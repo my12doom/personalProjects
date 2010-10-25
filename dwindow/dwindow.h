@@ -1,0 +1,74 @@
+#pragma once
+// Win32
+#include <Windows.h>
+#include <WindowsX.h>
+#include <wchar.h>
+
+
+class dwindow
+{
+public:
+	// window controll functions
+	dwindow(RECT screen1, RECT screen2);
+	~dwindow();
+	HRESULT set_fullscreen(int id, bool full, bool nosave = false);
+	HRESULT set_timer(int id, int interval);
+	HRESULT show_window(int id, bool show);
+	HRESULT show_mouse(bool show);
+	HRESULT set_window_text(int id, wchar_t *text);
+	bool m_full1;
+	bool m_full2;
+	HWND m_hwnd1;
+	HWND m_hwnd2;
+
+	void close_and_kill_thread();
+protected:
+	typedef struct struct_window_proc_param
+	{
+		dwindow *that;
+		HWND *hwnd;
+	} window_proc_param;
+
+	static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	static DWORD WINAPI WindowThread(LPVOID lpParame);
+
+	virtual LRESULT on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam){
+		return DefWindowProc(id_to_hwnd(id), message, wParam, lParam);}
+	virtual LRESULT on_sys_command(int id, WPARAM wParam, LPARAM lParam){return S_FALSE;}	// don't block WM_SYSCOMMAND
+	virtual LRESULT on_getminmaxinfo(int id, MINMAXINFO *info){return S_OK;}
+	virtual LRESULT on_move(int id, int x, int y){return S_OK;}
+	virtual LRESULT on_mouse_move(int id, int x, int y){return S_OK;}
+	virtual LRESULT on_nc_mouse_move(int id, int x, int y){return S_OK;}
+	virtual LRESULT on_mouse_down(int id, int button, int x, int y){return S_OK;}
+	virtual LRESULT on_mouse_up(int id, int button, int x, int y){return S_OK;}
+	virtual LRESULT on_double_click(int id, int button, int x, int y){return S_OK;}
+	virtual LRESULT on_key_down(int id, int key){return S_OK;}
+	virtual LRESULT on_close(int id){return S_OK;}
+	virtual LRESULT on_display_change(){return S_OK;}
+	virtual LRESULT on_paint(int id, HDC hdc){return S_OK;}
+	virtual LRESULT on_timer(int id){return S_OK;}
+	virtual LRESULT on_size(int id, int type, int x, int y){return S_OK;}
+
+	// helper function
+	HWND id_to_hwnd(int id);
+	int hwnd_to_id(HWND hwnd);
+	bool is_visible(int id);
+
+	// need init:
+	HANDLE m_thread1;
+	HANDLE m_thread2;
+	LONG m_style1;
+	LONG m_style2;
+	LONG m_exstyle1;
+	LONG m_exstyle2;
+	RECT m_normal1;
+	RECT m_normal2;
+	RECT m_screen1;
+	RECT m_screen2;
+	bool m_show_mouse;
+
+	/*
+	bool m_show_ui;
+	*/
+};
+

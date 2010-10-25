@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JM_pipe_server", "JM_pipe_server.vcproj", "{E8890070-08B2-4516-AB6C-858A3FE49311}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{E8890070-08B2-4516-AB6C-858A3FE49311}.Debug.ActiveCfg = Debug|Win32
+		{E8890070-08B2-4516-AB6C-858A3FE49311}.Debug.Build.0 = Debug|Win32
+		{E8890070-08B2-4516-AB6C-858A3FE49311}.Release.ActiveCfg = Release|Win32
+		{E8890070-08B2-4516-AB6C-858A3FE49311}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

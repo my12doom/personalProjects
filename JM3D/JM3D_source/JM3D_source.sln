@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JM3D_source", "JM3D_source.vcproj", "{477CB64A-26B5-443D-A182-AE217C754B5B}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		m2ts_scan_test = m2ts_scan_test
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{477CB64A-26B5-443D-A182-AE217C754B5B}.Debug.ActiveCfg = Debug|Win32
+		{477CB64A-26B5-443D-A182-AE217C754B5B}.Debug.Build.0 = Debug|Win32
+		{477CB64A-26B5-443D-A182-AE217C754B5B}.m2ts_scan_test.ActiveCfg = m2ts_scan_test|Win32
+		{477CB64A-26B5-443D-A182-AE217C754B5B}.m2ts_scan_test.Build.0 = m2ts_scan_test|Win32
+		{477CB64A-26B5-443D-A182-AE217C754B5B}.Release.ActiveCfg = Release|Win32
+		{477CB64A-26B5-443D-A182-AE217C754B5B}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

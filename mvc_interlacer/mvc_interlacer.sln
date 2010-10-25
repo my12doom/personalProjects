@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "interlacer", "interlacer.vcproj", "{805FC7BE-8C27-481A-AA18-F829541D9489}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gui", "gui.vcproj", "{0E40E917-D6AA-45B8-BA98-9E3852DC69E3}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{805FC7BE-8C27-481A-AA18-F829541D9489}.Debug.ActiveCfg = Debug|Win32
+		{805FC7BE-8C27-481A-AA18-F829541D9489}.Debug.Build.0 = Debug|Win32
+		{805FC7BE-8C27-481A-AA18-F829541D9489}.Release.ActiveCfg = Release|Win32
+		{805FC7BE-8C27-481A-AA18-F829541D9489}.Release.Build.0 = Release|Win32
+		{0E40E917-D6AA-45B8-BA98-9E3852DC69E3}.Debug.ActiveCfg = Debug|Win32
+		{0E40E917-D6AA-45B8-BA98-9E3852DC69E3}.Debug.Build.0 = Debug|Win32
+		{0E40E917-D6AA-45B8-BA98-9E3852DC69E3}.Release.ActiveCfg = Release|Win32
+		{0E40E917-D6AA-45B8-BA98-9E3852DC69E3}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
