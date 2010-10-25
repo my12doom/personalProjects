@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JM_hook", "JM_hook.vcproj", "{674FD6B9-7F9A-4A77-9CF0-5CC3F0D30159}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{674FD6B9-7F9A-4A77-9CF0-5CC3F0D30159}.Debug.ActiveCfg = Debug|Win32
+		{674FD6B9-7F9A-4A77-9CF0-5CC3F0D30159}.Debug.Build.0 = Debug|Win32
+		{674FD6B9-7F9A-4A77-9CF0-5CC3F0D30159}.Release.ActiveCfg = Release|Win32
+		{674FD6B9-7F9A-4A77-9CF0-5CC3F0D30159}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
