@@ -151,10 +151,11 @@ void Cdwindow_launcherDlg::OnBnClickedButton1()
 
 void Cdwindow_launcherDlg::OnBnClickedButton4()
 {
-	if (MessageBox(_T("这将自动关闭SSP，是否继续？"), NULL, MB_YESNO | MB_ICONWARNING) == IDNO)
+	if(kill_ssp(false))
+	if (MessageBox(_T("检测到SSP正在运行，程序将将其关闭，是否继续？"), NULL, MB_YESNO | MB_ICONWARNING) == IDNO)
 		return;
 
-	kill_ssp();
+	kill_ssp(true);
 	// ssp set remux
 	const TCHAR* filters_key= _T("Software\\3dtv.at\\Stereoscopic Player\\Preferred Filters");
 
@@ -194,9 +195,10 @@ void Cdwindow_launcherDlg::OnBnClickedButton4()
 
 void Cdwindow_launcherDlg::OnBnClickedButton3()
 {
-	if (MessageBox(_T("这将自动关闭SSP，是否继续？"), NULL, MB_YESNO | MB_ICONWARNING) == IDNO)
+	if(kill_ssp(false))
+	if (MessageBox(_T("检测到SSP正在运行，程序将将其关闭，是否继续？"), NULL, MB_YESNO | MB_ICONWARNING) == IDNO)
 		return;
-	kill_ssp();
+	kill_ssp(true);
 	// ssp reset
 
 	const TCHAR* filters_key= _T("Software\\3dtv.at\\Stereoscopic Player\\Preferred Filters");
@@ -240,7 +242,7 @@ void Cdwindow_launcherDlg::OnBnClickedButton5()
 		MessageBox(_T("DWindow 运行失败"), NULL, MB_OK | MB_ICONERROR);
 }
 
-void Cdwindow_launcherDlg::kill_ssp()
+bool Cdwindow_launcherDlg::kill_ssp(bool kill)
 {
 	HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	PROCESSENTRY32 pe32; 
@@ -256,10 +258,17 @@ void Cdwindow_launcherDlg::kill_ssp()
 
 			if (!wcscmp(tmp, L"stereoplayer.exe"))
 			{
-				HANDLE process = OpenProcess(PROCESS_TERMINATE, FALSE, pe32.th32ProcessID);
-				TerminateProcess(process, -1);
-				CloseHandle(process);
+				if(kill)
+				{
+					HANDLE process = OpenProcess(PROCESS_TERMINATE, FALSE, pe32.th32ProcessID);
+					TerminateProcess(process, -1);
+					CloseHandle(process);
+				}
+				else
+					return true;
 			}
 		} while (Process32Next(hSnap, &pe32));
 	}
+
+	return false;
 }

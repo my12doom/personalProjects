@@ -23,7 +23,7 @@ public:
 protected:
 	HICON m_hIcon;
 
-	void kill_ssp();
+	bool kill_ssp(bool kill);
 	bool check_module();
 
 	// 生成的消息映射函数

@@ -26,13 +26,15 @@ CFileBuffer right(max_nal_size*10);
 
 void create_watermark()
 {
+	#define str "powered by my12doom's mvc interlacer."
+
 	watermark[0] = 0;
 	watermark[1] = 0;
 	watermark[2] = 0;
 	watermark[3] = 1;
-	watermark[4] = 0x31;	// should be find
-	strcpy((char*)watermark+5, "my12doom's test");
-	watermark_size = 5 + strlen("my12doom's test");
+	watermark[4] = 31;	// should be fine
+	strcpy((char*)watermark+5, str);
+	watermark_size = 5 + strlen(str);
 }
 
 int nal_type(unsigned char *data)
@@ -179,6 +181,12 @@ void main(int argc, char * argv[])
 	printf("my12doom.googlecode.com\n");
 	printf("mailto:my12doom@gmail.com\n");
 	printf("thanks to tsdemux by clark15b\n\n");
+
+	create_watermark();
+	FILE * f = fopen("Z:\\watermark.wm", "wb");
+	fwrite(watermark, watermark_size, 1, f);
+	fflush(f);
+	fclose(f);
 
 	if (argc<3 || argc>4)
 	{

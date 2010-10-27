@@ -2,6 +2,64 @@
 #include <windows.h>
 #define ssp_hwnd (FindWindow(_T("4C463F505C19080C5A2D5F4744591F1E"), NULL))
 
+// {D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}
+DEFINE_GUID(CLSID_PD10_DECODER, 
+                        0xD00E73D7, 0x06f5, 0x44F9, 0x8B, 0xE4, 0xB7, 0xDB, 0x19, 0x1E, 0x9E, 0x7E);
+
+// {F07E981B-0EC4-4665-A671-C24955D11A38}
+DEFINE_GUID(CLSID_PD10_DEMUXER, 
+                        0xF07E981B, 0x0EC4, 0x4665, 0xA6, 0x71, 0xC2, 0x49, 0x55, 0xD1, 0x1A, 0x38);
+
+IBaseFilter * GetUpperFilter(IBaseFilter *pFilter)
+{
+	if (!pFilter)
+		return NULL;
+
+	IBaseFilter *rtn = NULL;
+
+	IEnumPins *pEnum = 0;
+	HRESULT hr = pFilter->EnumPins(&pEnum);
+	if (FAILED(hr))
+	{
+		return NULL;
+	}
+	IPin *pPin = 0;
+	while (pEnum->Next(1, &pPin, NULL) == S_OK)
+	{
+		PIN_DIRECTION ThisPinDir;
+		pPin->QueryDirection(&ThisPinDir);
+
+		if (ThisPinDir == PINDIR_INPUT)
+		{
+			IPin *pTmp = 0;
+			hr = pPin->ConnectedTo(&pTmp);
+			if (SUCCEEDED(hr))  // Already connected, the pin we want.
+			{
+				PIN_INFO info;
+				pTmp->QueryPinInfo(&info);
+				FILTER_INFO finfo;
+				info.pFilter->QueryFilterInfo(&finfo);
+
+				finfo.pGraph->Release();
+				//info.pFilter->Release();
+				//don't release it
+				//release by caller
+				rtn = info.pFilter;
+				pTmp->Release();
+				pPin->Release();
+				break;
+			}
+			else  // Unconnected
+			{}
+		}
+		pPin->Release();
+	}
+
+	pEnum->Release();
+	return rtn;
+}
+
+
 CDWindowSSP::CDWindowSSP(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
 CTransformFilter(tszName, punk, CLSID_YV12MonoMixer)
 {
@@ -101,14 +159,26 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 	pIn->GetPointer(&psrc);
 	LONG data_size = pIn->GetActualDataLength();
 
+
 	m_frm --;
 	if (m_left)
 	{
+		if(!my12doom_found && pOut)
+		{
+			// pass thourgh left
+			BYTE *pdst = NULL;
+			pOut->GetPointer(&pdst);
+
+			memcpy(pdst, psrc, data_size);
+			return S_OK;
+		}
 		memcpy(m_image_buffer, psrc, data_size);
 		return S_FALSE;
 	}
 	else
 	{
+		if (!my12doom_found)
+			return S_FALSE;
 		if(pOut)
 		{
 			const int byte_per_pixel = 2;
@@ -213,7 +283,16 @@ HRESULT CDWindowSSP::GetMediaType(int iPosition, CMediaType *pMediaType)
 		vihOut->rcSource = zero;
 		vihOut->rcTarget = zero;
 
-		vihOut->bmiHeader.biWidth = m_image_x *2 ;
+		if(my12doom_found)
+		{
+			vihOut->dwPictAspectRatioX = 32;
+			vihOut->bmiHeader.biWidth = m_image_x *2 ;
+		}
+		else
+		{
+			vihOut->dwPictAspectRatioX = 16;
+			vihOut->bmiHeader.biWidth = m_image_x;
+		}
 		vihOut->bmiHeader.biHeight = m_image_y;
 
 		vihOut->bmiHeader.biXPelsPerMeter = 1;
@@ -221,7 +300,6 @@ HRESULT CDWindowSSP::GetMediaType(int iPosition, CMediaType *pMediaType)
 
 		vihOut->dwInterlaceFlags = 0;	// 不支持交织图像，如果发现闪瞎狗眼的图像，检查片源
 
-		vihOut->dwPictAspectRatioX = 32;
 		vihOut->dwPictAspectRatioY = 9;	// 16:9 only
 	}
 
@@ -261,6 +339,14 @@ HRESULT CDWindowSSP::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, dou
 	return S_OK;
 }
 
+HRESULT CDWindowSSP::BreakConnect(PIN_DIRECTION dir)
+{
+	if (dir == PINDIR_INPUT)
+		m_demuxer = NULL;
+	return CTransformFilter::BreakConnect(dir);
+}
+
+
 HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 {
 	if (m_demuxer == NULL && direction == PINDIR_INPUT)
@@ -268,6 +354,55 @@ HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 		CComQIPtr<IBaseFilter, &IID_IBaseFilter> pbase(this);
 		FILTER_INFO fi;
 		pbase->QueryFilterInfo(&fi);
+
+		// check my12doom watermark
+
+		if (fi.pGraph)
+		{
+			my12doom_found = false;
+			CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(fi.pGraph);
+
+			CComPtr<IEnumFilters> penum;
+			gb->EnumFilters(&penum);
+
+			ULONG fetched = 0;
+			CComPtr<IBaseFilter> filter;
+			while(penum->Next(1, &filter, &fetched) == S_OK)
+			{
+				CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(filter);
+				if (source != NULL)
+				{
+					LPOLESTR file = NULL;
+					source->GetCurFile(&file, NULL);
+					// check input file?
+					if(file)
+					{
+						FILE *f = _wfopen(file, L"rb");
+						if (f)
+						{
+							const int check_size = 32768;
+							char *buf = (char*) malloc(check_size);
+							fread(buf, 1, check_size, f);
+							fclose(f);
+
+							for(int i=0; i<check_size-8; i++)
+							{
+								if (buf[i+0] == 'm' && buf[i+1] == 'y' && buf[i+2] == '1' && buf[i+3] =='2' &&
+									buf[i+4] == 'd' && buf[i+5] == 'o' && buf[i+6] == 'o' && buf[i+7] =='m')
+								{
+									my12doom_found = true;								
+								}
+
+							}
+							free(buf);
+						}
+						CoTaskMemFree(file);
+					}
+				}
+
+				filter = NULL;
+			}
+		}
 
 		// find cyberlink demuxer
 		CComPtr<IEnumFilters> pEnum;
@@ -294,12 +429,14 @@ HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 		fi.pGraph->Release();
 	}
 
-	if (direction == PINDIR_INPUT)
+	if (direction == PINDIR_INPUT && my12doom_found)
 	{
 		MessageBox(ssp_hwnd, _T("This is a free demo version of my12doom's bluray3D remux filter for SSP.\n"
-			L"This version is fully functional. It only add a watermark to the video.\n\n"
+			L"This version is fully functional. It only add a watermark to the video.\n"
+			L"Please set layout to \"Side by Side, Left Image First\"\n\n"
 			L"这是一个免费测试版的my12doom's bluray3D remux filter for SSP。\n"
-			L"本版本功能完整，仅仅在画面上加入一个水印。"), _T("Warning"), MB_OK);
+			L"本版本功能完整，仅仅在画面上加入一个水印。\n"
+			L"请选择输入格式\"水平并排(左画面在左)\""), _T("Warning"), MB_OK);
 	}
 
 	prepare_mask();

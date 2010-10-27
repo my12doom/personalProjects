@@ -25,11 +25,16 @@ public:
 	HRESULT StartStreaming();
 	HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
     HRESULT CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin);
+    HRESULT BreakConnect(PIN_DIRECTION dir);
+
+	// IBaseFilter::JoinFilter
+	//STDMETHODIMP JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName);
 
 private:
 	CComPtr<IBaseFilter> m_demuxer;
 	HANDLE h_F11_thread;
 	static DWORD WINAPI F11Thread(LPVOID lpParame);
+	bool my12doom_found;
 	int m_image_x;
 	int m_image_y;
 	int m_left;
