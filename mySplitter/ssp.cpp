@@ -9,7 +9,42 @@ DEFINE_GUID(CLSID_PD10_DECODER,
 // {F07E981B-0EC4-4665-A671-C24955D11A38}
 DEFINE_GUID(CLSID_PD10_DEMUXER, 
                         0xF07E981B, 0x0EC4, 0x4665, 0xA6, 0x71, 0xC2, 0x49, 0x55, 0xD1, 0x1A, 0x38);
-
+// helper functions
+HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
+{
+	*ppPin = 0;
+	IEnumPins *pEnum = 0;
+	IPin *pPin = 0;
+	HRESULT hr = pFilter->EnumPins(&pEnum);
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+	while (pEnum->Next(1, &pPin, NULL) == S_OK)
+	{
+		PIN_DIRECTION ThisPinDir;
+		pPin->QueryDirection(&ThisPinDir);
+		if (ThisPinDir == PinDir)
+		{
+			IPin *pTmp = 0;
+			hr = pPin->ConnectedTo(&pTmp);
+			if (SUCCEEDED(hr))  // Already connected, not the pin we want.
+			{
+				pTmp->Release();
+			}
+			else  // Unconnected, this is the pin we want.
+			{
+				pEnum->Release();
+				*ppPin = pPin;
+				return S_OK;
+			}
+		}
+		pPin->Release();
+	}
+	pEnum->Release();
+	// Did not find a matching pin.
+	return E_FAIL;
+}
 IBaseFilter * GetUpperFilter(IBaseFilter *pFilter)
 {
 	if (!pFilter)
@@ -159,26 +194,24 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 	pIn->GetPointer(&psrc);
 	LONG data_size = pIn->GetActualDataLength();
 
+	if(!my12doom_found && pOut)
+	{
+		// pass thourgh
+		BYTE *pdst = NULL;
+		pOut->GetPointer(&pdst);
+
+		memcpy(pdst, psrc, data_size);
+		return S_OK;
+	}
 
 	m_frm --;
 	if (m_left)
 	{
-		if(!my12doom_found && pOut)
-		{
-			// pass thourgh left
-			BYTE *pdst = NULL;
-			pOut->GetPointer(&pdst);
-
-			memcpy(pdst, psrc, data_size);
-			return S_OK;
-		}
 		memcpy(m_image_buffer, psrc, data_size);
 		return S_FALSE;
 	}
 	else
 	{
-		if (!my12doom_found)
-			return S_FALSE;
 		if(pOut)
 		{
 			const int byte_per_pixel = 2;
@@ -346,6 +379,136 @@ HRESULT CDWindowSSP::BreakConnect(PIN_DIRECTION dir)
 	return CTransformFilter::BreakConnect(dir);
 }
 
+STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
+{
+
+	HRESULT hr = CTransformFilter::JoinFilterGraph(pGraph, pName);
+
+	if (pGraph)
+	{
+		my12doom_found = false;
+		CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(pGraph);
+
+		CComPtr<IEnumFilters> penum;
+		gb->EnumFilters(&penum);
+
+		ULONG fetched = 0;
+		CComPtr<IBaseFilter> filter;
+		while(penum->Next(1, &filter, &fetched) == S_OK)
+		{
+			CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(filter);
+			if (source != NULL)
+			{
+				LPOLESTR file = NULL;
+				source->GetCurFile(&file, NULL);
+				// check input file?
+				if(file)
+				{
+					FILE *f = _wfopen(file, L"rb");
+					if (f)
+					{
+						const int check_size = 32768;
+						char *buf = (char*) malloc(check_size);
+						fread(buf, 1, check_size, f);
+						fclose(f);
+
+						for(int i=0; i<check_size-8; i++)
+						{
+							if (buf[i+0] == 'm' && buf[i+1] == 'y' && buf[i+2] == '1' && buf[i+3] =='2' &&
+								buf[i+4] == 'd' && buf[i+5] == 'o' && buf[i+6] == 'o' && buf[i+7] =='m')
+							{
+								my12doom_found = true;								
+							}
+
+						}
+						free(buf);
+					}
+					CoTaskMemFree(file);
+				}
+			}
+
+			filter = NULL;
+		}
+
+
+		if (!my12doom_found)
+		{
+			MessageBoxW(ssp_hwnd, L"Non-REMUX content detected, if picture become confused or freezed,\n"
+				L"please use DWindow config tool to reset SSP's config\n\n"
+				L"检测到非REMUX文件，如果出现画面异常或冻结，请用DWindow配置工具恢复SSP默认设置", L"Warning", MB_OK | MB_ICONERROR);
+		}
+		
+		CComPtr<IPin> demuxer_upper_pin;
+	remove:
+		filter = NULL;
+		penum = NULL;
+		gb->EnumFilters(&penum);
+		while(penum->Next(1, &filter, &fetched) == S_OK)
+		{
+			CLSID filter_id;
+			filter->GetClassID(&filter_id);
+
+			if (filter_id == CLSID_PD10_DECODER)
+			{
+				//gb->RemoveFilter(filter);
+				//goto remove;
+			}
+
+			if (filter_id == CLSID_PD10_DEMUXER)
+			{
+				CComPtr<IBaseFilter> demuxer_upper_filter = GetUpperFilter(filter);
+				gb->RemoveFilter(filter);
+
+				GetUnconnectedPin(demuxer_upper_filter, PINDIR_OUTPUT, &demuxer_upper_pin);
+				goto remove;
+			}
+
+			filter = NULL;
+		}
+
+		if (demuxer_upper_pin)
+		{
+			// render it
+			gb->Render(demuxer_upper_pin);
+
+			// remove that damned renderer
+			filter = NULL;
+			penum = NULL;
+			gb->EnumFilters(&penum);
+			while(penum->Next(1, &filter, &fetched) == S_OK)
+			{
+				FILTER_INFO fi2;
+				filter->QueryFilterInfo(&fi2);
+				if(fi2.pGraph) fi2.pGraph->Release();
+
+				if(wcsstr(fi2.achName, L"Video Renderer"))
+				{
+					gb->RemoveFilter(filter);
+				}
+
+				filter = NULL;
+			}
+
+		}
+
+		//gb->RenderFile(L"Z:\\low.ts", NULL);
+
+		CComPtr<IPin> input_o;
+		CComPtr<IPin> output_i;
+		m_pInput->ConnectedTo(&input_o);
+		m_pOutput->ConnectedTo(&output_i);
+
+		//HRESULT hr2 = gb->Disconnect(m_pInput);
+		//HRESULT hr3 = gb->Disconnect(m_pOutput);
+		//HRESULT hr4 = gb->Disconnect(input_o);
+		//HRESULT hr5 = gb->Disconnect(output_i);
+
+		
+	}
+
+	return hr;
+}
+
 
 HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 {
@@ -354,60 +517,10 @@ HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 		CComQIPtr<IBaseFilter, &IID_IBaseFilter> pbase(this);
 		FILTER_INFO fi;
 		pbase->QueryFilterInfo(&fi);
-
-		// check my12doom watermark
-
-		if (fi.pGraph)
-		{
-			my12doom_found = false;
-			CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(fi.pGraph);
-
-			CComPtr<IEnumFilters> penum;
-			gb->EnumFilters(&penum);
-
-			ULONG fetched = 0;
-			CComPtr<IBaseFilter> filter;
-			while(penum->Next(1, &filter, &fetched) == S_OK)
-			{
-				CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(filter);
-				if (source != NULL)
-				{
-					LPOLESTR file = NULL;
-					source->GetCurFile(&file, NULL);
-					// check input file?
-					if(file)
-					{
-						FILE *f = _wfopen(file, L"rb");
-						if (f)
-						{
-							const int check_size = 32768;
-							char *buf = (char*) malloc(check_size);
-							fread(buf, 1, check_size, f);
-							fclose(f);
-
-							for(int i=0; i<check_size-8; i++)
-							{
-								if (buf[i+0] == 'm' && buf[i+1] == 'y' && buf[i+2] == '1' && buf[i+3] =='2' &&
-									buf[i+4] == 'd' && buf[i+5] == 'o' && buf[i+6] == 'o' && buf[i+7] =='m')
-								{
-									my12doom_found = true;								
-								}
-
-							}
-							free(buf);
-						}
-						CoTaskMemFree(file);
-					}
-				}
-
-				filter = NULL;
-			}
-		}
-
-		// find cyberlink demuxer
 		CComPtr<IEnumFilters> pEnum;
 		HRESULT hr = fi.pGraph->EnumFilters(&pEnum);
-
+		
+		// find cyberlink demuxer
 		while(pEnum->Next(1, &m_demuxer, NULL) == S_OK)
 		{
 			FILTER_INFO filter_info;
@@ -422,11 +535,12 @@ HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 		// show warning or create F11 thread
 		CAutoLock lock_it(m_pLock);
 		if (m_demuxer == NULL)
-			MessageBox(ssp_hwnd,_T("Cyberlink Demuxer 2.0 not found, image might be wrong."), _T("Warning"), MB_OK | MB_ICONERROR);
+			;//MessageBox(ssp_hwnd,_T("Cyberlink Demuxer 2.0 not found, image might be wrong."), _T("Warning"), MB_OK | MB_ICONERROR);
 		else if (h_F11_thread == INVALID_HANDLE_VALUE)
 			h_F11_thread = CreateThread(0, 0, F11Thread, this, NULL, NULL);
 
 		fi.pGraph->Release();
+
 	}
 
 	if (direction == PINDIR_INPUT && my12doom_found)
@@ -442,6 +556,13 @@ HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 	prepare_mask();
 
 	return S_OK;
+}
+
+
+DWORD WINAPI CDWindowSSP::default_thread(LPVOID lpParame)
+{
+
+	return 0;
 }
 
 DWORD WINAPI CDWindowSSP::F11Thread(LPVOID lpParame)

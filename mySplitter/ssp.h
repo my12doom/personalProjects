@@ -28,12 +28,13 @@ public:
     HRESULT BreakConnect(PIN_DIRECTION dir);
 
 	// IBaseFilter::JoinFilter
-	//STDMETHODIMP JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName);
+	STDMETHODIMP JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName);
 
 private:
 	CComPtr<IBaseFilter> m_demuxer;
 	HANDLE h_F11_thread;
 	static DWORD WINAPI F11Thread(LPVOID lpParame);
+	static DWORD WINAPI default_thread(LPVOID lpParame);		//reset graph to default thread
 	bool my12doom_found;
 	int m_image_x;
 	int m_image_y;
