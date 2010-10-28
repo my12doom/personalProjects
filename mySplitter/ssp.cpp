@@ -362,11 +362,25 @@ HRESULT CDWindowSSP::GetMediaType(int iPosition, CMediaType *pMediaType)
 		if(my12doom_found)
 		{
 			vihOut->dwPictAspectRatioX = 32;
+			vihOut->dwPictAspectRatioY = 9;	// 16:9 only
 			vihOut->bmiHeader.biWidth = m_image_x *2 ;
 		}
 		else
 		{
-			vihOut->dwPictAspectRatioX = 16;
+
+			// compute aspect
+			int aspect_x = m_image_x;
+			int aspect_y = m_image_y;
+			for(int i=2; i<100; i++)
+			{
+				if (aspect_x % i == 0 && aspect_y % i == 0)
+				{
+					aspect_x /= i;
+					aspect_y /= i;
+				}
+			}
+			vihOut->dwPictAspectRatioX = aspect_x;
+			vihOut->dwPictAspectRatioY = aspect_y;
 			vihOut->bmiHeader.biWidth = m_image_x;
 		}
 		vihOut->bmiHeader.biHeight = m_image_y;
@@ -376,7 +390,6 @@ HRESULT CDWindowSSP::GetMediaType(int iPosition, CMediaType *pMediaType)
 
 		vihOut->dwInterlaceFlags = 0;	// 不支持交织图像，如果发现闪瞎狗眼的图像，检查片源
 
-		vihOut->dwPictAspectRatioY = 9;	// 16:9 only
 	}
 
 	return NOERROR;
