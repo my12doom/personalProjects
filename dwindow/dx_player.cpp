@@ -68,7 +68,7 @@ HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 			}
 			else  // Unconnected, not the pin we want.
 			{
-				pTmp->Release();
+				if(pTmp) pTmp->Release();
 			}
 		}
 		pPin->Release();

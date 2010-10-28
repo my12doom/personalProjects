@@ -9,6 +9,12 @@ DEFINE_GUID(CLSID_PD10_DECODER,
 // {F07E981B-0EC4-4665-A671-C24955D11A38}
 DEFINE_GUID(CLSID_PD10_DEMUXER, 
                         0xF07E981B, 0x0EC4, 0x4665, 0xA6, 0x71, 0xC2, 0x49, 0x55, 0xD1, 0x1A, 0x38);
+
+// {854408FE-B7CB-4881-A8AF-5E17FB42AC24}
+DEFINE_GUID(CLSID_SSP_TRANFORMER, 
+                        0x854408FE, 0xB7CB, 0x4881, 0xA8, 0xAF, 0x5E, 0x17, 0xFB, 0x42, 0xac, 0x24);
+
+
 // helper functions
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 {
@@ -45,6 +51,43 @@ HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPi
 	// Did not find a matching pin.
 	return E_FAIL;
 }
+
+HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
+{
+	*ppPin = 0;
+	IEnumPins *pEnum = 0;
+	IPin *pPin = 0;
+	HRESULT hr = pFilter->EnumPins(&pEnum);
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+	while (pEnum->Next(1, &pPin, NULL) == S_OK)
+	{
+		PIN_DIRECTION ThisPinDir;
+		pPin->QueryDirection(&ThisPinDir);
+		if (ThisPinDir == PinDir)
+		{
+			IPin *pTmp = 0;
+			hr = pPin->ConnectedTo(&pTmp);
+			if (SUCCEEDED(hr)) // Connected, this is the pin we want. 
+			{
+				pEnum->Release();
+				*ppPin = pPin;
+				return S_OK;
+			}
+			else  // Unconnected, not the pin we want.
+			{
+				if(pTmp) pTmp->Release();
+			}
+		}
+		pPin->Release();
+	}
+	pEnum->Release();
+	// Did not find a matching pin.
+	return E_FAIL;
+}
+
 IBaseFilter * GetUpperFilter(IBaseFilter *pFilter)
 {
 	if (!pFilter)
@@ -430,78 +473,90 @@ STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 			filter = NULL;
 		}
 
-
 		if (!my12doom_found)
 		{
-			MessageBoxW(ssp_hwnd, L"Non-REMUX content detected, if picture become confused or freezed,\n"
-				L"please use DWindow config tool to reset SSP's config\n\n"
-				L"检测到非REMUX文件，如果出现画面异常或冻结，请用DWindow配置工具恢复SSP默认设置", L"Warning", MB_OK | MB_ICONERROR);
-		}
-		
-		CComPtr<IPin> demuxer_upper_pin;
-	remove:
-		filter = NULL;
-		penum = NULL;
-		gb->EnumFilters(&penum);
-		while(penum->Next(1, &filter, &fetched) == S_OK)
-		{
-			CLSID filter_id;
-			filter->GetClassID(&filter_id);
-
-			if (filter_id == CLSID_PD10_DECODER)
-			{
-				//gb->RemoveFilter(filter);
-				//goto remove;
-			}
-
-			if (filter_id == CLSID_PD10_DEMUXER)
-			{
-				CComPtr<IBaseFilter> demuxer_upper_filter = GetUpperFilter(filter);
-				gb->RemoveFilter(filter);
-
-				GetUnconnectedPin(demuxer_upper_filter, PINDIR_OUTPUT, &demuxer_upper_pin);
-				goto remove;
-			}
-
-			filter = NULL;
-		}
-
-		if (demuxer_upper_pin)
-		{
-			// render it
-			gb->Render(demuxer_upper_pin);
-
-			// remove that damned renderer
+			wchar_t source_file[MAX_PATH] = L"";
+remove:
 			filter = NULL;
 			penum = NULL;
 			gb->EnumFilters(&penum);
 			while(penum->Next(1, &filter, &fetched) == S_OK)
 			{
-				FILTER_INFO fi2;
-				filter->QueryFilterInfo(&fi2);
-				if(fi2.pGraph) fi2.pGraph->Release();
+				CLSID filter_id;
+				filter->GetClassID(&filter_id);
 
-				if(wcsstr(fi2.achName, L"Video Renderer"))
+				// remove demuxer only, decoder is needed due to SSP's codes
+				if (filter_id == CLSID_PD10_DEMUXER)
 				{
+					// this should be the Source (file async)
+					CComPtr<IBaseFilter> demuxer_upper_filter = GetUpperFilter(filter);
 					gb->RemoveFilter(filter);
+
+					CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(demuxer_upper_filter);
+					if (source != NULL)
+					{
+						LPOLESTR file = NULL;
+						source->GetCurFile(&file, NULL);
+						if (file)
+						{
+							wcscpy(source_file, file);
+							CoTaskMemFree(file);
+						}
+					}
+
+					goto remove;
 				}
 
 				filter = NULL;
 			}
 
+			if (source_file[0])
+			{
+				gb->RenderFile(source_file, NULL);
+
+				// disconnect SSP's transformer's output pins
+				filter = NULL;
+				penum = NULL;
+				gb->EnumFilters(&penum);
+				while(penum->Next(1, &filter, &fetched) == S_OK)
+				{
+					CLSID filter_id;
+					filter->GetClassID(&filter_id);
+					if (filter_id == CLSID_SSP_TRANFORMER)
+					{
+						CComPtr<IPin> pin1;
+						CComPtr<IPin> pin1o;
+						GetConnectedPin(filter, PINDIR_OUTPUT, &pin1);
+						if(pin1 != NULL)
+						{
+							pin1->ConnectedTo(&pin1o);
+							gb->Disconnect(pin1);
+							gb->Disconnect(pin1o);
+						}
+
+
+						CComPtr<IPin> pin2;
+						CComPtr<IPin> pin2o;
+						GetConnectedPin(filter, PINDIR_OUTPUT, &pin2);
+						if(pin2 != NULL)
+						{
+							pin2->ConnectedTo(&pin2o);
+							gb->Disconnect(pin2);
+							gb->Disconnect(pin2o);
+						}
+
+					}
+
+					filter = NULL;
+				}
+
+			}
+
+			MessageBoxW(ssp_hwnd, L"Non-REMUX content detected, if picture become confused or freezed,\n"
+				L"please use DWindow config tool to reset SSP's config\n\n"
+				L"检测到非REMUX文件，如果出现画面异常或冻结，请用DWindow配置工具恢复SSP默认设置", L"Warning", MB_OK | MB_ICONERROR);
+
 		}
-
-		//gb->RenderFile(L"Z:\\low.ts", NULL);
-
-		CComPtr<IPin> input_o;
-		CComPtr<IPin> output_i;
-		m_pInput->ConnectedTo(&input_o);
-		m_pOutput->ConnectedTo(&output_i);
-
-		//HRESULT hr2 = gb->Disconnect(m_pInput);
-		//HRESULT hr3 = gb->Disconnect(m_pOutput);
-		//HRESULT hr4 = gb->Disconnect(input_o);
-		//HRESULT hr5 = gb->Disconnect(output_i);
 
 		
 	}
