@@ -565,9 +565,11 @@ remove:
 
 			}
 
-			MessageBoxW(ssp_hwnd, L"Non-REMUX content detected, if picture become confused or freezed,\n"
+			MessageBoxW(ssp_hwnd, L"Non-REMUX content detected, switching to compatibility mode\n"
+				L"if picture become confused or freezed,\n"
 				L"please use DWindow config tool to reset SSP's config\n\n"
-				L"检测到非REMUX文件，如果出现画面异常或冻结，请用DWindow配置工具恢复SSP默认设置", L"Warning", MB_OK | MB_ICONERROR);
+				L"检测到非REMUX文件，正在使用兼容模式播放\n"
+				L"如果仍出现画面异常或冻结，请用DWindow配置工具恢复SSP默认设置", L"Warning", MB_OK | MB_ICONERROR);
 
 		}
 
