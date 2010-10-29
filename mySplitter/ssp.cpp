@@ -137,6 +137,77 @@ IBaseFilter * GetUpperFilter(IBaseFilter *pFilter)
 	return rtn;
 }
 
+IBaseFilter * GetTopmostFilter(IBaseFilter *filter)
+{
+	if (!filter)
+		return NULL;
+
+	filter->AddRef();
+
+	IBaseFilter *up = NULL;
+
+	while(true)
+	{
+		up = GetUpperFilter(filter);
+		if(!up)
+			return filter;
+
+		filter->Release();
+		filter = up;
+	}
+
+	return NULL;
+}
+
+HRESULT ActiveMVC(IGraphBuilder *gb, IBaseFilter *filter)
+{
+	CComPtr<IBaseFilter> h264;
+	CComPtr<IBaseFilter> demuxer;
+
+	h264.CoCreateInstance(CLSID_AsyncReader);
+	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> h264_control(h264);
+	demuxer.CoCreateInstance(CLSID_PD10_DEMUXER);
+
+	gb->AddFilter(h264, L"MVC");
+	gb->AddFilter(demuxer, L"Demuxer");
+
+	// test writing file
+	FILE *f = fopen("C:\\black.264", "rb");
+	char buf[596];
+	fread(buf,1,596,f);
+	fclose(f);
+
+	f = fopen("black.264", "wb");
+	fwrite(buf,1,596,f);
+	fflush(f);
+	fclose(f);
+
+	h264_control->Load(L"black.264", NULL);
+
+	CComPtr<IPin> h264_o;
+	GetUnconnectedPin(h264, PINDIR_OUTPUT, &h264_o);
+	CComPtr<IPin> demuxer_i;
+	GetUnconnectedPin(demuxer, PINDIR_INPUT, &demuxer_i);
+	gb->ConnectDirect(h264_o, demuxer_i, NULL);
+
+	CComPtr<IPin> demuxer_o;
+	GetUnconnectedPin(demuxer, PINDIR_OUTPUT, &demuxer_o);
+	CComPtr<IPin> decoder_i;
+	GetConnectedPin(filter, PINDIR_INPUT, &decoder_i);
+	CComPtr<IPin> decoder_up;
+	decoder_i->ConnectedTo(&decoder_up);
+	gb->Disconnect(decoder_i);
+	gb->Disconnect(decoder_up);
+
+	gb->ConnectDirect(demuxer_o, decoder_i, NULL);
+
+	gb->RemoveFilter(h264);
+	gb->RemoveFilter(demuxer);
+
+	gb->ConnectDirect(decoder_up, decoder_i, NULL);
+
+	return S_OK;
+}
 
 CDWindowSSP::CDWindowSSP(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
 CTransformFilter(tszName, punk, CLSID_YV12MonoMixer)
@@ -438,10 +509,68 @@ HRESULT CDWindowSSP::BreakConnect(PIN_DIRECTION dir)
 STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 {
 
+	
 	HRESULT hr = CTransformFilter::JoinFilterGraph(pGraph, pName);
 
 	if (pGraph)
 	{
+		my12doom_found = false;
+		CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(pGraph);
+
+		CComPtr<IEnumFilters> penum;
+		gb->EnumFilters(&penum);
+		ULONG fetched = 0;
+		CComPtr<IBaseFilter> filter;
+		while(penum->Next(1, &filter, &fetched) == S_OK)
+		{
+			CLSID filter_id;
+			filter->GetClassID(&filter_id);
+
+			// test if need active
+			if (filter_id == CLSID_PD10_DECODER)
+			{
+				bool this_decoder_is_remux = false;
+				CComPtr<IBaseFilter> topmost = GetTopmostFilter(filter);
+				CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(topmost);
+
+				if (source != NULL)
+				{
+					// check input file
+					LPOLESTR file = NULL;
+					source->GetCurFile(&file, NULL);
+					if(file)
+					{
+						FILE *f = _wfopen(file, L"rb");
+						if (f)
+						{
+							const int check_size = 32768;
+							char *buf = (char*) malloc(check_size);
+							fread(buf, 1, check_size, f);
+							fclose(f);
+
+							for(int i=0; i<check_size-8; i++)
+							{
+								if (buf[i+0] == 'm' && buf[i+1] == 'y' && buf[i+2] == '1' && buf[i+3] =='2' &&
+									buf[i+4] == 'd' && buf[i+5] == 'o' && buf[i+6] == 'o' && buf[i+7] =='m')
+									this_decoder_is_remux = my12doom_found = true;
+
+							}
+							free(buf);
+						}
+						CoTaskMemFree(file);
+					}
+				}
+
+				if (this_decoder_is_remux)
+				{
+					ActiveMVC(gb, filter);
+				}
+			}
+
+
+			filter = NULL;
+		}
+		/*
 		my12doom_found = false;
 		CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(pGraph);
 
@@ -564,16 +693,17 @@ remove:
 				}
 
 			}
-
-			MessageBoxW(ssp_hwnd, L"Non-REMUX content detected, switching to compatibility mode\n"
-				L"if picture become confused or freezed,\n"
-				L"please use DWindow config tool to reset SSP's config\n\n"
-				L"检测到非REMUX文件，正在使用兼容模式播放\n"
-				L"如果仍出现画面异常或冻结，请用DWindow配置工具恢复SSP默认设置", L"Warning", MB_OK | MB_ICONERROR);
-
 		}
+		*/
 
-		
+		if(!my12doom_found)
+		MessageBoxW(ssp_hwnd, L"Non-REMUX content detected, switching to compatibility mode\n"
+			L"if picture become confused or freezed,\n"
+			L"please use DWindow config tool to reset SSP's config\n\n"
+			L"检测到非REMUX文件，正在使用兼容模式播放\n"
+			L"如果仍出现画面异常或冻结，请用DWindow配置工具恢复SSP默认设置", L"Warning", MB_OK | MB_ICONERROR);
+
+
 	}
 
 	return hr;
