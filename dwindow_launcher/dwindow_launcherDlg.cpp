@@ -167,10 +167,12 @@ void Cdwindow_launcherDlg::OnBnClickedButton4()
 	ret = RegCreateKeyEx(HKEY_CURRENT_USER, filters_key, 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE  |KEY_SET_VALUE, NULL , &hkey, NULL  );
 
 	// demuxer
+	/*
 	HKEY hdemuxerkey = NULL;
 	ret = RegCreateKeyEx(hkey, _T("MPEG-2 Stream Splitter"), 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE  |KEY_SET_VALUE, NULL , &hdemuxerkey, NULL  );
 	ret = RegSetValueEx(hdemuxerkey, _T("0"), 0, REG_SZ, (const BYTE*)_T("{F07E981B-0EC4-4665-A671-C24955D11A38}"), sizeof(_T("{F07E981B-0EC4-4665-A671-C24955D11A38}")) );
 	RegCloseKey(hdemuxerkey);
+	*/
 
 	// decoder
 	HKEY hdecoderkey = NULL;

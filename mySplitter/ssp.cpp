@@ -14,6 +14,13 @@ DEFINE_GUID(CLSID_PD10_DEMUXER,
 DEFINE_GUID(CLSID_SSP_TRANFORMER, 
                         0x854408FE, 0xB7CB, 0x4881, 0xA8, 0xAF, 0x5E, 0x17, 0xFB, 0x42, 0xac, 0x24);
 
+// {55DA30FC-F16B-49FC-BAA5-AE59FC65F82D}
+DEFINE_GUID(CLSID_haali_source,
+						0x55DA30FC, 0xF16B, 0x49FC, 0xBA, 0xA5, 0xAE, 0x59, 0xFC, 0x65, 0xF8, 0x2D);
+
+// {DBF9000E-F08C-4858-B769-C914A0FBB1D7}
+DEFINE_GUID(CLSID_ffdshow_subtitle,
+						0xDBF9000E, 0xF08C, 0x4858, 0xB7, 0x69, 0xC9, 0x14, 0xA0, 0xFB, 0xB1, 0xD7);
 
 // helper functions
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
@@ -88,12 +95,10 @@ HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 	return E_FAIL;
 }
 
-IBaseFilter * GetUpperFilter(IBaseFilter *pFilter)
+HRESULT GetUpperFilter(IBaseFilter *pFilter, IBaseFilter **pOut)
 {
-	if (!pFilter)
-		return NULL;
-
-	IBaseFilter *rtn = NULL;
+	if (!pFilter || !pOut)
+		return E_POINTER;
 
 	IEnumPins *pEnum = 0;
 	HRESULT hr = pFilter->EnumPins(&pEnum);
@@ -115,17 +120,18 @@ IBaseFilter * GetUpperFilter(IBaseFilter *pFilter)
 			{
 				PIN_INFO info;
 				pTmp->QueryPinInfo(&info);
+
 				FILTER_INFO finfo;
 				info.pFilter->QueryFilterInfo(&finfo);
-
 				finfo.pGraph->Release();
 				//info.pFilter->Release();
 				//don't release it
 				//release by caller
-				rtn = info.pFilter;
+				*pOut = info.pFilter;
 				pTmp->Release();
 				pPin->Release();
-				break;
+				pEnum->Release();
+				return S_OK;
 			}
 			else  // Unconnected
 			{}
@@ -134,62 +140,143 @@ IBaseFilter * GetUpperFilter(IBaseFilter *pFilter)
 	}
 
 	pEnum->Release();
-	return rtn;
-}
-
-IBaseFilter * GetTopmostFilter(IBaseFilter *filter)
-{
-	if (!filter)
-		return NULL;
-
-	filter->AddRef();
-
-	IBaseFilter *up = NULL;
-
-	while(true)
-	{
-		up = GetUpperFilter(filter);
-		if(!up)
-			return filter;
-
-		filter->Release();
-		filter = up;
-	}
-
 	return NULL;
 }
 
-HRESULT ActiveMVC(IGraphBuilder *gb, IBaseFilter *filter)
+HRESULT FindPin(IBaseFilter *filter, IPin **out, wchar_t *pin_name, int connected=-1)// -1 = don't check connect, 0=un, 1=connected
 {
+	HRESULT hr = E_FAIL;
+
+	if (!filter || !out)
+		return E_POINTER;
+
+	CComPtr<IEnumPins> penum;
+	filter->EnumPins(&penum);
+
+	CComPtr<IPin> pin;
+	ULONG fetched = 0;
+	while (penum->Next(1, &pin, &fetched) == S_OK)
+	{
+		PIN_INFO pi;
+		pin->QueryPinInfo(&pi);
+		if(pi.pFilter) pi.pFilter->Release();
+
+		if(wcsstr(pi.achName, pin_name))
+		{
+			if (connected == -1)
+			{
+				hr = S_OK;
+				*out = pin;
+				(*out)->AddRef();
+				break;
+			}
+
+			CComPtr<IPin> connected;
+			if (SUCCEEDED(pin->ConnectedTo(&connected)) && connected)
+			{
+				hr = S_OK;
+				*out = pin;
+				(*out)->AddRef();
+				break;
+			}
+
+			if (FAILED(pin->ConnectedTo(&connected)) && !connected)
+			{
+				hr = S_OK;
+				*out = pin;
+				(*out)->AddRef();
+				break;
+			}
+
+		}
+
+		pin = NULL;
+	}
+
+	return hr;
+}
+
+HRESULT GetTopmostFilter(IBaseFilter *filter, IBaseFilter **pOut)
+{
+	if (!filter || !pOut)
+		return E_FAIL;
+
+	CComPtr<IBaseFilter> cur = filter;
+	CComPtr<IBaseFilter> up;
+
+	while(true)
+	{
+		up = NULL;
+		GetUpperFilter(cur, &up);
+
+		if(!up)
+		{
+			*pOut = cur;
+			(*pOut)->AddRef();
+			return S_OK;
+		}
+
+		cur = NULL;
+		cur = up;
+	}
+
+	return E_FAIL;
+}
+
+HRESULT ActiveMVC(IBaseFilter *filter)
+{
+	if (!filter)
+		return E_POINTER;
+
+	// check if PD10 decoder
+	CLSID filter_id;
+	filter->GetClassID(&filter_id);
+	if (filter_id != CLSID_PD10_DECODER)
+		return E_FAIL;
+
+	// query graph builder
+	FILTER_INFO fi;
+	filter->QueryFilterInfo(&fi);
+	if (!fi.pGraph)
+		return E_FAIL; // not in a graph
+	CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(fi.pGraph);
+	fi.pGraph->Release();
+
+	// create source and demuxer and add to graph
 	CComPtr<IBaseFilter> h264;
 	CComPtr<IBaseFilter> demuxer;
-
 	h264.CoCreateInstance(CLSID_AsyncReader);
 	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> h264_control(h264);
 	demuxer.CoCreateInstance(CLSID_PD10_DEMUXER);
 
+	if (demuxer == NULL)
+		return E_FAIL;	// demuxer not registered
+
 	gb->AddFilter(h264, L"MVC");
 	gb->AddFilter(demuxer, L"Demuxer");
 
-	// test writing file
-	FILE *f = fopen("C:\\black.264", "rb");
-	char buf[596];
-	fread(buf,1,596,f);
-	fclose(f);
-
-	f = fopen("black.264", "wb");
-	fwrite(buf,1,596,f);
+	// write active file
+	unsigned int mvc_data[149] = {0x01000000, 0x29006467, 0x7800d1ac, 0x84e52702, 0xa40f0000, 0x00ee0200, 0x00000010, 0x00806f01, 0x00d1ac29, 0xe5270278, 0x0f000084, 0xee0200a4, 0xaa4a1500, 0xe0f898b2, 0x207d0000, 0x00701700, 0x00000080, 0x63eb6801, 0x0000008b, 0xdd5a6801, 0x0000c0e2, 0x7a680100, 0x00c0e2de, 0x6e010000, 0x00070000, 0x65010000, 0x9f0240b8, 0x1f88f7fe, 0x9c6fcb32, 0x16734a68, 0xc9a57ff0, 0x86ed5c4b, 0xac027e73, 0x0000fca8, 0x03000003, 0x00030000, 0x00000300, 0xb4d40303, 0x696e5f00, 0x70ac954a, 0x00030000, 0x03000300, 0x030000ec, 0x0080ca00, 0x00804600, 0x00e02d00, 0x00401f00, 0x00201900, 0x00401c00, 0x00c01f00, 0x00402600, 0x00404300, 0x00808000, 0x0000c500, 0x00d80103, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00080800, 0x54010000, 0xe0450041, 0xfe9f820c, 0x00802ab5, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0xab010003};
+	wchar_t tmp[MAX_PATH];
+	GetTempPathW(MAX_PATH, tmp);
+	wcscat(tmp, L"ac.mvc");
+	FILE *f = _wfopen(tmp, L"wb");
+	if(!f)
+		return E_FAIL;	// failed writing file
+	fwrite(mvc_data,1,596,f);
 	fflush(f);
 	fclose(f);
 
-	h264_control->Load(L"black.264", NULL);
+	h264_control->Load(tmp, NULL);
 
+	// connect source & demuxer
 	CComPtr<IPin> h264_o;
 	GetUnconnectedPin(h264, PINDIR_OUTPUT, &h264_o);
 	CComPtr<IPin> demuxer_i;
 	GetUnconnectedPin(demuxer, PINDIR_INPUT, &demuxer_i);
 	gb->ConnectDirect(h264_o, demuxer_i, NULL);
 
+	// connect demuxer & decoder
 	CComPtr<IPin> demuxer_o;
 	GetUnconnectedPin(demuxer, PINDIR_OUTPUT, &demuxer_o);
 	CComPtr<IPin> decoder_i;
@@ -198,13 +285,15 @@ HRESULT ActiveMVC(IGraphBuilder *gb, IBaseFilter *filter)
 	decoder_i->ConnectedTo(&decoder_up);
 	gb->Disconnect(decoder_i);
 	gb->Disconnect(decoder_up);
-
 	gb->ConnectDirect(demuxer_o, decoder_i, NULL);
 
+	// remove source & demuxer, and reconnect decoder
 	gb->RemoveFilter(h264);
 	gb->RemoveFilter(demuxer);
-
 	gb->ConnectDirect(decoder_up, decoder_i, NULL);
+
+	// delete file
+	_wremove(tmp);
 
 	return S_OK;
 }
@@ -212,6 +301,7 @@ HRESULT ActiveMVC(IGraphBuilder *gb, IBaseFilter *filter)
 CDWindowSSP::CDWindowSSP(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
 CTransformFilter(tszName, punk, CLSID_YV12MonoMixer)
 {
+	my12doom_found = false;
 	m_left = 0;
 	m_image_buffer = NULL;
 	m_mask = NULL;
@@ -220,7 +310,7 @@ CTransformFilter(tszName, punk, CLSID_YV12MonoMixer)
 
 CDWindowSSP::~CDWindowSSP() 
 {
-	if (h_F11_thread == INVALID_HANDLE_VALUE)
+	if (h_F11_thread != INVALID_HANDLE_VALUE)
 		TerminateThread(h_F11_thread, 0);
 
 	if (m_image_buffer)
@@ -318,6 +408,11 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 		return S_OK;
 	}
 
+	if (m_image_x == 1280 && m_frm < -36000)
+		m_frm = 2400;
+	else if(m_frm < -14400)
+		m_frm = 960;
+
 	m_frm --;
 	if (m_left)
 	{
@@ -379,7 +474,7 @@ HRESULT CDWindowSSP::CheckInputType(const CMediaType *mtIn)
 	GUID subtypeIn = *mtIn->Subtype();
 	HRESULT hr = VFW_E_INVALID_MEDIA_TYPE;
 
-	if( *mtIn->FormatType() == FORMAT_VideoInfo2 && subtypeIn == MEDIASUBTYPE_YUY2)
+	if( *mtIn->FormatType() == FORMAT_VideoInfo2 && subtypeIn == MEDIASUBTYPE_YUY2 && my12doom_found)
 	{
 		BITMAPINFOHEADER *pbih = &((VIDEOINFOHEADER2*)mtIn->Format())->bmiHeader;
 		m_image_x = pbih->biWidth;
@@ -507,9 +602,7 @@ HRESULT CDWindowSSP::BreakConnect(PIN_DIRECTION dir)
 }
 
 STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
-{
-
-	
+{	
 	HRESULT hr = CTransformFilter::JoinFilterGraph(pGraph, pName);
 
 	if (pGraph)
@@ -530,7 +623,9 @@ STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 			if (filter_id == CLSID_PD10_DECODER)
 			{
 				bool this_decoder_is_remux = false;
-				CComPtr<IBaseFilter> topmost = GetTopmostFilter(filter);
+				CComPtr<IBaseFilter> topmost;
+				GetTopmostFilter(filter, &topmost);
+
 				CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(topmost);
 
 				if (source != NULL)
@@ -562,14 +657,14 @@ STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 				}
 
 				if (this_decoder_is_remux)
-				{
-					ActiveMVC(gb, filter);
-				}
+					ActiveMVC(filter);
 			}
 
 
 			filter = NULL;
 		}
+
+		// old mode
 		/*
 		my12doom_found = false;
 		CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(pGraph);
@@ -714,6 +809,7 @@ HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 {
 	if (m_demuxer == NULL && direction == PINDIR_INPUT)
 	{
+		// prepare
 		CComQIPtr<IBaseFilter, &IID_IBaseFilter> pbase(this);
 		FILTER_INFO fi;
 		pbase->QueryFilterInfo(&fi);
@@ -752,6 +848,92 @@ HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 			L"本版本功能完整，仅仅在画面上加入一个水印。\n"
 			L"请选择输入格式\"水平并排(左画面在左)\""), _T("Warning"), MB_OK);
 	}
+
+	// subtile
+	if (direction == PINDIR_OUTPUT)
+	{
+		// check if ffdshow subtitle
+		PIN_INFO recieve_info;
+		pReceivePin->QueryPinInfo(&recieve_info);
+		CLSID recieve_id;
+		recieve_info.pFilter->GetClassID(&recieve_id);
+		CComPtr<IBaseFilter> recieve_filter = recieve_info.pFilter;
+		recieve_info.pFilter->Release();
+		if (recieve_id != CLSID_ffdshow_subtitle)
+			goto end_output;
+
+		// prepare graphBuilder...
+		CComQIPtr<IBaseFilter, &IID_IBaseFilter> pbase(this);
+		FILTER_INFO fi;
+		pbase->QueryFilterInfo(&fi);
+		CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(fi.pGraph);
+		fi.pGraph->Release();
+
+		// go upstream and find unconnected Subtitle pin
+		CComPtr<IBaseFilter> filter = pbase;
+		CComPtr<IBaseFilter> up;
+		while(true)
+		{
+			// find upstream
+			up = NULL;
+			GetUpperFilter(filter, &up);
+
+			if(!up)
+				break;
+
+			// test find pin and connect
+			CComPtr<IPin> subtitle_pin;
+			::FindPin(up, &subtitle_pin, L"Subtitle", 0);
+			CComPtr<IPin> in_text_pin;
+			::FindPin(recieve_filter, &in_text_pin, L"In Text", 0);
+
+			if (subtitle_pin != NULL && in_text_pin != NULL)
+				gb->ConnectDirect(subtitle_pin, in_text_pin, NULL);
+
+			// go upstream
+			filter = NULL;
+			filter = up;
+		}
+		
+		// disconnect SSP's transformer
+		filter = NULL;
+		CComPtr<IEnumFilters> penum;
+		gb->EnumFilters(&penum);
+		ULONG fetched = 0;
+		while(penum->Next(1, &filter, &fetched) == S_OK)
+		{
+			CLSID filter_id;
+			filter->GetClassID(&filter_id);
+			if (filter_id == CLSID_SSP_TRANFORMER)
+			{
+				CComPtr<IPin> pin1;
+				CComPtr<IPin> pin1o;
+				GetConnectedPin(filter, PINDIR_OUTPUT, &pin1);
+				if(pin1 != NULL)
+				{
+					pin1->ConnectedTo(&pin1o);
+					gb->Disconnect(pin1);
+					gb->Disconnect(pin1o);
+				}
+
+
+				CComPtr<IPin> pin2;
+				CComPtr<IPin> pin2o;
+				GetConnectedPin(filter, PINDIR_OUTPUT, &pin2);
+				if(pin2 != NULL)
+				{
+					pin2->ConnectedTo(&pin2o);
+					gb->Disconnect(pin2);
+					gb->Disconnect(pin2o);
+				}
+
+			}
+
+			filter = NULL;
+		}
+	}
+end_output:
+
 
 	prepare_mask();
 
