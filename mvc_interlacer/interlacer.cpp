@@ -183,10 +183,14 @@ void main(int argc, char * argv[])
 	printf("thanks to tsdemux by clark15b\n\n");
 
 	create_watermark();
+	/*
 	FILE * f = fopen("Z:\\watermark.wm", "wb");
 	fwrite(watermark, watermark_size, 1, f);
+	fseek(f, 127, SEEK_CUR);
+	fwrite("", 1, 1, f);
 	fflush(f);
 	fclose(f);
+	*/
 
 	if (argc<3 || argc>4)
 	{

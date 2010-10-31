@@ -62,13 +62,13 @@ HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 			hr = pPin->ConnectedTo(&pTmp);
 			if (SUCCEEDED(hr)) // Connected, this is the pin we want. 
 			{
+				pTmp->Release();
 				pEnum->Release();
 				*ppPin = pPin;
 				return S_OK;
 			}
 			else  // Unconnected, not the pin we want.
 			{
-				if(pTmp) pTmp->Release();
 			}
 		}
 		pPin->Release();

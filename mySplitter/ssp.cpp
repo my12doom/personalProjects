@@ -1,5 +1,8 @@
 #include "ssp.h"
 #include <windows.h>
+
+#include "..\libchecksum\libchecksum.h"
+
 #define ssp_hwnd (FindWindow(_T("4C463F505C19080C5A2D5F4744591F1E"), NULL))
 
 // {D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}
@@ -79,13 +82,13 @@ HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 			hr = pPin->ConnectedTo(&pTmp);
 			if (SUCCEEDED(hr)) // Connected, this is the pin we want. 
 			{
+				pTmp->Release();
 				pEnum->Release();
 				*ppPin = pPin;
 				return S_OK;
 			}
 			else  // Unconnected, not the pin we want.
 			{
-				if(pTmp) pTmp->Release();
 			}
 		}
 		pPin->Release();
@@ -180,6 +183,7 @@ HRESULT FindPin(IBaseFilter *filter, IPin **out, wchar_t *pin_name, int connecte
 				break;
 			}
 
+			connected = NULL;
 			if (FAILED(pin->ConnectedTo(&connected)) && !connected)
 			{
 				hr = S_OK;
@@ -255,7 +259,7 @@ HRESULT ActiveMVC(IBaseFilter *filter)
 	gb->AddFilter(h264, L"MVC");
 	gb->AddFilter(demuxer, L"Demuxer");
 
-	// write active file
+	// write active file and load
 	unsigned int mvc_data[149] = {0x01000000, 0x29006467, 0x7800d1ac, 0x84e52702, 0xa40f0000, 0x00ee0200, 0x00000010, 0x00806f01, 0x00d1ac29, 0xe5270278, 0x0f000084, 0xee0200a4, 0xaa4a1500, 0xe0f898b2, 0x207d0000, 0x00701700, 0x00000080, 0x63eb6801, 0x0000008b, 0xdd5a6801, 0x0000c0e2, 0x7a680100, 0x00c0e2de, 0x6e010000, 0x00070000, 0x65010000, 0x9f0240b8, 0x1f88f7fe, 0x9c6fcb32, 0x16734a68, 0xc9a57ff0, 0x86ed5c4b, 0xac027e73, 0x0000fca8, 0x03000003, 0x00030000, 0x00000300, 0xb4d40303, 0x696e5f00, 0x70ac954a, 0x00030000, 0x03000300, 0x030000ec, 0x0080ca00, 0x00804600, 0x00e02d00, 0x00401f00, 0x00201900, 0x00401c00, 0x00c01f00, 0x00402600, 0x00404300, 0x00808000, 0x0000c500, 0x00d80103, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00080800, 0x54010000, 0xe0450041, 0xfe9f820c, 0x00802ab5, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0xab010003};
 	wchar_t tmp[MAX_PATH];
 	GetTempPathW(MAX_PATH, tmp);
@@ -268,7 +272,7 @@ HRESULT ActiveMVC(IBaseFilter *filter)
 	fclose(f);
 
 	h264_control->Load(tmp, NULL);
-
+	
 	// connect source & demuxer
 	CComPtr<IPin> h264_o;
 	GetUnconnectedPin(h264, PINDIR_OUTPUT, &h264_o);
@@ -288,6 +292,7 @@ HRESULT ActiveMVC(IBaseFilter *filter)
 	gb->ConnectDirect(demuxer_o, decoder_i, NULL);
 
 	// remove source & demuxer, and reconnect decoder
+	
 	gb->RemoveFilter(h264);
 	gb->RemoveFilter(demuxer);
 	gb->ConnectDirect(decoder_up, decoder_i, NULL);
@@ -408,10 +413,12 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 		return S_OK;
 	}
 
-	if (m_image_x == 1280 && m_frm < -36000)
-		m_frm = 2400;
-	else if(m_frm < -14400)
-		m_frm = 960;
+	if (m_image_x == 1280)
+		if( m_frm < -36000)
+			m_frm = 2400;
+	else
+		if(m_frm < -14400)
+			m_frm = 960;
 
 	m_frm --;
 	if (m_left)
@@ -635,23 +642,10 @@ STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 					source->GetCurFile(&file, NULL);
 					if(file)
 					{
-						FILE *f = _wfopen(file, L"rb");
-						if (f)
-						{
-							const int check_size = 32768;
-							char *buf = (char*) malloc(check_size);
-							fread(buf, 1, check_size, f);
-							fclose(f);
+						int verify_result = verify_file(file);
+						if (verify_result >0)
+							this_decoder_is_remux = my12doom_found = true;
 
-							for(int i=0; i<check_size-8; i++)
-							{
-								if (buf[i+0] == 'm' && buf[i+1] == 'y' && buf[i+2] == '1' && buf[i+3] =='2' &&
-									buf[i+4] == 'd' && buf[i+5] == 'o' && buf[i+6] == 'o' && buf[i+7] =='m')
-									this_decoder_is_remux = my12doom_found = true;
-
-							}
-							free(buf);
-						}
 						CoTaskMemFree(file);
 					}
 				}
