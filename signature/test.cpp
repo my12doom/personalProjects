@@ -10,7 +10,7 @@ void publish_signature(const DWORD *checksum, DWORD *signature);
 int main()
 {
 	printf("checking file...");
-	int check_result = verify_file(L"Z:\\00019_w.mkv");
+	int check_result = verify_file(L"Z:\\logo1920.ts");
 	if (check_result >0)
 	{
 		printf("OK!");
@@ -30,7 +30,7 @@ int main()
 	// calculate signature
 	char sha1[20];
 	DWORD signature[32];
-	video_checksum(L"Z:\\00019_w.mkv", (DWORD*)sha1);
+	video_checksum(L"Z:\\logo1920.ts", (DWORD*)sha1);
 	publish_signature((DWORD*) sha1, signature);
 
 	// check RSA error( should not happen)
@@ -43,8 +43,8 @@ int main()
 	}
 
 	// write signature
-	int pos = find_startcode(L"Z:\\00019_w.mkv");
-	FILE *f = _wfopen(L"Z:\\00019_w.mkv", L"r+b");
+	int pos = find_startcode(L"Z:\\logo1920.ts");
+	FILE *f = _wfopen(L"Z:\\logo1920.ts", L"r+b");
 	fseek(f, pos, SEEK_SET);
 	fwrite(signature, 1, 128, f);
 	fflush(f);
@@ -54,7 +54,7 @@ int main()
 
 	// recheck
 	printf("checking file...");
-	check_result = verify_file(L"Z:\\00019_w.mkv");
+	check_result = verify_file(L"Z:\\logo1920.ts");
 	if( check_result > 0)
 		printf("OK");
 	else

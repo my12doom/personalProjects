@@ -142,8 +142,16 @@ int verify_file(wchar_t *file)
 	fread(signature, 1, 128, f);
 	fclose(f);
 
+	for(int i=0; i<32; i++)
+		if (signature[i] != 0)
+			goto signature_check;
+
+	return 0;			// unsigned file
+
+
+signature_check:
 	if (verify_signature(sha1, signature))
-		return 1;		// match
+		return 2;		// match
 	else
-		return 0;		// not match
+		return 1;		// not match
 }

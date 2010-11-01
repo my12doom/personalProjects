@@ -609,11 +609,69 @@ HRESULT CDWindowSSP::BreakConnect(PIN_DIRECTION dir)
 }
 
 STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
-{	
+{
+	if (pGraph)
+	{
+		// check creation
+		CComPtr<IBaseFilter> demuxer_test;
+		CComPtr<IBaseFilter> decoder_test;
+		demuxer_test.CoCreateInstance(CLSID_PD10_DEMUXER);
+		decoder_test.CoCreateInstance(CLSID_PD10_DECODER);
+
+		if (demuxer_test == NULL || decoder_test == NULL)
+		{
+			MessageBoxW(ssp_hwnd, L"some modules not registered, try use DWindow Launcher to fix it.\n\n"
+				L"某些组件没有注册，请使用DWindow注册组件",L"Warning", MB_OK | MB_ICONERROR);
+			return E_FAIL;
+		}
+
+		demuxer_test = NULL;
+
+		// check decoder version
+		if (decoder_test != NULL)
+		{
+			decoder_test = NULL;
+			HKEY hkeyFilter=0;
+			DWORD dwSize=MAX_PATH;
+			BYTE pbFilename[MAX_PATH];
+			int rc = RegOpenKey(HKEY_LOCAL_MACHINE, L"Software\\Classes\\CLSID\\{D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}\\InprocServer32", &hkeyFilter);
+			rc = RegQueryValueEx(hkeyFilter, NULL,  // Read (Default) value
+									NULL, NULL, pbFilename, &dwSize);
+
+			TCHAR szFilename[MAX_PATH];
+			HRESULT hr = StringCchPrintf(szFilename, NUMELMS(szFilename), TEXT("%s\0"), pbFilename);
+
+			const int filesize = 615792;
+			FILE * f = _wfopen(szFilename, L"rb");
+			unsigned char *buf = (unsigned char*)malloc(filesize);
+			fread(buf, 1, filesize, f);
+			fclose(f);
+
+			DWORD sha1[5];
+			DWORD sha1_right[5] ={0x597ea85e, 0xd026f966, 0x25a5df89, 0x587b6272, 0xd574a627};
+			SHA1Hash((unsigned char*)sha1, buf, filesize);
+			RegCloseKey(hkeyFilter);
+
+			for(int i=0; i<5; i++)
+			{
+				if (sha1[i] != sha1_right[i])
+				{
+					MessageBoxW(ssp_hwnd, L"some modules are invalid version, try use DWindow Launcher to fix it.\n\n"
+						L"某些组件是错误的版本，请使用DWindow注册正确版本组件",L"Warning", MB_OK | MB_ICONERROR);
+					return E_FAIL;
+				}
+			}
+		}
+	}
+
+	// join it
 	HRESULT hr = CTransformFilter::JoinFilterGraph(pGraph, pName);
+
 
 	if (pGraph)
 	{
+
+		// check input file signature
 		my12doom_found = false;
 		CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(pGraph);
 
@@ -643,7 +701,7 @@ STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 					if(file)
 					{
 						int verify_result = verify_file(file);
-						if (verify_result >0)
+						if (verify_result == 2)
 							this_decoder_is_remux = my12doom_found = true;
 
 						CoTaskMemFree(file);

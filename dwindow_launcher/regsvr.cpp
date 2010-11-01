@@ -2,7 +2,7 @@
 #include <atlbase.h>
 #include <dshow.h>
 #include <initguid.h>
-
+#include <strsafe.h>
 
 // {F07E981B-0EC4-4665-A671-C24955D11A38}
 DEFINE_GUID(CLSID_PD10_DEMUXER, 
@@ -13,6 +13,8 @@ DEFINE_GUID(CLSID_PD10_DECODER,
                         0xD00E73D7, 0x06f5, 0x44F9, 0x8B, 0xE4, 0xB7, 0xDB, 0x19, 0x1E, 0x9E, 0x7E);
 
 HRESULT reg_ax(const TCHAR *pathname);
+bool compare_file(wchar_t *file1, wchar_t *file2);
+
 
 int main()
 {
@@ -41,7 +43,36 @@ int main()
 		}
 	}
 
-	if (decoder == NULL)
+	// check decoder veriosn
+	bool right_decoder = false;
+	if (decoder != NULL)
+	{
+        HKEY hkeyFilter=0;
+        DWORD dwSize=MAX_PATH;
+        BYTE pbFilename[MAX_PATH];
+
+        // Open the CLSID key that contains information about the filter
+        int rc = RegOpenKey(HKEY_LOCAL_MACHINE, L"Software\\Classes\\CLSID\\{D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}\\InprocServer32", &hkeyFilter);
+        if (rc == ERROR_SUCCESS)
+        {
+            rc = RegQueryValueEx(hkeyFilter, NULL,  // Read (Default) value
+                                 NULL, NULL, pbFilename, &dwSize);
+
+            if (rc == ERROR_SUCCESS)
+            {
+                TCHAR szFilename[MAX_PATH];
+                HRESULT hr = StringCchPrintf(szFilename, NUMELMS(szFilename), TEXT("%s\0"), pbFilename);
+
+				if(compare_file(szFilename, L"codec\\CLCvd.ax"))
+					right_decoder = true;
+            }
+
+            RegCloseKey(hkeyFilter);
+        }
+
+	}
+
+	if (decoder == NULL || !right_decoder)
 	{
 		HRESULT hr = reg_ax(_T("codec\\CLCvd.ax"));
 		if (FAILED(hr))
@@ -95,4 +126,52 @@ HRESULT reg_ax(const TCHAR *pathname)
 		return E_FAIL;
 
 	return (*entry_point)();
+}
+
+bool compare_file(wchar_t *file1, wchar_t *file2)
+{
+	bool rtn = false;
+
+	FILE *f1 = NULL;
+	FILE *f2 = NULL;
+	void *buf1 = NULL;
+	void *buf2 = NULL;
+	int size1 = 0;
+	int size2 = 0;
+
+	f1 = _wfopen(file1, L"rb");
+	f2 = _wfopen(file2, L"rb");
+
+	if (!f1 || !f2)
+		goto clear_up;
+
+
+	fseek(f1, 0, SEEK_END);
+	fseek(f2, 0, SEEK_END);
+
+	size1 = ftell(f1);
+	size2 = ftell(f2);
+
+	if (size1 != size2)
+		goto clear_up;
+
+	buf1 = malloc(size1);
+	buf2 = malloc(size2);
+
+	fseek(f1, 0, SEEK_SET);
+	fseek(f2, 0, SEEK_SET);
+
+	fread(buf1, 1, size1, f1);
+	fread(buf2, 1, size2, f2);
+
+	if (memcmp(buf1, buf2, size1) == 0)
+		rtn = true;
+
+clear_up:
+	if (f1) fclose(f1);
+	if (f2) fclose(f2);
+	if (buf1) free(buf1);
+	if (buf2) free(buf2);
+
+	return rtn;
 }
