@@ -21,7 +21,7 @@ bool open_file_dlg(wchar_t *pathname, HWND hDlg, wchar_t *filter = NULL);
 #define type_mkv 1
 #define type_PD10 2
 wchar_t input1[MAX_PATH] = L"";
-int type1 = type_PD10;
+int type1 = type_normal;
 wchar_t input2[MAX_PATH] = L"";
 int type2 = type_normal;
 wchar_t sound[MAX_PATH] = L"";
@@ -122,11 +122,6 @@ show_config:
 		else
 			player->load_file(input2);
 	}
-
-	if (type1 == type_PD10)
-		player->set_PD10(true);// set PD10 mode
-	else
-		player->set_PD10();
 
 	HRESULT hr = player->end_loading();
 	if (FAILED(hr))
@@ -291,7 +286,6 @@ void init_dialog(HWND hDlg)
 	USES_CONVERSION;
 	SendMessage(combo1, CB_ADDSTRING, 0, (LPARAM)W2T(L"Normal"));
 	SendMessage(combo1, CB_ADDSTRING, 0, (LPARAM)W2T(L"MKV"));
-	SendMessage(combo1, CB_ADDSTRING, 0, (LPARAM)W2T(L"PD10"));
 	SendMessage(combo2, CB_ADDSTRING, 0, (LPARAM)W2T(L"Normal"));
 
 	SendMessage(combo1, CB_SETCURSEL, type1, 0);

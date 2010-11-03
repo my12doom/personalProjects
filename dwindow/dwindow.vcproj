@@ -23,7 +23,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_OTHER_PROJECTS_AX"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -32,7 +32,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="strmbasd.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib srt_parser.obj winmm.lib"
+				AdditionalDependencies="strmbasd.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib srt_parser.obj winmm.lib ..\libchecksum\debug\libchecksum.lib"
 				OutputFile="$(OutDir)/dwindow.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="E:\DX_SDK_LITE\Lib\x86;E:\projects\srt_parser\Debug;E:\DS_SDK_LITE\BaseClasses\Debug"
@@ -80,7 +80,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib srt_parser.obj winmm.lib"
+				AdditionalDependencies="STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib srt_parser.obj winmm.lib ..\libchecksum\release\libchecksum.lib"
 				OutputFile="$(OutDir)/dwindow.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\DX_SDK_LITE\Lib\x86;E:\projects\srt_parser\release;E:\DS_SDK_LITE\BaseClasses\Release"
@@ -129,7 +129,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib srt_parser.obj winmm.lib"
+				AdditionalDependencies="STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib srt_parser.obj winmm.lib ..\libchecksum\release_mt\libchecksum.lib"
 				OutputFile="$(OutDir)/dwindow.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\DX_SDK_LITE\Lib\x86;E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt"

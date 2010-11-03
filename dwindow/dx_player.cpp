@@ -1,5 +1,7 @@
 #include <math.h>
 #include "dx_player.h"
+#include "..\libchecksum\libchecksum.h"
+
 //#include "private_filter.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
@@ -921,6 +923,9 @@ HRESULT dx_window::start_loading()
 
 HRESULT dx_window::load_file(wchar_t *pathname)
 {
+	if (verify_file(pathname) == 2)
+		return load_PD10_file(pathname);
+
 	HRESULT hr = m_gb->RenderFile(pathname, NULL);
 
 	if (hr == VFW_S_AUDIO_NOT_RENDERED)
@@ -1010,6 +1015,7 @@ HRESULT dx_window::load_PD10_file(wchar_t *pathname)
 		}
 		pin = NULL;
 	}
+	m_PD10 = true;
 	return S_OK;
 }
 

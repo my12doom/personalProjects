@@ -78,7 +78,7 @@ EXSTYLE WS_EX_ACCEPTFILES | WS_EX_APPWINDOW
 CAPTION "remux_publish"
 FONT 9, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    LTEXT           "State:",IDC_STATIC,22,16,84,19
+    LTEXT           "State:  Drag file here",IDC_STATIC,22,16,84,19
     PUSHBUTTON      "Publish",IDC_BUTTON2,23,45,74,23,WS_DISABLED
 END
 

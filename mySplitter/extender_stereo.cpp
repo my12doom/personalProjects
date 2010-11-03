@@ -20,10 +20,13 @@ CSplitFilter(tszName, punk, CLSID_DWindowStereo)
 	m_topdown = false;
 	m_cb = NULL;
 	m_mask = NULL;
+	m_frame_buffer = NULL;
 }
 
 CDWindowExtenderStereo::~CDWindowExtenderStereo() 
 {
+	if (m_mask) free(m_mask);
+	if (m_frame_buffer) free(m_frame_buffer);
 }
 void CDWindowExtenderStereo::prepare_mask()
 {
@@ -145,6 +148,8 @@ HRESULT CDWindowExtenderStereo::CheckInputType(const CMediaType *mtIn)
 
 		if (m_mode == DWindowFilter_CUT_MODE_PD10)
 		{
+			if (m_frame_buffer) free(m_frame_buffer);
+			m_frame_buffer = (BYTE*) malloc(m_in_x * m_in_y * 2);
 			prepare_mask();
 		}
 
@@ -607,68 +612,69 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 	// PD10 mode
 	if (m_mode == DWindowFilter_CUT_MODE_PD10)
 	{
-		IMediaSample *pOut = pOut1;
-		if (!m_left)
-			pOut = pOut2;
-
-		if(!pOut)
-			return S_FALSE;
-
-		// these are copied from ExtenderMono::Transform_YV12
-		// one line of letterbox
-		static DWORD one_line_letterbox[16384];
-		if (one_line_letterbox[0] != 0x80008000)
-			for (int i=0; i<16384; i++)
-				one_line_letterbox[i] = 0x80008000;
-
-		// basic infos
-		int letterbox_top = m_letterbox_top;
-		int letterbox_bottom = m_letterbox_bottom;
-		if (m_topdown)
+		if (m_left)
 		{
-			letterbox_top = m_letterbox_bottom;
-			letterbox_bottom = m_letterbox_top;
+			// copy data to frame cache;
+			BYTE *p_in = NULL;
+			pIn->GetPointer(&p_in);
+			memcpy(m_frame_buffer, p_in, m_in_x*m_in_y*2);
+
+			return S_FALSE;
 		}
 
-		// pointers
-		BYTE *p_pin;
-		BYTE *p_out;
-		pIn->GetPointer(&p_pin);
-		pOut->GetPointer(&p_out);
-		LONG data_size = pIn->GetActualDataLength();
-		LONG out_size = pOut->GetActualDataLength();
-		const int byte_per_pixel = 2;
-		int stride = out_size / m_out_y / byte_per_pixel;
-		if (stride < m_out_x)
-			return E_UNEXPECTED;
+		for(int i=0; i<2; i++)
+		{
+			IMediaSample *pOut = pOut1;
+			if (i == 1)
+				pOut = pOut2;
 
-		// letterbox top
-		for (int y=0; y<letterbox_top; y++)
-			memcpy(p_out + stride * byte_per_pixel * y, one_line_letterbox, m_out_x*byte_per_pixel);
-		p_out += stride * letterbox_top * byte_per_pixel;
+			if(pOut)
+			{
+				// these are copied from ExtenderMono::Transform_YV12
+				// one line of letterbox
+				static DWORD one_line_letterbox[16384];
+				if (one_line_letterbox[0] != 0x80008000)
+					for (int i=0; i<16384; i++)
+						one_line_letterbox[i] = 0x80008000;
 
-		// image
-		for (int y=0; y<m_image_y; y++)
-			memcpy(p_out+y * stride*byte_per_pixel, 
-				p_pin + m_in_x * y*byte_per_pixel,  m_out_x*byte_per_pixel);
+				// pointers
+				BYTE *p_in = m_frame_buffer;
+				BYTE *p_out;
+				if(i==1) pIn->GetPointer(&p_in);// read from input if is right frame
+				pOut->GetPointer(&p_out);
+				LONG data_size = pIn->GetActualDataLength();
+				LONG out_size = pOut->GetActualDataLength();
+				const int byte_per_pixel = 2;
+				int stride = out_size / m_out_y / byte_per_pixel;
+				if (stride < m_out_x)
+					return E_UNEXPECTED;
 
-		// mask
-		m_frm --;
-		if (m_frm>0)
-		for (int y=0; y<m_mask_height; y++)
-			memcpy(p_out+y * stride*byte_per_pixel,
-				m_mask +m_mask_width * y*byte_per_pixel,  m_mask_width*byte_per_pixel);
-		p_out += stride * m_image_y * byte_per_pixel;
+				// letterbox top
+				for (int y=0; y<letterbox_top; y++)
+					memcpy(p_out + stride * byte_per_pixel * y, one_line_letterbox, m_out_x*byte_per_pixel);
+				p_out += stride * letterbox_top * byte_per_pixel;
 
-		// letterbox bottom
-		for (int y=0; y<letterbox_bottom; y++)
-			memcpy(p_out + stride * byte_per_pixel * y, one_line_letterbox, m_out_x*byte_per_pixel);
+				// image
+				for (int y=0; y<m_image_y; y++)
+					memcpy(p_out+y * stride*byte_per_pixel, 
+						p_in + m_in_x * y*byte_per_pixel,  m_out_x*byte_per_pixel);
 
+				// mask
+				m_frm --;
+				if (m_frm>0)
+				for (int y=0; y<m_mask_height; y++)
+					memcpy(p_out+y * stride*byte_per_pixel,
+						m_mask +m_mask_width * y*byte_per_pixel,  m_mask_width*byte_per_pixel);
+				p_out += stride * m_image_y * byte_per_pixel;
 
-		if (m_left)
-			return S_LEFT;
-		else
-			return S_RIGHT;
+				// letterbox bottom
+				for (int y=0; y<letterbox_bottom; y++)
+					memcpy(p_out + stride * byte_per_pixel * y, one_line_letterbox, m_out_x*byte_per_pixel);
+
+			}
+		}
+
+		return S_OK;
 	}
 
 	if (pOut1)

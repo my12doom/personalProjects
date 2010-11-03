@@ -111,7 +111,8 @@ private:
 	HRESULT Split_YV12(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2);
 	HRESULT Split_YUY2(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2);
 
-	// PD10 timecode fix
+	// PD10 timecode fix and frame buffer
+	BYTE *m_frame_buffer;
 	REFERENCE_TIME m_TimeStart;
 	REFERENCE_TIME m_TimeEnd;
 	REFERENCE_TIME m_MediaStart;
