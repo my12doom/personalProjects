@@ -121,13 +121,16 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath=".\CFileBuffer.cpp">
+				RelativePath="..\CFileBuffer.cpp">
 			</File>
 			<File
 				RelativePath=".\dll.def">
 			</File>
 			<File
 				RelativePath=".\main.cpp">
+			</File>
+			<File
+				RelativePath=".\nal.cpp">
 			</File>
 			<Filter
 				Name="tsdemux"
@@ -185,6 +188,9 @@
 			</File>
 			<File
 				RelativePath=".\CFileBuffer.h">
+			</File>
+			<File
+				RelativePath=".\nal.h">
 			</File>
 		</Filter>
 		<Filter

@@ -439,8 +439,10 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	if (views<0 || views > 2)
 		env->ThrowError("available views : 0 = left, 1 = right, 2 = both");
 
+	const char *mvc = args[5].AsString("");
+
 	return new JM3DSource(frame_count, width, height, buffer_size, views,
-		0, "", 0, "", 24000, 1001, env);
+		0, mvc, 0, "", 24000, 1001, env);
 }
 
 AVSValue __cdecl Create_JM3DSource2(AVSValue args, void* user_data, IScriptEnvironment* env)
@@ -510,7 +512,7 @@ AVSValue __cdecl Create_JM3DSource2(AVSValue args, void* user_data, IScriptEnvir
 
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env)
 {
-	env->AddFunction("JM3DSource","[frame_count]i[width]i[height]i[buffer_count]i[views]i",Create_JM3DSource,0);
+	env->AddFunction("JM3DSource","[frame_count]i[width]i[height]i[buffer_count]i[views]i[mvc]s",Create_JM3DSource,0);
 
 	env->AddFunction("JM3DSource2","[file1]s[file2]s[views]i[buffer_count]i[left_pid]i[right_pid]i",Create_JM3DSource2,0);
 

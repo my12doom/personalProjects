@@ -2,8 +2,9 @@
 #include <windows.h>
 #include <conio.h>
 #include <detours.h>
-#include "CFileBuffer.h"
+#include "..\CFileBuffer.h"
 #include "tsdemux\ts.h"
+#include "nal.h"
 
 #pragma comment(lib, "detours.lib")
 #pragma comment(lib, "detoured.lib")
@@ -287,6 +288,56 @@ DWORD WINAPI demux_thread(LPVOID lpvParam)
 	return 0;
 }
 
+CFileBuffer mvc(max_nal_size*10);
+DWORD WINAPI deinterlace_read_thread(LPVOID lpvParam)
+{
+	FILE *f = fopen(left_m2ts, "rb");
+
+	if(f)
+	{
+		unsigned char buf[102400];
+		int got = 0;
+		int total = 0;
+		while ((got = fread(buf, 1, 102400, f)) > 0)
+		{
+			mvc.insert(got, buf);
+			total += got;
+		}
+		mvc.no_more_data = true;
+		fclose(f);
+	}
+	else
+	{
+		printf("can't open file %s\n", left_m2ts);
+	}
+	return 0;
+}
+
+DWORD WINAPI deinterlace_thread(LPVOID lpvParam)
+{
+	CreateThread(NULL, NULL, deinterlace_read_thread, 0, NULL, NULL);
+
+	int n = 0;
+	int id = 0;
+	while (true)
+	{
+		int delimeter_size = read_a_delimeter(&mvc);
+
+		if (delimeter_size == 0)
+			break;
+
+		if (id == 0)
+			buffer_left->insert(delimeter_size, delimeter_buffer);
+		else
+			buffer_right->insert(delimeter_size, delimeter_buffer);
+
+		id = 1-id;
+	}
+	return 0;
+}
+
+
+
 BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
 {
     LONG error;
@@ -362,7 +413,27 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
 
 			CreateThread(NULL, NULL, demux_thread, (LPVOID)0, NULL, NULL);
 			CreateThread(NULL, NULL, demux_thread, (LPVOID)1, NULL, NULL);
-
+		}
+		else if (input_left[0] == NULL && input_right[0] == NULL)
+		{
+			// this is raw input
+			override_input = false;
+		}
+		else
+		{
+			// check for mvc(left = *.mvc, right = "")
+			int left_strlen = strlen(input_left);
+			if (left_strlen > 3 &&
+				tolower(input_left[left_strlen-3]) == 'm' &&
+				tolower(input_left[left_strlen-2]) == 'v' &&
+				tolower(input_left[left_strlen-1]) == 'c')
+			{
+				buffer_left = new CFileBuffer(1024000);
+				buffer_right = new CFileBuffer(1024000);
+				override_input = true;
+				strcpy(left_m2ts, input_left);
+				CreateThread(NULL, NULL, deinterlace_thread, (LPVOID)0, NULL, NULL);
+			}
 		}
 		printf("config : %dx%d, parent process id :%d\n", width, height, parent_id);
 
@@ -386,6 +457,8 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
 		CloseHandle(h_pipe);
 
 		if(right_image_buffer){free(right_image_buffer);right_image_buffer=NULL;}
+		if(left_image_buffer){free(left_image_buffer);left_image_buffer=NULL;}
+
     }
     return TRUE;
 }

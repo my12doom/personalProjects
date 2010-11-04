@@ -7,6 +7,7 @@
 
 
 DWORD WINAPI feeder_thread(LPVOID lpParameter);
+void main2();
 
 typedef struct feeder_thread_parameter_tags
 {
@@ -82,6 +83,12 @@ int read_a_delimeter(CFileBuffer *f)
 			printf("(r)");
 		printf("%x ", _nal_type);
 		*/
+
+		if (_nal_type == 31) //my12doom's watermark
+		{
+			f->remove_data(nal_size);
+			continue;
+		}
 
 		if (nal_size == 0 ||	
 			nal_type(read_buffer) == 0x9 ||
@@ -177,6 +184,8 @@ LONGLONG FileSize(const char*filename)
 
 void main(int argc, char * argv[])
 {
+	main2();
+	return;
 	printf("my12doom's mvc interlacer\n");
 	printf("my12doom.googlecode.com\n");
 	printf("mailto:my12doom@gmail.com\n");
@@ -314,4 +323,38 @@ void main(int argc, char * argv[])
 
 	printf("\ndone, press any key to exit");
 	getch();
+}
+
+void main2()
+{
+	feeder_thread_parameter * para = new feeder_thread_parameter;
+	strcpy(para->filename, "F:\\TDDOWNLOAD\\BDMV STREAM SSIF 00005.mvc");
+	para->demux = false;
+	para->out = &left;
+	CreateThread(NULL, NULL, feeder_thread, para, NULL, NULL);
+
+	FILE * f[2];
+	f[0] = fopen("Z:\\left.h264", "wb");
+	f[1] = fopen("Z:\\right.h264", "wb");
+
+	int n = 0;
+	int id = 0;
+	while (true)
+	{
+		int delimeter_size = read_a_delimeter(&left);
+
+		if (delimeter_size == 0)
+			break;
+
+		fwrite(delimeter_buffer, 1, delimeter_size, f[id]);
+
+		id = 1-id;
+
+		if (id)
+			n++;
+	}
+
+	fclose(f[0]);
+	fclose(f[1]);
+
 }
