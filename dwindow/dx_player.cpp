@@ -84,6 +84,7 @@ HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 dx_window::dx_window(RECT screen1, RECT screen2, HINSTANCE hExe):dwindow(screen1, screen2)
 {
 	// vars
+	m_PD10 = false;
 	m_demuxer_config_active = false;
 	m_select_font_active = false;
 	m_log = (wchar_t*)malloc(100000);
