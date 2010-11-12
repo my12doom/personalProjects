@@ -27,6 +27,7 @@
 
 // Filter setup data
 const AMOVIESETUP_MEDIATYPE sudPinTypes = { &MEDIATYPE_Video, &MEDIASUBTYPE_NULL};
+const AMOVIESETUP_MEDIATYPE sudPinTypesSSP = { &MEDIATYPE_Video, &MEDIASUBTYPE_YUY2};
 
 const AMOVIESETUP_PIN sudYV12StereoMixerPins[] =
 {
@@ -167,7 +168,7 @@ const AMOVIESETUP_PIN sudDWindowSSPPins[] =
 		&CLSID_NULL,          // Connects to filter
 		NULL,                 // Connects to pin
 		1,                    // Number of types
-		&sudPinTypes          // Pin information
+		&sudPinTypesSSP          // Pin information
 	},
 	{ 
 		L"Output",            // Pins string name
@@ -178,7 +179,7 @@ const AMOVIESETUP_PIN sudDWindowSSPPins[] =
 		&CLSID_NULL,          // Connects to filter
 		NULL,                 // Connects to pin
 		1,                    // Number of types
-		&sudPinTypes          // Pin information
+		&sudPinTypesSSP          // Pin information
 	}
 };
 

@@ -463,6 +463,7 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			}
 
 			// set sample property
+
 			pOut->SetTime(&TimeStart, &TimeEnd);
 			pOut->SetMediaTime(&MediaStart,&MediaEnd);
 			pOut->SetSyncPoint(pIn->IsSyncPoint() == S_OK);
@@ -598,7 +599,8 @@ HRESULT CDWindowSSP::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, dou
 
 	m_left = 0;
 
-	return S_OK;
+
+	return CTransformFilter::NewSegment(tStart, tStop, dRate);
 }
 
 HRESULT CDWindowSSP::BreakConnect(PIN_DIRECTION dir)
