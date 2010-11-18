@@ -124,7 +124,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				OptimizeForProcessor="3"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;E:\trunk\src\filters\parser\MpegSplitter"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MYSPLITTER_EXPORTS;UNICODE;_UNICODE"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"

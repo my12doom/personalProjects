@@ -92,6 +92,16 @@ int main()
 		}
 	}
 
+	// always register ssif splitter
+	{
+		HRESULT hr = reg_ax(_T("codec\\SsifSplitter.ax"));
+		if (FAILED(hr))
+		{
+			all_ok = false;
+			if(!silent)MessageBox(0, _T("×¢²áSSIF·ÖÀëÆ÷Ê§°Ü£¡"), _T("ERROR"), MB_OK | MB_ICONERROR);
+		}
+	}
+
 	if (!silent)
 	{
 		if (all_ok)

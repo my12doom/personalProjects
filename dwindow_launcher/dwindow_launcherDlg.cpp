@@ -234,39 +234,44 @@ void Cdwindow_launcherDlg::OnBnClickedButton4()
 		return;
 
 	kill_ssp(true);
+
 	// ssp set remux
-	const TCHAR* filters_key= _T("Software\\3dtv.at\\Stereoscopic Player\\Preferred Filters");
+	const TCHAR* filters_key[2]= 
+		{_T("Software\\3dtv.at\\Stereoscopic Player\\Preferred Filters"),
+		_T("Software\\NVIDIA Corporation\\NVIDIA 3D Vision Video Player\\Preferred Filters")};
 
-	// reset first
-	int ret = SHDeleteKey( HKEY_CURRENT_USER, filters_key);
+	for (int i=0; i<2; i++)
+	{
+		// reset first
+		int ret = SHDeleteKey( HKEY_CURRENT_USER, filters_key[i]);
 
-	// write keys
-	HKEY hkey = NULL;
-	ret = RegCreateKeyEx(HKEY_CURRENT_USER, filters_key, 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE  |KEY_SET_VALUE, NULL , &hkey, NULL  );
+		// write keys
+		HKEY hkey = NULL;
+		ret = RegCreateKeyEx(HKEY_CURRENT_USER, filters_key[i], 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE  |KEY_SET_VALUE, NULL , &hkey, NULL  );
 
-	// demuxer
-	/*
-	HKEY hdemuxerkey = NULL;
-	ret = RegCreateKeyEx(hkey, _T("MPEG-2 Stream Splitter"), 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE  |KEY_SET_VALUE, NULL , &hdemuxerkey, NULL  );
-	ret = RegSetValueEx(hdemuxerkey, _T("0"), 0, REG_SZ, (const BYTE*)_T("{F07E981B-0EC4-4665-A671-C24955D11A38}"), sizeof(_T("{F07E981B-0EC4-4665-A671-C24955D11A38}")) );
-	RegCloseKey(hdemuxerkey);
-	*/
+		// demuxer
+		/*
+		HKEY hdemuxerkey = NULL;
+		ret = RegCreateKeyEx(hkey, _T("MPEG-2 Stream Splitter"), 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE  |KEY_SET_VALUE, NULL , &hdemuxerkey, NULL  );
+		ret = RegSetValueEx(hdemuxerkey, _T("0"), 0, REG_SZ, (const BYTE*)_T("{F07E981B-0EC4-4665-A671-C24955D11A38}"), sizeof(_T("{F07E981B-0EC4-4665-A671-C24955D11A38}")) );
+		RegCloseKey(hdemuxerkey);
+		*/
 
-	// decoder
-	HKEY hdecoderkey = NULL;
-	ret = RegCreateKeyEx(hkey, _T("MPEG-4 AVC Video Decoder"), 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE  |KEY_SET_VALUE, NULL , &hdecoderkey, NULL  );
-	ret = RegSetValueEx(hdecoderkey, _T("0"), 0, REG_SZ, (const BYTE*)_T("{D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}"), sizeof(_T("{D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}")) );
-	RegCloseKey(hdecoderkey);
+		// decoder
+		HKEY hdecoderkey = NULL;
+		ret = RegCreateKeyEx(hkey, _T("MPEG-4 AVC Video Decoder"), 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE  |KEY_SET_VALUE, NULL , &hdecoderkey, NULL  );
+		ret = RegSetValueEx(hdecoderkey, _T("0"), 0, REG_SZ, (const BYTE*)_T("{D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}"), sizeof(_T("{D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}")) );
+		RegCloseKey(hdecoderkey);
 
-	// video processor
-	HKEY hvpkey = NULL;
-	ret = RegCreateKeyEx(hkey, _T("Video Processor"), 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE  |KEY_SET_VALUE, NULL , &hvpkey, NULL  );
-	ret = RegSetValueEx(hvpkey, _T("0"), 0, REG_SZ, (const BYTE*)_T("{419832C4-7813-4B90-A262-12496691E82E}"), sizeof(_T("{419832C4-7813-4B90-A262-12496691E82E}")) );
-	ret = RegSetValueEx(hvpkey, _T("1"), 0, REG_SZ, (const BYTE*)_T("{DBF9000E-F08C-4858-B769-C914A0FBB1D7}"), sizeof(_T("{DBF9000E-F08C-4858-B769-C914A0FBB1D7}")) );
-	RegCloseKey(hvpkey);
+		// video processor
+		HKEY hvpkey = NULL;
+		ret = RegCreateKeyEx(hkey, _T("Video Processor"), 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE  |KEY_SET_VALUE, NULL , &hvpkey, NULL  );
+		ret = RegSetValueEx(hvpkey, _T("0"), 0, REG_SZ, (const BYTE*)_T("{419832C4-7813-4B90-A262-12496691E82E}"), sizeof(_T("{419832C4-7813-4B90-A262-12496691E82E}")) );
+		ret = RegSetValueEx(hvpkey, _T("1"), 0, REG_SZ, (const BYTE*)_T("{DBF9000E-F08C-4858-B769-C914A0FBB1D7}"), sizeof(_T("{DBF9000E-F08C-4858-B769-C914A0FBB1D7}")) );
+		RegCloseKey(hvpkey);
 
-	RegCloseKey(hkey);
-
+		RegCloseKey(hkey);
+	}
 	//
 	MessageBox(_T("配置成功!"), NULL, MB_OK | MB_ICONINFORMATION);
 	return;
@@ -281,9 +286,12 @@ void Cdwindow_launcherDlg::OnBnClickedButton3()
 	kill_ssp(true);
 	// ssp reset
 
-	const TCHAR* filters_key= _T("Software\\3dtv.at\\Stereoscopic Player\\Preferred Filters");
+	const TCHAR* filters_key[2]= 
+		{_T("Software\\3dtv.at\\Stereoscopic Player\\Preferred Filters"),
+		_T("Software\\NVIDIA Corporation\\NVIDIA 3D Vision Video Player\\Preferred Filters")};
 
-	int ret = SHDeleteKey( HKEY_CURRENT_USER, filters_key);
+	for(int i=0;i<2; i++)
+		int ret = SHDeleteKey( HKEY_CURRENT_USER, filters_key[i]);
 
 	MessageBox(_T("恢复成功!"), NULL, MB_OK | MB_ICONINFORMATION);
 

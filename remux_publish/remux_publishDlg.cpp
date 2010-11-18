@@ -119,7 +119,7 @@ void Cremux_publishDlg::check_file()
 	else if (check_result == 1)
 	{
 		SetDlgItemText(IDC_STATIC, _T("State: corrupted file"));
-		::EnableWindow(GetDlgItem(IDC_BUTTON2)->m_hWnd, FALSE);
+		::EnableWindow(GetDlgItem(IDC_BUTTON2)->m_hWnd, TRUE);
 	}
 	else if (check_result <0)
 	{

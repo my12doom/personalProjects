@@ -2,6 +2,7 @@
 #include <windows.h>
 
 #include "..\libchecksum\libchecksum.h"
+#include "mvc.h"
 
 #define ssp_hwnd (FindWindow(_T("4C463F505C19080C5A2D5F4744591F1E"), NULL))
 
@@ -572,21 +573,7 @@ HRESULT CDWindowSSP::GetMediaType(int iPosition, CMediaType *pMediaType)
 HRESULT CDWindowSSP::StartStreaming()
 {
 	m_left = 0;
-	/*
-	CComQIPtr<IBaseFilter, &IID_IBaseFilter> pbase(this);
-	FILTER_INFO fi;
-	pbase->QueryFilterInfo(&fi);
-
-	if (NULL == fi.pGraph)
-		return 0;
-
-	CComQIPtr<IMediaSeeking, &IID_IMediaSeeking> pMS(fi.pGraph);
-	pMS->GetCurrentPosition(&m_this_stream_start);
-
-	fi.pGraph->Release();
-	*/
-
-	return 0;
+	return __super::StartStreaming();
 }
 HRESULT CDWindowSSP::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {	
@@ -672,8 +659,8 @@ STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 
 	if (pGraph)
 	{
-
 		// check input file signature
+		bool PD10_found = false;
 		my12doom_found = false;
 		CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(pGraph);
 
@@ -689,13 +676,20 @@ STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 			// test if need active
 			if (filter_id == CLSID_PD10_DECODER)
 			{
+				PD10_found = true;
 				bool this_decoder_is_remux = false;
 				CComPtr<IBaseFilter> topmost;
 				GetTopmostFilter(filter, &topmost);
 
+				CComQIPtr<IMVC, &IID_IMVC> mvc(topmost);
 				CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(topmost);
-
-				if (source != NULL)
+				
+				if (mvc != NULL)
+				{
+					if (mvc->IsMVC() == S_OK)
+						this_decoder_is_remux = my12doom_found = true;
+				}
+				else if (source != NULL)
 				{
 					// check input file
 					LPOLESTR file = NULL;
@@ -718,134 +712,13 @@ STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 			filter = NULL;
 		}
 
-		// old mode
-		/*
-		my12doom_found = false;
-		CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(pGraph);
+		if (!PD10_found)
+		MessageBoxW(ssp_hwnd, L"Cyberlink Video Decoder not found.\n"
+			L"try use DWindow Launcher to fix it.\n\n"
+			L"未发现Cyberlink Video Decoder\n"
+			L"请使用DWindow配置工具配置SSP", L"Warning", MB_OK | MB_ICONERROR);
 
-		CComPtr<IEnumFilters> penum;
-		gb->EnumFilters(&penum);
-
-		ULONG fetched = 0;
-		CComPtr<IBaseFilter> filter;
-		while(penum->Next(1, &filter, &fetched) == S_OK)
-		{
-			CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(filter);
-			if (source != NULL)
-			{
-				LPOLESTR file = NULL;
-				source->GetCurFile(&file, NULL);
-				// check input file?
-				if(file)
-				{
-					FILE *f = _wfopen(file, L"rb");
-					if (f)
-					{
-						const int check_size = 32768;
-						char *buf = (char*) malloc(check_size);
-						fread(buf, 1, check_size, f);
-						fclose(f);
-
-						for(int i=0; i<check_size-8; i++)
-						{
-							if (buf[i+0] == 'm' && buf[i+1] == 'y' && buf[i+2] == '1' && buf[i+3] =='2' &&
-								buf[i+4] == 'd' && buf[i+5] == 'o' && buf[i+6] == 'o' && buf[i+7] =='m')
-							{
-								my12doom_found = true;								
-							}
-
-						}
-						free(buf);
-					}
-					CoTaskMemFree(file);
-				}
-			}
-
-			filter = NULL;
-		}
-
-		if (!my12doom_found)
-		{
-			wchar_t source_file[MAX_PATH] = L"";
-remove:
-			filter = NULL;
-			penum = NULL;
-			gb->EnumFilters(&penum);
-			while(penum->Next(1, &filter, &fetched) == S_OK)
-			{
-				CLSID filter_id;
-				filter->GetClassID(&filter_id);
-
-				// remove demuxer only, decoder is needed due to SSP's codes
-				if (filter_id == CLSID_PD10_DEMUXER)
-				{
-					// this should be the Source (file async)
-					CComPtr<IBaseFilter> demuxer_upper_filter = GetUpperFilter(filter);
-					gb->RemoveFilter(filter);
-
-					CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(demuxer_upper_filter);
-					if (source != NULL)
-					{
-						LPOLESTR file = NULL;
-						source->GetCurFile(&file, NULL);
-						if (file)
-						{
-							wcscpy(source_file, file);
-							CoTaskMemFree(file);
-						}
-					}
-
-					goto remove;
-				}
-
-				filter = NULL;
-			}
-
-			if (source_file[0])
-			{
-				gb->RenderFile(source_file, NULL);
-
-				// disconnect SSP's transformer's output pins
-				filter = NULL;
-				penum = NULL;
-				gb->EnumFilters(&penum);
-				while(penum->Next(1, &filter, &fetched) == S_OK)
-				{
-					CLSID filter_id;
-					filter->GetClassID(&filter_id);
-					if (filter_id == CLSID_SSP_TRANFORMER)
-					{
-						CComPtr<IPin> pin1;
-						CComPtr<IPin> pin1o;
-						GetConnectedPin(filter, PINDIR_OUTPUT, &pin1);
-						if(pin1 != NULL)
-						{
-							pin1->ConnectedTo(&pin1o);
-							gb->Disconnect(pin1);
-							gb->Disconnect(pin1o);
-						}
-
-
-						CComPtr<IPin> pin2;
-						CComPtr<IPin> pin2o;
-						GetConnectedPin(filter, PINDIR_OUTPUT, &pin2);
-						if(pin2 != NULL)
-						{
-							pin2->ConnectedTo(&pin2o);
-							gb->Disconnect(pin2);
-							gb->Disconnect(pin2o);
-						}
-
-					}
-
-					filter = NULL;
-				}
-
-			}
-		}
-		*/
-
-		if(!my12doom_found)
+		else if(!my12doom_found)
 		MessageBoxW(ssp_hwnd, L"Non-REMUX content detected, switching to compatibility mode\n"
 			L"if picture become confused or freezed,\n"
 			L"please use DWindow config tool to reset SSP's config\n\n"
