@@ -2,7 +2,7 @@
 #include <windows.h>
 
 #include "..\libchecksum\libchecksum.h"
-#include "mvc.h"
+#include "..\SsifSource\src\filters\parser\MpegSplitter\mvc.h"
 
 #define ssp_hwnd (FindWindow(_T("4C463F505C19080C5A2D5F4744591F1E"), NULL))
 
