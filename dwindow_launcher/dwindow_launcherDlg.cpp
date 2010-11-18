@@ -27,6 +27,8 @@ DEFINE_GUID(CLSID_PD10_DECODER,
 DEFINE_GUID(CLSID_DWindowSSP, 
 						0x419832c4, 0x7813, 0x4b90, 0xa2, 0x62, 0x12, 0x49, 0x66, 0x91, 0xe8, 0x2e);
 
+static const GUID CLSID_SSIFSource = { 0x916e4c8d, 0xe37f, 0x4fd4, { 0x95, 0xf6, 0xa4, 0x4e, 0x51, 0x46, 0x2e, 0xdf } };
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -119,6 +121,8 @@ bool Cdwindow_launcherDlg::check_module()
 	CComPtr<IBaseFilter> ssp;
 	CComPtr<IBaseFilter> demuxer;
 	CComPtr<IBaseFilter> decoder;
+	CComPtr<IBaseFilter> ssif;
+	ssif.CoCreateInstance(CLSID_SSIFSource);
 	ssp.CoCreateInstance(CLSID_DWindowSSP);
 	demuxer.CoCreateInstance(CLSID_PD10_DEMUXER);
 	decoder.CoCreateInstance(CLSID_PD10_DECODER);
@@ -152,7 +156,7 @@ bool Cdwindow_launcherDlg::check_module()
 
 	}
 
-	if (ssp == NULL || demuxer == NULL || decoder == NULL || !right_decoder)
+	if (ssp == NULL || demuxer == NULL || decoder == NULL || ssif == NULL || !right_decoder)
 	{
 		// need registration
 		m_regsvr_button.SendMessage(BCM_SETSHIELD, 0, TRUE);

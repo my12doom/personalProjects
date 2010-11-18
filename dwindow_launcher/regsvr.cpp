@@ -12,6 +12,8 @@ DEFINE_GUID(CLSID_PD10_DEMUXER,
 DEFINE_GUID(CLSID_PD10_DECODER, 
                         0xD00E73D7, 0x06f5, 0x44F9, 0x8B, 0xE4, 0xB7, 0xDB, 0x19, 0x1E, 0x9E, 0x7E);
 
+static const GUID CLSID_SSIFSource = { 0x916e4c8d, 0xe37f, 0x4fd4, { 0x95, 0xf6, 0xa4, 0x4e, 0x51, 0x46, 0x2e, 0xdf } };
+
 HRESULT reg_ax(const TCHAR *pathname);
 bool compare_file(wchar_t *file1, wchar_t *file2);
 
@@ -94,7 +96,7 @@ int main()
 
 	// always register ssif splitter
 	{
-		HRESULT hr = reg_ax(_T("codec\\SsifSplitter.ax"));
+		HRESULT hr = reg_ax(_T("codec\\SsifSource.ax"));
 		if (FAILED(hr))
 		{
 			all_ok = false;
