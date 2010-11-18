@@ -621,6 +621,10 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath=".\TrayMenu.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -632,6 +636,10 @@
 			</File>
 			<File
 				RelativePath=".\MpegSplitterFile.h"
+				>
+			</File>
+			<File
+				RelativePath=".\mvc.h"
 				>
 			</File>
 			<File
@@ -674,11 +682,19 @@
 				RelativePath=".\stdafx.h"
 				>
 			</File>
+			<File
+				RelativePath=".\TrayMenu.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 			>
+			<File
+				RelativePath=".\ico.ico"
+				>
+			</File>
 			<File
 				RelativePath=".\MpegSplitter.rc"
 				>

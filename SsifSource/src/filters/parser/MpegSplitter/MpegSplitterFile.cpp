@@ -123,7 +123,7 @@ HRESULT CMpegSplitterFile::Init()
 			__int64 fp = fps.RemoveHead();
 			fp = min(GetLength() - MEGABYTE/8, fp);
 			fp = max(pfp, fp);
-			__int64 nfp = fp + (pfp == 0 ? 5*MEGABYTE : MEGABYTE/8);
+			__int64 nfp = fp + (pfp == 0 ? 30*MEGABYTE : MEGABYTE/8);
 			if(FAILED(hr = SearchStreams(fp, nfp)))
 				return hr;
 			pfp = nfp;
