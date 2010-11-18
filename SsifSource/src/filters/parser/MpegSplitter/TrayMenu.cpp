@@ -90,7 +90,7 @@ DWORD WINAPI TrayMenu::WindowThread(LPVOID lpParame)
 	nid.uID = IDI_ICON1;
 	nid.uFlags = NIF_ICON|NIF_MESSAGE|NIF_TIP;
 	nid.uCallbackMessage = UM_ICONNOTIFY;
-	nid.hIcon = (HICON)LoadImage(GetModuleHandle(_T("MpegSplitter.ax")), MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 16, 16, 0);
+	nid.hIcon = (HICON)LoadImage(GetModuleHandle(_T("SsifSource.ax")), MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 16, 16, 0);
 	_tcscpy(nid.szTip, _this->m_tooltip);
 	Shell_NotifyIcon(NIM_ADD, &nid);
 
