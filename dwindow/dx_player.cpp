@@ -1,6 +1,7 @@
 #include <math.h>
 #include "dx_player.h"
 #include "..\libchecksum\libchecksum.h"
+#include "..\SsifSource\src\filters\parser\MpegSplitter\mvc.h"
 
 //#include "private_filter.h"
 
@@ -79,6 +80,83 @@ HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 	// Did not find a matching pin.
 	return E_FAIL;
 }
+
+HRESULT dx_window::ActiveMVC(IBaseFilter *filter)
+{
+	if (!filter)
+		return E_POINTER;
+
+	// check if PD10 decoder
+	CLSID filter_id;
+	filter->GetClassID(&filter_id);
+	if (filter_id != CLSID_PD10_DECODER)
+		return E_FAIL;
+
+	// query graph builder
+	FILTER_INFO fi;
+	filter->QueryFilterInfo(&fi);
+	if (!fi.pGraph)
+		return E_FAIL; // not in a graph
+	CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(fi.pGraph);
+	fi.pGraph->Release();
+
+	// create source and demuxer and add to graph
+	CComPtr<IBaseFilter> h264;
+	CComPtr<IBaseFilter> demuxer;
+	h264.CoCreateInstance(CLSID_AsyncReader);
+	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> h264_control(h264);
+	demuxer.CoCreateInstance(CLSID_PD10_DEMUXER);
+
+	if (demuxer == NULL)
+		return E_FAIL;	// demuxer not registered
+
+	gb->AddFilter(h264, L"MVC");
+	gb->AddFilter(demuxer, L"Demuxer");
+
+	// write active file and load
+	unsigned int mvc_data[149] = {0x01000000, 0x29006467, 0x7800d1ac, 0x84e52702, 0xa40f0000, 0x00ee0200, 0x00000010, 0x00806f01, 0x00d1ac29, 0xe5270278, 0x0f000084, 0xee0200a4, 0xaa4a1500, 0xe0f898b2, 0x207d0000, 0x00701700, 0x00000080, 0x63eb6801, 0x0000008b, 0xdd5a6801, 0x0000c0e2, 0x7a680100, 0x00c0e2de, 0x6e010000, 0x00070000, 0x65010000, 0x9f0240b8, 0x1f88f7fe, 0x9c6fcb32, 0x16734a68, 0xc9a57ff0, 0x86ed5c4b, 0xac027e73, 0x0000fca8, 0x03000003, 0x00030000, 0x00000300, 0xb4d40303, 0x696e5f00, 0x70ac954a, 0x00030000, 0x03000300, 0x030000ec, 0x0080ca00, 0x00804600, 0x00e02d00, 0x00401f00, 0x00201900, 0x00401c00, 0x00c01f00, 0x00402600, 0x00404300, 0x00808000, 0x0000c500, 0x00d80103, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00080800, 0x54010000, 0xe0450041, 0xfe9f820c, 0x00802ab5, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0xab010003};
+	wchar_t tmp[MAX_PATH];
+	GetTempPathW(MAX_PATH, tmp);
+	wcscat(tmp, L"ac.mvc");
+	FILE *f = _wfopen(tmp, L"wb");
+	if(!f)
+		return E_FAIL;	// failed writing file
+	fwrite(mvc_data,1,596,f);
+	fflush(f);
+	fclose(f);
+
+	h264_control->Load(tmp, NULL);
+	
+	// connect source & demuxer
+	CComPtr<IPin> h264_o;
+	GetUnconnectedPin(h264, PINDIR_OUTPUT, &h264_o);
+	CComPtr<IPin> demuxer_i;
+	GetUnconnectedPin(demuxer, PINDIR_INPUT, &demuxer_i);
+	gb->ConnectDirect(h264_o, demuxer_i, NULL);
+
+	// connect demuxer & decoder
+	CComPtr<IPin> demuxer_o;
+	GetUnconnectedPin(demuxer, PINDIR_OUTPUT, &demuxer_o);
+	CComPtr<IPin> decoder_i;
+	GetConnectedPin(filter, PINDIR_INPUT, &decoder_i);
+	CComPtr<IPin> decoder_up;
+	decoder_i->ConnectedTo(&decoder_up);
+	gb->Disconnect(decoder_i);
+	gb->Disconnect(decoder_up);
+	gb->ConnectDirect(demuxer_o, decoder_i, NULL);
+
+	// remove source & demuxer, and reconnect decoder
+	
+	gb->RemoveFilter(h264);
+	gb->RemoveFilter(demuxer);
+	gb->ConnectDirect(decoder_up, decoder_i, NULL);
+
+	// delete file
+	_wremove(tmp);
+
+	return S_OK;
+}
+
 
 // constructor & destructor
 dx_window::dx_window(RECT screen1, RECT screen2, HINSTANCE hExe):dwindow(screen1, screen2)
@@ -170,6 +248,7 @@ DWORD WINAPI dx_window::select_font_thread(LPVOID lpParame)
 
 DWORD WINAPI dx_window::property_page_thread(LPVOID lpParame)
 {
+	/*
 	dx_window *_this = (dx_window*) lpParame;
 	if (_this->m_demuxer)
 	{
@@ -189,6 +268,7 @@ DWORD WINAPI dx_window::property_page_thread(LPVOID lpParame)
 
 		_this->m_demuxer_config_active = false;
 	}
+	*/
 
 	return 0;
 }
@@ -206,6 +286,7 @@ HRESULT dx_window::show_PD10_demuxer_config()
 // play control
 HRESULT dx_window::play()
 {
+	CAutoLock lock(&m_seek_sec);
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
 
@@ -213,6 +294,7 @@ HRESULT dx_window::play()
 }
 HRESULT dx_window::pause()
 {
+	CAutoLock lock(&m_seek_sec);
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
 
@@ -225,6 +307,7 @@ HRESULT dx_window::pause()
 }
 HRESULT dx_window::stop()
 {
+	CAutoLock lock(&m_seek_sec);
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
 
@@ -232,6 +315,7 @@ HRESULT dx_window::stop()
 }
 HRESULT dx_window::seek(int time)
 {
+	CAutoLock lock(&m_seek_sec);
 	if (m_ms == NULL)
 		return VFW_E_WRONG_STATE;
 
@@ -240,6 +324,8 @@ HRESULT dx_window::seek(int time)
 }
 HRESULT dx_window::tell(int *time)
 {
+	CAutoLock lock(&m_seek_sec);
+
 	if (time == NULL)
 		return E_POINTER;
 
@@ -254,6 +340,7 @@ HRESULT dx_window::tell(int *time)
 }
 HRESULT dx_window::total(int *time)
 {
+	CAutoLock lock(&m_seek_sec);
 	if (time == NULL)
 		return E_POINTER;
 
@@ -924,8 +1011,44 @@ HRESULT dx_window::start_loading()
 
 HRESULT dx_window::load_file(wchar_t *pathname)
 {
+	if(PathIsDirectoryW(pathname))
+	{
+		HMODULE hax = LoadLibraryW(L"codec\\SsifSource.ax");
+		if (!hax)
+		{
+			log_line(L"module SsifSource.ax not found.");
+			return E_FAIL;
+		}
+
+		HRESULT (*pfind) (wchar_t *, wchar_t *) = (HRESULT (__cdecl *)(wchar_t *, wchar_t *))GetProcAddress(hax, "find_main_movie");
+		if (pfind == NULL)
+		{
+			log_line(L"module SsifSource.ax corrupted.");
+			return E_FAIL;
+		}
+
+		wchar_t playlist[MAX_PATH];
+		HRESULT hr;
+		if (FAILED(hr = pfind(pathname, playlist)))
+			return hr;
+		else
+			return load_iso_file(playlist);
+
+	}
+
 	if (verify_file(pathname) == 2)
 		return load_PD10_file(pathname);
+
+	size_t name_len = wcslen(pathname);
+	if ( (towlower(pathname[name_len-4]) == L's'
+		&&towlower(pathname[name_len-3]) == L's'
+		&&towlower(pathname[name_len-2]) == L'i'
+		&&towlower(pathname[name_len-1]) == L'f')
+	||	 (towlower(pathname[name_len-4]) == L'm'
+		&&towlower(pathname[name_len-3]) == L'p'
+		&&towlower(pathname[name_len-2]) == L'l'
+		&&towlower(pathname[name_len-1]) == L's'))
+		return load_iso_file(pathname);
 
 	HRESULT hr = m_gb->RenderFile(pathname, NULL);
 
@@ -946,6 +1069,63 @@ HRESULT dx_window::load_file(wchar_t *pathname)
 	return hr;
 }
 
+HRESULT dx_window::load_iso_file(wchar_t *pathname)
+{
+	// add a decoder
+	CComPtr<IBaseFilter> decoder;
+	decoder.CoCreateInstance(CLSID_PD10_DECODER);
+
+	m_gb->AddFilter(decoder, L"PD10 decoder");
+
+	// render file
+	HRESULT hr = m_gb->RenderFile(pathname, NULL);
+
+	if (hr == VFW_S_AUDIO_NOT_RENDERED)
+		log_line(L"warning: audio not rendered. \"%s\"", pathname);
+
+	if (hr == VFW_S_PARTIAL_RENDER)
+		log_line(L"warning: Some of the streams in this movie are in an unsupported format. \"%s\"", pathname);
+
+	if (hr == VFW_S_VIDEO_NOT_RENDERED)
+		log_line(L"warning: video not rendered. \"%s\"", pathname);
+
+	if (FAILED(hr))
+	{
+		log_line(L"failed rendering iso \"%s\" (error = 0x%08x).", pathname, hr);
+		return hr;
+	}
+
+	// find and test if mvc
+	bool ismvc = false;
+	CComPtr<IEnumFilters> ef;
+	m_gb->EnumFilters(&ef);
+
+	CComPtr<IBaseFilter> filter;
+	while (S_OK == ef->Next(1, &filter, NULL))
+	{
+		CComQIPtr<IMVC, &IID_IMVC> imvc(filter);
+		if (imvc)
+			if (imvc->IsMVC() == S_OK)
+				ismvc = true;
+		filter = NULL;
+	}
+
+	if (!ismvc)
+	{
+		log_line(L"failed activing MVC.");
+		return E_FAIL;
+	}
+
+	hr = ActiveMVC(decoder);
+	if (FAILED(hr))
+	{
+		log_line(L"failed activing MVC (error = 0x%08x).", hr);
+	}
+
+	m_PD10 = true;
+	return hr;
+}
+
 HRESULT dx_window::load_PD10_file(wchar_t *pathname)
 {
 	if (pathname == NULL)
@@ -953,14 +1133,14 @@ HRESULT dx_window::load_PD10_file(wchar_t *pathname)
 
 	// create filters and add to graph
 	CComPtr<IBaseFilter> decoder;
-	m_demuxer.CoCreateInstance(CLSID_PD10_DEMUXER);
+	//m_demuxer.CoCreateInstance(CLSID_PD10_DEMUXER);
 	decoder.CoCreateInstance(CLSID_PD10_DECODER);
 
 	CComPtr<IBaseFilter> source_base;
-	source_base.CoCreateInstance(CLSID_AsyncReader);
+	source_base.CoCreateInstance(CLSID_SSIFSource);
 	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(source_base);
 
-	if (m_demuxer == NULL || decoder == NULL)
+	if (decoder == NULL)
 	{
 		log_line(L"cyberlink PowerDVD10 module not found, register it first.");
 		return E_FAIL;		// cyberlink fail
@@ -969,7 +1149,7 @@ HRESULT dx_window::load_PD10_file(wchar_t *pathname)
 		return E_FAIL;		// dshow fail
 
 	m_gb->AddFilter(source_base, L"PD10 Source");
-	m_gb->AddFilter(m_demuxer, L"PD10 demuxer");
+	//m_gb->AddFilter(m_demuxer, L"PD10 demuxer");
 	m_gb->AddFilter(decoder, L"PD10 decoder");
 
 	// load file
@@ -977,6 +1157,7 @@ HRESULT dx_window::load_PD10_file(wchar_t *pathname)
 	if (FAILED(hr))
 		return E_FAIL;		//dshow fail
 	
+	/*
 	// connect source and demuxer
 	CComPtr<IPin> source_out;
 	CComPtr<IPin> demuxer_in;
@@ -992,11 +1173,12 @@ HRESULT dx_window::load_PD10_file(wchar_t *pathname)
 		log_line(L"demuxer doesn't accept this file");
 		return E_FAIL;
 	}
+	*/
 
 	// render demuxer output pins
 	CComPtr<IPin> pin;
 	CComPtr<IEnumPins> pEnum;
-	hr = m_demuxer->EnumPins(&pEnum);
+	hr = source_base->EnumPins(&pEnum);
 	if (FAILED(hr))
 		return hr;
 	while (pEnum->Next(1, &pin, NULL) == S_OK)
@@ -1017,7 +1199,8 @@ HRESULT dx_window::load_PD10_file(wchar_t *pathname)
 		pin = NULL;
 	}
 	m_PD10 = true;
-	return S_OK;
+
+	return ActiveMVC(decoder);
 }
 
 HRESULT dx_window::load_mkv_file(wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)

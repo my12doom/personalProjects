@@ -33,6 +33,9 @@ DEFINE_GUID(CLSID_PD10_DEMUXER,
 DEFINE_GUID(CLSID_PD10_DECODER, 
                         0xD00E73D7, 0x06f5, 0x44F9, 0x8B, 0xE4, 0xB7, 0xDB, 0x19, 0x1E, 0x9E, 0x7E);
 
+static const GUID CLSID_SSIFSource = { 0x916e4c8d, 0xe37f, 0x4fd4, { 0x95, 0xf6, 0xa4, 0x4e, 0x51, 0x46, 0x2e, 0xdf } };
+
+
 class dx_window : public IDWindowFilterCB, public dwindow
 {
 public:
@@ -42,6 +45,7 @@ public:
 	HRESULT start_loading();
 	HRESULT load_srt(wchar_t *pathname, bool reset = true);
 	HRESULT load_file(wchar_t *pathname);
+	HRESULT load_iso_file(wchar_t *pathname);
 	HRESULT load_mkv_file(wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
 	HRESULT load_PD10_file(wchar_t *pathname);																				// for PD10 demuxer and mvc decoder
 	HRESULT end_loading();
@@ -86,6 +90,7 @@ protected:
 	double m_letterbox_delta;
 
 	// helper function and vars
+	HRESULT ActiveMVC(IBaseFilter *filter);
 	HRESULT calculate_movie_rect(RECT *source, RECT *client, RECT *letterbox, bool ui);
 	HRESULT paint_letterbox(int id, RECT letterbox);
 	bool m_demuxer_config_active;
@@ -116,6 +121,7 @@ protected:
 	// directshow etc. core part
 	bar_drawer m_bar;
 	CCritSec m_draw_sec;
+	CCritSec m_seek_sec;
 	bool m_show_ui;
 	HRESULT show_ui(bool show);
 	HRESULT draw_ui();
@@ -149,7 +155,7 @@ protected:
 	CComPtr<IDWindowExtender> m_stereo;
 	CComPtr<IDWindowExtender> m_mono1;
 	CComPtr<IDWindowExtender> m_mono2;
-	CComPtr<IBaseFilter> m_demuxer;//pd10
+	//CComPtr<IBaseFilter> m_demuxer;//pd10
 	int m_filter_mode;
 	bool m_PD10;
 	HRESULT create_myfilter();
