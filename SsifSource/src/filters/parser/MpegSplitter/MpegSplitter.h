@@ -59,6 +59,7 @@ friend class CMpegSplitterOutputPin;
 	CAutoPtrList<Packet> m_pl;
 	REFERENCE_TIME m_rtPrev, m_rtOffset, m_rtMaxShift;
 	bool m_fHasAccessUnitDelimiters;
+	CCritSec m_dummylock;
 
 	HRESULT Click(int id);
 	HRESULT BeforeShow();

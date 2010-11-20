@@ -988,15 +988,22 @@ bool CMpegSplitterFilter::DemuxLoop()
 	return(true);
 }
 
-HRESULT find_main_movie(wchar_t *out, int nSize)
+HRESULT find_main_movie(wchar_t *in, wchar_t *out)
 {
+	wchar_t in2[MAX_PATH];
+	wcsncpy(in2, in, MAX_PATH);
+	in2[MAX_PATH-1] = NULL;
+	while (in2[wcslen(in2)-1] == L'\\') in2[wcslen(in2)-1] = NULL;
+
+
 	CHdmvClipInfo	clipinfo;
 	CString main_file;
 	CAtlList<CHdmvClipInfo::PlaylistItem> item;
-	HRESULT hr = clipinfo.FindMainMovie(_T("H:\\"), main_file, item);
+	HRESULT hr = clipinfo.FindMainMovie(W2T(in2), main_file, item);
 
 	USES_CONVERSION;
-	wcsncpy(out, T2W(main_file.GetBuffer()), nSize);
+	wcsncpy(out, T2W(main_file.GetBuffer()), MAX_PATH);
+	out[MAX_PATH-1] = NULL;
 	return hr;
 }
 
@@ -1329,6 +1336,7 @@ bool CMpegSplitterFile::stream::operator < (const stream &_Other) const
 
 HRESULT CMpegSplitterFilter::dummy_deliver_packet(CAutoPtr<Packet> p)
 {
+	CAutoLock dummylock(&m_dummylock);
 	// copied from CBaseSplitterFilter
 	if(p->rtStart != Packet::INVALID_TIME)
 	{
@@ -1614,7 +1622,7 @@ HRESULT CMpegSplitterOutputPin::DeliverNewSegment(REFERENCE_TIME tStart, REFEREN
 		m_rtPrev = Packet::INVALID_TIME;
 		m_rtOffset = 0;
 
-		CAutoLock cAutoLock2(((CMpegSplitterFilter*)m_pFilter)->m_pLock);
+		CAutoLock cAutoLock2(&((CMpegSplitterFilter*)m_pFilter)->m_dummylock);
 		((CMpegSplitterFilter*)m_pFilter) -> m_rtPrev = Packet::INVALID_TIME;
 		((CMpegSplitterFilter*)m_pFilter) -> m_rtOffset = 0;
 
@@ -1631,7 +1639,7 @@ HRESULT CMpegSplitterOutputPin::DeliverEndFlush()
 		m_p.Free();
 		m_pl.RemoveAll();
 		
-		CAutoLock cAutoLock2(((CMpegSplitterFilter*)m_pFilter)->m_pLock);
+		CAutoLock cAutoLock2(&((CMpegSplitterFilter*)m_pFilter)->m_dummylock);
 		((CMpegSplitterFilter*)m_pFilter) ->m_p.Free();
 		((CMpegSplitterFilter*)m_pFilter) ->m_pl.RemoveAll();
 
