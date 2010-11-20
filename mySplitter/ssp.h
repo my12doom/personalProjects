@@ -22,7 +22,7 @@ public:
 	HRESULT CheckTransform(const CMediaType *mtIn, const CMediaType *mtOut);
 	HRESULT DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pProperties);
 	HRESULT GetMediaType(int iPosition, CMediaType *pMediaType);
-	HRESULT StartStreaming();
+	//HRESULT StartStreaming();
 	HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
     HRESULT CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin);
     HRESULT BreakConnect(PIN_DIRECTION dir);
@@ -31,6 +31,7 @@ public:
 	STDMETHODIMP JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName);
 
 private:
+	REFERENCE_TIME m_t;
 	CComPtr<IBaseFilter> m_demuxer;
 	HANDLE h_F11_thread;
 	static DWORD WINAPI F11Thread(LPVOID lpParame);
@@ -38,7 +39,6 @@ private:
 	bool my12doom_found;
 	int m_image_x;
 	int m_image_y;
-	int m_left;
 	BYTE *m_image_buffer;
 	CCritSec m_DWindowSSPLock;
 	CDWindowSSP(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr);

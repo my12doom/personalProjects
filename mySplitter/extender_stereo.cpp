@@ -2,11 +2,15 @@
 #include "filter.h"
 #include "extender.h"
 
+// {F07E981B-0EC4-4665-A671-C24955D11A38}
+DEFINE_GUID(CLSID_PD10_DEMUXER, 
+                        0xF07E981B, 0x0EC4, 0x4665, 0xA6, 0x71, 0xC2, 0x49, 0x55, 0xD1, 0x1A, 0x38);
+
 CDWindowExtenderStereo::CDWindowExtenderStereo(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
 CSplitFilter(tszName, punk, CLSID_DWindowStereo)
 {
+	m_pd10_demuxer_fix = 0;
 	m_letterbox_total = m_letterbox_top = m_letterbox_bottom = 0;
-	m_left = 0;
 	m_in_x = 0;
 	m_in_y = 0;
 	m_out_x = 0;
@@ -21,6 +25,7 @@ CSplitFilter(tszName, punk, CLSID_DWindowStereo)
 	m_cb = NULL;
 	m_mask = NULL;
 	m_frame_buffer = NULL;
+	m_t = m_TimeEnd = m_TimeStart = m_MediaStart = m_MediaEnd = 0;
 }
 
 CDWindowExtenderStereo::~CDWindowExtenderStereo() 
@@ -95,6 +100,37 @@ STDMETHODIMP CDWindowExtenderStereo::NonDelegatingQueryInterface(REFIID riid, vo
 
 	return CSplitFilter::NonDelegatingQueryInterface(riid, ppv);
 }
+
+HRESULT CDWindowExtenderStereo::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
+{
+	if (direction == PINDIR_INPUT)
+	{
+		CComQIPtr<IBaseFilter, &IID_IBaseFilter> f(this);
+		FILTER_INFO fi;
+		f->QueryFilterInfo(&fi);
+
+		CComPtr<IFilterGraph> graph;
+		graph.Attach(fi.pGraph);
+
+		CComPtr<IEnumFilters> ef;
+		graph->EnumFilters(&ef);
+
+		m_pd10_demuxer_fix = 0;
+		CComPtr<IBaseFilter> filter;
+		while (S_OK == ef->Next(1, &filter, NULL))
+		{
+			CLSID clsid;
+			filter->GetClassID(&clsid);
+
+			if (clsid == CLSID_PD10_DEMUXER)
+				m_pd10_demuxer_fix = 1;
+			filter = NULL;
+		}
+	}
+
+	return S_OK;
+}
+
 
 // CheckInputType
 HRESULT CDWindowExtenderStereo::CheckInputType(const CMediaType *mtIn)
@@ -342,12 +378,26 @@ compute_aspect:
 
 HRESULT CDWindowExtenderStereo::Split(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2)
 {
+	// test if sample is left
+	REFERENCE_TIME TimeStart, TimeEnd;
+	pIn->GetTime(&TimeStart, &TimeEnd);
+
+	int fn;
+	if (m_image_x == 1280)
+		fn = (double)(TimeStart+m_t)/10000*120/1001 + 0.5;
+	else
+		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
+
+	int left = (fn & 1);
+	left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
+
+	printf("%d\t%d\n", fn, left);
+
 
 	if (m_mode == DWindowFilter_CUT_MODE_PD10)
 	{
-		m_left = 1 - m_left;
 		// PD10 timecde fix
-		if (m_left)
+		if (left)
 		{
 			pIn->GetTime(&m_TimeStart, &m_TimeEnd);
 			pIn->GetMediaTime(&m_MediaStart,&m_MediaEnd);
@@ -361,7 +411,7 @@ HRESULT CDWindowExtenderStereo::Split(IMediaSample *pIn, IMediaSample *pOut1, IM
 
 	CAutoLock configlock(&m_config_sec);
 	if (m_cb)
-		m_cb->SampleCB(m_TimeStart+m_this_stream_start, m_TimeEnd+m_this_stream_start, pIn);		// callback
+		m_cb->SampleCB(m_TimeStart+m_t, m_TimeEnd+m_t, pIn);		// callback
 
 	HRESULT hr = S_OK;
 
@@ -409,6 +459,19 @@ HRESULT CDWindowExtenderStereo::Split(IMediaSample *pIn, IMediaSample *pOut1, IM
 
 HRESULT CDWindowExtenderStereo::Split_YV12(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2)
 {
+	// test if sample is left
+	REFERENCE_TIME TimeStart, TimeEnd;
+	pIn->GetTime(&TimeStart, &TimeEnd);
+
+	int fn;
+	if (m_image_x == 1280)
+		fn = (double)(TimeStart+m_t)/10000*120/1001 + 0.5;
+	else
+		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
+
+	int left = (fn & 1);
+	left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
+
 	// basic info
 	int letterbox_top = m_letterbox_top;
 	int letterbox_bottom = m_letterbox_bottom;
@@ -428,7 +491,7 @@ HRESULT CDWindowExtenderStereo::Split_YV12(IMediaSample *pIn, IMediaSample *pOut
 	if (m_mode == DWindowFilter_CUT_MODE_PD10)
 	{
 		IMediaSample *pOut = pOut1;
-		if (!m_left)
+		if (!left)
 			pOut = pOut2;
 
 		if(!pOut)
@@ -479,7 +542,7 @@ HRESULT CDWindowExtenderStereo::Split_YV12(IMediaSample *pIn, IMediaSample *pOut
 			memset(pDstU+(stride/2)*(line/2), 128, (m_letterbox_bottom/2) * stride/2);
 		}
 
-		if (m_left)
+		if (left)
 			return S_LEFT;
 		else
 			return S_RIGHT;
@@ -588,6 +651,19 @@ HRESULT CDWindowExtenderStereo::Split_YV12(IMediaSample *pIn, IMediaSample *pOut
 
 HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2)
 {
+	// test if sample is left
+	REFERENCE_TIME TimeStart, TimeEnd;
+	pIn->GetTime(&TimeStart, &TimeEnd);
+
+	int fn;
+	if (m_image_x == 1280)
+		fn = (double)(TimeStart+m_t)/10000*120/1001 + 0.5;
+	else
+		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
+
+	int left = 1 - (fn & 1);
+	left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
+
 	// one line of letterbox
 	static DWORD one_line_letterbox[16384];
 	if (one_line_letterbox[0] != 0x80008000)
@@ -612,7 +688,7 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 	// PD10 mode
 	if (m_mode == DWindowFilter_CUT_MODE_PD10)
 	{
-		if (m_left)
+		if (left)
 		{
 			// copy data to frame cache;
 			BYTE *p_in = NULL;
@@ -737,6 +813,7 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 	return S_OK;
 }
 
+/*
 HRESULT CDWindowExtenderStereo::StartStreaming()
 {
 	printf("Start Streaming!..\n");
@@ -751,22 +828,23 @@ HRESULT CDWindowExtenderStereo::StartStreaming()
 	pMS->GetCurrentPosition(&m_this_stream_start);
 
 	fi.pGraph->Release();
-
-	return S_OK;
+	return __super::StartStreaming();
 }
+*/
 
 HRESULT CDWindowExtenderStereo::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {	
 	printf("New Segment!..\n");
+	//CAutoLock cAutolock(&m_csReceive);
 
 	if (m_image_x == 1280)
 		m_frm = 1200;
 	else
 		m_frm = 480;
 
-	m_left = 0;
+	m_t = tStart;
 
-	return S_OK;
+	return __super::NewSegment(tStart, tStop, dRate);
 }
 
 

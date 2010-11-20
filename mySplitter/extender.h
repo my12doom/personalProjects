@@ -76,7 +76,8 @@ public:
 	HRESULT CheckSplit(const CMediaType *mtIn, const CMediaType *mtOut);
 	HRESULT DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pProperties);
 	HRESULT GetMediaType(int iPosition, CMediaType *pMediaType);
-	HRESULT StartStreaming();
+	//HRESULT StartStreaming();
+    HRESULT CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin);
 	HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 
 	// Implementation of  the custom IYV12StereoMixer interface
@@ -90,11 +91,10 @@ private:
 	CCritSec m_config_sec;
 
 	// callback related vars
-	REFERENCE_TIME m_this_stream_start;
+	//REFERENCE_TIME m_this_stream_start;
 	IDWindowFilterCB *m_cb;
 
 	// image vars and funcs
-	int m_left;				// for seq split
 	int m_letterbox_total;
 	int m_letterbox_top;
 	int m_letterbox_bottom;
@@ -112,6 +112,8 @@ private:
 	HRESULT Split_YUY2(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2);
 
 	// PD10 timecode fix and frame buffer
+	int m_pd10_demuxer_fix;
+	REFERENCE_TIME m_t;
 	BYTE *m_frame_buffer;
 	REFERENCE_TIME m_TimeStart;
 	REFERENCE_TIME m_TimeEnd;

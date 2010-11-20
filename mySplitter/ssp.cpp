@@ -307,8 +307,8 @@ HRESULT ActiveMVC(IBaseFilter *filter)
 CDWindowSSP::CDWindowSSP(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
 CTransformFilter(tszName, punk, CLSID_YV12MonoMixer)
 {
+	m_t = 0;
 	my12doom_found = false;
-	m_left = 0;
 	m_image_buffer = NULL;
 	m_mask = NULL;
 	h_F11_thread = INVALID_HANDLE_VALUE;
@@ -393,12 +393,19 @@ STDMETHODIMP CDWindowSSP::NonDelegatingQueryInterface(REFIID riid, void **ppv)
 HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 {
 	CAutoLock cAutolock(&m_DWindowSSPLock);
-	m_left = 1 - m_left;
 
 	REFERENCE_TIME TimeStart, TimeEnd;
 	LONGLONG MediaStart, MediaEnd;
 	pIn->GetTime(&TimeStart, &TimeEnd);
 	pIn->GetMediaTime(&MediaStart,&MediaEnd);
+
+	int fn;
+	if (m_image_x == 1280)
+		fn = (double)(TimeStart+m_t)/10000*120/1001 + 0.5;
+	else
+		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
+
+	int left = 1-(fn & 1);
 
 	BYTE *psrc = NULL;
 	pIn->GetPointer(&psrc);
@@ -422,7 +429,7 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			m_frm = 960;
 
 	m_frm --;
-	if (m_left)
+	if (left)
 	{
 		memcpy(m_image_buffer, psrc, data_size);
 		return S_FALSE;
@@ -570,13 +577,15 @@ HRESULT CDWindowSSP::GetMediaType(int iPosition, CMediaType *pMediaType)
 	return NOERROR;
 }
 
+/*
 HRESULT CDWindowSSP::StartStreaming()
 {
-	m_left = 0;
 	return __super::StartStreaming();
 }
+*/
 HRESULT CDWindowSSP::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
-{	
+{
+	CAutoLock cAutolock(&m_csReceive);
 	printf("New Segment!..\n");
 
 	if (m_image_x == 1280)
@@ -584,8 +593,7 @@ HRESULT CDWindowSSP::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, dou
 	else
 		m_frm = 960;
 
-	m_left = 0;
-
+	m_t = tStart;
 
 	return CTransformFilter::NewSegment(tStart, tStop, dRate);
 }
