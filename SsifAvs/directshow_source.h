@@ -346,7 +346,7 @@ class DirectShowSource : public IClip {
   void DirectShowSource::DisableDeinterlacing(IFilterGraph *pGraph);
   void DirectShowSource::SetWMAudioDecoderDMOtoHiResOutput(IFilterGraph *pGraph);
 
-  CAutoPtr<sq2sbs> sq;
+  sq2sbs *sq;
 
 public:
 

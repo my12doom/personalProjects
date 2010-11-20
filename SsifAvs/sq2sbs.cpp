@@ -150,7 +150,10 @@ sq2sbs::sq2sbs(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr)
 sq2sbs::~sq2sbs()
 {
 	if (m_image_buffer)
-		free(m_image_buffer);
+		{
+			free(m_image_buffer);
+			m_image_buffer = NULL;
+		}
 }
 
 HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
@@ -227,7 +230,10 @@ HRESULT sq2sbs::CheckInputType(const CMediaType *mtIn)
 
 		// malloc image buffer
 		if (m_image_buffer)
+		{
 			free(m_image_buffer);
+			m_image_buffer = NULL;
+		}
 		m_image_buffer = (BYTE*)malloc(m_image_x*m_image_y*2);
 
 		hr = S_OK;

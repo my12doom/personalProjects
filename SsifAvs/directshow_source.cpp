@@ -1614,7 +1614,10 @@ DirectShowSource::DirectShowSource(const char* filename, int _avg_time_per_frame
                                    bool _enable_audio, bool _enable_video, bool _convert_fps, unsigned _media,
                                    int _timeout, int _frames, LOG* _log, IScriptEnvironment* env)
   : get_sample(_enable_audio, _enable_video, _media, _log), seekmode(_seekmode), convert_fps(_convert_fps),
-    gb(NULL), currentFrame(0), TrapTimeouts(_timeout < 0), WaitTimeout(abs(_timeout)), log(_log) {
+    gb(NULL), currentFrame(0), TrapTimeouts(_timeout < 0), WaitTimeout(abs(_timeout)), log(_log) 
+
+
+{
 
   dssRPT0(dssNEW, "New DirectShowSource.\n");
 
@@ -1631,7 +1634,7 @@ DirectShowSource::DirectShowSource(const char* filename, int _avg_time_per_frame
 	ActiveMVC(decoder);
 	
 	HRESULT hrr;
-	sq.Attach(new sq2sbs(_T("sq2sbs"), NULL, &hrr));
+	sq = new sq2sbs(_T("sq2sbs"), NULL, &hrr);
 	CComQIPtr<IBaseFilter, &IID_IBaseFilter> ssp(sq);
 	gb->AddFilter(ssp, L"sq2sbs");
 	
