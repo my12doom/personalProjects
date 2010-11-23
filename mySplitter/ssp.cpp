@@ -307,6 +307,7 @@ HRESULT ActiveMVC(IBaseFilter *filter)
 CDWindowSSP::CDWindowSSP(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
 CTransformFilter(tszName, punk, CLSID_YV12MonoMixer)
 {
+	m_buffer_has_data = false;
 	m_t = 0;
 	my12doom_found = false;
 	m_image_buffer = NULL;
@@ -431,6 +432,7 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 	m_frm --;
 	if (left)
 	{
+		m_buffer_has_data = true;
 		memcpy(m_image_buffer, psrc, data_size);
 		return S_FALSE;
 	}
@@ -438,6 +440,9 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 	{
 		if(pOut)
 		{
+			if (!m_buffer_has_data)
+				return S_FALSE;
+
 			const int byte_per_pixel = 2;
 			// output pointer and stride
 			BYTE *pdst = NULL;
@@ -594,6 +599,9 @@ HRESULT CDWindowSSP::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, dou
 		m_frm = 960;
 
 	m_t = tStart;
+
+	m_buffer_has_data = false;
+
 
 	return CTransformFilter::NewSegment(tStart, tStop, dRate);
 }

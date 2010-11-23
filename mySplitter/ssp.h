@@ -40,6 +40,7 @@ private:
 	int m_image_x;
 	int m_image_y;
 	BYTE *m_image_buffer;
+	bool m_buffer_has_data;
 	CCritSec m_DWindowSSPLock;
 	CDWindowSSP(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr);
 	~CDWindowSSP();

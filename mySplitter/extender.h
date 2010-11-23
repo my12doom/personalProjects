@@ -115,6 +115,7 @@ private:
 	int m_pd10_demuxer_fix;
 	REFERENCE_TIME m_t;
 	BYTE *m_frame_buffer;
+	bool m_buffer_has_data;
 	REFERENCE_TIME m_TimeStart;
 	REFERENCE_TIME m_TimeEnd;
 	REFERENCE_TIME m_MediaStart;

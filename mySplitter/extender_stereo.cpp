@@ -9,6 +9,7 @@ DEFINE_GUID(CLSID_PD10_DEMUXER,
 CDWindowExtenderStereo::CDWindowExtenderStereo(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
 CSplitFilter(tszName, punk, CLSID_DWindowStereo)
 {
+	m_buffer_has_data = false;
 	m_pd10_demuxer_fix = 0;
 	m_letterbox_total = m_letterbox_top = m_letterbox_bottom = 0;
 	m_in_x = 0;
@@ -695,6 +696,8 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 			pIn->GetPointer(&p_in);
 			memcpy(m_frame_buffer, p_in, m_in_x*m_in_y*2);
 
+			m_buffer_has_data = true;
+
 			return S_FALSE;
 		}
 
@@ -706,6 +709,9 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 
 			if(pOut)
 			{
+				if (!m_buffer_has_data)
+					return S_FALSE;
+
 				// these are copied from ExtenderMono::Transform_YV12
 				// one line of letterbox
 				static DWORD one_line_letterbox[16384];
@@ -843,6 +849,8 @@ HRESULT CDWindowExtenderStereo::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME
 		m_frm = 480;
 
 	m_t = tStart;
+
+	m_buffer_has_data = false;
 
 	return __super::NewSegment(tStart, tStop, dRate);
 }
