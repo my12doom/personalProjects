@@ -298,6 +298,7 @@ HRESULT CHdmvClipInfo::ReadPlaylist(CString strPlaylistFile, REFERENCE_TIME& rtD
 			dwPos = dwPos + ReadShort() + 2;
 			ReadBuffer(Buff, 5);
 			Item.m_strFileName.Format(_T("%s\\STREAM\\SSIF\\%c%c%c%c%c.SSIF"), Path, Buff[0], Buff[1], Buff[2], Buff[3], Buff[4]);
+			//Item.m_strFileName.Format(_T("%s\\STREAM\\%c%c%c%c%c.M2TS"), Path, Buff[0], Buff[1], Buff[2], Buff[3], Buff[4]);
 
 			ReadBuffer(Buff, 4);
 			if (memcmp (Buff, "M2TS", 4)) return CloseFile(VFW_E_INVALID_FILE_FORMAT);

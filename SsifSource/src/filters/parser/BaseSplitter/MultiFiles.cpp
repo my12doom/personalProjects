@@ -157,7 +157,7 @@ UINT CMultiFiles::Read(void* lpBuf, UINT nCount)
 			lpBuf	 = (void*)((BYTE*)lpBuf + dwRead);
 			nCount  -= dwRead;
 		}
-	} while (nCount != dwRead && m_nCurPart < m_strFiles.GetCount()-1);
+	} while (nCount != dwRead && m_nCurPart < m_strFiles.GetCount());	//my12doom: fix last file problem
 	return dwRead;
 }
 
