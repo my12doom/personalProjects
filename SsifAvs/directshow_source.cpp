@@ -1630,6 +1630,8 @@ DirectShowSource::DirectShowSource(const char* filename, int _avg_time_per_frame
 
 	CComPtr<IBaseFilter> decoder;
 	decoder.CoCreateInstance(CLSID_PD10_DECODER);
+		if (decoder == NULL)
+			env->ThrowError("couldn't load PD10 decoder.");
 	gb->AddFilter(decoder, L"decoder");
 	ActiveMVC(decoder);
 	
@@ -1664,29 +1666,69 @@ DirectShowSource::DirectShowSource(const char* filename, int _avg_time_per_frame
                           "Graph must have 1 output pin that will bid 8, 16, 24 or 32 bit PCM or IEEE Float.");
       }
     } else {
-      //HRESULT RFHresult = gb->RenderFile(filenameW, NULL);
-			CComPtr<IBaseFilter> source_base;
-			source_base.CoCreateInstance(CLSID_SSIFSource);
-			CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(source_base);
-			gb->AddFilter(source_base, L"Ssif Source");
-			HRESULT hr = source->Load(filenameW, NULL);
-			
 
-			CComPtr<IPin> source_o;
-			CComPtr<IPin> decoder_i;
-			CComPtr<IPin> decoder_o;
-			CComPtr<IPin> ssp_i;
-			CComPtr<IPin> ssp_o;
+			HRESULT hr = S_OK;
+			// test if is a directory
+			if(PathIsDirectoryW(filenameW))
+			{
+				// find ssifsource.ax
+				HKEY hkeyFilter=0;
+				DWORD dwSize=MAX_PATH;
+				BYTE pbFilename[MAX_PATH];
+				int rc = RegOpenKey(HKEY_LOCAL_MACHINE, "Software\\Classes\\CLSID\\{916E4C8D-E37F-4FD4-95F6-A44E51462EDF}\\InprocServer32", &hkeyFilter);
+				if (rc == ERROR_SUCCESS)
+				{
+					rc = RegQueryValueEx(hkeyFilter, NULL,  // Read (Default) value
+										NULL, NULL, pbFilename, &dwSize);
 
-			GetUnconnectedPin(source_base, PINDIR_OUTPUT, &source_o);
-			GetUnconnectedPin(decoder, PINDIR_INPUT, &decoder_i);
-			GetUnconnectedPin(decoder, PINDIR_OUTPUT, &decoder_o);
-			GetUnconnectedPin(ssp, PINDIR_INPUT, &ssp_i);
-			GetUnconnectedPin(ssp, PINDIR_OUTPUT, &ssp_o);
+					HMODULE hax = LoadLibraryA((LPSTR)pbFilename);
+					if (!hax)
+					{
+						hr = E_FAIL;
+						goto _continue;
+					}
 
-			gb->ConnectDirect(source_o, decoder_i, NULL);
-			gb->ConnectDirect(decoder_o, ssp_i, NULL);
-			gb->Render(ssp_o);
+					HRESULT (*pfind) (wchar_t *, wchar_t *) = (HRESULT (__cdecl *)(wchar_t *, wchar_t *))GetProcAddress(hax, "find_main_movie");
+					if (pfind == NULL)
+					{
+						hr = E_FAIL;
+						goto _continue;
+					}
+
+					hr = pfind(filenameW, filenameW);
+
+					RegCloseKey(hkeyFilter);
+				}
+			}
+
+_continue:
+        CheckHresult(env, hr, "couldn't find main movie.", filename);
+
+		//HRESULT RFHresult = gb->RenderFile(filenameW, NULL);
+		CComPtr<IBaseFilter> source_base;
+		source_base.CoCreateInstance(CLSID_SSIFSource);
+		if (source_base == NULL)
+			env->ThrowError("couldn't load ssif source.");
+		CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(source_base);
+		gb->AddFilter(source_base, L"Ssif Source");
+		hr = source->Load(filenameW, NULL);
+		
+
+		CComPtr<IPin> source_o;
+		CComPtr<IPin> decoder_i;
+		CComPtr<IPin> decoder_o;
+		CComPtr<IPin> ssp_i;
+		CComPtr<IPin> ssp_o;
+
+		GetUnconnectedPin(source_base, PINDIR_OUTPUT, &source_o);
+		GetUnconnectedPin(decoder, PINDIR_INPUT, &decoder_i);
+		GetUnconnectedPin(decoder, PINDIR_OUTPUT, &decoder_o);
+		GetUnconnectedPin(ssp, PINDIR_INPUT, &ssp_i);
+		GetUnconnectedPin(ssp, PINDIR_OUTPUT, &ssp_o);
+
+		gb->ConnectDirect(source_o, decoder_i, NULL);
+		gb->ConnectDirect(decoder_o, ssp_i, NULL);
+		gb->Render(ssp_o);
 
       if (!get_sample.IsConnected()) { // Ignore arbitary errors, run with what we got
         CheckHresult(env, hr, "couldn't open file ", filename);
