@@ -150,6 +150,79 @@
 			<Tool
 				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
+		<Configuration
+			Name="Release_mt|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="FALSE"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="2"
+				OptimizeForProcessor="2"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;DIRECTSHOWSOURCE_EXPORTS"
+				StringPooling="TRUE"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="TRUE"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderFile=".\Release_mt/DirectShowSource.pch"
+				AssemblerListingLocation=".\Release_mt/"
+				ObjectFile=".\Release_mt/"
+				ProgramDataBaseFileName=".\Release_mt/"
+				BrowseInformation="1"
+				WarningLevel="3"
+				SuppressStartupBanner="TRUE"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="odbc32.lib odbccp32.lib strmbase.lib msacm32.lib quartz.lib ddraw.lib amstrmid.lib winmm.lib"
+				OutputFile=".\Release_mt/SsifAvs.dll"
+				LinkIncremental="1"
+				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Release_mt"
+				IgnoreDefaultLibraryNames=""
+				ProgramDatabaseFile=".\Release_mt/DirectShowSource.pdb"
+				GenerateMapFile="TRUE"
+				MapFileName=".\Release_mt/DirectShowSource.map"
+				ImportLibrary=".\Release_mt/DirectShowSource.lib"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="TRUE"
+				SuppressStartupBanner="TRUE"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Release/DirectShowSource.tlb"
+				HeaderFileName=""/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Compress the .DLL"
+				CommandLine="..\..\..\distrib\upx -9 release\DirectShowSource.dll"
+				ExcludedFromBuild="TRUE"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1030"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
 	</Configurations>
 	<References>
 	</References>
@@ -174,6 +247,14 @@
 						Optimization="0"
 						PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;DIRECTSHOWSOURCE_EXPORTS;$(NoInherit)"
 						BasicRuntimeChecks="3"
+						BrowseInformation="1"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_mt|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;DIRECTSHOWSOURCE_EXPORTS;$(NoInherit)"
 						BrowseInformation="1"/>
 				</FileConfiguration>
 			</File>

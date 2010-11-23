@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 8.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirectShowSource", "DirectShowSource.vcproj", "{1F09D15B-32A2-4B79-98D9-5FDE7B35EEFE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SsifAvs", "DirectShowSource.vcproj", "{1F09D15B-32A2-4B79-98D9-5FDE7B35EEFE}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
@@ -7,12 +7,15 @@ Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
 		Release = Release
+		Release_mt = Release_mt
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{1F09D15B-32A2-4B79-98D9-5FDE7B35EEFE}.Debug.ActiveCfg = Debug|Win32
 		{1F09D15B-32A2-4B79-98D9-5FDE7B35EEFE}.Debug.Build.0 = Debug|Win32
 		{1F09D15B-32A2-4B79-98D9-5FDE7B35EEFE}.Release.ActiveCfg = Release|Win32
 		{1F09D15B-32A2-4B79-98D9-5FDE7B35EEFE}.Release.Build.0 = Release|Win32
+		{1F09D15B-32A2-4B79-98D9-5FDE7B35EEFE}.Release_mt.ActiveCfg = Release_mt|Win32
+		{1F09D15B-32A2-4B79-98D9-5FDE7B35EEFE}.Release_mt.Build.0 = Release_mt|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection
