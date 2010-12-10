@@ -654,6 +654,8 @@ LRESULT dx_window::on_sys_command(int id, WPARAM wParam, LPARAM lParam)
 		update_video_pos();
 		return S_OK;
 	}
+	else if (LOWORD(wParam) == SC_SCREENSAVE)
+		return 0;
 
 	return S_FALSE;
 }

@@ -306,6 +306,7 @@ void finish_dialog(HWND hDlg)
 // screen saver
 void kill_ssaver()
 {
+	return;
 	wchar_t dll_path[MAX_PATH];
 	GetModuleFileNameW(NULL, dll_path, MAX_PATH);
 	for(int i=(int)wcslen(dll_path); i>=0; i--)
@@ -340,6 +341,7 @@ try_kill:
 
 void revive_ssaver()
 {
+	return;
 	typedef int (*p_proc_revive)(void);
 	p_proc_revive p_revive = (p_proc_revive)GetProcAddress(hDll, "revive");
 	if (p_revive)
