@@ -60,6 +60,11 @@ friend class CMpegSplitterOutputPin;
 	REFERENCE_TIME m_rtPrev, m_rtOffset, m_rtMaxShift;
 	bool m_fHasAccessUnitDelimiters;
 	CCritSec m_dummylock;
+	CCritSec m_queuelock;
+	CAutoPtrList<Packet> m_queue;
+	HANDLE m_dummy_thread;
+	bool m_dummy_exit;
+	static DWORD WINAPI dummy_thread(LPVOID lpParame);
 
 	HRESULT Click(int id);
 	HRESULT BeforeShow();
@@ -84,6 +89,7 @@ protected:
 
 public:
 	CMpegSplitterFilter(LPUNKNOWN pUnk, HRESULT* phr, const CLSID& clsid = __uuidof(CMpegSplitterFilter));
+	~CMpegSplitterFilter();
 	void SetPipo(bool bPipo) { m_pPipoBimbo = bPipo; };
 
 	DECLARE_IUNKNOWN

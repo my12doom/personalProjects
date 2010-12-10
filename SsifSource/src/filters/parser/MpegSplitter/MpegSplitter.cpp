@@ -477,7 +477,21 @@ CMpegSplitterFilter::CMpegSplitterFilter(LPUNKNOWN pUnk, HRESULT* phr, const CLS
 	, m_fHasAccessUnitDelimiters(false)
 	, m_rtMaxShift(50000000)
 	, m_mvc_found(false)
+	, m_dummy_exit(false)
 {
+	m_dummy_thread = CreateThread(0,0,dummy_thread, this, NULL, NULL);
+}
+
+CMpegSplitterFilter::~CMpegSplitterFilter()
+{
+	m_dummy_exit = true;
+	ResumeThread(m_dummy_thread);
+	if (WAIT_TIMEOUT == WaitForSingleObject(m_dummy_thread, 200))
+	{
+		ResumeThread(m_dummy_thread);
+		if (WAIT_TIMEOUT == WaitForSingleObject(m_dummy_thread, 1000))
+			TerminateThread(m_dummy_thread, 0);
+	}
 }
 
 HRESULT CMpegSplitterFilter::IsMVC()
@@ -707,7 +721,12 @@ HRESULT CMpegSplitterFilter::DemuxNextPacket(REFERENCE_TIME rtStartOffset)
 				m_pFile->ByteRead(p->GetData(), nBytes);
 
 				if (m_mvc_found && TrackNumber == 0x1012)
-					hr = dummy_deliver_packet(p);
+				{					
+					CAutoLock queuelock(&m_queuelock);
+					hr = S_OK;
+					m_queue.AddTail(p);
+					ResumeThread(m_dummy_thread);
+				}
 				else
 					hr = DeliverPacket(p);
 			}
@@ -880,6 +899,11 @@ bool CMpegSplitterFilter::DemuxInit()
 
 void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 {
+	{
+		CAutoLock queuelock(&m_queuelock);
+		m_queue.RemoveAll();
+	}
+
 	CAtlList<CMpegSplitterFile::stream>* pMasterStream = m_pFile->GetMasterStream();
 
 	if(!pMasterStream)
@@ -1333,6 +1357,30 @@ bool CMpegSplitterFile::stream::operator < (const stream &_Other) const
 	return DefaultFirst < DefaultSecond;
 }
 
+DWORD WINAPI CMpegSplitterFilter::dummy_thread(LPVOID lpParame)
+{
+	CMpegSplitterFilter *_this = (CMpegSplitterFilter*) lpParame;
+	CAutoPtr<Packet> p;
+
+sleep:
+	SuspendThread(_this->m_dummy_thread);
+	if (_this->m_dummy_exit)
+		return 0;
+next:
+	{
+		CAutoLock queuelock(&(_this->m_queuelock));
+		if (_this->m_queue.IsEmpty())
+			goto sleep;
+		p = _this->m_queue.RemoveHead();
+	}
+
+	_this->dummy_deliver_packet(p);
+
+	goto next;
+
+	return 0;
+}
+
 
 HRESULT CMpegSplitterFilter::dummy_deliver_packet(CAutoPtr<Packet> p)
 {
@@ -1688,6 +1736,7 @@ HRESULT CMpegSplitterOutputPin::DeliverMVCPacket(CAutoPtr<Packet> p)
 
 	if (matched_time != Packet::INVALID_TIME)
 	{
+		CAutoPtr<Packet> double_packet;
 		// delete every packet before matched packet
 		HRESULT hr;
 		while(true)
@@ -1695,8 +1744,7 @@ HRESULT CMpegSplitterOutputPin::DeliverMVCPacket(CAutoPtr<Packet> p)
 			CAutoPtr<Packet> p2 = m_q1011.RemoveHead();
 			if (p2->rtStart == matched_time)
 			{
-				hr = __super::DeliverPacket(p2);
-				if (FAILED(hr)) return hr;
+				double_packet = p2;
 
 				break;
 			}
@@ -1706,16 +1754,13 @@ HRESULT CMpegSplitterOutputPin::DeliverMVCPacket(CAutoPtr<Packet> p)
 			CAutoPtr<Packet> p2 = m_q1012.RemoveHead();
 			if (p2->rtStart == matched_time)
 			{
-				hr = __super::DeliverPacket(p2);
-				if (FAILED(hr)) return hr;
+				double_packet->Append(*p2);
 
 				break;
 			}
 		}
 
-
-
-		//goto find_match;
+		return __super::DeliverPacket(double_packet);
 	}
 	return S_OK;
 }
@@ -1967,15 +2012,6 @@ HRESULT CMpegSplitterOutputPin::DeliverPacket(CAutoPtr<Packet> p)
 				{
 					hr = DeliverMVCPacket(p);
 				}
-				/*
-				else if ( ((CMpegSplitterFilter*)m_pFilter)->m_mvc_found
-					&& (p->TrackNumber == 0x1012 ))
-				{
-					CMpegSplitterOutputPin *avc_pin = (CMpegSplitterOutputPin *)((CMpegSplitterFilter*)m_pFilter)->GetOutputPin(0x1011);
-					hr = avc_pin->DeliverMVCPacket(p);
-				}
-				*/
-
 				else
 					hr = __super::DeliverPacket(p);
 
