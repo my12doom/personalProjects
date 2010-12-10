@@ -9,7 +9,7 @@
 SetCompressor /SOLID lzma
 
 ; The name of the installer
-Name "Example2"
+Name "DWindow"
 
 ; The file to write
 OutFile "dwindow_setup.exe"
