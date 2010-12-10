@@ -286,6 +286,9 @@ HRESULT ActiveMVC(IBaseFilter *filter)
 	GetUnconnectedPin(demuxer, PINDIR_OUTPUT, &demuxer_o);
 	CComPtr<IPin> decoder_i;
 	GetConnectedPin(filter, PINDIR_INPUT, &decoder_i);
+	if (decoder_i == NULL)
+		GetUnconnectedPin(filter, PINDIR_INPUT, &decoder_i);
+
 	CComPtr<IPin> decoder_up;
 	decoder_i->ConnectedTo(&decoder_up);
 	gb->Disconnect(decoder_i);
@@ -307,19 +310,16 @@ HRESULT ActiveMVC(IBaseFilter *filter)
 CDWindowSSP::CDWindowSSP(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
 CTransformFilter(tszName, punk, CLSID_YV12MonoMixer)
 {
+	m_mvc_actived = false;
 	m_buffer_has_data = false;
 	m_t = 0;
 	my12doom_found = false;
 	m_image_buffer = NULL;
 	m_mask = NULL;
-	h_F11_thread = INVALID_HANDLE_VALUE;
 }
 
 CDWindowSSP::~CDWindowSSP() 
 {
-	if (h_F11_thread != INVALID_HANDLE_VALUE)
-		TerminateThread(h_F11_thread, 0);
-
 	if (m_image_buffer)
 		free(m_image_buffer);
 
@@ -495,6 +495,9 @@ HRESULT CDWindowSSP::CheckInputType(const CMediaType *mtIn)
 	GUID subtypeIn = *mtIn->Subtype();
 	HRESULT hr = VFW_E_INVALID_MEDIA_TYPE;
 
+	// TODO: this is external program support
+	// find_and_active_mvc();
+
 	if( *mtIn->FormatType() == FORMAT_VideoInfo2 && subtypeIn == MEDIASUBTYPE_YUY2 && my12doom_found)
 	{
 		BITMAPINFOHEADER *pbih = &((VIDEOINFOHEADER2*)mtIn->Format())->bmiHeader;
@@ -606,80 +609,33 @@ HRESULT CDWindowSSP::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, dou
 	return CTransformFilter::NewSegment(tStart, tStop, dRate);
 }
 
-HRESULT CDWindowSSP::BreakConnect(PIN_DIRECTION dir)
+HRESULT CDWindowSSP::find_and_active_mvc()
 {
-	if (dir == PINDIR_INPUT)
-		m_demuxer = NULL;
-	return CTransformFilter::BreakConnect(dir);
-}
+	// E_FAIL = no cyberlink Decoder found
+	// S_FALSE = no remux or ssif found
+	// S_OK = OK
 
-STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
-{
-	if (pGraph)
+	if (m_mvc_actived)
+		return S_OK;
+
+	bool PD10_found = false;
+	if (m_pGraph)
 	{
-		// check creation
-		CComPtr<IBaseFilter> demuxer_test;
-		CComPtr<IBaseFilter> decoder_test;
-		demuxer_test.CoCreateInstance(CLSID_PD10_DEMUXER);
-		decoder_test.CoCreateInstance(CLSID_PD10_DECODER);
-
-		if (demuxer_test == NULL || decoder_test == NULL)
-		{
-			MessageBoxW(ssp_hwnd, L"some modules not registered, try use DWindow Launcher to fix it.\n\n"
-				L"某些组件没有注册，请使用DWindow注册组件",L"Warning", MB_OK | MB_ICONERROR);
-			return E_FAIL;
-		}
-
-		demuxer_test = NULL;
-
-		// check decoder version
-		if (decoder_test != NULL)
-		{
-			decoder_test = NULL;
-			HKEY hkeyFilter=0;
-			DWORD dwSize=MAX_PATH;
-			BYTE pbFilename[MAX_PATH];
-			int rc = RegOpenKey(HKEY_LOCAL_MACHINE, L"Software\\Classes\\CLSID\\{D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}\\InprocServer32", &hkeyFilter);
-			rc = RegQueryValueEx(hkeyFilter, NULL,  // Read (Default) value
-									NULL, NULL, pbFilename, &dwSize);
-
-			TCHAR szFilename[MAX_PATH];
-			HRESULT hr = StringCchPrintf(szFilename, NUMELMS(szFilename), TEXT("%s\0"), pbFilename);
-
-			const int filesize = 615792;
-			FILE * f = _wfopen(szFilename, L"rb");
-			unsigned char *buf = (unsigned char*)malloc(filesize);
-			fread(buf, 1, filesize, f);
-			fclose(f);
-
-			DWORD sha1[5];
-			DWORD sha1_right[5] ={0x597ea85e, 0xd026f966, 0x25a5df89, 0x587b6272, 0xd574a627};
-			SHA1Hash((unsigned char*)sha1, buf, filesize);
-			RegCloseKey(hkeyFilter);
-
-			for(int i=0; i<5; i++)
-			{
-				if (sha1[i] != sha1_right[i])
-				{
-					MessageBoxW(ssp_hwnd, L"some modules are invalid version, try use DWindow Launcher to fix it.\n\n"
-						L"某些组件是错误的版本，请使用DWindow注册正确版本组件",L"Warning", MB_OK | MB_ICONERROR);
-					return E_FAIL;
-				}
-			}
-		}
-	}
-
-	// join it
-	HRESULT hr = CTransformFilter::JoinFilterGraph(pGraph, pName);
-
-
-	if (pGraph)
-	{
-		// check input file signature
-		bool PD10_found = false;
 		my12doom_found = false;
-		CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(pGraph);
+		CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(m_pGraph);
+		CComQIPtr<IMediaControl, &IID_IMediaControl> mc(m_pGraph);
 
+		// stop it if not stopped
+		OAFilterState fs;
+		mc->GetState(INFINITE, &fs);
+		if (fs != State_Stopped)
+		{
+			OAFilterState fs2;
+			mc->Stop();
+			mc->GetState(INFINITE, &fs2);
+		}
+
+		// check input file signature
 		CComPtr<IEnumFilters> penum;
 		gb->EnumFilters(&penum);
 		ULONG fetched = 0;
@@ -728,21 +684,116 @@ STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 			filter = NULL;
 		}
 
-		if (!PD10_found)
+		// restore running state
+		if (fs == State_Running)
+			mc->Run();
+		else if (fs == State_Paused)
+			mc->Pause();
+	}
+
+	if (!PD10_found)
+	{
+		return E_FAIL;
+	}
+	else if(!my12doom_found)
+	{
+		return S_FALSE;
+	}
+	else
+	{
+		m_mvc_actived = true;
+	}
+
+	return S_OK;
+}
+
+HRESULT CDWindowSSP::modules_check()
+{
+	// module checks
+	// check creation
+	CComPtr<IBaseFilter> demuxer_test;
+	CComPtr<IBaseFilter> decoder_test;
+	demuxer_test.CoCreateInstance(CLSID_PD10_DEMUXER);
+	decoder_test.CoCreateInstance(CLSID_PD10_DECODER);
+
+	if (demuxer_test == NULL || decoder_test == NULL)
+	{
+		MessageBoxW(ssp_hwnd, L"some modules not registered, try use DWindow Launcher to fix it.\n\n"
+			L"某些组件没有注册，请使用DWindow注册组件",L"Warning", MB_OK | MB_ICONERROR);
+		return E_FAIL;
+	}
+
+	demuxer_test = NULL;
+
+	// check decoder version
+	if (decoder_test != NULL)
+	{
+		decoder_test = NULL;
+		HKEY hkeyFilter=0;
+		DWORD dwSize=MAX_PATH;
+		BYTE pbFilename[MAX_PATH];
+		int rc = RegOpenKey(HKEY_LOCAL_MACHINE, L"Software\\Classes\\CLSID\\{D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}\\InprocServer32", &hkeyFilter);
+		rc = RegQueryValueEx(hkeyFilter, NULL,  // Read (Default) value
+								NULL, NULL, pbFilename, &dwSize);
+
+		TCHAR szFilename[MAX_PATH];
+		HRESULT hr = StringCchPrintf(szFilename, NUMELMS(szFilename), TEXT("%s\0"), pbFilename);
+
+		const int filesize = 615792;
+		FILE * f = _wfopen(szFilename, L"rb");
+		unsigned char *buf = (unsigned char*)malloc(filesize);
+		fread(buf, 1, filesize, f);
+		fclose(f);
+
+		DWORD sha1[5];
+		DWORD sha1_right[5] ={0x597ea85e, 0xd026f966, 0x25a5df89, 0x587b6272, 0xd574a627};
+		SHA1Hash((unsigned char*)sha1, buf, filesize);
+		RegCloseKey(hkeyFilter);
+
+		for(int i=0; i<5; i++)
+		{
+			if (sha1[i] != sha1_right[i])
+			{
+				MessageBoxW(ssp_hwnd, L"some modules are invalid version, try use DWindow Launcher to fix it.\n\n"
+					L"某些组件是错误的版本，请使用DWindow注册正确版本组件",L"Warning", MB_OK | MB_ICONERROR);
+				return E_FAIL;
+			}
+		}
+	}
+
+	return S_OK;
+}
+
+STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
+{
+	if (pGraph)
+	{
+		HRESULT hr = modules_check();
+		if (FAILED(hr))
+			return hr;
+	}
+
+	// join it
+	HRESULT hr = CTransformFilter::JoinFilterGraph(pGraph, pName);
+	
+	// TODO: this is SSP-only support
+	if (pGraph)
+	{
+		hr = find_and_active_mvc();
+		if (hr == E_FAIL)
 		MessageBoxW(ssp_hwnd, L"Cyberlink Video Decoder not found.\n"
 			L"try use DWindow Launcher to fix it.\n\n"
 			L"未发现Cyberlink Video Decoder\n"
 			L"请使用DWindow配置工具配置SSP", L"Warning", MB_OK | MB_ICONERROR);
 
-		else if(!my12doom_found)
+		else if(hr == S_FALSE)
 		MessageBoxW(ssp_hwnd, L"Non-REMUX content detected, switching to compatibility mode\n"
 			L"if picture become confused or freezed,\n"
 			L"please use DWindow config tool to reset SSP's config\n\n"
 			L"检测到非REMUX文件，正在使用兼容模式播放\n"
 			L"如果仍出现画面异常或冻结，请用DWindow配置工具恢复SSP默认设置", L"Warning", MB_OK | MB_ICONERROR);
-
-
 	}
+	
 
 	return hr;
 }
@@ -750,38 +801,6 @@ STDMETHODIMP CDWindowSSP::JoinFilterGraph(IFilterGraph *pGraph, LPCWSTR pName)
 
 HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 {
-	if (m_demuxer == NULL && direction == PINDIR_INPUT)
-	{
-		// prepare
-		CComQIPtr<IBaseFilter, &IID_IBaseFilter> pbase(this);
-		FILTER_INFO fi;
-		pbase->QueryFilterInfo(&fi);
-		CComPtr<IEnumFilters> pEnum;
-		HRESULT hr = fi.pGraph->EnumFilters(&pEnum);
-		
-		// find cyberlink demuxer
-		while(pEnum->Next(1, &m_demuxer, NULL) == S_OK)
-		{
-			FILTER_INFO filter_info;
-			m_demuxer->QueryFilterInfo(&filter_info);
-			if (filter_info.pGraph) filter_info.pGraph->Release();
-			if (!wcscmp(filter_info.achName, L"Cyberlink Demuxer 2.0") )
-				break;
-
-			m_demuxer = NULL;
-		}
-
-		// show warning or create F11 thread
-		CAutoLock lock_it(m_pLock);
-		if (m_demuxer == NULL)
-			;//MessageBox(ssp_hwnd,_T("Cyberlink Demuxer 2.0 not found, image might be wrong."), _T("Warning"), MB_OK | MB_ICONERROR);
-		else if (h_F11_thread == INVALID_HANDLE_VALUE)
-			h_F11_thread = CreateThread(0, 0, F11Thread, this, NULL, NULL);
-
-		fi.pGraph->Release();
-
-	}
-
 	if (direction == PINDIR_INPUT && my12doom_found)
 	{
 		MessageBox(ssp_hwnd, _T("This is a free demo version of my12doom's bluray3D remux filter for SSP.\n"
@@ -881,37 +900,6 @@ end_output:
 	prepare_mask();
 
 	return S_OK;
-}
-
-
-DWORD WINAPI CDWindowSSP::default_thread(LPVOID lpParame)
-{
-
-	return 0;
-}
-
-DWORD WINAPI CDWindowSSP::F11Thread(LPVOID lpParame)
-{
-	CDWindowSSP * _this = (CDWindowSSP*)lpParame;
-	while(true)
-	{
-		if ( GetAsyncKeyState(VK_F11)< 0)
-		{
-			CComQIPtr<ISpecifyPropertyPages, &IID_ISpecifyPropertyPages> prop(_this->m_demuxer);
-			if (prop)
-			{
-				CAUUID caGUID;
-				prop->GetPages(&caGUID);
-
-				IBaseFilter* tmp = _this->m_demuxer;
-
-				OleCreatePropertyFrame(GetActiveWindow(), 0, 0, NULL, 1, (IUnknown **)&tmp, caGUID.cElems, caGUID.pElems, 0, 0, NULL);
-				CoTaskMemFree(caGUID.pElems);
-			}
-		}
-		Sleep(10);
-	}
-	return 0;
 }
 
 // CheckTransform

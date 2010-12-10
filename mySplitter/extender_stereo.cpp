@@ -10,7 +10,7 @@ CDWindowExtenderStereo::CDWindowExtenderStereo(TCHAR *tszName, LPUNKNOWN punk, H
 CSplitFilter(tszName, punk, CLSID_DWindowStereo)
 {
 	m_buffer_has_data = false;
-	m_pd10_demuxer_fix = 0;
+	//m_pd10_demuxer_fix = 0;
 	m_letterbox_total = m_letterbox_top = m_letterbox_bottom = 0;
 	m_in_x = 0;
 	m_in_y = 0;
@@ -104,6 +104,7 @@ STDMETHODIMP CDWindowExtenderStereo::NonDelegatingQueryInterface(REFIID riid, vo
 
 HRESULT CDWindowExtenderStereo::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 {
+	/*
 	if (direction == PINDIR_INPUT)
 	{
 		CComQIPtr<IBaseFilter, &IID_IBaseFilter> f(this);
@@ -128,6 +129,7 @@ HRESULT CDWindowExtenderStereo::CompleteConnect(PIN_DIRECTION direction,IPin *pR
 			filter = NULL;
 		}
 	}
+	*/
 
 	return S_OK;
 }
@@ -384,13 +386,13 @@ HRESULT CDWindowExtenderStereo::Split(IMediaSample *pIn, IMediaSample *pOut1, IM
 	pIn->GetTime(&TimeStart, &TimeEnd);
 
 	int fn;
-	if (m_image_x == 1280)
+	if (m_in_x == 1280)
 		fn = (double)(TimeStart+m_t)/10000*120/1001 + 0.5;
 	else
 		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
 
 	int left = (fn & 1);
-	left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
+	//left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
 
 	printf("%d\t%d\n", fn, left);
 
@@ -471,7 +473,7 @@ HRESULT CDWindowExtenderStereo::Split_YV12(IMediaSample *pIn, IMediaSample *pOut
 		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
 
 	int left = (fn & 1);
-	left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
+	//left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
 
 	// basic info
 	int letterbox_top = m_letterbox_top;
@@ -663,7 +665,7 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
 
 	int left = 1 - (fn & 1);
-	left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
+	//left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
 
 	// one line of letterbox
 	static DWORD one_line_letterbox[16384];

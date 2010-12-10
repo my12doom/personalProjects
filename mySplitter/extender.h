@@ -112,7 +112,7 @@ private:
 	HRESULT Split_YUY2(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2);
 
 	// PD10 timecode fix and frame buffer
-	int m_pd10_demuxer_fix;
+	//int m_pd10_demuxer_fix;
 	REFERENCE_TIME m_t;
 	BYTE *m_frame_buffer;
 	bool m_buffer_has_data;
