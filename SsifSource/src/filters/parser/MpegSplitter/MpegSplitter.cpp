@@ -1669,12 +1669,12 @@ HRESULT CMpegSplitterOutputPin::DeliverNewSegment(REFERENCE_TIME tStart, REFEREN
 		CAutoLock cAutoLock(this);
 		m_rtPrev = Packet::INVALID_TIME;
 		m_rtOffset = 0;
+	}
 
+	{
 		CAutoLock cAutoLock2(&((CMpegSplitterFilter*)m_pFilter)->m_dummylock);
 		((CMpegSplitterFilter*)m_pFilter) -> m_rtPrev = Packet::INVALID_TIME;
 		((CMpegSplitterFilter*)m_pFilter) -> m_rtOffset = 0;
-
-
 	}
 
 	return __super::DeliverNewSegment(tStart, tStop, dRate);
@@ -1686,7 +1686,9 @@ HRESULT CMpegSplitterOutputPin::DeliverEndFlush()
 		CAutoLock cAutoLock(this);
 		m_p.Free();
 		m_pl.RemoveAll();
-		
+	}
+
+	{
 		CAutoLock cAutoLock2(&((CMpegSplitterFilter*)m_pFilter)->m_dummylock);
 		((CMpegSplitterFilter*)m_pFilter) ->m_p.Free();
 		((CMpegSplitterFilter*)m_pFilter) ->m_pl.RemoveAll();
