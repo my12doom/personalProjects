@@ -155,3 +155,61 @@ signature_check:
 	else
 		return 1;		// not match
 }
+
+bool encrypt_license(dwindow_license license, DWORD *encrypt_out)		// false = fail
+{
+	DWORD e[32];
+	BigNumberSetEqualdw(e, 65537, 32);
+
+	RSA(encrypt_out, license.id, e, (DWORD*)dwindow_n, 32);
+	return true;
+}
+bool decrypt_license(dwindow_license *license_out, DWORD *msg)		// out is 128byte, decrypt license from message recieved from server
+{
+	memcpy(license_out->signature, msg, 128);
+
+	DWORD e[32];
+	BigNumberSetEqualdw(e, 65537, 32);
+
+	RSA(license_out->id, license_out->signature, e, (DWORD*)dwindow_n, 32);
+
+	return is_valid_license(*license_out);
+}
+
+bool is_valid_license(dwindow_license license)			// true = valid
+{
+	DWORD e[32];
+	BigNumberSetEqualdw(e, 65537, 32);
+
+	DWORD m[32];
+
+	RSA(m, (DWORD*)license.signature, e, (DWORD*)dwindow_n, 32);
+
+	for(int i=0; i<32; i++)
+		if (license.id[i] != m[i])
+			return false;
+
+	return true;
+}
+bool load_license(wchar_t *file, dwindow_license *out)	// false = fail
+{
+	FILE * f = _wfopen(file, L"rb");
+	if (!f)
+		return false;
+
+	if (fread(out->signature, 1, 128, f) != 128)
+		return false;
+
+	DWORD e[32];
+	BigNumberSetEqualdw(e, 65537, 32);
+
+	RSA(out->id, out->signature, e, (DWORD*)dwindow_n, 32);
+
+	// TODO: CRC32 checksum
+
+}
+bool save_license(wchar_t *file, dwindow_license in)	// false = fail
+{
+	// TODO
+	return false;
+}
