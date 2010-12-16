@@ -721,11 +721,22 @@ HRESULT CMpegSplitterFilter::DemuxNextPacket(REFERENCE_TIME rtStartOffset)
 				m_pFile->ByteRead(p->GetData(), nBytes);
 
 				if (m_mvc_found && TrackNumber == 0x1012)
-				{					
-					CAutoLock queuelock(&m_queuelock);
-					hr = S_OK;
-					m_queue.AddTail(p);
-					ResumeThread(m_dummy_thread);
+				{
+					bool sleep = false;
+					retry:
+					if (sleep)
+						Sleep(1);
+					{
+						CAutoLock queuelock(&m_queuelock);
+						if (m_queue.GetCount() > 1024*1024*30/188)
+						{
+							sleep = true;
+							goto retry;
+						}
+						hr = S_OK;
+						m_queue.AddTail(p);
+						ResumeThread(m_dummy_thread);
+					}
 				}
 				else
 					hr = DeliverPacket(p);
