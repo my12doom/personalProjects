@@ -190,9 +190,14 @@ HRESULT CDWindowExtenderStereo::CheckInputType(const CMediaType *mtIn)
 			if (m_frame_buffer) free(m_frame_buffer);
 			m_frame_buffer = (BYTE*) malloc(m_in_x * m_in_y * 2);
 			prepare_mask();
+
 		}
 
 		hr = init_image();
+
+		// 1088 fix
+		if (m_image_y == 1088 && m_mode == DWindowFilter_CUT_MODE_PD10)
+			m_image_y = 1080;
 	}
 
 	return hr;
@@ -739,9 +744,19 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 				p_out += stride * letterbox_top * byte_per_pixel;
 
 				// image
+				int skip_line[8] = {1, 136, 272, 408, 544, 680, 816, 952};
+				int line_source = 0;
 				for (int y=0; y<m_image_y; y++)
+				{
 					memcpy(p_out+y * stride*byte_per_pixel, 
-						p_in + m_in_x * y*byte_per_pixel,  m_out_x*byte_per_pixel);
+						p_in + m_in_x * line_source*byte_per_pixel,  m_out_x*byte_per_pixel);
+
+					// skip thos lines
+					line_source ++;
+					for(int i=0; i<8; i++)
+						if (skip_line[i] == line_source && m_image_y == 1080)
+							line_source++;
+				}
 
 				// mask
 				m_frm --;

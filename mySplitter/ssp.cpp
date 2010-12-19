@@ -455,12 +455,20 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			// find the right eye image
 			int offset = m_image_x * byte_per_pixel;
 
+			int skip_line[8] = {1, 136, 272, 408, 544, 680, 816, 952};
+			int line_source = 0;
 			for (int y=0; y<m_image_y; y++)
 			{
 				memcpy(pdst+y * stride*byte_per_pixel + offset,
-					psrc + m_image_x * y*byte_per_pixel,  m_image_x*byte_per_pixel);								// copy right eye
+					psrc + m_image_x * line_source * byte_per_pixel,  m_image_x*byte_per_pixel);								// copy right eye
 				memcpy(pdst+y * stride*byte_per_pixel,
-					m_image_buffer + m_image_x * y*byte_per_pixel,  m_image_x*byte_per_pixel);						// copy left eye
+					m_image_buffer + m_image_x * line_source * byte_per_pixel,  m_image_x*byte_per_pixel);						// copy left eye
+
+				line_source ++;
+				for(int i=0; i<8; i++)
+					if (skip_line[i] == line_source && m_image_y == 1080)
+						line_source++;
+
 			}
 
 			// mask
@@ -509,6 +517,10 @@ HRESULT CDWindowSSP::CheckInputType(const CMediaType *mtIn)
 		if (m_image_buffer)
 			free(m_image_buffer);
 		m_image_buffer = (BYTE*)malloc(m_image_x*m_image_y*2);
+
+		// 1088 fix
+		if (m_image_y == 1088)
+			m_image_y = 1080;
 
 		hr = S_OK;
 	}

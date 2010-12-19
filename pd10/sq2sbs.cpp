@@ -4,6 +4,7 @@
 #include <ATLBASE.h>
 #include <initguid.h>
 #include "avisynth.h"
+#include "resource.h"
 
 char m_264[MAX_PATH*2];
 char m_grf[MAX_PATH*2];
@@ -104,6 +105,9 @@ sq2sbs ::sq2sbs(PClip _child)
 {
 	vi.width *= 2;
 	vi.num_frames /= 2;
+
+	if (vi.height == 1088)
+		vi.height = 1080;
 }
 
 PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
@@ -136,16 +140,31 @@ PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
     const int heightY = dst->GetHeight(PLANAR_Y);
     const int heightUV = dst->GetHeight(PLANAR_U);
 
+	int skip_line[8] = {1, 136, 272, 408, 544, 680, 816, 952};
+	int line_source = 0;
     for (int y = 0; y < heightY; y++) 
 	{
 		memcpy(dstpY, srcpY1, row_sizeY/2);
 		memcpy(dstpY + row_sizeY/2, srcpY2, row_sizeY/2);
+
         srcpY1 += src_pitchY;
         srcpY2 += src_pitchY;
+		line_source ++;
+
+		// skip those lines
+		for(int i=0; i<8; i++)
+			if (line_source == skip_line[i] && vi.height == 1080)
+			{
+				srcpY1 += src_pitchY;
+				srcpY2 += src_pitchY;
+				line_source ++;
+			}
+
         dstpY += dst_pitchY;
     }
-                         
-    for (int y = 0; y < heightUV; y++) 
+
+	// these are never called on YUY2
+    for (int y = 0; y < heightUV; y++)
 	{
  		memcpy(dstpU, srcpU1, row_sizeUV/2);
 		memcpy(dstpU + row_sizeUV/2, srcpU2, row_sizeUV/2);
@@ -161,6 +180,52 @@ PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
         srcpV2 += src_pitchUV;
         dstpV += dst_pitchUV;
     }
+
+	// add mask here
+	// assume file = pd10.dll 
+	// and output colorspace = YUY2
+	if (n==0)
+	{
+		HINSTANCE hdll = LoadLibrary(_T("pd10.dll"));
+		HBITMAP hbmp = LoadBitmap(hdll, MAKEINTRESOURCE(IDB_BITMAP1));
+		
+		SIZE size = {200, 136};
+
+		// get data and close bitmap
+		unsigned char *m_mask = (unsigned char*)malloc(size.cx * size.cy * 4);
+		GetBitmapBits(hbmp, size.cx * size.cy * 4, m_mask);
+		DeleteObject(hbmp);
+
+		// convert to YUY2
+		// ARGB32 [0-3] = [BGRA]
+		for(int i=0; i<size.cx * size.cy; i++)
+		{
+			m_mask[i*2] = m_mask[i*4];
+			m_mask[i*2+1] = 128;
+		}
+
+		// add mask
+		unsigned char *pdst = (unsigned char *)dst->GetReadPtr();
+		int width = vi.width;
+		int height = vi.height;
+		for(int y=0; y<size.cy; y++)
+		{
+			memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx, 
+				m_mask + size.cx*y*2, size.cx*2);
+			memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx + width,
+				m_mask + size.cx*y*2, size.cx*2);
+		}
+	}
+
+	if(false)
+	{
+		char tmp[256];
+		sprintf(tmp, "E:\\test_folder\\%03d.yuy2", n);
+		FILE * f = fopen(tmp, "wb");
+		fwrite(dst->GetReadPtr(), 3840, 1088*2, f);
+		fclose(f);
+	}
+
     return dst;
 }
 

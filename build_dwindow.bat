@@ -19,4 +19,5 @@ pause
 F:\NSIS\makensisw.exe dwindow_NSIS\dwindow.nsi
 cd dwindow_NSIS
 set v=%DATE:~2,2%%DATE:~5,2%%DATE:~8,2%
+del dwindow_setup%v%.exe
 ren dwindow_setup.exe dwindow_setup%v%.exe

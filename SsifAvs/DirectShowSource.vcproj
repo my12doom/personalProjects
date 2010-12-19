@@ -272,6 +272,9 @@
 				RelativePath="directshow_source.h">
 			</File>
 			<File
+				RelativePath=".\resource.h">
+			</File>
+			<File
 				RelativePath=".\sq2sbs.h">
 			</File>
 		</Filter>
@@ -283,6 +286,9 @@
 			</File>
 			<File
 				RelativePath="directshow_source.rc">
+			</File>
+			<File
+				RelativePath=".\mask.bmp">
 			</File>
 			<File
 				RelativePath="..\..\resource.h">

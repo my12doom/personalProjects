@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -13,7 +13,26 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// 中文(中华人民共和国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BITMAP1             BITMAP                  "mask.bmp"
+#endif    // 中文(中华人民共和国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// 英语(美国) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 #ifdef _WIN32
@@ -21,7 +40,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
 #endif //_WIN32
 
-#ifndef _MAC
 /////////////////////////////////////////////////////////////////////////////
 //
 // Version
@@ -44,18 +62,15 @@ BEGIN
     BEGIN
         BLOCK "000004b0"
         BEGIN
-            VALUE "Comments", "Homepage: http://www.avisynth.org\0"
-            VALUE "CompanyName", "The Public\0"
-            VALUE "FileDescription", "Avisynth DirectShow Reader pluggin\0"
-            VALUE "FileVersion", "2, 5, 8, 6\0"
-            VALUE "InternalName", "DirectShowSource 2.5.8\0"
-            VALUE "LegalCopyright", "?2000-2008 Ben Rudiak-Gould and others\0"
-//          VALUE "LegalTrademarks", " \0"
-            VALUE "OriginalFilename", "DirectShowSource.dll\0"
-//          VALUE "PrivateBuild", " \0"
-            VALUE "ProductName", "Avisynth 2.5\0"
-            VALUE "ProductVersion", "2, 5, 8, 0\0"
-//          VALUE "SpecialBuild", " \0"
+            VALUE "Comments", "Homepage: http://www.avisynth.org"
+            VALUE "CompanyName", "The Public"
+            VALUE "FileDescription", "Avisynth DirectShow Reader pluggin"
+            VALUE "FileVersion", "2, 5, 8, 6"
+            VALUE "InternalName", "DirectShowSource 2.5.8"
+            VALUE "LegalCopyright", "?2000-2008 Ben Rudiak-Gould and others"
+            VALUE "OriginalFilename", "DirectShowSource.dll"
+            VALUE "ProductName", "Avisynth 2.5"
+            VALUE "ProductVersion", "2, 5, 8, 0"
         END
     END
     BLOCK "VarFileInfo"
@@ -64,35 +79,12 @@ BEGIN
     END
 END
 
-#endif    // !_MAC
-
-#endif    // English (U.S.) resources
+#endif    // 英语(美国) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Neutral (Sys. Default) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEUSD)
-#ifdef _WIN32
-LANGUAGE LANG_NEUTRAL, SUBLANG_SYS_DEFAULT
-#pragma code_page(1252)
-#endif //_WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-//IDI_ICON                ICON    DISCARDABLE     "..\\..\\..\\distrib\\AviSynth.ico"
-#endif    // Neutral (Sys. Default) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// English (Australia) resources
+// 英语(澳大利亚) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENA)
 #ifdef _WIN32
@@ -106,18 +98,18 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_AUS
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE DISCARDABLE 
+1 TEXTINCLUDE 
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE DISCARDABLE 
+2 TEXTINCLUDE 
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE DISCARDABLE 
+3 TEXTINCLUDE 
 BEGIN
     "\r\n"
     "\0"
@@ -125,7 +117,7 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (Australia) resources
+#endif    // 英语(澳大利亚) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
