@@ -34,7 +34,6 @@
  
 
 #include "directshow_source.h"
-#include "resource.h"
 #include <windows.h>
 static const GUID CLSID_SSIFSource = { 0x916e4c8d, 0xe37f, 0x4fd4, { 0x95, 0xf6, 0xa4, 0x4e, 0x51, 0x46, 0x2e, 0xdf } };
 
@@ -2100,42 +2099,6 @@ _continue:
       dssRPT3(dssCALL, "GetFrame: CFR Frame %d time span x100ns %I64d to %I64d\n", n,
               get_sample.GetSampleStartTime(), get_sample.GetSampleEndTime());
     }
-
-	// add mask here
-	// assume file = ssifavs.dll 
-	// and output colorspace = YUY2
-	if (n==0)
-	{
-		HINSTANCE hdll = LoadLibrary(_T("SsifAvs.dll"));
-		HBITMAP hbmp = LoadBitmap(hdll, MAKEINTRESOURCE(IDB_BITMAP1));
-		
-		SIZE size = {200, 136};
-
-		// get data and close bitmap
-		unsigned char *m_mask = (unsigned char*)malloc(size.cx * size.cy * 4);
-		GetBitmapBits(hbmp, size.cx * size.cy * 4, m_mask);
-		DeleteObject(hbmp);
-
-		// convert to YUY2
-		// ARGB32 [0-3] = [BGRA]
-		for(int i=0; i<size.cx * size.cy; i++)
-		{
-			m_mask[i*2] = m_mask[i*4];
-			m_mask[i*2+1] = 128;
-		}
-
-		// add mask
-		unsigned char *pdst = (unsigned char *)currentFrame->GetReadPtr();
-		int width = vi.width;
-		int height = vi.height;
-		for(int y=0; y<size.cy; y++)
-		{
-			memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx, 
-				m_mask + size.cx*y*2, size.cx*2);
-			memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx + width,
-				m_mask + size.cx*y*2, size.cx*2);
-		}
-	}
 
     return currentFrame;
   }

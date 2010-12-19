@@ -50,4 +50,5 @@ private:
 	int m_image_x;
 	int m_image_y;
 	BYTE *m_image_buffer;
+	BYTE *m_YUY2_buffer;
 };

@@ -97,7 +97,11 @@ class sq2sbs : public GenericVideoFilter
 {
 public:
     sq2sbs(PClip _child);
+	~sq2sbs();
     PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+
+protected:
+	char *m_YUY2_buffer;
 };
 
 sq2sbs ::sq2sbs(PClip _child)
@@ -108,41 +112,30 @@ sq2sbs ::sq2sbs(PClip _child)
 
 	if (vi.height == 1088)
 		vi.height = 1080;
+
+	vi.pixel_type = vi.CS_YV12;
+	m_YUY2_buffer = (char*) malloc(vi.width * vi.height *2);
+}
+
+sq2sbs::~sq2sbs()
+{
+	free(m_YUY2_buffer);
 }
 
 PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
 {
     PVideoFrame src1 = child->GetFrame(n*2, env);
 	PVideoFrame src2 = child->GetFrame(n*2+1, env);
-    PVideoFrame dst = env->NewVideoFrame(vi);
 
     const unsigned char* srcpY1 = src1->GetReadPtr(PLANAR_Y);
-    const unsigned char* srcpV1 = src1->GetReadPtr(PLANAR_V);    
-    const unsigned char* srcpU1 = src1->GetReadPtr(PLANAR_U);
     const unsigned char* srcpY2 = src2->GetReadPtr(PLANAR_Y);
-    const unsigned char* srcpV2 = src2->GetReadPtr(PLANAR_V);    
-    const unsigned char* srcpU2 = src2->GetReadPtr(PLANAR_U);
-
-    unsigned char* dstpY = dst->GetWritePtr(PLANAR_Y);
-    unsigned char* dstpV = dst->GetWritePtr(PLANAR_V);    
-    unsigned char* dstpU = dst->GetWritePtr(PLANAR_U);
-
     const int src_pitchY = src1->GetPitch(PLANAR_Y);
-    const int src_pitchUV = src1->GetPitch(PLANAR_V);
-    const int dst_pitchY = dst->GetPitch(PLANAR_Y);
-    const int dst_pitchUV = dst->GetPitch(PLANAR_U);
-
-    const int row_sizeY = dst->GetRowSize(PLANAR_Y); 
-    // Could also be PLANAR_Y_ALIGNED which would return a mod16 rowsize
-    const int row_sizeUV = dst->GetRowSize(PLANAR_U); 
-    // Could also be PLANAR_U_ALIGNED which would return a mod8 rowsize    
-                        
-    const int heightY = dst->GetHeight(PLANAR_Y);
-    const int heightUV = dst->GetHeight(PLANAR_U);
 
 	int skip_line[8] = {1, 136, 272, 408, 544, 680, 816, 952};
 	int line_source = 0;
-    for (int y = 0; y < heightY; y++) 
+	int row_sizeY = vi.width * 2;
+	char *dstpY = m_YUY2_buffer;
+	for (int y = 0; y < vi.height; y++) 
 	{
 		memcpy(dstpY, srcpY1, row_sizeY/2);
 		memcpy(dstpY + row_sizeY/2, srcpY2, row_sizeY/2);
@@ -160,30 +153,12 @@ PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
 				line_source ++;
 			}
 
-        dstpY += dst_pitchY;
-    }
-
-	// these are never called on YUY2
-    for (int y = 0; y < heightUV; y++)
-	{
- 		memcpy(dstpU, srcpU1, row_sizeUV/2);
-		memcpy(dstpU + row_sizeUV/2, srcpU2, row_sizeUV/2);
-
-		memcpy(dstpV, srcpV1, row_sizeUV/2);
-		memcpy(dstpV + row_sizeUV/2, srcpV2, row_sizeUV/2);
-
-		srcpU1 += src_pitchUV;
-		srcpU2 += src_pitchUV;
-        dstpU += dst_pitchUV;
-
-        srcpV1 += src_pitchUV;
-        srcpV2 += src_pitchUV;
-        dstpV += dst_pitchUV;
+        dstpY += row_sizeY;
     }
 
 	// add mask here
 	// assume file = pd10.dll 
-	// and output colorspace = YUY2
+	// and colorspace = YUY2
 	if (n==0)
 	{
 		HINSTANCE hdll = LoadLibrary(_T("pd10.dll"));
@@ -205,7 +180,7 @@ PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
 		}
 
 		// add mask
-		unsigned char *pdst = (unsigned char *)dst->GetReadPtr();
+		char *pdst = m_YUY2_buffer;
 		int width = vi.width;
 		int height = vi.height;
 		for(int y=0; y<size.cy; y++)
@@ -215,8 +190,45 @@ PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
 			memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx + width,
 				m_mask + size.cx*y*2, size.cx*2);
 		}
+
+		FreeLibrary(hdll);
 	}
 
+
+	// my special convert to YV12
+    PVideoFrame dst = env->NewVideoFrame(vi);
+	unsigned char* pdst = (unsigned char*) dst->GetReadPtr();
+	unsigned char* psrc = (unsigned char*)m_YUY2_buffer;
+
+	// copy Y
+	for(int y=0; y<vi.height; y++)
+	{
+		for(int x=0; x<vi.width; x++)
+		{
+			pdst[x] = psrc[x*2];
+
+		}
+		pdst += vi.width;
+		psrc += vi.width*2;
+	}
+
+	// copy UV
+	psrc = (unsigned char*)m_YUY2_buffer;
+	unsigned char *pdst2 = pdst+vi.width*vi.height/4;
+	for(int y=0; y<vi.height/2; y++)
+	{
+		for(int x=0; x<vi.width/2; x++)
+		{
+			pdst[x]  = psrc[x*4 +3];
+			pdst2[x] = psrc[x*4 +1]; 
+		}
+
+		psrc += vi.width*4;// 2 line
+		pdst += vi.width/2;// 1 line (half width)
+		pdst2+= vi.width/2;
+	}
+
+	// debug output
 	if(false)
 	{
 		char tmp[256];

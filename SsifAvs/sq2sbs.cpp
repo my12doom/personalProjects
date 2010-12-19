@@ -1,4 +1,5 @@
 #include "sq2sbs.h"
+#include "resource.h"
 
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 {
@@ -145,6 +146,7 @@ sq2sbs::sq2sbs(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr)
 {
 	m_t = m_image_x = m_image_y = 0;
 	m_image_buffer = NULL;
+	m_YUY2_buffer = NULL;
 }
 
 sq2sbs::~sq2sbs()
@@ -153,6 +155,11 @@ sq2sbs::~sq2sbs()
 		{
 			free(m_image_buffer);
 			m_image_buffer = NULL;
+		}
+	if (m_YUY2_buffer)
+		{
+			free(m_YUY2_buffer);
+			m_YUY2_buffer = NULL;
 		}
 }
 
@@ -165,9 +172,9 @@ HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 
 	int fn;
 	if (m_image_x == 1280)
-		fn = (double)(TimeStart+m_t)/10000*120/1001 + 0.5;
+		fn = (int)((double)(TimeStart+m_t)/10000*120/1001 + 0.5);
 	else
-		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
+		fn = (int)((double)(TimeStart+m_t)/10000*48/1001 + 0.5);
 
 	int left = 1-(fn & 1);
 
@@ -186,13 +193,6 @@ HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 		if(pOut)
 		{
 			const int byte_per_pixel = 2;
-			// output pointer and stride
-			BYTE *pdst = NULL;
-			pOut->GetPointer(&pdst);
-			int out_size = pOut->GetActualDataLength();
-			int stride = out_size / m_image_y / byte_per_pixel;
-			if (stride < m_image_x*2)
-				return E_UNEXPECTED;
 
 			// find the right eye image
 			int offset = m_image_x * byte_per_pixel;
@@ -201,9 +201,9 @@ HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			int line_source = 0;
 			for (int y=0; y<m_image_y; y++)
 			{
-				memcpy(pdst+y * stride*byte_per_pixel + offset,
+				memcpy(m_YUY2_buffer+y * (m_image_x*2) *byte_per_pixel + offset,
 					psrc + m_image_x * line_source *byte_per_pixel,  m_image_x*byte_per_pixel);								// copy right eye
-				memcpy(pdst+y * stride*byte_per_pixel,
+				memcpy(m_YUY2_buffer+y * (m_image_x*2) *byte_per_pixel,
 					m_image_buffer + m_image_x * line_source*byte_per_pixel,  m_image_x*byte_per_pixel);						// copy left eye
 
 				line_source ++;
@@ -212,8 +212,85 @@ HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 						line_source++;
 			}
 
-			// set sample property
+			// add mask here
+			// assume file = ssifavs.dll 
+			// and output colorspace = YUY2
+			if (fn==1)
+			{
+				HINSTANCE hdll = LoadLibrary(_T("SsifAvs.dll"));
+				HBITMAP hbmp = LoadBitmap(hdll, MAKEINTRESOURCE(IDB_BITMAP1));
+				
+				SIZE size = {200, 136};
 
+				// get data and close bitmap
+				unsigned char *m_mask = (unsigned char*)malloc(size.cx * size.cy * 4);
+				GetBitmapBits(hbmp, size.cx * size.cy * 4, m_mask);
+				DeleteObject(hbmp);
+
+				// convert to YUY2
+				// ARGB32 [0-3] = [BGRA]
+				for(int i=0; i<size.cx * size.cy; i++)
+				{
+					m_mask[i*2] = m_mask[i*4];
+					m_mask[i*2+1] = 128;
+				}
+
+				// add mask
+				unsigned char *pdst = (unsigned char *)m_YUY2_buffer;
+				int width = m_image_x * 2;
+				int height = m_image_y;
+				for(int y=0; y<size.cy; y++)
+				{
+					memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx, 
+						m_mask + size.cx*y*2, size.cx*2);
+					memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx + width,
+						m_mask + size.cx*y*2, size.cx*2);
+				}
+
+				FreeLibrary(hdll);
+			}
+
+			// output pointer and stride
+			BYTE *pdst = NULL;
+			pOut->GetPointer(&pdst);
+			int out_size = pOut->GetActualDataLength();
+			int stride = out_size *2 /3/ m_image_y ;
+			if (stride < m_image_x*2)
+				return E_UNEXPECTED;
+
+			// my special convert to YV12
+			unsigned char* psrc = (unsigned char*)m_YUY2_buffer;
+
+			// copy Y
+			for(int y=0; y<m_image_y; y++)
+			{
+				for(int x=0; x<m_image_x*2; x++)
+				{
+					pdst[x] = psrc[x*2];
+				}
+				pdst += stride;
+				psrc += m_image_x*4;
+			}
+
+			// copy UV
+			
+			psrc = (unsigned char*)m_YUY2_buffer;
+			unsigned char *pdst2 = pdst + stride*m_image_y/4;
+			for(int y=0; y<m_image_y/2; y++)
+			{
+				for(int x=0; x<m_image_x; x++)
+				{
+					pdst[x]  = psrc[x*4 +3];
+					pdst2[x] = psrc[x*4 +1]; 
+				}
+
+				psrc += m_image_x*8;// 2 line
+				pdst += stride/2;// 1 line (half width)
+				pdst2+= stride/2;
+			}
+			
+
+			// set sample property
 			pOut->SetTime(&TimeStart, &TimeEnd);
 			pOut->SetMediaTime(&MediaStart,&MediaEnd);
 			pOut->SetSyncPoint(pIn->IsSyncPoint() == S_OK);
@@ -235,7 +312,6 @@ HRESULT sq2sbs::CheckInputType(const CMediaType *mtIn)
 		m_image_x = pbih->biWidth;
 		m_image_y = pbih->biHeight;
 
-
 		// malloc image buffer
 		if (m_image_buffer)
 		{
@@ -243,6 +319,13 @@ HRESULT sq2sbs::CheckInputType(const CMediaType *mtIn)
 			m_image_buffer = NULL;
 		}
 		m_image_buffer = (BYTE*)malloc(m_image_x*m_image_y*2);
+
+		if (m_YUY2_buffer)
+		{
+			free(m_YUY2_buffer);
+			m_YUY2_buffer = NULL;
+		}
+		m_YUY2_buffer = (BYTE*)malloc(m_image_x*2 *m_image_y*2);
 
 		// 1088 fix
 		if (m_image_y == 1088)
@@ -259,7 +342,7 @@ HRESULT sq2sbs::CheckTransform(const CMediaType *mtIn, const CMediaType *mtOut)
 	GUID subtypeIn = *mtIn->Subtype();
 	GUID subtypeOut = *mtOut->Subtype();
 
-	if(subtypeIn == subtypeOut && subtypeIn == MEDIASUBTYPE_YUY2)
+	if(subtypeIn == MEDIASUBTYPE_YUY2 && subtypeOut == MEDIASUBTYPE_YV12)
 		return S_OK;
 
 	return VFW_E_INVALID_MEDIA_TYPE;
@@ -275,7 +358,7 @@ HRESULT sq2sbs::DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pP
 	CMediaType *inMediaType = &m_pInput->CurrentMediaType();
 
 	pProperties->cBuffers = 1;
-	pProperties->cbBuffer = m_image_x * 2 * m_image_y * 2;
+	pProperties->cbBuffer = m_image_x * 2 * m_image_y * 3/2;
 
 	ALLOCATOR_PROPERTIES Actual;
 	hr = pAlloc->SetProperties(pProperties,&Actual);
@@ -305,8 +388,8 @@ HRESULT sq2sbs::GetMediaType(int iPosition, CMediaType *pMediaType)
 		VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)inMediaType->Format();
 		pMediaType->SetType(&MEDIATYPE_Video);
 		pMediaType->SetFormatType(&FORMAT_VideoInfo2);
-		pMediaType->SetSubtype(inMediaType->Subtype());
-		pMediaType->SetSampleSize(m_image_x*2*m_image_y*2);
+		pMediaType->SetSubtype(&MEDIASUBTYPE_YV12);
+		pMediaType->SetSampleSize(m_image_x*2*m_image_y*3/2);
 		pMediaType->SetTemporalCompression(FALSE);
 
 		VIDEOINFOHEADER2 *vihOut = (VIDEOINFOHEADER2 *)pMediaType->ReallocFormatBuffer(sizeof(VIDEOINFOHEADER2));
