@@ -280,7 +280,7 @@ void h264_parse_sequence_parameter_set (h264_decode_t *dec, CBitstream *bs)
 	temp = bs->GetBits(1);
 	printf("   Seq Scaling List[%u] Present Flag: %u\n", ix, temp); 
 	if (temp) {
-	  scaling_list(ix, ix < 6 ? 16 : 64, bs);
+	  //scaling_list(ix, ix < 6 ? 16 : 64, bs);
 	}
       }
     }
@@ -418,7 +418,7 @@ void h264_parse_pic_parameter_set (h264_decode_t *dec, CBitstream *bs)
 	temp = bs->GetBits(1);
 	printf("   Pic Scaling List[%u] Present Flag: %u\n", ix, temp); 
 	if (temp) {
-	  scaling_list(ix, ix < 6 ? 16 : 64, bs);
+	  //scaling_list(ix, ix < 6 ? 16 : 64, bs);
 	}
       }
     }
@@ -825,6 +825,7 @@ uint8_t h264_parse_nal (h264_decode_t *dec, CBitstream *bs)
     dec->nal_unit_type = type = bs->GetBits(5);
     printf(" ref %u type %u %s\n", dec->nal_ref_idc, type, nal_unit_type(type));
     switch (type) {
+	case 20:
     case H264_NAL_TYPE_NON_IDR_SLICE:
     case H264_NAL_TYPE_IDR_SLICE:
       h264_slice_layer_without_partitioning(dec, bs);
