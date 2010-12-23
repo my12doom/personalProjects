@@ -366,8 +366,7 @@ void CDWindowSSP::prepare_mask()
 	// ARGB32 [0-3] = [BGRA]
 	for(int i=0; i<m_mask_width * m_mask_height; i++)
 	{
-		m_mask[i*2] = m_mask[i*4];
-		m_mask[i*2+1] = 128;
+		m_mask[i] = m_mask[i*4];
 	}
 
 	DeleteObject(SelectObject(hdcBmp, hbmOld));
@@ -442,7 +441,6 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 	if (left)
 	{
 		m_buffer_has_data = true;
-		//memcpy(m_image_buffer, psrc, data_size);
  		BYTE *pdstV = m_image_buffer + stride*m_image_y;
 		BYTE *pdstU = pdstV + stride*m_image_y/4;
 
@@ -471,84 +469,18 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			// copy to pOut;
 			memcpy(pdst, m_image_buffer, out_size);
 
-			/*
-			const int byte_per_pixel = 2;
-
-			// find the right eye image
-			int offset = m_image_x * byte_per_pixel;
-
-			int skip_line[8] = {1, 136, 272, 408, 544, 680, 816, 952};
-			int line_source = 0;
-			for (int y=0; y<m_image_y; y++)
-			{
-				memcpy(m_YUY2_buffer+y * (m_image_x*2) *byte_per_pixel + offset,
-					psrc + m_image_x * line_source *byte_per_pixel,  m_image_x*byte_per_pixel);								// copy right eye
-				memcpy(m_YUY2_buffer+y * (m_image_x*2) *byte_per_pixel,
-					m_image_buffer + m_image_x * line_source*byte_per_pixel,  m_image_x*byte_per_pixel);						// copy left eye
-
-				line_source ++;
-				for(int i=0; i<8; i++)
-					if (skip_line[i] == line_source && m_image_y == 1080)
-						line_source++;
-
-			}
 
 			// mask
 			if (m_frm>0)
 			{
 				for(int y=0; y<m_mask_height; y++)
 				{
-					memcpy(m_YUY2_buffer+y*(m_image_x*2)*byte_per_pixel, 
-						m_mask + m_mask_width*y*byte_per_pixel, m_mask_width*byte_per_pixel);
-					memcpy(m_YUY2_buffer+y*(m_image_x*2)*byte_per_pixel + offset, 
-						m_mask + m_mask_width*y*byte_per_pixel, m_mask_width*byte_per_pixel);
+					memcpy(pdst+y*stride,
+						m_mask + m_mask_width*y, m_mask_width);
+					memcpy(pdst+y*stride + m_image_x,
+						m_mask + m_mask_width*y, m_mask_width);
 				}
 			}
-
-
-			
-			// asm YUY2-YV12 convert?
-			BYTE *pdstV = pdst + stride*m_image_y;
-			BYTE *pdstU = pdstV + stride*m_image_y/4;
-			isse_yuy2_to_yv12_r(m_YUY2_buffer, m_image_x*4, m_image_x*4, pdst, pdstU, pdstV, stride, stride/2, m_image_y);
-			*/
-			
-
-			
-			/*
-			// my special convert to YV12
-			unsigned char* psrc = (unsigned char*)m_YUY2_buffer;
-
-			// copy Y
-			for(int y=0; y<m_image_y; y++)
-			{
-				for(int x=0; x<m_image_x*2; x++)
-				{
-					pdst[x] = psrc[x*2];
-				}
-				pdst += stride;
-				psrc += m_image_x*4;
-			}
-
-			// copy UV
-			
-			psrc = (unsigned char*)m_YUY2_buffer;
-			unsigned char *pdst2 = pdst + stride*m_image_y/4;
-			for(int y=0; y<m_image_y/2; y++)
-			{
-				for(int x=0; x<m_image_x; x++)
-				{
-					pdst[x]  = psrc[x*4 +3];
-					pdst2[x] = psrc[x*4 +1]; 
-				}
-
-				psrc += m_image_x*8;// 2 line
-				pdst += stride/2;// 1 line (half width)
-				pdst2+= stride/2;
-			}
-			*/
-			
-
 
 			// set sample property
 			pOut->SetTime(&TimeStart, &TimeEnd);

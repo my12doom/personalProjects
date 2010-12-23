@@ -68,12 +68,11 @@ void CDWindowExtenderStereo::prepare_mask()
 	m_mask = (unsigned char*)malloc(m_mask_width * m_mask_height * 4);
 	GetBitmapBits(hbm, m_mask_width * m_mask_height * 4, m_mask);
 
-	// convert to YUY2
+	// convert to YV12
 	// ARGB32 [0-3] = [BGRA]
 	for(int i=0; i<m_mask_width * m_mask_height; i++)
 	{
-		m_mask[i*2] = m_mask[i*4];
-		m_mask[i*2+1] = 128;
+		m_mask[i] = m_mask[i*4];
 	}
 
 	DeleteObject(SelectObject(hdcBmp, hbmOld));
@@ -716,8 +715,8 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 				{
 					// right eye from pIn
 					BYTE *Y = pDst + letterbox_top * stride;
-					BYTE *V = pDstV + letterbox_top*stride/4;
-					BYTE *U = pDstU + letterbox_top*stride/4;
+					BYTE *V = pDstV + letterbox_top/2*stride/2;
+					BYTE *U = pDstU + letterbox_top/2*stride/2;
 					if (m_image_y == 1080)
 						my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, Y, U, V, stride, stride/2);
 					else
@@ -732,8 +731,16 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 					memset(pDstV+(stride/2)*(line/2), 128, (letterbox_bottom/2) * stride/2);
 					memset(pDstU+(stride/2)*(line/2), 128, (letterbox_bottom/2) * stride/2);
 				}
+
+				// mask
+				m_frm --;
+				if (m_frm>0)
+				for (int y=0; y<m_mask_height; y++)
+					memcpy(pDst+y * stride,
+						m_mask +m_mask_width * y,  m_mask_width);
 			}
 		}
+
 
 		/*
 		for(int i=0; i<2; i++)
