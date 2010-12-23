@@ -39,7 +39,7 @@
 				ModuleDefinitionFile="dll.def"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/mySplitter.pdb"
-				SubSystem="2"
+				SubSystem="0"
 				ImportLibrary="$(OutDir)/mySplitter.lib"
 				TargetMachine="1"/>
 			<Tool
@@ -177,6 +177,9 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
+				RelativePath=".\asm.cpp">
+			</File>
+			<File
 				RelativePath=".\dll.def">
 			</File>
 			<File
@@ -211,6 +214,9 @@
 			Name="Í·ÎÄ¼þ"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			<File
+				RelativePath=".\asm.h">
+			</File>
 			<File
 				RelativePath=".\extender.h">
 			</File>

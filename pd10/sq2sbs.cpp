@@ -5,6 +5,7 @@
 #include <initguid.h>
 #include "avisynth.h"
 #include "resource.h"
+#include "..\mysplitter\asm.h"
 
 char m_264[MAX_PATH*2];
 char m_grf[MAX_PATH*2];
@@ -97,11 +98,7 @@ class sq2sbs : public GenericVideoFilter
 {
 public:
     sq2sbs(PClip _child);
-	~sq2sbs();
     PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
-
-protected:
-	char *m_YUY2_buffer;
 };
 
 sq2sbs ::sq2sbs(PClip _child)
@@ -114,13 +111,8 @@ sq2sbs ::sq2sbs(PClip _child)
 		vi.height = 1080;
 
 	vi.pixel_type = vi.CS_YV12;
-	m_YUY2_buffer = (char*) malloc(vi.width * vi.height *2);
 }
 
-sq2sbs::~sq2sbs()
-{
-	free(m_YUY2_buffer);
-}
 
 PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
 {
@@ -131,34 +123,27 @@ PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
     const unsigned char* srcpY2 = src2->GetReadPtr(PLANAR_Y);
     const int src_pitchY = src1->GetPitch(PLANAR_Y);
 
-	int skip_line[8] = {1, 136, 272, 408, 544, 680, 816, 952};
-	int line_source = 0;
-	int row_sizeY = vi.width * 2;
-	char *dstpY = m_YUY2_buffer;
-	for (int y = 0; y < vi.height; y++) 
+    PVideoFrame dst = env->NewVideoFrame(vi);
+	unsigned char* pdst = (unsigned char*) dst->GetReadPtr();
+	
+	if(vi.height == 1080)
 	{
-		memcpy(dstpY, srcpY1, row_sizeY/2);
-		memcpy(dstpY + row_sizeY/2, srcpY2, row_sizeY/2);
-
-        srcpY1 += src_pitchY;
-        srcpY2 += src_pitchY;
-		line_source ++;
-
-		// skip those lines
-		for(int i=0; i<8; i++)
-			if (line_source == skip_line[i] && vi.height == 1080)
-			{
-				srcpY1 += src_pitchY;
-				srcpY2 += src_pitchY;
-				line_source ++;
-			}
-
-        dstpY += row_sizeY;
-    }
+		BYTE *pdstV = pdst + 3840*1080;
+		BYTE *pdstU = pdstV + 1920*540;
+		my_1088_to_YV12(srcpY1, 3840, 3840, pdst, pdstU, pdstV, 3840, 1920);
+		my_1088_to_YV12(srcpY2, 3840, 3840, pdst+1920, pdstU+960, pdstV+960, 3840, 1920);
+	}
+	else
+	{
+		BYTE *pdstV = pdst + 2560*720;
+		BYTE *pdstU = pdstV + 1280*360;
+		isse_yuy2_to_yv12_r(srcpY1, 2560, 2560, pdst, pdstU, pdstV, 2560, 1280, 720);
+		isse_yuy2_to_yv12_r(srcpY2, 2560, 2560, pdst+1280, pdstU+640, pdstV+640, 2560, 1280, 720);
+	}
 
 	// add mask here
 	// assume file = pd10.dll 
-	// and colorspace = YUY2
+	// and colorspace = YV12
 	if (n==0)
 	{
 		HINSTANCE hdll = LoadLibrary(_T("pd10.dll"));
@@ -167,75 +152,29 @@ PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
 		SIZE size = {200, 136};
 
 		// get data and close bitmap
-		unsigned char *m_mask = (unsigned char*)malloc(size.cx * size.cy * 4);
-		GetBitmapBits(hbmp, size.cx * size.cy * 4, m_mask);
+		unsigned char *m_mask = (unsigned char*)malloc(size.cx * size.cy*4);
+		GetBitmapBits(hbmp, size.cx * size.cy*4, m_mask);
 		DeleteObject(hbmp);
+		FreeLibrary(hdll);
 
-		// convert to YUY2
-		// ARGB32 [0-3] = [BGRA]
-		for(int i=0; i<size.cx * size.cy; i++)
+		// convert to YV12
+		for(int i=0; i<size.cx*size.cy; i++)
 		{
-			m_mask[i*2] = m_mask[i*4];
-			m_mask[i*2+1] = 128;
+			m_mask[i] = m_mask[i*4];
 		}
 
 		// add mask
-		char *pdst = m_YUY2_buffer;
 		int width = vi.width;
 		int height = vi.height;
 		for(int y=0; y<size.cy; y++)
 		{
-			memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx, 
-				m_mask + size.cx*y*2, size.cx*2);
-			memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx + width,
-				m_mask + size.cx*y*2, size.cx*2);
+			memcpy(pdst+(y+height/2-size.cy/2)*width +width/4-size.cx/2, 
+				m_mask + size.cx*y, size.cx);
+			memcpy(pdst+(y+height/2-size.cy/2)*width +width/4-size.cx/2 + width/2,
+				m_mask + size.cx*y, size.cx);
 		}
 
-		FreeLibrary(hdll);
-	}
-
-
-	// my special convert to YV12
-    PVideoFrame dst = env->NewVideoFrame(vi);
-	unsigned char* pdst = (unsigned char*) dst->GetReadPtr();
-	unsigned char* psrc = (unsigned char*)m_YUY2_buffer;
-
-	// copy Y
-	for(int y=0; y<vi.height; y++)
-	{
-		for(int x=0; x<vi.width; x++)
-		{
-			pdst[x] = psrc[x*2];
-
-		}
-		pdst += vi.width;
-		psrc += vi.width*2;
-	}
-
-	// copy UV
-	psrc = (unsigned char*)m_YUY2_buffer;
-	unsigned char *pdst2 = pdst+vi.width*vi.height/4;
-	for(int y=0; y<vi.height/2; y++)
-	{
-		for(int x=0; x<vi.width/2; x++)
-		{
-			pdst[x]  = psrc[x*4 +3];
-			pdst2[x] = psrc[x*4 +1]; 
-		}
-
-		psrc += vi.width*4;// 2 line
-		pdst += vi.width/2;// 1 line (half width)
-		pdst2+= vi.width/2;
-	}
-
-	// debug output
-	if(false)
-	{
-		char tmp[256];
-		sprintf(tmp, "E:\\test_folder\\%03d.yuy2", n);
-		FILE * f = fopen(tmp, "wb");
-		fwrite(dst->GetReadPtr(), 3840, 1088*2, f);
-		fclose(f);
+		free(m_mask);
 	}
 
     return dst;

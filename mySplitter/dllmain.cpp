@@ -233,8 +233,8 @@ const AMOVIESETUP_FILTER sudDWindowSSP =
 
 CFactoryTemplate g_Templates[] = 
 {
-    { g_wszYV12StereoMixer, &CLSID_YV12StereoMixer, CYV12StereoMixer::CreateInstance, NULL, &sudYV12StereoMixer },
-	{ g_wszYV12MonoMixer,	&CLSID_YV12MonoMixer,	CYV12MonoMixer::CreateInstance,   NULL, &sudYV12MonoMixer	},
+    //{ g_wszYV12StereoMixer, &CLSID_YV12StereoMixer, CYV12StereoMixer::CreateInstance, NULL, &sudYV12StereoMixer },
+	//{ g_wszYV12MonoMixer,	&CLSID_YV12MonoMixer,	CYV12MonoMixer::CreateInstance,   NULL, &sudYV12MonoMixer	},
 	{ g_wszDWindowExtenderMono,	&CLSID_DWindowMono,	CDWindowExtenderMono::CreateInstance,   NULL, &sudDWindowExtenderMono	},
 	{ g_wszDWindowExtenderStereo,	&CLSID_DWindowStereo,	CDWindowExtenderStereo::CreateInstance,   NULL, &sudDWindowExtenderStereo	},
 	{ g_wszDWindowSSP,	&CLSID_DWindowSSP,	CDWindowSSP::CreateInstance,   NULL, &sudDWindowSSP	}

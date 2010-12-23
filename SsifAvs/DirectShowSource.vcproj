@@ -231,6 +231,9 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
+				RelativePath="..\mySplitter\asm.cpp">
+			</File>
+			<File
 				RelativePath="directshow_source.cpp">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -265,6 +268,9 @@
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl">
+			<File
+				RelativePath="..\mySplitter\asm.h">
+			</File>
 			<File
 				RelativePath="avisynth.h">
 			</File>

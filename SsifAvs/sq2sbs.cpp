@@ -1,5 +1,6 @@
 #include "sq2sbs.h"
 #include "resource.h"
+#include "..\mysplitter\asm.h"
 
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 {
@@ -146,7 +147,6 @@ sq2sbs::sq2sbs(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr)
 {
 	m_t = m_image_x = m_image_y = 0;
 	m_image_buffer = NULL;
-	m_YUY2_buffer = NULL;
 }
 
 sq2sbs::~sq2sbs()
@@ -155,11 +155,6 @@ sq2sbs::~sq2sbs()
 		{
 			free(m_image_buffer);
 			m_image_buffer = NULL;
-		}
-	if (m_YUY2_buffer)
-		{
-			free(m_YUY2_buffer);
-			m_YUY2_buffer = NULL;
 		}
 }
 
@@ -176,119 +171,45 @@ HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 	else
 		fn = (int)((double)(TimeStart+m_t)/10000*48/1001 + 0.5);
 
-	int left = 1-(fn & 1);
+	int left = 1-(fn & 1); 
 
 
+	// pointer and stride
 	BYTE *psrc = NULL;
 	pIn->GetPointer(&psrc);
-	LONG data_size = pIn->GetActualDataLength();
+	BYTE *pdst = NULL;
+	pOut->GetPointer(&pdst);
+	int out_size = pOut->GetActualDataLength();
+	int stride = out_size *2 /3/ m_image_y ;
+	if (stride < m_image_x*2)
+		return E_UNEXPECTED;
 
 	if (left)
 	{
-		memcpy(m_image_buffer, psrc, data_size);
+ 		BYTE *pdstV = m_image_buffer + stride*m_image_y;
+		BYTE *pdstU = pdstV + stride*m_image_y/4;
+
+		if (m_image_y == 1080)
+			my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, m_image_buffer, pdstU, pdstV, m_image_x*2, m_image_x);
+		else
+			isse_yuy2_to_yv12_r(psrc, m_image_x*2, m_image_x*2, m_image_buffer, pdstU, pdstV, m_image_x*2, m_image_x, m_image_y);
 		return S_FALSE;
 	}
 	else
 	{
 		if(pOut)
 		{
-			const int byte_per_pixel = 2;
+			// right half
+			BYTE *pdstY = m_image_buffer + m_image_x;
+			BYTE *pdstV = m_image_buffer + stride*m_image_y + m_image_x/2;
+			BYTE *pdstU = pdstV + stride*m_image_y/4;
+			if (m_image_y == 1080)
+				my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, pdstY, pdstU, pdstV, m_image_x*2, m_image_x);
+			else
+				isse_yuy2_to_yv12_r(psrc, m_image_x*2, m_image_x*2, pdstY, pdstU, pdstV, m_image_x*2, m_image_x, m_image_y);
 
-			// find the right eye image
-			int offset = m_image_x * byte_per_pixel;
-
-			int skip_line[8] = {1, 136, 272, 408, 544, 680, 816, 952};
-			int line_source = 0;
-			for (int y=0; y<m_image_y; y++)
-			{
-				memcpy(m_YUY2_buffer+y * (m_image_x*2) *byte_per_pixel + offset,
-					psrc + m_image_x * line_source *byte_per_pixel,  m_image_x*byte_per_pixel);								// copy right eye
-				memcpy(m_YUY2_buffer+y * (m_image_x*2) *byte_per_pixel,
-					m_image_buffer + m_image_x * line_source*byte_per_pixel,  m_image_x*byte_per_pixel);						// copy left eye
-
-				line_source ++;
-				for(int i=0; i<8; i++)
-					if (skip_line[i] == line_source && m_image_y == 1080)
-						line_source++;
-			}
-
-			// add mask here
-			// assume file = ssifavs.dll 
-			// and output colorspace = YUY2
-			if (fn==1)
-			{
-				HINSTANCE hdll = LoadLibrary(_T("SsifAvs.dll"));
-				HBITMAP hbmp = LoadBitmap(hdll, MAKEINTRESOURCE(IDB_BITMAP1));
-				
-				SIZE size = {200, 136};
-
-				// get data and close bitmap
-				unsigned char *m_mask = (unsigned char*)malloc(size.cx * size.cy * 4);
-				GetBitmapBits(hbmp, size.cx * size.cy * 4, m_mask);
-				DeleteObject(hbmp);
-
-				// convert to YUY2
-				// ARGB32 [0-3] = [BGRA]
-				for(int i=0; i<size.cx * size.cy; i++)
-				{
-					m_mask[i*2] = m_mask[i*4];
-					m_mask[i*2+1] = 128;
-				}
-
-				// add mask
-				unsigned char *pdst = (unsigned char *)m_YUY2_buffer;
-				int width = m_image_x * 2;
-				int height = m_image_y;
-				for(int y=0; y<size.cy; y++)
-				{
-					memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx, 
-						m_mask + size.cx*y*2, size.cx*2);
-					memcpy(pdst+(y+height/2-size.cy/2)*width*2 +width/2-size.cx + width,
-						m_mask + size.cx*y*2, size.cx*2);
-				}
-
-				FreeLibrary(hdll);
-			}
-
-			// output pointer and stride
-			BYTE *pdst = NULL;
-			pOut->GetPointer(&pdst);
-			int out_size = pOut->GetActualDataLength();
-			int stride = out_size *2 /3/ m_image_y ;
-			if (stride < m_image_x*2)
-				return E_UNEXPECTED;
-
-			// my special convert to YV12
-			unsigned char* psrc = (unsigned char*)m_YUY2_buffer;
-
-			// copy Y
-			for(int y=0; y<m_image_y; y++)
-			{
-				for(int x=0; x<m_image_x*2; x++)
-				{
-					pdst[x] = psrc[x*2];
-				}
-				pdst += stride;
-				psrc += m_image_x*4;
-			}
-
-			// copy UV
-			
-			psrc = (unsigned char*)m_YUY2_buffer;
-			unsigned char *pdst2 = pdst + stride*m_image_y/4;
-			for(int y=0; y<m_image_y/2; y++)
-			{
-				for(int x=0; x<m_image_x; x++)
-				{
-					pdst[x]  = psrc[x*4 +3];
-					pdst2[x] = psrc[x*4 +1]; 
-				}
-
-				psrc += m_image_x*8;// 2 line
-				pdst += stride/2;// 1 line (half width)
-				pdst2+= stride/2;
-			}
-			
+			// copy to pOut;
+			memcpy(pdst, m_image_buffer, out_size);
 
 			// set sample property
 			pOut->SetTime(&TimeStart, &TimeEnd);
@@ -297,6 +218,42 @@ HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			pOut->SetPreroll(pIn->IsPreroll() == S_OK);
 			pOut->SetDiscontinuity(pIn->IsDiscontinuity() == S_OK);
 		}
+	}
+
+	// add mask here
+	// assume file = SsifAvs.dll 
+	// and colorspace = YV12
+	if (fn==1)
+	{
+		HINSTANCE hdll = LoadLibrary(_T("SsifAvs.dll"));
+		HBITMAP hbmp = LoadBitmap(hdll, MAKEINTRESOURCE(IDB_BITMAP1));
+		
+		SIZE size = {200, 136};
+
+		// get data and close bitmap
+		unsigned char *m_mask = (unsigned char*)malloc(size.cx * size.cy*4);
+		GetBitmapBits(hbmp, size.cx * size.cy*4, m_mask);
+		DeleteObject(hbmp);
+		FreeLibrary(hdll);
+
+		// convert to YV12
+		for(int i=0; i<size.cx*size.cy; i++)
+		{
+			m_mask[i] = m_mask[i*4];
+		}
+
+		// add mask
+		int width = m_image_x*2;
+		int height = m_image_y;
+		for(int y=0; y<size.cy; y++)
+		{
+			memcpy(pdst+(y+height/2-size.cy/2)*width +width/4-size.cx/2, 
+				m_mask + size.cx*y, size.cx);
+			memcpy(pdst+(y+height/2-size.cy/2)*width +width/4-size.cx/2 + width/2,
+				m_mask + size.cx*y, size.cx);
+		}
+
+		free(m_mask);
 	}
 	return S_OK;
 }
@@ -318,14 +275,7 @@ HRESULT sq2sbs::CheckInputType(const CMediaType *mtIn)
 			free(m_image_buffer);
 			m_image_buffer = NULL;
 		}
-		m_image_buffer = (BYTE*)malloc(m_image_x*m_image_y*2);
-
-		if (m_YUY2_buffer)
-		{
-			free(m_YUY2_buffer);
-			m_YUY2_buffer = NULL;
-		}
-		m_YUY2_buffer = (BYTE*)malloc(m_image_x*2 *m_image_y*2);
+		m_image_buffer = (BYTE*)malloc(m_image_x*2*m_image_y*3/2);
 
 		// 1088 fix
 		if (m_image_y == 1088)

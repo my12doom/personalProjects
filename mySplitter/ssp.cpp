@@ -1,6 +1,8 @@
 #include "ssp.h"
 #include <windows.h>
 
+#include "asm.h"
+
 #include "..\libchecksum\libchecksum.h"
 #include "..\SsifSource\src\filters\parser\MpegSplitter\mvc.h"
 
@@ -410,7 +412,7 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 
 	BYTE *psrc = NULL;
 	pIn->GetPointer(&psrc);
-	LONG data_size = pIn->GetActualDataLength();
+	int out_size = pOut->GetActualDataLength();
 
 	if(!my12doom_found && pOut)
 	{
@@ -418,7 +420,7 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 		BYTE *pdst = NULL;
 		pOut->GetPointer(&pdst);
 
-		memcpy(pdst, psrc, data_size);
+		memcpy(pdst, psrc, out_size);
 		return S_OK;
 	}
 
@@ -429,11 +431,25 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 		if(m_frm < -14400)
 			m_frm = 960;
 
+	// output pointer and stride
+	BYTE *pdst = NULL;
+	pOut->GetPointer(&pdst);
+	int stride = out_size / m_image_y *2 /3 ;
+	if (stride < m_image_x*2)
+		return E_UNEXPECTED;
+
 	m_frm --;
 	if (left)
 	{
 		m_buffer_has_data = true;
-		memcpy(m_image_buffer, psrc, data_size);
+		//memcpy(m_image_buffer, psrc, data_size);
+ 		BYTE *pdstV = m_image_buffer + stride*m_image_y;
+		BYTE *pdstU = pdstV + stride*m_image_y/4;
+
+		if (m_image_y == 1080)
+			my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, m_image_buffer, pdstU, pdstV, stride, stride/2);
+		else
+			isse_yuy2_to_yv12_r(psrc, m_image_x*2, m_image_x*2, m_image_buffer, pdstU, pdstV, stride, stride/2, m_image_y);
 		return S_FALSE;
 	}
 	else
@@ -443,14 +459,20 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			if (!m_buffer_has_data)
 				return S_FALSE;
 
+			// right half
+			BYTE *pdstY = m_image_buffer + m_image_x;
+			BYTE *pdstV = m_image_buffer + stride*m_image_y + m_image_x/2;
+			BYTE *pdstU = pdstV + stride*m_image_y/4;
+			if (m_image_y == 1080)
+				my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, pdstY, pdstU, pdstV, stride, stride/2);
+			else
+				isse_yuy2_to_yv12_r(psrc, m_image_x*2, m_image_x*2, pdstY, pdstU, pdstV, stride, stride/2, m_image_y);
+
+			// copy to pOut;
+			memcpy(pdst, m_image_buffer, out_size);
+
+			/*
 			const int byte_per_pixel = 2;
-			// output pointer and stride
-			BYTE *pdst = NULL;
-			pOut->GetPointer(&pdst);
-			int out_size = pOut->GetActualDataLength();
-			int stride = out_size / m_image_y / byte_per_pixel;
-			if (stride < m_image_x*2)
-				return E_UNEXPECTED;
 
 			// find the right eye image
 			int offset = m_image_x * byte_per_pixel;
@@ -459,10 +481,10 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			int line_source = 0;
 			for (int y=0; y<m_image_y; y++)
 			{
-				memcpy(pdst+y * stride*byte_per_pixel + offset,
-					psrc + m_image_x * line_source * byte_per_pixel,  m_image_x*byte_per_pixel);								// copy right eye
-				memcpy(pdst+y * stride*byte_per_pixel,
-					m_image_buffer + m_image_x * line_source * byte_per_pixel,  m_image_x*byte_per_pixel);						// copy left eye
+				memcpy(m_YUY2_buffer+y * (m_image_x*2) *byte_per_pixel + offset,
+					psrc + m_image_x * line_source *byte_per_pixel,  m_image_x*byte_per_pixel);								// copy right eye
+				memcpy(m_YUY2_buffer+y * (m_image_x*2) *byte_per_pixel,
+					m_image_buffer + m_image_x * line_source*byte_per_pixel,  m_image_x*byte_per_pixel);						// copy left eye
 
 				line_source ++;
 				for(int i=0; i<8; i++)
@@ -476,15 +498,59 @@ HRESULT CDWindowSSP::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			{
 				for(int y=0; y<m_mask_height; y++)
 				{
-					memcpy(pdst+y*stride*byte_per_pixel, 
+					memcpy(m_YUY2_buffer+y*(m_image_x*2)*byte_per_pixel, 
 						m_mask + m_mask_width*y*byte_per_pixel, m_mask_width*byte_per_pixel);
-					memcpy(pdst+y*stride*byte_per_pixel + offset, 
+					memcpy(m_YUY2_buffer+y*(m_image_x*2)*byte_per_pixel + offset, 
 						m_mask + m_mask_width*y*byte_per_pixel, m_mask_width*byte_per_pixel);
 				}
 			}
 
-			// set sample property
 
+			
+			// asm YUY2-YV12 convert?
+			BYTE *pdstV = pdst + stride*m_image_y;
+			BYTE *pdstU = pdstV + stride*m_image_y/4;
+			isse_yuy2_to_yv12_r(m_YUY2_buffer, m_image_x*4, m_image_x*4, pdst, pdstU, pdstV, stride, stride/2, m_image_y);
+			*/
+			
+
+			
+			/*
+			// my special convert to YV12
+			unsigned char* psrc = (unsigned char*)m_YUY2_buffer;
+
+			// copy Y
+			for(int y=0; y<m_image_y; y++)
+			{
+				for(int x=0; x<m_image_x*2; x++)
+				{
+					pdst[x] = psrc[x*2];
+				}
+				pdst += stride;
+				psrc += m_image_x*4;
+			}
+
+			// copy UV
+			
+			psrc = (unsigned char*)m_YUY2_buffer;
+			unsigned char *pdst2 = pdst + stride*m_image_y/4;
+			for(int y=0; y<m_image_y/2; y++)
+			{
+				for(int x=0; x<m_image_x; x++)
+				{
+					pdst[x]  = psrc[x*4 +3];
+					pdst2[x] = psrc[x*4 +1]; 
+				}
+
+				psrc += m_image_x*8;// 2 line
+				pdst += stride/2;// 1 line (half width)
+				pdst2+= stride/2;
+			}
+			*/
+			
+
+
+			// set sample property
 			pOut->SetTime(&TimeStart, &TimeEnd);
 			pOut->SetMediaTime(&MediaStart,&MediaEnd);
 			pOut->SetSyncPoint(pIn->IsSyncPoint() == S_OK);
@@ -503,9 +569,6 @@ HRESULT CDWindowSSP::CheckInputType(const CMediaType *mtIn)
 	GUID subtypeIn = *mtIn->Subtype();
 	HRESULT hr = VFW_E_INVALID_MEDIA_TYPE;
 
-	// TODO: this is external program support
-	// find_and_active_mvc();
-
 	if( *mtIn->FormatType() == FORMAT_VideoInfo2 && subtypeIn == MEDIASUBTYPE_YUY2 && my12doom_found)
 	{
 		BITMAPINFOHEADER *pbih = &((VIDEOINFOHEADER2*)mtIn->Format())->bmiHeader;
@@ -516,7 +579,7 @@ HRESULT CDWindowSSP::CheckInputType(const CMediaType *mtIn)
 		CAutoLock cAutolock(&m_DWindowSSPLock);
 		if (m_image_buffer)
 			free(m_image_buffer);
-		m_image_buffer = (BYTE*)malloc(m_image_x*m_image_y*2);
+		m_image_buffer = (BYTE*)malloc(4096*m_image_y*3/2);
 
 		// 1088 fix
 		if (m_image_y == 1088)
@@ -551,8 +614,8 @@ HRESULT CDWindowSSP::GetMediaType(int iPosition, CMediaType *pMediaType)
 		VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)inMediaType->Format();
 		pMediaType->SetType(&MEDIATYPE_Video);
 		pMediaType->SetFormatType(&FORMAT_VideoInfo2);
-		pMediaType->SetSubtype(inMediaType->Subtype());
-		pMediaType->SetSampleSize(m_image_x*2*m_image_y*2);
+		pMediaType->SetSubtype(&MEDIASUBTYPE_YV12);
+		pMediaType->SetSampleSize(m_image_x*2*m_image_y*3/2);
 		pMediaType->SetTemporalCompression(FALSE);
 
 		VIDEOINFOHEADER2 *vihOut = (VIDEOINFOHEADER2 *)pMediaType->ReallocFormatBuffer(sizeof(VIDEOINFOHEADER2));
@@ -566,10 +629,13 @@ HRESULT CDWindowSSP::GetMediaType(int iPosition, CMediaType *pMediaType)
 			vihOut->dwPictAspectRatioX = 32;
 			vihOut->dwPictAspectRatioY = 9;	// 16:9 only
 			vihOut->bmiHeader.biWidth = m_image_x *2 ;
+			vihOut->bmiHeader.biCompression = MAKEFOURCC('Y','V','1','2');
+			vihOut->bmiHeader.biBitCount = 12;
+			vihOut->bmiHeader.biPlanes = 3;
+			vihOut->bmiHeader.biSizeImage = m_image_x*2*m_image_y*3/2;
 		}
 		else
 		{
-
 			// compute aspect
 			int aspect_x = m_image_x;
 			int aspect_y = m_image_y;
@@ -585,11 +651,10 @@ HRESULT CDWindowSSP::GetMediaType(int iPosition, CMediaType *pMediaType)
 			vihOut->dwPictAspectRatioY = aspect_y;
 			vihOut->bmiHeader.biWidth = m_image_x;
 		}
-		vihOut->bmiHeader.biHeight = m_image_y;
 
+		vihOut->bmiHeader.biHeight = m_image_y;
 		vihOut->bmiHeader.biXPelsPerMeter = 1;
 		vihOut->bmiHeader.biYPelsPerMeter = 1;
-
 		vihOut->dwInterlaceFlags = 0;	// 不支持交织图像，如果发现闪瞎狗眼的图像，检查片源
 
 	}
@@ -921,7 +986,7 @@ HRESULT CDWindowSSP::CheckTransform(const CMediaType *mtIn, const CMediaType *mt
 	GUID subtypeIn = *mtIn->Subtype();
 	GUID subtypeOut = *mtOut->Subtype();
 
-	if(subtypeIn == subtypeOut && subtypeIn == MEDIASUBTYPE_YUY2)
+	if(subtypeIn == MEDIASUBTYPE_YUY2 && subtypeOut == MEDIASUBTYPE_YV12)
 		return S_OK;
 
 	return VFW_E_INVALID_MEDIA_TYPE;
@@ -941,7 +1006,7 @@ HRESULT CDWindowSSP::DecideBufferSize(IMemAllocator *pAlloc,ALLOCATOR_PROPERTIES
 	CMediaType *inMediaType = &m_pInput->CurrentMediaType();
 
 	pProperties->cBuffers = 1;
-	pProperties->cbBuffer = m_image_x * 2 * m_image_y * 2;
+	pProperties->cbBuffer = m_image_x * 2 * m_image_y * 3 / 2;
 
 	ALLOCATOR_PROPERTIES Actual;
 	hr = pAlloc->SetProperties(pProperties,&Actual);
