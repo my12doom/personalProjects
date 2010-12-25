@@ -148,6 +148,9 @@
 				RelativePath=".\pd10.rc">
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\mask.raw">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

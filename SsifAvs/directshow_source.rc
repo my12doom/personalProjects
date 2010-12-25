@@ -23,10 +23,10 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Bitmap
+// RCDATA
 //
 
-IDB_BITMAP1             BITMAP                  "mask.bmp"
+IDR_RCDATA1             RCDATA                  "mask.raw"
 #endif    // 中文(中华人民共和国) resources
 /////////////////////////////////////////////////////////////////////////////
 

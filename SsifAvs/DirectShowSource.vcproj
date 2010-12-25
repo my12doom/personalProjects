@@ -262,6 +262,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\mySplitter\QTransfrm.cpp">
+			</File>
+			<File
 				RelativePath=".\sq2sbs.cpp">
 			</File>
 		</Filter>
@@ -276,6 +279,9 @@
 			</File>
 			<File
 				RelativePath="directshow_source.h">
+			</File>
+			<File
+				RelativePath="..\mySplitter\QTransfrm.h">
 			</File>
 			<File
 				RelativePath=".\resource.h">
@@ -300,6 +306,9 @@
 				RelativePath="..\..\resource.h">
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\mask.raw">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

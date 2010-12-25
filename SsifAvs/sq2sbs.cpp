@@ -221,26 +221,21 @@ HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 	}
 
 	// add mask here
-	// assume file = SsifAvs.dll 
+	// assume file = ssifavs.dll
 	// and colorspace = YV12
 	if (fn==1)
 	{
-		HINSTANCE hdll = LoadLibrary(_T("SsifAvs.dll"));
-		HBITMAP hbmp = LoadBitmap(hdll, MAKEINTRESOURCE(IDB_BITMAP1));
-		
+		HMODULE hm= LoadLibrary(_T("ssifavs.dll"));
+		HGLOBAL hDllData = LoadResource(hm, FindResource(hm, MAKEINTRESOURCE(IDR_RCDATA1), RT_RCDATA));
+		void * dll_data = LockResource(hDllData);
+
 		SIZE size = {200, 136};
 
-		// get data and close bitmap
-		unsigned char *m_mask = (unsigned char*)malloc(size.cx * size.cy*4);
-		GetBitmapBits(hbmp, size.cx * size.cy*4, m_mask);
-		DeleteObject(hbmp);
-		FreeLibrary(hdll);
-
-		// convert to YV12
-		for(int i=0; i<size.cx*size.cy; i++)
-		{
-			m_mask[i] = m_mask[i*4];
-		}
+		// get data and close it
+		unsigned char *m_mask = (unsigned char*)malloc(27200);
+		memset(m_mask, 0, 27200);
+		if(dll_data) memcpy(m_mask, dll_data, 27200);
+		FreeLibrary(hm);
 
 		// add mask
 		int width = m_image_x*2;

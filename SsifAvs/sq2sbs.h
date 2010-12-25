@@ -1,6 +1,7 @@
 #include <streams.h>
 #include <dvdmedia.h>
 #include <initguid.h>
+#include "..\mysplitter\QTransfrm.h"
 
 // {D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}
 DEFINE_GUID(CLSID_PD10_DECODER, 
