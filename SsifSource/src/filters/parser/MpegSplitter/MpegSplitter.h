@@ -54,6 +54,7 @@ friend class CMpegSplitterOutputPin;
 	CHdmvClipInfo	m_ClipInfo;
 
 	// mvc right eye handle codes
+	bool m_for_encoding;
 	bool m_mvc_found;
 	CAutoPtr<Packet> m_p;
 	CAutoPtrList<Packet> m_pl;

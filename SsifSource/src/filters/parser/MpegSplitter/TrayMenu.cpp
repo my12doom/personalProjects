@@ -73,7 +73,7 @@ DWORD WINAPI TrayMenu::WindowThread(LPVOID lpParame)
 
 	if (!hwnd) 
 		return FALSE; 
-	SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR)(TrayMenu*)lpParame);
+	SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)(TrayMenu*)lpParame);
 
 	_this->m_hwnd = hwnd;
 
@@ -108,7 +108,7 @@ LRESULT CALLBACK TrayMenu::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, L
 {
 	LRESULT lr = S_FALSE;
 	TrayMenu *_this = NULL;
-	_this = (TrayMenu*)GetWindowLongPtr(hWnd, GWL_USERDATA);
+	_this = (TrayMenu*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (!_this)
 		return DefWindowProc(hWnd, message, wParam, lParam);
 

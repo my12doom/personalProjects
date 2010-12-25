@@ -21,6 +21,7 @@
  */
 
 #include "stdafx.h"
+#include <tchar.h>
 #include <mmreg.h>
 #include <initguid.h>
 #include <dmodshow.h>
@@ -478,7 +479,32 @@ CMpegSplitterFilter::CMpegSplitterFilter(LPUNKNOWN pUnk, HRESULT* phr, const CLS
 	, m_rtMaxShift(50000000)
 	, m_mvc_found(false)
 	, m_dummy_exit(false)
+	, m_for_encoding(false)
 {
+	TCHAR exe[MAX_PATH];
+	GetModuleFileName (NULL, exe, MAX_PATH);
+	for(int i=_tcslen(exe)-1; i>0; i--)
+		if (exe[i] == _T('\\'))
+		{
+			_tcscpy(exe, exe+i+1);
+			break;
+		}
+
+	for(int i=0; i<_tcslen(exe); i++)
+		exe[i] = tolower(exe[i]);
+
+	if (_tcscmp(exe, _T("x264.exe")) == 0 || 
+		_tcscmp(exe, _T("avsutil.exe")) == 0)
+	{
+		_tprintf(_T("SsifSource: %s detected, right eye queue disabled.\n"), exe);
+		m_for_encoding = true;
+	}
+	else
+	{
+		_tprintf(_T("SsifSource: %s detected, right eye queue enabled.\n"), exe);
+	}
+
+
 	m_dummy_thread = CreateThread(0,0,dummy_thread, this, NULL, NULL);
 }
 
@@ -722,21 +748,29 @@ HRESULT CMpegSplitterFilter::DemuxNextPacket(REFERENCE_TIME rtStartOffset)
 
 				if (m_mvc_found && TrackNumber == 0x1012)
 				{
-					bool sleep = false;
-					retry:
-					if (sleep)
-						Sleep(1);
+					if (m_for_encoding)
+						// for encoding ,no queue
+						hr = dummy_deliver_packet(p);
+					else
 					{
-						CAutoLock queuelock(&m_queuelock);
-						if (m_queue.GetCount() > 1024*1024*30/188)
+						// for player, queue
+						bool sleep = false;
+						retry:
+						if (sleep)
+							Sleep(1);
 						{
-							sleep = true;
-							goto retry;
+							CAutoLock queuelock(&m_queuelock);
+							if (m_queue.GetCount() > 1024*1024*30/188)
+							{
+								sleep = true;
+								goto retry;
+							}
+							hr = S_OK;
+							m_queue.AddTail(p);
+							ResumeThread(m_dummy_thread);
 						}
-						hr = S_OK;
-						m_queue.AddTail(p);
-						ResumeThread(m_dummy_thread);
 					}
+
 				}
 				else
 					hr = DeliverPacket(p);
@@ -1016,7 +1050,7 @@ bool CMpegSplitterFilter::DemuxLoop()
 			if((hr = DemuxNextPacket(rtStartOffset)) == S_FALSE)
 				Sleep(1);
 
-		if ((n&0xff) == 0)
+		//if ((n&0xff) == 0)
 			check = CheckRequest(NULL);
 	}
 
