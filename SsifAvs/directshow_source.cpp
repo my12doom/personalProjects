@@ -2410,6 +2410,7 @@ AVSValue __cdecl Create_DirectShowSource(AVSValue args, void*, IScriptEnvironmen
 
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env)
 {
+	env->SetMemoryMax(32);
   env->AddFunction("SsifAvs",
 // args   0      1      2       3       4            5          6
        "s+[fps]f[seek]b[audio]b[video]b[convertfps]b[seekzero]b"

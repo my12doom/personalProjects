@@ -256,7 +256,8 @@ AVSValue __cdecl func_create_grf(AVSValue args, void* user_data, IScriptEnvironm
 
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env)
 {
-    env->AddFunction("sq2sbs", "c", Create_sq2sbs, 0);
+ 	env->SetMemoryMax(32);
+	env->AddFunction("sq2sbs", "c", Create_sq2sbs, 0);
     env->AddFunction("CreateGRF", "s", func_create_grf, 0);
     return 0;
 }
