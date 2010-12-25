@@ -7,6 +7,8 @@ cd E:\private_projects
 %dev2003% mySplitter\mySplitter.sln /build "Release_mt"
 %dev2003% dwindow\dwindow.sln /build "Release_mt"
 %dev2003% dwindow_launcher\dwindow_launcher.sln /build "Release"
+%dev2003% pd10\pd10.sln /build "Release"
+%dev2003% ssifavs\ssifavs.sln /build "Release_mt"
 %dev2008% SsifSource\SsifSource.sln /build "Release Filter"
 
 #copy
@@ -14,6 +16,10 @@ copy/y dwindow\release_mt\dwindow.exe dwindow_NSIS
 copy/y mySplitter\release_mt\mySplitter.ax dwindow_NSIS\codec
 copy/y dwindow_launcher\release\*.exe dwindow_NSIS
 copy/y SsifSource\bin\Filters_x86\MpegSplitter.ax dwindow_NSIS\codec\SsifSource.ax
+
+#x264 tools
+copy/y pd10\release\pd10.dll tools\
+copy/y ssifavs\release_mt\ssifavs.dll tools\
 
 pause
 F:\NSIS\makensisw.exe dwindow_NSIS\dwindow.nsi
