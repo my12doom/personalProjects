@@ -204,6 +204,9 @@
 				RelativePath=".\image_stereo.cpp">
 			</File>
 			<File
+				RelativePath=".\QTransfrm.cpp">
+			</File>
+			<File
 				RelativePath=".\splitbase.cpp">
 			</File>
 			<File
@@ -231,6 +234,9 @@
 			</File>
 			<File
 				RelativePath=".\image.h">
+			</File>
+			<File
+				RelativePath=".\QTransfrm.h">
 			</File>
 			<File
 				RelativePath=".\splitbase.h">
