@@ -25,7 +25,7 @@ int type1 = type_normal;
 wchar_t input2[MAX_PATH] = L"";
 int type2 = type_normal;
 wchar_t sound[MAX_PATH] = L"";
-wchar_t subtitle[MAX_PATH] = L"";
+wchar_t _subtitle[MAX_PATH] = L"";
 
 // scrennsaver
 HMODULE hExe = GetModuleHandle(NULL);
@@ -93,9 +93,9 @@ show_config:
 	player->set_window_text(2, L"2");
 
 	player->start_loading();
-	//subtitle
-	if (subtitle[0])
-		player->load_srt(subtitle);
+	//_subtitle
+	if (_subtitle[0])
+		player->load_srt(_subtitle);
 	//sound
 	if (sound[0])
 		player->load_file(sound);
@@ -275,7 +275,7 @@ void init_dialog(HWND hDlg)
 	SetDlgItemTextW(hDlg, IDC_EDIT_INPUT1, input1);
 	SetDlgItemTextW(hDlg, IDC_EDIT_INPUT2, input2);
 	SetDlgItemTextW(hDlg, IDC_EDIT_SOUND, sound);
-	SetDlgItemTextW(hDlg, IDC_EDIT_SUBTITLE, subtitle);
+	SetDlgItemTextW(hDlg, IDC_EDIT_SUBTITLE, _subtitle);
 
 	HWND combo1 = GetDlgItem(hDlg, IDC_COMBO1);
 	HWND combo2 = GetDlgItem(hDlg, IDC_COMBO2);
@@ -297,7 +297,7 @@ void finish_dialog(HWND hDlg)
 	GetDlgItemTextW(hDlg, IDC_EDIT_INPUT1, input1, MAX_PATH);
 	GetDlgItemTextW(hDlg, IDC_EDIT_INPUT2, input2, MAX_PATH);
 	GetDlgItemTextW(hDlg, IDC_EDIT_SOUND, sound, MAX_PATH);
-	GetDlgItemTextW(hDlg, IDC_EDIT_SUBTITLE, subtitle, MAX_PATH);
+	GetDlgItemTextW(hDlg, IDC_EDIT_SUBTITLE, _subtitle, MAX_PATH);
 
 	type1 = SendDlgItemMessage(hDlg, IDC_COMBO1, CB_GETCURSEL, 0, 0);
 	type2 = SendDlgItemMessage(hDlg, IDC_COMBO2, CB_GETCURSEL, 0, 0);

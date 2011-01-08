@@ -161,6 +161,15 @@ HRESULT dx_window::ActiveMVC(IBaseFilter *filter)
 // constructor & destructor
 dx_window::dx_window(RECT screen1, RECT screen2, HINSTANCE hExe):dwindow(screen1, screen2)
 {
+	//PGS
+	FILE *f = fopen("E:\\test_folder\\avt_sup\\00001.track_4608.sup", "rb");
+	BYTE buf[32768];
+	int read = 0;
+	while (read = fread(buf, 1, 32768, f))
+		m_pgs.add_data(buf, read);
+	fclose(f);
+
+
 	// vars
 	m_PD10 = false;
 	m_demuxer_config_active = false;
@@ -702,6 +711,34 @@ HRESULT dx_window::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 {
 	int ms_start = (int)(TimeStart / 10000);
 	int ms_end = (int)(TimeEnd / 10000);
+
+	// PGS test
+	subtitle sub;
+	m_pgs.find_subtitle(ms_start, ms_end, &sub);
+	if (sub.start > 0 && sub.end >0 && sub.rgb)
+	{
+		m_text_surface_width = sub.width;
+		m_text_surface_height = sub.height;
+
+		m_text_surface = NULL;
+		m_D3Ddevice->CreateOffscreenPlainSurface(
+			m_text_surface_width, m_text_surface_height,
+			D3DFMT_A8R8G8B8,
+			D3DPOOL_SYSTEMMEM,
+			&m_text_surface, NULL);
+
+		D3DLOCKED_RECT locked_rect;
+		m_text_surface->LockRect(&locked_rect, NULL, NULL);
+		memcpy(locked_rect.pBits, sub.rgb, m_text_surface_width * m_text_surface_height * 4);
+		m_text_surface->UnlockRect();
+
+		free(sub.rgb);
+		draw_subtitle();
+
+		return S_OK;
+	}
+
+	// normal
 
 	wchar_t subtitle[5000] = L"";
 	m_srt.get_subtitle(ms_start, ms_end, subtitle);
@@ -1599,6 +1636,7 @@ HRESULT dx_window::end_loading_step2(IPin *pin1, IPin *pin2)
 	CComQIPtr<IVMRFilterConfig9, &IID_IVMRFilterConfig9> config2(vmr2base);
 	config2->SetRenderingMode(VMR9Mode_Windowless);
 
+
 	vmr1base->QueryInterface(IID_IVMRWindowlessControl9, (void**)&m_vmr1c);
 	vmr2base->QueryInterface(IID_IVMRWindowlessControl9, (void**)&m_vmr2c);
 	vmr1base->QueryInterface(IID_IVMRMixerBitmap9, (void**)&m_vmr1bmp);
@@ -1611,6 +1649,25 @@ HRESULT dx_window::end_loading_step2(IPin *pin1, IPin *pin2)
 	m_vmr1c->SetAspectRatioMode(VMR9ARMode_LetterBox);
 	m_vmr2c->SetAspectRatioMode(VMR9ARMode_LetterBox);
 	set_revert(m_revert);
+
+	// set Resizer
+	CComQIPtr<IVMRMixerControl9, &IID_IVMRMixerControl9> mixer1(vmr1base);
+	DWORD mixer_prefs = 0;
+	mixer1->GetMixingPrefs(&mixer_prefs);
+	mixer_prefs &= ~MixerPref9_FilteringMask;
+	mixer_prefs |= MixerPref9_AnisotropicFiltering;
+	mixer_prefs &= ~MixerPref9_RenderTargetMask;
+	mixer_prefs |= MixerPref9_RenderTargetYUV;
+	mixer1->SetMixingPrefs(mixer_prefs);
+	mixer1->GetMixingPrefs(&mixer_prefs);
+
+	CComQIPtr<IVMRMixerControl9, &IID_IVMRMixerControl9> mixer2(vmr2base);
+	mixer2->GetMixingPrefs(&mixer_prefs);
+	mixer_prefs &= ~MixerPref9_FilteringMask;
+	mixer_prefs |= MixerPref9_AnisotropicFiltering;
+	mixer_prefs &= ~MixerPref9_RenderTargetMask;
+	mixer_prefs |= MixerPref9_RenderTargetYUV;
+	mixer2->SetMixingPrefs(mixer_prefs);
 
 	// connect pins
 	CComPtr<IPin> vmr1pin;
@@ -1685,7 +1742,6 @@ HRESULT dx_window::exit_D3D9()
 
 HRESULT dx_window::draw_text(wchar_t *text)
 {
-
 	if (text[0] == NULL)
 	{
 		m_text_surface_width = m_text_surface_height = 0;

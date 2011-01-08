@@ -6,6 +6,7 @@
 #include "avisynth.h"
 #include "resource.h"
 #include "..\mysplitter\asm.h"
+#pragma comment(lib,"winmm.lib") 
 
 char m_264[MAX_PATH*2];
 char m_grf[MAX_PATH*2];
@@ -98,12 +99,14 @@ class sq2sbs : public GenericVideoFilter
 {
 public:
     sq2sbs(PClip _child);
+	~sq2sbs();
     PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 };
 
 sq2sbs ::sq2sbs(PClip _child)
 :GenericVideoFilter(_child)
 {
+	timeBeginPeriod(1);
 	vi.width *= 2;
 	vi.num_frames /= 2;
 
@@ -112,18 +115,23 @@ sq2sbs ::sq2sbs(PClip _child)
 
 	vi.pixel_type = vi.CS_YV12;
 }
+sq2sbs ::~sq2sbs()
+{
+	timeEndPeriod(1);
+}
+
 
 
 PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
 {
     PVideoFrame src1 = child->GetFrame(n*2, env);
 	PVideoFrame src2 = child->GetFrame(n*2+1, env);
+    PVideoFrame dst = env->NewVideoFrame(vi);
 
     const unsigned char* srcpY1 = src1->GetReadPtr(PLANAR_Y);
     const unsigned char* srcpY2 = src2->GetReadPtr(PLANAR_Y);
     const int src_pitchY = src1->GetPitch(PLANAR_Y);
 
-    PVideoFrame dst = env->NewVideoFrame(vi);
 	unsigned char* pdst = (unsigned char*) dst->GetReadPtr();
 	
 	if(vi.height == 1080)
@@ -173,6 +181,28 @@ PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
 	}
 
     return dst;
+}
+class DeSelct : public GenericVideoFilter 
+{
+public:
+	PClip m_clip2;
+    DeSelct(PClip _child, PClip clip2):GenericVideoFilter(_child)
+	{
+		m_clip2 = clip2;
+	}
+
+    PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env)
+	{
+		if (n%2 == 0)
+			return child->GetFrame(n/2, env);
+		else
+			return m_clip2->GetFrame(n/2, env);
+	}
+};
+
+AVSValue __cdecl Create_DeSelect(AVSValue args, void* user_data, IScriptEnvironment* env)
+{
+    return new DeSelct(args[0].AsClip(), args[1].AsClip());
 }
 
 AVSValue __cdecl Create_sq2sbs(AVSValue args, void* user_data, IScriptEnvironment* env)
@@ -258,6 +288,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScri
 {
  	env->SetMemoryMax(32);
 	env->AddFunction("sq2sbs", "c", Create_sq2sbs, 0);
+	env->AddFunction("DeSelect", "[clip1]c[clip]c", Create_DeSelect, 0);
     env->AddFunction("CreateGRF", "s", func_create_grf, 0);
     return 0;
 }

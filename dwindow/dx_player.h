@@ -12,6 +12,7 @@
 #include "bar.h"
 #include "..\..\projects\srt_parser\srt_parser.h"
 #include "..\mySplitter\filter.h"
+#include "..\PGS\PGS.h"
 
 #define MKV_NO_TRACK -1
 #define MKV_ALL_TRACK -2
@@ -82,6 +83,8 @@ public:
 	HRESULT log_line(wchar_t *format, ...);
 	wchar_t *m_log;
 
+	// PGS test
+	PGSParser m_pgs;
 protected:
 	// image control vars
 	int m_mirror1;

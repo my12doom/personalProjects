@@ -179,6 +179,9 @@
 			<File
 				RelativePath=".\main.cpp">
 			</File>
+			<File
+				RelativePath="..\Pgs\PGS.cpp">
+			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -195,6 +198,9 @@
 			</File>
 			<File
 				RelativePath=".\dx_player.h">
+			</File>
+			<File
+				RelativePath="..\Pgs\PGS.h">
 			</File>
 			<File
 				RelativePath=".\private_filter.h">

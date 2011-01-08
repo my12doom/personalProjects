@@ -36,6 +36,7 @@
 #include "directshow_source.h"
 #include <windows.h>
 static const GUID CLSID_SSIFSource = { 0x916e4c8d, 0xe37f, 0x4fd4, { 0x95, 0xf6, 0xa4, 0x4e, 0x51, 0x46, 0x2e, 0xdf } };
+#pragma comment(lib,"winmm.lib") 
 
 
 #define DSS_VERSION "2.5.8"
@@ -1618,6 +1619,7 @@ DirectShowSource::DirectShowSource(const char* filename, int _avg_time_per_frame
 
 
 {
+	timeBeginPeriod(1);
 
   dssRPT0(dssNEW, "New DirectShowSource.\n");
 
@@ -1936,7 +1938,8 @@ _continue:
 
   DirectShowSource::~DirectShowSource() {
     dssRPT0(dssNEW, "~DirectShowSource.\n");
-
+	
+	timeEndPeriod(1);
     cleanUp();
   }
 
@@ -2035,6 +2038,18 @@ _continue:
 #else
 
   PVideoFrame __stdcall DirectShowSource::GetFrame(int n, IScriptEnvironment* env) {
+
+
+pause:
+	  FILE * f;
+	  f = fopen("pause.txt", "rb");
+	  if (f)
+	  {
+		  fclose(f);
+		  Sleep(100);
+		  goto pause;
+	  }
+
     DWORD timeout = WaitTimeout;
 
     n = max(min(n, vi.num_frames-1), 0); 
