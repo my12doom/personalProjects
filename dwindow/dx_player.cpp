@@ -171,6 +171,8 @@ dx_window::dx_window(RECT screen1, RECT screen2, HINSTANCE hExe):dwindow(screen1
 
 
 	// vars
+	m_renderer1 = NULL;
+	m_renderer2 = NULL;
 	m_PD10 = false;
 	m_demuxer_config_active = false;
 	m_select_font_active = false;
@@ -212,6 +214,11 @@ dx_window::dx_window(RECT screen1, RECT screen2, HINSTANCE hExe):dwindow(screen1
 					width1/2 + dcx, height1/2 + dcy, SWP_NOZORDER);
 	SetWindowPos(id_to_hwnd(2), NULL, screen2.left + width2/4, screen2.top + height2/4,
 					width2/2 + dcx, height2/2 + dcy, SWP_NOZORDER);
+
+	// to init video zone
+	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);
+	SendMessage(m_hwnd2, WM_INITDIALOG, 0, 0);
+
 
 	// set timer for ui drawing
 	set_timer(2, 125);
@@ -408,11 +415,8 @@ LRESULT dx_window::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 
 LRESULT dx_window::on_display_change()
 {
-	if (m_vmr1c)
-		m_vmr1c->DisplayModeChanged();
-
-	if (m_vmr2c)
-		m_vmr2c->DisplayModeChanged();
+	m_renderer1->DisplayModeChanged();
+	m_renderer2->DisplayModeChanged();
 
 	return S_OK;
 }
@@ -605,8 +609,8 @@ LRESULT dx_window::on_paint(int id, HDC hdc)
 {
 	if (id == 1)
 	{
-		IVMRWindowlessControl9 *c = m_vmr1c;
-		if (m_revert) c = m_vmr2c;
+		CUnifyRenderer *c = m_renderer1;
+		if (m_revert) c = m_renderer2;
 
 		if (c)
 			c->RepaintVideo(id_to_hwnd(id), hdc);
@@ -620,8 +624,8 @@ LRESULT dx_window::on_paint(int id, HDC hdc)
 
 	if (id == 2)
 	{
-		IVMRWindowlessControl9 *c = m_vmr2c;
-		if (m_revert) c = m_vmr1c;
+		CUnifyRenderer *c = m_renderer2;
+		if (m_revert) c = m_renderer1;
 		if (c)
 			c->RepaintVideo(id_to_hwnd(id), hdc);
 		else
@@ -668,6 +672,63 @@ LRESULT dx_window::on_sys_command(int id, WPARAM wParam, LPARAM lParam)
 
 	return S_FALSE;
 }
+
+LRESULT dx_window::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
+{
+	HINSTANCE hinstance = GetModuleHandle(NULL);
+
+	HWND video = CreateWindow(
+		"Static",
+		"HelloWorld",
+		WS_CHILDWINDOW | SS_OWNERDRAW,
+		0,
+		0,
+		100,
+		100,
+		id_to_hwnd(id),
+		(HMENU)NULL,
+		hinstance,
+		(LPVOID)NULL);
+	ShowWindow(video, SW_SHOW);
+	SetWindowLongPtr(video, GWL_USERDATA, (LONG_PTR)(dwindow*)this);
+	//SetWindowLongPtr(video, GWL_WNDPROC, (LONG_PTR)MainWndProc);
+
+	if (id == 1)
+		m_video1 = video;
+	else if (id == 2)
+		m_video2 = video;
+	else 
+		return S_OK;
+
+	return S_OK;
+}
+
+HWND dx_window::id_to_video(int id)
+{
+	if (id == 1)
+		return m_video1;
+	else if (id == 2)
+		return m_video2;
+	else
+		return NULL;
+}
+int dx_window::video_to_id(HWND video)
+{
+	if (video == m_video1)
+		return 1;
+	else if (video == m_video2)
+		return 2;
+	else
+		return 0;
+}
+int dx_window::hwnd_to_id(HWND hwnd)
+{
+	if (video_to_id(hwnd))
+		return video_to_id(hwnd);
+	else
+		return __super::hwnd_to_id(hwnd);
+}
+
 // directshow part
 
 HRESULT dx_window::init_direct_show()
@@ -691,10 +752,10 @@ HRESULT dx_window::exit_direct_show()
 	if (m_mc)
 		m_mc->Stop();
 		
-	m_vmr1c = NULL;
-	m_vmr2c = NULL;
-	m_vmr1bmp = NULL;
-	m_vmr2bmp = NULL;
+	if (m_renderer1)
+		{delete m_renderer1; m_renderer1=NULL;}
+	if (m_renderer2)
+		{delete m_renderer2; m_renderer2=NULL;}
 	m_stereo = NULL;
 	m_mono1 = NULL;
 	m_mono2 = NULL;
@@ -732,10 +793,24 @@ HRESULT dx_window::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		memcpy(locked_rect.pBits, sub.rgb, m_text_surface_width * m_text_surface_height * 4);
 		m_text_surface->UnlockRect();
 
-		free(sub.rgb);
-		draw_subtitle();
+		//draw_subtitle();
 
+		UnifyAlphaBitmap bmp = {sub.width, sub.height, sub.rgb, 
+								(float)sub.left/1920.0,
+								(float)sub.top/1080,
+								(float)sub.width/1920,
+								(float)sub.height/1080};
+
+		HRESULT hr = m_renderer1->SetAlphaBitmap(bmp);
+		hr = m_renderer2->SetAlphaBitmap(bmp);
+
+		free(sub.rgb);
 		return S_OK;
+	}
+	else
+	{
+		m_renderer1->ClearAlphaBitmap();
+		m_renderer2->ClearAlphaBitmap();
 	}
 
 	// normal
@@ -764,6 +839,13 @@ HRESULT dx_window::calculate_movie_rect(RECT *source, RECT *client, RECT *letter
 
 	int source_width = source->right - source->left;
 	int source_height = source->bottom - source->top;
+
+	if (source_width == 0 || source_height == 0)
+	{
+		source_width = 1920;
+		source_height = 1920*(m_screen1.bottom - m_screen1.top) / (m_screen1.right - m_screen1.left);
+	}
+
     double source_aspect = (double) source_width / source_height;
 
 	int client_width = client->right - client->left;
@@ -806,7 +888,8 @@ HRESULT dx_window::paint_letterbox(int id, RECT letterbox)
 	RECT client;
 	HDC hdc = GetDC(id_to_hwnd(id));
 	HBRUSH brush = (HBRUSH)BLACK_BRUSH+1;
-
+	
+	/*
 	//bottom
 	GetClientRect(id_to_hwnd(id), &client);
 	client.top = client.bottom - letterbox.bottom;
@@ -830,6 +913,7 @@ HRESULT dx_window::paint_letterbox(int id, RECT letterbox)
 	client.right = client.left + letterbox.left;
 	if (m_show_ui) client.bottom -= 30;	// don't draw here to avoid flash
 	FillRect(hdc, &client, brush);
+	*/
 
 	ReleaseDC(id_to_hwnd(id), hdc);
 	return S_OK;
@@ -859,22 +943,31 @@ HRESULT dx_window::update_video_pos()
 {
 	RECT client;
 	RECT source = {0,0,0,0};
-	RECT letterbox;
+	RECT letterbox = {0,0,0,0};
 
 	// set window pos
-	if (m_vmr1c)
+	if (m_renderer1)
 	{
 		int id = 1;
 		if (m_revert) id = 2;
 
+		// move the video zone to proper position
 		GetClientRect(id_to_hwnd(id), &client);
-		m_vmr1c->GetNativeVideoSize(&source.right, &source.bottom, NULL, NULL);
-		calculate_movie_rect(&source, &client, &letterbox, m_show_ui);
+		if (m_show_ui)
+			client.bottom -= 30;
+		MoveWindow(id_to_video(id), 0, 0, client.right - client.left, client.bottom - client.top, TRUE);
 
-		m_vmr1c->SetVideoPosition(&source, &client);
+		GetClientRect(id_to_hwnd(id), &client);
+		if (FAILED(m_renderer1->GetNativeVideoSize(&source.right, &source.bottom, NULL, NULL)) || source.right == source.left || source.bottom == source.top)
+		{
+			source.right = 1920;
+			source.bottom = 1920*(m_screen1.bottom - m_screen1.top) / (m_screen1.right - m_screen1.left);
+		};
+
+		m_renderer1->SetVideoPosition(&source, &client);
 
 		// mirror
-		VMR9NormalizedRect mirror_rect = {0,0,1,1};
+		UnifyVideoNormalizedRect mirror_rect = {0,0,1,1};
 		float tmp = 0.0;
 		if (m_mirror1 & 0x1) //mirror horizontal
 		{
@@ -888,26 +981,34 @@ HRESULT dx_window::update_video_pos()
 			mirror_rect.top = mirror_rect.bottom;
 			mirror_rect.bottom = tmp;
 		}
-		CComQIPtr<IVMRMixerControl9, &IID_IVMRMixerControl9> mixer1(m_vmr1c);
-		mixer1->SetOutputRect(0, &mirror_rect);
+		m_renderer1->SetOutputRect(0, &mirror_rect);
 
 		// paint letterbox
 		paint_letterbox(id, letterbox);
 	}
 
-	if (m_vmr2c)
+	memset(&source, 0, sizeof(source));
+	if (m_renderer2)
 	{
 		int id = 2;
 		if (m_revert) id = 1;
 
+		// move the video zone to proper position
 		GetClientRect(id_to_hwnd(id), &client);
-		m_vmr2c->GetNativeVideoSize(&source.right, &source.bottom, NULL, NULL);
-		calculate_movie_rect(&source, &client, &letterbox, m_show_ui);
+		if (m_show_ui)
+			client.bottom -= 30;
+		MoveWindow(id_to_video(id), 0, 0, client.right - client.left, client.bottom, TRUE);
 
-		m_vmr2c->SetVideoPosition(&source, &client);
+		GetClientRect(id_to_hwnd(id), &client);
+		if (FAILED(m_renderer1->GetNativeVideoSize(&source.right, &source.bottom, NULL, NULL)) || source.right == source.left || source.bottom == source.top)
+		{
+			source.right = 1920;
+			source.bottom = 1920*(m_screen2.bottom - m_screen1.top) / (m_screen2.right - m_screen2.left);
+		};
+		m_renderer2->SetVideoPosition(&source, &client);
 
 		// mirror
-		VMR9NormalizedRect mirror_rect = {0,0,1,1};
+		UnifyVideoNormalizedRect mirror_rect = {0,0,1,1};
 		float tmp = 0.0;
 		if (m_mirror2 & 0x1) //mirror horizontal
 		{
@@ -921,8 +1022,7 @@ HRESULT dx_window::update_video_pos()
 			mirror_rect.top = mirror_rect.bottom;
 			mirror_rect.bottom = tmp;
 		}
-		CComQIPtr<IVMRMixerControl9, &IID_IVMRMixerControl9> mixer2(m_vmr2c);
-		mixer2->SetOutputRect(0, &mirror_rect);
+		m_renderer2->SetOutputRect(0, &mirror_rect);
 
 		// paint letterbox
 		paint_letterbox(id, letterbox);
@@ -937,20 +1037,20 @@ HRESULT dx_window::set_revert(bool revert)
 {
 	m_revert = revert;
 
-	if (m_vmr1c)
+	if (m_renderer1)
 	{
 		if (m_revert)
-			m_vmr1c->SetVideoClippingWindow(id_to_hwnd(2));
+			m_renderer1->SetVideoClippingWindow(id_to_video(2));
 		else
-			m_vmr1c->SetVideoClippingWindow(id_to_hwnd(1));
+			m_renderer1->SetVideoClippingWindow(id_to_video(1));
 	}
 
-	if (m_vmr2c)
+	if (m_renderer2)
 	{
 		if (m_revert)
-			m_vmr2c->SetVideoClippingWindow(id_to_hwnd(1));
+			m_renderer2->SetVideoClippingWindow(id_to_video(1));
 		else
-			m_vmr2c->SetVideoClippingWindow(id_to_hwnd(2));
+			m_renderer2->SetVideoClippingWindow(id_to_video(2));
 	}
 	update_video_pos();
 	return S_OK;
@@ -1374,7 +1474,11 @@ HRESULT dx_window::end_loading()
 		return E_FAIL;
 	}
 
-	end_loading_step2(pin1, pin2);
+	if ( FAILED(hr = end_loading_step2(pin1, pin2)))
+	{
+		log_line(L"failed connect dwindow stereo filter with renderer.(%08x)", hr);
+		return hr;
+	}
 	m_loading = false;
 	return S_OK;
 }
@@ -1626,31 +1730,24 @@ HRESULT dx_window::end_loading_step2(IPin *pin1, IPin *pin2)
 		return E_FAIL;
 
 	// create, config, and add vmr9 #1 & #2
-	CComPtr<IBaseFilter> vmr1base;
-	CComPtr<IBaseFilter> vmr2base;
-	vmr1base.CoCreateInstance(CLSID_VideoMixingRenderer9);
-	vmr2base.CoCreateInstance(CLSID_VideoMixingRenderer9);
+	//m_renderer1 = new CVMR7Windowless(m_hwnd1);
+	//m_renderer2 = new CVMR7Windowless(m_hwnd2);
 
-	CComQIPtr<IVMRFilterConfig9, &IID_IVMRFilterConfig9> config1(vmr1base);
-	config1->SetRenderingMode(VMR9Mode_Windowless);
-	CComQIPtr<IVMRFilterConfig9, &IID_IVMRFilterConfig9> config2(vmr2base);
-	config2->SetRenderingMode(VMR9Mode_Windowless);
+	//m_renderer1 = new CVMR9Windowless(m_hwnd1);
+	//m_renderer2 = new CVMR9Windowless(m_hwnd2);
 
+	m_renderer1 = new CEVRVista(m_hwnd1);
+	m_renderer2 = new CEVRVista(m_hwnd2);
 
-	vmr1base->QueryInterface(IID_IVMRWindowlessControl9, (void**)&m_vmr1c);
-	vmr2base->QueryInterface(IID_IVMRWindowlessControl9, (void**)&m_vmr2c);
-	vmr1base->QueryInterface(IID_IVMRMixerBitmap9, (void**)&m_vmr1bmp);
-	vmr2base->QueryInterface(IID_IVMRMixerBitmap9, (void**)&m_vmr2bmp);
-
-	m_gb->AddFilter(vmr1base, L"VMR9 #1");
-	m_gb->AddFilter(vmr2base, L"VMR9 #2");
+	m_gb->AddFilter(m_renderer1->base_filter, L"VMR9 #1");
+	m_gb->AddFilter(m_renderer2->base_filter, L"VMR9 #2");
 
 	// config output window
-	m_vmr1c->SetAspectRatioMode(VMR9ARMode_LetterBox);
-	m_vmr2c->SetAspectRatioMode(VMR9ARMode_LetterBox);
+	m_renderer1->SetAspectRatioMode(UnifyARMode_LetterBox);
+	m_renderer2->SetAspectRatioMode(UnifyARMode_LetterBox);
 	set_revert(m_revert);
-
 	// set Resizer
+	/*
 	CComQIPtr<IVMRMixerControl9, &IID_IVMRMixerControl9> mixer1(vmr1base);
 	DWORD mixer_prefs = 0;
 	mixer1->GetMixingPrefs(&mixer_prefs);
@@ -1668,13 +1765,14 @@ HRESULT dx_window::end_loading_step2(IPin *pin1, IPin *pin2)
 	mixer_prefs &= ~MixerPref9_RenderTargetMask;
 	mixer_prefs |= MixerPref9_RenderTargetYUV;
 	mixer2->SetMixingPrefs(mixer_prefs);
+	*/
 
 	// connect pins
 	CComPtr<IPin> vmr1pin;
 	CComPtr<IPin> vmr2pin;
 
-	GetUnconnectedPin(vmr1base, PINDIR_INPUT, &vmr1pin);
-	GetUnconnectedPin(vmr2base, PINDIR_INPUT, &vmr2pin);
+	GetUnconnectedPin(m_renderer1->base_filter, PINDIR_INPUT, &vmr1pin);
+	GetUnconnectedPin(m_renderer2->base_filter, PINDIR_INPUT, &vmr2pin);
 
 	if (vmr1pin == NULL || vmr2pin == NULL)
 		return E_FAIL;
@@ -1811,6 +1909,7 @@ HRESULT dx_window::draw_subtitle()
 	// so we don't care about what happened
 	VMR9AlphaBitmap bmp_info;
 
+	/*
 	float p_x = (float)m_text_surface_width / 1920;
 	float p_y = (float)m_text_surface_height / 1440;
 
@@ -1835,7 +1934,7 @@ HRESULT dx_window::draw_subtitle()
 	bmp_info.rDest.right += (float)m_subtitle_offset / 1920;
 	m_vmr2bmp->SetAlphaBitmap(&bmp_info);
 
-
+	*/
 	if (m_mc)
 	{
 		OAFilterState fs;

@@ -48,10 +48,11 @@ protected:
 	virtual LRESULT on_paint(int id, HDC hdc){return S_OK;}
 	virtual LRESULT on_timer(int id){return S_OK;}
 	virtual LRESULT on_size(int id, int type, int x, int y){return S_OK;}
+	virtual LRESULT on_init_dialog(int id, WPARAM wParam, LPARAM lParam){return S_OK;}	// buged
 
 	// helper function
-	HWND id_to_hwnd(int id);
-	int hwnd_to_id(HWND hwnd);
+	virtual HWND id_to_hwnd(int id);
+	virtual int hwnd_to_id(HWND hwnd);
 	bool is_visible(int id);
 
 	// need init:

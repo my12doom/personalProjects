@@ -1,3 +1,4 @@
+#include <atlbase.h>
 #include <streams.h>
 #include "filter.h"
 #include "splitbase.h"

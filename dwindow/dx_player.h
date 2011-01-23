@@ -3,9 +3,9 @@
 #include <atlbase.h>
 #include <dshow.h>
 
-// vmr 9
-#include <d3d9.h>
-#include <vmr9.h>
+// renderer
+#include "UnifyRenderer.h"
+
 
 #include "streams.h"
 #include "dwindow.h"
@@ -87,6 +87,11 @@ public:
 	PGSParser m_pgs;
 protected:
 	// image control vars
+	HWND m_video1;
+	HWND m_video2;
+	HWND id_to_video(int id);
+	int video_to_id(HWND video);
+
 	int m_mirror1;
 	int m_mirror2;			// 0x0:no mirror, 0x1 mirror horizontal, 0x2 mirror vertical, 0x3(0x3=0x1|0x2) mirror both
 	bool m_revert;
@@ -119,7 +124,12 @@ protected:
 	LRESULT on_paint(int id, HDC hdc);
 	LRESULT on_timer(int id);
 	LRESULT on_size(int id, int type, int x, int y);
+	LRESULT on_init_dialog(int id, WPARAM wParam, LPARAM lParam);		// buged
 	// end window handler
+
+	// helper
+	int hwnd_to_id(HWND hwnd);
+
 
 	// directshow etc. core part
 	bar_drawer m_bar;
@@ -148,11 +158,16 @@ protected:
 	CComPtr<IMediaControl>		m_mc;
 	CComPtr<IBasicAudio>		m_ba;
 
+	// renderer
+	CUnifyRenderer *m_renderer1;
+	CUnifyRenderer *m_renderer2;
 	// VMR filter vars
+	/*
 	CComPtr<IVMRWindowlessControl9> m_vmr1c;
 	CComPtr<IVMRWindowlessControl9> m_vmr2c;
 	CComPtr<IVMRMixerBitmap9>	m_vmr1bmp;
 	CComPtr<IVMRMixerBitmap9>	m_vmr2bmp;
+	*/
 
 	// my filters
 	CComPtr<IDWindowExtender> m_stereo;

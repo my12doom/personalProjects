@@ -200,6 +200,38 @@ public:
 	}
 };
 
+class Inter2SBS : public GenericVideoFilter 
+{
+public:
+    Inter2SBS(PClip _child, IScriptEnvironment* env):GenericVideoFilter(_child)
+	{
+		if (vi.pixel_type != vi.CS_BGR32)
+			env->ThrowError("input must be RGB32 colorspace.");			
+	}
+
+    PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env)
+	{
+		PVideoFrame src = child->GetFrame(n, env);
+		PVideoFrame dst = env->NewVideoFrame(vi);
+
+		DWORD *psrc = (DWORD*)src->GetReadPtr();
+		DWORD *pdst = (DWORD*)dst->GetWritePtr();
+
+		for(int y=0; y<vi.height; y++)
+		{
+			int pos =  (y>>1) + (y&0x1) * vi.height/2;
+
+			memcpy(pdst + pos*vi.width, psrc+y*vi.width, vi.width*4);
+			//pdst[pos] = psrc[x];
+
+			//psrc += vi.width;
+			//pdst += vi.width;
+		}
+
+		return dst;
+	}
+};
+
 AVSValue __cdecl Create_DeSelect(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
     return new DeSelct(args[0].AsClip(), args[1].AsClip());
@@ -209,7 +241,10 @@ AVSValue __cdecl Create_sq2sbs(AVSValue args, void* user_data, IScriptEnvironmen
 {
     return new sq2sbs(args[0].AsClip());
 }
-
+AVSValue __cdecl Create_Inter2SBS(AVSValue args, void* user_data, IScriptEnvironment* env)
+{
+    return new Inter2SBS(args[0].AsClip(), env);
+}
 AVSValue __cdecl func_create_grf(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
 	strcpy(m_264, args[0].AsString());
@@ -286,8 +321,9 @@ AVSValue __cdecl func_create_grf(AVSValue args, void* user_data, IScriptEnvironm
 
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env)
 {
- 	env->SetMemoryMax(32);
+	env->SetMemoryMax(32);
 	env->AddFunction("sq2sbs", "c", Create_sq2sbs, 0);
+	env->AddFunction("Inter2SBS", "c", Create_Inter2SBS, 0);
 	env->AddFunction("DeSelect", "[clip1]c[clip]c", Create_DeSelect, 0);
     env->AddFunction("CreateGRF", "s", func_create_grf, 0);
     return 0;

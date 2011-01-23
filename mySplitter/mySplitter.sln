@@ -1,24 +1,22 @@
-Microsoft Visual Studio Solution File, Format Version 8.00
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mySplitter", "mySplitter.vcproj", "{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
 EndProject
 Global
-	GlobalSection(SolutionConfiguration) = preSolution
-		Debug = Debug
-		Release = Release
-		release_mt = release_mt
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		release_mt|Win32 = release_mt|Win32
+		Release|Win32 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ProjectConfiguration) = postSolution
-		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.Debug.ActiveCfg = Debug|Win32
-		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.Debug.Build.0 = Debug|Win32
-		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.Release.ActiveCfg = Release|Win32
-		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.Release.Build.0 = Release|Win32
-		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.release_mt.ActiveCfg = release_mt|Win32
-		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.release_mt.Build.0 = release_mt|Win32
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.Debug|Win32.Build.0 = Debug|Win32
+		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.release_mt|Win32.ActiveCfg = release_mt|Win32
+		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.release_mt|Win32.Build.0 = release_mt|Win32
+		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.Release|Win32.ActiveCfg = Release|Win32
+		{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-	EndGlobalSection
-	GlobalSection(ExtensibilityAddIns) = postSolution
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

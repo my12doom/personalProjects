@@ -7,8 +7,10 @@
 #pragma comment( lib, "strmiids" )
 #pragma comment( lib, "winmm" )
 
+#include <tchar.h>
 #include <streams.h>
 #include <initguid.h>
+
 #include "filter_stereo.h"
 #include "filter_mono.h"
 #include "extender.h"
@@ -190,7 +192,8 @@ const AMOVIESETUP_FILTER sudYV12StereoMixer =
     g_wszYV12StereoMixer,				// String name
     MERIT_DO_NOT_USE,					// Filter merit
     3,									// Number of pins
-    sudYV12StereoMixerPins				// Pin information
+    sudYV12StereoMixerPins,				// Pin information
+	CLSID_LegacyAmFilterCategory
 };
 
 
@@ -200,7 +203,8 @@ const AMOVIESETUP_FILTER sudYV12MonoMixer =
 	g_wszYV12MonoMixer,					// String name
 	MERIT_DO_NOT_USE,					// Filter merit
 	2,									// Number of pins
-	sudYV12MonoMixerPins				// Pin information
+	sudYV12MonoMixerPins,				// Pin information
+	CLSID_LegacyAmFilterCategory
 };
 
 
@@ -210,7 +214,8 @@ const AMOVIESETUP_FILTER sudDWindowExtenderMono =
 	g_wszDWindowExtenderMono,			// String name
 	MERIT_DO_NOT_USE,					// Filter merit
 	2,									// Number of pins
-	sudDWindowExtenderMonoPins			// Pin information
+	sudDWindowExtenderMonoPins,			// Pin information
+	CLSID_LegacyAmFilterCategory
 };
 
 const AMOVIESETUP_FILTER sudDWindowExtenderStereo =
@@ -219,7 +224,8 @@ const AMOVIESETUP_FILTER sudDWindowExtenderStereo =
 	g_wszDWindowExtenderStereo,			// String name
 	MERIT_DO_NOT_USE,					// Filter merit
 	3,									// Number of pins
-	sudDWindowExtenderStereoPins		// Pin information
+	sudDWindowExtenderStereoPins,		// Pin information
+	CLSID_LegacyAmFilterCategory
 };
 
 const AMOVIESETUP_FILTER sudDWindowSSP =
@@ -228,7 +234,8 @@ const AMOVIESETUP_FILTER sudDWindowSSP =
 	g_wszDWindowSSP,					// String name
 	MERIT_DO_NOT_USE,					// Filter merit
 	2,									// Number of pins
-	sudDWindowSSPPins					// Pin information
+	sudDWindowSSPPins,					// Pin information
+	CLSID_LegacyAmFilterCategory
 };
 
 CFactoryTemplate g_Templates[] = 

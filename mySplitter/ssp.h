@@ -1,3 +1,4 @@
+#include <atlbase.h>
 #include <streams.h>
 #include <dvdmedia.h>
 #include "filter.h"

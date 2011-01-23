@@ -494,7 +494,9 @@ CMpegSplitterFilter::CMpegSplitterFilter(LPUNKNOWN pUnk, HRESULT* phr, const CLS
 		exe[i] = tolower(exe[i]);
 
 	if (_tcscmp(exe, _T("x264.exe")) == 0 || 
-		_tcscmp(exe, _T("avsutil.exe")) == 0)
+		_tcscmp(exe, _T("avsutil.exe")) == 0 || 
+		_tcscmp(exe, _T("avsdaemon32.exe")) == 0 ||
+		_tcscmp(exe, _T("virtualdub.exe")) == 0) 
 	{
 		_tprintf(_T("SsifSource: %s detected, right eye queue disabled.\n"), exe);
 		m_for_encoding = true;
@@ -1763,6 +1765,7 @@ HRESULT CMpegSplitterOutputPin::DeliverMVCPacket(CAutoPtr<Packet> p)
 //find_match:
 
 	// find matching packets
+	bool matched = false;
 	REFERENCE_TIME matched_time = Packet::INVALID_TIME;
 
 	for(POSITION for_1011 = m_q1011.GetHeadPosition(); for_1011; m_q1011.GetNext(for_1011))
@@ -1773,15 +1776,18 @@ HRESULT CMpegSplitterOutputPin::DeliverMVCPacket(CAutoPtr<Packet> p)
 			Packet *ele1012 = m_q1012.GetAt(for_1012);
 			if (ele1011->rtStart == ele1012->rtStart
 				&& ele1011->rtStop == ele1012->rtStop
-				&& ele1011->rtStart != Packet::INVALID_TIME)
+				&& ele1011->rtStart != Packet::INVALID_TIME
+				)
 			{
 				matched_time = ele1011->rtStart;
+				matched = true;
 				break;
 			}
 		}
 	}
 
-	if (matched_time != Packet::INVALID_TIME)
+	//if (matched_time != Packet::INVALID_TIME)
+	if (matched)
 	{
 		CAutoPtr<Packet> double_packet;
 		// delete every packet before matched packet
@@ -1795,6 +1801,8 @@ HRESULT CMpegSplitterOutputPin::DeliverMVCPacket(CAutoPtr<Packet> p)
 
 				break;
 			}
+			else
+				_tprintf(_T("warning: dropping unmatched packets(left eye, %s - %s, %d bytes)\n"), (LPCTSTR)ReftimeToString(p2->rtStart), (LPCTSTR)ReftimeToString(p2->rtStop), p2->GetDataSize());
 		}
 		while(true)
 		{
@@ -1805,7 +1813,15 @@ HRESULT CMpegSplitterOutputPin::DeliverMVCPacket(CAutoPtr<Packet> p)
 
 				break;
 			}
+			else
+				_tprintf(_T("warning: dropping unmatched packets(right eye, %s - %s, %d bytes)\n"), (LPCTSTR)ReftimeToString(p2->rtStart), (LPCTSTR)ReftimeToString(p2->rtStop), p2->GetDataSize());
+
 		}
+
+		if (double_packet->rtStart == Packet::INVALID_TIME)
+			printf("warning: delivering packet with start = INVALID_TIME");
+		if (double_packet->rtStop == Packet::INVALID_TIME)
+			printf("warning: delivering packet with stop  = INVALID_TIME");
 
 		return __super::DeliverPacket(double_packet);
 	}

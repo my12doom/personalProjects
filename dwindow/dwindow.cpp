@@ -19,6 +19,10 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 
 	switch (message)
 	{
+	case WM_INITDIALOG:
+		lr =_this->on_init_dialog(id, wParam, lParam);
+		break;
+
 	case WM_PAINT:
 		PAINTSTRUCT ps;
 		HDC hdc;
@@ -138,14 +142,13 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 	// Show the window and send a WM_PAINT message to the window 
 	// procedure.
 
-	SendMessage(hwnd, WM_INITDIALOG, 0, 0);
 	ShowWindow(hwnd, SW_HIDE);
 	UpdateWindow(hwnd);
 	*((window_proc_param*)lpParame)->hwnd = hwnd;
 
 	BOOL fGotMessage;
 	while ((fGotMessage = GetMessage(&msg, (HWND) NULL, 0, 0)) != 0 && fGotMessage != -1) 
-	{ 
+	{
 		TranslateMessage(&msg); 
 		DispatchMessage(&msg); 
 	}

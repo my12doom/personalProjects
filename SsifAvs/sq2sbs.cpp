@@ -173,6 +173,7 @@ HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 
 	int left = 1-(fn & 1); 
 
+	//printf("got frame %d\n", fn);
 
 	// pointer and stride
 	BYTE *psrc = NULL;

@@ -8,6 +8,7 @@
 
 DWORD WINAPI feeder_thread(LPVOID lpParameter);
 void main2();
+void main3(int argc, char * argv[]);
 
 typedef struct feeder_thread_parameter_tags
 {
@@ -20,6 +21,7 @@ typedef struct feeder_thread_parameter_tags
 
 const unsigned int max_nal_size = 1024000;
 unsigned char *delimeter_buffer = (unsigned char*)malloc(max_nal_size);
+int n_slice = 0;
 unsigned char watermark[1024];
 int watermark_size = 0;
 CFileBuffer left(max_nal_size*10);
@@ -55,10 +57,12 @@ int read_a_nal(CFileBuffer *f)
 
 	if (data_read == 0)
 		return 0;
-	for(unsigned int i=4; i<data_read-3; i++)
+	for(unsigned int i=3; i<data_read-3; i++)
 		//if (read_buffer[i] == 0)
-		//if (read_buffer[i] == 0x0 && read_buffer[i+1] == 0x0 && read_buffer[i+2] == 0x0 && read_buffer[i+3] == 0x1)
-		if (*(unsigned int *)(read_buffer+i) == 0x01000000)
+		//if (*(unsigned int *)(read_buffer+i) == 0x01000000)
+		if (
+			(read_buffer[i] == 0x0 && read_buffer[i+1] == 0x0 && read_buffer[i+2] == 0x0 && read_buffer[i+3] == 0x1)
+			|| (read_buffer[i] == 0x0 && read_buffer[i+1] == 0x0 && read_buffer[i+2] == 0x1))
 		{
 			return i;
 		}
@@ -67,6 +71,7 @@ int read_a_nal(CFileBuffer *f)
 
 int read_a_delimeter(CFileBuffer *f)
 {
+	n_slice = 0;
 	int size = 0;
 	int current_start = false;
 
@@ -83,6 +88,9 @@ int read_a_delimeter(CFileBuffer *f)
 			printf("(r)");
 		printf("%x ", _nal_type);
 		*/
+
+		if ( (1 <= _nal_type && _nal_type <= 5) || _nal_type == 20)
+			n_slice ++;
 
 		if (_nal_type == 31) //my12doom's watermark
 		{
@@ -101,6 +109,9 @@ int read_a_delimeter(CFileBuffer *f)
 			else
 			{
 				current_start = true;
+
+				if(read_buffer[2] == 0x1)
+					delimeter_buffer[size++] = 0;
 				memcpy(delimeter_buffer + size, read_buffer, nal_size);
 				size += nal_size;
 
@@ -109,6 +120,8 @@ int read_a_delimeter(CFileBuffer *f)
 		}
 		else
 		{
+			if(read_buffer[2] == 0x1)
+				delimeter_buffer[size++] = 0;
 			memcpy(delimeter_buffer + size, read_buffer, nal_size);
 			size += nal_size;
 
@@ -184,8 +197,8 @@ LONGLONG FileSize(const char*filename)
 
 void main(int argc, char * argv[])
 {
-	main2();
-	return;
+	//main3(argc, argv);
+	//return;
 	printf("my12doom's mvc interlacer\n");
 	printf("my12doom.googlecode.com\n");
 	printf("mailto:my12doom@gmail.com\n");
@@ -356,5 +369,33 @@ void main2()
 
 	fclose(f[0]);
 	fclose(f[1]);
+
+}
+
+
+void main3(int argc, char * argv[])
+{
+	feeder_thread_parameter * para = new feeder_thread_parameter;
+	strcpy(para->filename, argv[1]);
+	para->demux = false;
+	para->out = &left;
+	CreateThread(NULL, NULL, feeder_thread, para, NULL, NULL);
+
+	FILE *log = fopen("log.log", "wb");
+
+	int n = 0;
+	int id = 0;
+	while (true)
+	{
+		int delimeter_size = read_a_delimeter(&left);
+
+		if (delimeter_size == 0)
+			break;
+
+		printf("%d :%d bytes, %d slices.\n", n++, delimeter_size, n_slice);
+		fprintf(log, "%d : %d bytes, %d slices.\r\n", n-1, delimeter_size, n_slice);
+	}
+
+	fclose(log);
 
 }

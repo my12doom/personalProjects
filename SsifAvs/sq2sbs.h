@@ -1,3 +1,6 @@
+#include <windows.h>
+#include <stdio.h>
+#include <atlbase.h>
 #include <streams.h>
 #include <dvdmedia.h>
 #include <initguid.h>

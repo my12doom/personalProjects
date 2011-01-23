@@ -2,6 +2,12 @@
 
 __declspec(align(8)) static const __int64 mask1	   = 0x00ff00ff00ff00ff;
 __declspec(align(8)) static const __int64 mask2	   = 0xff00ff00ff00ff00;
+__declspec(align(8)) static const __int64 n16   = 0x0010001000100010;
+__declspec(align(8)) static const __int64 n131	   = 0x0083008300830083;
+__declspec(align(8)) static const __int64 n146	   = 0x0092009200920092;
+__declspec(align(8)) static const __int64 n149	   = 0x0095009500950095;
+__declspec(align(8)) static const __int64 n291	   = 0x0123012301230123;
+__declspec(align(8)) static const __int64 n299	   = 0x012b012b012b012b;
 
 void isse_yuy2_to_yv12(const BYTE* src, int src_rowsize, int src_pitch, 
                     BYTE* dstY, BYTE* dstU, BYTE* dstV, int dst_pitchY, int dst_pitchUV,
@@ -256,6 +262,177 @@ xloop:
        pand mm3,mm4         
       pand mm5,mm4           // Mask chroma
        pand mm6,mm4          // Mask chroma
+   		packuswb mm0, mm2     // Pack luma (upper)
+   		 packuswb mm6, mm5    // Pack chroma
+   		packuswb mm1, mm3     // Pack luma (lower)     
+       movq mm5, mm6        // Chroma copy
+      pand mm5, mm7         // Mask V
+       pand mm6, mm4        // Mask U
+      psrlq mm5,8            // shift down V
+   		 packuswb mm5, mm7     // Pack U 
+   		packuswb mm6, mm7     // Pack V 
+       mov ebx, [edi]
+      mov ecx, [edi+4]
+      movq [ebx+edx*2],mm0
+       movq [ecx+edx*2],mm1
+
+      mov ecx, [edi+8]
+      mov ebx, [edi+12]
+       movd [ecx+edx], mm6  // Store U
+      movd [ebx+edx], mm5   // Store V
+      add esi, 16
+      add edx, 4
+xloop_test:
+    cmp edx,[src_rowsize]
+    jl xloop
+    mov esi, src
+    mov edx,[edi]
+    mov ebx,[edi+4]
+    mov ecx,[edi+8]
+    mov eax,[edi+12]
+    
+    add edx, [dst_pitch2]
+    add ebx, [dst_pitch2]
+    add ecx, [dst_pitchUV]
+    add eax, [dst_pitchUV]
+    add esi, [src_pitch2]
+
+    mov [edi],edx
+    mov [edi+4],ebx
+    mov [edi+8],ecx
+    mov [edi+12],eax
+    mov edx, [y]
+    mov [src],esi
+    
+    add edx, 2
+	
+	// my12doom's line skip
+	cmp edx, 0
+	jne n1
+	add esi, [src_pitch]
+n1:
+	cmp edx, 134
+	jne n2
+	add esi, [src_pitch]
+n2:
+	cmp edx, 270//269
+	jne n3
+	add esi, [src_pitch]
+n3:
+	cmp edx, 404
+	jne n4
+	add esi, [src_pitch]
+n4:
+	cmp edx, 540//539
+	jne n5
+	add esi, [src_pitch]
+n5:
+	cmp edx, 674
+	jne n6
+	add esi, [src_pitch]
+n6:
+	cmp edx, 810//809
+	jne n7
+	add esi, [src_pitch]
+n7:
+	cmp edx, 944
+	jne n8
+	add esi, [src_pitch]
+n8:
+    mov [src],esi
+	// end my12doom's line skip
+	
+yloop_test:
+    cmp edx,[height]
+    mov [y],edx
+    jl yloop
+    sfence
+    emms
+    pop ebx
+  }
+   delete[] dstp;
+
+   return true;
+}
+
+
+bool my_1088_to_YV12_TV(const BYTE* src, int src_rowsize, int src_pitch, 
+BYTE* dstY, BYTE* dstU, BYTE* dstV, int dst_pitchY, int dst_pitchUV,
+int height) 
+{
+	src += src_pitch;// skip line 0
+
+  const BYTE** dstp= new const BYTE*[4];
+  dstp[0]=dstY;
+  dstp[1]=dstY+dst_pitchY;
+  dstp[2]=dstU;
+  dstp[3]=dstV;
+  int src_pitch2 = src_pitch*2;
+  int dst_pitch2 = dst_pitchY*2;
+
+  int y=0;
+  int x=0;
+  src_rowsize = (src_rowsize+3)/4;
+  __asm {
+  push ebx    // stupid compiler forgets to save ebx!!
+    movq mm7,[mask2]
+    movq mm4,[mask1]
+    movq xmm0,[n16]
+    movq xmm1,[n149]
+    mov edx,0
+    mov esi, src
+    mov edi, dstp
+    jmp yloop_test
+    align 16
+yloop:
+      mov edx,0               // x counter   
+      mov eax, [src_pitch]
+      jmp xloop_test
+      align 16
+xloop:      
+      movq mm0,[esi]        // YUY2 upper line  (4 pixels luma, 2 chroma)
+       movq mm1,[esi+eax]   // YUY2 lower line  
+      movq mm6,mm0
+       movq mm2, [esi+8]    // Load second pair
+      movq mm3, [esi+eax+8]
+       movq mm5,mm2
+      //pavgb mm6,mm1         // Average (chroma)
+       //pavgb mm5,mm3        // Average Chroma (second pair)
+
+	   //-- -- -- --(mm0, mm6), -- -- -- --(mm2, mm5)
+	   //-- -- -- --(mm1), -- -- -- --(mm3)
+
+      pand mm0,mm4          // Mask luma
+  	    psrlq mm5, 8		// shift chroma
+		psubusb mm0, [n16]	// -16
+		pmullw mm0, [n149]	// *149
+		psrlw mm0, 7		// shift right(/128)
+
+      pand mm1,mm4          // Mask luma
+ 	     psrlq mm6, 8		// shift chroma
+		psubusb mm1, [n16]	// -16
+		pmullw mm1, [n149]	// *149
+		psrlw mm1, 7		// shift right(/128)
+      pand mm2,mm4          // Mask luma
+ 		psubusb mm2, [n16]	// -16
+		pmullw mm2, [n149]	// *149
+ 		psrlw mm2, 7		// shift right(/128)
+     pand mm3,mm4			// Mask luma
+		psubusb mm3, [n16]	// -16
+		pmullw mm3, [n149]	// *149
+		psrlw mm3, 7		// shift right(/128)
+
+      pand mm5,mm4           // Mask chroma
+ 		//psubusb mm5, [n16]	// -16
+		//pmullw mm5, [n131]	// *131
+		//psrlw mm5, 7		// shift right(/128)
+ 		//paddusb mm5, [n16]	// +16
+      pand mm6,mm4          // Mask chroma
+		//psubusb mm6, [n16]	// -16
+		//pmullw mm6, [n131]	// *131
+		//psrlw mm6, 7		// shift right(/128)
+		//paddusb mm6, [n16]	// +16
+
    		packuswb mm0, mm2     // Pack luma (upper)
    		 packuswb mm6, mm5    // Pack chroma
    		packuswb mm1, mm3     // Pack luma (lower)     
