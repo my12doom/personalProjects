@@ -1630,17 +1630,23 @@ DirectShowSource::DirectShowSource(const char* filename, int _avg_time_per_frame
     CheckHresult(env, CoCreateInstance(CLSID_FilterGraphNoThread, 0, CLSCTX_INPROC_SERVER, IID_IGraphBuilder, (void**)&gb),
                  "couldn't create filter graph");
 
+	HRESULT hrr;
+	sq = new sq2sbs(_T("sq2sbs"), NULL, &hrr);
+	sq->m_dbg = fopen("debug.log", "wb");
+	sq->debug_print("timeBeginPeriod(1)\r\n");
+	CComQIPtr<IBaseFilter, &IID_IBaseFilter> ssp(sq);
+	gb->AddFilter(ssp, L"sq2sbs");
+
 	CComPtr<IBaseFilter> decoder;
 	decoder.CoCreateInstance(CLSID_PD10_DECODER);
 		if (decoder == NULL)
+		{
+			sq->debug_print("could not load pd10 decoder.\r\n");
 			env->ThrowError("couldn't load PD10 decoder.");
+		}
 	gb->AddFilter(decoder, L"decoder");
 	ActiveMVC(decoder);
 	
-	HRESULT hrr;
-	sq = new sq2sbs(_T("sq2sbs"), NULL, &hrr);
-	CComQIPtr<IBaseFilter, &IID_IBaseFilter> ssp(sq);
-	gb->AddFilter(ssp, L"sq2sbs");
 	
 
 
@@ -1706,11 +1712,16 @@ DirectShowSource::DirectShowSource(const char* filename, int _avg_time_per_frame
 _continue:
         CheckHresult(env, hr, "couldn't find main movie.", filename);
 
+		sq->debug_print(L"trying loading %s.\r\n", filenameW);
+
 		//HRESULT RFHresult = gb->RenderFile(filenameW, NULL);
 		CComPtr<IBaseFilter> source_base;
 		source_base.CoCreateInstance(CLSID_SSIFSource);
 		if (source_base == NULL)
+		{
+			sq->debug_print("couldn't load ssif source.\r\n");
 			env->ThrowError("couldn't load ssif source.");
+		}
 		CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(source_base);
 		gb->AddFilter(source_base, L"Ssif Source");
 		hr = source->Load(filenameW, NULL);
@@ -1731,6 +1742,11 @@ _continue:
 		gb->ConnectDirect(source_o, decoder_i, NULL);
 		gb->ConnectDirect(decoder_o, ssp_i, NULL);
 		gb->Render(ssp_o);
+
+		CComPtr<IPin> source_o2;
+		GetUnconnectedPin(source_base, PINDIR_OUTPUT, &source_o2);
+		if (source_o2)
+			gb->Render(source_o2);
 
       if (!get_sample.IsConnected()) { // Ignore arbitary errors, run with what we got
         CheckHresult(env, hr, "couldn't open file ", filename);
@@ -1939,6 +1955,7 @@ _continue:
   DirectShowSource::~DirectShowSource() {
     dssRPT0(dssNEW, "~DirectShowSource.\n");
 	
+	printf("timeEndPeriod(1)\n");
 	timeEndPeriod(1);
     cleanUp();
   }
@@ -2425,6 +2442,9 @@ AVSValue __cdecl Create_DirectShowSource(AVSValue args, void*, IScriptEnvironmen
 
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env)
 {
+	HANDLE h = GetCurrentProcess();
+	//SetProcessAffinityMask(h, 1);
+	CloseHandle(h);
 	env->SetMemoryMax(32);
   env->AddFunction("SsifAvs",
 // args   0      1      2       3       4            5          6

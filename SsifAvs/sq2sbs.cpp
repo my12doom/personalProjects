@@ -142,49 +142,226 @@ HRESULT ActiveMVC(IBaseFilter *filter)
 	return S_OK;
 }
 
-sq2sbs::sq2sbs(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr)
-:CTransformFilter(tszName, punk, CLSID_sq2sbs)
+MPacket::MPacket(IMediaSample *sample)
 {
-	m_t = m_image_x = m_image_y = 0;
-	m_image_buffer = NULL;
+	m_datasize = sample->GetActualDataLength();
+	m_data = (BYTE*)malloc(m_datasize);
+	BYTE*src = NULL;
+	sample->GetPointer(&src);
+	memcpy(m_data, src, m_datasize);
+
+	sample->GetTime(&rtStart, &rtStop);
+}
+
+MPacket::~MPacket()
+{
+	free(m_data);
+}
+
+
+sq2sbs::sq2sbs(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr)
+:CTransformFilter(tszName, punk, CLSID_sq2sbs),
+m_left_queue(_T("left packets")),
+m_right_queue(_T("right packets")),
+m_packet_state(packet_state_normal)
+{
+	m_resuming_left_eye = false;
+	m_dbg = NULL;
+	m_1088fix = false;
+	m_right_eye_flushing_fn = -1;
+	m_this_stream_start = m_in_x = m_in_y = 0;
+}
+
+void sq2sbs::debug_print(const char *err, ...)
+{
+	if (m_dbg == NULL)
+		return;
+
+	char out[MAX_PATH + 256];
+
+	va_list valist;
+
+	va_start(valist,err);
+	wvsprintfA(out, err, valist);
+	va_end (valist);
+	fprintf(m_dbg, out);
+	fflush(m_dbg);
+}
+void sq2sbs::debug_print(const wchar_t *err, ...)
+{
+	if (m_dbg == NULL)
+		return;
+
+	wchar_t out[MAX_PATH + 256];
+
+	va_list valist;
+
+	va_start(valist,err);
+	wvsprintfW(out, err, valist);
+	va_end (valist);
+	fwprintf(m_dbg, out);
+	fflush(m_dbg);
 }
 
 sq2sbs::~sq2sbs()
 {
-	if (m_image_buffer)
-		{
-			free(m_image_buffer);
-			m_image_buffer = NULL;
-		}
+	if (m_dbg)
+	{
+		fprintf(m_dbg, "end of debug.\r\n");
+		fclose(m_dbg);
+	}
 }
 
 HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 {
+	// time and frame number
 	REFERENCE_TIME TimeStart, TimeEnd;
 	REFERENCE_TIME MediaStart, MediaEnd;
 	pIn->GetTime(&TimeStart, &TimeEnd);
 	pIn->GetMediaTime(&MediaStart, &MediaEnd);
-
 	int fn;
-	if (m_image_x == 1280)
-		fn = (int)((double)(TimeStart+m_t)/10000*120/1001 + 0.5);
+	if (m_in_x == 1280)
+		fn = (int)((double)(TimeStart+m_this_stream_start)/10000*120/1001 + 0.5);
 	else
-		fn = (int)((double)(TimeStart+m_t)/10000*48/1001 + 0.5);
+		fn = (int)((double)(TimeStart+m_this_stream_start)/10000*48/1001 + 0.5);
+	debug_print("got frame %d\r\n", fn);
 
-	int left = 1-(fn & 1); 
 
-	//printf("got frame %d\n", fn);
+	// determine left or right eye
+	// assume only right eye has flushing packets
+	// assume left eye packets' time stamp is always right
+	int left;
+	if (m_last_fn != -1 && fn != m_last_fn+1)
+	{
+		debug_print("%d -> %d\r\n", m_last_fn, fn);
 
-	// pointer and stride
-	BYTE *psrc = NULL;
-	pIn->GetPointer(&psrc);
-	BYTE *pdst = NULL;
-	pOut->GetPointer(&pdst);
-	int out_size = pOut->GetActualDataLength();
-	int stride = out_size *2 /3/ m_image_y ;
-	if (stride < m_image_x*2)
-		return E_UNEXPECTED;
+		/*
+		if (m_right_eye_flushing_fn < 0)
+		{
+			debug_print("first flushing right eye detected(%d).\r\n", fn);
+			m_right_eye_flushing_fn = fn;
+			left = 0;
+		}
+		else if (m_right_eye_flushing_fn > 0 && fn == m_right_eye_flushing_fn)
+		{
+			debug_print("flushing right eye detected(%d).\r\n", fn);
+			left = 0;
+		}
+		else
+		{
+			debug_print("resuming left eye detected(%d).\r\n", fn);
+			left = 1;
+		}
+		*/
 
+		// left queue == right queue, not right eye flushing packet, and is time of 2
+		// this should be new segment
+		if (m_left_queue.GetCount() == m_right_queue.GetCount() && fn != m_right_eye_flushing_fn && (fn%2==0))
+		{
+			// TODO: add freeze frame to maintain sync
+			debug_print("left eye new segment! queue(%d,%d) fn(%d)\r\n", m_left_queue.GetCount(), m_right_queue.GetCount(), fn);
+			m_last_fn = fn;
+			left = 1;
+			m_right_eye_flushing_fn = -1;
+		}
+
+		// this should be right eye flushing
+		else 
+		{
+			// left queue == right queue +1
+			// this might be first right eye flushing packet
+			if (m_left_queue.GetCount() == m_right_queue.GetCount() + 1)
+			{
+				debug_print("first right eye flushing! queue(%d,%d) fn(%d)\r\n", m_left_queue.GetCount(), m_right_queue.GetCount(), fn);
+				m_resuming_left_eye = true;
+				m_right_eye_flushing_fn = fn;
+				left = 0;
+			}
+
+			// continue flushing right eye packet
+			else if (m_right_eye_flushing_fn >0 && fn == m_right_eye_flushing_fn)
+			{
+				debug_print("continue right eye flushing! queue(%d,%d) fn(%d)\r\n", m_left_queue.GetCount(), m_right_queue.GetCount(), fn);
+				left = 0;
+			}
+
+			// resuming left eye packet
+			else
+			{
+				debug_print("possible resuming left eye detected! queue(%d,%d) fn(%d)\r\n", m_left_queue.GetCount(), m_right_queue.GetCount(), fn);
+				if (m_resuming_left_eye)
+				{
+					m_resuming_left_eye = false;
+
+					// test if is new segment
+					MPacket * last_packet = m_right_queue.Get(m_right_queue.GetTailPosition());
+					int last_fn = ((double)(last_packet->rtStart+m_this_stream_start)/10000*120/1001 + 0.5);
+					if (fn == last_fn +1)
+					{
+						// when this new segment come, the queue is not balenced, so we clear it;
+						// TODO : maintain sync
+						debug_print("new segment!!\r\n");
+						last_packet = m_right_queue.RemoveTail();
+						m_left_queue.RemoveAll();
+						m_right_queue.RemoveAll();
+						m_left_queue.AddHead(last_packet);
+						left = 0;
+
+					}
+					else
+					{
+						debug_print("reversing!\r\n");
+						MPacket * right_packet = m_right_queue.RemoveTail();
+						m_right_queue.AddHead(right_packet);
+						left = 1;
+					}
+				}
+				else
+				{
+					// this is 2nd or 3rd resuming left eye packet
+					left = 1;
+				}
+			}
+
+			// try fix to last_fn+1
+			fn = m_last_fn + 1;
+		}
+	}
+	else
+	{
+		m_right_eye_flushing_fn = -1;
+		left = 1-(fn & 1); 
+	}
+
+	m_last_fn = fn;
+
+
+	// add to queue first
+	if (left)
+	{
+		debug_print("adding to left queue(%d in queue)\r\n", m_left_queue.GetCount());
+		m_left_queue.AddTail(new MPacket(pIn));
+	}
+	else
+	{
+		debug_print("adding to right queue(%d in queue)\r\n", m_right_queue.GetCount());
+		m_right_queue.AddTail(new MPacket(pIn));
+		/*
+		if (m_right_queue.GetCount() == 3 && m_right_eye_flushing_fn > 0)
+		{
+			debug_print("adding to right queue(head)\r\n");
+			m_right_queue.AddHead(new MPacket(pIn));
+		}
+		else
+		{
+			debug_print("adding to right queue(%d in queue)\r\n", m_right_queue.GetCount());
+			m_right_queue.AddTail(new MPacket(pIn));
+		}
+		*/
+	}
+
+
+	/*
 	if (left)
 	{
  		BYTE *pdstV = m_image_buffer + stride*m_image_y;
@@ -220,38 +397,86 @@ HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			pOut->SetDiscontinuity(pIn->IsDiscontinuity() == S_OK);
 		}
 	}
+	*/
 
-	// add mask here
-	// assume file = ssifavs.dll
-	// and colorspace = YV12
-	if (fn==1)
+
+	if (m_left_queue.GetCount()>0 && m_right_queue.GetCount()>0 && m_right_eye_flushing_fn == -1)
 	{
-		HMODULE hm= LoadLibrary(_T("ssifavs.dll"));
-		HGLOBAL hDllData = LoadResource(hm, FindResource(hm, MAKEINTRESOURCE(IDR_RCDATA1), RT_RCDATA));
-		void * dll_data = LockResource(hDllData);
+		// pointer and stride
+		BYTE *pdst = NULL;
+		pOut->GetPointer(&pdst);
+		int out_size = pOut->GetActualDataLength();
+		int stride = out_size *2 /3/ m_out_y ;
+		if (stride < m_in_x*2)
+			return E_UNEXPECTED;
+		BYTE *pdstV = pdst + stride*m_out_y;
+		BYTE *pdstU = pdstV + stride*m_out_y/4;
+		BYTE *pdst_r = pdst + m_in_x;
+		BYTE *pdst_r_V = pdstV + m_in_x/2;
+		BYTE *pdst_r_U = pdstU + m_in_x/2;
 
-		SIZE size = {200, 136};
+		CAutoPtr<MPacket> left_packet(m_left_queue.RemoveHead());
+		BYTE *psrc_l = left_packet->m_data;
+		//left_packet->GetPointer(&psrc_l);
+		//BYTE *psrc_l_V = psrc_l + m_image_x*m_image_y;
+		//BYTE *psrc_l_U = psrc_l_V + m_image_x*m_image_y/4;
 
-		// get data and close it
-		unsigned char *m_mask = (unsigned char*)malloc(27200);
-		memset(m_mask, 0, 27200);
-		if(dll_data) memcpy(m_mask, dll_data, 27200);
-		FreeLibrary(hm);
-
-		// add mask
-		int width = m_image_x*2;
-		int height = m_image_y;
-		for(int y=0; y<size.cy; y++)
+		CAutoPtr<MPacket> right_packet(m_right_queue.RemoveHead());
+		BYTE *psrc_r = right_packet->m_data;
+		//right_packet->GetPointer(&psrc_r);
+		//BYTE *psrc_r_V = psrc_r + m_image_x*m_image_y;
+		//BYTE *psrc_r_U = psrc_r_V + m_image_x*m_image_y/4;
+		if (m_1088fix)
 		{
-			memcpy(pdst+(y+height/2-size.cy/2)*width +width/4-size.cx/2, 
-				m_mask + size.cx*y, size.cx);
-			memcpy(pdst+(y+height/2-size.cy/2)*width +width/4-size.cx/2 + width/2,
-				m_mask + size.cx*y, size.cx);
+			my_1088_to_YV12(psrc_l, m_in_x*2, m_in_x*2, pdst, pdstU, pdstV, stride, stride/2);
+			my_1088_to_YV12(psrc_r, m_in_x*2, m_in_x*2, pdst_r, pdst_r_U, pdst_r_V, stride, stride/2);
+		}
+		else
+		{
+			isse_yuy2_to_yv12_r(psrc_l, m_in_x*2, m_in_x*2, pdst, pdstU, pdstV, stride, stride/2, m_in_y);
+			isse_yuy2_to_yv12_r(psrc_r, m_in_x*2, m_in_x*2, pdst_r, pdst_r_U, pdst_r_V, stride, stride/2, m_in_y);
 		}
 
-		free(m_mask);
+
+		// add mask here
+		// assume file = ssifavs.dll
+		// and colorspace = YV12
+		if (fn==1)
+		{
+			HMODULE hm= LoadLibrary(_T("ssifavs.dll"));
+			HGLOBAL hDllData = LoadResource(hm, FindResource(hm, MAKEINTRESOURCE(IDR_RCDATA1), RT_RCDATA));
+			void * dll_data = LockResource(hDllData);
+
+			SIZE size = {200, 136};
+
+			// get data and close it
+			unsigned char *m_mask = (unsigned char*)malloc(27200);
+			memset(m_mask, 0, 27200);
+			if(dll_data) memcpy(m_mask, dll_data, 27200);
+			FreeLibrary(hm);
+
+			// add mask
+			int width = m_in_x*2;
+			int height = m_out_y;
+			for(int y=0; y<size.cy; y++)
+			{
+				memcpy(pdst+(y+height/2-size.cy/2)*width +width/4-size.cx/2, 
+					m_mask + size.cx*y, size.cx);
+				memcpy(pdst+(y+height/2-size.cy/2)*width +width/4-size.cx/2 + width/2,
+					m_mask + size.cx*y, size.cx);
+			}
+
+			free(m_mask);
+		}
+		pOut->SetTime(&left_packet->rtStart, &left_packet->rtStop);
+		debug_print("deliver\r\n");
+		return S_OK;
 	}
-	return S_OK;
+	else
+	{
+		debug_print("not enough data\r\n");
+		return S_FALSE;
+	}
 }
 HRESULT sq2sbs::CheckInputType(const CMediaType *mtIn)
 {
@@ -262,20 +487,15 @@ HRESULT sq2sbs::CheckInputType(const CMediaType *mtIn)
 	if( *mtIn->FormatType() == FORMAT_VideoInfo2 && subtypeIn == MEDIASUBTYPE_YUY2)
 	{
 		BITMAPINFOHEADER *pbih = &((VIDEOINFOHEADER2*)mtIn->Format())->bmiHeader;
-		m_image_x = pbih->biWidth;
-		m_image_y = pbih->biHeight;
-
-		// malloc image buffer
-		if (m_image_buffer)
-		{
-			free(m_image_buffer);
-			m_image_buffer = NULL;
-		}
-		m_image_buffer = (BYTE*)malloc(m_image_x*2*m_image_y*3/2);
+		m_out_x = m_in_x = pbih->biWidth;
+		m_out_y = m_in_y = pbih->biHeight;
 
 		// 1088 fix
-		if (m_image_y == 1088)
-			m_image_y = 1080;
+		if (m_in_y == 1088)
+		{
+			m_out_y = 1080;
+			m_1088fix = true;
+		}
 
 		hr = S_OK;
 	}
@@ -304,7 +524,7 @@ HRESULT sq2sbs::DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pP
 	CMediaType *inMediaType = &m_pInput->CurrentMediaType();
 
 	pProperties->cBuffers = 1;
-	pProperties->cbBuffer = m_image_x * 2 * m_image_y * 3/2;
+	pProperties->cbBuffer = m_in_x * 2 * m_out_y * 3/2;
 
 	ALLOCATOR_PROPERTIES Actual;
 	hr = pAlloc->SetProperties(pProperties,&Actual);
@@ -335,7 +555,7 @@ HRESULT sq2sbs::GetMediaType(int iPosition, CMediaType *pMediaType)
 		pMediaType->SetType(&MEDIATYPE_Video);
 		pMediaType->SetFormatType(&FORMAT_VideoInfo2);
 		pMediaType->SetSubtype(&MEDIASUBTYPE_YV12);
-		pMediaType->SetSampleSize(m_image_x*2*m_image_y*3/2);
+		pMediaType->SetSampleSize(m_out_x*2*m_out_y*3/2);
 		pMediaType->SetTemporalCompression(FALSE);
 
 		VIDEOINFOHEADER2 *vihOut = (VIDEOINFOHEADER2 *)pMediaType->ReallocFormatBuffer(sizeof(VIDEOINFOHEADER2));
@@ -346,8 +566,9 @@ HRESULT sq2sbs::GetMediaType(int iPosition, CMediaType *pMediaType)
 
 		vihOut->dwPictAspectRatioX = 32;
 		vihOut->dwPictAspectRatioY = 9;	// 16:9 only
-		vihOut->bmiHeader.biWidth = m_image_x *2 ;
-		vihOut->bmiHeader.biHeight = m_image_y;
+		vihOut->bmiHeader.biWidth = m_out_x *2 ;
+		vihOut->bmiHeader.biHeight = m_out_y;
+
 
 		vihOut->bmiHeader.biXPelsPerMeter = 1;
 		vihOut->bmiHeader.biYPelsPerMeter = 1;
@@ -361,6 +582,13 @@ HRESULT sq2sbs::GetMediaType(int iPosition, CMediaType *pMediaType)
 }
 HRESULT sq2sbs::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {
-	m_t = tStart;
+	// TODO: flush to ensure sync
+
+	debug_print("new segment!\r\n");
+	m_left_queue.RemoveAll();
+	m_right_queue.RemoveAll();
+	m_last_fn = -1;
+	m_right_eye_flushing_fn = -1;
+	m_this_stream_start = tStart;
 	return __super::NewSegment(tStart, tStop, dRate);
 }

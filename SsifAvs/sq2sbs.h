@@ -1,6 +1,6 @@
+#include <atlbase.h>
 #include <windows.h>
 #include <stdio.h>
-#include <atlbase.h>
 #include <streams.h>
 #include <dvdmedia.h>
 #include <initguid.h>
@@ -27,6 +27,16 @@ HRESULT AddGraphToRot(IUnknown *pUnkGraph, DWORD *pdwRegister);
 void RemoveGraphFromRot(DWORD pdwRegister);
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
 
+class MPacket
+{
+public:
+	MPacket(IMediaSample *sample);
+	~MPacket();
+	REFERENCE_TIME rtStart, rtStop;
+	BYTE *m_data;
+	int m_datasize;
+};
+
 
 class sq2sbs : public CTransformFilter
 {
@@ -49,9 +59,41 @@ public:
 	sq2sbs(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr);
 	~sq2sbs();
 
+	// debug function
+	FILE *m_dbg;
+	void debug_print(const char *tszErr, ...);
+	void debug_print(const wchar_t *tszErr, ...);
+
 private:
-	REFERENCE_TIME m_t;
-	int m_image_x;
-	int m_image_y;
-	BYTE *m_image_buffer;
+
+	// for pd10 fixing
+	enum
+	{
+		packet_state_normal,
+		packet_state_flushing_r1,
+		packet_state_flushing_r2,
+		packet_state_flushing_r3,
+		packet_state_flushing_r4,
+		packet_state_flushing_l1,
+		packet_state_flushing_l2,
+		packet_state_flushing_l3,
+		packet_state_jump,
+	} m_packet_state;
+	int m_right_eye_flushing_fn;
+
+	int m_last_fn;
+	bool m_resuming_left_eye;		// true = waiting for first resuming left eye packet, to reverse a right eye packet from tail to head;
+
+	// image control
+	int m_1088fix;
+	int m_in_x;
+	int m_in_y;
+	int m_out_x;	// not sbs, is 1920 or 1280
+	int m_out_y;
+	CGenericList<MPacket> m_left_queue;
+	CGenericList<MPacket> m_right_queue;
+
+	// stream time
+	REFERENCE_TIME m_this_stream_start;
+
 };

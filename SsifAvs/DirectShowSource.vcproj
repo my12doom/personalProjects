@@ -176,11 +176,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib strmbasd.lib msacm32.lib quartz.lib ddraw.lib amstrmid.lib winmm.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib strmbasd.lib msacm32.lib quartz.lib amstrmid.lib winmm.lib"
 				OutputFile=".\Debug/SsifAvs.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug"
+				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode"
 				IgnoreDefaultLibraryNames="LIBCMT"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/DirectShowSource.pdb"
