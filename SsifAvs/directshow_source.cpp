@@ -1710,9 +1710,10 @@ DirectShowSource::DirectShowSource(const char* filename, int _avg_time_per_frame
 			}
 
 _continue:
-        CheckHresult(env, hr, "couldn't find main movie.", filename);
+        CheckHresult(env, hr, "couldn't find main movie of (\"%s\").", filename);
 
-		sq->debug_print(L"trying loading %s.\r\n", filenameW);
+		sq->debug_print(L"trying loading %s.", filenameW);
+		sq->debug_print("\r\n");
 
 		//HRESULT RFHresult = gb->RenderFile(filenameW, NULL);
 		CComPtr<IBaseFilter> source_base;

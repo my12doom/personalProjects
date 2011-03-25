@@ -35,6 +35,7 @@ public:
 	REFERENCE_TIME rtStart, rtStop;
 	BYTE *m_data;
 	int m_datasize;
+	int fn;
 };
 
 
@@ -70,19 +71,21 @@ private:
 	enum
 	{
 		packet_state_normal,
-		packet_state_flushing_r1,
-		packet_state_flushing_r2,
-		packet_state_flushing_r3,
-		packet_state_flushing_r4,
-		packet_state_flushing_l1,
-		packet_state_flushing_l2,
-		packet_state_flushing_l3,
-		packet_state_jump,
+		packet_state_lost_sync,
+		packet_state_flushing_R3,
+		packet_state_flushing_R4,
+		packet_state_flushing_L1,
+		packet_state_flushing_L2,
+		packet_state_flushing_L3,
 	} m_packet_state;
-	int m_right_eye_flushing_fn;
 
 	int m_last_fn;
+	int m_flushing_fn;
+
 	bool m_resuming_left_eye;		// true = waiting for first resuming left eye packet, to reverse a right eye packet from tail to head;
+	CGenericList<MPacket> m_left_queue;
+	CGenericList<MPacket> m_right_queue;
+	void ClearQueue();
 
 	// image control
 	int m_1088fix;
@@ -90,8 +93,6 @@ private:
 	int m_in_y;
 	int m_out_x;	// not sbs, is 1920 or 1280
 	int m_out_y;
-	CGenericList<MPacket> m_left_queue;
-	CGenericList<MPacket> m_right_queue;
 
 	// stream time
 	REFERENCE_TIME m_this_stream_start;

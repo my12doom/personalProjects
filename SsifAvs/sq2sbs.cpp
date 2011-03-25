@@ -1,6 +1,7 @@
 #include "sq2sbs.h"
 #include "resource.h"
 #include "..\mysplitter\asm.h"
+#include "vld.h"
 
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 {
@@ -142,10 +143,19 @@ HRESULT ActiveMVC(IBaseFilter *filter)
 	return S_OK;
 }
 
+
 MPacket::MPacket(IMediaSample *sample)
 {
 	m_datasize = sample->GetActualDataLength();
+
+	if (m_datasize < 10240)
+		printf("warning: very small data size:%d\n\n", m_datasize);
+
 	m_data = (BYTE*)malloc(m_datasize);
+
+	if (m_data == NULL)
+		printf("warning: malloc(%d) failed.\n\n", m_datasize);
+
 	BYTE*src = NULL;
 	sample->GetPointer(&src);
 	memcpy(m_data, src, m_datasize);
@@ -168,7 +178,7 @@ m_packet_state(packet_state_normal)
 	m_resuming_left_eye = false;
 	m_dbg = NULL;
 	m_1088fix = false;
-	m_right_eye_flushing_fn = -1;
+	m_flushing_fn = -1;
 	m_this_stream_start = m_in_x = m_in_y = 0;
 }
 
@@ -224,183 +234,127 @@ HRESULT sq2sbs::Transform(IMediaSample *pIn, IMediaSample *pOut)
 		fn = (int)((double)(TimeStart+m_this_stream_start)/10000*120/1001 + 0.5);
 	else
 		fn = (int)((double)(TimeStart+m_this_stream_start)/10000*48/1001 + 0.5);
-	debug_print("got frame %d\r\n", fn);
 
+	debug_print("got frame %d,queue(%d,%d)\r\n", fn, m_left_queue.GetCount(), m_right_queue.GetCount());
 
-	// determine left or right eye
-	// assume only right eye has flushing packets
-	// assume left eye packets' time stamp is always right
-	int left;
-	if (m_last_fn != -1 && fn != m_last_fn+1)
+	int left = 0;
+	if (m_last_fn != -1 && fn != m_last_fn+1 && m_packet_state == packet_state_normal)
 	{
-		debug_print("%d -> %d\r\n", m_last_fn, fn);
+		debug_print("lost sync\r\n");
+		m_packet_state = packet_state_lost_sync;
+		m_flushing_fn = fn;
+		fn = m_last_fn + 1;
+		left = 0;
+	}
 
-		/*
-		if (m_right_eye_flushing_fn < 0)
+	else if (m_packet_state == packet_state_lost_sync)
+	{
+		if (fn == m_flushing_fn +1 && ((fn&1) == 1) )	// m_flushing_fn == real last fn
 		{
-			debug_print("first flushing right eye detected(%d).\r\n", fn);
-			m_right_eye_flushing_fn = fn;
+			debug_print("lost right eye packets, start new segment.\r\n");
+			// new segment
+			// TODO: maintain sync
+			MPacket *last_packet = m_right_queue.RemoveTail();
+			ClearQueue();
+			POSITION pos = m_left_queue.AddTail(last_packet);
 			left = 0;
+			m_packet_state = packet_state_normal;
 		}
-		else if (m_right_eye_flushing_fn > 0 && fn == m_right_eye_flushing_fn)
+		else if (fn == m_last_fn +1)
 		{
-			debug_print("flushing right eye detected(%d).\r\n", fn);
+			debug_print("resync.\r\n");
+			left = 1;
+			m_packet_state = packet_state_normal;
+			fn = m_last_fn + 1;
+		}
+		else if(fn == m_flushing_fn)
+		{
+			debug_print("right eye flushing\r\n");
 			left = 0;
+			m_packet_state = packet_state_flushing_R3;
+			fn = m_last_fn + 1;
 		}
 		else
 		{
-			debug_print("resuming left eye detected(%d).\r\n", fn);
+			debug_print("lost left and right eye packets, start new segment.\r\n");
+			// new segment
+			// TODO: even X or odd Y
+			// TODO: maintain sync
+			ClearQueue();
 			left = 1;
+			m_packet_state = packet_state_normal;
 		}
-		*/
+	}
 
-		// left queue == right queue, not right eye flushing packet, and is time of 2
-		// this should be new segment
-		if (m_left_queue.GetCount() == m_right_queue.GetCount() && fn != m_right_eye_flushing_fn && (fn%2==0))
-		{
-			// TODO: add freeze frame to maintain sync
-			debug_print("left eye new segment! queue(%d,%d) fn(%d)\r\n", m_left_queue.GetCount(), m_right_queue.GetCount(), fn);
-			m_last_fn = fn;
-			left = 1;
-			m_right_eye_flushing_fn = -1;
-		}
+	else if (m_packet_state == packet_state_flushing_R3)
+	{
+		debug_print("3rd right eye flushing packet.\r\n");
+		fn = m_last_fn + 1;
+		left = 0;
+		m_packet_state = packet_state_flushing_R4;
+	}
 
-		// this should be right eye flushing
-		else 
-		{
-			// left queue == right queue +1
-			// this might be first right eye flushing packet
-			if (m_left_queue.GetCount() == m_right_queue.GetCount() + 1)
-			{
-				debug_print("first right eye flushing! queue(%d,%d) fn(%d)\r\n", m_left_queue.GetCount(), m_right_queue.GetCount(), fn);
-				m_resuming_left_eye = true;
-				m_right_eye_flushing_fn = fn;
-				left = 0;
-			}
+	else if (m_packet_state == packet_state_flushing_R4)
+	{
+		debug_print("4th right eye flushing packet.\r\n");
+		fn = m_last_fn + 1;
+		left = 0;
+		m_packet_state = packet_state_flushing_L1;
+	}
 
-			// continue flushing right eye packet
-			else if (m_right_eye_flushing_fn >0 && fn == m_right_eye_flushing_fn)
-			{
-				debug_print("continue right eye flushing! queue(%d,%d) fn(%d)\r\n", m_left_queue.GetCount(), m_right_queue.GetCount(), fn);
-				left = 0;
-			}
+	else if (m_packet_state == packet_state_flushing_L1)
+	{
+		debug_print("1st left eye flushing packet, reversing right eye order.\r\n");
+		//reverse
+		MPacket *last_right_packet = m_right_queue.RemoveTail();
+		POSITION pos = m_right_queue.AddHead(last_right_packet);
 
-			// resuming left eye packet
-			else
-			{
-				debug_print("possible resuming left eye detected! queue(%d,%d) fn(%d)\r\n", m_left_queue.GetCount(), m_right_queue.GetCount(), fn);
-				if (m_resuming_left_eye)
-				{
-					m_resuming_left_eye = false;
+		fn = m_last_fn + 1;
+		left = 1;
+		m_packet_state = packet_state_flushing_L2;
+	}
 
-					// test if is new segment
-					MPacket * last_packet = m_right_queue.Get(m_right_queue.GetTailPosition());
-					int last_fn = ((double)(last_packet->rtStart+m_this_stream_start)/10000*120/1001 + 0.5);
-					if (fn == last_fn +1)
-					{
-						// when this new segment come, the queue is not balenced, so we clear it;
-						// TODO : maintain sync
-						debug_print("new segment!!\r\n");
-						last_packet = m_right_queue.RemoveTail();
-						m_left_queue.RemoveAll();
-						m_right_queue.RemoveAll();
-						m_left_queue.AddHead(last_packet);
-						left = 0;
+	else if (m_packet_state == packet_state_flushing_L2)
+	{
+		debug_print("2nd left eye flushing packet.\r\n");
+		fn = m_last_fn + 1;
+		left = 1;
+		m_packet_state = packet_state_flushing_L3;
+	}
 
-					}
-					else
-					{
-						debug_print("reversing!\r\n");
-						MPacket * right_packet = m_right_queue.RemoveTail();
-						m_right_queue.AddHead(right_packet);
-						left = 1;
-					}
-				}
-				else
-				{
-					// this is 2nd or 3rd resuming left eye packet
-					left = 1;
-				}
-			}
-
-			// try fix to last_fn+1
-			fn = m_last_fn + 1;
-		}
+	else if (m_packet_state == packet_state_flushing_L3)
+	{
+		debug_print("3rd left eye flushing packet.\r\n");
+		fn = m_last_fn + 1;
+		left = 1;
+		m_packet_state = packet_state_normal;
+	}
+	
+	else if (m_packet_state == packet_state_normal)
+	{
+		left = 1- (fn & 0x1);
 	}
 	else
 	{
-		m_right_eye_flushing_fn = -1;
-		left = 1-(fn & 1); 
+		debug_print("unkown packet\r\n");
 	}
 
 	m_last_fn = fn;
 
-
-	// add to queue first
+	MPacket *tmp = new MPacket(pIn);
+	tmp->fn = fn;
 	if (left)
 	{
-		debug_print("adding to left queue(%d in queue)\r\n", m_left_queue.GetCount());
-		m_left_queue.AddTail(new MPacket(pIn));
+		debug_print("adding to left, queue(%d,%d).\r\n", m_left_queue.GetCount(), m_right_queue.GetCount());
+		POSITION pos = m_left_queue.AddTail(tmp);
 	}
 	else
 	{
-		debug_print("adding to right queue(%d in queue)\r\n", m_right_queue.GetCount());
-		m_right_queue.AddTail(new MPacket(pIn));
-		/*
-		if (m_right_queue.GetCount() == 3 && m_right_eye_flushing_fn > 0)
-		{
-			debug_print("adding to right queue(head)\r\n");
-			m_right_queue.AddHead(new MPacket(pIn));
-		}
-		else
-		{
-			debug_print("adding to right queue(%d in queue)\r\n", m_right_queue.GetCount());
-			m_right_queue.AddTail(new MPacket(pIn));
-		}
-		*/
+		debug_print("adding to right, queue(%d,%d).\r\n", m_left_queue.GetCount(), m_right_queue.GetCount());
+		POSITION pos = m_right_queue.AddTail(tmp);
 	}
 
-
-	/*
-	if (left)
-	{
- 		BYTE *pdstV = m_image_buffer + stride*m_image_y;
-		BYTE *pdstU = pdstV + stride*m_image_y/4;
-
-		if (m_image_y == 1080)
-			my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, m_image_buffer, pdstU, pdstV, m_image_x*2, m_image_x);
-		else
-			isse_yuy2_to_yv12_r(psrc, m_image_x*2, m_image_x*2, m_image_buffer, pdstU, pdstV, m_image_x*2, m_image_x, m_image_y);
-		return S_FALSE;
-	}
-	else
-	{
-		if(pOut)
-		{
-			// right half
-			BYTE *pdstY = m_image_buffer + m_image_x;
-			BYTE *pdstV = m_image_buffer + stride*m_image_y + m_image_x/2;
-			BYTE *pdstU = pdstV + stride*m_image_y/4;
-			if (m_image_y == 1080)
-				my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, pdstY, pdstU, pdstV, m_image_x*2, m_image_x);
-			else
-				isse_yuy2_to_yv12_r(psrc, m_image_x*2, m_image_x*2, pdstY, pdstU, pdstV, m_image_x*2, m_image_x, m_image_y);
-
-			// copy to pOut;
-			memcpy(pdst, m_image_buffer, out_size);
-
-			// set sample property
-			pOut->SetTime(&TimeStart, &TimeEnd);
-			pOut->SetMediaTime(&MediaStart,&MediaEnd);
-			pOut->SetSyncPoint(pIn->IsSyncPoint() == S_OK);
-			pOut->SetPreroll(pIn->IsPreroll() == S_OK);
-			pOut->SetDiscontinuity(pIn->IsDiscontinuity() == S_OK);
-		}
-	}
-	*/
-
-
-	if (m_left_queue.GetCount()>0 && m_right_queue.GetCount()>0 && m_right_eye_flushing_fn == -1)
+	if (m_left_queue.GetCount()>0 && m_right_queue.GetCount()>0 && m_packet_state == packet_state_normal)
 	{
 		// pointer and stride
 		BYTE *pdst = NULL;
@@ -583,12 +537,23 @@ HRESULT sq2sbs::GetMediaType(int iPosition, CMediaType *pMediaType)
 HRESULT sq2sbs::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {
 	// TODO: flush to ensure sync
+	CAutoLock lck(&m_csReceive);
 
 	debug_print("new segment!\r\n");
-	m_left_queue.RemoveAll();
-	m_right_queue.RemoveAll();
+	ClearQueue();
 	m_last_fn = -1;
-	m_right_eye_flushing_fn = -1;
+	m_flushing_fn = -1;
 	m_this_stream_start = tStart;
 	return __super::NewSegment(tStart, tStop, dRate);
+}
+void sq2sbs::ClearQueue()
+{
+	while(m_left_queue.GetCount())
+	{
+		delete m_left_queue.RemoveTail();
+	}
+	while(m_right_queue.GetCount())
+	{
+		delete m_right_queue.RemoveTail();
+	}
 }
