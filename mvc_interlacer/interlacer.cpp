@@ -5,7 +5,6 @@
 #include "tsdemux\ts.h"
 #include "CFileBuffer.h"
 
-
 DWORD WINAPI feeder_thread(LPVOID lpParameter);
 void main2();
 void main3(int argc, char * argv[]);
@@ -27,6 +26,8 @@ int watermark_size = 0;
 CFileBuffer left(max_nal_size*10);
 CFileBuffer right(max_nal_size*10);
 
+int nal_type_found[255] = {};
+
 void create_watermark()
 {
 	#define str "my12doom's mvc interlacer."
@@ -42,12 +43,13 @@ void create_watermark()
 
 int nal_type(unsigned char *data)
 {
+	int o = -1;
 	if (data[2] == 0x0 && data[3] == 0x1)
-		return data[4] & 0x1f;
+		o = data[4] & 0x1f;
 	else if (data[1] == 0x0 && data[2] == 0x1)
-		return data[3] & 0x1f;
+		o = data[3] & 0x1f;
 
-	return -1;
+	return o;
 }
 
 int read_a_nal(CFileBuffer *f)
@@ -98,6 +100,29 @@ int read_a_delimeter(CFileBuffer *f)
 			continue;
 		}
 
+		// test remove SEI
+		if (_nal_type == 6) //my12doom's watermark
+		{
+			f->remove_data(nal_size);
+			continue;
+		}
+
+		/*
+		if (_nal_type == 12) //NALU_TYPE_FILL
+		{
+			static FILE *fill = fopen("F:\\fill.dat", "wb");
+			printf("\ndeleted FILL data, size = %d\n", nal_size);
+			fwrite(read_buffer, 1, nal_size, fill);
+			fflush(fill);
+			f->remove_data(nal_size);
+			continue;
+		}
+		*/
+
+		// log
+		if (_nal_type == 0x18)
+			nal_type_found[_nal_type] ++;
+
 		if (nal_size == 0 ||	
 			nal_type(read_buffer) == 0x9 ||
 			nal_type(read_buffer) == 0x18)
@@ -110,10 +135,13 @@ int read_a_delimeter(CFileBuffer *f)
 			{
 				current_start = true;
 
+				// test remove delimeter
+				/*
 				if(read_buffer[2] == 0x1)
 					delimeter_buffer[size++] = 0;
 				memcpy(delimeter_buffer + size, read_buffer, nal_size);
 				size += nal_size;
+				*/
 
 				f->remove_data(nal_size);
 			}
@@ -197,8 +225,9 @@ LONGLONG FileSize(const char*filename)
 
 void main(int argc, char * argv[])
 {
-	//main3(argc, argv);
+	//main2();
 	//return;
+	return main3(argc, argv);
 	printf("my12doom's mvc interlacer\n");
 	printf("my12doom.googlecode.com\n");
 	printf("mailto:my12doom@gmail.com\n");
@@ -338,17 +367,18 @@ void main(int argc, char * argv[])
 	getch();
 }
 
+// test deinterlace mvc file
 void main2()
 {
 	feeder_thread_parameter * para = new feeder_thread_parameter;
-	strcpy(para->filename, "F:\\TDDOWNLOAD\\BDMV STREAM SSIF 00005.mvc");
+	strcpy(para->filename, "F:\\left.mvc");
 	para->demux = false;
 	para->out = &left;
 	CreateThread(NULL, NULL, feeder_thread, para, NULL, NULL);
 
 	FILE * f[2];
-	f[0] = fopen("Z:\\left.h264", "wb");
-	f[1] = fopen("Z:\\right.h264", "wb");
+	f[0] = fopen("F:\\left.h264", "wb");
+	f[1] = fopen("F:\\right.h264", "wb");
 
 	int n = 0;
 	int id = 0;
@@ -367,6 +397,7 @@ void main2()
 			n++;
 	}
 
+	printf("%d frames deinterlaced.\n", n);
 	fclose(f[0]);
 	fclose(f[1]);
 
@@ -375,10 +406,18 @@ void main2()
 
 void main3(int argc, char * argv[])
 {
+	memset(nal_type_found, 0, sizeof(nal_type_found));
 	feeder_thread_parameter * para = new feeder_thread_parameter;
 	strcpy(para->filename, argv[1]);
 	para->demux = false;
 	para->out = &left;
+
+	/*
+	para->demux = true;
+	para->out_left = &left;
+	para->out_right = &right;
+	*/
+
 	CreateThread(NULL, NULL, feeder_thread, para, NULL, NULL);
 
 	FILE *log = fopen("log.log", "wb");
@@ -387,13 +426,23 @@ void main3(int argc, char * argv[])
 	int id = 0;
 	while (true)
 	{
+		/*
 		int delimeter_size = read_a_delimeter(&left);
+		delimeter_size = read_a_delimeter(&right);
 
 		if (delimeter_size == 0)
 			break;
 
 		printf("%d :%d bytes, %d slices.\n", n++, delimeter_size, n_slice);
 		fprintf(log, "%d : %d bytes, %d slices.\r\n", n-1, delimeter_size, n_slice);
+		*/
+
+		int nal_size = read_a_nal(&left);
+		if (nal_size == 0)
+			break;
+		int _nal_type = nal_type(left.m_the_buffer + left.m_data_start);
+		nal_type_found[_nal_type]++;
+		left.remove_data(nal_size);
 	}
 
 	fclose(log);
