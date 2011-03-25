@@ -23,11 +23,6 @@ DEFINE_GUID(CLSID_DWindowMono,
 DEFINE_GUID(CLSID_DWindowStereo, 
 			0x25eaafcb, 0xdd72, 0x44ce, 0xa4, 0xa0, 0xf7, 0x3e, 0x7b, 0x6, 0x52, 0x87);
 
-// {419832C4-7813-4b90-A262-12496691E82E}
-DEFINE_GUID(CLSID_DWindowSSP, 
-0x419832c4, 0x7813, 0x4b90, 0xa2, 0x62, 0x12, 0x49, 0x66, 0x91, 0xe8, 0x2e);
-
-
 // {65819806-D5AA-4c43-9D31-93F4F9F641FF}
 DEFINE_GUID(IID_IYV12Mixer, 
 			0x65819806, 0xd5aa, 0x4c43, 0x9d, 0x31, 0x93, 0xf4, 0xf9, 0xf6, 0x41, 0xff);
@@ -36,6 +31,14 @@ DEFINE_GUID(IID_IYV12Mixer,
 DEFINE_GUID(IID_IDWindowExtender, 
 			0x972a955c, 0xd3cc, 0x4955, 0x86, 0x25, 0xad, 0x60, 0x81, 0xf8, 0xfc, 0xe7);
 
+// {419832C4-7813-4b90-A262-12496691E82E}
+DEFINE_GUID(CLSID_DWindowSSP, 
+0x419832c4, 0x7813, 0x4b90, 0xa2, 0x62, 0x12, 0x49, 0x66, 0x91, 0xe8, 0x2e);
+
+
+// {09571A4B-F1FE-4C60-9760-DE6D310C7C31} (COREAVC)
+//DEFINE_GUID(CLSID_DWindowSSP, 
+//			0x09571A4B, 0xF1FE, 0x4C60, 0x97, 0x60, 0xDE, 0x6D, 0x31, 0x0C, 0x7C, 0x31);
 
 
 class DECLSPEC_UUID("65819806-D5AA-4c43-9D31-93F4F9F641FF") IYV12Mixer;
@@ -62,10 +65,12 @@ public:
 #define DWindowFilter_EXTEND_54 2
 #define DWindowFilter_EXTEND_169 3
 #define DWindowFilter_EXTEND_1610 4
-#define DWindowFilter_EXTEND_CUSTOM(x,y) (5+( (x&0xff) | (y&0xff)<<8))
+#define DWindowFilter_EXTEND_CUSTOM(x,y) (5+( (x&0xff) | (y&0xff)<<8))		// 0x6 - 0x10004
 #define DWindowFilter_EXTEND_CUSTOM_DECIMAL(aspect) (0xf00000 | ((int)(aspect*100000)&0xfffff) )
 														// 20-bit fix-point decimal, "11.11111" = "111111111"
-#define DWindowFilter_EXTEND_TO(y) (0xf0000 + y)
+#define DWindowFilter_EXTEND_TO(y) (0xf0000 + y)	// 0x0fxxxx, xxxx = 16bit integer
+#define DWindowFilter_CUT_MODE_LEFT_RIGHT_HALF 0x10005
+#define DWindowFilter_CUT_MODE_TOP_BOTTOM_HALF 0x10006
 
 class IYV12Mixer : public IUnknown
 {

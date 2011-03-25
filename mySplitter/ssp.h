@@ -4,11 +4,21 @@
 #include "filter.h"
 #include "image.h"
 
-class CDWindowSSP : public CTransformFilter
+class CDWindowSSP : public CTransformFilter, public IPropertyBag
 {
 public:
 	DECLARE_IUNKNOWN;
 	static CUnknown * WINAPI CreateInstance(LPUNKNOWN punk, HRESULT *phr);
+
+	// IPropertyBag
+	STDMETHODIMP Read(LPCOLESTR pszPropName,	VARIANT *pVar,	IErrorLog *pErrorLog)
+	{
+		return S_OK;
+	}
+	STDMETHODIMP Write(LPCOLESTR pszPropName, VARIANT *pVar)
+	{
+		return S_OK;
+	}
 
 	// Reveals IYV12MonoMixer and ISpecifyPropertyPages
 	STDMETHODIMP NonDelegatingQueryInterface(REFIID riid, void ** ppv);

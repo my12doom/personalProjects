@@ -11,7 +11,6 @@ CQTransformOutputPin::~CQTransformOutputPin()
 		delete m_pOutputQueue;
 		m_pOutputQueue = NULL;
 	}
-    if (m_pPosition) m_pPosition->Release();
 }
 
 HRESULT CQTransformOutputPin::Active()
@@ -191,4 +190,76 @@ CQTransformFilter::GetPin(int n)
     } else {
         return NULL;
     }
+}
+
+
+// mostly copied from CTransformFilter
+HRESULT CQTransformFilter::Receive(IMediaSample *pSample)
+{
+	/*  Check for other streams and pass them on */
+	AM_SAMPLE2_PROPERTIES * const pProps = m_pInput->SampleProps();
+	if (pProps->dwStreamId != AM_STREAM_MEDIA) 
+	{
+		return m_pOutput->Deliver(pSample);
+	}
+	HRESULT hr;
+	ASSERT(pSample);
+	IMediaSample * pOutSample;
+
+	// If no output to deliver to then no point sending us data
+
+	ASSERT (m_pOutput != NULL) ;
+
+	// Set up the output sample
+	hr = InitializeOutputSample(pSample, &pOutSample);
+
+	if (FAILED(hr)) {
+		return hr;
+	}
+
+	// Start timing the transform (if PERF is defined)
+	MSR_START(m_idTransform);
+
+	// have the derived class transform the data
+
+	hr = Transform(pSample, pOutSample);
+
+	// Stop the clock and log it (if PERF is defined)
+	MSR_STOP(m_idTransform);
+
+	if (FAILED(hr)) {
+		DbgLog((LOG_TRACE,1,TEXT("Error from transform")));
+	} else {
+		// the Transform() function can return S_FALSE to indicate that the
+		// sample should not be delivered; we only deliver the sample if it's
+		// really S_OK (same as NOERROR, of course.)
+		if (hr == NOERROR) {
+			hr = m_pOutput->Deliver(pOutSample);
+			m_bSampleSkipped = FALSE;	// last thing no longer dropped
+		} else {
+			// S_FALSE returned from Transform is a PRIVATE agreement
+			// We should return NOERROR from Receive() in this cause because returning S_FALSE
+			// from Receive() means that this is the end of the stream and no more data should
+			// be sent.
+			if (S_FALSE == hr) {
+
+				//  Release the sample before calling notify to avoid
+				//  deadlocks if the sample holds a lock on the system
+				//  such as DirectDraw buffers do
+				pOutSample->Release();
+				m_bSampleSkipped = TRUE;
+				if (!m_bQualityChanged) {
+					NotifyEvent(EC_QUALITY_CHANGE,0,0);
+					m_bQualityChanged = TRUE;
+				}
+				return NOERROR;
+			}
+		}
+	}
+
+	// release the output buffer. If the connected pin still needs it,
+	// it will have addrefed it itself.
+	pOutSample->Release();
+
+	return hr;
 }

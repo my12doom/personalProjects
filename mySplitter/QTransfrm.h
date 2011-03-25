@@ -1,3 +1,4 @@
+#pragma once
 #include <streams.h>		// Based on CTransformFilter
 
 class CQTransformOutputPin : public CTransformOutputPin
@@ -44,5 +45,9 @@ public:
 		:CTransformFilter(name, punk, clsid){};
 #endif
 	CBasePin * GetPin(int n);
+	virtual HRESULT Receive(IMediaSample *pSample);
 
+	// CTransformFilter's bug fix
+	STDMETHODIMP Pause(){CAutoLock lock_it(m_pLock);return CTransformFilter::Pause();}
+	STDMETHODIMP Stop(){CAutoLock lock_it(m_pLock);return CTransformFilter::Stop();}
 };

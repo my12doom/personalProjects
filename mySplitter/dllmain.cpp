@@ -257,7 +257,7 @@ int g_cTemplates = sizeof(g_Templates) / sizeof(g_Templates[0]);
 
 STDAPI DllRegisterServer()
 {
-	//return E_FAIL;
+	return E_FAIL;
     return AMovieDllRegisterServer2( TRUE );
 }
 

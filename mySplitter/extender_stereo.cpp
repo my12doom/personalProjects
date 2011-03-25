@@ -11,7 +11,7 @@ CDWindowExtenderStereo::CDWindowExtenderStereo(TCHAR *tszName, LPUNKNOWN punk, H
 CSplitFilter(tszName, punk, CLSID_DWindowStereo)
 {
 	m_buffer_has_data = false;
-	//m_pd10_demuxer_fix = 0;
+	m_pixel_aspect = 1.0;
 	m_letterbox_total = m_letterbox_top = m_letterbox_bottom = 0;
 	m_in_x = 0;
 	m_in_y = 0;
@@ -22,7 +22,7 @@ CSplitFilter(tszName, punk, CLSID_DWindowStereo)
 	m_mode = DWindowFilter_CUT_MODE_AUTO;
 	m_extend = DWindowFilter_EXTEND_NONE;
 	m_byte_per_4_pixel = 0;
-	m_subtype = GUID_NULL;
+	m_subtype_in = GUID_NULL;
 	m_topdown = false;
 	m_cb = NULL;
 	m_mask = NULL;
@@ -149,10 +149,10 @@ HRESULT CDWindowExtenderStereo::CheckInputType(const CMediaType *mtIn)
 	}
 
 	if( *mtIn->FormatType() == FORMAT_VideoInfo && 
-		(subtypeIn == MEDIASUBTYPE_YV12 || subtypeIn == MEDIASUBTYPE_YUY2))
+		(subtypeIn == MEDIASUBTYPE_YV12 || subtypeIn == MEDIASUBTYPE_YUY2 || subtypeIn == MEDIASUBTYPE_NV12))
 	{
 		BITMAPINFOHEADER *pbih = &((VIDEOINFOHEADER*)mtIn->Format())->bmiHeader;
-		m_subtype = subtypeIn;
+		m_subtype_in = subtypeIn;
 		m_in_x = pbih->biWidth;
 		m_in_y = pbih->biHeight;
 
@@ -160,10 +160,11 @@ HRESULT CDWindowExtenderStereo::CheckInputType(const CMediaType *mtIn)
 	}
 
 	if( *mtIn->FormatType() == FORMAT_VideoInfo2 && 
-		(subtypeIn == MEDIASUBTYPE_YV12 || subtypeIn == MEDIASUBTYPE_YUY2))
+		(subtypeIn == MEDIASUBTYPE_YV12 || subtypeIn == MEDIASUBTYPE_YUY2 || subtypeIn == MEDIASUBTYPE_NV12))
 	{
+		printf("%d * 100ns per frame.\n", ((VIDEOINFOHEADER2*)mtIn->Format())->AvgTimePerFrame);
 		BITMAPINFOHEADER *pbih = &((VIDEOINFOHEADER2*)mtIn->Format())->bmiHeader;
-		m_subtype = subtypeIn;
+		m_subtype_in = subtypeIn;
 		m_in_x = pbih->biWidth;
 		m_in_y = pbih->biHeight;
 
@@ -178,11 +179,11 @@ HRESULT CDWindowExtenderStereo::CheckInputType(const CMediaType *mtIn)
 			m_in_y = -m_in_y;
 		}
 
-		if (m_subtype == MEDIASUBTYPE_YV12)
+		if (m_subtype_in == MEDIASUBTYPE_YV12 || m_subtype_in == MEDIASUBTYPE_NV12)
 			m_byte_per_4_pixel = 6;
-		else if (m_subtype == MEDIASUBTYPE_YUY2)
+		else if (m_subtype_in == MEDIASUBTYPE_YUY2)
 			m_byte_per_4_pixel = 8;
-		else if (m_subtype == MEDIASUBTYPE_RGB32)
+		else if (m_subtype_in == MEDIASUBTYPE_RGB32)
 			m_byte_per_4_pixel = 16;
 		
 		if (m_mode == DWindowFilter_CUT_MODE_PD10)
@@ -208,10 +209,11 @@ HRESULT CDWindowExtenderStereo::CheckSplit(const CMediaType *mtIn, const CMediaT
 	GUID subtypeIn = *mtIn->Subtype();
 	GUID subtypeOut = *mtOut->Subtype();
 
-	if (m_mode == DWindowFilter_CUT_MODE_PD10 && subtypeIn == MEDIASUBTYPE_YUY2 && subtypeOut == MEDIASUBTYPE_YV12)
+	if (m_mode == DWindowFilter_CUT_MODE_PD10 && subtypeIn == MEDIASUBTYPE_YUY2 && 
+		(subtypeOut == MEDIASUBTYPE_YV12 || subtypeOut == MEDIASUBTYPE_NV12))
 		return S_OK;
 
-	if(subtypeIn == subtypeOut && subtypeIn == m_subtype)
+	if(subtypeIn == subtypeOut && subtypeIn == m_subtype_in)
 		return S_OK;
 
 	return VFW_E_INVALID_MEDIA_TYPE;
@@ -219,6 +221,16 @@ HRESULT CDWindowExtenderStereo::CheckSplit(const CMediaType *mtIn, const CMediaT
 
 HRESULT CDWindowExtenderStereo::init_image()
 {
+	if (m_mode == DWindowFilter_CUT_MODE_LEFT_RIGHT_HALF)
+	{
+		m_mode = DWindowFilter_CUT_MODE_LEFT_RIGHT;
+		m_pixel_aspect = 2.0;
+	}
+	else if (m_mode == DWindowFilter_CUT_MODE_TOP_BOTTOM_HALF)
+	{
+		m_mode = DWindowFilter_CUT_MODE_TOP_BOTTOM;
+		m_pixel_aspect = 0.5;
+	}
 
 	if (m_mode == DWindowFilter_CUT_MODE_AUTO)
 	{
@@ -227,6 +239,8 @@ HRESULT CDWindowExtenderStereo::init_image()
 			m_mode = DWindowFilter_CUT_MODE_LEFT_RIGHT;
 		else if (0 < aspect && aspect < 1.2125)
 			m_mode = DWindowFilter_CUT_MODE_TOP_BOTTOM;
+		else
+			return E_FAIL;
 	}
 
 	if (m_mode == DWindowFilter_CUT_MODE_LEFT_RIGHT)
@@ -280,6 +294,9 @@ HRESULT CDWindowExtenderStereo::init_image()
 		aspect_y = 1;
 	}
 
+	// pixel aspect
+	aspect_y *= m_pixel_aspect;
+
 	if (aspect_x > 0 && aspect_y > 0)
 		out_y_extended = (int)(m_image_x * aspect_y / aspect_x);
 
@@ -316,100 +333,122 @@ HRESULT CDWindowExtenderStereo::GetMediaType(int iPosition, CMediaType *pMediaTy
 		return E_INVALIDARG;
 
 	// Do we have more items to offer
-	if (iPosition > 0)
+	if ((m_mode != DWindowFilter_CUT_MODE_PD10 && iPosition > 0)
+		|| (m_mode == DWindowFilter_CUT_MODE_PD10 && iPosition > 1))
 		return VFW_S_NO_MORE_ITEMS;
 
-	// get input dimensions
+	VIDEOINFOHEADER2 *vihOut = (VIDEOINFOHEADER2 *)pMediaType->ReallocFormatBuffer(sizeof(VIDEOINFOHEADER2));
 	CMediaType *inMediaType = &m_pInput->CurrentMediaType();
 	if (*inMediaType->FormatType() == FORMAT_VideoInfo)
 	{
 		VIDEOINFOHEADER *vihIn = (VIDEOINFOHEADER*)inMediaType->Format();
-		pMediaType->SetType(&MEDIATYPE_Video);
-		pMediaType->SetFormatType(&FORMAT_VideoInfo);
-		pMediaType->SetSubtype(&m_subtype);
-		pMediaType->SetSampleSize(m_out_x*m_out_y*m_byte_per_4_pixel/4);
-		pMediaType->SetTemporalCompression(FALSE);
-
-		VIDEOINFOHEADER *vihOut = (VIDEOINFOHEADER *)pMediaType->ReallocFormatBuffer(sizeof(VIDEOINFOHEADER));
-		memcpy(vihOut, vihIn, sizeof(VIDEOINFOHEADER));
-		RECT zero = {0,0,m_out_x,m_out_y};
-		vihOut->rcSource = zero;
-		vihOut->rcTarget = zero;
-
-		vihOut->bmiHeader.biWidth = m_out_x ;
-		vihOut->bmiHeader.biHeight = m_out_y;
-		if (m_topdown) vihOut->bmiHeader.biHeight = -m_out_y;
-
-		vihOut->bmiHeader.biXPelsPerMeter = 1 ;
-		vihOut->bmiHeader.biYPelsPerMeter = 1;
+		vihOut->AvgTimePerFrame = vihIn->AvgTimePerFrame;
+		vihOut->dwBitErrorRate = vihIn->dwBitErrorRate;
+		vihOut->dwBitRate = vihIn->dwBitRate;
+		vihOut->bmiHeader = vihIn->bmiHeader;
 	}
 	else if (*inMediaType->FormatType() == FORMAT_VideoInfo2)
 	{
 		VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)inMediaType->Format();
-		pMediaType->SetType(&MEDIATYPE_Video);
-		pMediaType->SetFormatType(&FORMAT_VideoInfo2);
-		pMediaType->SetSubtype(&m_subtype);
-		pMediaType->SetSampleSize(m_out_x*m_out_y*m_byte_per_4_pixel/4);
-		pMediaType->SetTemporalCompression(FALSE);
-
-		VIDEOINFOHEADER2 *vihOut = (VIDEOINFOHEADER2 *)pMediaType->ReallocFormatBuffer(sizeof(VIDEOINFOHEADER2));
 		memcpy(vihOut, vihIn, sizeof(VIDEOINFOHEADER2));
-		RECT zero = {0,0,0,0};
-		vihOut->rcSource = zero;
-		vihOut->rcTarget = zero;
+	}
 
-		vihOut->bmiHeader.biWidth = m_out_x ;
-		vihOut->bmiHeader.biHeight = m_out_y;
-		vihOut->bmiHeader.biXPelsPerMeter = 1;
-		vihOut->bmiHeader.biYPelsPerMeter = 1;
+	pMediaType->SetType(&MEDIATYPE_Video);
+	pMediaType->SetFormatType(&FORMAT_VideoInfo2);
+	pMediaType->SetSubtype(&m_subtype_in);
+	pMediaType->SetSampleSize(m_out_x*m_out_y*m_byte_per_4_pixel/4);
+	pMediaType->SetTemporalCompression(FALSE);
 
-		vihOut->dwInterlaceFlags = 0;	// 不支持交织图像，如果发现闪瞎狗眼的图像，检查片源
+	RECT zero = {0,0,0,0};
+	vihOut->rcSource = zero;
+	vihOut->rcTarget = zero;
 
-		// compute aspect
-		int aspect_x = m_out_x;
-		int aspect_y = m_out_y;
+	vihOut->bmiHeader.biWidth = m_out_x ;
+	vihOut->bmiHeader.biHeight = m_out_y;
+	vihOut->bmiHeader.biXPelsPerMeter = 1;
+	vihOut->bmiHeader.biYPelsPerMeter = 1;
+
+	vihOut->dwInterlaceFlags = 0;	// 不支持交织图像，如果发现闪瞎狗眼的图像，检查片源
+
+	// compute aspect
+	int aspect_x = m_out_x * m_pixel_aspect;	// pixel aspect
+	int aspect_y = m_out_y;
 compute_aspect:
-		for(int i=2; i<100; i++)
+	for(int i=2; i<100; i++)
+	{
+		if (aspect_x % i == 0 && aspect_y % i == 0)
 		{
-			if (aspect_x % i == 0 && aspect_y % i == 0)
-			{
-				aspect_x /= i;
-				aspect_y /= i;
-				goto compute_aspect;
-			}
+			aspect_x /= i;
+			aspect_y /= i;
+			goto compute_aspect;
 		}
-		vihOut->dwPictAspectRatioX = aspect_x;
-		vihOut->dwPictAspectRatioY = aspect_y;
+	}
 
-		if(m_mode == DWindowFilter_CUT_MODE_PD10)
+	vihOut->dwPictAspectRatioX = aspect_x;
+	vihOut->dwPictAspectRatioY = aspect_y;
+
+	if(m_mode == DWindowFilter_CUT_MODE_PD10)
+	{
+		if (iPosition == 0)
 		{
-			pMediaType->SetSubtype(&MEDIASUBTYPE_YV12);	//PD10 mode = YV12
+			pMediaType->SetSubtype(&MEDIASUBTYPE_YV12);	//PD10 mode = YV12/NV12
 			vihOut->bmiHeader.biCompression = MAKEFOURCC('Y','V','1','2');
-			vihOut->bmiHeader.biBitCount = 12;
-			vihOut->bmiHeader.biPlanes = 3;
-			vihOut->bmiHeader.biSizeImage = m_out_x*m_out_y*3/2;
 		}
+		else if (iPosition == 1)
+		{
+			pMediaType->SetSubtype(&MEDIASUBTYPE_NV12);	//PD10 mode = YV12/NV12
+			vihOut->bmiHeader.biCompression = MAKEFOURCC('N','V','1','2');
+		}
+		vihOut->bmiHeader.biBitCount = 12;
+		vihOut->bmiHeader.biPlanes = 3;
+		vihOut->bmiHeader.biSizeImage = m_out_x*m_out_y*3/2;
 	}
 
 	return NOERROR;
 }
 
+HRESULT CDWindowExtenderStereo::SetMediaType(PIN_DIRECTION direction,const CMediaType *pmt)
+{
+	if (*pmt->FormatType() == FORMAT_VideoInfo2 && direction == PINDIR_OUTPUT)
+	{
+		if (pmt->subtype == MEDIASUBTYPE_NV12)
+			m_subtype_out = MEDIASUBTYPE_NV12;
+		else if (pmt->subtype == MEDIASUBTYPE_YV12)
+			m_subtype_out = MEDIASUBTYPE_YV12;
+		else
+			m_subtype_out = pmt->subtype;
+	}
+
+	return S_OK;
+}
+
 HRESULT CDWindowExtenderStereo::Split(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2)
 {
-	// test if sample is left
+	// debug test if sample is left
+	// (not used in output)
 	REFERENCE_TIME TimeStart, TimeEnd;
 	pIn->GetTime(&TimeStart, &TimeEnd);
 
-	int fn;
+	double fn;
 	if (m_in_x == 1280)
-		fn = (double)(TimeStart+m_t)/10000*120/1001 + 0.5;
+		fn = (double)(TimeStart)/10000*120/1001;// + 0.5;
 	else
-		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
+		fn = (double)(TimeStart)/10000*48/1001;// + 0.5;
 
-	int left = (fn & 1);
+	double delta = (double)(TimeEnd)/10000*48/1001;
+	double fn2 = (double)(m_t)/10000*48/1001;
+	int left = 1- ((int)fn & 1);
+	int left2 = 1-(((int)(fn+fn2))&1);
 	//left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
 
-	//printf("%d\t%d\n", fn, left);
+	static int n = 1;
+	int n2 = TimeStart / 208540;
+	double n1 = (double)m_t /10000*48/1001 + 0.5;
+	printf("%.2f+%d.%d", n1, n2, TimeStart % 208540);
+	//printf("%I64d\t%d\t", TimeStart, n++);
+	//printf("%d.%d", (TimeStart+m_t)*2/417080, (TimeStart+m_t)%208540);
+	if(TimeEnd - TimeStart != 417080/2)
+		printf("(delta=%d)", TimeEnd - TimeStart);
 
 
 	if (m_mode == DWindowFilter_CUT_MODE_PD10)
@@ -435,9 +474,11 @@ HRESULT CDWindowExtenderStereo::Split(IMediaSample *pIn, IMediaSample *pOut1, IM
 
 	if (pOut1 || pOut2)
 	{
-		if (m_subtype == MEDIASUBTYPE_YV12)
+		if (m_subtype_in == MEDIASUBTYPE_YV12)
 			hr = Split_YV12(pIn, pOut1, pOut2);
-		else if (m_subtype == MEDIASUBTYPE_YUY2)
+		else if (m_subtype_in == MEDIASUBTYPE_NV12)
+			hr = Split_NV12(pIn, pOut1, pOut2);
+		else if (m_subtype_in == MEDIASUBTYPE_YUY2)
 			hr = Split_YUY2(pIn, pOut1, pOut2);
 
 
@@ -477,7 +518,7 @@ HRESULT CDWindowExtenderStereo::Split(IMediaSample *pIn, IMediaSample *pOut1, IM
 
 HRESULT CDWindowExtenderStereo::Split_YV12(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2)
 {
-	// test if sample is left
+	// times
 	REFERENCE_TIME TimeStart, TimeEnd;
 	pIn->GetTime(&TimeStart, &TimeEnd);
 
@@ -597,6 +638,115 @@ HRESULT CDWindowExtenderStereo::Split_YV12(IMediaSample *pIn, IMediaSample *pOut
 	return S_OK;
 }
 
+HRESULT CDWindowExtenderStereo::Split_NV12(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2)
+{
+	// times
+	REFERENCE_TIME TimeStart, TimeEnd;
+	pIn->GetTime(&TimeStart, &TimeEnd);
+
+	// basic info
+	int letterbox_top = m_letterbox_top;
+	int letterbox_bottom = m_letterbox_bottom;
+	if (m_topdown)
+	{
+		letterbox_top = m_letterbox_bottom;
+		letterbox_bottom = m_letterbox_top;
+	}
+
+	// input pointers
+	unsigned char *pSrc = 0;
+	pIn->GetPointer((unsigned char **)&pSrc);
+	unsigned char *pSrcV = pSrc + m_in_x*m_in_y;
+	unsigned char *pSrcU = pSrcV+ (m_in_x/2)*(m_in_y/2);
+
+	if (pOut1)
+	{
+		// output pointer and stride
+		int stride = pOut1->GetSize() *2/3 / m_out_y;
+		if (stride < m_out_x)
+			return E_UNEXPECTED;
+
+		unsigned char *pDst = 0;
+		pOut1->GetPointer(&pDst);
+		unsigned char *pDstV = pDst + stride*m_out_y;
+
+		// letterbox top
+		if (letterbox_top > 0)
+		{
+			memset(pDst, 0, letterbox_top * stride);
+			memset(pDstV, 128, (letterbox_top/2) * stride);
+		}
+
+		// copy image
+		if (m_image_y > 0)
+		{
+			int line_dst = letterbox_top;
+			for(int y = 0; y<m_image_y; y++)//copy y
+				memcpy(pDst+(line_dst + y)*stride, pSrc+y*m_in_x, m_out_x);
+
+			for(int y = 0; y<m_image_y/2; y++)//copy vu
+				memcpy(pDstV +(line_dst/2+ y)*stride, pSrcV+y*m_in_x, m_out_x);
+
+		}
+
+		// letterbox bottom
+		if (letterbox_bottom > 0)
+		{
+			int line = letterbox_top + m_image_y;
+			memset(pDst +stride*line, 0, letterbox_bottom * stride);
+			memset(pDstV+(stride)*(line/2), 128, (letterbox_bottom/2) * stride);
+		}
+	}
+
+	if (pOut2)
+	{
+		// output pointer and stride
+		int stride = pOut2->GetSize() *2/3 / m_out_y;
+		if (stride < m_out_x)
+			return E_UNEXPECTED;
+
+		unsigned char *pDst = 0;
+		pOut2->GetPointer(&pDst);
+		unsigned char *pDstV = pDst + stride*m_out_y;
+
+		// find the right eye image
+		int offset = m_image_x;
+		int offset_uv = m_image_x;
+		if (m_mode == DWindowFilter_CUT_MODE_TOP_BOTTOM)
+		{
+			offset = m_image_x * m_image_y;
+			offset_uv = m_image_x * m_image_y/2;
+		}
+
+		// letterbox top
+		if (letterbox_top > 0)
+		{
+			memset(pDst, 0, letterbox_top * stride);
+			memset(pDstV, 128, (letterbox_top/2) * stride);
+		}
+
+		// copy image
+		if (m_image_y > 0)
+		{
+			int line_dst = letterbox_top;
+			for(int y = 0; y<m_image_y; y++)				//copy y
+				memcpy(pDst+(line_dst + y)*stride, offset+pSrc+y*m_in_x, m_out_x);
+
+			for(int y = 0; y<m_image_y/2; y++)				//copy v
+				memcpy(pDstV +(line_dst/2+ y)*stride, offset_uv+pSrcV+y*m_in_x, m_out_x);
+		}
+
+		// letterbox bottom
+		if (letterbox_bottom > 0)
+		{
+			int line = letterbox_top + m_image_y;
+			memset(pDst +stride*line, 0, letterbox_bottom * stride);
+			memset(pDstV+(stride)*(line/2), 128, (letterbox_bottom/2) * stride);
+		}
+	}
+
+	return S_OK;
+}
 HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2)
 {
 	// test if sample is left
@@ -609,7 +759,13 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 	else
 		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
 
-	int left = 1 - (fn & 1);
+	//int left = 1 - (fn & 1);
+	m_left = 1- m_left;
+	int left = 1-fn&1;
+	if (left)
+		printf("(left)\n");
+	else
+		printf("(right)\n");
 	//left ^= m_pd10_demuxer_fix;	/// PD10 demuxer 11 fix
 
 	// one line of letterbox
@@ -658,9 +814,20 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 			BYTE *pdstU = pdstV + m_image_x*m_image_y/4;
 
 			if (m_image_y == 1080)
-				my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, m_frame_buffer, pdstU, pdstV, m_image_x, m_image_x/2);
+			{
+				if (m_subtype_out == MEDIASUBTYPE_YV12)
+					my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, m_frame_buffer, pdstU, pdstV, m_image_x, m_image_x/2);
+				else
+					my_1088_to_NV12(psrc, m_image_x*2, m_image_x*2, m_frame_buffer, pdstU, pdstV, m_image_x, m_image_x);
+			}
 			else
-				isse_yuy2_to_yv12_r(psrc, m_image_x*2, m_image_x*2, m_frame_buffer, pdstU, pdstV, m_image_x, m_image_x/2, m_image_y);
+			{
+				if (m_subtype_out == MEDIASUBTYPE_YV12)
+					isse_yuy2_to_yv12_r(psrc, m_image_x*2, m_image_x*2, m_frame_buffer, pdstU, pdstV, m_image_x, m_image_x/2, m_image_y);
+				else
+					isse_yuy2_to_nv12_r(psrc, m_image_x*2, m_image_x*2, m_frame_buffer, pdstU, pdstV, m_image_x, m_image_x, m_image_y);
+
+			}
 
 			m_buffer_has_data = true;
 
@@ -692,9 +859,16 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 				// letterbox top
 				if (letterbox_top > 0)
 				{
-					memset(pDst, 0, letterbox_top * stride);
-					memset(pDstV, 128, (letterbox_top/2) * stride/2);
-					memset(pDstU, 128, (letterbox_top/2) * stride/2);
+					memset(pDst, 0, letterbox_top * stride);		//Y
+					if (m_subtype_out == MEDIASUBTYPE_YV12)
+					{
+						memset(pDstV, 128, (letterbox_top/2) * stride/2);
+						memset(pDstU, 128, (letterbox_top/2) * stride/2);
+					}
+					else		// NV12
+					{
+						memset(pDstV, 128, (letterbox_top/2) * stride);
+					}
 				}
 
 				// copy image
@@ -705,11 +879,20 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 					for(int y = 0; y<m_image_y; y++)//copy y
 						memcpy(pDst+(line_dst + y)*stride, pSrc+y*m_in_x, m_out_x);
 
-					for(int y = 0; y<m_image_y/2; y++)//copy v
-						memcpy(pDstV +(line_dst/2+ y)*stride/2, pSrcV+y*m_in_x/2, m_out_x/2);
+					if (m_subtype_out == MEDIASUBTYPE_YV12)
+					{
+						for(int y = 0; y<m_image_y/2; y++)//copy v
+							memcpy(pDstV +(line_dst/2+ y)*stride/2, pSrcV+y*m_in_x/2, m_out_x/2);
 
-					for(int y = 0; y<m_image_y/2; y++)//copy u
-						memcpy(pDstU +(line_dst/2 +y)*stride/2, pSrcU+y*m_in_x/2, m_out_x/2);
+						for(int y = 0; y<m_image_y/2; y++)//copy u
+							memcpy(pDstU +(line_dst/2 +y)*stride/2, pSrcU+y*m_in_x/2, m_out_x/2);
+					}
+					else
+					{
+						//NV12
+						for(int y = 0; y<m_image_y/2; y++)//copy v
+							memcpy(pDstV +(line_dst/2+ y)*stride, pSrcV+y*m_in_x, m_out_x);
+					}
 				}
 				else if (i == 1 && m_image_y>0)
 				{
@@ -717,10 +900,22 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 					BYTE *Y = pDst + letterbox_top * stride;
 					BYTE *V = pDstV + letterbox_top/2*stride/2;
 					BYTE *U = pDstU + letterbox_top/2*stride/2;
+					if (MEDIASUBTYPE_NV12 == m_subtype_out)
+						V = pDstV + letterbox_top/2*stride;
 					if (m_image_y == 1080)
-						my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, Y, U, V, stride, stride/2);
+					{
+						if (m_subtype_out == MEDIASUBTYPE_YV12)
+							my_1088_to_YV12(psrc, m_image_x*2, m_image_x*2, Y, U, V, stride, stride/2);
+						else
+							my_1088_to_NV12(psrc, m_image_x*2, m_image_x*2, Y, U, V, stride, stride);
+					}
 					else
-						isse_yuy2_to_yv12_r(psrc, m_image_x*2, m_image_x*2, Y, U, V, stride, stride/2, m_image_y);
+					{
+						if (m_subtype_out == MEDIASUBTYPE_YV12)
+							isse_yuy2_to_yv12_r(psrc, m_image_x*2, m_image_x*2, Y, U, V, stride, stride/2, m_image_y);
+						else
+							isse_yuy2_to_nv12_r(psrc, m_image_x*2, m_image_x*2, Y, U, V, stride, stride, m_image_y);
+					}
 				}
 
 				// letterbox bottom
@@ -728,8 +923,16 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 				{
 					int line = letterbox_top + m_image_y;
 					memset(pDst +stride*line, 0, letterbox_bottom * stride);
-					memset(pDstV+(stride/2)*(line/2), 128, (letterbox_bottom/2) * stride/2);
-					memset(pDstU+(stride/2)*(line/2), 128, (letterbox_bottom/2) * stride/2);
+					if (m_subtype_out == MEDIASUBTYPE_YV12)
+					{
+						memset(pDstV+(stride/2)*(line/2), 128, (letterbox_bottom/2) * stride/2);
+						memset(pDstU+(stride/2)*(line/2), 128, (letterbox_bottom/2) * stride/2);
+					}
+					else
+					{
+						//NV12
+						memset(pDstV+(stride)*(line/2), 128, (letterbox_bottom/2) * stride);
+					}
 				}
 
 				// mask
@@ -893,8 +1096,7 @@ HRESULT CDWindowExtenderStereo::StartStreaming()
 
 HRESULT CDWindowExtenderStereo::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {	
-	printf("New Segment!..\n");
-	//CAutoLock cAutolock(&m_csReceive);
+	CAutoLock cAutolock(&m_csReceive);
 
 	if (m_image_x == 1280)
 		m_frm = 1200;
@@ -902,7 +1104,10 @@ HRESULT CDWindowExtenderStereo::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME
 		m_frm = 480;
 
 	m_t = tStart;
-
+	m_left = 0;
+	double fn = (double)(tStart)/10000*48/1001;// + 0.5;
+	fn = (tStart)*2/417080;
+	printf("New Segment!(%I64d, %d)..\n", tStart, tStart%208540);
 	m_buffer_has_data = false;
 
 	return __super::NewSegment(tStart, tStop, dRate);
@@ -947,6 +1152,10 @@ HRESULT STDMETHODCALLTYPE CDWindowExtenderStereo::SetMode(int mode, int extend)
 {
 	CAutoLock cAutolock(&m_config_sec);
 	// ignore any cut mode..
+
+	// reset pixel aspect every time
+	m_pixel_aspect = 1.0;
+
 	m_mode = mode;
 	m_extend = extend;
 	return NOERROR;

@@ -4,7 +4,7 @@
 #include "asm.h"
 
 #include "..\libchecksum\libchecksum.h"
-#include "..\SsifSource\src\filters\parser\MpegSplitter\mvc.h"
+#include "..\SsifSource\src\filters\parser\MpegSplitter\IMVC.h"
 
 #define ssp_hwnd (FindWindow(_T("4C463F505C19080C5A2D5F4744591F1E"), NULL))
 
@@ -388,6 +388,8 @@ CUnknown *CDWindowSSP::CreateInstance(LPUNKNOWN punk, HRESULT *phr)
 // NonDelegatingQueryInterface
 STDMETHODIMP CDWindowSSP::NonDelegatingQueryInterface(REFIID riid, void **ppv)
 {
+	if (riid == __uuidof(IPropertyBag)) 
+		return GetInterface((IPropertyBag *) this, ppv);
 	return CTransformFilter::NonDelegatingQueryInterface(riid, ppv);
 }
 

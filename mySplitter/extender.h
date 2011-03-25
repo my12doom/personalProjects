@@ -77,6 +77,8 @@ public:
 	HRESULT CheckSplit(const CMediaType *mtIn, const CMediaType *mtOut);
 	HRESULT DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pProperties);
 	HRESULT GetMediaType(int iPosition, CMediaType *pMediaType);
+	HRESULT SetMediaType(PIN_DIRECTION direction,const CMediaType *pmt);
+
 	//HRESULT StartStreaming();
     HRESULT CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin);
 	HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
@@ -106,14 +108,17 @@ private:
 	int m_image_x;
 	int m_image_y;
 	int m_byte_per_4_pixel;
-	GUID m_subtype;
+	GUID m_subtype_in;
+	GUID m_subtype_out;
 	bool m_topdown;
 	HRESULT init_image();
 	HRESULT Split_YV12(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2);
+	HRESULT Split_NV12(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2);
 	HRESULT Split_YUY2(IMediaSample *pIn, IMediaSample *pOut1, IMediaSample *pOut2);
 
 	// PD10 timecode fix and frame buffer
 	//int m_pd10_demuxer_fix;
+	int m_left;
 	REFERENCE_TIME m_t;
 	BYTE *m_frame_buffer;
 	bool m_buffer_has_data;
@@ -123,6 +128,7 @@ private:
 	REFERENCE_TIME m_MediaEnd;
 
 	// split mode
+	double m_pixel_aspect;
 	int m_mode;
 	int m_extend;
 

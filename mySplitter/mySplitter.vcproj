@@ -4,6 +4,7 @@
 	Version="9.00"
 	Name="mySplitter"
 	ProjectGUID="{6F7412C7-DB4F-4987-8B16-A706FC8A11A9}"
+	RootNamespace="mySplitter"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
 	>
@@ -202,11 +203,17 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MYSPLITTER_EXPORTS;UNICODE;_UNICODE"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
+				AssemblerOutput="2"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
