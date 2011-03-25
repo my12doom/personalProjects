@@ -1,7 +1,11 @@
 #include <math.h>
 #include "dx_player.h"
+#include "pgs\PGSRenderer.h"
+#include "private_filter.h"
+#include "srt\srt_renderer.h"
 #include "..\libchecksum\libchecksum.h"
-#include "..\SsifSource\src\filters\parser\MpegSplitter\mvc.h"
+#include "..\SsifSource\src\filters\parser\MpegSplitter\Imvc.h"
+static const GUID CLSID_my12doomSource = { 0x8FD7B1DE, 0x3B84, 0x4817, { 0xA9, 0x6F, 0x4C, 0x94, 0x72, 0x8B, 0x1A, 0xAE } };
 
 //#include "private_filter.h"
 
@@ -81,7 +85,7 @@ HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 	return E_FAIL;
 }
 
-HRESULT dx_window::ActiveMVC(IBaseFilter *filter)
+HRESULT dx_window::CrackPD10(IBaseFilter *filter)
 {
 	if (!filter)
 		return E_POINTER;
@@ -105,7 +109,7 @@ HRESULT dx_window::ActiveMVC(IBaseFilter *filter)
 	CComPtr<IBaseFilter> demuxer;
 	h264.CoCreateInstance(CLSID_AsyncReader);
 	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> h264_control(h264);
-	demuxer.CoCreateInstance(CLSID_PD10_DEMUXER);
+	myCreateInstance(CLSID_PD10_DEMUXER, IID_IBaseFilter, (void**)&demuxer);
 
 	if (demuxer == NULL)
 		return E_FAIL;	// demuxer not registered
@@ -139,17 +143,22 @@ HRESULT dx_window::ActiveMVC(IBaseFilter *filter)
 	GetUnconnectedPin(demuxer, PINDIR_OUTPUT, &demuxer_o);
 	CComPtr<IPin> decoder_i;
 	GetConnectedPin(filter, PINDIR_INPUT, &decoder_i);
+	if (NULL == decoder_i)
+		GetUnconnectedPin(filter, PINDIR_INPUT, &decoder_i);
 	CComPtr<IPin> decoder_up;
 	decoder_i->ConnectedTo(&decoder_up);
-	gb->Disconnect(decoder_i);
-	gb->Disconnect(decoder_up);
+	if (decoder_up)
+	{
+		gb->Disconnect(decoder_i);
+		gb->Disconnect(decoder_up);
+	}
 	gb->ConnectDirect(demuxer_o, decoder_i, NULL);
 
-	// remove source & demuxer, and reconnect decoder
+	// remove source & demuxer, and reconnect decoder(if it is connected before)
 	
 	gb->RemoveFilter(h264);
 	gb->RemoveFilter(demuxer);
-	gb->ConnectDirect(decoder_up, decoder_i, NULL);
+	if (decoder_up)gb->ConnectDirect(decoder_up, decoder_i, NULL);
 
 	// delete file
 	_wremove(tmp);
@@ -161,16 +170,15 @@ HRESULT dx_window::ActiveMVC(IBaseFilter *filter)
 // constructor & destructor
 dx_window::dx_window(RECT screen1, RECT screen2, HINSTANCE hExe):dwindow(screen1, screen2)
 {
-	//PGS
-	FILE *f = fopen("E:\\test_folder\\avt_sup\\00001.track_4608.sup", "rb");
-	BYTE buf[32768];
-	int read = 0;
-	while (read = fread(buf, 1, 32768, f))
-		m_pgs.add_data(buf, read);
-	fclose(f);
+	// Enable away mode and prevent the sleep idle time-out.
+	SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_AWAYMODE_REQUIRED);
 
+	//PGS
+	m_lastCBtime = -1;
+	m_srenderer = NULL;
 
 	// vars
+	m_subtile_bitmap = NULL;
 	m_renderer1 = NULL;
 	m_renderer2 = NULL;
 	m_PD10 = false;
@@ -250,13 +258,20 @@ dx_window::~dx_window()
 	CAutoLock lock(&m_draw_sec);
 	exit_direct_show();
 	exit_D3D9();
+
+	// Clear EXECUTION_STATE flags to disable away mode and allow the system to idle to sleep normally.
+	SetThreadExecutionState(ES_CONTINUOUS);
 }
 DWORD WINAPI dx_window::select_font_thread(LPVOID lpParame)
 {
 	dx_window *_this = (dx_window*) lpParame;
 
 	_this->m_select_font_active = true;
-	_this->select_font();
+
+	HRESULT hr = _this->m_srenderer->select_font(false);
+	if (SUCCEEDED(hr))
+		hr = _this->m_srenderer->select_font(true);
+
 	_this->m_select_font_active = false;
 
 	return 0;
@@ -336,6 +351,8 @@ HRESULT dx_window::seek(int time)
 		return VFW_E_WRONG_STATE;
 
 	REFERENCE_TIME target = (REFERENCE_TIME)time *10000;
+
+	printf("seeking to %I64d\n", target);
 	return m_ms->SetPositions(&target, AM_SEEKING_AbsolutePositioning, NULL, NULL);
 }
 HRESULT dx_window::tell(int *time)
@@ -514,7 +531,7 @@ LRESULT dx_window::on_mouse_move(int id, int x, int y)
 	double v;
 	GetClientRect(id_to_hwnd(id), &r);
 	m_bar.total_width = r.right - r.left;
-	int type = m_bar.test(x, y-(r.bottom-r.top)+30, &v);
+	int type = m_bar.hit_test(x, y-(r.bottom-r.top)+30, &v);
 	if (type == 3 && GetAsyncKeyState(VK_LBUTTON) < 0)
 	{
 		set_volume(v);
@@ -533,7 +550,7 @@ LRESULT dx_window::on_mouse_down(int id, int button, int x, int y)
 		int type;
 
 		m_bar.total_width = r.right - r.left;
-		type = m_bar.test(x, y-(r.bottom-r.top)+30, &v);
+		type = m_bar.hit_test(x, y-(r.bottom-r.top)+30, &v);
 		if (type == 1)
 		{
 			pause();
@@ -555,6 +572,9 @@ LRESULT dx_window::on_mouse_down(int id, int button, int x, int y)
 		}
 		else if (type == -1)
 		{
+			// move this window
+			ReleaseCapture();
+			SendMessage(id_to_hwnd(id), WM_NCLBUTTONDOWN, HTCAPTION, 0);
 		}
 	}
 
@@ -575,10 +595,10 @@ LRESULT dx_window::on_timer(int id)
 		ScreenToClient(id_to_hwnd(2), &mouse2);
 
 		m_bar.total_width = client1.right - client1.left;
-		int test1 = m_bar.test(mouse1.x, mouse1.y-(client1.bottom-client1.top)+30, NULL);
+		int test1 = m_bar.hit_test(mouse1.x, mouse1.y-(client1.bottom-client1.top)+30, NULL);
 
 		m_bar.total_width = client2.right - client2.left;
-		int test2 = m_bar.test(mouse2.x, mouse2.y-(client2.bottom-client2.top)+30, NULL);		// warning
+		int test2 = m_bar.hit_test(mouse2.x, mouse2.y-(client2.bottom-client2.top)+30, NULL);		// warning
 
 		if (test1 < 0 && test2 < 0)
 		{
@@ -774,6 +794,7 @@ HRESULT dx_window::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	int ms_end = (int)(TimeEnd / 10000);
 
 	// PGS test
+	/*
 	subtitle sub;
 	m_pgs.find_subtitle(ms_start, ms_end, &sub);
 	if (sub.start > 0 && sub.end >0 && sub.rgb)
@@ -812,9 +833,11 @@ HRESULT dx_window::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		m_renderer1->ClearAlphaBitmap();
 		m_renderer2->ClearAlphaBitmap();
 	}
+	*/
 
 	// normal
 
+	/*
 	wchar_t subtitle[5000] = L"";
 	m_srt.get_subtitle(ms_start, ms_end, subtitle);
 
@@ -823,6 +846,63 @@ HRESULT dx_window::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		draw_text(subtitle);
 		draw_subtitle();
 		wcscpy(m_last_subtitle, subtitle);
+	}
+	*/
+
+	// CSubtitleRenderer test
+	rendered_subtitle sub;
+	if (m_srenderer)
+	{
+		HRESULT hr = m_srenderer->get_subtitle(ms_start, &sub, m_lastCBtime);
+		m_lastCBtime = ms_start;
+		if (S_FALSE == hr)		// same subtitle, ignore
+			return S_OK;
+		else if (S_OK == hr)	// need to update
+		{
+			// empty result, clear it
+			if( sub.width == 0 || sub.height ==0 || sub.width_pixel==0 || sub.height_pixel == 0 || sub.data == NULL)
+			{
+				m_renderer1->ClearAlphaBitmap();
+				m_renderer2->ClearAlphaBitmap();
+				return S_OK;
+			}
+
+			// draw it
+			else
+			{
+				// FIXME: assume aspect_screen is always less than aspect_subtitle
+				double aspect_screen1 = (double)(m_screen1.right - m_screen1.left)/(m_screen1.bottom - m_screen1.top);
+				double aspect_screen2 = (double)(m_screen2.right - m_screen2.left)/(m_screen2.bottom - m_screen2.top);
+
+				double delta1 = (1-aspect_screen1/sub.aspect);
+				double delta2 = (1-aspect_screen1/sub.aspect);
+
+				UnifyAlphaBitmap bmp1 = {sub.width_pixel, sub.height_pixel, sub.data, 
+					(float)sub.left + (m_subtitle_center_x-0.5),
+					(float)sub.top *(1-delta1) + delta1/2 + (m_subtitle_bottom_y-0.95),
+					(float)sub.width,
+					(float)sub.height * (1-delta1)};
+
+				HRESULT hr = m_renderer1->SetAlphaBitmap(bmp1);
+				if (FAILED(hr)) 
+				{
+					free(sub.data);
+					return hr;
+				}
+
+				// another eye
+				UnifyAlphaBitmap bmp2 = {sub.width_pixel, sub.height_pixel, sub.data, 
+					(float)sub.left + (m_subtitle_center_x-0.5),
+					(float)sub.top *(1-delta2) + delta2/2 + (m_subtitle_bottom_y-0.95),
+					(float)sub.width,
+					(float)sub.height * (1-delta2)};
+				bmp2.left += (double)m_subtitle_offset*sub.width/sub.width_pixel + sub.delta;
+				hr =  m_renderer2->SetAlphaBitmap(bmp2);
+				free(sub.data);
+				return hr;
+			}
+		}
+
 	}
 
 	return S_OK;
@@ -1148,9 +1228,13 @@ HRESULT dx_window::start_loading()
 	return S_OK;
 }
 
-HRESULT dx_window::load_file(wchar_t *pathname)
+HRESULT dx_window::load_file(wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
 {
-	if(PathIsDirectoryW(pathname))
+	wchar_t file_to_play[MAX_PATH];
+	wcscpy(file_to_play, pathname);
+
+	// Bluray Directory
+	if(PathIsDirectoryW(file_to_play))
 	{
 		HMODULE hax = LoadLibraryW(L"codec\\SsifSource.ax");
 		if (!hax)
@@ -1168,51 +1252,119 @@ HRESULT dx_window::load_file(wchar_t *pathname)
 
 		wchar_t playlist[MAX_PATH];
 		HRESULT hr;
-		if (FAILED(hr = pfind(pathname, playlist)))
+		if (FAILED(hr = pfind(file_to_play, playlist)))
 			return hr;
 		else
-			return load_iso_file(playlist);
-
+			wcscpy(file_to_play, playlist);
 	}
 
-	if (verify_file(pathname) == 2)
-		return load_PD10_file(pathname);
+	// Legacy Remux file
+	if (verify_file(file_to_play) == 2)
+		return load_REMUX_file(file_to_play);
 
-	size_t name_len = wcslen(pathname);
-	if ( (towlower(pathname[name_len-4]) == L's'
-		&&towlower(pathname[name_len-3]) == L's'
-		&&towlower(pathname[name_len-2]) == L'i'
-		&&towlower(pathname[name_len-1]) == L'f')
-	||	 (towlower(pathname[name_len-4]) == L'm'
-		&&towlower(pathname[name_len-3]) == L'p'
-		&&towlower(pathname[name_len-2]) == L'l'
-		&&towlower(pathname[name_len-1]) == L's'))
-		return load_iso_file(pathname);
+	// check private source and whether is MVC content
+	CLSID source_clsid;
+	HRESULT hr = GetFileSource(file_to_play, &source_clsid);
+	if (SUCCEEDED(hr))
+	{
+		// private file types
+		// create source, load file and join it into graph
+		CComPtr<IBaseFilter> source_base;
+		hr = myCreateInstance(source_clsid, IID_IBaseFilter, (void**)&source_base);
+		CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source_source(source_base);
+		hr = source_source->Load(file_to_play, NULL);
+		hr = m_gb->AddFilter(source_base, L"Source");
 
-	HRESULT hr = m_gb->RenderFile(pathname, NULL);
+		// check MVC content, if is, Add a Cracked PD10 Decoder into graph, and set m_PD10=true
+		CComQIPtr<IMVC, &IID_IMVC> imvc(source_base);
+		if (imvc && imvc->IsMVC() == S_OK)
+			{
+				CComPtr<IBaseFilter> pd10_decoder;
+				hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10_decoder);
+				hr = m_gb->AddFilter(pd10_decoder, L"PD10 Decoder");
+				hr = CrackPD10(pd10_decoder);
+				imvc->SetPD10(TRUE);
+				m_PD10 = true;
+			}
 
+		// then render pins
+		CComPtr<IPin> pin;
+		CComPtr<IEnumPins> pEnum;
+		int audio_num = 0, video_num = 0;
+		hr = source_base->EnumPins(&pEnum);
+		if (FAILED(hr))
+			return hr;
+		while (pEnum->Next(1, &pin, NULL) == S_OK)
+		{
+			PIN_DIRECTION ThisPinDir;
+			pin->QueryDirection(&ThisPinDir);
+			if (ThisPinDir == PINDIR_OUTPUT)
+			{
+				CComPtr<IPin> pin_tmp;
+				pin->ConnectedTo(&pin_tmp);
+				if (pin_tmp)  // Already connected, not the pin we want.
+					pin_tmp = NULL;
+				else  // Unconnected, this is the pin we may want.
+				{
+					PIN_INFO info;
+					pin->QueryPinInfo(&info);
+					if (info.pFilter) info.pFilter->Release();
+
+					if (wcsstr(info.achName, L"Video"))
+					{
+						if ( (video_track>=0 && (MKV_TRACK_NUMBER(video_num) & video_track ))
+							|| video_track == MKV_ALL_TRACK)
+							m_gb->Render(pin);
+						video_num ++;
+					}
+
+					else if (wcsstr(info.achName, L"Audio"))
+					{
+						if ( (audio_track>=0 && (MKV_TRACK_NUMBER(audio_num) & audio_track ))
+							|| audio_track == MKV_ALL_TRACK)
+							m_gb->Render(pin);
+						audio_num ++;
+					}
+
+					else;	// other tracks, ignore them
+				}
+			}
+			pin = NULL;
+		}
+
+		// if it doesn't work....
+		if (video_num == 0)
+			hr = m_gb->RenderFile(file_to_play, NULL);
+	}
+
+
+	// normal file, just render it.
+	else
+		hr = m_gb->RenderFile(file_to_play, NULL);
+
+	// check result
 	if (hr == VFW_S_AUDIO_NOT_RENDERED)
-		log_line(L"warning: audio not rendered. \"%s\"", pathname);
+		log_line(L"warning: audio not rendered. \"%s\"", file_to_play);
 
 	if (hr == VFW_S_PARTIAL_RENDER)
-		log_line(L"warning: Some of the streams in this movie are in an unsupported format. \"%s\"", pathname);
+		log_line(L"warning: Some of the streams in this movie are in an unsupported format. \"%s\"", file_to_play);
 
 	if (hr == VFW_S_VIDEO_NOT_RENDERED)
-		log_line(L"warning: video not rendered. \"%s\"", pathname);
+		log_line(L"warning: video not rendered. \"%s\"", file_to_play);
 
 	if (FAILED(hr))
 	{
-		log_line(L"failed rendering \"%s\" (error = 0x%08x).", pathname, hr);
+		log_line(L"failed rendering \"%s\" (error = 0x%08x).", file_to_play, hr);
 	}
 
 	return hr;
 }
 
-HRESULT dx_window::load_iso_file(wchar_t *pathname)
+HRESULT dx_window::load_BD3D_file(wchar_t *pathname)
 {
 	// add a decoder
 	CComPtr<IBaseFilter> decoder;
-	decoder.CoCreateInstance(CLSID_PD10_DECODER);
+	myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&decoder);
 
 	m_gb->AddFilter(decoder, L"PD10 decoder");
 
@@ -1245,7 +1397,10 @@ HRESULT dx_window::load_iso_file(wchar_t *pathname)
 		CComQIPtr<IMVC, &IID_IMVC> imvc(filter);
 		if (imvc)
 			if (imvc->IsMVC() == S_OK)
+			{
+				imvc->SetPD10(TRUE);
 				ismvc = true;
+			}
 		filter = NULL;
 	}
 
@@ -1255,7 +1410,7 @@ HRESULT dx_window::load_iso_file(wchar_t *pathname)
 		return E_FAIL;
 	}
 
-	hr = ActiveMVC(decoder);
+	hr = CrackPD10(decoder);
 	if (FAILED(hr))
 	{
 		log_line(L"failed activing MVC (error = 0x%08x).", hr);
@@ -1265,18 +1420,17 @@ HRESULT dx_window::load_iso_file(wchar_t *pathname)
 	return hr;
 }
 
-HRESULT dx_window::load_PD10_file(wchar_t *pathname)
+HRESULT dx_window::load_REMUX_file(wchar_t *pathname)
 {
 	if (pathname == NULL)
 		return E_POINTER;
 
 	// create filters and add to graph
 	CComPtr<IBaseFilter> decoder;
-	//m_demuxer.CoCreateInstance(CLSID_PD10_DEMUXER);
-	decoder.CoCreateInstance(CLSID_PD10_DECODER);
+	myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&decoder);
 
 	CComPtr<IBaseFilter> source_base;
-	source_base.CoCreateInstance(CLSID_SSIFSource);
+	myCreateInstance(CLSID_SSIFSource, IID_IBaseFilter, (void**)&source_base);
 	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(source_base);
 
 	if (decoder == NULL)
@@ -1339,7 +1493,7 @@ HRESULT dx_window::load_PD10_file(wchar_t *pathname)
 	}
 	m_PD10 = true;
 
-	return ActiveMVC(decoder);
+	return CrackPD10(decoder);
 }
 
 HRESULT dx_window::load_mkv_file(wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
@@ -1415,6 +1569,132 @@ HRESULT dx_window::load_mkv_file(wchar_t *pathname, int audio_track /* = MKV_FIR
 	return S_OK;
 }
 
+
+HRESULT dx_window::load_3dv_file(wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
+{
+	if (pathname == NULL)
+		return E_POINTER;
+
+	// create & load & add to filter
+	CComPtr<IBaseFilter> source;
+	myCreateInstance(CLSID_3dvSource, IID_IBaseFilter, (void**)&source);
+
+	if (source == NULL)
+		return E_FAIL;
+
+	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> haali_source(source);
+	if (haali_source == NULL)
+	{
+		log_line(L"haali media splitter not found, install it first.");
+		return E_FAIL;
+	}
+
+	HRESULT hr = haali_source->Load(pathname, NULL);
+	if (FAILED(hr))
+		return hr;
+
+	m_gb->AddFilter(source, L"haali simple source");
+
+	// render pins
+	CComPtr<IPin> pin;
+	CComPtr<IEnumPins> pEnum;
+	int audio_num = 0, video_num = 0;
+	hr = source->EnumPins(&pEnum);
+	if (FAILED(hr))
+		return hr;
+	while (pEnum->Next(1, &pin, NULL) == S_OK)
+	{
+		PIN_DIRECTION ThisPinDir;
+		pin->QueryDirection(&ThisPinDir);
+		if (ThisPinDir == PINDIR_OUTPUT)
+		{
+			CComPtr<IPin> pin_tmp;
+			hr = pin->ConnectedTo(&pin_tmp);
+			if (SUCCEEDED(hr))  // Already connected, not the pin we want.
+				pin_tmp = NULL;
+			else	// Unconnected, this is the pin we may want.
+			{		//just render every out pin
+				m_gb->Render(pin);
+			}
+		}
+		pin = NULL;
+	}
+	return S_OK;
+}
+
+
+HRESULT dx_window::load_E3D_file(wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
+{
+	if (pathname == NULL)
+		return E_POINTER;
+
+	// create & load & add to filter
+	CComPtr<IBaseFilter> haali;
+	haali.CoCreateInstance(CLSID_E3DSource);
+	//load_object(CLSID_HaaliSimple, IID_IBaseFilter, (void**)&haali);
+
+	if (haali == NULL)
+		return E_FAIL;
+
+	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> haali_source(haali);
+	if (haali_source == NULL)
+	{
+		log_line(L"E3D Source filter not found, install it first.");
+		return E_FAIL;
+	}
+
+	HRESULT hr = haali_source->Load(pathname, NULL);
+	if (FAILED(hr))
+		return hr;
+
+	m_gb->AddFilter(haali, L"E3D source");
+
+	// render pins
+	CComPtr<IPin> pin;
+	CComPtr<IEnumPins> pEnum;
+	int audio_num = 0, video_num = 0;
+	hr = haali->EnumPins(&pEnum);
+	if (FAILED(hr))
+		return hr;
+	while (pEnum->Next(1, &pin, NULL) == S_OK)
+	{
+		PIN_DIRECTION ThisPinDir;
+		pin->QueryDirection(&ThisPinDir);
+		if (ThisPinDir == PINDIR_OUTPUT)
+		{
+			CComPtr<IPin> pin_tmp;
+			hr = pin->ConnectedTo(&pin_tmp);
+			if (SUCCEEDED(hr))  // Already connected, not the pin we want.
+				pin_tmp = NULL;
+			else  // Unconnected, this is the pin we may want.
+			{
+				PIN_INFO info;
+				pin->QueryPinInfo(&info);
+				if (info.pFilter) info.pFilter->Release();
+
+				if (wcsstr(info.achName, L"Video"))
+				{
+					if ( (video_track>=0 && (MKV_TRACK_NUMBER(video_num) & video_track ))
+						|| video_track == MKV_ALL_TRACK)
+						m_gb->Render(pin);
+					video_num ++;
+				}
+
+				else if (wcsstr(info.achName, L"Audio"))
+				{
+					if ( (audio_track>=0 && (MKV_TRACK_NUMBER(audio_num) & audio_track ))
+						|| audio_track == MKV_ALL_TRACK)
+						m_gb->Render(pin);
+					audio_num ++;
+				}
+
+				else;	// other tracks, ignore them
+			}
+		}
+		pin = NULL;
+	}
+	return S_OK;
+}
 HRESULT dx_window::set_PD10(bool PD10 /*= false*/)
 {
 	m_PD10 = PD10;
@@ -1509,6 +1789,7 @@ HRESULT dx_window::end_loading_sidebyside(IPin **pin1, IPin **pin2)
 	m_gb->AddFilter(stereo_base, L"the Splitter");
 
 	// find the only renderer and replace it
+	bool hsbs_tested = false;
 	CComPtr<IEnumFilters> pEnum;
 	CComPtr<IBaseFilter> renderer;
 	HRESULT hr = m_gb->EnumFilters(&pEnum);
@@ -1553,12 +1834,27 @@ avisynth:
 			// connect them
 			CComPtr<IPin> stereo_pin;
 			GetUnconnectedPin(stereo_base, PINDIR_INPUT, &stereo_pin);
+test_hsbs:
 			m_gb->ConnectDirect(output, stereo_pin, NULL);
 			
 			CComPtr<IPin> check;
 			stereo_pin->ConnectedTo(&check);
 			if (check == NULL)
 			{
+				if (!hsbs_tested)
+				{
+					log_line(L"trying half SBS.");
+					hsbs_tested = true;
+					m_stereo->SetMode(DWindowFilter_CUT_MODE_LEFT_RIGHT_HALF, DWindowFilter_EXTEND_CUSTOM_DECIMAL(aspect));
+
+					FILE *f = fopen("lr.txt", "rb");
+					if (f)
+					{
+						m_stereo->SetMode(DWindowFilter_CUT_MODE_TOP_BOTTOM_HALF, DWindowFilter_EXTEND_CUSTOM_DECIMAL(aspect));
+						fclose(f);
+					}
+					goto test_hsbs;
+				}
 				log_line(L"input format not supported(half-width or half-height is not supported).");
 				return VFW_E_INVALID_MEDIA_TYPE;			// not connected
 			}
@@ -1702,10 +1998,8 @@ HRESULT dx_window::create_myfilter()
 
 	if (m_filter_mode == FILTER_MODE_MONO)
 	{
-		//hr = load_object(CLSID_DWindowMono, IID_IDWindowExtender, (void**)&m_mono1);
-		m_mono1.CoCreateInstance(CLSID_DWindowMono);
-		//hr = load_object(CLSID_DWindowMono, IID_IDWindowExtender, (void**)&m_mono2);
-		m_mono2.CoCreateInstance(CLSID_DWindowMono);
+		hr = myCreateInstance(CLSID_DWindowMono, IID_IDWindowExtender, (void**)&m_mono1);
+		hr = myCreateInstance(CLSID_DWindowMono, IID_IDWindowExtender, (void**)&m_mono2);
 
 		if (m_mono1 == NULL || m_mono2 == NULL)
 			hr = E_FAIL;
@@ -1713,8 +2007,7 @@ HRESULT dx_window::create_myfilter()
 
 	if (m_filter_mode == FILTER_MODE_STEREO)
 	{
-		//hr = load_object(CLSID_DWindowStereo, IID_IDWindowExtender, (void**)&m_stereo);
-		m_stereo.CoCreateInstance(CLSID_DWindowStereo);
+		hr = myCreateInstance(CLSID_DWindowStereo, IID_IDWindowExtender, (void**)&m_stereo);
 
 		if (m_stereo == NULL)
 			hr = E_FAIL;
@@ -1736,36 +2029,26 @@ HRESULT dx_window::end_loading_step2(IPin *pin1, IPin *pin2)
 	//m_renderer1 = new CVMR9Windowless(m_hwnd1);
 	//m_renderer2 = new CVMR9Windowless(m_hwnd2);
 
+	
 	m_renderer1 = new CEVRVista(m_hwnd1);
-	m_renderer2 = new CEVRVista(m_hwnd2);
+	if (m_renderer1->base_filter == NULL)
+	{
+		// no EVR, possible XP
+		delete m_renderer1;
+		m_renderer1 = new CVMR9Windowless(m_hwnd1);
+		m_renderer2 = new CVMR9Windowless(m_hwnd2);
+	}
+	else
+		m_renderer2 = new CEVRVista(m_hwnd2);
+	
 
-	m_gb->AddFilter(m_renderer1->base_filter, L"VMR9 #1");
-	m_gb->AddFilter(m_renderer2->base_filter, L"VMR9 #2");
+	m_gb->AddFilter(m_renderer1->base_filter, L"Renderer #1");
+	m_gb->AddFilter(m_renderer2->base_filter, L"Renderer #2");
 
 	// config output window
 	m_renderer1->SetAspectRatioMode(UnifyARMode_LetterBox);
 	m_renderer2->SetAspectRatioMode(UnifyARMode_LetterBox);
 	set_revert(m_revert);
-	// set Resizer
-	/*
-	CComQIPtr<IVMRMixerControl9, &IID_IVMRMixerControl9> mixer1(vmr1base);
-	DWORD mixer_prefs = 0;
-	mixer1->GetMixingPrefs(&mixer_prefs);
-	mixer_prefs &= ~MixerPref9_FilteringMask;
-	mixer_prefs |= MixerPref9_AnisotropicFiltering;
-	mixer_prefs &= ~MixerPref9_RenderTargetMask;
-	mixer_prefs |= MixerPref9_RenderTargetYUV;
-	mixer1->SetMixingPrefs(mixer_prefs);
-	mixer1->GetMixingPrefs(&mixer_prefs);
-
-	CComQIPtr<IVMRMixerControl9, &IID_IVMRMixerControl9> mixer2(vmr2base);
-	mixer2->GetMixingPrefs(&mixer_prefs);
-	mixer_prefs &= ~MixerPref9_FilteringMask;
-	mixer_prefs |= MixerPref9_AnisotropicFiltering;
-	mixer_prefs &= ~MixerPref9_RenderTargetMask;
-	mixer_prefs |= MixerPref9_RenderTargetYUV;
-	mixer2->SetMixingPrefs(mixer_prefs);
-	*/
 
 	// connect pins
 	CComPtr<IPin> vmr1pin;
@@ -1789,7 +2072,7 @@ HRESULT dx_window::end_loading_step2(IPin *pin1, IPin *pin2)
 }
 
 // font/d3d/subtitle part
-HRESULT dx_window::load_srt(wchar_t *pathname, bool reset)
+HRESULT dx_window::load_subtitle(wchar_t *pathname, bool reset)			//FIXME : always reset 
 {
 	if (pathname == NULL)
 		return E_POINTER;
@@ -1797,10 +2080,31 @@ HRESULT dx_window::load_srt(wchar_t *pathname, bool reset)
 	if (!m_loading)
 		return VFW_E_WRONG_STATE;
 
-	if (reset)
-		m_srt.init(20480, 2048*1024);
+	if (reset && m_srenderer)
+		m_srenderer->reset();
 
-	m_srt.load(pathname);
+	if (m_srenderer)
+		delete m_srenderer;
+
+	wchar_t *p_3 = pathname + wcslen(pathname) -3;
+	if ( (p_3[0] == L's' || p_3[0] == L'S') &&
+		(p_3[1] == L'r' || p_3[1] == L'R') &&
+		(p_3[2] == L't' || p_3[2] == L'T'))
+	{
+		m_srenderer = new CsrtRenderer();
+	}
+	else if ( (p_3[0] == L's' || p_3[0] == L'S') &&
+		(p_3[1] == L'u' || p_3[1] == L'U') &&
+		(p_3[2] == L'p' || p_3[2] == L'P'))
+	{
+		m_srenderer = new PGSRenderer();
+	}
+	else
+	{
+		return E_NOTIMPL;
+	}
+
+	m_srenderer->load_file(pathname);
 
 	return S_OK;
 }
@@ -1877,9 +2181,13 @@ HRESULT dx_window::draw_text(wchar_t *text)
 	D3DLOCKED_RECT locked_rect;
 	m_text_surface->LockRect(&locked_rect, NULL, NULL);
 	GetBitmapBits(hbm, m_text_surface_height * m_text_surface_width * 4, locked_rect.pBits);
+	if(m_subtile_bitmap) free(m_subtile_bitmap);
+	m_subtile_bitmap = (BYTE *) malloc(m_text_surface_width * m_text_surface_height*4);
+	GetBitmapBits(hbm, m_text_surface_height * m_text_surface_width * 4, m_subtile_bitmap);
 
-	BYTE *data = (BYTE*)locked_rect.pBits;
-	DWORD *data_dw = (DWORD*)locked_rect.pBits;
+
+	BYTE *data = (BYTE*)m_subtile_bitmap;
+	DWORD *data_dw = (DWORD*)m_subtile_bitmap;
 	unsigned char color_r = (BYTE)(m_font_color       & 0xff);
 	unsigned char color_g = (BYTE)((m_font_color>>8)  & 0xff);
 	unsigned char color_b = (BYTE)((m_font_color>>16) & 0xff);
@@ -1905,36 +2213,33 @@ HRESULT dx_window::draw_text(wchar_t *text)
 
 HRESULT dx_window::draw_subtitle()
 {
-	// when width=0 or height=0, the VMR don't show anything
-	// so we don't care about what happened
-	VMR9AlphaBitmap bmp_info;
-
+	// force refresh on next frame
+	m_lastCBtime = -1;
 	/*
+	if (m_text_surface_width == 0 || m_text_surface_height == 0)
+	{
+		m_renderer1->ClearAlphaBitmap();
+		m_renderer2->ClearAlphaBitmap();
+		return S_OK;
+	}
+
 	float p_x = (float)m_text_surface_width / 1920;
 	float p_y = (float)m_text_surface_height / 1440;
 
-	RECT rect = {0,0,m_text_surface_width,m_text_surface_height};
-	VMR9NormalizedRect rect_dst = {(float)(m_subtitle_center_x - p_x/2),
-								   (float)(m_subtitle_bottom_y - p_y),
-								   (float)(m_subtitle_center_x + p_x/2),
-								   (float)m_subtitle_bottom_y};
+	UnifyAlphaBitmap bmp;
+	bmp.data = m_subtile_bitmap;
+	bmp.width = m_text_surface_width;
+	bmp.height = m_text_surface_height;
+	bmp.left = (float)(m_subtitle_center_x - p_x/2);
+	bmp.top = (float)(m_subtitle_bottom_y - p_y);
+	bmp.fwidth = (float)p_x;
+	bmp.fheight = (float)p_y;
 
-	bmp_info.dwFlags = VMR9AlphaBitmap_EntireDDS | VMR9AlphaBitmap_FilterMode;
-	bmp_info.hdc = NULL;
-	bmp_info.pDDS = m_text_surface;
-	bmp_info.rSrc = rect;
-	bmp_info.rDest= rect_dst;
-	bmp_info.fAlpha = 1;
-	bmp_info.clrSrcKey = 0xffffffff;
-	bmp_info.dwFilterMode = MixerPref9_AnisotropicFiltering;
-
-	m_vmr1bmp->SetAlphaBitmap(&bmp_info);
-
-	bmp_info.rDest.left += (float)m_subtitle_offset / 1920;
-	bmp_info.rDest.right += (float)m_subtitle_offset / 1920;
-	m_vmr2bmp->SetAlphaBitmap(&bmp_info);
-
+	m_renderer1->SetAlphaBitmap(bmp);
+	bmp.left += (float) m_subtitle_offset / 1920;
+	m_renderer2->SetAlphaBitmap(bmp);
 	*/
+
 	if (m_mc)
 	{
 		OAFilterState fs;

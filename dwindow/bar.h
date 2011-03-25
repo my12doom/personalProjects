@@ -28,7 +28,7 @@ public:
 	void draw_time(int time);
 
 	int draw_total(bool paused, int current_time, int total_time, double volume);
-	int test(int x, int y, double *out_value);	// 0 = nothing, 1= pause/play, 2 = full
+	int hit_test(int x, int y, double *out_value);	// 0 = nothing, 1= pause/play, 2 = full
 												// 3 = volume,  4 = progress, value = value
 												// -1= ³¹µ×³ö½ç
 protected:

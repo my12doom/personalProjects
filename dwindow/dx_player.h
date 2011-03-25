@@ -10,9 +10,10 @@
 #include "streams.h"
 #include "dwindow.h"
 #include "bar.h"
-#include "..\..\projects\srt_parser\srt_parser.h"
+#include "CSubtitle.h"
+#include "srt\srt_parser.h"
 #include "..\mySplitter\filter.h"
-#include "..\PGS\PGS.h"
+#include "PGS\PGSParser.h"
 
 #define MKV_NO_TRACK -1
 #define MKV_ALL_TRACK -2
@@ -26,6 +27,10 @@
 DEFINE_GUID(CLSID_HaaliSimple, 
 			0x8F43B7D9, 0x9D6B, 0x4F48, 0xBE, 0x18, 0x4D, 0x78, 0x7C, 0x79, 0x5E, 0xEA);
 
+// {0A68C3B5-9164-4A54-AFAF-995B2FF0E0D4}
+DEFINE_GUID(CLSID_E3DSource, 
+			0x0A68C3B5, 0x9164, 0x4A54, 0xAF, 0xAF, 0x99, 0x5B, 0x2F, 0xF0, 0xE0, 0xD4);
+
 // {F07E981B-0EC4-4665-A671-C24955D11A38}
 DEFINE_GUID(CLSID_PD10_DEMUXER, 
                         0xF07E981B, 0x0EC4, 0x4665, 0xA6, 0x71, 0xC2, 0x49, 0x55, 0xD1, 0x1A, 0x38);
@@ -33,6 +38,10 @@ DEFINE_GUID(CLSID_PD10_DEMUXER,
 // {D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}
 DEFINE_GUID(CLSID_PD10_DECODER, 
                         0xD00E73D7, 0x06f5, 0x44F9, 0x8B, 0xE4, 0xB7, 0xDB, 0x19, 0x1E, 0x9E, 0x7E);
+
+// {FBCFD6AF-B25F-4a6d-AE56-5B5303F1A40E}
+DEFINE_GUID(CLSID_3dvSource, 
+			0xfbcfd6af, 0xb25f, 0x4a6d, 0xae, 0x56, 0x5b, 0x53, 0x3, 0xf1, 0xa4, 0xe);
 
 static const GUID CLSID_SSIFSource = { 0x916e4c8d, 0xe37f, 0x4fd4, { 0x95, 0xf6, 0xa4, 0x4e, 0x51, 0x46, 0x2e, 0xdf } };
 
@@ -44,11 +53,13 @@ public:
 	~dx_window();
 	// load functions
 	HRESULT start_loading();
-	HRESULT load_srt(wchar_t *pathname, bool reset = true);
-	HRESULT load_file(wchar_t *pathname);
-	HRESULT load_iso_file(wchar_t *pathname);
+	HRESULT load_subtitle(wchar_t *pathname, bool reset = true);
+	HRESULT load_file(wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
+	HRESULT load_BD3D_file(wchar_t *pathname);
 	HRESULT load_mkv_file(wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
-	HRESULT load_PD10_file(wchar_t *pathname);																				// for PD10 demuxer and mvc decoder
+	HRESULT load_REMUX_file(wchar_t *pathname);																				// for PD10 demuxer and mvc decoder
+	HRESULT load_E3D_file(wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
+	HRESULT load_3dv_file(wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
 	HRESULT end_loading();
 	HRESULT set_PD10(bool PD10 = false);
 
@@ -98,7 +109,7 @@ protected:
 	double m_letterbox_delta;
 
 	// helper function and vars
-	HRESULT ActiveMVC(IBaseFilter *filter);
+	HRESULT CrackPD10(IBaseFilter *filter);
 	HRESULT calculate_movie_rect(RECT *source, RECT *client, RECT *letterbox, bool ui);
 	HRESULT paint_letterbox(int id, RECT letterbox);
 	bool m_demuxer_config_active;
@@ -159,8 +170,12 @@ protected:
 	CComPtr<IBasicAudio>		m_ba;
 
 	// renderer
+	int m_lastCBtime;
+	CSubtitleRenderer *m_srenderer;
 	CUnifyRenderer *m_renderer1;
 	CUnifyRenderer *m_renderer2;
+	BYTE *m_subtile_bitmap;
+
 	// VMR filter vars
 	/*
 	CComPtr<IVMRWindowlessControl9> m_vmr1c;

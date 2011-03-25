@@ -1,6 +1,5 @@
+#pragma once
 #include <windows.h>
-#include "..\PGS\PGS.h"
-#include "..\..\projects\srt_parser\srt_parser.h"
 
 typedef struct _rendered_subtitle
 {
@@ -37,25 +36,6 @@ public:
 	virtual HRESULT get_subtitle(int time, rendered_subtitle *out, int last_time=-1)=0;			// get subtitle on a time point, 
 																								// if last_time != -1, return S_OK = need update, return S_FALSE = same subtitle, and out should be ignored;
 	virtual HRESULT reset()=0;
-	virtual HRESULT seek()=0;	// to provide dshow support
-};
-
-class CPGSRenderer : public CSubtitleRenderer
-{
-	virtual HRESULT load_file(wchar_t *filename);	//maybe you don't need this?
-	virtual HRESULT add_data(BYTE *data, int size, int start, int end);
-	virtual HRESULT get_subtitle(int time, rendered_subtitle *out, int last_time=-1);			// get subtitle on a time point, 
-																								// if last_time != -1, return S_OK = need update, return S_FALSE = same subtitle, and out should be ignored;
-	virtual HRESULT reset();
-	virtual HRESULT seek();		// to provide dshow support
-};
-
-class CsrtRenderer : public CSubtitleRenderer
-{
-	virtual HRESULT load_file(wchar_t *filename);	//maybe you don't need this?
-	virtual HRESULT add_data(BYTE *data, int size, int start, int end);
-	virtual HRESULT get_subtitle(int time, rendered_subtitle *out, int last_time=-1);			// get subtitle on a time point, 
-																								// if last_time != -1, return S_OK = need update, return S_FALSE = same subtitle, and out should be ignored;
-	virtual HRESULT reset();
-	virtual HRESULT seek();		// to provide dshow support
+	virtual HRESULT seek()=0;	// just clear current incompleted data, to support dshow seeking.
+	virtual HRESULT select_font(bool show_dlg = true)=0;											// for text based subtitles, the main program will try show_dlg=false first, if the SubtitleRenderer is not text based, it should return E_NOT_IMPL.
 };

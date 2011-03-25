@@ -226,14 +226,16 @@ int bar_drawer::draw_total(bool paused, int current_time, int total_time, double
 	return 0;
 }
 
-int bar_drawer::test(int x, int y, double *out_value)				// 0 = nothing, 1= pause/play, 2 = full
-																	// 3 = volume,  4 = progress, value = value
+int bar_drawer::hit_test(int x, int y, double *out_value)			// return value: hit button
+																	// 0 = nothing, 1= pause/play, 2 = full
+																	// 3 = volume,  4 = progress, out_value = value
 																	// -1= 彻底出界
+																	// out_value: volume or progressbar balue
 {
 	if (out_value)
 		*out_value = 0;
 
-	if (y<0 || y>=30)									// 按钮只要大致
+	if (y<0 || y>=30 || x<0 || x>total_width)			// 按钮只要大致
 		return -1;
 
 	if (7 <= x && x < 35)

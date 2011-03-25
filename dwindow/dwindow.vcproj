@@ -4,6 +4,7 @@
 	Version="9.00"
 	Name="dwindow"
 	ProjectGUID="{99F4BF26-5159-4A90-83BE-CB492C8A87C7}"
+	RootNamespace="dwindow"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
 	>
@@ -63,7 +64,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
 				OutputFile="$(OutDir)/dwindow.exe"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/dwindow.pdb"
@@ -216,7 +217,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Mfuuid.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib"
+				AdditionalDependencies="Mfuuid.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
 				OutputFile="$(OutDir)/dwindow.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\DX_SDK_LITE\Lib\x86;E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt"
@@ -276,6 +277,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\private_filter.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\UnifyRenderer.cpp"
 				>
 			</File>
@@ -287,11 +292,19 @@
 					>
 				</File>
 				<File
-					RelativePath="..\Pgs\PGS.cpp"
+					RelativePath=".\PGS\PGSParser.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\projects\srt_parser\srt_parser.cpp"
+					RelativePath=".\PGS\PGSRenderer.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\srt\srt_parser.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\srt\srt_renderer.cpp"
 					>
 				</File>
 			</Filter>
@@ -317,10 +330,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath=".\autolock.h"
-				>
-			</File>
 			<File
 				RelativePath=".\bar.h"
 				>
@@ -353,11 +362,19 @@
 					>
 				</File>
 				<File
-					RelativePath="..\Pgs\PGS.h"
+					RelativePath=".\PGS\PGSParser.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\projects\srt_parser\srt_parser.h"
+					RelativePath=".\PGS\PGSRenderer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\srt\srt_parser.h"
+					>
+				</File>
+				<File
+					RelativePath=".\srt\srt_renderer.h"
 					>
 				</File>
 			</Filter>

@@ -19,7 +19,6 @@ bool open_file_dlg(wchar_t *pathname, HWND hDlg, wchar_t *filter = NULL);
 // input files
 #define type_normal 0
 #define type_mkv 1
-#define type_PD10 2
 wchar_t input1[MAX_PATH] = L"";
 int type1 = type_normal;
 wchar_t input2[MAX_PATH] = L"";
@@ -95,7 +94,7 @@ show_config:
 	player->start_loading();
 	//_subtitle
 	if (_subtitle[0])
-		player->load_srt(_subtitle);
+		player->load_subtitle(_subtitle);
 	//sound
 	if (sound[0])
 		player->load_file(sound);
@@ -103,9 +102,7 @@ show_config:
 	// input1
 	if (input1[0])
 	{
-		if (type1 == type_PD10)
-			player->load_PD10_file(input1);
-		else if (type1 == type_mkv)
+		if (type1 == type_mkv)
 			player->load_mkv_file(input1);
 		else
 			player->load_file(input1);
@@ -115,9 +112,7 @@ show_config:
 	// input2
 	if (input2[0])
 	{
-		if (type2 == type_PD10)
-			player->load_PD10_file(input2);
-		else if (type2 == type_mkv)
+		if (type2 == type_mkv)
 			player->load_mkv_file(input2);
 		else
 			player->load_file(input2);
@@ -133,6 +128,13 @@ show_config:
 		free(tmp);
 		delete player;
 		goto show_config;
+	}
+	else
+	{
+		// print load log on console
+		printf("load log:\n");
+		wprintf(player->m_log);
+		printf("\n");
 	}
 
 	kill_ssaver();
@@ -179,10 +181,10 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 bool open_file_dlg(wchar_t *pathname, HWND hDlg, wchar_t *filter/* = NULL*/)
 {
 	static wchar_t *default_filter = L"Video files\0"
-									 L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls\0"
+									 L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d\0"
 									 L"Audio files\0"
 									 L"*.wav;*.ac3;*.dts;*.mp3;*.mp2;*.mpa;*.mp4;*.wma;*.flac;*.ape;*.avs\0"
-									 L"Subtitles\0*.srt\0"
+									 L"Subtitles\0*.srt;*.sup\0"
 									 L"All Files\0*.*\0"
 									 L"\0";
 	if (filter == NULL) filter = default_filter;
@@ -266,7 +268,7 @@ void on_command(HWND hDlg, int ItemID)
 	if (ItemID == IDC_BUTTON_SUBTITLE)
 	{
 		GetDlgItemTextW(hDlg, IDC_EDIT_SUBTITLE, file_selected, MAX_PATH);
-		open_file_dlg(file_selected, hDlg, L"Subtitles(*.srt)\0*.srt\0All Files\0*.*\0\0");
+		open_file_dlg(file_selected, hDlg, L"Subtitles(*.srt)\0*.srt;*.sup\0All Files\0*.*\0\0");
 		SetDlgItemTextW(hDlg, IDC_EDIT_SUBTITLE, file_selected);
 	}
 }
