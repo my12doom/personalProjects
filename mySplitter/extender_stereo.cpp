@@ -10,6 +10,7 @@ DEFINE_GUID(CLSID_PD10_DEMUXER,
 CDWindowExtenderStereo::CDWindowExtenderStereo(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
 CSplitFilter(tszName, punk, CLSID_DWindowStereo)
 {
+	m_newseg_is_left = false;
 	m_buffer_has_data = false;
 	m_pixel_aspect = 1.0;
 	m_letterbox_total = m_letterbox_top = m_letterbox_bottom = 0;
@@ -104,9 +105,10 @@ STDMETHODIMP CDWindowExtenderStereo::NonDelegatingQueryInterface(REFIID riid, vo
 
 HRESULT CDWindowExtenderStereo::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 {
-	/*
 	if (direction == PINDIR_INPUT)
 	{
+		static const GUID CLSID_my12doomSource = { 0x8FD7B1DE, 0x3B84, 0x4817, { 0xA9, 0x6F, 0x4C, 0x94, 0x72, 0x8B, 0x1A, 0xAE } };
+		m_newseg_is_left = false;
 		CComQIPtr<IBaseFilter, &IID_IBaseFilter> f(this);
 		FILTER_INFO fi;
 		f->QueryFilterInfo(&fi);
@@ -117,19 +119,17 @@ HRESULT CDWindowExtenderStereo::CompleteConnect(PIN_DIRECTION direction,IPin *pR
 		CComPtr<IEnumFilters> ef;
 		graph->EnumFilters(&ef);
 
-		m_pd10_demuxer_fix = 0;
 		CComPtr<IBaseFilter> filter;
 		while (S_OK == ef->Next(1, &filter, NULL))
 		{
 			CLSID clsid;
 			filter->GetClassID(&clsid);
 
-			if (clsid == CLSID_PD10_DEMUXER)
-				m_pd10_demuxer_fix = 1;
+			if (clsid == CLSID_my12doomSource)
+				m_newseg_is_left = true;
 			filter = NULL;
 		}
 	}
-	*/
 
 	return S_OK;
 }
