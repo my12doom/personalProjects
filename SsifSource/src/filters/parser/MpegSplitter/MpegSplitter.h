@@ -23,7 +23,7 @@
 
 #include "../BaseSplitter/BaseSplitter.h"
 #include "MpegSplitterFile.h"
-#include "mvc.h"
+#include "IMVC.h"
 #include "TrayMenu.h"
 
 class CMpegSplitterOutputPin;
@@ -105,6 +105,8 @@ public:
 
 	// IMVC
 	STDMETHODIMP IsMVC();
+	STDMETHODIMP GetPD10(BOOL *Enabled);
+	STDMETHODIMP SetPD10(BOOL Enable);
 };
 
 //class __declspec(uuid("1365BE7A-C86A-473C-9A41-C0A6E82C9FA3"))

@@ -51,7 +51,7 @@ const AMOVIESETUP_PIN sudpPins[] =
 const AMOVIESETUP_FILTER sudFilter[] =
 {
 	//{&__uuidof(CMpegSplitterFilter), L"MPC - Mpeg Splitter (Gabest)", MERIT_NORMAL+1, countof(sudpPins), sudpPins, CLSID_LegacyAmFilterCategory},
-	{&__uuidof(CMpegSourceFilter), L"MPC - SSIF Source (Gabest)", MERIT_UNLIKELY, 0, NULL, CLSID_LegacyAmFilterCategory},
+	{&__uuidof(CMpegSourceFilter), L"my12doom's SSIF Source", MERIT_UNLIKELY, 0, NULL, CLSID_LegacyAmFilterCategory},
 };
 
 CFactoryTemplate g_Templates[] =
@@ -530,6 +530,29 @@ HRESULT CMpegSplitterFilter::IsMVC()
 		return S_FALSE;
 }
 
+HRESULT CMpegSplitterFilter::GetPD10(BOOL *Enabled)
+{
+	if (!Enabled)
+		return E_POINTER;
+
+	if (m_mvc_found)
+		return S_OK;
+	else
+		return S_FALSE;
+}
+HRESULT CMpegSplitterFilter::SetPD10(BOOL Enable)
+{
+	if (m_mvc_found && Enable)
+		return S_OK;
+	else if (m_mvc_found && !Enable)
+		return S_FALSE;
+	else if (!m_mvc_found && Enable)
+		return E_FAIL;
+	else if (!m_mvc_found && !Enable)
+		return S_OK;
+
+	return E_FAIL;
+}
 HRESULT CMpegSplitterFilter::BeforeShow()
 {
 	m_traymenu->m_Menu.CreatePopupMenu();
@@ -1577,9 +1600,13 @@ HRESULT CMpegSplitterFilter::dummy_deliver_packet(CAutoPtr<Packet> p)
 			Packet* pPacket = m_pl.GetAt(pos);
 			BYTE* pData = pPacket->GetData();
 
-			if((pData[4]&0x1f) == 0x19) m_fHasAccessUnitDelimiters = true;
+			if((pData[4]&0x1f) == 0x18 && !m_fHasAccessUnitDelimiters)
+			{
+				m_fHasAccessUnitDelimiters = true;
+				printf("right eye delimeter detected.\n");
+			}
 
-			if((pData[4]&0x1f) == 0x19 || !m_fHasAccessUnitDelimiters && pPacket->rtStart != Packet::INVALID_TIME)
+			if((pData[4]&0x1f) == 0x18 || !m_fHasAccessUnitDelimiters && pPacket->rtStart != Packet::INVALID_TIME)
 			{
 				p = m_pl.RemoveHead();
 
@@ -1776,7 +1803,7 @@ HRESULT CMpegSplitterOutputPin::DeliverMVCPacket(CAutoPtr<Packet> p)
 			Packet *ele1012 = m_q1012.GetAt(for_1012);
 			if (ele1011->rtStart == ele1012->rtStart
 				&& ele1011->rtStop == ele1012->rtStop
-				&& ele1011->rtStart != Packet::INVALID_TIME
+				//&& ele1011->rtStart != Packet::INVALID_TIME
 				)
 			{
 				matched_time = ele1011->rtStart;
@@ -1817,6 +1844,11 @@ HRESULT CMpegSplitterOutputPin::DeliverMVCPacket(CAutoPtr<Packet> p)
 				_tprintf(_T("warning: dropping unmatched packets(right eye, %s - %s, %d bytes)\n"), (LPCTSTR)ReftimeToString(p2->rtStart), (LPCTSTR)ReftimeToString(p2->rtStop), p2->GetDataSize());
 
 		}
+
+		// frame number debug:
+		int fn = (int)((double)(double_packet->rtStart)/10000*120/1001 + 0.5);
+		//printf("debug: fn = %d\n", fn);
+
 
 		if (double_packet->rtStart == Packet::INVALID_TIME)
 			printf("warning: delivering packet with start = INVALID_TIME");
