@@ -759,9 +759,14 @@ HRESULT CDWindowExtenderStereo::Split_YUY2(IMediaSample *pIn, IMediaSample *pOut
 	else
 		fn = (double)(TimeStart+m_t)/10000*48/1001 + 0.5;
 
-	//int left = 1 - (fn & 1);
 	m_left = 1- m_left;
 	int left = 1-fn&1;
+
+	if(m_newseg_is_left)
+		left = m_left;
+
+
+
 	if (left)
 		printf("(left)\n");
 	else
