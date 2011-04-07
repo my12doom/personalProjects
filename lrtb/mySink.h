@@ -1,3 +1,4 @@
+#pragma  once
 //------------------------------------------------------------------------------
 // File: Dump.h
 //
@@ -10,31 +11,35 @@
 #include <streams.h>
 #include <initguid.h>
 
-class CYV12DumpInputPin;
-class CYV12Dump;
-class CYV12DumpFilter;
+class mySinkInputPin;
+class mySink;
+class mySinkFilter;
 
 // {59079D04-60E9-4a9d-9B25-3E2746E8F1BA}
-DEFINE_GUID(CLSID_YV12Dump, 
+DEFINE_GUID(CLSID_mySink, 
 			0x59079d04, 0x60e9, 0x4a9d, 0x9b, 0x25, 0x3e, 0x27, 0x46, 0xe8, 0xf1, 0xba);
 
 //
-class IYV12CB
+class ImySinkCB
 {
 public:
-	virtual HRESULT SampleCB(int width, int height, IMediaSample *sample)=0;
+	virtual HRESULT EndOfStreamCB(){return E_NOTIMPL;}
+	virtual HRESULT BreakConnectCB(){return E_NOTIMPL;}
+	virtual HRESULT SampleCB(IMediaSample *sample)=0;
+	virtual HRESULT CheckMediaTypeCB(const CMediaType *inType){return E_NOTIMPL;}
+	virtual HRESULT NewSegmentCB(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate){return E_NOTIMPL;}
 };
 
 // Main filter object
-class CYV12DumpFilter : public CBaseFilter
+class mySinkFilter : public CBaseFilter
 {
-	friend CYV12Dump;
-	CYV12Dump * const m_pDump;
+	friend mySink;
+	mySink * const m_pDump;
 
 public:
 
 	// Constructor
-	CYV12DumpFilter(CYV12Dump *pDump,
+	mySinkFilter(mySink *pDump,
 		LPUNKNOWN pUnk,
 		CCritSec *pLock,
 		HRESULT *phr);
@@ -52,16 +57,15 @@ public:
 
 //  Pin object
 
-class CYV12DumpInputPin : public CRenderedInputPin
+class mySinkInputPin : public CRenderedInputPin
 {
-	friend class CYV12Dump;
-	CYV12Dump    * const m_pDump;           // Main renderer object
+	friend class mySink;
+	mySink    * const m_pDump;           // Main renderer object
 	CCritSec * const m_pReceiveLock;    // Sample critical section
-	REFERENCE_TIME m_tLast;             // Last sample receive time
 
 public:
 
-	CYV12DumpInputPin(CYV12Dump *pDump,
+	mySinkInputPin(mySink *pDump,
 		LPUNKNOWN pUnk,
 		CBaseFilter *pFilter,
 		CCritSec *pLock,
@@ -88,59 +92,32 @@ public:
 
 //  CYV12Dump object which has filter and pin members
 
-class CYV12Dump : public CUnknown//, public IFileSinkFilter
+class mySink : public CUnknown//, public IFileSinkFilter
 {
-	friend class CYV12DumpFilter;
-	friend class CYV12DumpInputPin;
+	friend class mySinkFilter;
+	friend class mySinkInputPin;
 
-	CYV12DumpFilter   *m_pFilter;       // Methods for filter interfaces
-	CYV12DumpInputPin *m_pPin;          // A simple rendered input pin
+	mySinkFilter   *m_pFilter;       // Methods for filter interfaces
+	mySinkInputPin *m_pPin;          // A simple rendered input pin
 
 	CCritSec m_Lock;                // Main renderer critical section
 	CCritSec m_ReceiveLock;         // Sublock for received samples
 
-	/*
-	CPosPassThru *m_pPosition;      // Renderer position controls
-
-	HANDLE   m_hFile;               // Handle to file for dumping
-	LPOLESTR m_pFileName;           // The filename where we dump
-	BOOL     m_fWriteError;
-	*/
 public:
 
 	DECLARE_IUNKNOWN
 
-	CYV12Dump(LPUNKNOWN pUnk, HRESULT *phr);
-	~CYV12Dump();
+	mySink(LPUNKNOWN pUnk, HRESULT *phr);
+	~mySink();
 
-	HRESULT SetCallback(IYV12CB *cb);
+	HRESULT SetCallback(ImySinkCB *cb);
 	static CUnknown * WINAPI CreateInstance(LPUNKNOWN punk, HRESULT *phr);
 
-	/*
-	// Write string, followed by CR/LF, to a file
-	void WriteString(TCHAR *pString);
-
-	// Write raw data stream to a file
-	HRESULT Write(PBYTE pbData, LONG lDataLength);
-
-	// Implements the IFileSinkFilter interface
-	STDMETHODIMP SetFileName(LPCOLESTR pszFileName,const AM_MEDIA_TYPE *pmt);
-	STDMETHODIMP GetCurFile(LPOLESTR * ppszFileName,AM_MEDIA_TYPE *pmt);
-	*/
 private:
 
-	IYV12CB *m_cb;
-	int m_width;
-	int m_height;
+	ImySinkCB *m_cb;
 
 	// Overriden to say what interfaces we support where
 	STDMETHODIMP NonDelegatingQueryInterface(REFIID riid, void ** ppv);
-
-	/*
-	// Open and write to the file
-	HRESULT OpenFile();
-	HRESULT CloseFile();
-	HRESULT HandleWriteFailure();
-	*/
 };
 

@@ -1,6 +1,7 @@
 //#include <tchar.h>
 //#include <Windows.h>
 #include "LayoutDetect.h"
+#include <dvdmedia.h>
 #ifndef CLSID_NullRenderer
 #include <InitGuid.h>
 // {{C1F400A4-3F08-11D3-9F0B-006008039E37}}
@@ -77,7 +78,7 @@ tb_result(new double[frames_to_scan])
 			}
 			m_gb->RemoveFilter(filter);
 
-			yv12 = new CYV12Dump(NULL, &hr);
+			yv12 = new mySink(NULL, &hr);
 			yv12->SetCallback(this);
 			CComPtr<IBaseFilter> yv12_base;
 			yv12->QueryInterface(IID_IBaseFilter, (void**)&yv12_base);
@@ -164,7 +165,31 @@ layout_detector::~layout_detector()
 	_aligned_free(img12_mul_sum);
 }
 
-HRESULT layout_detector::SampleCB(int width, int height, IMediaSample *sample)
+HRESULT layout_detector::CheckMediaTypeCB(const CMediaType *inType)
+{
+	if (*inType->Type() != MEDIATYPE_Video)
+		return E_FAIL;
+	if (*inType->FormatType() != FORMAT_VideoInfo && *inType->FormatType() != FORMAT_VideoInfo2)
+		return E_FAIL;
+	if (*inType->Subtype() != MEDIASUBTYPE_YV12)
+		return E_FAIL;
+
+	if( *inType->FormatType() == FORMAT_VideoInfo)
+	{
+		BITMAPINFOHEADER *pbih = &((VIDEOINFOHEADER*)inType->Format())->bmiHeader;
+		m_width = pbih->biWidth;
+		m_height = pbih->biHeight;
+	}
+	else if( *inType->FormatType() == FORMAT_VideoInfo2)
+	{
+		BITMAPINFOHEADER *pbih = &((VIDEOINFOHEADER2*)inType->Format())->bmiHeader;
+		m_width = pbih->biWidth;
+		m_height = pbih->biHeight;
+	}
+	return S_OK;
+}
+
+HRESULT layout_detector::SampleCB(IMediaSample *sample)
 {
 	if(m_scaned >= m_frames_to_scan)
 	{
@@ -174,13 +199,13 @@ HRESULT layout_detector::SampleCB(int width, int height, IMediaSample *sample)
 	BYTE *p = NULL;
 	sample->GetPointer(&p);
 	int datasize = sample->GetActualDataLength();
-	int stride = datasize / height * 2 / 3;
+	int stride = datasize / m_height * 2 / 3;
 
-	BYTE *bottom = p + stride * height/2;
-	BYTE *right = p + width/2;
+	BYTE *bottom = p + stride * m_height/2;
+	BYTE *right = p + m_width/2;
 
-	sbs_result[m_scaned] = image_quality(p, right, stride, stride, width/2, height, true, NULL);
-	tb_result[m_scaned++] = image_quality(p, bottom, stride, stride, width, height/2, true, NULL);
+	sbs_result[m_scaned] = image_quality(p, right, stride, stride, m_width/2, m_height, true, NULL, max(m_width/960,1));
+	tb_result[m_scaned++] = image_quality(p, bottom, stride, stride, m_width, m_height/2, true, NULL, max(m_width/960,1));
 	return S_OK;
 }
 
@@ -204,7 +229,7 @@ inline double layout_detector::similarity(int muX, int muY, int preMuX2, int pre
 }
 
 
-double layout_detector::image_quality(const unsigned char *img1, const unsigned char *img2, int stride_img1, int stride_img2, int width, int height, bool luminance, double *oweight)
+double layout_detector::image_quality(const unsigned char *img1, const unsigned char *img2, int stride_img1, int stride_img2, int width, int height, bool luminance, double *oweight, int step /*= 1*/)
 {
 	int widthUV = width/2;
 	int stride = stride_img1;
@@ -236,7 +261,7 @@ double layout_detector::image_quality(const unsigned char *img1, const unsigned 
 	img2_sq_sum_ptr1   = img2_sq_sum + temp;
 	img12_mul_sum_ptr1 = img12_mul_sum + temp;
 
-	for (x = 0; x < width; x++) {
+	for (x = 0; x < width; x+=step) {
 		img1_sum[x]      = img1[x];
 		img2_sum[x]      = img2[x];
 		img1_sq_sum[x]   = img1[x] * img1[x];
@@ -251,7 +276,7 @@ double layout_detector::image_quality(const unsigned char *img1, const unsigned 
 	}
 
 	//the main loop
-	for (y = 1; y < height; y++) {
+	for (y = 1; y < height; y+=step) {
 		img1 += stride_img1;
 		img2 += stride_img2;
 
@@ -271,7 +296,7 @@ double layout_detector::image_quality(const unsigned char *img1, const unsigned 
 		img2_sq_sum_ptr2   = img2_sq_sum + temp;
 		img12_mul_sum_ptr2 = img12_mul_sum + temp;
 
-		for (x = 0; x < width; x++) {
+		for (x = 0; x < width; x+=step) {
 			img1_sum_ptr2[x]      = img1_sum_ptr1[x] + img1[x];
 			img2_sum_ptr2[x]      = img2_sum_ptr1[x] + img2[x];
 			img1_sq_sum_ptr2[x]   = img1_sq_sum_ptr1[x] + img1[x] * img1[x];
@@ -289,7 +314,7 @@ double layout_detector::image_quality(const unsigned char *img1, const unsigned 
 			img2_sq_sum_ptr1   = img2_sq_sum + temp;
 			img12_mul_sum_ptr1 = img12_mul_sum + temp;
 
-			for (x = 0; x < width; x++) {
+			for (x = 0; x < width; x+=step) {
 				img1_sum_ptr1[x]      = img1_sum_ptr2[x] - img1_sum_ptr1[x];
 				img2_sum_ptr1[x]      = img2_sum_ptr2[x] - img2_sum_ptr1[x];
 				img1_sq_sum_ptr1[x]   = img1_sq_sum_ptr2[x] - img1_sq_sum_ptr1[x];

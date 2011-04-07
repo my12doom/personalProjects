@@ -1,9 +1,9 @@
 #include <atlbase.h>
 #include <DShow.h>
 
-#include "YV12Dump.h"
+#include "mySink.h"
 
-class layout_detector : protected IYV12CB
+class layout_detector : protected ImySinkCB
 {
 public:
 	layout_detector(int frames_to_scan, const wchar_t *file);
@@ -16,9 +16,12 @@ public:
 	double *tb_result;
 
 protected:
-	CYV12Dump *yv12;
+	mySink *yv12;
 	DWORD m_ROT;
-	HRESULT SampleCB(int width, int height, IMediaSample *sample);
+	HRESULT SampleCB(IMediaSample *sample);
+	HRESULT CheckMediaTypeCB(const CMediaType *inType);
+	int m_width;
+	int m_height;
 	CComPtr<IGraphBuilder> m_gb;
 	int m_frames_to_scan;
 
@@ -29,7 +32,7 @@ protected:
 	int* img1_sq_sum;
 	int* img2_sq_sum;
 	int* img12_mul_sum;
-	double image_quality(const unsigned char *img1, const unsigned char *img2, int stride_img1, int stride_img2, int width, int height, bool isY, double *oweight = NULL);
+	double image_quality(const unsigned char *img1, const unsigned char *img2, int stride_img1, int stride_img2, int width, int height, bool isY, double *oweight = NULL, int step = 1);
 	double similarity(int img1_block, int img2_block, int img1_sq_block, int img2_sq_block, int img12_mul_block);
 
 };
