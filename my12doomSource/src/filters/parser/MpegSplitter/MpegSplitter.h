@@ -42,6 +42,7 @@ protected:
 	// my12doom's codes
 	CAutoPtr<TrayMenu> m_traymenu;
 	bool m_PD10;
+	COffsetSink *m_offset_sink;
 	// mvc right eye handle codes
 	bool m_for_encoding;
 	bool m_mvc_found;
@@ -93,6 +94,7 @@ public:
 	STDMETHODIMP IsMVC();
 	STDMETHODIMP GetPD10(BOOL *Enabled);
 	STDMETHODIMP SetPD10(BOOL Enable);
+	STDMETHODIMP SetOffsetSink(COffsetSink *sink);
 
 	// ITrayMenuCallback
 	HRESULT Click(int id);

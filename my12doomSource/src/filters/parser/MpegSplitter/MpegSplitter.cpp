@@ -502,8 +502,10 @@ CMpegSplitterFilter::CMpegSplitterFilter(LPUNKNOWN pUnk, HRESULT* phr, const CLS
 	, m_PD10(false)
 	, m_fHasAccessUnitDelimiters(false)
 	, m_rtMaxShift(50000000)
+	, m_offset_sink(NULL)
 {
 }
+
 
 
 HRESULT CMpegSplitterFilter::IsMVC()
@@ -528,6 +530,14 @@ HRESULT CMpegSplitterFilter::SetPD10(BOOL Enable)
 
 	return S_OK;
 }
+
+HRESULT CMpegSplitterFilter::SetOffsetSink(COffsetSink *sink)
+{
+	m_offset_sink = sink;
+	return S_OK;
+}
+
+
 HRESULT CMpegSplitterFilter::BeforeShow()
 {
 
@@ -619,13 +629,6 @@ void CMpegSplitterFilter::ReadClipInfo(LPCOLESTR pszFileName)
 					strClipInfo.Format (_T("%s\\..\\CLIPINF\\%s.clpi"), Dir, Filename);
 				}
 			}
-
-			// for ssif
-			CString ssif = strClipInfo;
-			ssif.MakeLower();
-
-			if (ssif.Find(_T("ssif")) >= 0)
-				strClipInfo.Replace(_T("..\\"), _T("..\\..\\"));
 
 			m_ClipInfo.ReadInfo (strClipInfo);
 		}
@@ -963,7 +966,7 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 							curpos -= (__int64)(1.0*dt/m_rtDuration*len);
 							m_pFile->Seek(curpos);
 
-							//pdt = dt;
+							pdt = dt;
 						}
 					}
 				}
@@ -973,11 +976,13 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 			seekpos = minseekpos;
 		} else {
 			// this file is probably screwed up, try plan B, seek simply by bitrate
-
 			rt -= rtPreroll;
 			seekpos = (__int64)(1.0*rt/m_rtDuration*len);
 			m_pFile->Seek(seekpos);
 			m_rtStartOffset = m_pFile->m_rtMin + m_pFile->NextPTS(pMasterStream->GetHead()) - rt;
+			printf("seeking by bitrate(offset=%lld).\n", m_rtStartOffset);
+			if (m_offset_sink) 
+				m_offset_sink->SetOffset(m_rtStartOffset);
 		}
 
 		m_pFile->Seek(seekpos);
@@ -1030,7 +1035,7 @@ STDMETHODIMP CMpegSplitterFilter::Enable(long lIndex, DWORD dwFlags)
 	Info(lIndex, NULL, NULL, NULL, &group, &name, NULL, NULL);
 
 	HRESULT hr = S_OK;
-	if (group != m_pFile->audio)
+	if (group != m_pFile->audio && group != m_pFile->subpic)
 	{
 		if(wcsstr(name, L"Right Eye"))
 			hr = E_FAIL;
@@ -1057,33 +1062,44 @@ STDMETHODIMP CMpegSplitterFilter::Enable(long lIndex, DWORD dwFlags)
 			mc->GetState(INFINITE, &state);
 		}
 
-		// find audio pin
+		// find output pin
 		CComPtr<IEnumPins> ep;
 		this_filter->EnumPins(&ep);
-		CComPtr<IPin> audio_pin;
-		while(S_OK == ep->Next(1, &audio_pin, NULL))
+		CComPtr<IPin> outpin;
+		while(S_OK == ep->Next(1, &outpin, NULL))
 		{
 			PIN_INFO pi;
-			audio_pin->QueryPinInfo(&pi);
+			outpin->QueryPinInfo(&pi);
 			if (pi.pFilter) pi.pFilter->Release();
 
-			if (wcsstr(pi.achName, L"Audio"))
+			if ((wcsstr(pi.achName, L"Audio")&& group == m_pFile->audio) ||
+				(wcsstr(pi.achName, L"Subtitle")&& group == m_pFile->subpic))
 				break;
 
-			audio_pin = NULL;
+			outpin = NULL;
 		}
 
-		// disconnect it
+		// reconnect/rerender it
 		CComPtr<IPin> connected;
-		audio_pin->ConnectedTo(&connected);
+		outpin->ConnectedTo(&connected);
 		if (connected)
 		{
-			RemoveDownstream(connected);
+			if (group == m_pFile->audio)
+			{
+				// disconnect and render it
+				RemoveDownstream(connected);
+				gb->Render(outpin);
+			}
+			else if (group == m_pFile->subpic)
+			{
+				// disconnect and reconnect it
+				gb->Disconnect(connected);
+				gb->Disconnect(outpin);
+				hr = EnableCore(lIndex, dwFlags);
+				hr = gb->ConnectDirect(outpin, connected, NULL);
+			}
 
-			hr = EnableCore(lIndex, dwFlags);
 
-			// render it
-			gb->Render(audio_pin);
 		}
 		else
 			hr = EnableCore(lIndex, dwFlags);
@@ -1890,6 +1906,7 @@ HRESULT CMpegSplitterOutputPin::DeliverPacket(CAutoPtr<Packet> p)
 
 					if (p->TrackNumber == 0x1012)
 					{
+						/*
 						CAutoPtr<Packet> p_copy(DNew Packet());
 						p_copy->TrackNumber = p->TrackNumber;
 						p_copy->bAppendable = p->bAppendable;
@@ -1898,8 +1915,9 @@ HRESULT CMpegSplitterOutputPin::DeliverPacket(CAutoPtr<Packet> p)
 						p_copy->rtStart = p->rtStart;
 						p_copy->rtStop = p->rtStop;
 						p_copy->SetData(p->GetData(), p->GetDataSize());
-						hr = ((CMpegSplitterOutputPin*)(((CMpegSplitterFilter*)m_pFilter)->GetOutputPin(0x1011)))->DeliverMVCPacket(p_copy);
 						hr = __super::DeliverPacket(p);
+						*/
+						hr = ((CMpegSplitterOutputPin*)(((CMpegSplitterFilter*)m_pFilter)->GetOutputPin(0x1011)))->DeliverMVCPacket(p);
 					}
 					else
 						hr = ((CMpegSplitterOutputPin*)(((CMpegSplitterFilter*)m_pFilter)->GetOutputPin(0x1011)))->DeliverMVCPacket(p);
@@ -1908,7 +1926,6 @@ HRESULT CMpegSplitterOutputPin::DeliverPacket(CAutoPtr<Packet> p)
 				{
 					hr = __super::DeliverPacket(p);
 				}
-
 				if(hr != S_OK) {
 					return hr;
 				}

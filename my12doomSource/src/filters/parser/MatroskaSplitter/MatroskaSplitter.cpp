@@ -43,11 +43,11 @@ const AMOVIESETUP_PIN sudpPins[] = {
 
 const AMOVIESETUP_FILTER sudFilter[] = {
 	//{&__uuidof(CMatroskaSplitterFilter), L"MPC - Matroska Splitter", MERIT_NORMAL, countof(sudpPins), sudpPins, CLSID_LegacyAmFilterCategory},
-	{&__uuidof(CMatroskaSourceFilter), L"MPC - Matroska Source", MERIT_NORMAL, 0, NULL, CLSID_LegacyAmFilterCategory},
+	{&__uuidof(CMatroskaSourceFilter), L"E3D Source", MERIT_NORMAL, 0, NULL, CLSID_LegacyAmFilterCategory},
 };
 
 CFactoryTemplate g_Templates[] = {
-	{sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CMatroskaSourceFilter>, NULL, &sudFilter[1]},
+	{sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CMatroskaSourceFilter>, NULL, &sudFilter[0]},
 	//{sudFilter[0].strName, sudFilter[0].clsID, CreateInstance<CMatroskaSplitterFilter>, NULL, &sudFilter[0]},
 	//{sudFilter[1].strName, sudFilter[1].clsID, CreateInstance<CMatroskaSourceFilter>, NULL, &sudFilter[1]},
 };
