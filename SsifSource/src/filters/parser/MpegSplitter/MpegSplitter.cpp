@@ -1131,7 +1131,7 @@ STDMETHODIMP CMpegSplitterFilter::Enable(long lIndex, DWORD dwFlags)
 	Info(lIndex, NULL, NULL, NULL, &group, &name, NULL, NULL);
 
 	HRESULT hr = S_OK;
-	if (group != m_pFile->audio)
+	if (group != m_pFile->audio && group != m_pFile->subpic)
 	{
 		if(wcsstr(name, L"Right Eye"))
 			hr = E_FAIL;
@@ -1158,33 +1158,44 @@ STDMETHODIMP CMpegSplitterFilter::Enable(long lIndex, DWORD dwFlags)
 			mc->GetState(INFINITE, &state);
 		}
 
-		// find audio pin
+		// find output pin
 		CComPtr<IEnumPins> ep;
 		this_filter->EnumPins(&ep);
-		CComPtr<IPin> audio_pin;
-		while(S_OK == ep->Next(1, &audio_pin, NULL))
+		CComPtr<IPin> outpin;
+		while(S_OK == ep->Next(1, &outpin, NULL))
 		{
 			PIN_INFO pi;
-			audio_pin->QueryPinInfo(&pi);
+			outpin->QueryPinInfo(&pi);
 			if (pi.pFilter) pi.pFilter->Release();
 
-			if (wcsstr(pi.achName, L"Audio"))
+			if ((wcsstr(pi.achName, L"Audio")&& group == m_pFile->audio) ||
+				(wcsstr(pi.achName, L"Subtitle")&& group == m_pFile->subpic))
 				break;
 
-			audio_pin = NULL;
+			outpin = NULL;
 		}
 
-		// disconnect it
+		// reconnect/rerender it
 		CComPtr<IPin> connected;
-		audio_pin->ConnectedTo(&connected);
+		outpin->ConnectedTo(&connected);
 		if (connected)
 		{
-			RemoveDownstream(connected);
+			if (group == m_pFile->audio)
+			{
+				// disconnect and render it
+				RemoveDownstream(connected);
+				gb->Render(outpin);
+			}
+			else if (group == m_pFile->subpic)
+			{
+				// disconnect and reconnect it
+				gb->Disconnect(connected);
+				gb->Disconnect(outpin);
+				hr = EnableCore(lIndex, dwFlags);
+				hr = gb->ConnectDirect(outpin, connected, NULL);
+			}
 
-			hr = EnableCore(lIndex, dwFlags);
 
-			// render it
-			gb->Render(audio_pin);
 		}
 		else
 			hr = EnableCore(lIndex, dwFlags);
