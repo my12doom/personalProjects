@@ -12,7 +12,7 @@ public:
 	dwindow(RECT screen1, RECT screen2);
 	~dwindow();
 	HRESULT set_fullscreen(int id, bool full, bool nosave = false);
-	HRESULT set_timer(int id, int interval);
+	HRESULT reset_timer(int id, int new_interval);
 	HRESULT show_window(int id, bool show);
 	HRESULT show_mouse(bool show);
 	HRESULT set_window_text(int id, wchar_t *text);
@@ -26,15 +26,17 @@ protected:
 	typedef struct struct_window_proc_param
 	{
 		dwindow *that;
-		HWND *hwnd;
+		HWND *hwnd1;
+		HWND *hwnd2;
 	} window_proc_param;
 
 	static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	static DWORD WINAPI WindowThread(LPVOID lpParame);
 
-	virtual LRESULT on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam){
-		return DefWindowProc(id_to_hwnd(id), message, wParam, lParam);}
+	virtual LRESULT on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam)
+		{return DefWindowProc(id_to_hwnd(id), message, wParam, lParam);}
 	virtual LRESULT on_sys_command(int id, WPARAM wParam, LPARAM lParam){return S_FALSE;}	// don't block WM_SYSCOMMAND
+	virtual LRESULT on_command(int id, WPARAM wParam, LPARAM lParam){return S_OK;}
 	virtual LRESULT on_getminmaxinfo(int id, MINMAXINFO *info){return S_OK;}
 	virtual LRESULT on_move(int id, int x, int y){return S_OK;}
 	virtual LRESULT on_mouse_move(int id, int x, int y){return S_OK;}
@@ -48,6 +50,7 @@ protected:
 	virtual LRESULT on_paint(int id, HDC hdc){return S_OK;}
 	virtual LRESULT on_timer(int id){return S_OK;}
 	virtual LRESULT on_size(int id, int type, int x, int y){return S_OK;}
+	virtual LRESULT on_dropfile(int id, int count, wchar_t **filenames){return S_OK;}
 	virtual LRESULT on_init_dialog(int id, WPARAM wParam, LPARAM lParam){return S_OK;}	// buged
 
 	// helper function

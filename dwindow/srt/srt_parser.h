@@ -20,11 +20,11 @@ protected:
 		int pos;
 	} subtitle_index;
 
-	subtitle_index *index;
-	wchar_t *text_data;
-	int last_type;
-	int index_pos;
-	int text_pos;
+	subtitle_index *m_index;
+	wchar_t *m_text_data;
+	int m_last_type;
+	int m_index_pos;
+	int m_text_pos;
 
 private:
 	int handle_data_16(unsigned short *data, bool big, int size);

@@ -1,64 +1,25 @@
 #include "srt_renderer.h"
 
-CsrtRenderer::CsrtRenderer()
+CsrtRenderer::CsrtRenderer(HFONT font, DWORD fontcolor)
 {
-	m_font = NULL;
-	m_font_color = RGB(255,255,255);
-	m_lFontPointSize = 60;
-	wcscpy(m_FontName, L"ËÎÌו");
-	wcscpy(m_FontStyle, L"Regular");
-	select_font(false);
+	m_font = font;
+	m_font_color = fontcolor;
 	reset();
 }
-HRESULT CsrtRenderer::select_font(bool show_dlg)
+
+HRESULT CsrtRenderer::set_font_color(DWORD newcolor)
 {
-	if (!show_dlg && m_font)
-		return S_OK;
-
-	CHOOSEFONTW cf={0};
-	memset(&cf, 0, sizeof(cf));
-	LOGFONTW lf={0}; 
-	HDC hdc;
-	LONG lHeight;
-
-	// Convert requested font point size to logical units
-	hdc = GetDC( NULL );
-	lHeight = -MulDiv( m_lFontPointSize, GetDeviceCaps(hdc, LOGPIXELSY), 72 );
-	ReleaseDC( NULL, hdc );
-
-	// Initialize members of the LOGFONT structure. 
-	lstrcpynW(lf.lfFaceName, m_FontName, 32);
-	lf.lfHeight = lHeight;      // Logical units
-	lf.lfQuality = ANTIALIASED_QUALITY;
-
-	// Initialize members of the CHOOSEFONT structure. 
-	cf.lStructSize = sizeof(CHOOSEFONT); 
-	cf.hwndOwner   = NULL; 
-	cf.hDC         = (HDC)NULL; 
-	cf.lpLogFont   = &lf; 
-	cf.iPointSize  = m_lFontPointSize * 10; 
-	cf.rgbColors   = m_font_color; 
-	cf.lCustData   = 0L; 
-	cf.lpfnHook    = (LPCFHOOKPROC)NULL; 
-	cf.hInstance   = (HINSTANCE) NULL; 
-	cf.lpszStyle   = m_FontStyle; 
-	cf.nFontType   = SCREEN_FONTTYPE; 
-	cf.nSizeMin    = 0; 
-	cf.lpTemplateName = NULL; 
-	cf.nSizeMax = 720; 
-	cf.Flags = CF_SCREENFONTS | CF_SCALABLEONLY | CF_INITTOLOGFONTSTRUCT | 
-		CF_EFFECTS     | CF_USESTYLE     | CF_LIMITSIZE; 
-
-	if (show_dlg)
-		ChooseFontW(&cf);
-
-	lstrcpynW(m_FontName, lf.lfFaceName, sizeof(m_FontName)/sizeof(TCHAR));
-	m_lFontPointSize = cf.iPointSize / 10;  // Specified in 1/10 point units
-	m_font_color = cf.rgbColors;
-	m_font = CreateFontIndirectW(cf.lpLogFont); 
-
+	m_font_color = newcolor;
 	return S_OK;
 }
+
+HRESULT CsrtRenderer::set_font(HFONT newfont)
+{
+	m_font = newfont;
+	return S_OK;
+}
+
+
 HRESULT CsrtRenderer::load_file(wchar_t *filename)
 {
 	return m_srt.load(filename);
@@ -79,9 +40,17 @@ HRESULT CsrtRenderer::seek()
 
 HRESULT CsrtRenderer::add_data(BYTE *data, int size, int start, int end)
 {
-	wchar_t *tmp = (wchar_t*)malloc(sizeof(wchar_t)*size);
-	MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)data, size, tmp, size);
-	return m_srt.direct_add_subtitle(tmp, start, end);
+	char *p1 = (char*)malloc(size+1);
+	memcpy(p1, data, size);
+	p1[size] = NULL;
+	wchar_t *p2 = (wchar_t*)malloc(size*2+2);
+	MultiByteToWideChar(CP_UTF8, 0, (char*)p1, size+1, p2, size+1);
+	HRESULT hr = m_srt.direct_add_subtitle(p2, start, end);
+
+	free(p1);
+	free(p2);
+
+	return hr;
 }
 
 HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_time/* =-1 */)

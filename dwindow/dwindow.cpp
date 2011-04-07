@@ -43,6 +43,10 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		lr = _this->on_getminmaxinfo(id, (MINMAXINFO*)lParam);
 		break;
 
+	case WM_COMMAND:
+		lr = _this->on_command(id, wParam, lParam);
+		break;
+
 	case WM_SIZE:
 		lr = _this->on_size(id, (int)wParam, xPos, yPos);
 		return DefWindowProc(hWnd, message, wParam, lParam);
@@ -99,6 +103,25 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 			ShowWindow(_this->id_to_hwnd(2), SW_HIDE);
 		break;
 
+	case WM_DROPFILES:
+		{
+			HDROP hDropInfo = (HDROP)wParam;
+			int count = DragQueryFile(hDropInfo, (UINT)-1, NULL, 0);
+			if (count>0)
+			{
+				wchar_t **filenames = (wchar_t**)malloc(sizeof(wchar_t*)*count);
+				for(int i=0; i<count; i++)
+				{
+					filenames[i] = (wchar_t*)malloc(sizeof(wchar_t) * MAX_PATH);
+					DragQueryFileW(hDropInfo, 0, filenames[i], MAX_PATH);
+				}
+				lr = _this->on_dropfile(id, count, filenames);
+				for(int i=0; i<count; i++) free(filenames[i]);
+				free(filenames);
+			}
+		}
+		break;
+
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -119,10 +142,10 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 {
 	HINSTANCE hinstance = GetModuleHandle(NULL);
-	MSG msg;
 
 	HWND hwnd; 	// Create the main window. 
-	hwnd = CreateWindow( 
+	hwnd = CreateWindowExA(
+		WS_EX_ACCEPTFILES,
 		"MainWClass",        // name of window class 
 		"",					 // title-bar string 
 		WS_OVERLAPPEDWINDOW, // top-level window 
@@ -139,20 +162,40 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 		return FALSE; 
 	SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR)((window_proc_param*)lpParame)->that);
 
-	// Show the window and send a WM_PAINT message to the window 
-	// procedure.
+	ShowWindow(hwnd, SW_HIDE);
+	UpdateWindow(hwnd);
+	*((window_proc_param*)lpParame)->hwnd1 = hwnd;
+
+	hwnd = CreateWindowExA(
+		WS_EX_ACCEPTFILES,
+		"MainWClass",        // name of window class 
+		"",					 // title-bar string 
+		WS_OVERLAPPEDWINDOW, // top-level window 
+		CW_USEDEFAULT,       // default horizontal position 
+		CW_USEDEFAULT,       // default vertical position 
+		CW_USEDEFAULT,       // default width 
+		CW_USEDEFAULT,       // default height 
+		(HWND) NULL,         // no owner window 
+		(HMENU) NULL,        // use class menu 
+		hinstance,           // handle to application instance 
+		(LPVOID) NULL);      // no window-creation data 
+
+	if (!hwnd) 
+		return FALSE; 
+	SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR)((window_proc_param*)lpParame)->that);
 
 	ShowWindow(hwnd, SW_HIDE);
 	UpdateWindow(hwnd);
-	*((window_proc_param*)lpParame)->hwnd = hwnd;
+	*((window_proc_param*)lpParame)->hwnd2 = hwnd;
 
-	BOOL fGotMessage;
-	while ((fGotMessage = GetMessage(&msg, (HWND) NULL, 0, 0)) != 0 && fGotMessage != -1) 
+	BOOL fGotMessage1;
+	MSG msg1;
+	while ((fGotMessage1 = GetMessage(&msg1, (HWND) NULL, 0, 0)) != 0 && fGotMessage1 != -1) 
 	{
-		TranslateMessage(&msg); 
-		DispatchMessage(&msg); 
+		TranslateMessage(&msg1); 
+		DispatchMessage(&msg1); 
 	}
-	return (DWORD)msg.wParam; 
+	return (DWORD)msg1.wParam; 
 } 
 
 HRESULT dwindow::show_window(int id, bool show)
@@ -177,10 +220,10 @@ HRESULT dwindow::set_window_text(int id, wchar_t *text)
 	return S_OK;
 }
 
-HRESULT dwindow::set_timer(int id, int interval)
+HRESULT dwindow::reset_timer(int id, int new_interval)
 {
 	KillTimer(m_hwnd1, id);
-	SetTimer(m_hwnd1, id, interval, NULL);
+	SetTimer(m_hwnd1, id, new_interval, NULL);
 
 	return S_OK;
 }
@@ -246,7 +289,7 @@ HRESULT dwindow::set_fullscreen(int id, bool full, bool nosave)
 
 		LONG f = m_style2 & ~(WS_BORDER | WS_CAPTION | WS_THICKFRAME);
 		LONG exf =  m_exstyle2 & ~(WS_EX_CLIENTEDGE | WS_EX_STATICEDGE | WS_EX_WINDOWEDGE |WS_EX_DLGMODALFRAME) | WS_EX_TOPMOST;
-
+		
 		SetWindowLongPtr(m_hwnd2, GWL_STYLE, f);
 		SetWindowLongPtr(m_hwnd2, GWL_EXSTYLE, exf);
 
@@ -306,14 +349,9 @@ dwindow::dwindow(RECT screen1, RECT screen2)
 	if (!RegisterClassEx(&wcx))
 		return;
 
-	window_proc_param param = {this, &m_hwnd1};
+	window_proc_param param = {this, &m_hwnd1, &m_hwnd2};
 	m_thread1 = CreateThread(0,0,WindowThread, &param, NULL, NULL);
-	while(m_hwnd1 == NULL)
-		Sleep(1);
-
-	param.hwnd = &m_hwnd2;
-	m_thread2 = CreateThread(0,0,WindowThread, &param, NULL, NULL);
-	while (m_hwnd2 == NULL)
+	while(m_hwnd1 == NULL || m_hwnd2 == NULL)
 		Sleep(1);
 
 	m_style1 = GetWindowLongPtr(m_hwnd1, GWL_STYLE);

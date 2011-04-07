@@ -35,7 +35,7 @@ public:
 	HRESULT find_subtitle(int start, int end, pgs_subtitle *out); // in ms
 	HRESULT seek();	// just clear current incompleted data, to support dshow seeking.
 	HRESULT reset();
-
+	HRESULT parse_raw_element(BYTE *data, int type, int size, int start, int end);	//for dshow, don't use this directly in file mode
 	int m_total_width;
 	int m_total_height;
 
@@ -55,7 +55,7 @@ protected:
 	HRESULT parseSEG(BYTE*data, int size, int time);
 	HRESULT parseDisplay(BYTE*data, int size, int time);
 	HRESULT parseWindow(BYTE*data, int size);
-	HRESULT decode(pgs_subtitle *sub);
+	HRESULT decodeRLE(pgs_subtitle *sub);
 
 	// helper functions
 	HRESULT remove_head(int size);

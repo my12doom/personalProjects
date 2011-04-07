@@ -103,7 +103,7 @@ HRESULT PGSParser::find_subtitle(int start, int end, pgs_subtitle *out) // in ms
 			(sub.start <= end && end <= sub.end))
 		{
 			*out = sub;
-			decode(out);
+			decodeRLE(out);
 			out->rle = NULL;
 
 			return i;
@@ -130,7 +130,7 @@ HRESULT PGSParser::parse()
 		}
 
 		// test if enough header data
-		if (m_data_pos < 2+4+4+1+2) // header(2) + timeStart(4) + timeStart(4) + type(1) + seg_len(2)
+		if (m_data_pos < 2+4+4+1+2) // header(2) + timeStart(4) + timeEnd(4) + type(1) + seg_len(2)
 			return S_OK;
 
 		DWORD time_start = readDWORD(2)/90;
@@ -143,34 +143,58 @@ HRESULT PGSParser::parse()
 			return S_OK;
 
 		BYTE *data = m_data + 2+4+4+1+2;
-		if (type == PRESENTATION_SEG)
-			parseSEG(data, size, time_start);
-		else if (type == WINDOW_DEF)
-			parseWindow(data, size);
-		else if (type == PALETTE)
-			parsePalette(data, size);
-		else if (type == OBJECT)
-			parseObject(data, size);
-		else if (type == DISPLAY)
-			parseDisplay(data, size, time_start);
-		//else
-		//	printf("type=%02x, size=%d\n", type, size);
-
+		
+		parse_raw_element(data, type, size, time_start, time_end);
 		remove_head(2+4+4+1+2+size);
 	}
 }
 
+HRESULT PGSParser::parse_raw_element(BYTE *data, int type, int size, int start, int end)
+{
+	HRESULT hr = S_OK;
+	if (type == PRESENTATION_SEG)
+		hr = parseSEG(data, size, start);
+	else if (type == WINDOW_DEF)
+		hr = parseWindow(data, size);
+	else if (type == PALETTE)
+		hr = parsePalette(data, size);
+	else if (type == OBJECT)
+		hr = parseObject(data, size);
+	else if (type == DISPLAY)
+		hr = parseDisplay(data, size, start);
+	//else
+	//	printf("type=%02x, size=%d\n", type, size);
+
+	return hr;
+}
 
 HRESULT PGSParser::parseSEG(BYTE *data, int size, int time)
 {
-	if (m_current_subtitle.start != -1 && m_current_subtitle.rle)
+	if (m_current_subtitle.start != -1 && m_current_subtitle.rle &&
+		0 < m_current_subtitle.width && m_current_subtitle.width < 4096 &&
+		0 < m_current_subtitle.height && m_current_subtitle.height < 4096)
 	{
 		m_current_subtitle.end = time;
+
+		// find duplicate
+		for(int i=0; i<m_subtitle_count; i++)
+			if (abs(m_subtitles[i].start - m_current_subtitle.start) < 10
+			  &&abs(m_subtitles[i].end - m_current_subtitle.end) < 10)
+			{
+				if (m_current_subtitle.rle)
+				{
+					free(m_current_subtitle.rle);
+					memset(&m_current_subtitle, 0, sizeof(m_current_subtitle));
+				}
+				return S_FALSE;
+			}
+
+		// add to tail
 		m_subtitles[m_subtitle_count++] = m_current_subtitle;
 	}
 	else
 	{
-		int n = 0;
+		int n = 0;	//debug
 	}
 	memset(&m_current_subtitle, 0, sizeof(pgs_subtitle));
 	m_current_subtitle.start = -1;
@@ -252,7 +276,7 @@ HRESULT PGSParser::parseDisplay(BYTE *data, int size, int time)
 	return S_OK;
 }
 
-HRESULT PGSParser::decode(pgs_subtitle *sub)
+HRESULT PGSParser::decodeRLE(pgs_subtitle *sub)
 {
 	// assume palette is ready;
 
@@ -261,6 +285,8 @@ HRESULT PGSParser::decode(pgs_subtitle *sub)
 		return E_FAIL;
 
 	DWORD *decoded = sub->rgb = (DWORD*) malloc(sub->width * sub->height*4);
+	if (decoded == NULL)
+		return E_FAIL;	// may happen when width and height is incorrect(maybe file corrupted.)
 
 	// decode data;
 	int pos = 0;

@@ -65,7 +65,7 @@
 				AdditionalDependencies="strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
 				OutputFile="$(OutDir)/dwindow.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug"
+				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/dwindow.pdb"
 				SubSystem="1"
@@ -273,7 +273,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\global_funcs.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\main.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\lrtb\mySink.cpp"
 				>
 			</File>
 			<File
@@ -288,7 +296,7 @@
 				Name="subtitle"
 				>
 				<File
-					RelativePath=".\CSubtitle.cpp"
+					RelativePath=".\GenericSubtitleRenderer.cpp"
 					>
 				</File>
 				<File
@@ -335,11 +343,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\detours\detours.h"
+				>
+			</File>
+			<File
 				RelativePath=".\dwindow.h"
 				>
 			</File>
 			<File
 				RelativePath=".\dx_player.h"
+				>
+			</File>
+			<File
+				RelativePath=".\global_funcs.h"
+				>
+			</File>
+			<File
+				RelativePath="..\lrtb\mySink.h"
 				>
 			</File>
 			<File
@@ -359,6 +379,10 @@
 				>
 				<File
 					RelativePath=".\CSubtitle.h"
+					>
+				</File>
+				<File
+					RelativePath=".\GenericSubtitleRenderer.h"
 					>
 				</File>
 				<File

@@ -63,33 +63,33 @@ int srt_parser::time_to_decimal(wchar_t *str)
 // class functions
 srt_parser::srt_parser()
 {
-	index = NULL;
-	text_data = NULL;	
-	last_type = 0;
-	index_pos = 0;
-	text_pos = 0;
+	m_index = NULL;
+	m_text_data = NULL;	
+	m_last_type = 0;
+	m_index_pos = 0;
+	m_text_pos = 0;
 }
 
 srt_parser::~srt_parser()
 {
-	if (index)
-		delete [] index;
-	if (text_data)
-		delete [] text_data;
+	if (m_index)
+		delete [] m_index;
+	if (m_text_data)
+		delete [] m_text_data;
 }
 //size in wchar_t
 void srt_parser::init(int num, int text_size)
 {
-	index = new subtitle_index[num];
-	text_data = new wchar_t[text_size];
-	last_type = 0;
-	index_pos = 0;
-	text_pos = 0;
-	text_data[0] = NULL;
+	m_index = new subtitle_index[num];
+	m_text_data = new wchar_t[text_size];
+	m_last_type = 0;
+	m_index_pos = 0;
+	m_text_pos = 0;
+	m_text_data[0] = NULL;
 }
 int srt_parser::load(wchar_t *pathname)
 {
-	if (!index)
+	if (!m_index)
 		return -1;
 
 	FILE * f = _wfopen(pathname, L"rb");
@@ -120,7 +120,7 @@ int srt_parser::load(wchar_t *pathname)
 }
 int srt_parser::get_subtitle(int start, int end, wchar_t *out, bool multi)	//size in wchar_t
 {
-	if (!index)
+	if (!m_index)
 		return -1;
 
 	if (start > end)
@@ -129,10 +129,10 @@ int srt_parser::get_subtitle(int start, int end, wchar_t *out, bool multi)	//siz
 	out[0] = NULL;
 
 	if (multi)
-	for(int i=index_pos-1; i>=0; i--)
+	for(int i=m_index_pos-1; i>=0; i--)
 	{
-		int sub_start = index[i].time_start;
-		int sub_end = index[i].time_end;
+		int sub_start = m_index[i].time_start;
+		int sub_end = m_index[i].time_end;
 		if ( 
 			 ( start <= sub_start && sub_start <= end ) ||
 			 ( start <= sub_end && sub_end <= end) ||
@@ -141,26 +141,26 @@ int srt_parser::get_subtitle(int start, int end, wchar_t *out, bool multi)	//siz
 			 )
 		{
 			if (NULL == out[0] )
-				wcscpy(out, text_data + index[i].pos);
+				wcscpy(out, m_text_data + m_index[i].pos);
 			else
 			{
 				wcscat(out, L"\n");
-				wcscat(out, text_data + index[i].pos);
+				wcscat(out, m_text_data + m_index[i].pos);
 			}
 		}
 	}
 
 	else	// single
-		for(int i=0; i<index_pos; i++)
+		for(int i=0; i<m_index_pos; i++)
 		{
-			int sub_start = index[i].time_start;
-			int sub_end = index[i].time_end;
+			int sub_start = m_index[i].time_start;
+			int sub_end = m_index[i].time_end;
 			if ( 
 				( sub_start <= start && start <= sub_end) ||
 				(sub_start <= end && end <= sub_end)
 			 )
 			{
-				wcscpy(out, text_data + index[i].pos);
+				wcscpy(out, m_text_data + m_index[i].pos);
 				return i;
 			}
 		}
@@ -169,17 +169,22 @@ int srt_parser::get_subtitle(int start, int end, wchar_t *out, bool multi)	//siz
 
 int srt_parser::direct_add_subtitle(wchar_t *line, int start, int end)
 {
-	index[index_pos].time_start = start;
-	index[index_pos].time_end = end;
+	// find duplicate
+	for(int i=0; i<m_index_pos; i++)
+		if (abs(m_index[i].time_start - start) < 10 && abs(m_index[i].time_end - end) < 10)
+			return -1;
 
-	if (text_data[0] != NULL)
-		text_pos += (int)wcslen(text_data + text_pos) + 1;
+	m_index[m_index_pos].time_start = start;
+	m_index[m_index_pos].time_end = end;
 
-	index[index_pos].pos = text_pos;
+	if (m_text_data[0] != NULL)
+		m_text_pos += (int)wcslen(m_text_data + m_text_pos) + 1;
 
-	wcscpy(text_data+text_pos, line);
+	m_index[m_index_pos].pos = m_text_pos;
 
-	index_pos ++;
+	wcscpy(m_text_data+m_text_pos, line);
+
+	m_index_pos ++;
 
 	return 0;
 }
@@ -205,7 +210,7 @@ int srt_parser::handle_data_16(unsigned short *data, bool big, int size)
 					if (NULL != line_w[0])
 						handle_line(line_w);
 					else
-						last_type = 0;
+						m_last_type = 0;
 				}
 				else
 					p = 0;
@@ -227,7 +232,7 @@ int srt_parser::handle_data_16(unsigned short *data, bool big, int size)
 					if (NULL != line_w[0])
 						handle_line(line_w);
 					else
-						last_type = 0;
+						m_last_type = 0;
 				}
 				else
 					p = 0;
@@ -257,7 +262,7 @@ int srt_parser::handle_data_8(unsigned char *data, int code_page, int size)
 				if (NULL != line_w[0])
 					handle_line(line_w);
 				else
-					last_type = 0;
+					m_last_type = 0;
 			}
 			else
 				p = 0;
@@ -269,9 +274,9 @@ int srt_parser::handle_data_8(unsigned char *data, int code_page, int size)
 int srt_parser::handle_line(wchar_t *line)
 {
 	// number
-	if (wisgidit(line) && last_type == 0)
+	if (wisgidit(line) && m_last_type == 0)
 	{
-		last_type = 1;
+		m_last_type = 1;
 		return 0;
 	}
 
@@ -284,32 +289,32 @@ int srt_parser::handle_line(wchar_t *line)
 		wstrtrim(e_str+3);
 		int ms_start = time_to_decimal(line);
 		int ms_end = time_to_decimal(e_str + 3);
-		if (ms_start >= 0 && ms_end > 0 && last_type == 1)
+		if (ms_start >= 0 && ms_end > 0 && m_last_type == 1)
 		{
-			last_type = 2;
+			m_last_type = 2;
 
-			index[index_pos].time_start = ms_start;
-			index[index_pos].time_end = ms_end;
+			m_index[m_index_pos].time_start = ms_start;
+			m_index[m_index_pos].time_end = ms_end;
 
-			if (text_data[0] != NULL)
-				text_pos += (int)wcslen(text_data + text_pos) + 1;
+			if (m_text_data[0] != NULL)
+				m_text_pos += (int)wcslen(m_text_data + m_text_pos) + 1;
 
-			index[index_pos].pos = text_pos;
+			m_index[m_index_pos].pos = m_text_pos;
 
-			text_data[text_pos] = NULL;
+			m_text_data[m_text_pos] = NULL;
 
-			index_pos ++;
+			m_index_pos ++;
 
 			return 0;
 		}
 	}
 
 	//text:
-	if (last_type >= 2 && index_pos >= 0)
+	if (m_last_type >= 2 && m_index_pos >= 0)
 	{
-		last_type = 3;
+		m_last_type = 3;
 
-		wchar_t * p = text_data + text_pos;
+		wchar_t * p = m_text_data + m_text_pos;
 
 		if ( p[0] == NULL)
 			wcscpy(p, line);

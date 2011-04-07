@@ -3,8 +3,15 @@
 
 PGSRenderer::PGSRenderer()
 {
+	m_seg_buffer = (BYTE*) malloc(655360);
 	m_last_found = -1;
 }
+
+PGSRenderer::~PGSRenderer()
+{
+	free(m_seg_buffer);
+}
+
 HRESULT PGSRenderer::load_file(wchar_t *filename)
 {
 	FILE *f = _wfopen(filename, L"rb");
@@ -23,7 +30,31 @@ HRESULT PGSRenderer::load_file(wchar_t *filename)
 
 HRESULT PGSRenderer::add_data(BYTE *data, int size, int start, int end)
 {
-	return m_parser.add_data(data, size);
+	HRESULT hr = S_OK;
+
+	// pack together
+	memcpy(m_seg_buffer+m_seg_buffer_pos, data, size);
+	m_seg_buffer_pos += size;
+
+	BYTE *tmp = m_seg_buffer;
+	int counter = 0;
+	while(counter < 100)
+	{
+		int type = tmp[0];
+		int ele_size = (tmp[1] << 8) + tmp[2];
+		if (tmp+ele_size+3 > m_seg_buffer + m_seg_buffer_pos)
+			break;
+
+		hr = m_parser.parse_raw_element(tmp+3, type, ele_size, start, end);
+
+		tmp += ele_size + 3;
+		counter++;
+	}
+
+	memmove(m_seg_buffer, tmp, m_seg_buffer_pos - (tmp-m_seg_buffer));
+	m_seg_buffer_pos -= (tmp-m_seg_buffer);
+
+	return hr;
 }
 
 // get subtitle on a time point, 
@@ -78,6 +109,7 @@ HRESULT PGSRenderer::reset()
 
 HRESULT PGSRenderer::seek()
 {
+	m_seg_buffer_pos = 0;
 	m_last_found = -1;
 	return m_parser.seek();
 }
