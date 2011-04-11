@@ -10,7 +10,32 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (argc<3)
 		return 0;
 
-	encode_file(argv[1], argv[2]);
+	if (argc == 4 && argv[3][0] == L'd')
+	{
+		file_reader reader;
+		reader.SetFile(CreateFileW (argv[1], GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL));
+		unsigned char key[32] = "Hello World!";
+		reader.set_key(key);
+		FILE *output = _wfopen(argv[2], L"wb");
+		char tmp[65536];
+		LARGE_INTEGER size;
+		reader.GetFileSizeEx(&size);
+		for(__int64 byte_left= size.QuadPart; byte_left>0; byte_left-= 65536)
+		{
+			DWORD byte_read = 0;
+			reader.ReadFile(tmp, (DWORD)min(byte_left, 65536), &byte_read, NULL);
+			fwrite(tmp, byte_read, 1, output);
+
+			if (byte_read < 65536)
+				break;
+		}
+
+		fclose(output);
+	}
+	else
+	{
+		encode_file(argv[1], argv[2]);
+	}
 
 
 	/*

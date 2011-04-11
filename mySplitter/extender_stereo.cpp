@@ -105,6 +105,8 @@ STDMETHODIMP CDWindowExtenderStereo::NonDelegatingQueryInterface(REFIID riid, vo
 
 HRESULT CDWindowExtenderStereo::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 {
+	//no need to do this
+	/*
 	if (direction == PINDIR_INPUT)
 	{
 		static const GUID CLSID_my12doomSource = { 0x8FD7B1DE, 0x3B84, 0x4817, { 0xA9, 0x6F, 0x4C, 0x94, 0x72, 0x8B, 0x1A, 0xAE } };
@@ -130,6 +132,7 @@ HRESULT CDWindowExtenderStereo::CompleteConnect(PIN_DIRECTION direction,IPin *pR
 			filter = NULL;
 		}
 	}
+	*/
 
 	return S_OK;
 }

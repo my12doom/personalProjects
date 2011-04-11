@@ -6,8 +6,6 @@
 
 // renderer
 #include "UnifyRenderer.h"
-
-
 #include "streams.h"
 #include "dwindow.h"
 #include "bar.h"
@@ -19,7 +17,11 @@
 #include "srt\srt_parser.h"
 #include "..\lrtb\mySink.h"
 #include "PGS\PGSParser.h"
-#include "GenericSubtitleRenderer.h"
+#include "DShowSubtitleRenderer.h"
+
+#define _AFX
+#define __AFX_H__
+#include <atlcoll.h>
 
 // some definition
 #define MKV_NO_TRACK -1
@@ -31,32 +33,17 @@
 #define FILTER_MODE_MONO 1
 #define FILTER_MODE_STEREO 2
 
-
-
-class AudioManager
+class subtitle_file_handler
 {
 public:
-	virtual int count();
-	virtual HRESULT Info(int n, int*group, wchar_t *name, wchar_t *group_name);
-	virtual HRESULT enable(int n, bool enable);
-
-	HRESULT try_add_pin(IPin *pin);						// for MEDIATYPE_Audio output pin, need reconnect when eneabled
-	HRESULT try_add_filter(IBaseFilter *filter);		// for filter with IAMStreamSelect
+	bool actived/* = false*/;
+	wchar_t m_pathname[MAX_PATH];
+	CSubtitleRenderer *m_renderer;
+	subtitle_file_handler(const wchar_t *pathname);
+	~subtitle_file_handler();
 };
 
-class SubtitleManager
-{
-public:
-	virtual int count();
-	virtual HRESULT Info(int n, int*group, wchar_t *name, wchar_t *group_name);
-	virtual HRESULT enable(int n, bool enable);
-
-	HRESULT try_add_pin(IPin *pin);						// for MEDIATYPE_Subtitle output pin, need reconnect when eneabled
-	HRESULT try_add_filter(IBaseFilter *filter);		// for filter with IAMStreamSelect
-	HRESULT add_file(const wchar_t*file);
-};
-
-class dx_player : public IDWindowFilterCB, public dwindow, public COffsetSink//, public ImySinkCB
+class dx_player : public IDWindowFilterCB, public dwindow, public COffsetSink
 {
 public:
 	dx_player(RECT screen1, RECT screen2, HINSTANCE hExe);
@@ -65,12 +52,12 @@ public:
 	// load functions
 	bool m_file_loaded /*= false*/;
 	HRESULT reset();								// unload all video and subtitle files
+	HRESULT reset_and_loadfile(const wchar_t *pathname);
 	HRESULT start_loading();
-	HRESULT load_subtitle(wchar_t *pathname, bool reset = true);
-	HRESULT load_file(wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
-	HRESULT load_REMUX_file(wchar_t *pathname);																				// for PD10 demuxer and mvc decoder
+	HRESULT load_subtitle(const wchar_t *pathname, bool reset = true);
+	HRESULT load_file(const wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
+	HRESULT load_REMUX_file(const wchar_t *pathname);																				// for PD10 demuxer and mvc decoder
 	HRESULT end_loading();
-	HRESULT set_PD10(bool PD10 = false);
 
 	// subtitle control functions
 	HRESULT set_subtitle_pos(double center_x, double bottom_y);
@@ -79,9 +66,6 @@ public:
 	// image control functions
 	HRESULT set_revert(bool revert);
 	HRESULT set_letterbox(double delta);	// 1.0 = top, -1.0 = bottom, 0 = center
-
-	// show property page for PD10 demuxer
-	HRESULT show_PD10_demuxer_config();
 
 	// play control functions
 	HRESULT play();
@@ -102,6 +86,7 @@ public:
 protected:
 	// image control vars
 	HINSTANCE m_hexe;
+	bool m_always_show_right;
 	HWND m_video1;
 	HWND m_video2;
 	HWND id_to_video(int id);
@@ -130,7 +115,7 @@ protected:
 	LRESULT on_mouse_move(int id, int x, int y);
 	LRESULT on_nc_mouse_move(int id, int x, int y);
 	LRESULT on_mouse_down(int id, int button, int x, int y);
-	//LRESULT on_mouse_up(int id, int button, int x, int y);
+	LRESULT on_mouse_up(int id, int button, int x, int y);
 	LRESULT on_double_click(int id, int button, int x, int y);
 	LRESULT on_key_down(int id, int key);
 	//LRESULT on_close(int id);
@@ -143,8 +128,11 @@ protected:
 	// end window handler
 
 	// helper
+	HRESULT enable_audio_track(int track);
+	HRESULT enable_subtitle_track(int track);
+	HRESULT list_audio_track(HMENU submenu);
+	HRESULT list_subtitle_track(HMENU submenu);
 	int hwnd_to_id(HWND hwnd);
-
 
 	// filter callback function
 	REFERENCE_TIME m_splitter_offset;
@@ -175,7 +163,6 @@ protected:
 	CComPtr<IMediaControl>		m_mc;
 	CComPtr<IBasicAudio>		m_ba;
 
-
 	// my filters
 	CComPtr<IDWindowExtender> m_stereo;
 	CComPtr<IDWindowExtender> m_mono1;
@@ -188,20 +175,12 @@ protected:
 	CUnifyRenderer *m_renderer1;
 	CUnifyRenderer *m_renderer2;
 
-	// ImySink callback functions
-	//mySink *m_subtilte_sink;
-	//REFERENCE_TIME m_subtitle_seg_time;
-	//HRESULT CheckMediaTypeCB(const CMediaType *inType);
-	//HRESULT NewSegmentCB(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
-	//HRESULT SampleCB(IMediaSample *pIn);
-	CGenericSubtitleRenderer m_grenderer;
-
-
-
 	// subtitle control
+	CSubtitleRenderer *m_srenderer;
+	DShowSubtitleRenderer m_grenderer;
+	CAutoPtrList<subtitle_file_handler> m_external_subtitles;
 	CCritSec m_subtitle_sec;
 	int m_lastCBtime;
-	CSubtitleRenderer *m_srenderer;
 	HRESULT draw_subtitle();
 	double m_subtitle_center_x;
 	double m_subtitle_bottom_y;

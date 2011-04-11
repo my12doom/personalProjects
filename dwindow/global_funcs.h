@@ -18,6 +18,9 @@ DEFINE_GUID(MEDIASUBTYPE_PGS, 0x4eba53e, 0x9330, 0x436c, 0x91, 0x33, 0x55, 0x3e,
 static const GUID CLSID_SSIFSource = { 0x916e4c8d, 0xe37f, 0x4fd4, { 0x95, 0xf6, 0xa4, 0x4e, 0x51, 0x46, 0x2e, 0xdf } };
 static const GUID CLSID_my12doomSource = { 0x8FD7B1DE, 0x3B84, 0x4817, { 0xA9, 0x6F, 0x4C, 0x94, 0x72, 0x8B, 0x1A, 0xAE } };
 DEFINE_GUID(CLSID_CoreAVC, 0x09571A4B, 0xF1FE, 0x4C60, 0x97, 0x60, 0xDE, 0x6D, 0x31, 0x0C, 0x7C, 0x31);
+DEFINE_GUID(CLSID_LAVAudio, 0xe8e73b6b, 0x4cb3, 0x44a4, 0xbe, 0x99, 0x4f, 0x7b, 0xcb, 0x96, 0xe4, 0x91);
+DEFINE_GUID(CLSID_XvidDecoder, 0x64697678, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71);
+DEFINE_GUID(CLSID_DivxDecoder, 0x78766964, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71);
 
 // funcs
 HRESULT get_monitors_rect(RECT *screen1, RECT *screen2);
@@ -28,13 +31,17 @@ HRESULT RemoveDownstream(CComPtr<IPin> &input_pin);
 HRESULT find_main_movie(const wchar_t *folder, wchar_t *out);
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
 HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
-
+HRESULT RemoveUselessFilters(IGraphBuilder *gb);
+HRESULT DeterminPin(IPin *pin, wchar_t *name = NULL, CLSID majortype = CLSID_NULL);
+HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *name, IPin **ppPin);
 
 // localization
 typedef enum{ENGLISH, CHINESE} localization_language;
+extern localization_language g_active_language;
 wchar_t *C(const wchar_t *English);
-HRESULT add_localization(const wchar_t *English, const wchar_t *Localized);
+HRESULT add_localization(const wchar_t *English, const wchar_t *Localized = NULL);
 HRESULT set_localization_language(localization_language language);
+HRESULT localize_menu(HMENU menu);
 
 // CoreMVC
 HRESULT ActiveCoreMVC(IBaseFilter *decoder);

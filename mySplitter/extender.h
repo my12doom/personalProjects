@@ -18,7 +18,7 @@ public:
 	HRESULT CheckTransform(const CMediaType *mtIn, const CMediaType *mtOut);
 	HRESULT DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pProperties);
 	HRESULT GetMediaType(int iPosition, CMediaType *pMediaType);
-	HRESULT StartStreaming();
+	HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 
 	// Implementation of  the custom IDWindowExtender interface
 	HRESULT STDMETHODCALLTYPE SetCallback(IDWindowFilterCB * cb);
@@ -79,7 +79,6 @@ public:
 	HRESULT GetMediaType(int iPosition, CMediaType *pMediaType);
 	HRESULT SetMediaType(PIN_DIRECTION direction,const CMediaType *pmt);
 
-	//HRESULT StartStreaming();
     HRESULT CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin);
 	HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 

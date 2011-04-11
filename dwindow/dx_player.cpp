@@ -108,7 +108,7 @@ dwindow(screen1, screen2)
 	// font
 	m_font = NULL;
 	m_font_color = RGB(255,255,255);
-	m_lFontPointSize = 60;
+	m_lFontPointSize = 40;
 	wcscpy(m_FontName, L"ËÎÌו");
 	wcscpy(m_FontStyle, L"Regular");
 	select_font(false);
@@ -116,6 +116,7 @@ dwindow(screen1, screen2)
 	m_grenderer.set_font_color(m_font_color);
 
 	// vars
+	m_always_show_right = false;
 	m_file_loaded = false;
 	m_renderer1 = NULL;
 	m_renderer2 = NULL;
@@ -191,10 +192,14 @@ HRESULT dx_player::reset()
 	log_line(L"reset!");
 	CAutoLock lock(&m_draw_sec);
 
+
 	// reinit
 	exit_direct_show();
 	init_direct_show();
 	m_PD10 = false;
+	CAutoLock lck(&m_subtitle_sec);
+	m_srenderer = NULL;
+	m_external_subtitles.RemoveAll();
 
 	// set event notify
 	CComQIPtr<IMediaEventEx, &IID_IMediaEventEx> event_ex(m_gb);
@@ -274,6 +279,7 @@ HRESULT dx_player::seek(int time)
 	m_ms->GetPositions(&target, NULL);
 
 	printf("seeked to %I64d\n", target);
+	draw_subtitle();
 	return hr;
 }
 HRESULT dx_player::tell(int *time)
@@ -456,6 +462,13 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 	return S_OK;
 }
 
+
+LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
+{
+
+	return S_OK;
+}
+
 LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 {
 	show_ui(true);
@@ -464,11 +477,12 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	if (button == VK_RBUTTON || !m_file_loaded)
 	{
 		HMENU menu = LoadMenu(m_hexe, MAKEINTRESOURCE(IDR_MENU1));
-		menu = GetSubMenu(menu, 1);
+		menu = GetSubMenu(menu, 0);
+		localize_menu(menu);
 
 
-		HMENU sub_open_BD = GetSubMenu(menu, 1);
 		// find BD drives
+		HMENU sub_open_BD = GetSubMenu(menu, 1);
 		bool drive_found = false;
 		for(int i=L'Z'; i>L'B'; i--)
 		{
@@ -482,12 +496,12 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 				UINT flag = MF_BYPOSITION | MF_STRING;
 				if (!GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
 				{
-					wcscat(tmp, L" (No Disc)");
+					wcscat(tmp, C(L" (No Disc)"));
 					flag |= MF_GRAYED;
 				}
 				else if (FAILED(find_main_movie(tmp, tmp2)))
 				{
-					wcscat(tmp, L" (No Movie Disc)");
+					wcscat(tmp, C(L" (No Movie Disc)"));
 					flag |= MF_GRAYED;
 				}
 				else
@@ -505,21 +519,42 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		// subtitle menu
 		HMENU sub_subtitle = GetSubMenu(menu, 4);
 		{
-		CAutoLock lck(&m_subtitle_sec);
-		if (!m_srenderer || FAILED(m_srenderer->set_font_color(m_font_color)))
+			CAutoLock lck(&m_subtitle_sec);
+			if (!m_srenderer || FAILED(m_srenderer->set_font_color(m_font_color)))
+			{
+				EnableMenuItem(sub_subtitle, ID_SUBTITLE_FONT, MF_GRAYED);
+				EnableMenuItem(sub_subtitle, ID_SUBTITLE_COLOR, MF_GRAYED);
+			}
+			else
+			{
+				EnableMenuItem(sub_subtitle, ID_SUBTITLE_FONT, MF_ENABLED);
+				EnableMenuItem(sub_subtitle, ID_SUBTITLE_COLOR, MF_ENABLED);
+			}
+		}
+
+		// check/uncheck always show right eye
+		CheckMenuItem(menu, ID_SHOWRIGHTEYE, m_always_show_right?MF_CHECKED:MF_UNCHECKED);
+
+		// audio tracks
+		HMENU sub_audio = GetSubMenu(menu, 3);
+		list_audio_track(sub_audio);
+
+		// subtitle tracks
+		list_subtitle_track(sub_subtitle);
+
+		// language
+		HMENU sub_language = GetSubMenu(menu, 10);
+		if (g_active_language == ENGLISH)
 		{
-			EnableMenuItem(sub_subtitle, ID_SUBTITLE_FONT, MF_GRAYED);
-			EnableMenuItem(sub_subtitle, ID_SUBTITLE_COLOR, MF_GRAYED);
+			CheckMenuItem(sub_language, ID_LANGUAGE_ENGLISH, MF_CHECKED | MF_BYCOMMAND);
 		}
-		else
+		else if (g_active_language == CHINESE)
 		{
-			EnableMenuItem(sub_subtitle, ID_SUBTITLE_FONT, MF_ENABLED);
-			EnableMenuItem(sub_subtitle, ID_SUBTITLE_COLOR, MF_ENABLED);
-		}
+			CheckMenuItem(sub_language, ID_LANGUAGE_CHINESE, MF_CHECKED | MF_BYCOMMAND);
 		}
 
 
-
+		// show it
 		POINT mouse_pos;
 		GetCursorPos(&mouse_pos);
 		TrackPopupMenu(menu, TPM_TOPALIGN | TPM_LEFTALIGN, mouse_pos.x-5, mouse_pos.y-5, 0, id_to_hwnd(id), NULL);
@@ -539,10 +574,10 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		}
 		else if (type == 2)
 		{
-			show_window(2, !m_full2);		// show/hide it before set fullscreen, or you may got a strange window
+			show_window(2, !m_full2|| m_always_show_right);		// show/hide it before set fullscreen, or you may got a strange window
 			set_fullscreen(2, !m_full2);		// yeah, this is not a bug
 			set_fullscreen(1, m_full2);
-			show_window(2, m_full2);		// show/hide it again
+			show_window(2, m_full2|| m_always_show_right);		// show/hide it again
 		}
 		else if (type == 3)
 		{
@@ -613,6 +648,18 @@ LRESULT dx_player::on_size(int id, int type, int x, int y)
 
 LRESULT dx_player::on_paint(int id, HDC hdc)
 {
+	// paint Icon
+	/*
+	int cxIcon = GetSystemMetrics(SM_CXICON);
+	int cyIcon = GetSystemMetrics(SM_CYICON);
+	RECT rect;
+	GetClientRect(id_to_hwnd(id), &rect);
+	int x = (rect.right - rect.left - cxIcon + 1) / 2;
+	int y = (rect.bottom - rect.top - cyIcon + 1) / 2;
+	HICON hIcon = LoadIcon(m_hexe, MAKEINTRESOURCE(IDI_ICON1));
+	DrawIcon(hdc, x, y, hIcon);
+	*/
+
 	if (id == 1)
 	{
 		CUnifyRenderer *c = m_renderer1;
@@ -648,10 +695,10 @@ LRESULT dx_player::on_paint(int id, HDC hdc)
 
 LRESULT dx_player::on_double_click(int id, int button, int x, int y)
 {
-	show_window(2, !m_full2);		// show/hide it before set fullscreen, or you may got a strange window
+	show_window(2, !m_full2|| m_always_show_right);		// show/hide it before set fullscreen, or you may got a strange window
 	set_fullscreen(2, !m_full2);		// yeah, this is not a bug
 	set_fullscreen(1, m_full2);
-	show_window(2, m_full2);		// show/hide it again
+	show_window(2, m_full2|| m_always_show_right);		// show/hide it again
 
 	update_video_pos();
 	return S_OK;
@@ -676,10 +723,23 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		if (open_file_dlg(file, id_to_hwnd(1), L"Video files\0"
 			L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d\0"))
 		{
-			wchar_t * tmp = file;
-			on_dropfile(id, 1, &tmp);
+			reset_and_loadfile(file);
 		}
+	}
 
+	else if (uid == ID_SUBTITLE_LOADFILE)
+	{
+		wchar_t file[MAX_PATH] = L"";
+		if (open_file_dlg(file, id_to_hwnd(1), L"Subtitles\0*.srt;*.sup\0All Files\0*.*\0\0"))
+		{
+			load_subtitle(file, false);
+		}
+	}
+
+	else if (uid == ID_SHOWRIGHTEYE)
+	{
+		m_always_show_right = !m_always_show_right;
+		show_window(2, m_always_show_right);
 	}
 
 	else if (uid == ID_SUBTITLE_FONT)
@@ -702,8 +762,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		wchar_t file[MAX_PATH] = L"";
 		if (browse_folder(file, id_to_hwnd(id)))
 		{
-			wchar_t * tmp = file;
-			on_dropfile(id, 1, &tmp);
+			reset_and_loadfile(file);
 		}
 	}
 
@@ -721,12 +780,34 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		show_window(1, false);
 		show_window(2, false);
 	}
+	else if (uid == ID_LANGUAGE_CHINESE)
+	{
+		set_localization_language(CHINESE);
+	}
+	else if (uid == ID_LANGUAGE_ENGLISH)
+	{
+		set_localization_language(ENGLISH);
+	}
+
+	// open drive
 	else if (uid > 'B' && uid <= 'Z')
 	{
 		wchar_t tmp[MAX_PATH] = L"C:\\";
-		wchar_t *tmp2 = tmp;
 		tmp[0] = uid;
-		on_dropfile(id, 1, &tmp2);
+		reset_and_loadfile(tmp);
+	}
+
+	// audio track
+	else if (uid >= 'A0' && uid <= 'B0')
+	{
+		int trackid = uid - 'A0';
+		enable_audio_track(trackid);
+	}
+
+	else if (uid >= 'S0' && uid <= 'T0')
+	{
+		int trackid = uid - 'S0';
+		enable_subtitle_track(trackid);
 	}
 	reset_timer(1, 1000);
 	return S_OK;
@@ -736,10 +817,10 @@ LRESULT dx_player::on_sys_command(int id, WPARAM wParam, LPARAM lParam)
 	const int SC_MAXIMIZE2 = 0xF032;
 	if (wParam == SC_MAXIMIZE || wParam == SC_MAXIMIZE2)
 	{
-		show_window(2, !m_full2);		// show/hide it before set fullscreen, or you may got a strange window
+		show_window(2, !m_full2 || m_always_show_right);		// show/hide it before set fullscreen, or you may got a strange window
 		set_fullscreen(1, true);
 		set_fullscreen(2, true);
-		show_window(2, m_full2);		// show/hide it again
+		show_window(2, m_full2 || m_always_show_right);		// show/hide it again
 		update_video_pos();
 		return S_OK;
 	}
@@ -751,8 +832,10 @@ LRESULT dx_player::on_sys_command(int id, WPARAM wParam, LPARAM lParam)
 
 LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 {
-	HINSTANCE hinstance = GetModuleHandle(NULL);
-
+	HICON h_icon = LoadIcon(m_hexe, MAKEINTRESOURCE(IDI_ICON1));
+	SendMessage(id_to_hwnd(id), WM_SETICON, TRUE, (LPARAM)h_icon);
+	SendMessage(id_to_hwnd(id), WM_SETICON, FALSE, (LPARAM)h_icon);
+	
 	HWND video = CreateWindow(
 		"Static",
 		"HelloWorld",
@@ -763,7 +846,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		100,
 		id_to_hwnd(id),
 		(HMENU)NULL,
-		hinstance,
+		m_hexe,
 		(LPVOID)NULL);
 	ShowWindow(video, SW_SHOW);
 	SetWindowLongPtr(video, GWL_USERDATA, (LONG_PTR)(dwindow*)this);
@@ -876,6 +959,13 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		}
 	}
 
+	// clear
+	if (m_lastCBtime == -1)
+	{
+		m_renderer1->ClearAlphaBitmap();
+		m_renderer2->ClearAlphaBitmap();
+	}
+
 	{
 		m_lastCBtime = ms_start;
 		if (S_FALSE == hr)		// same subtitle, ignore
@@ -930,61 +1020,6 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 
 	return S_OK;
 }
-
-
-/*
-HRESULT dx_player::CheckMediaTypeCB(const CMediaType *inType)
-{
-	GUID majorType = *inType->Type();
-	GUID subType = *inType->Subtype();
-	if (majorType != MEDIATYPE_Subtitle)
-		return VFW_E_INVALID_MEDIA_TYPE;
-	typedef struct SUBTITLEINFO 
-	{
-		DWORD dwOffset; // size of the structure/pointer to codec init data
-		CHAR IsoLang[4]; // three letter lang code + terminating zero
-		WCHAR TrackName[256]; // 256 bytes ought to be enough for everyone
-	} haali_format;
-	haali_format *format = (haali_format*)inType->pbFormat;
-	CAutoLock lck(&m_subtitle_sec);
-	if (subType == MEDIASUBTYPE_PGS || 
-		(subType == GUID_NULL &&inType->FormatLength()>=520 && wcsstr(format->TrackName, L"SUP")))
-		m_srenderer = new PGSRenderer();
-	else if (subType == MEDIASUBTYPE_UTF8)
-		m_srenderer = new CsrtRenderer(m_font, m_font_color);
-	else
-		return VFW_E_INVALID_MEDIA_TYPE;
-
-	return S_OK;
-}
-
-HRESULT dx_player::NewSegmentCB(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
-{
-	CAutoLock lck(&m_subtitle_sec);
-	if (m_srenderer)
-		m_srenderer->seek();
-
-	m_subtitle_seg_time = tStart;
-	return S_OK;
-}
-
-HRESULT dx_player::SampleCB(IMediaSample *pIn)
-{
-	AM_MEDIA_TYPE *mt = NULL;
-	pIn->GetMediaType(&mt);
-
-	REFERENCE_TIME start, end;
-	pIn->GetTime(&start, &end);
-	BYTE *p = NULL;
-	pIn->GetPointer(&p);
-
-	CAutoLock lck(&m_subtitle_sec);
-	if (m_srenderer)
-		m_srenderer->add_data(p, pIn->GetActualDataLength(), (start+m_subtitle_seg_time)/10000, (end+m_subtitle_seg_time)/10000);
-
-	return S_OK;
-}
-*/
 
 HRESULT dx_player::calculate_movie_rect(RECT *source, RECT *client, RECT *letterboxd, bool ui)
 {
@@ -1306,25 +1341,31 @@ HRESULT dx_player::start_loading()
 	return S_OK;
 }
 
+HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname)
+{
+	HRESULT hr = load_subtitle(pathname, false);
+	if (SUCCEEDED(hr))
+		return S_OK;
+
+	reset();
+	start_loading();
+	load_file(pathname);
+	hr = end_loading();
+	play();
+	return hr;
+}
+
 HRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 {
 	if (count>0)
 	{
-		HRESULT hr = load_subtitle(filenames[0], false);
-		if (SUCCEEDED(hr))
-			return S_OK;
-
-		reset();
-		start_loading();
-		load_file(filenames[0]);
-		end_loading();
-		play();
+		reset_and_loadfile(filenames[0]);
 	}
 
 	return S_OK;
 }
 
-HRESULT dx_player::load_file(wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
+HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
 {
 	wchar_t file_to_play[MAX_PATH];
 	wcscpy(file_to_play, pathname);
@@ -1409,21 +1450,6 @@ HRESULT dx_player::load_file(wchar_t *pathname, int audio_track /* = MKV_FIRST_T
 				imvc->SetOffsetSink(this);
 				m_PD10 = true;
 				*/
-
-				
-				CComPtr<IBaseFilter> coremvc;
-				hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
-				hr = ActiveCoreMVC(coremvc);
-				hr = m_gb->AddFilter(coremvc, L"CoreMVC");
-
-				FILTER_INFO fi;
-				coremvc->QueryFilterInfo(&fi);
-				if (fi.pGraph)
-					fi.pGraph->Release();
-				else
-					log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
-
-				log_line(L"CoreMVC hr = 0x%08x", hr);
 			}
 
 		// then render pins
@@ -1449,17 +1475,43 @@ HRESULT dx_player::load_file(wchar_t *pathname, int audio_track /* = MKV_FIRST_T
 
 					if (wcsstr(info.achName, L"Video"))
 					{
+
 						if ( (video_track>=0 && (MKV_TRACK_NUMBER(video_num) & video_track ))
 							|| video_track == MKV_ALL_TRACK)
+						{
+							CComPtr<IBaseFilter> divx;
+							hr = myCreateInstance(CLSID_DivxDecoder, IID_IBaseFilter, (void**)&divx);
+							hr = m_gb->AddFilter(divx, L"Divx Deocder");
+
+							CComPtr<IBaseFilter> coremvc;
+							hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
+							hr = ActiveCoreMVC(coremvc);
+							hr = m_gb->AddFilter(coremvc, L"CoreMVC");
+
+							FILTER_INFO fi;
+							coremvc->QueryFilterInfo(&fi);
+							if (fi.pGraph)
+								fi.pGraph->Release();
+							else
+								log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
+
+							log_line(L"CoreMVC hr = 0x%08x", hr);
 							hr = m_gb->Render(pin);
+						}
 						video_num ++;
 					}
 
 					else if (wcsstr(info.achName, L"Audio"))
 					{
+
 						if ( (audio_track>=0 && (MKV_TRACK_NUMBER(audio_num) & audio_track ))
 							|| audio_track == MKV_ALL_TRACK)
+						{
+							CComPtr<IBaseFilter> lav_audio;
+							hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
+							hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
 							m_gb->Render(pin);
+						}
 						audio_num ++;
 					}
 
@@ -1489,6 +1541,27 @@ HRESULT dx_player::load_file(wchar_t *pathname, int audio_track /* = MKV_FIRST_T
 	else
 	{
 		log_line(L"private filters failed, trying system filters. (%s)", file_to_play);
+
+		CComPtr<IBaseFilter> divx;
+		hr = myCreateInstance(CLSID_DivxDecoder, IID_IBaseFilter, (void**)&divx);
+		hr = m_gb->AddFilter(divx, L"Divx Deocder");
+
+		CComPtr<IBaseFilter> coremvc;
+		hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
+		hr = ActiveCoreMVC(coremvc);
+		hr = m_gb->AddFilter(coremvc, L"CoreMVC");
+
+		CComPtr<IBaseFilter> lav_audio;
+		hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
+		hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
+
+		FILTER_INFO fi;
+		coremvc->QueryFilterInfo(&fi);
+		if (fi.pGraph)
+			fi.pGraph->Release();
+		else
+			log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
+
 		hr = m_gb->RenderFile(file_to_play, NULL);
 	}
 
@@ -1521,7 +1594,7 @@ HRESULT dx_player::load_file(wchar_t *pathname, int audio_track /* = MKV_FIRST_T
 	return hr;
 }
 
-HRESULT dx_player::load_REMUX_file(wchar_t *pathname)
+HRESULT dx_player::load_REMUX_file(const wchar_t *pathname)
 {
 	if (pathname == NULL)
 		return E_POINTER;
@@ -1578,25 +1651,18 @@ HRESULT dx_player::load_REMUX_file(wchar_t *pathname)
 	return CrackPD10(decoder);
 }
 
-HRESULT dx_player::set_PD10(bool PD10 /*= false*/)
-{
-	m_PD10 = PD10;
-
-	return S_OK;
-}
-
-
 HRESULT dx_player::end_loading()
 {
 
 	int num_renderer_found = 0;
 
+	RemoveUselessFilters(m_gb);
+
+
 	// enum video renderers
 	CComPtr<IEnumFilters> pEnum;
 	CComPtr<IBaseFilter> filter;
 	HRESULT hr = m_gb->EnumFilters(&pEnum);
-	if (FAILED(hr))
-		return hr;
 
 	while(pEnum->Next(1, &filter, NULL) == S_OK)
 	{
@@ -1622,6 +1688,11 @@ HRESULT dx_player::end_loading()
 		return VFW_E_INVALID_MEDIA_TYPE;
 	}
 
+	else
+	{
+		log_line(L"%d video streams found.", num_renderer_found);
+	}
+
 	CComPtr<IPin> pin1;
 	CComPtr<IPin> pin2;
 
@@ -1642,6 +1713,60 @@ HRESULT dx_player::end_loading()
 		log_line(L"failed connect dwindow stereo filter with renderer.(%08x)", hr);
 		return hr;
 	}
+
+	// list filters
+	log_line(L"Listing filters.");
+	pEnum = NULL;
+	filter = NULL;
+	m_gb->EnumFilters(&pEnum);
+	while(pEnum->Next(1, &filter, NULL) == S_OK)
+	{
+
+		FILTER_INFO filter_info;
+		filter->QueryFilterInfo(&filter_info);
+		if (filter_info.pGraph) filter_info.pGraph->Release();
+		wchar_t tmp[10240];
+		wchar_t tmp2[1024];
+		wcscpy(tmp, filter_info.achName);
+		
+		CComPtr<IEnumPins> ep;
+		CComPtr<IPin> pin;
+		filter->EnumPins(&ep);
+		while (ep->Next(1, &pin, NULL) == S_OK)
+		{
+			PIN_DIRECTION dir;
+			PIN_INFO pi;
+			pin->QueryDirection(&dir);
+			pin->QueryPinInfo(&pi);
+			if (pi.pFilter) pi.pFilter->Release();
+
+			CComPtr<IPin> connected;
+			PIN_INFO pi2;
+			FILTER_INFO fi;
+			pin->ConnectedTo(&connected);
+			pi2.pFilter = NULL;
+			if (connected) connected->QueryPinInfo(&pi2);
+			if (pi2.pFilter)
+			{
+				pi2.pFilter->QueryFilterInfo(&fi);
+				if (fi.pGraph) fi.pGraph->Release();
+				pi2.pFilter->Release();
+			}
+			
+			wsprintfW(tmp2, L", %s %s", pi.achName, connected?L"Connected to ":L"Unconnected");
+			if (connected) wcscat(tmp2, fi.achName);
+
+			wcscat(tmp, tmp2);
+			pin = NULL;
+		}
+
+
+		log_line(L"%s", tmp);
+
+		filter = NULL;
+	}
+	log_line(L"");
+
 	m_loading = false;
 	return S_OK;
 }
@@ -1655,7 +1780,6 @@ HRESULT dx_player::end_loading_sidebyside(IPin **pin1, IPin **pin2)
 	// create stereo splitter filter
 	if (FAILED(create_myfilter()))
 	{
-		log_line(L"DWindow Splitter not registered.");
 		return E_FAIL;
 	}
 
@@ -1669,7 +1793,7 @@ HRESULT dx_player::end_loading_sidebyside(IPin **pin1, IPin **pin2)
 
 
 	CComQIPtr<IBaseFilter, &IID_IBaseFilter> stereo_base(m_stereo);
-	m_gb->AddFilter(stereo_base, L"the Splitter");
+	m_gb->AddFilter(stereo_base, L"Stereo Transform");
 
 	// find the only renderer and replace it
 	bool hsbs_tested = false;
@@ -1783,7 +1907,6 @@ HRESULT dx_player::end_loading_double_stream(IPin **pin1, IPin **pin2)
 
 	if (FAILED(create_myfilter()))
 	{
-		log_line(L"DWindow Splitter not registered.");
 		return E_FAIL;
 	}
 
@@ -1799,8 +1922,8 @@ HRESULT dx_player::end_loading_double_stream(IPin **pin1, IPin **pin2)
 	CComQIPtr<IBaseFilter, &IID_IBaseFilter> mono1base(m_mono1);
 	CComQIPtr<IBaseFilter, &IID_IBaseFilter> mono2base(m_mono2);
 
-	m_gb->AddFilter(mono1base, L"mono 1");
-	m_gb->AddFilter(mono2base, L"mono 2");
+	m_gb->AddFilter(mono1base, L"Mono Transform 1");
+	m_gb->AddFilter(mono2base, L"Mono Transform 2");
 
 
 	// find renderers and replace it
@@ -1853,17 +1976,18 @@ restart:
 			GetUnconnectedPin(mono1base, PINDIR_INPUT, &mono1_pin);
 			GetUnconnectedPin(mono2base, PINDIR_INPUT, &mono2_pin);
 
-			if (mono1_pin != NULL)
+			if (mono2_pin != NULL)
+			{
+				m_gb->ConnectDirect(output, mono2_pin, NULL);
+				GetUnconnectedPin(mono2base, PINDIR_OUTPUT, pin2);
+
+				goto restart;
+			}			
+			else if (mono1_pin != NULL)
 			{
 				m_gb->ConnectDirect(output, mono1_pin, NULL);
 				GetUnconnectedPin(mono1base, PINDIR_OUTPUT, pin1);
 
-				goto restart;
-			}
-			else if (mono2_pin != NULL)
-			{
-				m_gb->ConnectDirect(output, mono2_pin, NULL);
-				GetUnconnectedPin(mono2base, PINDIR_OUTPUT, pin2);
 				break;
 			}
 		}
@@ -1955,42 +2079,25 @@ HRESULT dx_player::end_loading_step2(IPin *pin1, IPin *pin2)
 }
 
 // font/d3d/subtitle part
-HRESULT dx_player::load_subtitle(wchar_t *pathname, bool reset)			//FIXME : always reset 
+HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME : always reset 
 {
 	if (pathname == NULL)
 		return E_POINTER;
 
-	CAutoLock lck(&m_subtitle_sec);
-	if (reset && m_srenderer)
-		m_srenderer->reset();
-
-	if (m_srenderer)
+	// find duplication
+	for(POSITION i = m_external_subtitles.GetHeadPosition(); i; m_external_subtitles.GetNext(i))
 	{
-		delete m_srenderer;
-		m_srenderer = NULL;
+		CAutoPtr<subtitle_file_handler> &tmp = m_external_subtitles.GetAt(i);
+		if (wcscmp(pathname, tmp->m_pathname) == 0)
+			return S_FALSE;
 	}
 
-	wchar_t *p_3 = pathname + wcslen(pathname) -3;
-	if ( (p_3[0] == L's' || p_3[0] == L'S') &&
-		(p_3[1] == L'r' || p_3[1] == L'R') &&
-		(p_3[2] == L't' || p_3[2] == L'T'))
-	{
-		m_srenderer = new CsrtRenderer(m_font, m_font_color);
-	}
-	else if ( (p_3[0] == L's' || p_3[0] == L'S') &&
-		(p_3[1] == L'u' || p_3[1] == L'U') &&
-		(p_3[2] == L'p' || p_3[2] == L'P'))
-	{
-		m_srenderer = new PGSRenderer();
-	}
-	else
-	{
-		return E_NOTIMPL;
-	}
+	CAutoPtr<subtitle_file_handler> tmp;
+	tmp.Attach(new subtitle_file_handler(pathname));
+	if(tmp->m_renderer == NULL)
+		return E_FAIL;
 
-	m_srenderer->load_file(pathname);
-	m_lastCBtime = -1;
-
+	m_external_subtitles.AddTail(tmp);
 	return S_OK;
 }
 
@@ -2086,4 +2193,529 @@ HRESULT dx_player::select_font(bool show_dlg)
 	m_font = CreateFontIndirectW(cf.lpLogFont); 
 
 	return S_OK;
+}
+
+HRESULT dx_player::enable_audio_track(int track)
+{
+	CComPtr<IEnumFilters> ef;
+	CComPtr<IEnumPins> ep;
+	CComPtr<IBaseFilter> filter;
+	CComPtr<IPin> pin;
+	int audio_track_found = 0;
+
+
+	// find splitter, which supports IFileSourceFilter, if it is AsyncReader, use its downstream
+	m_gb->EnumFilters(&ef);
+	while (ef->Next(1, &filter, NULL) == S_OK)
+	{
+		CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter>  fs(filter);
+		if (fs != NULL)
+		{
+			CLSID clsid;
+			filter->GetClassID(&clsid);
+			if (clsid == CLSID_AsyncReader)
+			{
+				// assume connected
+				GetConnectedPin(filter, PINDIR_OUTPUT, &pin);
+				CComPtr<IPin> connected;
+				pin->ConnectedTo(&connected);
+
+				PIN_INFO pi;
+				connected->QueryPinInfo(&pi);
+				pin = NULL;
+				filter = NULL;
+				filter.Attach(pi.pFilter);
+			}
+			break;
+		}
+		filter = NULL;
+	}
+
+	if (NULL == filter)
+		return VFW_E_NOT_CONNECTED;
+
+	CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
+
+	// Save Filter State
+	OAFilterState state_before, state;
+	m_mc->GetState(INFINITE, &state_before);
+	if (state_before != State_Stopped)
+	{
+		m_mc->Stop();
+		m_mc->GetState(INFINITE, &state);
+	}
+
+	if (stream_select == NULL)
+	{
+		// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
+		filter->EnumPins(&ep);
+		while (ep->Next(1, &pin, NULL) == S_OK)
+		{
+			PIN_INFO pi;
+			pin->QueryPinInfo(&pi);
+			if (pi.pFilter) pi.pFilter->Release();
+
+			CComPtr<IPin> connected;
+			pin->ConnectedTo(&connected);
+
+			if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Audio) == S_OK)
+			{
+				if (connected)
+				{
+					RemoveDownstream(connected);
+				}
+
+				if (audio_track_found == track)
+				{
+					CComPtr<IBaseFilter> LAV;
+					HRESULT hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&LAV);
+					m_gb->AddFilter(LAV, L"LAV Audio Deocder");
+					m_gb->Render(pin);
+				}
+
+				audio_track_found++;
+			}
+
+			pin = NULL;
+		}
+	}
+	else
+	{
+		// splitter that supports IAMStreamSelect should have only one Audio Pin
+
+		DWORD stream_count = 0;
+		stream_select->Count(&stream_count);
+		for(int i=0; i<stream_count; i++)
+		{
+			WCHAR *name = NULL;
+			DWORD enabled = 0;
+			stream_select->Info(i, NULL, &enabled, NULL, NULL, &name, NULL, NULL);
+
+			pin = NULL;
+			GetPinByName(filter, PINDIR_OUTPUT, name, &pin);
+			if (DeterminPin(pin, NULL, MEDIATYPE_Audio) == S_OK || wcsstr(name , L"Audio") || wcsstr(name, L"A:"))
+			{
+				if (pin == NULL) GetPinByName(filter, PINDIR_OUTPUT, L"Audio", &pin);
+				if (pin == NULL) GetPinByName(filter, PINDIR_OUTPUT, L"A:", &pin);
+
+				CComPtr<IPin> connected;
+				if (pin) pin->ConnectedTo(&connected);
+
+				if (connected)
+				{
+					RemoveDownstream(connected);
+				}
+
+				if (audio_track_found == track)
+				{
+					stream_select->Enable(i, AMSTREAMSELECTENABLE_ENABLE);
+
+					CComPtr<IBaseFilter> LAV;
+					HRESULT hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&LAV);
+					m_gb->AddFilter(LAV, L"LAV Audio Deocder");
+					m_gb->Render(pin);
+
+					CoTaskMemFree(name);
+					break;	//we should have done..
+				}
+
+				audio_track_found++;
+			}
+			CoTaskMemFree (name);
+		}
+
+	}
+
+	// restore filter state
+	if (state_before == State_Running) 
+		m_mc->Run();
+	else if (state_before == State_Paused)
+		m_mc->Pause();
+
+	return S_OK;
+}
+HRESULT dx_player::enable_subtitle_track(int track)
+{
+	CComPtr<IEnumFilters> ef;
+	CComPtr<IEnumPins> ep;
+	CComPtr<IBaseFilter> filter;
+	CComPtr<IPin> pin;
+	int subtitle_track_found = 0;
+
+	POSITION t = m_external_subtitles.GetHeadPosition();
+	for(int i=0; i<m_external_subtitles.GetCount(); i++, m_external_subtitles.GetNext(t))
+	{
+		CAutoPtr<subtitle_file_handler> &tmp = m_external_subtitles.GetAt(t);
+		if (i == track)
+		{
+			tmp->actived = true;
+			CAutoLock lck(&m_subtitle_sec);
+			m_srenderer = tmp->m_renderer;
+		}
+		else
+		{
+			tmp->actived = false;
+		}
+		subtitle_track_found++;
+	}
+
+	// Save Filter State
+	OAFilterState state_before, state;
+	m_mc->GetState(INFINITE, &state_before);
+	if (state_before != State_Stopped)
+	{
+		m_mc->Stop();
+		m_mc->GetState(INFINITE, &state);
+	}
+
+	// just remove (and re-add) the subtitle renderer
+	m_gb->RemoveFilter(m_grenderer.m_filter);
+	if (track >= m_external_subtitles.GetCount())
+	{
+		m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
+
+		// find splitter, which supports IFileSourceFilter, if it is AsyncReader, use its downstream
+		m_gb->EnumFilters(&ef);
+		while (ef->Next(1, &filter, NULL) == S_OK)
+		{
+			CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter>  fs(filter);
+			if (fs != NULL)
+			{
+				CLSID clsid;
+				filter->GetClassID(&clsid);
+				if (clsid == CLSID_AsyncReader)
+				{
+					// assume connected
+					GetConnectedPin(filter, PINDIR_OUTPUT, &pin);
+					CComPtr<IPin> connected;
+					pin->ConnectedTo(&connected);
+
+					PIN_INFO pi;
+					connected->QueryPinInfo(&pi);
+					pin = NULL;
+					filter = NULL;
+					filter.Attach(pi.pFilter);
+				}
+				break;
+			}
+			filter = NULL;
+		}
+
+		if (NULL == filter)
+			return VFW_E_NOT_CONNECTED;
+
+		CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
+		if (stream_select == NULL)
+		{
+			// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
+			filter->EnumPins(&ep);
+			while (ep->Next(1, &pin, NULL) == S_OK)
+			{
+				PIN_INFO pi;
+				pin->QueryPinInfo(&pi);
+				if (pi.pFilter) pi.pFilter->Release();
+
+				CComPtr<IPin> connected;
+				pin->ConnectedTo(&connected);
+
+				if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK)
+				{
+					if (subtitle_track_found == track)
+					{
+						m_gb->Render(pin);
+					}
+
+					subtitle_track_found++;
+				}
+
+				pin = NULL;
+			}
+		}
+		else
+		{
+			// splitter that supports IAMStreamSelect should have only one subtitle Pin
+			DWORD stream_count = 0;
+			stream_select->Count(&stream_count);
+			for(int i=0; i<stream_count; i++)
+			{
+				WCHAR *name = NULL;
+				DWORD enabled = 0;
+				stream_select->Info(i, NULL, &enabled, NULL, NULL, &name, NULL, NULL);
+
+				pin = NULL;
+				GetPinByName(filter, PINDIR_OUTPUT, name, &pin);
+
+				if (DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK || wcsstr(name , L"Subtitle") || wcsstr(name, L"S:"))
+				{
+					if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"Subtitle", &pin);
+					if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"S:", &pin);
+					if (subtitle_track_found == track)
+					{
+						stream_select->Enable(i, AMSTREAMSELECTENABLE_ENABLE);
+						m_gb->Render(pin);
+					}
+
+					subtitle_track_found++;
+				}
+				CoTaskMemFree (name);
+			}
+		}
+	}
+
+	// restore filter state
+	if (state_before == State_Running) 
+		m_mc->Run();
+	else if (state_before == State_Paused)
+		m_mc->Pause();
+
+	CAutoLock lck(&m_subtitle_sec);
+	if (track >= m_external_subtitles.GetCount()) m_srenderer = m_grenderer.GetSubtitleRenderer();
+	if (m_srenderer)
+	{
+		m_srenderer->set_font(m_font);
+		m_srenderer->set_font_color(m_font_color);
+	}
+	draw_subtitle();
+	return S_OK;
+}
+HRESULT dx_player::list_audio_track(HMENU submenu)
+{
+	CComPtr<IEnumFilters> ef;
+	CComPtr<IEnumPins> ep;
+	CComPtr<IBaseFilter> filter;
+	CComPtr<IPin> pin;
+	int audio_track_found = 0;
+
+	// find splitter, which supports IFileSourceFilter, if it is AsyncReader, use its downstream
+	m_gb->EnumFilters(&ef);
+	while (ef->Next(1, &filter, NULL) == S_OK)
+	{
+		CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter>  fs(filter);
+		if (fs != NULL)
+		{
+			CLSID clsid;
+			filter->GetClassID(&clsid);
+			if (clsid == CLSID_AsyncReader)
+			{
+				// assume connected
+				GetConnectedPin(filter, PINDIR_OUTPUT, &pin);
+				CComPtr<IPin> connected;
+				pin->ConnectedTo(&connected);
+
+				PIN_INFO pi;
+				connected->QueryPinInfo(&pi);
+				pin = NULL;
+				filter = NULL;
+				filter.Attach(pi.pFilter);
+			}
+			break;
+		}
+		filter = NULL;
+	}
+
+	if (NULL == filter)
+		return VFW_E_NOT_CONNECTED;
+
+	CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
+	if (stream_select == NULL)
+	{
+		// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
+		filter->EnumPins(&ep);
+		while (ep->Next(1, &pin, NULL) == S_OK)
+		{
+			PIN_INFO pi;
+			pin->QueryPinInfo(&pi);
+			if (pi.pFilter) pi.pFilter->Release();
+
+			CComPtr<IPin> connected;
+			pin->ConnectedTo(&connected);
+
+			if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Audio) == S_OK)
+			{
+				int flag = MF_STRING;
+				if (connected) flag |= MF_CHECKED;
+				AppendMenuW(submenu, flag, 'A0'+audio_track_found, pi.achName);
+				audio_track_found++;
+			}
+
+			pin = NULL;
+		}
+	}
+	else
+	{
+		// splitter that supports IAMStreamSelect should have only one Audio Pin
+		DWORD stream_count = 0;
+		stream_select->Count(&stream_count);
+		for(int i=0; i<stream_count; i++)
+		{
+			WCHAR *name = NULL;
+			DWORD enabled = 0;
+			stream_select->Info(i, NULL, &enabled, NULL, NULL, &name, NULL, NULL);
+
+			pin = NULL;
+			GetPinByName(filter, PINDIR_OUTPUT, name, &pin);
+
+			if (DeterminPin(pin, NULL, MEDIATYPE_Audio) == S_OK || wcsstr(name , L"Audio") || wcsstr(name, L"A:"))
+			{
+				int flag = MF_STRING;
+				if (enabled) flag |= MF_CHECKED;
+				AppendMenuW(submenu, flag, 'A0'+audio_track_found, name);
+				audio_track_found++;
+			}
+			CoTaskMemFree (name);
+		}
+
+	}
+
+	if (audio_track_found != 0)
+	{
+		DeleteMenu(submenu, ID_AUDIO_NONE, MF_BYCOMMAND);
+	}
+
+	return S_OK;
+}
+HRESULT dx_player::list_subtitle_track(HMENU submenu)
+{
+	CComPtr<IEnumFilters> ef;
+	CComPtr<IEnumPins> ep;
+	CComPtr<IBaseFilter> filter;
+	CComPtr<IPin> pin;
+	int subtitle_track_found = 0;
+
+	// external subtitle files
+	for(POSITION i = m_external_subtitles.GetHeadPosition(); i; m_external_subtitles.GetNext(i))
+	{
+		int flag = MF_STRING | MF_BYPOSITION;
+		CAutoPtr<subtitle_file_handler> &tmp = m_external_subtitles.GetAt(i);
+		if (tmp->actived) flag |= MF_CHECKED;
+		InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, tmp->m_pathname);
+		subtitle_track_found++;
+	}
+
+	// find splitter, which supports IFileSourceFilter, if it is AsyncReader, use its downstream
+	m_gb->EnumFilters(&ef);
+	while (ef->Next(1, &filter, NULL) == S_OK)
+	{
+		CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter>  fs(filter);
+		if (fs != NULL)
+		{
+			CLSID clsid;
+			filter->GetClassID(&clsid);
+			if (clsid == CLSID_AsyncReader)
+			{
+				// assume connected
+				GetConnectedPin(filter, PINDIR_OUTPUT, &pin);
+				CComPtr<IPin> connected;
+				pin->ConnectedTo(&connected);
+
+				PIN_INFO pi;
+				connected->QueryPinInfo(&pi);
+				pin = NULL;
+				filter = NULL;
+				filter.Attach(pi.pFilter);
+			}
+			break;
+		}
+		filter = NULL;
+	}
+
+	if (NULL == filter)
+		return VFW_E_NOT_CONNECTED;
+
+	CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
+	if (stream_select == NULL)
+	{
+		// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
+		filter->EnumPins(&ep);
+		while (ep->Next(1, &pin, NULL) == S_OK)
+		{
+			PIN_INFO pi;
+			pin->QueryPinInfo(&pi);
+			if (pi.pFilter) pi.pFilter->Release();
+
+			CComPtr<IPin> connected;
+			pin->ConnectedTo(&connected);
+
+			if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK)
+			{
+				int flag = MF_STRING | MF_BYPOSITION;
+				if (connected) flag |= MF_CHECKED;
+				InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, pi.achName);
+				subtitle_track_found++;
+			}
+
+			pin = NULL;
+		}
+	}
+	else
+	{
+		// splitter that supports IAMStreamSelect should have only one Audio Pin
+		DWORD stream_count = 0;
+		stream_select->Count(&stream_count);
+		for(int i=0; i<stream_count; i++)
+		{
+			WCHAR *name = NULL;
+			DWORD enabled = 0;
+			stream_select->Info(i, NULL, &enabled, NULL, NULL, &name, NULL, NULL);
+
+			pin = NULL;
+			GetPinByName(filter, PINDIR_OUTPUT, name, &pin);
+
+			if (DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK || wcsstr(name , L"Subtitle") || wcsstr(name, L"S:"))
+			{
+				if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"Subtitle", &pin);
+				if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"S:", &pin);
+				CComPtr<IPin> connected;
+				if (pin) pin->ConnectedTo(&connected);
+
+				int flag = MF_STRING | MF_BYPOSITION;
+				if (enabled && connected) flag |= MF_CHECKED;
+				InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, name);
+				subtitle_track_found++;
+			}
+			CoTaskMemFree (name);
+		}
+	}
+
+	if (subtitle_track_found != 0)
+	{
+		InsertMenuW(submenu, subtitle_track_found, MF_SEPARATOR | MF_BYPOSITION, 0, NULL);
+	}
+
+	return S_OK;
+}
+
+
+subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
+{
+	wcscpy(m_pathname, pathname);
+	actived = false;
+	m_renderer = NULL;
+
+	const wchar_t *p_3 = pathname + wcslen(pathname) -3;
+	if ( (p_3[0] == L's' || p_3[0] == L'S') &&
+		(p_3[1] == L'r' || p_3[1] == L'R') &&
+		(p_3[2] == L't' || p_3[2] == L'T'))
+	{
+		m_renderer = new CsrtRenderer(NULL, 0xffffff);
+	}
+	else if ( (p_3[0] == L's' || p_3[0] == L'S') &&
+		(p_3[1] == L'u' || p_3[1] == L'U') &&
+		(p_3[2] == L'p' || p_3[2] == L'P'))
+	{
+		m_renderer = new PGSRenderer();
+	}
+	else
+	{
+		return;
+	}
+
+	m_renderer->load_file(m_pathname);
+}
+
+subtitle_file_handler::~subtitle_file_handler()
+{
+	if (m_renderer)
+		delete m_renderer;
+	m_renderer = NULL;
 }

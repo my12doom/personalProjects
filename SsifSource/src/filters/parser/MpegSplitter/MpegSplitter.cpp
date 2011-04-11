@@ -870,7 +870,7 @@ HRESULT CMpegSplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 	//if (!m_mvc_found)
 	//	return E_FAIL;
 
-	m_traymenu.Attach(DNew TrayMenu(this, m_fn));
+	//m_traymenu.Attach(DNew TrayMenu(this, m_fn));
 
 	// Create
 	if (m_ClipInfo.IsHdmv())

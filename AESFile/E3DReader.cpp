@@ -3,15 +3,19 @@
 
 void log_line(char *format, ...)
 {
+#ifdef DEBUG
 	char tmp[10240];
 	va_list valist;
 	va_start(valist, format);
 	wvsprintfA(tmp, format, valist);
 	va_end(valist);
-
 	static FILE * f = fopen("F:\\e3d.log", "wb");
-	fprintf(f, "%s(%d)\r\n", tmp, GetCurrentThreadId());
-	fflush(f);
+	if (f)
+	{
+		fprintf(f, "%s(%d)\r\n", tmp, GetCurrentThreadId());
+		fflush(f);
+	}
+#endif
 }
 
 

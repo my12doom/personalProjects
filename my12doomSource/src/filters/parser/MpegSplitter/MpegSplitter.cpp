@@ -825,7 +825,7 @@ HRESULT CMpegSplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 	}
 
 	// Tray Icon
-	m_traymenu.Attach(DNew TrayMenu(this, m_fn));
+	//m_traymenu.Attach(DNew TrayMenu(this, m_fn));
 
 	// Create
 	if (m_ClipInfo.IsHdmv()) {

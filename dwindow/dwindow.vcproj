@@ -296,7 +296,7 @@
 				Name="subtitle"
 				>
 				<File
-					RelativePath=".\GenericSubtitleRenderer.cpp"
+					RelativePath=".\DShowSubtitleRenderer.cpp"
 					>
 				</File>
 				<File
@@ -382,7 +382,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\GenericSubtitleRenderer.h"
+					RelativePath=".\DShowSubtitleRenderer.h"
 					>
 				</File>
 				<File

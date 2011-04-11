@@ -389,21 +389,13 @@ HRESULT CDWindowExtenderMono::Transform_YUY2(IMediaSample * pIn, IMediaSample *p
 	return S_OK;
 }
 
-HRESULT CDWindowExtenderMono::StartStreaming()
-{
-	CComQIPtr<IBaseFilter, &IID_IBaseFilter> pbase(this);
-	FILTER_INFO fi;
-	pbase->QueryFilterInfo(&fi);
+HRESULT CDWindowExtenderMono::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
+{	
+	CAutoLock cAutolock(&m_csReceive);
 
-	if (NULL == fi.pGraph)
-		return 0;
+	m_this_stream_start = tStart;
 
-	CComQIPtr<IMediaSeeking, &IID_IMediaSeeking> pMS(fi.pGraph);
-	pMS->GetCurrentPosition(&m_this_stream_start);
-
-	fi.pGraph->Release();
-
-	return 0;
+	return __super::NewSegment(tStart, tStop, dRate);
 }
 
 HRESULT CDWindowExtenderMono::DecideBufferSize(IMemAllocator *pAlloc,ALLOCATOR_PROPERTIES *pProperties)

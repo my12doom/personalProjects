@@ -155,9 +155,9 @@ BEGIN
         MENUITEM "Open File...",                ID_OPENFILE
         POPUP "Open BluRay3D"
         BEGIN
-            MENUITEM "No BD Drive found",           ID_OPENBLURAY3D_NONE, GRAYED
+            MENUITEM "No BD Drive Found",           ID_OPENBLURAY3D_NONE, GRAYED
             MENUITEM SEPARATOR
-            MENUITEM "Folder...",                   ID_OPENDRIVER
+            MENUITEM "Folder...",                   ID_OPENBDFOLDER
         END
         MENUITEM SEPARATOR
         POPUP "Audio"
@@ -166,41 +166,21 @@ BEGIN
         END
         POPUP "Subtitle"
         BEGIN
-            MENUITEM "Load File...",                ID_SUBTITLE_LOADFILE
+            MENUITEM "Load Subtitle File...",       ID_SUBTITLE_LOADFILE
             MENUITEM "Font...",                     ID_SUBTITLE_FONT
             MENUITEM "Color...",                    ID_SUBTITLE_COLOR
         END
         MENUITEM SEPARATOR
         MENUITEM "Play/Pause",                  ID_PLAY
         MENUITEM "Fullscreen",                  ID_FULLSCREEN
+        MENUITEM "Always Show Right Eye",       ID_SHOWRIGHTEYE
         MENUITEM SEPARATOR
+        POPUP "Language"
+        BEGIN
+            MENUITEM "English",                     ID_LANGUAGE_ENGLISH
+            MENUITEM "中文",                          ID_LANGUAGE_CHINESE
+        END
         MENUITEM "Exit",                        ID_EXIT
-    END
-    POPUP "中文"
-    BEGIN
-        MENUITEM "打开文件...",                     ID_OPENFILE
-        POPUP "打开蓝光3D原盘"
-        BEGIN
-            MENUITEM "未找到蓝光光驱",                     ID_OPENBLURAY3D_NONE
-            MENUITEM SEPARATOR
-            MENUITEM "打开原盘文件夹...",                  ID_OPENBDFOLDER
-        END
-        MENUITEM SEPARATOR
-        POPUP "音轨"
-        BEGIN
-            MENUITEM "None",                        ID_AUDIO_NONE
-        END
-        POPUP "字幕"
-        BEGIN
-            MENUITEM "载入外部字幕...",                   ID_SUBTITLE_LOADFILE
-            MENUITEM "字体...",                       ID_SUBTITLE_FONT
-            MENUITEM "颜色...",                       ID_SUBTITLE_COLOR
-        END
-        MENUITEM SEPARATOR
-        MENUITEM "播放/暂停",                       ID_PLAY
-        MENUITEM "全屏",                          ID_FULLSCREEN
-        MENUITEM SEPARATOR
-        MENUITEM "退出",                          ID_EXIT
     END
 END
 

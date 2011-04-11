@@ -381,6 +381,9 @@ PGSParser::~PGSParser()
 HRESULT PGSParser::seek()	// just clear current incompleted data, to support dshow seeking.
 {
 	m_data_pos = 0;
+	memset(&m_current_subtitle, 0, sizeof(pgs_subtitle));
+	m_current_subtitle.start = -1;
+	m_has_seg = false;
 	return S_OK;
 }
 

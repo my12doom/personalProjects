@@ -48,6 +48,7 @@ Section "DWindow(required)"
   ; Put file there
   File "dwindow.exe"
   File "dwindow.ini"
+  File "detoured.dll"
   ;File "launcher.exe"
   ;File "regsvr.exe"
   SetOutPath $INSTDIR\codec
@@ -93,6 +94,7 @@ Section "Uninstall"
   Delete $INSTDIR\codec\*.dll
   Delete $INSTDIR\codec\*.ax
   Delete $INSTDIR\dwindow.exe
+  Delete $INSTDIR\detoured.dll
   Delete $INSTDIR\kill_ssaver.dll
   Delete $INSTDIR\launcher.exe
   Delete $INSTDIR\regsvr.exe
