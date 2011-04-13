@@ -96,27 +96,26 @@ HRESULT dx_player::CrackPD10(IBaseFilter *filter)
 
 // constructor & destructor
 dx_player::dx_player(RECT screen1, RECT screen2, HINSTANCE hExe):
-dwindow(screen1, screen2)
+dwindow(screen1, screen2),
+m_lFontPointSize(L"FontSize", 40),
+m_FontName(L"Font", L"Arial"),
+m_FontStyle(L"FontStyle", L"Regular"),
+m_font_color(L"FontColor", 0x00ffffff),
+m_always_show_right(L"AlwaysShowRight", false)
 {
 	// Enable away mode and prevent the sleep idle time-out.
 	SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_AWAYMODE_REQUIRED);
+
+	// font init
+	select_font(false);
+	m_grenderer.set_font(m_font);
+	m_grenderer.set_font_color(m_font_color);
 
 	// subtitle
 	m_lastCBtime = -1;
 	m_srenderer = NULL;
 
-	// font
-	m_font = NULL;
-	m_font_color = RGB(255,255,255);
-	m_lFontPointSize = 40;
-	wcscpy(m_FontName, L"ËÎÌו");
-	wcscpy(m_FontStyle, L"Regular");
-	select_font(false);
-	m_grenderer.set_font(m_font);
-	m_grenderer.set_font_color(m_font_color);
-
 	// vars
-	m_always_show_right = false;
 	m_file_loaded = false;
 	m_renderer1 = NULL;
 	m_renderer2 = NULL;
@@ -133,15 +132,17 @@ dwindow(screen1, screen2)
 	m_filter_mode = FILTER_MODE_FAIL;
 	m_subtitle_center_x = 0.5;
 	m_subtitle_bottom_y = 0.95;
-	m_subtitle_offset = 0;
 	m_loading = false;
 	m_hexe = hExe;
 
 	// window size & pos
+	show_window(1, true);
+	show_window(2, m_always_show_right);
 	int width1 = screen1.right - screen1.left;
 	int height1 = screen1.bottom - screen1.top;
 	int width2 = screen2.right - screen2.left;
 	int height2 = screen2.bottom - screen2.top;
+	m_subtitle_offset = width1/100;	// offset set to 1% of width
 
 	SetWindowPos(id_to_hwnd(1), NULL, screen1.left, screen1.top, width1, height1, SWP_NOZORDER);
 
@@ -160,11 +161,10 @@ dwindow(screen1, screen2)
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);
 	SendMessage(m_hwnd2, WM_INITDIALOG, 0, 0);
 
-
 	// set timer for ui drawing
 	reset_timer(2, 125);
 
-	// init
+	// init dshow
 	init_direct_show();
 
 	// set event notify
@@ -750,7 +750,10 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 	else if (uid == ID_SUBTITLE_COLOR)
 	{
-		bool ok = select_color(&m_font_color, id_to_hwnd(id));
+		DWORD tmp;
+		bool ok;
+		if (ok = select_color(&tmp, id_to_hwnd(id)))
+			m_font_color = tmp;
 		CAutoLock lck(&m_subtitle_sec);
 		if (m_srenderer && ok)
 			m_srenderer->set_font_color(m_font_color);
@@ -2147,9 +2150,6 @@ HRESULT dx_player::log_line(wchar_t *format, ...)
 
 HRESULT dx_player::select_font(bool show_dlg)
 {
-	if (!show_dlg && m_font)
-		return S_OK;
-
 	CHOOSEFONTW cf={0};
 	memset(&cf, 0, sizeof(cf));
 	LOGFONTW lf={0}; 

@@ -12,7 +12,8 @@
 #include "..\SsifSource\src\filters\parser\MpegSplitter\Imvc.h"
 #include "..\mySplitter\filter.h"
 
-
+// other
+#include "global_funcs.h"
 #include "CSubtitle.h"
 #include "srt\srt_parser.h"
 #include "..\lrtb\mySink.h"
@@ -86,7 +87,7 @@ public:
 protected:
 	// image control vars
 	HINSTANCE m_hexe;
-	bool m_always_show_right;
+	AutoSetting<bool> m_always_show_right/*(L"AlwaysShowRight", false)*/;
 	HWND m_video1;
 	HWND m_video2;
 	HWND id_to_video(int id);
@@ -188,10 +189,10 @@ protected:
 
 	// font
 	HFONT m_font;
-	DWORD m_font_color;
-	LONG m_lFontPointSize;//   = 60;
-	wchar_t m_FontName[100];// = L"ËÎÌו";
-	wchar_t m_FontStyle[32];// = L"Regular";
+	AutoSetting<DWORD> m_font_color/*L"FontColor", 0x00ffffff)*/;
+	AutoSetting<LONG> m_lFontPointSize/*(L"FontSize", 40)*/;
+	AutoSettingString m_FontName/*(L"Font", L"Arial")*/;
+	AutoSettingString m_FontStyle/*(L"FontStyle", L"Regular")*/;
 	HRESULT select_font(bool show_dlg);
 	// end font
 

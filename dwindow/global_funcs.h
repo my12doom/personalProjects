@@ -35,14 +35,81 @@ HRESULT RemoveUselessFilters(IGraphBuilder *gb);
 HRESULT DeterminPin(IPin *pin, wchar_t *name = NULL, CLSID majortype = CLSID_NULL);
 HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *name, IPin **ppPin);
 
+// CoreMVC
+HRESULT ActiveCoreMVC(IBaseFilter *decoder);
+HRESULT beforeCreateCoreMVC();
+
+
+// Settings loader & saver
+bool save_setting(const WCHAR *key, void *data, int len, DWORD REG_TYPE=REG_BINARY);
+int load_setting(const WCHAR *key, void *data, int len);
+template<class ValueType>
+class AutoSetting
+{
+public:
+	AutoSetting(const wchar_t *key, const ValueType default_value, DWORD reg_type = REG_BINARY)
+	{
+		wcscpy(m_key, key);
+		m_value = default_value;
+		m_reg_type = reg_type;
+		load_setting(key, &m_value, sizeof(ValueType));
+	}
+	~AutoSetting()
+	{
+		save_setting(m_key, &m_value, sizeof(ValueType), m_reg_type);
+	}
+	operator ValueType()
+	{
+		return m_value;
+	}
+	ValueType& operator= (ValueType in)
+	{
+		m_value = in;
+		save_setting(m_key, &m_value, sizeof(ValueType), m_reg_type);
+		return m_value;
+	}
+
+protected:
+	DWORD m_reg_type;
+	wchar_t m_key[256];
+	ValueType m_value;
+};
+
+class AutoSettingString
+{
+public:
+	AutoSettingString(const wchar_t*key, const wchar_t *default_value)
+	{
+		wcscpy(m_key, key);
+		m_value = new wchar_t[1024];
+		wcscpy(m_value, default_value);
+		load_setting(m_key, m_value, 1024);
+	}
+	~AutoSettingString()
+	{
+		save_setting(m_key, m_value, 1024, REG_SZ);
+		delete m_value;
+	}
+	operator wchar_t*()
+	{
+		return m_value;
+	}
+	wchar_t* operator=(const wchar_t*in)
+	{
+		wcscpy(m_value, in);
+		save_setting(m_key, m_value, 1024, REG_SZ);
+		return m_value;
+	}
+protected:
+	wchar_t m_key[256];
+	wchar_t *m_value;
+};
+
+
 // localization
 typedef enum{ENGLISH, CHINESE} localization_language;
-extern localization_language g_active_language;
+extern AutoSetting<localization_language> g_active_language;
 wchar_t *C(const wchar_t *English);
 HRESULT add_localization(const wchar_t *English, const wchar_t *Localized = NULL);
 HRESULT set_localization_language(localization_language language);
 HRESULT localize_menu(HMENU menu);
-
-// CoreMVC
-HRESULT ActiveCoreMVC(IBaseFilter *decoder);
-HRESULT beforeCreateCoreMVC();

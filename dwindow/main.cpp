@@ -7,7 +7,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
-	set_localization_language(CHINESE);
 	CoInitialize(NULL);
 
 	RECT screen1;
@@ -19,7 +18,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	dx_player test(screen1, screen2, hinstance);
-	test.show_window(1, true);
 	/*
 	test.start_loading();
 	test.load_file(L"F:\\movie\\101123.µ¡√Œø’º‰.Inception.2010.Blu-ray.720p.x264.iPad.SiLUHD\\µ¡√Œø’º‰.Inception.2010.Blu-ray.720p.x264.iPad.SiLUHD.01.mp4");

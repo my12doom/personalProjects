@@ -7,7 +7,7 @@
 #pragma comment(lib, "detours/detoured.lib")
 #pragma comment(lib, "detours/detours.lib")
 
-localization_language g_active_language = CHINESE;
+AutoSetting<localization_language> g_active_language(L"Language", CHINESE);
 
 int n_monitor_found = 0;
 RECT monitor_rect[MAX_MONITORS];
@@ -375,6 +375,7 @@ typedef struct _localization_element
 int n_localization_element_count;
 const int increase_step = 8;	// 2^8 = 256, increase when
 localization_element *localization_table = NULL;
+HRESULT hr_init_localization = set_localization_language(g_active_language);
 
 HRESULT add_localization(const wchar_t *English, const wchar_t *Localized)
 {
@@ -705,4 +706,33 @@ HRESULT localize_menu(HMENU menu)
 	}
 
 	return hr;
+}
+
+const WCHAR* soft_key= L"Software\\DWindow";
+bool save_setting(const WCHAR *key, void *data, int len, DWORD REG_TYPE)
+{
+	HKEY hkey = NULL;
+	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, soft_key, 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS)
+		return false;
+	ret = RegSetValueExW(hkey, key, 0, REG_TYPE, (const byte*)data, len );
+	if (ret != ERROR_SUCCESS)
+		return false;
+
+	RegCloseKey(hkey);
+	return true;
+}
+
+int load_setting(const WCHAR *key, void *data, int len)
+{
+	HKEY hkey = NULL;
+	int ret = RegOpenKeyExW(HKEY_CURRENT_USER, soft_key,0,STANDARD_RIGHTS_REQUIRED |KEY_READ  , &hkey);
+	if (ret != ERROR_SUCCESS || hkey == NULL)
+		return false;
+	RegQueryValueExW(hkey, key, 0, NULL, (LPBYTE)data, (LPDWORD)&len);
+	if (ret == ERROR_SUCCESS || ret == ERROR_MORE_DATA)
+		return len;
+
+	RegCloseKey(hkey);
+	return 0;
 }
