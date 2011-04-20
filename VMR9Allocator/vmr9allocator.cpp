@@ -355,7 +355,20 @@ void PaintWindow(HWND hWnd)
     {
         RECT rc2;
         GetClientRect(hWnd, &rc2);
-        FillRect(hdc, &rc2, (HBRUSH)(COLOR_WINDOW+1));
+		if(g_allocator)
+		{
+			if (FAILED(((CAllocator*)(IVMRSurfaceAllocator9*)g_allocator)->Present()))
+			{
+				if (g_mediaControl)
+				{
+					//g_mediaControl->Run();
+				}
+			}
+		}
+		else
+		{
+			FillRect(hdc, &rc2, (HBRUSH)(COLOR_WINDOW+1));
+		}
     }
 
     EndPaint( hWnd, &ps );

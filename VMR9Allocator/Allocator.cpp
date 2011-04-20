@@ -215,23 +215,8 @@ HRESULT CAllocator::Present()
 			//m_D3DDev->EndScene();
 			double time4 = CycleTime();
 			
-			//m_D3DDev->Present(NULL, NULL, NULL, NULL);
+			hr = m_D3DDev->Present(NULL, NULL, NULL, NULL);
 			
-			IDirect3DSwapChain9 *swap = NULL;
-			m_D3DDev->GetSwapChain(0, &swap);
-			if (swap)
-			{
-				m_last_present_result = swap->Present(NULL, NULL, NULL, NULL, D3DPRESENT_DONOTWAIT);
-				swap->Release();
-				if (hr == D3DERR_WASSTILLDRAWING)
-				{
-					OutputDebugStringA("D3DERR_WASSTILLDRAWING\n");
-				}
-			}
-			else
-			{
-				m_last_present_result = D3DERR_DEVICELOST;
-			}
 			double time5 = CycleTime();
 
 			sprintf(tmp, "%f,%f,%f,%f\n", time2-time1, time3-time2, time4-time3, time5-time4);
@@ -239,43 +224,6 @@ HRESULT CAllocator::Present()
 		}
 		
 		m_device_sec.Unlock();
-
-		if(!m_reseting)
-		{
-			m_reseting = true;
-			if (!should_direct_render() && (m_last_present_result == D3DERR_DEVICELOST || m_pending_reset ))
-			{
-				pp.Windowed = m_dshow_presenting == D3DERR_DEVICELOST ? TRUE : !pp.Windowed;
-				//pp.Windowed = TRUE;
-				mylog(m_last_present_result == D3DERR_DEVICELOST?"DEVICE LOST\n":"F11");
-				DeleteSurfaces();
-				while (FAILED(CreateDevice()) && !m_work_exit)
-					Sleep(50);
-
-				m_pending_reset = false;
-
-				if (m_work_exit)
-					return E_FAIL;
-
-				HMONITOR hMonitor = m_D3D->GetAdapterMonitor( D3DADAPTER_DEFAULT );
-				OutputDebugString(L"Change Device Started in Present()\n");
-				hr = m_lpIVMRSurfAllocNotify->ChangeD3DDevice( m_D3DDev, hMonitor ) ;
-				if (FAILED(hr))
-				{
-					OutputDebugString(L"Change Device Failed\n");
-					m_reseting = false;
-					return hr;
-				}
-				else
-				{
-					OutputDebugString(L"Change Device OK!\n");
-				}
-				
-				m_reseting = false;
-				return S_OK;
-			}
-		}
-		m_reseting = false;
 	}
 
 	return hr;
@@ -717,6 +665,11 @@ HRESULT CAllocator::PresentImage(
 
 	m_dshow_presenting++;
 
+	if (FAILED(hr))
+	{
+		mylog("PresentHelper Failed with hr=0x%08x.\n", hr);
+	}
+
 	if (!m_reseting)
 	{
 		m_reseting = true;
@@ -726,6 +679,7 @@ HRESULT CAllocator::PresentImage(
 			pp.Windowed = hr == D3DERR_DEVICELOST ? TRUE : !pp.Windowed;
 
 			//if (TestCopperativelLevel() == D3DERR_DEVICENOTRESET)
+			mylog("test=0x%08x;\n", TestCopperativelLevel());
 			{
 				DeleteSurfaces();
 				while (FAILED(CreateDevice()))
@@ -829,19 +783,8 @@ HRESULT CAllocator::PresentHelper(VMR9PresentationInfo *lpPresInfo)
     }
 
 	hr = m_last_present_result;
-	if (should_direct_render()) m_scene.copy_to_back_buffer(m_D3DDev);
-	IDirect3DSwapChain9 *swap = NULL;
-	m_D3DDev->GetSwapChain(0, &swap);
-	if (swap)
-	{
-		HRESULT hr = S_OK;
-		if (should_direct_render()) hr = swap->Present(NULL, NULL, NULL, NULL, D3DPRESENT_DONOTWAIT);
-		swap->Release();
-		if (hr == D3DERR_WASSTILLDRAWING)
-		{
-			OutputDebugStringA("D3DERR_WASSTILLDRAWING\n");
-		}
-	}
+	m_scene.copy_to_back_buffer(m_D3DDev);
+	hr = m_D3DDev->Present(NULL, NULL, NULL, NULL);
 	m_drawing = false;
 
     return hr;
