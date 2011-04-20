@@ -1476,15 +1476,15 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 					pin->QueryPinInfo(&info);
 					if (info.pFilter) info.pFilter->Release();
 
-					if (wcsstr(info.achName, L"Video"))
+					if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Video))
 					{
 
 						if ( (video_track>=0 && (MKV_TRACK_NUMBER(video_num) & video_track ))
 							|| video_track == MKV_ALL_TRACK)
 						{
-							CComPtr<IBaseFilter> divx;
-							hr = myCreateInstance(CLSID_DivxDecoder, IID_IBaseFilter, (void**)&divx);
-							hr = m_gb->AddFilter(divx, L"Divx Deocder");
+							CComPtr<IBaseFilter> xvid;
+							hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
+							hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
 
 							CComPtr<IBaseFilter> coremvc;
 							hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
@@ -1504,9 +1504,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 						video_num ++;
 					}
 
-					else if (wcsstr(info.achName, L"Audio"))
+					else if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Audio))
 					{
-
 						if ( (audio_track>=0 && (MKV_TRACK_NUMBER(audio_num) & audio_track ))
 							|| audio_track == MKV_ALL_TRACK)
 						{
@@ -1518,7 +1517,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 						audio_num ++;
 					}
 
-					else if (wcsstr(info.achName, L"Subtitle"))
+					else if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Subtitle))
 					{
 						m_gb->Render(pin);
 					}

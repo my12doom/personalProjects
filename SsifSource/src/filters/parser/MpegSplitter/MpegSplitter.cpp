@@ -1448,7 +1448,7 @@ sleep:
 	if (_this->m_dummy_exit)
 		return 0;
 next:
-	{
+	{ 
 		CAutoLock queuelock(&(_this->m_queuelock));
 		if (_this->m_queue.IsEmpty())
 			goto sleep;

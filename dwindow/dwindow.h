@@ -33,6 +33,7 @@ protected:
 	static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	static DWORD WINAPI WindowThread(LPVOID lpParame);
 
+	virtual LRESULT on_idle_time(){return S_FALSE;}	// S_FALSE = Sleep(1)
 	virtual LRESULT on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam)
 		{return DefWindowProc(id_to_hwnd(id), message, wParam, lParam);}
 	virtual LRESULT on_sys_command(int id, WPARAM wParam, LPARAM lParam){return S_FALSE;}	// don't block WM_SYSCOMMAND

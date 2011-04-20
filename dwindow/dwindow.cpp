@@ -188,13 +188,30 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 	UpdateWindow(hwnd);
 	*((window_proc_param*)lpParame)->hwnd2 = hwnd;
 
+	dwindow * that = ((window_proc_param*)lpParame)->that;
 	BOOL fGotMessage1;
 	MSG msg1;
+	memset(&msg1,0,sizeof(msg1));
+	while( msg1.message != WM_QUIT )
+	{
+		if( PeekMessage( &msg1, NULL, 0, 0, PM_REMOVE ) )
+		{ 
+			TranslateMessage( &msg1 );
+			DispatchMessage( &msg1 );
+		}
+		else
+		{
+			if (that->on_idle_time() == S_FALSE)
+				Sleep(1);
+		}
+	}
+	/*
 	while ((fGotMessage1 = GetMessage(&msg1, (HWND) NULL, 0, 0)) != 0 && fGotMessage1 != -1) 
 	{
 		TranslateMessage(&msg1); 
 		DispatchMessage(&msg1); 
 	}
+	*/
 	return (DWORD)msg1.wParam; 
 } 
 
