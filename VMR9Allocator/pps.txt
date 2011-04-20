@@ -1,0 +1,45 @@
+// Contour.txt=ps_2_0
+
+sampler s0 : register(s0);
+float4 p0 : register(c0);
+float4 p1 : register(c1);
+
+#define width (p0[0])
+#define height (p0[1])
+
+float4 main2(float2 tex : TEXCOORD0) : COLOR
+{
+        float2 tex0 = tex;
+        tex0.x = tex0.x/2;
+
+        float2 tex1 = tex;
+        tex1.x = tex1.x/2 + 0.5;
+
+        float4 rgb0 = tex2D(s0, tex0);
+        float4 rgb1 = tex2D(s0, tex1);
+	
+	float4 o;
+       // rgb1.r = rgb0.r;
+        //return rgb1;
+	if (abs(width*tex.x % 2) < 0.5)
+		o = rgb0;
+	else
+		o = rgb1;
+	return o;
+}
+
+float4 main(float2 tex : TEXCOORD0) : COLOR
+{
+	if (tex.x<0.5)
+	{
+		tex.x = tex.x*2;
+		tex.y = tex.y/2;
+	}
+	else
+	{
+		tex.x = (tex.x-0.5)*2;
+		tex.y = tex.y/2+0.5;
+	}
+	return tex2D(s0, tex);
+	
+}

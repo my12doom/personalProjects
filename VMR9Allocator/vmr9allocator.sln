@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VMR9Allocator", "vmr9allocator.vcproj", "{4D9538C1-E5C1-4550-AAEF-4881D42F1FBB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug Unicode|Win32 = Debug Unicode|Win32
+		Debug|Win32 = Debug|Win32
+		Release Unicode|Win32 = Release Unicode|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4D9538C1-E5C1-4550-AAEF-4881D42F1FBB}.Debug Unicode|Win32.ActiveCfg = Debug Unicode|Win32
+		{4D9538C1-E5C1-4550-AAEF-4881D42F1FBB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4D9538C1-E5C1-4550-AAEF-4881D42F1FBB}.Release Unicode|Win32.ActiveCfg = Release Unicode|Win32
+		{4D9538C1-E5C1-4550-AAEF-4881D42F1FBB}.Release|Win32.ActiveCfg = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
