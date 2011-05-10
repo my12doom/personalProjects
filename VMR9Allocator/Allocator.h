@@ -135,7 +135,7 @@ public:
 		*/
 		return !(pp.Windowed || !nv3d_enabled || !m_dshow_presenting) && true;
 	}
-	bool m_use_work_thread;
+	int m_pump_threadID;
 	static DWORD WINAPI worker_thread(LPVOID lpParame);
 
 protected:

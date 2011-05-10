@@ -1544,9 +1544,9 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 	{
 		log_line(L"private filters failed, trying system filters. (%s)", file_to_play);
 
-		CComPtr<IBaseFilter> divx;
-		hr = myCreateInstance(CLSID_DivxDecoder, IID_IBaseFilter, (void**)&divx);
-		hr = m_gb->AddFilter(divx, L"Divx Deocder");
+		CComPtr<IBaseFilter> xvid;
+		hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
+		hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
 
 		CComPtr<IBaseFilter> coremvc;
 		hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);

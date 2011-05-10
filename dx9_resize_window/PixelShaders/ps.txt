@@ -1,0 +1,107 @@
+// invert=ps_2_0
+// Code from MPC
+
+sampler s0 : register(s0);
+sampler s1 : register(s1);
+sampler s2 : register(s2);
+float4 p0 : register(c0);
+
+#define width (p0[0])
+#define height (p0[1])
+#define counter (p0[2])
+#define clock (p0[3])
+
+#define PI acos(-1)
+#define C1 (16.0/255.0)
+#define C2 (255.0/219.0)
+
+float4 main(float2 tex : TEXCOORD0) : COLOR
+{
+	if (tex.x > 0.5) tex.x -= 0.5;
+	return tex2D(s0, tex);
+
+	//float c0 = 1-dot(tex2D(s0, tex), float4(0.299, 0.587, 0.114, 0));	
+	//float c0 = dot(tex2D(s0, tex), float4(0.333, 0.333, 0.333, 0));	
+	//return float4(c0, c0, c0, 1);
+
+	//float4 c0 = float4(1, 1, 1, 2) - tex2D(s0, tex);
+	//return c0;
+
+	//return float4(1,tex.x,tex.y,1);
+}
+
+
+float4 yuv2rgb(float4 yuv)
+{
+	yuv.r -= C1;
+	yuv.g -= 128.0/255.0;
+	yuv.b -= 128.0/255.0;
+	float4x4 coeffs=
+		{
+			 1.000, 0.000, 1.140, 0.000,
+			 1.000,-0.395,-0.581, 0.000,
+			 1.000, 2.032, 0.000, 0.000,
+			 0.000, 0.000, 0.000, 0.000
+		};
+	float4x4 coeffs2=
+		{
+			 1.164, 0.000, 1.596, 0.000,
+			 1.164,-0.391,-0.813, 0.000,
+			 1.164, 2.018, 0.000, 0.000,
+			 0.000, 0.000, 0.000, 0.000
+		};
+	
+	return (mul(coeffs2,yuv));
+}
+
+float4 main3(float2 tex : TEXCOORD0) : COLOR
+{
+	float2 texY = tex;
+	texY.y /= 1.5;
+
+	float2 texV = tex;
+	texV.y = texV.y / 6.0 + (2.0/3.0);
+
+	float2 texU = tex;
+	texU.y = texU.y / 6.0 + (2.5/3.0);
+	
+	//return tex2D(s0, tex);
+	return yuv2rgb(float4(tex2D(s0, texY).r, tex2D(s0, texV).r, tex2D(s0, texU).r, 1));
+}
+
+float4 planar_rgb(float2 tex : TEXCOORD0) : COLOR
+{
+	return yuv2rgb(float4(tex2D(s0, tex).r, tex2D(s1, tex).r, tex2D(s2, tex).r, 1));
+}
+
+float4 yuy2_argb_rgb(float2 tex : TEXCOORD0) : COLOR
+{
+	// BGRA = YUYV
+	tex.x = tex.x/5+0.5;
+	tex.y = tex.y/5+0.5;
+	
+	float x = tex.x / (1.0/1920.0);
+	x = 0;
+	float x1 = x % 1;
+	float x2 = 1 - x1;
+	float4 argb = tex2D(s0, tex);
+	float4 c1 = yuv2rgb(float4(argb.b, argb.g, argb.a, 1));
+	float4 c2 = yuv2rgb(float4(argb.r, argb.g, argb.a, 1));
+	
+	return c1*x1 + c2*x2;
+}
+
+float4 yuy2_a8l8_rgb(float2 tex : TEXCOORD0) : COLOR
+{
+	// BGRA = YUYV
+	float y = tex2D(s0, tex).r;
+	int x = tex.x / (1.0/1920.0);
+	float u = tex2D(s0, float2(x*(1.0/1920.0), tex.y)).a;
+	float v = tex2D(s0, float2((x+1)*(1.0/1920.0), tex.y)).a;
+	
+	return yuv2rgb(float4(y, u, v, 1));
+	
+	//float4 argb = tex2D(s0, tex);
+	//float4 c1 = yuv2rgb(float4(argb.b, argb.g, argb.a, 1));
+	//float4 c2 = yuv2rgb(float4(argb.r, argb.g, argb.a, 1));	
+}

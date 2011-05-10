@@ -51,7 +51,7 @@ void CPlaneScene::set_ps(IDirect3DDevice9* d3ddev)
 	LPD3DXBUFFER pCode = NULL;
 	LPD3DXBUFFER pErrorMsgs = NULL;
 
-	HRESULT hRes = D3DXCompileShaderFromFile(L"E:\\Extras\\DirectShow\\Samples\\C++\\DirectShow\\VMR9\\VMR9Allocator\\ps.txt", NULL, NULL, "main", "ps_2_0", 0,
+	HRESULT hRes = D3DXCompileShaderFromFile(L"E:\\Extras\\DirectShow\\Samples\\C++\\DirectShow\\VMR9\\VMR9Allocator\\pps.txt", NULL, NULL, "main", "ps_2_0", 0,
 		&pCode, &pErrorMsgs, NULL);
 
 	// If assembly failed, then pErrorMsgs will hopefully be non-null
@@ -71,6 +71,7 @@ void CPlaneScene::set_ps(IDirect3DDevice9* d3ddev)
 
 	IDirect3DPixelShader9* ps = NULL;
 	// Create the pixel shader
+	int codesize = pCode->GetBufferSize();
 	hRes = d3ddev->CreatePixelShader((DWORD*)pCode->GetBufferPointer(), 
 		&ps);
 	if (FAILED(hRes)) return;
@@ -93,14 +94,16 @@ CPlaneScene::Init(IDirect3DDevice9* d3ddev)
     if( ! d3ddev )
         return E_POINTER;
 
-    //FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE));			// two-sided stenciling
-    FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_LIGHTING, FALSE));
-    FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE));
-    FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA));
+	FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA));
     FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA));
-    FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE));
-    FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_ALPHAREF, 0x10));
-    FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER));
+	FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_LIGHTING, FALSE));
+	//FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE));
+	FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE));
+	FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_ALPHAREF, 0x10));
+	//FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER));
+    //FAIL_RET(hr = d3ddev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE));			// two-sided stenciling
+	/*
+	*/
 
 	/*
     FAIL_RET(hr = d3ddev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP));
@@ -231,11 +234,12 @@ CPlaneScene::draw_to_my_surface( IDirect3DDevice9* d3ddev, IDirect3DTexture9* te
 	d3ddev->SetRenderTarget(0, m_my_surface);
     // clear the scene so we don't have any articats left
     d3ddev->Clear( 0L, NULL, D3DCLEAR_TARGET, 
-                   D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );
+                   D3DCOLOR_XRGB(255,0,0), 1.0f, 0L );
 
     //FAIL_RET( d3ddev->BeginScene() );
     if (texture)
 		FAIL_RET( d3ddev->SetTexture( 0, texture));
+		FAIL_RET( d3ddev->SetTexture( 1, texture));
 
     //FAIL_RET(hr = d3ddev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE));
     //FAIL_RET(hr = d3ddev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE));

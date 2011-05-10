@@ -43,7 +43,7 @@ CComPtr<IGraphBuilder>          g_graph;
 CComPtr<IBaseFilter>            g_filter;
 CComPtr<IMediaControl>          g_mediaControl;
 CComPtr<IMediaSeeking>          g_mediaSeeking;
-CComPtr<IVMRSurfaceAllocator9>  g_allocator;
+CAllocator*  g_allocator;
 
 
 int APIENTRY WinMain(HINSTANCE hInstance,
@@ -105,7 +105,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 			{
 				if (g_allocator)
 				{
-					while (((CAllocator*)(IVMRSurfaceAllocator9*)g_allocator)->Pump() != S_FALSE)
+					while (g_allocator->Pump() != S_FALSE)
 						;
 				}
 				Sleep(1);
@@ -192,7 +192,11 @@ CloseGraph(HWND window)
     g_filter       = NULL;
 	if (g_allocator) g_allocator->AdviseNotify(NULL);
     g_graph        = NULL;
-	g_allocator    = NULL;
+	if (g_allocator)
+	{
+		delete g_allocator;
+		g_allocator = NULL;
+	}
 
 
     ::InvalidateRect( window, NULL, true );
@@ -254,7 +258,7 @@ HRESULT SetAllocatorPresenter( CComPtr<IBaseFilter> filter, HWND window )
     FAIL_RET( filter->QueryInterface(IID_IVMRSurfaceAllocatorNotify9, reinterpret_cast<void**>(&lpIVMRSurfAllocNotify)) );
 
     // create our surface allocator
-    g_allocator.Attach(new CAllocator( hr, window ));
+    g_allocator = new CAllocator( hr, window );
     if( FAILED( hr ) )
     {
         g_allocator = NULL;
@@ -357,8 +361,10 @@ void PaintWindow(HWND hWnd)
         GetClientRect(hWnd, &rc2);
 		if(g_allocator)
 		{
-			if (FAILED(((CAllocator*)(IVMRSurfaceAllocator9*)g_allocator)->Present()))
+			HRESULT hr;
+			if (FAILED(hr = g_allocator->Present()))
 			{
+				printf("WM_Paint:Present() failed: 0x%08x.\n", hr);
 				if (g_mediaControl)
 				{
 					//g_mediaControl->Run();
@@ -490,21 +496,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					g_mediaControl->StopWhenReady();
 				else if (keycode == VK_F11)
 				{
-					((CAllocator*)(IVMRSurfaceAllocator9*)g_allocator)->m_pending_reset = true;
-					((CAllocator*)(IVMRSurfaceAllocator9*)g_allocator)->m_dshow_presenting = 1;
-					while (((CAllocator*)(IVMRSurfaceAllocator9*)g_allocator)->m_pending_reset || 
-						((CAllocator*)(IVMRSurfaceAllocator9*)g_allocator)->m_dshow_presenting < 20)
+					OAFilterState state_before;
+					g_mediaControl->GetState(INFINITE, &state_before);
+
+					if (state_before != State_Running)
+						g_mediaControl->Run();
+
+					g_allocator->m_pending_reset = true;
+					g_allocator->m_dshow_presenting = 1;
+					while (g_allocator->m_pending_reset || g_allocator->m_dshow_presenting < 3)
 					{
-						g_mediaControl->StopWhenReady();
-						((CAllocator*)(IVMRSurfaceAllocator9*)g_allocator)->Pump();
+						g_allocator->Pump();
+					}
+					if (state_before != State_Running)
+					{
+						g_mediaControl->Stop();
+						g_allocator->m_dshow_presenting = 0;
 					}
 
-					mylog("m_presenting = %d\n", ((CAllocator*)(IVMRSurfaceAllocator9*)g_allocator)->m_dshow_presenting);
-					g_mediaControl->StopWhenReady();
+					g_allocator->Present();
+
+					mylog("m_presenting = %d\n", g_allocator->m_dshow_presenting);
 				}
 				else if (keycode == VK_F9)
 				{
-					((CAllocator*)(IVMRSurfaceAllocator9*)g_allocator)->Present();
+					if (g_allocator)
+					{
+						g_allocator->Present();
+					}
 				}
 			}
 			break;

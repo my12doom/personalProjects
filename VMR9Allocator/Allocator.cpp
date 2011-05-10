@@ -103,12 +103,11 @@ CAllocator::CAllocator(HRESULT& hr, HWND wnd, IDirect3D9* d3d, IDirect3DDevice9*
     }
 
 	m_last_present_result = S_OK;
-	m_use_work_thread = false;
+	m_pump_threadID = GetCurrentThreadId();
     if( m_D3DDev == NULL )
     {
         hr = CreateDevice();
     }
-	m_use_work_thread = true;
 }
 
 CAllocator::~CAllocator()
@@ -118,7 +117,6 @@ CAllocator::~CAllocator()
 		Pump();
 
     DeleteSurfaces();
-	m_use_work_thread = false;
 	Destroy();
 }
 
@@ -183,10 +181,10 @@ next:
 
 HRESULT CAllocator::Present()
 {
-	//if (should_direct_render())
-	//	return S_OK;
-	if (m_drawing)
+	if (m_drawing || m_dshow_presenting)
 		return S_FALSE;
+
+	mylog("Present()");
 
 	char tmp[256];
 	double lock=CycleTime();
@@ -281,7 +279,7 @@ HRESULT CAllocator::Pump()
 }
 HRESULT CAllocator::TestCopperativelLevel()
 {
-	if (!m_use_work_thread)
+	if (m_pump_threadID == GetCurrentThreadId())
 		return m_D3DDev->TestCooperativeLevel();
 
 	HRESULT hr;
@@ -303,7 +301,7 @@ HRESULT CAllocator::TestCopperativelLevel()
 HRESULT CAllocator::Destroy()
 {
 	char tmp[256];sprintf(tmp, "Destroying From thread %d\n", GetCurrentThreadId());OutputDebugStringA(tmp);
-	if (!m_use_work_thread)
+	if (m_pump_threadID == GetCurrentThreadId())
 	{
 		CAutoLock lck(&m_device_sec);
 		m_D3DDev = NULL;
@@ -328,7 +326,7 @@ HRESULT CAllocator::Destroy()
 
 HRESULT CAllocator::Reset()
 {
-	if (!m_use_work_thread)
+	if (m_pump_threadID == GetCurrentThreadId())
 	{
 		CAutoLock lck(&m_device_sec);
 		return m_D3DDev->Reset(&pp);
@@ -378,7 +376,10 @@ HRESULT CAllocator::CreateDevice()
 
 	}
 
-	if (!m_use_work_thread)
+	pp.SwapEffect = pp.Windowed ? D3DSWAPEFFECT_COPY : D3DSWAPEFFECT_DISCARD;
+	mylog("mode = %s\n", pp.SwapEffect == D3DSWAPEFFECT_COPY ? "copy" : "discard" );
+
+	if (m_pump_threadID == GetCurrentThreadId())
 	{
 		CAutoLock lck(&m_device_sec);
 		m_D3DDev = NULL;
@@ -622,39 +623,15 @@ HRESULT CAllocator::PresentImage(
 
     // if we are in the middle of the display change
 
-	/*
     if( NeedToHandleDisplayChange() )
     {
+		mylog("to handle display change\n");
         // NOTE: this piece of code is left as a user exercise.  
         // The D3DDevice here needs to be switched
         // to the device that is using another adapter
     }
-	*/
 
-	/*
-	if (GetKeyState(VK_F11) < 0)
-	{
-		OutputDebugStringA("F11\n");
-		pp.Windowed = !pp.Windowed;
-		DeleteSurfaces();
-		HMONITOR hMonitor = m_D3D->GetAdapterMonitor( D3DADAPTER_DEFAULT );
-		while (FAILED(CreateDevice()))
-			Sleep(50);
-
-		hr = m_lpIVMRSurfAllocNotify->ChangeD3DDevice( m_D3DDev, hMonitor ) ;
-		if (FAILED(hr))
-		{
-			OutputDebugString(L"Change Device Failed\n");
-			return hr;
-		}
-		else
-		{
-			OutputDebugString(L"Change Device OK!\n");
-		}
-		
-		return S_OK;
-	}
-	*/
+retry:
     hr = PresentHelper( lpPresInfo );
 	char tmp[256];
 	sprintf(tmp, "(%d,%f)LockTime=%f, PresentHelper:%f\n", GetCurrentThreadId(), CycleTime(), time2-time1, CycleTime()-time2);
@@ -663,30 +640,29 @@ HRESULT CAllocator::PresentImage(
     // or when (s)he presses Ctrl + Alt + Delete.
     // We need to restore our video memory after that
 
-	m_dshow_presenting++;
 
 	if (FAILED(hr))
 	{
 		mylog("PresentHelper Failed with hr=0x%08x.\n", hr);
 	}
+	else
+	{
+		m_dshow_presenting++;
+	}
 
 	if (!m_reseting)
 	{
 		m_reseting = true;
-		if(( hr == D3DERR_DEVICELOST || m_pending_reset) && should_direct_render())//
+		if(( hr == D3DERR_DEVICELOST || m_pending_reset))//
 		{
 			mylog(hr == D3DERR_DEVICELOST?"DEVICE LOST\n":"F11");
 			pp.Windowed = hr == D3DERR_DEVICELOST ? TRUE : !pp.Windowed;
 
-			//if (TestCopperativelLevel() == D3DERR_DEVICENOTRESET)
 			mylog("test=0x%08x;\n", TestCopperativelLevel());
 			{
 				DeleteSurfaces();
 				while (FAILED(CreateDevice()))
 					Sleep(500);
-				//pp.hDeviceWindow = NULL;
-				//hr = m_D3DDev->Reset(&pp);
-
 
 				m_pending_reset = false;
 
@@ -709,13 +685,18 @@ HRESULT CAllocator::PresentImage(
 			OutputDebugString(L"RESET DONE\n");
 
 			hr = S_OK;
+			mylog("retry it!");
+			goto retry;
 		}
 		m_reseting = false;
 	}
 
 	if (FAILED(hr))
 	{
-		printf("hr = %08x\n", hr);
+		mylog("hr = %08x\n", hr);
+	}
+	else
+	{
 	}
 
     return hr;
@@ -753,17 +734,7 @@ HRESULT CAllocator::PresentHelper(VMR9PresentationInfo *lpPresInfo)
                              surface, NULL,
                              D3DTEXF_NONE ) );
 
-		OutputDebugStringA("StretchRect on PresentHelper\n");
-
-        if (should_direct_render())
-			FAIL_RET( m_scene.draw_to_my_surface(m_D3DDev, m_privateTexture, pp.Windowed));
-		else
-		{
-			CAutoLock lck(&m_image_sec);
-			mylog("\nsaving image\n");
-			m_texture_to_draw = NULL;
-			m_texture_to_draw = m_privateTexture;
-		}
+		m_scene.draw_to_my_surface(m_D3DDev, m_privateTexture, pp.Windowed);
     }
     else // this is the case where we have got the textures allocated by VMR
          // all we need to do is to get them from the surface
@@ -771,15 +742,7 @@ HRESULT CAllocator::PresentHelper(VMR9PresentationInfo *lpPresInfo)
         CComPtr<IDirect3DTexture9> texture;
         FAIL_RET( lpPresInfo->lpSurf->GetContainer( IID_IDirect3DTexture9, (LPVOID*) & texture.p ) );    
         
-		if (should_direct_render())
-			FAIL_RET( m_scene.draw_to_my_surface(m_D3DDev, texture, pp.Windowed));
-		else
-		{
-			CAutoLock lck(&m_image_sec);
-			mylog("\nsaving image\n");
-			m_texture_to_draw = NULL;
-			m_texture_to_draw = texture;
-		}
+		FAIL_RET( m_scene.draw_to_my_surface(m_D3DDev, texture, pp.Windowed));
     }
 
 	hr = m_last_present_result;
