@@ -122,6 +122,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\ps.bin planar_rgb"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
