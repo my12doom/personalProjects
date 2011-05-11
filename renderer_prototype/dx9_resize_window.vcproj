@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="dx9_resize_window"
+	Name="dx9_prototype"
 	ProjectGUID="{571D0F90-0421-454D-8795-3CDC19C14A4F}"
 	RootNamespace="dx9_resize_window"
 	TargetFrameworkVersion="131072"
@@ -171,7 +171,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="d3d9.lib d3dx9.lib strmbasd.lib strmiids.lib winmm.lib"
+				AdditionalDependencies="d3d9.lib d3dx9.lib dxguid.lib strmbasd.lib strmiids.lib winmm.lib"
 				OutputFile=".\Debug/dx9_resize_window.exe"
 				LinkIncremental="0"
 				SuppressStartupBanner="true"
@@ -239,6 +239,10 @@
 			</File>
 			<File
 				RelativePath=".\my12doomRenderer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\PixelShaders\ps.txt"
 				>
 			</File>
 		</Filter>
