@@ -1,24 +1,32 @@
-#include <stdio.h>
+// DirectShow part of my12doom renderer
+
 #include "my12doomRenderer.h"
 
-//-----------------------------------------------------------------------------
-// CTextureRenderer constructor
-//-----------------------------------------------------------------------------
-CTextureRenderer::CTextureRenderer( LPUNKNOWN pUnk, HRESULT *phr )
-                                  : CBaseVideoRenderer(__uuidof(CLSID_TextureRenderer),
+my12doomRenderer::my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 /* = NULL */, HWND hwnd2 /* = NULL */)
+                                  : CBaseVideoRenderer(__uuidof(CLSID_my12doomRenderer),
                                     NAME("Texture Renderer"), pUnk, phr)
 {
     if (phr)
         *phr = S_OK;
 	m_data = NULL;
+
+	g_hWnd = hwnd1;
+
+	m_device_threadid = GetCurrentThreadId();
+	m_device_state = need_create;
+	m_color1 = D3DCOLOR_XRGB(255, 0, 0);
+	m_color2 = D3DCOLOR_XRGB(0, 255, 255);
+	m_render_thread = INVALID_HANDLE_VALUE;
+	m_render_thread_exit = false;
 }
 
 
 //-----------------------------------------------------------------------------
 // CTextureRenderer destructor
 //-----------------------------------------------------------------------------
-CTextureRenderer::~CTextureRenderer()
+my12doomRenderer::~my12doomRenderer()
 {
+	shutdown();
 	if (m_data)
 		free(m_data);
 }
@@ -28,7 +36,7 @@ CTextureRenderer::~CTextureRenderer()
 // CheckMediaType: This method forces the graph to give us an R8G8B8 video
 // type, making our copy to texture memory trivial.
 //-----------------------------------------------------------------------------
-HRESULT CTextureRenderer::CheckMediaType(const CMediaType *pmt)
+HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt)
 {
     HRESULT   hr = E_FAIL;
     VIDEOINFO *pvi=0;
@@ -52,7 +60,7 @@ HRESULT CTextureRenderer::CheckMediaType(const CMediaType *pmt)
 //-----------------------------------------------------------------------------
 // SetMediaType: Graph connection has been made.
 //-----------------------------------------------------------------------------
-HRESULT CTextureRenderer::SetMediaType(const CMediaType *pmt)
+HRESULT my12doomRenderer::SetMediaType(const CMediaType *pmt)
 {
     // Retrive the size of this media type
     VIDEOINFO *pviBmp;                      // Bitmap info header
@@ -79,7 +87,7 @@ extern enum output_mode_types
 //-----------------------------------------------------------------------------
 // DoRenderSample: A sample has been delivered. Copy it to the texture.
 //-----------------------------------------------------------------------------
-HRESULT CTextureRenderer::DoRenderSample( IMediaSample * pSample )
+HRESULT my12doomRenderer::DoRenderSample( IMediaSample * pSample )
 {
     BYTE  *pBmpBuffer;
     pSample->GetPointer( &pBmpBuffer );
@@ -92,13 +100,7 @@ HRESULT CTextureRenderer::DoRenderSample( IMediaSample * pSample )
 	}
 
 	if (output_mode != pageflipping)
-		render(1, true);
+		render(true);
 
-	static int l = timeGetTime();
-	char tmp[256];
-	sprintf(tmp, "inter:%d\n", timeGetTime()-l);
-	l = timeGetTime();
-	OutputDebugStringA(tmp);
-
-    return S_OK;
+	return S_OK;
 }

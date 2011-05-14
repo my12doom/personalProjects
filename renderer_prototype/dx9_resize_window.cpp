@@ -36,6 +36,7 @@
 #include "resource.h"
 #include "my12doomRenderer.h"
 #include "3dvideo.h"
+#include "PixelShaders/ps.h"			// compiled pixel shader
 
 //-----------------------------------------------------------------------------
 // MACROS
@@ -68,7 +69,6 @@ CComPtr <IDirect3DPixelShader9> ps_yv12_to_rgb;
 CComPtr<IDirect3DSwapChain9> g_swap1;
 CComPtr<IDirect3DSwapChain9> g_swap2;
 
-D3DMATERIAL9            g_quadMtrl;
 D3DPRESENT_PARAMETERS   g_active_pp;
 D3DPRESENT_PARAMETERS   g_new_pp;
 bool g_bDeviceLost = false;
@@ -77,10 +77,9 @@ bool g_objects_reset = false;
 bool g_render_thread_exit = false;
 HANDLE h_render_thread = INVALID_HANDLE_VALUE;
 HINSTANCE g_instance;
-int g_render_threadid = 0;
 int g_device_threadid = GetCurrentThreadId();
 HRESULT hr;
-CTextureRenderer *renderer = new CTextureRenderer(NULL, &hr);
+my12doomRenderer *renderer;
 CComPtr<IGraphBuilder> gb;
 
 LONG g_style, g_exstyle;
@@ -122,8 +121,36 @@ struct MyVertex
 	DWORD specular;
     float tu, tv;
 };
-
 const DWORD FVF_Flags = D3DFVF_XYZRHW | D3DFVF_TEX1 | D3DFVF_DIFFUSE | D3DFVF_SPECULAR;
+
+HRESULT mylog(wchar_t *format, ...)
+{
+	wchar_t tmp[10240];
+	wchar_t tmp2[10240];
+	va_list valist;
+	va_start(valist, format);
+	wvsprintfW(tmp, format, valist);
+	va_end(valist);
+
+	wsprintfW(tmp2, L"(tid=%d)%s", GetCurrentThreadId(), tmp);
+	OutputDebugStringW(tmp2);
+	return S_OK;
+}
+
+
+HRESULT mylog(const char *format, ...)
+{
+	char tmp[10240];
+	char tmp2[10240];
+	va_list valist;
+	va_start(valist, format);
+	wvsprintfA(tmp, format, valist);
+	va_end(valist);
+
+	wsprintfA(tmp2, "(tid=%d)%s", GetCurrentThreadId(), tmp);
+	OutputDebugStringA(tmp2);
+	return S_OK;
+}
 
 MyVertex g_myVertices[] =
 {
@@ -154,7 +181,13 @@ MyVertex g_myVertices[] =
 	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,1.0f},
 	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,1.0f},
 
-// pass2 whole texture, fixed aspect output
+// pass2 whole texture, fixed aspect output for main back buffer
+	{-1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,0.0f},
+	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.0f},
+	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,1.0f},
+	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,1.0f},
+
+// pass2 whole texture, fixed aspect output for second back buffer
 	{-1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,0.0f},
 	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.0f},
 	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,1.0f},
@@ -165,6 +198,7 @@ MyVertex g_myVertices[] =
 	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.0f},
 	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,1.0f},
 	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,1.0f},
+
 };
 enum vertex_types
 {
@@ -177,19 +211,21 @@ enum vertex_types
 	vertex_pass1_top = 12,
 	vertex_pass1_bottom = 16,
 
-	vertex_pass2 = 20,
-	vertex_pass3 = 24,
+	vertex_pass2_main = 20,
+	vertex_pass2_second = 24,
+
+	vertex_pass3 = 28,
 };
 
 enum output_mode_types
 {
-	NV3D, masking, anaglyph, mono, pageflipping, dual_window, output_mode_types_max
-} output_mode = NV3D;
+	NV3D, masking, anaglyph, mono, pageflipping, dual_window, out_side_by_side, out_top_bottom, output_mode_types_max
+} output_mode = mono;
 
 enum input_layout_types
 {
 	side_by_side, top_bottom, mono2d, input_layout_types_max
-} input_layout = side_by_side;
+} input_layout = mono2d;
 bool g_swapeyes = false;
 
 enum mask_mode_types
@@ -224,7 +260,7 @@ void calculate_vertex();
 
 DWORD WINAPI render_thread(LPVOID lpParame)
 {
-	g_render_threadid = GetCurrentThreadId();
+	mylog("Render thread created.\n");
 	// I don't know why, but WM_SIZE seems to be a little different
 	int l = timeGetTime();
 	while (timeGetTime() - l < 0 && !g_render_thread_exit)
@@ -235,7 +271,7 @@ DWORD WINAPI render_thread(LPVOID lpParame)
 	{
 		if (output_mode != pageflipping)
 		{
-			if (renderer->m_state == State_Running)
+			if (renderer->State() == State_Running)
 			{
 				Sleep(1);
 				continue;
@@ -251,6 +287,7 @@ DWORD WINAPI render_thread(LPVOID lpParame)
 		else if (render_unlocked(1, true) == S_FALSE)
 			Sleep(1);
 	}
+	mylog("Render thread Terminated.\n");
 	return 0;
 }
 
@@ -294,6 +331,13 @@ bool open_file_dlg(wchar_t *pathname, HWND hDlg, wchar_t *filter/* = NULL*/)
 		return false;
 }
 
+LONG_PTR g_old_wnd_proc = 0;
+LRESULT CALLBACK my_reseter( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+	handle_reset();
+	return 	CallWindowProc((WNDPROC)g_old_wnd_proc, hDlg ,msg, wParam, lParam);
+}
+
 //-----------------------------------------------------------------------------
 // Name: WinMain()
 // Desc: The application's entry point
@@ -303,6 +347,7 @@ int WINAPI WinMain( HINSTANCE hInstance,
                     LPSTR     lpCmdLine,
                     int       nCmdShow )
 {
+	CoInitialize(NULL);
 	g_instance = hInstance;
 
 	HANDLE h = GetCurrentProcess();
@@ -334,13 +379,13 @@ int WINAPI WinMain( HINSTANCE hInstance,
                              _T("Direct3D (DX9) - Resize Window"),
                              WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 							 //WS_EX_TOPMOST | WS_POPUP,    // fullscreen values
-                             1000, 0, 800, 480, NULL, NULL, hInstance, NULL );
+                             600, 0, 800, 480, NULL, NULL, hInstance, NULL );
 
 	g_hWnd2 = CreateWindowEx( NULL, _T("MY_WINDOWS_CLASS"),
 		_T("Direct3D (DX9) - Resize Window2"),
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		//WS_EX_TOPMOST | WS_POPUP,    // fullscreen values
-		1500, 50, 800, 480, NULL, NULL, hInstance, NULL );
+		700, 50, 800, 480, NULL, NULL, hInstance, NULL );
 
     if( g_hWnd == NULL  || g_hWnd2 == NULL)
         return E_FAIL;
@@ -350,7 +395,22 @@ int WINAPI WinMain( HINSTANCE hInstance,
 	ShowWindow( g_hWnd2, output_mode == dual_window ? nCmdShow : SW_HIDE );
 	UpdateWindow( g_hWnd2 );
 
-    oneTimeSystemInit();
+	renderer = new my12doomRenderer(NULL, &hr, g_hWnd);
+	// dshow
+	wchar_t file[MAX_PATH] = L"test.avi";
+	open_file_dlg(file, g_hWnd, NULL);
+	gb.CoCreateInstance(CLSID_FilterGraph);
+	CComQIPtr<IBaseFilter, &IID_IBaseFilter> renderer_base(renderer);
+	gb->AddFilter(renderer_base, L"Texture Renderer");
+	//gb->RenderFile(L"F:\\TDDOWNLOAD\\00019hsbs.mkv", NULL);
+	//gb->RenderFile(L"Z:\\avts.ts", NULL);
+	if (FAILED(gb->RenderFile(file, NULL)))
+		exit(-1);
+	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
+	mc->Run();
+	// set event notify
+	CComQIPtr<IMediaEventEx, &IID_IMediaEventEx> event_ex(gb);
+	event_ex->SetNotifyWindow((OAHWND)g_hWnd, DS_EVENT, 0);
 
 	while( uMsg.message != WM_QUIT )
     {
@@ -361,18 +421,14 @@ int WINAPI WinMain( HINSTANCE hInstance,
         }
         else
 		{
-			if (S_OK == handle_reset())
+			if (S_OK == renderer->handle_reset())
 				Sleep(1);
 		}
     }
 
-	terminate_render_thread();
-	gb = NULL;
-
-    shutDown();
-
     UnregisterClass( _T("MY_WINDOWS_CLASS"), winClass.hInstance );
 
+	CoUninitialize();
     return uMsg.wParam;
 }
 
@@ -438,6 +494,7 @@ LRESULT CALLBACK WindowProc( HWND   hWnd,
 
 					ShowWindow(g_hWnd2, output_mode == dual_window ? SW_SHOW : SW_HIDE);
 					generate_mask();
+					calculate_vertex();
 					render(1, true);
 					break;
 
@@ -455,10 +512,6 @@ LRESULT CALLBACK WindowProc( HWND   hWnd,
 						handle_reset();
 						if (g_active_pp.Windowed)
 						{
-							SetWindowPos(g_hWnd, g_exstyle & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
-								g_window_pos.left, g_window_pos.top, g_window_pos.right - g_window_pos.left, g_window_pos.bottom - g_window_pos.top, NULL);
-							SetWindowLongPtr(g_hWnd, GWL_STYLE, g_style);
-							SetWindowLongPtr(g_hWnd, GWL_EXSTYLE, g_exstyle);
 						}
 						render(1, true);
 					}
@@ -477,8 +530,23 @@ LRESULT CALLBACK WindowProc( HWND   hWnd,
 						mc->Run();
 					}
 					break;
-
 				case VK_F3:
+					{
+						CComQIPtr<IQualProp, &IID_IQualProp> qp(renderer);
+						int avg_fps = 0, avg_sync = 0, dev_sync = 0, n_drop = 0, jitter = 0;
+						qp->get_AvgFrameRate(&avg_fps);
+						qp->get_AvgSyncOffset(&avg_sync);
+						qp->get_DevSyncOffset(&dev_sync);
+						qp->get_FramesDroppedInRenderer(&n_drop);
+						qp->get_Jitter(&jitter);
+						
+						wchar_t tmp[256];
+						wsprintfW(tmp, L"avg_fps = %d, avg_sync = %d, dev_sync = %d, n_drop = %d, jitter = %d\n", avg_fps, avg_sync, dev_sync, n_drop, jitter);
+						SetWindowText(g_hWnd, tmp);
+					}
+					break;
+
+				case VK_F5:
 					render(1, true);
 					break;
 
@@ -567,6 +635,8 @@ void set_full_screen(bool full)
 
 		SetWindowLongPtr(g_hWnd, GWL_STYLE, f);
 		SetWindowLongPtr(g_hWnd, GWL_EXSTYLE, exf);
+		if ((DWORD)(LOBYTE(LOWORD(GetVersion()))) < 6)
+			SendMessage(g_hWnd, WM_SYSCOMMAND, SC_RESTORE, 0);
 
 		g_new_pp.Windowed = FALSE;
 		g_new_pp.BackBufferWidth = d3ddm.Width;
@@ -580,6 +650,10 @@ void set_full_screen(bool full)
 		g_new_pp.BackBufferHeight = 0;
 		g_new_pp.hDeviceWindow = g_hWnd;
 		g_new_pp.FullScreen_RefreshRateInHz = 0;
+		SetWindowLongPtr(g_hWnd, GWL_STYLE, g_style);
+		SetWindowLongPtr(g_hWnd, GWL_EXSTYLE, g_exstyle);
+		SetWindowPos(g_hWnd, g_exstyle & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
+			g_window_pos.left, g_window_pos.top, g_window_pos.right - g_window_pos.left, g_window_pos.bottom - g_window_pos.top, SWP_FRAMECHANGED);
 	}
 
 }
@@ -623,23 +697,6 @@ void oneTimeSystemInit( void )
 	g_new_pp = g_active_pp;
 
 
-	// dshow
-	wchar_t file[MAX_PATH] = L"test.avi";
-	open_file_dlg(file, g_hWnd, NULL);
-	gb.CoCreateInstance(CLSID_FilterGraph);
-	CComQIPtr<IBaseFilter, &IID_IBaseFilter> renderer_base(renderer);
-	gb->AddFilter(renderer_base, L"Texture Renderer");
-	//gb->RenderFile(L"F:\\TDDOWNLOAD\\00019hsbs.mkv", NULL);
-	//gb->RenderFile(L"Z:\\avts.ts", NULL);
-	if (FAILED(gb->RenderFile(file, NULL)))
-		exit(-1);
-	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
-	mc->Run();
-	// set event notify
-	CComQIPtr<IMediaEventEx, &IID_IMediaEventEx> event_ex(gb);
-	event_ex->SetNotifyWindow((OAHWND)g_hWnd, DS_EVENT, 0);
-
-	hr = g_pd3dDevice->CreateOffscreenPlainSurface(renderer->m_lVidWidth, renderer->m_lVidHeight, D3DFMT_X8B8G8R8, D3DPOOL_SYSTEMMEM, &g_surf_Y, NULL);
     restoreDeviceObjects();
 }
 
@@ -766,203 +823,6 @@ HRESULT load_image(bool forced /*= false*/)
 	return S_OK;
 }
 
-HRESULT load_image_old(bool forced /* = false */)
-{
-	CAutoLock lck(&g_frame_lock);
-	// loading YV12 image as three L8 texture
-	{
-		CAutoLock lck(&renderer->m_data_lock);
-		if (!forced && !renderer->m_data_changed)
-			return S_FALSE;
-
-		renderer->m_data_changed = false;
-
-		D3DLOCKED_RECT d3dlr;
-		BYTE * src = renderer->m_data;
-		BYTE * dst;
-
-		if (!g_tex_Y || !g_tex_U ||!g_tex_V)
-			return E_FAIL;
-
-		// load Y
-		if( FAILED(hr = g_tex_Y->LockRect(0, &d3dlr, 0, D3DLOCK_DISCARD)))
-			return hr;
-		dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<renderer->m_lVidHeight; i++)
-		{
-			memcpy(dst, src, renderer->m_lVidWidth);
-			src += renderer->m_lVidWidth;
-			dst += d3dlr.Pitch;
-		}
-		// black level test
-		// memset(d3dlr.pBits, 0, d3dlr.Pitch * 100);
-		g_tex_Y->UnlockRect(0);
-
-		// load V
-		if( FAILED(hr = g_tex_V->LockRect(0, &d3dlr, 0, D3DLOCK_DISCARD)))
-			return hr;
-		dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<renderer->m_lVidHeight/2; i++)
-		{
-			memcpy(dst, src, renderer->m_lVidWidth/2);
-			src += renderer->m_lVidWidth/2;
-			dst += d3dlr.Pitch;
-		}
-		// black level test
-		// memset(d3dlr.pBits, 128, d3dlr.Pitch * 50);
-		g_tex_V->UnlockRect(0);
-
-		// load U
-		if( FAILED(hr = g_tex_U->LockRect(0, &d3dlr, 0, D3DLOCK_DISCARD)))
-			return hr;
-		dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<renderer->m_lVidHeight/2; i++)
-		{
-			memcpy(dst, src, renderer->m_lVidWidth/2);
-			src += renderer->m_lVidWidth/2;
-			dst += d3dlr.Pitch;
-		}
-		// black level test
-		//memset(d3dlr.pBits, 128, d3dlr.Pitch * 50);
-		g_tex_U->UnlockRect(0);
-	}
-
-	if (!g_pd3dDevice || !g_tex_rgb_left ||!g_tex_rgb_right)
-		return E_FAIL;
-
-	// pass 1: render full resolution to two seperate texture
-	hr = g_pd3dDevice->BeginScene();
-	hr = g_pd3dDevice->SetPixelShader(ps_yv12_to_rgb);
-	hr = g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
-	CComPtr<IDirect3DSurface9> left_surface;
-	CComPtr<IDirect3DSurface9> right_surface;
-	hr = g_tex_rgb_left->GetSurfaceLevel(0, &left_surface);
-	hr = g_tex_rgb_right->GetSurfaceLevel(0, &right_surface);
-	if (!g_swapeyes)
-		hr = g_pd3dDevice->SetRenderTarget(0, left_surface);
-	else
-		hr = g_pd3dDevice->SetRenderTarget(0, right_surface);
-
-
-	// drawing
-	hr = g_pd3dDevice->SetTexture( 0, g_tex_Y );
-	hr = g_pd3dDevice->SetTexture( 1, g_tex_U );
-	hr = g_pd3dDevice->SetTexture( 2, g_tex_V );
-	hr = g_pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 0 );
-	hr = g_pd3dDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = g_pd3dDevice->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = g_pd3dDevice->SetSamplerState( 2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = g_pd3dDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = g_pd3dDevice->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = g_pd3dDevice->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = g_pd3dDevice->SetStreamSource( 0, g_pVertexBuffer, 0, sizeof(MyVertex) );
-	hr = g_pd3dDevice->SetFVF( FVF_Flags );
-
-	// modify vertex, this also avoid buffer miss
-	// -0.5 is the difference between texture and triangle coordinate
-	int surface_width = renderer->m_lVidWidth;
-	int surface_height = renderer->m_lVidHeight;
-	if (input_layout == side_by_side)
-		surface_width /= 2;
-	else if (input_layout == top_bottom)
-		surface_height /= 2;
-
-	g_myVertices[0].x = -0.5f; g_myVertices[0].y = -0.5f;
-	g_myVertices[1].x = surface_width-0.5f; g_myVertices[1].y = -0.5f;
-	g_myVertices[2].x = -0.5f; g_myVertices[2].y = surface_height-0.5f;
-	g_myVertices[3].x =  surface_width-0.5f; g_myVertices[3].y =surface_height-0.5f;
-	if (input_layout == side_by_side)
-	{
-		g_myVertices[0].tu = 0.0f; g_myVertices[0].tv = 0.0f;
-		g_myVertices[1].tu = 0.5f; g_myVertices[1].tv = 0.0f;
-		g_myVertices[2].tu = 0.0f; g_myVertices[2].tv = 1.0f;
-		g_myVertices[3].tu = 0.5f; g_myVertices[3].tv = 1.0f;
-	}
-	else if (input_layout == top_bottom)
-	{
-		g_myVertices[0].tu = 0.0f; g_myVertices[0].tv = 0.0f;
-		g_myVertices[1].tu = 1.0f; g_myVertices[1].tv = 0.0f;
-		g_myVertices[2].tu = 0.0f; g_myVertices[2].tv = 0.5f;
-		g_myVertices[3].tu = 1.0f; g_myVertices[3].tv = 0.5f;
-	}
-	else if (input_layout == mono2d)
-	{
-		g_myVertices[0].tu = 0.0f; g_myVertices[0].tv = 0.0f;
-		g_myVertices[1].tu = 1.0f; g_myVertices[1].tv = 0.0f;
-		g_myVertices[2].tu = 0.0f; g_myVertices[2].tv = 1.0f;
-		g_myVertices[3].tu = 1.0f; g_myVertices[3].tv = 1.0f;
-	}
-	void *pVertices = NULL;
-	g_pVertexBuffer->Lock( 0, sizeof(g_myVertices), (void**)&pVertices, D3DLOCK_DISCARD );
-	memcpy( pVertices, g_myVertices, sizeof(g_myVertices) );
-	g_pVertexBuffer->Unlock();
-
-	hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, 0, 2 );
-
-	// modify vertex again, change render target
-	if (input_layout == side_by_side)
-	{
-		g_myVertices[0].tu = 0.5f; g_myVertices[0].tv = 0.0f;
-		g_myVertices[1].tu = 1.0f; g_myVertices[1].tv = 0.0f;
-		g_myVertices[2].tu = 0.5f; g_myVertices[2].tv = 1.0f;
-		g_myVertices[3].tu = 1.0f; g_myVertices[3].tv = 1.0f;
-	}
-	else if (input_layout == top_bottom)
-	{
-		g_myVertices[0].tu = 0.0f; g_myVertices[0].tv = 0.5f;
-		g_myVertices[1].tu = 1.0f; g_myVertices[1].tv = 0.5f;
-		g_myVertices[2].tu = 0.0f; g_myVertices[2].tv = 1.0f;
-		g_myVertices[3].tu = 1.0f; g_myVertices[3].tv = 1.0f;
-	}
-	else if (input_layout == mono2d)
-	{
-		g_myVertices[0].tu = 0.0f; g_myVertices[0].tv = 0.0f;
-		g_myVertices[1].tu = 1.0f; g_myVertices[1].tv = 0.0f;
-		g_myVertices[2].tu = 0.0f; g_myVertices[2].tv = 1.0f;
-		g_myVertices[3].tu = 1.0f; g_myVertices[3].tv = 1.0f;
-	}
-	g_pVertexBuffer->Lock( 0, sizeof(g_myVertices), (void**)&pVertices, D3DLOCK_DISCARD );
-	memcpy( pVertices, g_myVertices, sizeof(g_myVertices) );
-	g_pVertexBuffer->Unlock();
-
-	if (!g_swapeyes)
-		hr = g_pd3dDevice->SetRenderTarget(0, right_surface);
-	else
-		hr = g_pd3dDevice->SetRenderTarget(0, left_surface);
-
-	hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, 0, 2 );
-
-
-	hr = g_pd3dDevice->EndScene();
-
-	// copy to 2x width +1 height surface, which already have NV3D tag.
-	// note: don't overwrite that tag
-	// this can also be used in process that need a double back_buffer width sbs rendered surface
-	RECT tar = {0,0, g_active_pp.BackBufferWidth, g_active_pp.BackBufferHeight};
-	double aspect = (double)renderer->m_lVidWidth / renderer->m_lVidHeight;
-	if (aspect> 2.425)
-		aspect /= 2;
-	else if (aspect< 1.2125)
-		aspect *= 2;
-	int delta_w = (int)(g_active_pp.BackBufferWidth - g_active_pp.BackBufferHeight * aspect + 0.5);
-	int delta_h = (int)(g_active_pp.BackBufferHeight- g_active_pp.BackBufferWidth  / aspect + 0.5);
-	if (delta_w > 0)
-	{
-		tar.left += delta_w/2;
-		tar.right -= delta_w/2;
-	}
-	else if (delta_h > 0)
-	{
-		tar.top += delta_h/2;
-		tar.bottom -= delta_h/2;
-	}
-	hr = g_pd3dDevice->StretchRect(left_surface, NULL, g_sbs_surface, &tar, D3DTEXF_LINEAR);
-	tar.left += g_active_pp.BackBufferWidth;
-	tar.right += g_active_pp.BackBufferWidth;
-	hr = g_pd3dDevice->StretchRect(right_surface, NULL, g_sbs_surface, &tar, D3DTEXF_LINEAR);
-	return S_OK;
-}
-
 HRESULT generate_mask()
 {
 	if (output_mode != masking)
@@ -1034,13 +894,19 @@ void calculate_vertex()
 
 	// pass2 coordinate
 	RECT tar = {0,0, g_active_pp.BackBufferWidth, g_active_pp.BackBufferHeight};
+	if (output_mode == out_side_by_side)
+		tar.right /= 2;
+	else if (output_mode == out_top_bottom)
+		tar.bottom /= 2;
+
+
 	double aspect = (double)renderer->m_lVidWidth / renderer->m_lVidHeight;
 	if (aspect> 2.425)
 		aspect /= 2;
 	else if (aspect< 1.2125)
 		aspect *= 2;
-	int delta_w = (int)(g_active_pp.BackBufferWidth - g_active_pp.BackBufferHeight * aspect + 0.5);
-	int delta_h = (int)(g_active_pp.BackBufferHeight- g_active_pp.BackBufferWidth  / aspect + 0.5);
+	int delta_w = (int)(tar.right - tar.bottom * aspect + 0.5);
+	int delta_h = (int)(tar.bottom - tar.right  / aspect + 0.5);
 	if (delta_w > 0)
 	{
 		tar.left += delta_w/2;
@@ -1054,12 +920,12 @@ void calculate_vertex()
 
 	int tar_width = tar.right-tar.left;
 	int tar_height = tar.bottom - tar.top;
-	tar.left += tar_width * offset_x;
-	tar.right += tar_width * offset_x;
-	tar.top += tar_height * offset_y;
-	tar.bottom += tar_height * offset_y;
+	tar.left += (LONG)(tar_width * offset_x);
+	tar.right += (LONG)(tar_width * offset_x);
+	tar.top += (LONG)(tar_height * offset_y);
+	tar.bottom += (LONG)(tar_height * offset_y);
 
-	MyVertex *tmp = g_myVertices + vertex_pass2;
+	MyVertex *tmp = g_myVertices + vertex_pass2_main;
 	tmp[0].x = tar.left-0.5f; tmp[0].y = tar.top-0.5f;
 	tmp[1].x = tar.right-0.5f; tmp[1].y = tar.top-0.5f;
 	tmp[2].x = tar.left-0.5f; tmp[2].y = tar.bottom-0.5f;
@@ -1125,13 +991,7 @@ HRESULT restoreDeviceObjects( void )
 	calculate_vertex();
 
 	// pixel shader
-	HGLOBAL hDllData = LoadResource(g_instance, FindResource(g_instance, MAKEINTRESOURCE(IDR_PLANAR2RGB), RT_RCDATA));
-	DWORD * shader_data = (DWORD*)LockResource(hDllData);
-
-	if (shader_data)
-		hr = g_pd3dDevice->CreatePixelShader(shader_data, &ps_yv12_to_rgb);
-	else
-		hr = E_FAIL;
+	hr = g_pd3dDevice->CreatePixelShader(g_code_planar_rgb, &ps_yv12_to_rgb);
 
 	// Create the pixel shader
 	if (FAILED(hr)) return E_FAIL;
@@ -1143,6 +1003,9 @@ HRESULT restoreDeviceObjects( void )
 
 	// create render thread
 	create_render_thread();
+
+	//g_old_wnd_proc = GetWindowLong(g_hWnd, GWL_WNDPROC);
+	//LONG rtn = SetWindowLong(g_hWnd, GWL_WNDPROC, (LONG_PTR)my_reseter);
 
 	return S_OK;
 }
@@ -1157,6 +1020,10 @@ HRESULT restoreDeviceObjects( void )
 //-----------------------------------------------------------------------------
 HRESULT invalidateDeviceObjects( void )
 {
+	if (g_old_wnd_proc != 0)
+		LONG rtn = SetWindowLong(g_hWnd, GWL_WNDPROC, (LONG_PTR)g_old_wnd_proc);
+	g_old_wnd_proc = 0;
+
 	terminate_render_thread();
 	ps_yv12_to_rgb = NULL;
 	g_tex_mask = NULL;
@@ -1190,6 +1057,7 @@ void shutDown( void )
 
 void create_render_thread()
 {
+	mylog("create_render_thread()\n");
 	if (INVALID_HANDLE_VALUE != h_render_thread)
 		terminate_render_thread();
 	g_render_thread_exit = false;
@@ -1197,6 +1065,7 @@ void create_render_thread()
 }
 void terminate_render_thread()
 {
+	mylog("terminate_render_thread()\n");
 	if (INVALID_HANDLE_VALUE == h_render_thread)
 		return;
 	g_render_thread_exit = true;
@@ -1211,13 +1080,14 @@ HRESULT handle_reset()
 		if (g_device_threadid != GetCurrentThreadId())
 			return E_FAIL;
 
-		Sleep( 100 );
+		Sleep(100);
 
 		HRESULT hr = S_OK;
 		if( FAILED( hr = g_pd3dDevice->TestCooperativeLevel() ) )
 		{
 			if( hr == D3DERR_DEVICENOTRESET )
 			{
+				mylog("device restore start.\n");
 				CAutoLock lck(&g_device_lock);
 				invalidateDeviceObjects();
 				hr = g_pd3dDevice->Reset( &g_new_pp );
@@ -1230,7 +1100,7 @@ HRESULT handle_reset()
 				g_bDeviceReset = false;
 				g_objects_reset = false;
 
-				OutputDebugStringA("device restored.\n");
+				mylog("device restored.\n");
 			}
 
 			else
@@ -1245,26 +1115,30 @@ HRESULT handle_reset()
 
 		CAutoLock lck(&g_device_lock);
 
+		mylog("device reset start.\n");
 		invalidateDeviceObjects();
 		hr = g_pd3dDevice->Reset( &g_new_pp );
 
 		if( FAILED(hr ) )
 			return hr;
 		g_active_pp = g_new_pp;
+		mylog("restoring objects start.\n");
 		restoreDeviceObjects();
+		mylog("restoring objects end.\n");
 		g_bDeviceLost = false;
 		g_bDeviceReset = false;
 		g_objects_reset = false;
-		OutputDebugStringA("device reseted.\n");
+		mylog("device reseted.\n");
 	}
 
 	else if (g_objects_reset)
 	{
 		CAutoLock lck(&g_device_lock);
+		mylog("device objects reset start.\n");
 		invalidateDeviceObjects();
 		restoreDeviceObjects();
 		g_objects_reset = false;
-		OutputDebugStringA("objects reseted.\n");
+		mylog("objects reseted.\n");
 	}
 
 	return S_OK;
@@ -1302,7 +1176,7 @@ HRESULT render_unlocked( int time, bool forced)
 
 	last_render_time = timeGetTime();
 
-	OutputDebugStringA("render!\n");
+	mylog("render!\n");
 	HRESULT hr;
 	for(int i=0; i<time; i++)
     {
@@ -1353,7 +1227,7 @@ HRESULT render_unlocked( int time, bool forced)
 			g_pd3dDevice->SetTexture( 0, g_tex_rgb_left );
 			hr = g_pd3dDevice->SetStreamSource( 0, g_pVertexBuffer, 0, sizeof(MyVertex) );
 			hr = g_pd3dDevice->SetFVF( FVF_Flags );
-			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2, 2 );
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
 			// copy left to nv3d surface
 			RECT dst = {0,0, g_active_pp.BackBufferWidth, g_active_pp.BackBufferHeight};
@@ -1361,7 +1235,7 @@ HRESULT render_unlocked( int time, bool forced)
 
 			// draw right
 			g_pd3dDevice->SetTexture( 0, g_tex_rgb_right );
-			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2, 2 );
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
 			// copy right to nv3d surface
 			dst.left += g_active_pp.BackBufferWidth;
@@ -1393,7 +1267,7 @@ HRESULT render_unlocked( int time, bool forced)
 
 			hr = g_pd3dDevice->SetStreamSource( 0, g_pVertexBuffer, 0, sizeof(MyVertex) );
 			hr = g_pd3dDevice->SetFVF( FVF_Flags );
-			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2, 2 );
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 		}
 
 		else if (output_mode == masking)
@@ -1413,7 +1287,7 @@ HRESULT render_unlocked( int time, bool forced)
 			#else
 			g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
 			#endif
-			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2, 2 );
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
 			// draw right
 			temp_surface = NULL;
@@ -1425,7 +1299,7 @@ HRESULT render_unlocked( int time, bool forced)
 			#else
 			g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
 			#endif
-			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2, 2 );
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
 
 			// pass 3: render to backbuffer with masking
@@ -1460,7 +1334,7 @@ HRESULT render_unlocked( int time, bool forced)
 
 			hr = g_pd3dDevice->SetStreamSource( 0, g_pVertexBuffer, 0, sizeof(MyVertex) );
 			hr = g_pd3dDevice->SetFVF( FVF_Flags );
-			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2, 2 );
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 		}
 
 		else if (output_mode == pageflipping)
@@ -1473,7 +1347,7 @@ HRESULT render_unlocked( int time, bool forced)
 
 			hr = g_pd3dDevice->SetStreamSource( 0, g_pVertexBuffer, 0, sizeof(MyVertex) );
 			hr = g_pd3dDevice->SetFVF( FVF_Flags );
-			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2, 2 );
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 		}
 
 		else if (output_mode == dual_window)
@@ -1483,7 +1357,7 @@ HRESULT render_unlocked( int time, bool forced)
 			g_pd3dDevice->SetTexture( 0, g_tex_rgb_left );
 			hr = g_pd3dDevice->SetStreamSource( 0, g_pVertexBuffer, 0, sizeof(MyVertex) );
 			hr = g_pd3dDevice->SetFVF( FVF_Flags );
-			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2, 2 );
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
 			// set render target to swap chain2
 			CComPtr<IDirect3DSurface9> back_buffer2;
@@ -1499,8 +1373,67 @@ HRESULT render_unlocked( int time, bool forced)
 
 			// draw right
 			g_pd3dDevice->SetTexture( 0, g_tex_rgb_right );
-			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2, 2 );
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
+		}
+
+		else if (output_mode == out_side_by_side || output_mode == out_top_bottom)
+		{
+			// pass 2: render seperate to two temp texture
+
+			// draw left
+			CComPtr<IDirect3DSurface9> temp_surface;
+			hr = g_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
+			hr = g_pd3dDevice->SetRenderTarget(0, temp_surface);
+			g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+			g_pd3dDevice->SetTexture( 0, g_tex_rgb_left );
+			hr = g_pd3dDevice->SetStreamSource( 0, g_pVertexBuffer, 0, sizeof(MyVertex) );
+			hr = g_pd3dDevice->SetFVF( FVF_Flags );
+			#ifdef DEBUG
+			g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+			#else
+			g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+			#endif
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+			// draw right
+			CComPtr<IDirect3DSurface9> temp_surface2;
+			hr = g_mask_temp_right->GetSurfaceLevel(0, &temp_surface2);
+			hr = g_pd3dDevice->SetRenderTarget(0, temp_surface2);
+			g_pd3dDevice->SetTexture( 0, g_tex_rgb_right );
+			#ifdef DEBUG
+			g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+			#else
+			g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+			#endif
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+
+			// pass 3: copy to backbuffer
+			if (output_mode == out_side_by_side)
+			{
+				RECT src = {0, 0, g_active_pp.BackBufferWidth/2, g_active_pp.BackBufferHeight};
+				RECT dst = src;
+
+				g_pd3dDevice->StretchRect(temp_surface, &src, back_buffer, &dst, D3DTEXF_NONE);
+
+				dst.left += g_active_pp.BackBufferWidth/2;
+				dst.right += g_active_pp.BackBufferWidth/2;
+				g_pd3dDevice->StretchRect(temp_surface2, &src, back_buffer, &dst, D3DTEXF_NONE);
+			}
+
+			else if (output_mode == out_top_bottom)
+			{
+				RECT src = {0, 0, g_active_pp.BackBufferWidth, g_active_pp.BackBufferHeight/2};
+				RECT dst = src;
+
+				g_pd3dDevice->StretchRect(temp_surface, &src, back_buffer, &dst, D3DTEXF_NONE);
+
+				dst.top += g_active_pp.BackBufferHeight/2;
+				dst.bottom += g_active_pp.BackBufferHeight/2;
+				g_pd3dDevice->StretchRect(temp_surface2, &src, back_buffer, &dst, D3DTEXF_NONE);
+
+			}
 		}
 
 		g_pd3dDevice->EndScene();
@@ -1527,9 +1460,9 @@ HRESULT render_unlocked( int time, bool forced)
 	static int t = timeGetTime();
 	sprintf(tmp, "%d\n", timeGetTime()-t);
 	if (timeGetTime()-t > 18)
-		OutputDebugStringA("lost sync\n");
+		mylog("lost sync\n");
 	t = timeGetTime();
-	OutputDebugStringA(tmp);
+	mylog(tmp);
 
 	return S_OK;
 }

@@ -29,7 +29,6 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 // RCDATA
 //
 
-IDR_PLANAR2RGB          RCDATA                  "PixelShaders\\ps.bin"
 #endif    // 中文(中华人民共和国) resources
 /////////////////////////////////////////////////////////////////////////////
 
