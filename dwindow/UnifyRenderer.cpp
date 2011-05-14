@@ -5,6 +5,8 @@
 
 CVMR9Windowless::CVMR9Windowless(HWND hwnd)
 {
+	CComPtr<IDirect3D9>			m_D3D;
+	CComPtr<IDirect3DDevice9>	m_D3Ddevice;   
 	m_D3D.Attach(Direct3DCreate9(D3D_SDK_VERSION));
 
 	D3DPRESENT_PARAMETERS d3dpp;    
@@ -21,6 +23,15 @@ CVMR9Windowless::CVMR9Windowless(HWND hwnd)
 		D3DCREATE_HARDWARE_VERTEXPROCESSING,   
 		&d3dpp,   
 		&m_D3Ddevice);
+
+	if (m_D3Ddevice == NULL)
+		return;
+
+	m_D3Ddevice->CreateOffscreenPlainSurface(
+		4096, 4096,
+		D3DFMT_A8R8G8B8,
+		D3DPOOL_SYSTEMMEM,
+		&m_surface, NULL);
 
 	base_filter.CoCreateInstance(CLSID_VideoMixingRenderer9);
 	if (!base_filter)
@@ -39,8 +50,6 @@ CVMR9Windowless::CVMR9Windowless(HWND hwnd)
 CVMR9Windowless::~CVMR9Windowless()
 {
 	m_surface = NULL;
-	m_D3Ddevice = NULL;
-	m_D3D = NULL;
 }
 
 HRESULT CVMR9Windowless::DisplayModeChanged()
@@ -84,13 +93,6 @@ HRESULT CVMR9Windowless::SetAlphaBitmap(UnifyAlphaBitmap &bitmap)
 {
 	HRESULT hr = S_OK;
 
-	m_surface = NULL;
-	hr = m_D3Ddevice->CreateOffscreenPlainSurface(
-		bitmap.width, bitmap.height,
-		D3DFMT_A8R8G8B8,
-		D3DPOOL_SYSTEMMEM,
-		&m_surface, NULL);
-
 	if (FAILED(hr))
 		return hr;
 
@@ -98,11 +100,18 @@ HRESULT CVMR9Windowless::SetAlphaBitmap(UnifyAlphaBitmap &bitmap)
 	VMR9NormalizedRect dst = {bitmap.left, bitmap.top, bitmap.fwidth+bitmap.left, bitmap.fheight+bitmap.top};
 	D3DLOCKED_RECT locked_rect;
 	m_surface->LockRect(&locked_rect, NULL, NULL);
-	memcpy(locked_rect.pBits, bitmap.data, bitmap.width * bitmap.height * 4);
+	BYTE *psrc = (BYTE*)bitmap.data;
+	BYTE *pdst = (BYTE*) locked_rect.pBits;
+	for(int i=0; i<bitmap.height; i++)
+	{
+		memcpy(pdst, psrc, bitmap.width*4);
+		psrc += bitmap.width*4;
+		pdst += locked_rect.Pitch;
+	}
 	m_surface->UnlockRect();
 
 	VMR9AlphaBitmap bmp_info;
-	bmp_info.dwFlags = VMR9AlphaBitmap_EntireDDS | VMR9AlphaBitmap_FilterMode;
+	bmp_info.dwFlags =  VMR9AlphaBitmap_FilterMode;
 	bmp_info.hdc = NULL;
 	bmp_info.pDDS = m_surface;
 	bmp_info.rSrc = src;
@@ -210,7 +219,14 @@ HRESULT CVMR7Windowless::SetAlphaBitmap(UnifyAlphaBitmap &bitmap)
 
 	// write to surface
 	m_surface->Lock(NULL, &surfdesc, DDLOCK_WAIT | DDLOCK_NOSYSLOCK | DDLOCK_SURFACEMEMORYPTR, NULL);
-	memcpy(surfdesc.lpSurface, bitmap.data, bitmap.width * bitmap.height * 4);
+	BYTE *psrc = (BYTE*) bitmap.data;
+	BYTE *pdst = (BYTE*) surfdesc.lpSurface;
+	for(int i=0; i<surfdesc.dwHeight; i++)
+	{
+		memcpy(pdst, psrc, surfdesc.dwWidth*4);
+		pdst += surfdesc.lPitch;
+		psrc += bitmap.width*4;
+	}
 	m_surface->Unlock(NULL);
 
 	RECT src = {0, 0, bitmap.width, bitmap.height};
@@ -264,6 +280,8 @@ HRESULT CVMR7Windowless::ClearAlphaBitmap()
 // EVR
 CEVRVista::CEVRVista(HWND hwnd)
 {
+	CComPtr<IDirect3D9>			m_D3D;
+	CComPtr<IDirect3DDevice9>	m_D3Ddevice;   
 	m_D3D.Attach(Direct3DCreate9(D3D_SDK_VERSION));
 
 	D3DPRESENT_PARAMETERS d3dpp;    
@@ -281,6 +299,15 @@ CEVRVista::CEVRVista(HWND hwnd)
 		&d3dpp,   
 		&m_D3Ddevice);
 
+	if (m_D3Ddevice == NULL)
+		return;
+
+	m_D3Ddevice->CreateOffscreenPlainSurface(
+		4096, 4096,
+		D3DFMT_A8R8G8B8,
+		D3DPOOL_SYSTEMMEM,
+		&m_surface, NULL);
+
 	base_filter.CoCreateInstance(CLSID_EnhancedVideoRenderer);
 	if (!base_filter)
 		return;
@@ -297,8 +324,6 @@ CEVRVista::CEVRVista(HWND hwnd)
 CEVRVista::~CEVRVista()
 {
 	m_surface = NULL;
-	m_D3Ddevice = NULL;
-	m_D3D = NULL;
 }
 
 HRESULT CEVRVista::DisplayModeChanged()
@@ -374,13 +399,6 @@ HRESULT CEVRVista::SetAlphaBitmap(UnifyAlphaBitmap &bitmap)
 {
 	HRESULT hr = S_OK;
 
-	m_surface = NULL;
-	hr = m_D3Ddevice->CreateOffscreenPlainSurface(
-		bitmap.width, bitmap.height,
-		D3DFMT_A8R8G8B8,
-		D3DPOOL_SYSTEMMEM,
-		&m_surface, NULL);
-
 	if (FAILED(hr))
 		return hr;
 
@@ -388,14 +406,21 @@ HRESULT CEVRVista::SetAlphaBitmap(UnifyAlphaBitmap &bitmap)
 	MFVideoNormalizedRect dst = {bitmap.left, bitmap.top, bitmap.fwidth+bitmap.left, bitmap.fheight+bitmap.top};
 	D3DLOCKED_RECT locked_rect;
 	m_surface->LockRect(&locked_rect, NULL, NULL);
-	memcpy(locked_rect.pBits, bitmap.data, bitmap.width * bitmap.height * 4);
+	BYTE *psrc = (BYTE*)bitmap.data;
+	BYTE *pdst = (BYTE*) locked_rect.pBits;
+	for(int i=0; i<bitmap.height; i++)
+	{
+		memcpy(pdst, psrc, bitmap.width*4);
+		psrc += bitmap.width*4;
+		pdst += locked_rect.Pitch;
+	}
 	m_surface->UnlockRect();
 
 	MFVideoAlphaBitmap  bmp_info;
 	bmp_info.GetBitmapFromDC = FALSE;
 	bmp_info.bitmap.pDDS = m_surface;
 	bmp_info.params.clrSrcKey = 0xffffffff;
-	bmp_info.params.dwFlags = MFVideoAlphaBitmap_EntireDDS | MFVideoAlphaBitmap_DestRect | MFVideoAlphaBitmap_FilterMode;
+	bmp_info.params.dwFlags = MFVideoAlphaBitmap_SrcRect | MFVideoAlphaBitmap_DestRect | MFVideoAlphaBitmap_FilterMode;
 	bmp_info.params.rcSrc = src;
 	bmp_info.params.nrcDest= dst;
 	bmp_info.params.fAlpha = 1;

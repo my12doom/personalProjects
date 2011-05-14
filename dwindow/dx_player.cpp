@@ -136,8 +136,6 @@ m_always_show_right(L"AlwaysShowRight", false)
 	m_hexe = hExe;
 
 	// window size & pos
-	show_window(1, true);
-	show_window(2, m_always_show_right);
 	int width1 = screen1.right - screen1.left;
 	int height1 = screen1.bottom - screen1.top;
 	int width2 = screen2.right - screen2.left;
@@ -156,6 +154,11 @@ m_always_show_right(L"AlwaysShowRight", false)
 					width1/2 + dcx, height1/2 + dcy, SWP_NOZORDER);
 	SetWindowPos(id_to_hwnd(2), NULL, screen2.left + width2/4, screen2.top + height2/4,
 					width2/2 + dcx, height2/2 + dcy, SWP_NOZORDER);
+
+
+	// show it!
+	show_window(1, true);
+	show_window(2, m_always_show_right);
 
 	// to init video zone
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);
@@ -2040,15 +2043,34 @@ HRESULT dx_player::end_loading_step2(IPin *pin1, IPin *pin2)
 
 	
 	m_renderer1 = new CEVRVista(m_hwnd1);
-	if (m_renderer1->base_filter == NULL)
+	m_renderer2 = new CEVRVista(m_hwnd2);
+	if (m_renderer1 == NULL || m_renderer1->base_filter == NULL)
 	{
-		// no EVR, possible XP
+		// no EVR, possible XP, try VMR9
+		log_line(L"EVR Renderer failed.\n");
 		delete m_renderer1;
 		m_renderer1 = new CVMR9Windowless(m_hwnd1);
 		m_renderer2 = new CVMR9Windowless(m_hwnd2);
 	}
-	else
-		m_renderer2 = new CEVRVista(m_hwnd2);
+
+	if (m_renderer1 == NULL || m_renderer1->base_filter == NULL)
+	{
+		// no VMR9, possible some ATI card?, try VMR7
+		log_line(L"VMR9 Renderer failed.\n");
+		delete m_renderer1;
+		m_renderer1 = new CVMR7Windowless(m_hwnd1);
+		m_renderer2 = new CVMR7Windowless(m_hwnd2);
+	}
+
+	if (m_renderer1 == NULL || m_renderer1->base_filter == NULL)
+	{
+		// no VMR7, FAIL
+		log_line(L"VMR7 Renderer failed.\n");
+		delete m_renderer1;
+		delete m_renderer2;
+		return E_FAIL;
+	}
+
 	
 
 	m_gb->AddFilter(m_renderer1->base_filter, L"Renderer #1");
@@ -2163,7 +2185,11 @@ HRESULT dx_player::select_font(bool show_dlg)
 	// Initialize members of the LOGFONT structure. 
 	lstrcpynW(lf.lfFaceName, m_FontName, 32);
 	lf.lfHeight = lHeight;      // Logical units
-	lf.lfQuality = ANTIALIASED_QUALITY;
+	lf.lfCharSet = GB2312_CHARSET;
+	lf.lfOutPrecision =  OUT_STROKE_PRECIS;
+	lf.lfClipPrecision = CLIP_STROKE_PRECIS;
+	lf.lfQuality = DRAFT_QUALITY;
+	lf.lfPitchAndFamily = VARIABLE_PITCH;
 
 	// Initialize members of the CHOOSEFONT structure. 
 	cf.lStructSize = sizeof(CHOOSEFONT); 

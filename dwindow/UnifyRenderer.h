@@ -47,6 +47,7 @@ public:
     virtual HRESULT GetNativeVideoSize(LONG *lpWidth, LONG *lpHeight, LONG *lpARWidth, LONG *lpARHeight) = 0;
 	virtual HRESULT SetVideoPosition(const LPRECT lpSRCRect, const LPRECT lpDSTRect) = 0;
 	virtual HRESULT SetVideoClippingWindow(HWND hwnd)=0;
+	virtual HRESULT SetVideoClippingWindow2(HWND hwnd){return E_NOTIMPL;}
 	virtual HRESULT SetAspectRatioMode(DWORD mode)=0;
 
 	// mixer
@@ -109,9 +110,7 @@ public:
 protected:
 	CComPtr<IVMRWindowlessControl9> m_config;
 	CComPtr<IVMRMixerBitmap9> m_bmp;
-	// D3D9 & Surface
-	CComPtr<IDirect3D9>			m_D3D;
-	CComPtr<IDirect3DDevice9>	m_D3Ddevice;   
+	// D3D9 Surface
 	CComPtr<IDirect3DSurface9>	m_surface;
 };
 
@@ -139,8 +138,6 @@ protected:
 	CComPtr<IMFVideoDisplayControl> m_config;
 	CComPtr<IMFVideoMixerBitmap> m_bmp;
 	CComPtr<IMFVideoMixerControl> m_mixer;
-	// D3D9 & Surface
-	CComPtr<IDirect3D9>			m_D3D;
-	CComPtr<IDirect3DDevice9>	m_D3Ddevice;   
+	// D3D9 Surface
 	CComPtr<IDirect3DSurface9>	m_surface;
 };

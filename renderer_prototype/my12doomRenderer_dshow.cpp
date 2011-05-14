@@ -11,6 +11,7 @@ my12doomRenderer::my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 /* = 
 	m_data = NULL;
 
 	g_hWnd = hwnd1;
+	g_hWnd2 = hwnd2;
 
 	m_device_threadid = GetCurrentThreadId();
 	m_device_state = need_create;

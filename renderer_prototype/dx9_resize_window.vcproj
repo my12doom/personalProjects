@@ -249,13 +249,23 @@
 				RelativePath=".\PixelShaders\ps.txt"
 				>
 				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Compiling planar_rgb of ps.txt"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\ps.h planar_rgb"
+						Outputs=".\PixelShaders\ps.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling planar_rgb of ps.txt"
 						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\ps.h planar_rgb&#x0D;&#x0A;"
-						Outputs=".\PixelShaders\ps.bin"
+						Outputs=".\PixelShaders\ps.h"
 					/>
 				</FileConfiguration>
 			</File>

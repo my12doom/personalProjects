@@ -59,10 +59,9 @@ protected:
 	CComPtr<IDirect3DDevice9> g_pd3dDevice;
 	CComPtr<IDirect3DSwapChain9> g_swap1;
 	CComPtr<IDirect3DSwapChain9> g_swap2;
-	D3DPRESENT_PARAMETERS   g_active_pp;
 	D3DPRESENT_PARAMETERS   g_new_pp;
+	D3DPRESENT_PARAMETERS   g_active_pp;
 	D3DPRESENT_PARAMETERS   g_active_pp2;
-	D3DPRESENT_PARAMETERS   g_new_pp2;
 	CCritSec m_frame_lock;
 	CCritSec m_device_lock;
 	int g_temp_width;
@@ -92,7 +91,7 @@ protected:
 	RECT g_window_pos;
 
 public:
-	HRESULT handle_reset(){return handle_device_state();}
+	HRESULT handle_reset();
 	CCritSec m_data_lock;
 	BYTE *m_data;
 	bool m_data_changed;

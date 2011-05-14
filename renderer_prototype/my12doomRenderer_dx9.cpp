@@ -273,6 +273,11 @@ HRESULT my12doomRenderer::restore_objects()
 
 
 	HRESULT hr = g_pd3dDevice->GetSwapChain(0, &g_swap1);
+	g_active_pp2 = g_active_pp;
+	RECT rect;
+	GetClientRect(g_hWnd2, &rect);
+	g_active_pp2.BackBufferWidth = rect.right - rect.left;
+	g_active_pp2.BackBufferHeight = rect.bottom - rect.top;
 	hr = g_pd3dDevice->CreateAdditionalSwapChain(&g_active_pp2, &g_swap2);
 
 	hr = g_pd3dDevice->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&g_tex_Y, NULL);
@@ -363,9 +368,9 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	// relock vertex
 	/*
 	void *pVertices = NULL;
-	g_pVertexBuffer->Lock( 0, sizeof(g_myVertices), (void**)&pVertices, D3DLOCK_DISCARD );
+	g_VertexBuffer->Lock( 0, sizeof(g_myVertices), (void**)&pVertices, D3DLOCK_DISCARD );
 	memcpy( pVertices, g_myVertices, sizeof(g_myVertices) );
-	g_pVertexBuffer->Unlock();
+	g_VertexBuffer->Unlock();
 	*/
 
 	// reset texture blending stages
@@ -377,7 +382,114 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	g_pd3dDevice->SetTextureStageState( 2, D3DTSS_COLOROP,   D3DTOP_DISABLE);
 	g_pd3dDevice->SetTextureStageState( 2, D3DTSS_TEXCOORDINDEX, 0 );
 
-	//else if (output_mode == mono)
+	if (output_mode == NV3D)
+	{
+		// draw left
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		g_pd3dDevice->SetTexture( 0, g_tex_rgb_left );
+		hr = g_pd3dDevice->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = g_pd3dDevice->SetFVF( FVF_Flags );
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+		// copy left to nv3d surface
+		RECT dst = {0,0, g_active_pp.BackBufferWidth, g_active_pp.BackBufferHeight};
+		hr = g_pd3dDevice->StretchRect(back_buffer, NULL, g_sbs_surface, &dst, D3DTEXF_NONE);
+
+		// draw right
+		g_pd3dDevice->SetTexture( 0, g_tex_rgb_right );
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+		// copy right to nv3d surface
+		dst.left += g_active_pp.BackBufferWidth;
+		dst.right += g_active_pp.BackBufferWidth;
+		hr = g_pd3dDevice->StretchRect(back_buffer, NULL, g_sbs_surface, &dst, D3DTEXF_LINEAR);
+
+		// StretchRect to backbuffer!, this is how 3D vision works
+		RECT tar = {0,0, g_active_pp.BackBufferWidth*2, g_active_pp.BackBufferHeight};
+		hr = g_pd3dDevice->StretchRect(g_sbs_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
+	}
+
+	else if (output_mode == anaglyph)
+	{
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_RESULTARG, D3DTA_CURRENT);	// current = texture * diffuse(red)
+
+		g_pd3dDevice->SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		g_pd3dDevice->SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_SPECULAR );
+		g_pd3dDevice->SetTextureStageState( 1, D3DTSS_COLORARG0, D3DTA_CURRENT );
+		g_pd3dDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MULTIPLYADD ); // Modulate then add...
+		g_pd3dDevice->SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT);     // current = texture * specular(cyan) + current
+
+		g_pd3dDevice->SetTextureStageState( 2, D3DTSS_COLOROP,   D3DTOP_DISABLE);
+
+		g_pd3dDevice->SetTexture( 0, g_tex_rgb_left );
+		g_pd3dDevice->SetTexture( 1, g_tex_rgb_right );
+
+		hr = g_pd3dDevice->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = g_pd3dDevice->SetFVF( FVF_Flags );
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+	}
+
+	else if (output_mode == masking)
+	{
+		// pass 2: render seperate to two temp texture
+
+		// draw left
+		CComPtr<IDirect3DSurface9> temp_surface;
+		hr = g_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
+		hr = g_pd3dDevice->SetRenderTarget(0, temp_surface);
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		g_pd3dDevice->SetTexture( 0, g_tex_rgb_left );
+		hr = g_pd3dDevice->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = g_pd3dDevice->SetFVF( FVF_Flags );
+#ifdef DEBUG
+		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+#else
+		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+#endif
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+		// draw right
+		temp_surface = NULL;
+		hr = g_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
+		hr = g_pd3dDevice->SetRenderTarget(0, temp_surface);
+		g_pd3dDevice->SetTexture( 0, g_tex_rgb_right );
+#ifdef DEBUG
+		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+#else
+		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+#endif
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+
+		// pass 3: render to backbuffer with masking
+		g_pd3dDevice->SetRenderTarget(0, back_buffer);
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );	// current = texture(mask)
+
+		g_pd3dDevice->SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		g_pd3dDevice->SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_CURRENT );
+		g_pd3dDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SUBTRACT ); // subtract... to show only black 
+		g_pd3dDevice->SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_TEMP);	  // temp = texture(left) - current(mask)
+
+		g_pd3dDevice->SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		g_pd3dDevice->SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_CURRENT );
+		g_pd3dDevice->SetTextureStageState( 2, D3DTSS_COLORARG0, D3DTA_TEMP );		 // arg3 = arg0...
+		g_pd3dDevice->SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_MULTIPLYADD ); // Modulate then add... to show only white then add with temp(black)
+		g_pd3dDevice->SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);     // current = texture(right) * current(mask) + temp
+
+		g_pd3dDevice->SetTexture( 0, g_tex_mask );
+		g_pd3dDevice->SetTexture( 1, g_mask_temp_left );
+		g_pd3dDevice->SetTexture( 2, g_mask_temp_right );
+
+		hr = g_pd3dDevice->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = g_pd3dDevice->SetFVF( FVF_Flags );
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+	}
+
+	else if (output_mode == mono)
 	{
 		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 		g_pd3dDevice->SetTexture( 0, g_tex_rgb_left );
@@ -387,21 +499,125 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 	}
 
+	else if (output_mode == pageflipping)
+	{
+		static bool left = true;
+		left = !left;
+
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		g_pd3dDevice->SetTexture( 0, left? g_tex_rgb_left : g_tex_rgb_right );
+
+		hr = g_pd3dDevice->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = g_pd3dDevice->SetFVF( FVF_Flags );
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+	}
+
+	else if (output_mode == dual_window)
+	{
+		// draw left
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		g_pd3dDevice->SetTexture( 0, g_tex_rgb_left );
+		hr = g_pd3dDevice->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = g_pd3dDevice->SetFVF( FVF_Flags );
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+		// set render target to swap chain2
+		CComPtr<IDirect3DSurface9> back_buffer2;
+		g_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
+		hr = g_pd3dDevice->SetRenderTarget(0, back_buffer2);
+
+		// back ground
+#ifdef DEBUG
+		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+#else
+		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+#endif
+
+		// draw right
+		g_pd3dDevice->SetTexture( 0, g_tex_rgb_right );
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_second, 2 );
+
+	}
+
+	else if (output_mode == out_side_by_side || output_mode == out_top_bottom)
+	{
+		// pass 2: render seperate to two temp texture
+
+		// draw left
+		CComPtr<IDirect3DSurface9> temp_surface;
+		hr = g_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
+		hr = g_pd3dDevice->SetRenderTarget(0, temp_surface);
+		g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		g_pd3dDevice->SetTexture( 0, g_tex_rgb_left );
+		hr = g_pd3dDevice->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = g_pd3dDevice->SetFVF( FVF_Flags );
+#ifdef DEBUG
+		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+#else
+		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+#endif
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+		// draw right
+		CComPtr<IDirect3DSurface9> temp_surface2;
+		hr = g_mask_temp_right->GetSurfaceLevel(0, &temp_surface2);
+		hr = g_pd3dDevice->SetRenderTarget(0, temp_surface2);
+		g_pd3dDevice->SetTexture( 0, g_tex_rgb_right );
+#ifdef DEBUG
+		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+#else
+		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+#endif
+		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+
+		// pass 3: copy to backbuffer
+		if (output_mode == out_side_by_side)
+		{
+			RECT src = {0, 0, g_active_pp.BackBufferWidth/2, g_active_pp.BackBufferHeight};
+			RECT dst = src;
+
+			g_pd3dDevice->StretchRect(temp_surface, &src, back_buffer, &dst, D3DTEXF_NONE);
+
+			dst.left += g_active_pp.BackBufferWidth/2;
+			dst.right += g_active_pp.BackBufferWidth/2;
+			g_pd3dDevice->StretchRect(temp_surface2, &src, back_buffer, &dst, D3DTEXF_NONE);
+		}
+
+		else if (output_mode == out_top_bottom)
+		{
+			RECT src = {0, 0, g_active_pp.BackBufferWidth, g_active_pp.BackBufferHeight/2};
+			RECT dst = src;
+
+			g_pd3dDevice->StretchRect(temp_surface, &src, back_buffer, &dst, D3DTEXF_NONE);
+
+			dst.top += g_active_pp.BackBufferHeight/2;
+			dst.bottom += g_active_pp.BackBufferHeight/2;
+			g_pd3dDevice->StretchRect(temp_surface2, &src, back_buffer, &dst, D3DTEXF_NONE);
+
+		}
+	}
+
+
 	g_pd3dDevice->EndScene();
 
-	if ((hr = g_pd3dDevice->Present( NULL, NULL, NULL, NULL )) ==  D3DERR_DEVICELOST)
-		set_device_state(device_lost);
+	if (output_mode == dual_window)
+	{
+		if (g_swap1->Present(NULL, NULL, g_hWnd, NULL, D3DPRESENT_DONOTWAIT) == D3DERR_DEVICELOST)
+			set_device_state(device_lost);
 
+		if (g_swap2->Present(NULL, NULL, g_hWnd2, NULL, D3DPRESENT_DONOTWAIT) == D3DERR_DEVICELOST)
+			set_device_state(device_lost);
+	}
 
-	char tmp[256];
-	static int t = timeGetTime();
-	sprintf(tmp, "%d\n", timeGetTime()-t);
-	if (timeGetTime()-t > 18)
-		OutputDebugStringA("lost sync\n");
-	t = timeGetTime();
-	OutputDebugStringA(tmp);
+	else
+	{
+		if (g_pd3dDevice->Present( NULL, NULL, NULL, NULL ) ==  D3DERR_DEVICELOST)
+			set_device_state(device_lost);
+	}
 
-	return S_OK;}
+	return S_OK;
+}
 HRESULT my12doomRenderer::render(bool forced)
 {
 	CAutoLock lck(&m_device_lock);
@@ -819,9 +1035,23 @@ HRESULT	my12doomRenderer::BreakConnect()
 
 HRESULT my12doomRenderer::CompleteConnect(IPin *pRecievePin)
 {
-	HRESULT hr = __super::CompleteConnect(pRecievePin);
 	set_device_state(need_reset);
-	handle_device_state();
+	return __super::CompleteConnect(pRecievePin);
+}
 
-	return hr;
+HRESULT my12doomRenderer::handle_reset()
+{
+	RECT rect;
+	GetClientRect(g_hWnd, &rect);
+	if (g_active_pp.BackBufferWidth != rect.right-rect.left || g_active_pp.BackBufferHeight != rect.bottom - rect.top)
+	{
+		g_new_pp.BackBufferWidth = 0;
+		g_new_pp.BackBufferHeight = 0;
+		set_device_state(need_reset);
+	}
+	GetClientRect(g_hWnd2, &rect);
+	if (g_active_pp2.BackBufferWidth != rect.right-rect.left || g_active_pp2.BackBufferHeight != rect.bottom - rect.top)
+		set_device_state(need_reset_object);
+
+	return handle_device_state();
 }

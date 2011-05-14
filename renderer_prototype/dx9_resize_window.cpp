@@ -220,12 +220,12 @@ enum vertex_types
 enum output_mode_types
 {
 	NV3D, masking, anaglyph, mono, pageflipping, dual_window, out_side_by_side, out_top_bottom, output_mode_types_max
-} output_mode = mono;
+} output_mode = dual_window;
 
 enum input_layout_types
 {
 	side_by_side, top_bottom, mono2d, input_layout_types_max
-} input_layout = mono2d;
+} input_layout = side_by_side;
 bool g_swapeyes = false;
 
 enum mask_mode_types
@@ -395,7 +395,7 @@ int WINAPI WinMain( HINSTANCE hInstance,
 	ShowWindow( g_hWnd2, output_mode == dual_window ? nCmdShow : SW_HIDE );
 	UpdateWindow( g_hWnd2 );
 
-	renderer = new my12doomRenderer(NULL, &hr, g_hWnd);
+	renderer = new my12doomRenderer(NULL, &hr, g_hWnd, g_hWnd2);
 	// dshow
 	wchar_t file[MAX_PATH] = L"test.avi";
 	open_file_dlg(file, g_hWnd, NULL);
@@ -572,6 +572,7 @@ LRESULT CALLBACK WindowProc( HWND   hWnd,
 
         case WM_SIZE:
         {
+			if (renderer) renderer->handle_reset();
 			if(!g_bDeviceLost)
 			{
 				// If the device is not NULL and the WM_SIZE message is not a
@@ -579,12 +580,6 @@ LRESULT CALLBACK WindowProc( HWND   hWnd,
 				// the new window size.
 				if( g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED )
 				{
-					g_new_pp.BackBufferWidth  = LOWORD(lParam);
-					g_new_pp.BackBufferHeight = HIWORD(lParam);
-					g_bDeviceReset = true;
-
-					handle_reset();
-					render(1, true);
 				}
 			}
         }
