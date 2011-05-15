@@ -5,63 +5,35 @@
 #include "3dvideo.h"
 
 
-struct MyVertex
+HRESULT mylog(wchar_t *format, ...)
 {
-	float x , y, z;
-	float w;
-	DWORD diffuse;
-	DWORD specular;
-	float tu, tv;
-};
-const DWORD FVF_Flags = D3DFVF_XYZRHW | D3DFVF_TEX1 | D3DFVF_DIFFUSE | D3DFVF_SPECULAR;
+	wchar_t tmp[10240];
+	wchar_t tmp2[10240];
+	va_list valist;
+	va_start(valist, format);
+	wvsprintfW(tmp, format, valist);
+	va_end(valist);
 
-extern MyVertex g_myVertices[28];/* =
+	wsprintfW(tmp2, L"(tid=%d)%s", GetCurrentThreadId(), tmp);
+	OutputDebugStringW(tmp2);
+	return S_OK;
+}
+
+
+HRESULT mylog(const char *format, ...)
 {
-	//     x      y     z     w   	diffuse					specular	 			  tu   tv
-	// pass1 whole
-	{-1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,0.0f},
-	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.0f},
-	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,1.0f},
-	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,1.0f},
-	// pass1 left
-	{-1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,0.0f},
-	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.5f,0.0f},
-	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,1.0f},
-	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.5f,1.0f},
-	// pass1 right
-	{-1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.5f,0.0f},
-	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.0f},
-	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.5f,1.0f},
-	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,1.0f},
-	// pass1 top
-	{-1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,0.0f},
-	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.0f},
-	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,0.5f},
-	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.5f},
-	// pass1 bottom
-	{-1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,0.5f},
-	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.5f},
-	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,1.0f},
-	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,1.0f},
+	char tmp[10240];
+	char tmp2[10240];
+	va_list valist;
+	va_start(valist, format);
+	wvsprintfA(tmp, format, valist);
+	va_end(valist);
 
-	// pass2 whole texture, fixed aspect output for main back buffer
-	{-1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,0.0f},
-	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.0f},
-	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,1.0f},
-	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,1.0f},
+	wsprintfA(tmp2, "(tid=%d)%s", GetCurrentThreadId(), tmp);
+	OutputDebugStringA(tmp2);
+	return S_OK;
+}
 
-	// pass2 whole texture, fixed aspect output for second back buffer
-	{-1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,0.0f},
-	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.0f},
-	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,1.0f},
-	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,1.0f},
-
-	// pass3 whole texture, whole back buffer output
-	{-1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,0.0f},
-	{ 1.0f, 1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,0.0f},
-	{-1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  0.0f,1.0f},
-	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,1.0f},
-};*/
 enum vertex_types
 {
 	vertex_pass1_types_count = 5,
@@ -78,21 +50,7 @@ enum vertex_types
 	vertex_pass3 = 28,
 };
 
-extern enum output_mode_types
-{
-	NV3D, masking, anaglyph, mono, pageflipping, dual_window, out_side_by_side, out_top_bottom, output_mode_types_max
-} output_mode;// = NV3D;
-
-extern enum input_layout_types
-{
-	side_by_side, top_bottom, mono2d, input_layout_types_max
-} input_layout;// = side_by_side;
-extern bool g_swapeyes;// = false;
-
-extern enum mask_mode_types
-{
-	row_interlace, line_interlace, checkboard_interlace, mask_mode_types_max
-} mask_mode;// = row_interlace;
+const DWORD FVF_Flags = D3DFVF_XYZRHW | D3DFVF_TEX1 | D3DFVF_DIFFUSE | D3DFVF_SPECULAR;
 
 HRESULT my12doomRenderer::handle_device_state()							//handle device create/recreate/lost/reset
 {
@@ -128,9 +86,9 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			m_device_state = device_lost;
 			return hr;
 		}
+		g_active_pp = g_new_pp;
 		restore_objects();
 		m_device_state = fine;
-		g_active_pp = g_new_pp;
 	}
 
 	else if (m_device_state == device_lost)
@@ -151,8 +109,6 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			restore_objects();
 			
 			m_device_state = fine;
-			g_active_pp = g_new_pp;
-
 			return hr;
 		}
 
@@ -162,8 +118,6 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 	else if (m_device_state == need_create)
 	{
-		timeBeginPeriod(1);
-		g_pD3D = Direct3DCreate9( D3D_SDK_VERSION );
 
 		ZeroMemory( &g_active_pp, sizeof(g_active_pp) );
 		g_active_pp.Windowed               = TRUE;
@@ -220,7 +174,8 @@ HRESULT my12doomRenderer::shutdown()
 	CAutoLock lck(&m_device_lock);
     invalidate_objects();
 	g_pd3dDevice = NULL;
-    g_pD3D = NULL;
+
+	set_device_state(need_create);
 
 	return S_OK;
 }
@@ -328,7 +283,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 {
 
 	// device state check and restore
-	if (FAILED(handle_reset()))
+	if (FAILED(handle_reset()) || !m_pInputPin->IsConnected())
 		return E_FAIL;
 
 
@@ -363,15 +318,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	#else
 	g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
 	#endif
-
-	calculate_vertex();
-	// relock vertex
-	/*
-	void *pVertices = NULL;
-	g_VertexBuffer->Lock( 0, sizeof(g_myVertices), (void**)&pVertices, D3DLOCK_DISCARD );
-	memcpy( pVertices, g_myVertices, sizeof(g_myVertices) );
-	g_VertexBuffer->Unlock();
-	*/
 
 	// reset texture blending stages
 	g_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
@@ -522,20 +468,23 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
 		// set render target to swap chain2
-		CComPtr<IDirect3DSurface9> back_buffer2;
-		g_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
-		hr = g_pd3dDevice->SetRenderTarget(0, back_buffer2);
+		if (g_swap2)
+		{
+			CComPtr<IDirect3DSurface9> back_buffer2;
+			g_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
+			hr = g_pd3dDevice->SetRenderTarget(0, back_buffer2);
 
-		// back ground
-#ifdef DEBUG
-		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
-#else
-		g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
-#endif
+			// back ground
+			#ifdef DEBUG
+			g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+			#else
+			g_pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+			#endif
 
-		// draw right
-		g_pd3dDevice->SetTexture( 0, g_tex_rgb_right );
-		hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_second, 2 );
+			// draw right
+			g_pd3dDevice->SetTexture( 0, g_tex_rgb_right );
+			hr = g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_second, 2 );
+		}
 
 	}
 
@@ -606,7 +555,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		if (g_swap1->Present(NULL, NULL, g_hWnd, NULL, D3DPRESENT_DONOTWAIT) == D3DERR_DEVICELOST)
 			set_device_state(device_lost);
 
-		if (g_swap2->Present(NULL, NULL, g_hWnd2, NULL, D3DPRESENT_DONOTWAIT) == D3DERR_DEVICELOST)
+		if(g_swap2) if (g_swap2->Present(NULL, NULL, g_hWnd2, NULL, D3DPRESENT_DONOTWAIT) == D3DERR_DEVICELOST)
 			set_device_state(device_lost);
 	}
 
@@ -638,7 +587,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 	while(!_this->m_render_thread_exit)
 	{
-		if (output_mode != pageflipping)
+		if (_this->output_mode != pageflipping)
 		{
 			if (_this->m_State == State_Running)
 			{
@@ -828,10 +777,10 @@ HRESULT my12doomRenderer::calculate_vertex()
 	g_myVertices[23].tu = 1.0f; g_myVertices[23].tv = 1.0f;
 
 	// pass2 whole texture, fixed aspect output for second back buffer
-	g_myVertices[24].tu = 0.0f; g_myVertices[20].tv = 0.0f;
-	g_myVertices[25].tu = 1.0f; g_myVertices[21].tv = 0.0f;
-	g_myVertices[26].tu = 0.0f; g_myVertices[22].tv = 1.0f;
-	g_myVertices[27].tu = 1.0f; g_myVertices[23].tv = 1.0f;
+	g_myVertices[24].tu = 0.0f; g_myVertices[24].tv = 0.0f;
+	g_myVertices[25].tu = 1.0f; g_myVertices[25].tv = 0.0f;
+	g_myVertices[26].tu = 0.0f; g_myVertices[26].tv = 1.0f;
+	g_myVertices[27].tu = 1.0f; g_myVertices[27].tv = 1.0f;
 
 	// pass3 whole texture, whole back buffer output
 	g_myVertices[28].tu = 0.0f; g_myVertices[28].tv = 0.0f;
@@ -856,16 +805,6 @@ HRESULT my12doomRenderer::calculate_vertex()
 		tar.right /= 2;
 	else if (output_mode == out_top_bottom)
 		tar.bottom /= 2;
-
-
-	double source_aspect = (double)m_lVidWidth / m_lVidHeight;
-	if (source_aspect> 2.425)
-		source_aspect /= 2;
-	else if (source_aspect< 1.2125)
-		source_aspect *= 2;
-
-	double offset_x = -0.0;
-	double offset_y = 0.0;
 
 	int delta_w = (int)(tar.right - tar.bottom * source_aspect + 0.5);
 	int delta_h = (int)(tar.bottom - tar.right  / source_aspect + 0.5);
@@ -928,10 +867,15 @@ HRESULT my12doomRenderer::calculate_vertex()
 	tmp[2].x = tar.left-0.5f; tmp[2].y = tar.bottom-0.5f;
 	tmp[3].x = tar.right-0.5f; tmp[3].y = tar.bottom-0.5f;
 
+	if (!g_VertexBuffer)
+		return S_FALSE;
+
 	void *pVertices = NULL;
 	g_VertexBuffer->Lock( 0, sizeof(g_myVertices), (void**)&pVertices, D3DLOCK_DISCARD );
 	memcpy( pVertices, g_myVertices, sizeof(g_myVertices) );
-	g_VertexBuffer->Unlock();	return S_OK;
+	g_VertexBuffer->Unlock();	
+	
+	return S_OK;
 }
 HRESULT my12doomRenderer::generate_mask()
 {
@@ -993,7 +937,9 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 	D3DDISPLAYMODE d3ddm;
 	g_pD3D->GetAdapterDisplayMode( D3DADAPTER_DEFAULT, &d3ddm );
 	g_new_pp.BackBufferFormat       = d3ddm.Format;
-	if(full)
+
+	mylog("mode:%dx%d@%dHz, format:%d.\n", d3ddm.Width, d3ddm.Height, d3ddm.RefreshRate, d3ddm.Format);
+	if(full && g_active_pp.Windowed)
 	{
 		GetWindowRect(g_hWnd, &g_window_pos);
 		g_style = GetWindowLongPtr(g_hWnd, GWL_STYLE);
@@ -1011,8 +957,12 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 		g_new_pp.BackBufferWidth = d3ddm.Width;
 		g_new_pp.BackBufferHeight = d3ddm.Height;
 		g_new_pp.FullScreen_RefreshRateInHz = d3ddm.RefreshRate;
+
+		set_device_state(need_reset);
+		if (m_device_state < need_create)
+			handle_device_state();
 	}
-	else
+	else if (!full && !g_active_pp.Windowed)
 	{
 		g_new_pp.Windowed = TRUE;
 		g_new_pp.BackBufferWidth = 0;
@@ -1023,7 +973,12 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 		SetWindowLongPtr(g_hWnd, GWL_EXSTYLE, g_exstyle);
 		SetWindowPos(g_hWnd, g_exstyle & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
 			g_window_pos.left, g_window_pos.top, g_window_pos.right - g_window_pos.left, g_window_pos.bottom - g_window_pos.top, SWP_FRAMECHANGED);
+
+		set_device_state(need_reset);
+		if (m_device_state < need_create)
+			handle_device_state();
 	}
+
 	return S_OK;
 }
 
@@ -1054,4 +1009,131 @@ HRESULT my12doomRenderer::handle_reset()
 		set_device_state(need_reset_object);
 
 	return handle_device_state();
+}
+
+HRESULT my12doomRenderer::set_input_layout(int layout)
+{
+	input_layout = (input_layout_types)(layout % input_layout_types_max);
+	set_device_state(need_reset);
+	handle_device_state();
+	render(true);
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::set_output_mode(int mode)
+{
+	output_mode = (output_mode_types)(mode % output_mode_types_max);
+	generate_mask();
+	calculate_vertex();
+	render(true);
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::set_mask_mode(int mode)
+{
+	mask_mode = (mask_mode_types)(mode % mask_mode_types_max);
+	calculate_vertex();
+	generate_mask();
+	render(true);
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::set_mask_color(int id, DWORD color)
+{
+	if (id == 1)
+		m_color1 = color;
+	else if (id == 2)
+		m_color2 = color;
+	else
+		return E_INVALIDARG;
+
+	calculate_vertex();
+	render(true);
+	return S_OK;
+}
+
+DWORD my12doomRenderer::get_mask_color(int id)
+{
+	if (id == 1)
+		return m_color1;
+	else if (id == 2)
+		return m_color2;
+	else
+		return 0;
+}
+
+HRESULT my12doomRenderer::set_swap_eyes(bool swap)
+{
+	g_swapeyes = swap;
+
+	load_image(true);
+	render(true);
+	return S_OK;
+}
+
+input_layout_types my12doomRenderer::get_input_layout()
+{
+	return input_layout;
+}
+
+output_mode_types my12doomRenderer::get_output_mode()
+{
+	return output_mode;
+}
+mask_mode_types my12doomRenderer::get_mask_mode()
+{
+	return mask_mode;
+}
+
+bool my12doomRenderer::get_swap_eyes()
+{
+	return g_swapeyes;
+}
+
+bool my12doomRenderer::get_fullscreen()
+{
+	return !g_active_pp.Windowed;
+}
+HRESULT my12doomRenderer::set_offset(int dimention, double offset)		// dimention1 = x, dimention2 = y
+{
+	if (dimention == 1)
+		offset_x = offset;
+	else if (dimention == 2)
+		offset_y = offset;
+	else
+		return E_INVALIDARG;
+
+	calculate_vertex();
+	render(true);
+	return S_OK;
+}
+HRESULT my12doomRenderer::set_aspect(double aspect)
+{
+	source_aspect = aspect;
+	calculate_vertex();
+	load_image(true);
+	render(true);
+	return S_OK;
+}
+double my12doomRenderer::get_offset(int dimention)
+{
+	if (dimention == 1)
+		return offset_x;
+	else if (dimention == 2)
+		return offset_y;
+	else
+		return 0.0;
+}
+double my12doomRenderer::get_aspect()
+{
+	return source_aspect;
+}
+
+HRESULT my12doomRenderer::set_window(HWND wnd, HWND wnd2)
+{
+	shutdown();
+	g_hWnd = wnd;
+	g_hWnd2 = wnd2;
+	handle_device_state();
+	return S_OK;
 }

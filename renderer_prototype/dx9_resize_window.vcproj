@@ -62,6 +62,7 @@
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -81,6 +82,7 @@
 				LinkIncremental="0"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Release_mt"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Release/dx9_resize_window.pdb"
 				SubSystem="2"
 				RandomizedBaseAddress="1"
@@ -214,26 +216,22 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="dx9_resize_window.cpp"
+				RelativePath=".\dx9_resize_window.cpp"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					ExcludedFromBuild="true"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
+					ExcludedFromBuild="true"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BasicRuntimeChecks="3"
-						BrowseInformation="1"
 					/>
 				</FileConfiguration>
 			</File>
@@ -254,7 +252,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling planar_rgb of ps.txt"
-						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\ps.h planar_rgb"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\ps.h planar_rgb&#x0D;&#x0A;"
 						Outputs=".\PixelShaders\ps.h"
 					/>
 				</FileConfiguration>
@@ -268,6 +266,10 @@
 						Outputs=".\PixelShaders\ps.h"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\test.cpp"
+				>
 			</File>
 		</Filter>
 		<Filter

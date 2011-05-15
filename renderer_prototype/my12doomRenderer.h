@@ -8,13 +8,49 @@ struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doom
 // setting window to invalid window during 
 // you can enter dual projector mode without a second window, but you won't get second image until you set a second window
 
+enum output_mode_types
+{
+	NV3D, masking, anaglyph, mono, pageflipping, dual_window, out_side_by_side, out_top_bottom, output_mode_types_max
+};
+
+enum input_layout_types
+{
+	side_by_side, top_bottom, mono2d, input_layout_types_max
+};
+
+enum mask_mode_types
+{
+	row_interlace, line_interlace, checkboard_interlace, mask_mode_types_max
+};
+
 class my12doomRenderer : public CBaseVideoRenderer
 {
 public:
 	my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 = NULL, HWND hwnd2 = NULL);
 	~my12doomRenderer();
 
-	OAFilterState State(){return m_State;}
+	HRESULT handle_reset();
+
+	HRESULT set_input_layout(int layout);
+	HRESULT set_output_mode(int mode);
+	HRESULT set_mask_mode(int mode);
+	HRESULT set_mask_color(int id, DWORD color);
+	HRESULT set_swap_eyes(bool swap);
+	HRESULT set_fullscreen(bool full);
+	HRESULT set_offset(int dimention, double offset);		// dimention1 = x, dimention2 = y
+	HRESULT set_aspect(double aspect);
+	HRESULT set_window(HWND wnd, HWND wnd2);
+
+
+	DWORD get_mask_color(int id);
+	bool get_swap_eyes();
+	input_layout_types get_input_layout();
+	output_mode_types get_output_mode();
+	mask_mode_types get_mask_mode();
+	bool get_fullscreen();
+	double get_offset(int dimention);
+	double get_aspect();
+
 protected:
 	// dshow functions
 	HRESULT CheckMediaType(const CMediaType *pmt );
@@ -22,6 +58,17 @@ protected:
 	HRESULT DoRenderSample(IMediaSample *pMediaSample);
 	HRESULT	BreakConnect();
 	HRESULT CompleteConnect(IPin *pRecievePin);
+
+	// dshow variables
+	CCritSec m_data_lock;
+	BYTE *m_data;
+	bool m_data_changed;
+	LONG m_lVidWidth;   // Video width
+	LONG m_lVidHeight;  // Video Height
+	double offset_x /*= -0.0*/;
+	double offset_y /*= 0.0*/;
+	double source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
+
 
 	// dx9 functions and variables
 	enum device_state
@@ -49,10 +96,21 @@ protected:
 	HRESULT load_image(bool forced = false);
 	HRESULT calculate_vertex();
 	HRESULT generate_mask();
-	HRESULT set_fullscreen(bool full);
 	HRESULT set_device_state(device_state new_state);
 
 	// variables
+	struct MyVertex
+	{
+		float x , y, z;
+		float w;
+		DWORD diffuse;
+		DWORD specular;
+		float tu, tv;
+	} g_myVertices[32];
+	bool g_swapeyes;
+	output_mode_types output_mode;
+	input_layout_types input_layout;
+	mask_mode_types mask_mode;
 	HWND g_hWnd;
 	HWND g_hWnd2;
 	CComPtr<IDirect3D9>		g_pD3D;
@@ -89,12 +147,4 @@ protected:
 	DWORD m_color2;
 	LONG g_style, g_exstyle;
 	RECT g_window_pos;
-
-public:
-	HRESULT handle_reset();
-	CCritSec m_data_lock;
-	BYTE *m_data;
-	bool m_data_changed;
-	LONG m_lVidWidth;   // Video width
-	LONG m_lVidHeight;  // Video Height
 };

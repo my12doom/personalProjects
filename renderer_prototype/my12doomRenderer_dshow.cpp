@@ -1,6 +1,7 @@
 // DirectShow part of my12doom renderer
 
 #include "my12doomRenderer.h"
+#include <dvdmedia.h>
 
 my12doomRenderer::my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 /* = NULL */, HWND hwnd2 /* = NULL */)
                                   : CBaseVideoRenderer(__uuidof(CLSID_my12doomRenderer),
@@ -10,33 +11,43 @@ my12doomRenderer::my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 /* = 
         *phr = S_OK;
 	m_data = NULL;
 
+	timeBeginPeriod(1);
+	// aspect and offset
+	offset_x = 0.0;
+	offset_y = 0.0;
+	source_aspect = 0.0;
+
+	// window
 	g_hWnd = hwnd1;
 	g_hWnd2 = hwnd2;
 
-	m_device_threadid = GetCurrentThreadId();
-	m_device_state = need_create;
+	// input / output
+	g_swapeyes = false;
+	output_mode = mono;
+	input_layout = mono2d;
+	mask_mode = row_interlace;
 	m_color1 = D3DCOLOR_XRGB(255, 0, 0);
 	m_color2 = D3DCOLOR_XRGB(0, 255, 255);
+
+	// thread
+	m_device_threadid = GetCurrentThreadId();
+	m_device_state = need_create;
 	m_render_thread = INVALID_HANDLE_VALUE;
 	m_render_thread_exit = false;
+
+	// D3D
+	g_pD3D = Direct3DCreate9( D3D_SDK_VERSION );
+
 }
 
-
-//-----------------------------------------------------------------------------
-// CTextureRenderer destructor
-//-----------------------------------------------------------------------------
 my12doomRenderer::~my12doomRenderer()
 {
 	shutdown();
 	if (m_data)
 		free(m_data);
+	timeEndPeriod(1);
 }
 
-
-//-----------------------------------------------------------------------------
-// CheckMediaType: This method forces the graph to give us an R8G8B8 video
-// type, making our copy to texture memory trivial.
-//-----------------------------------------------------------------------------
 HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt)
 {
     HRESULT   hr = E_FAIL;
@@ -44,7 +55,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt)
 
     CheckPointer(pmt,E_POINTER);
 
-    if( *pmt->FormatType() != FORMAT_VideoInfo )
+    if( *pmt->FormatType() != FORMAT_VideoInfo && *pmt->FormatType() != FORMAT_VideoInfo2)
         return E_INVALIDARG;
 
     pvi = (VIDEOINFO *)pmt->Format();
@@ -58,16 +69,27 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt)
     return hr;
 }
 
-//-----------------------------------------------------------------------------
-// SetMediaType: Graph connection has been made.
-//-----------------------------------------------------------------------------
 HRESULT my12doomRenderer::SetMediaType(const CMediaType *pmt)
 {
     // Retrive the size of this media type
-    VIDEOINFO *pviBmp;                      // Bitmap info header
-    pviBmp = (VIDEOINFO *)pmt->Format();
-	m_lVidWidth = pviBmp->bmiHeader.biWidth;
-	m_lVidHeight = pviBmp->bmiHeader.biHeight;
+	BITMAPINFOHEADER *pbih = NULL;
+	if (*pmt->FormatType() == FORMAT_VideoInfo)
+		pbih = &((VIDEOINFOHEADER*)pmt->Format())->bmiHeader;
+	else if (*pmt->FormatType() == FORMAT_VideoInfo2)
+		pbih = &((VIDEOINFOHEADER2*)pmt->Format())->bmiHeader;
+
+	if (!pbih)
+		return E_FAIL;
+
+	m_lVidWidth = pbih->biWidth;
+	m_lVidHeight = pbih->biHeight;
+
+	source_aspect = (double)m_lVidWidth / m_lVidHeight;
+	if (source_aspect> 2.425)
+		source_aspect /= 2;
+	else if (source_aspect< 1.2125)
+		source_aspect *= 2;
+
 
 	if (m_data)
 		free(m_data);
@@ -79,15 +101,6 @@ HRESULT my12doomRenderer::SetMediaType(const CMediaType *pmt)
     return S_OK;
 }
 
-HRESULT render( int time = 1, bool forced = false);
-extern enum output_mode_types
-{
-	NV3D, masking, anaglyph, mono, pageflipping, output_mode_types_max, safe_interlace_row, safe_interlace_line
-} output_mode;
-
-//-----------------------------------------------------------------------------
-// DoRenderSample: A sample has been delivered. Copy it to the texture.
-//-----------------------------------------------------------------------------
 HRESULT my12doomRenderer::DoRenderSample( IMediaSample * pSample )
 {
     BYTE  *pBmpBuffer;
