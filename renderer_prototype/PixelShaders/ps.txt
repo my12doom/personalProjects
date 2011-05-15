@@ -81,6 +81,26 @@ float4 main3(float2 tex : TEXCOORD0) : COLOR
 
 float4 planar_rgb(float2 tex : TEXCOORD0) : COLOR
 {
+	float xx = (tex.x - 0.5/1680) * 1680 + 0.5;
+	xx = xx - frac(xx);
+
+	float yy = (tex.y - 0.5/2100) * 2100 + 0.5;
+	yy = yy - frac(yy);
+	
+	float2 t2 = {xx,yy};
+	t2.x *= 1.0/(1680);
+	t2.y *= 1.0/(2100);
+	
+	t2.x += 0.5/(1680);
+	t2.y += 0.5/(2100);
+	return tex2D(s0, t2);
+	
+	if (xx % 2 == 1)
+		return float4(1.0, 0.0, 0.0, 1.0);
+	else
+		return float4(0.0, 1.0, 0.0, 1.0);
+		
+	//tex -= frac(tex);
 	return yuv2rgb(float4(tex2D(s0, tex).r, tex2D(s1, tex).r, tex2D(s2, tex).r, 1));
 }
 

@@ -1,3 +1,4 @@
+#include <tchar.h>
 #include "dwindow.h"
 #include "resource.h"
 
@@ -353,8 +354,8 @@ dwindow::dwindow(RECT screen1, RECT screen2)
 	wcx.hIcon = LoadIcon(NULL, IDI_APPLICATION);// predefined app. icon 
 	wcx.hCursor = LoadCursor(NULL, IDC_ARROW);  // predefined arrow 
 	wcx.hbrBackground = NULL;
-	wcx.lpszMenuName =  "MainMenu";    // name of menu resource 
-	wcx.lpszClassName = "MainWClass";  // name of window class 
+	wcx.lpszMenuName =  _T("MainMenu");    // name of menu resource 
+	wcx.lpszClassName = _T("MainWClass");  // name of window class 
 	wcx.hIconSm = (HICON)LoadImage(hinstance, // small class icon 
 		MAKEINTRESOURCE(IDI_ICON1),
 		IMAGE_ICON, 
@@ -390,7 +391,7 @@ void dwindow::close_and_kill_thread()
 	WaitForSingleObject(m_thread1, INFINITE);
 	WaitForSingleObject(m_thread2, INFINITE);
 
-	UnregisterClass("MainWClass", GetModuleHandle(NULL));
+	UnregisterClass(_T("MainWClass"), GetModuleHandle(NULL));
 }
 HWND dwindow::id_to_hwnd(int id)
 {

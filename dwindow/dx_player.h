@@ -98,6 +98,8 @@ protected:
 	bool m_revert;
 	double m_letterbox_delta;
 
+	int init_done_flag;
+
 	// helper function and vars
 	HRESULT CrackPD10(IBaseFilter *filter);
 	HRESULT calculate_movie_rect(RECT *source, RECT *client, RECT *letterbox, bool ui);
@@ -126,6 +128,7 @@ protected:
 	LRESULT on_size(int id, int type, int x, int y);
 	LRESULT on_init_dialog(int id, WPARAM wParam, LPARAM lParam);		// buged
 	LRESULT on_dropfile(int id, int count, wchar_t **filenames);
+	LRESULT on_idle_time();	// S_FALSE = Sleep(1)
 	// end window handler
 
 	// helper

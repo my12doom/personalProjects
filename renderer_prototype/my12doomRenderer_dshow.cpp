@@ -61,7 +61,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt)
     pvi = (VIDEOINFO *)pmt->Format();
 
     if(IsEqualGUID( *pmt->Type(),    MEDIATYPE_Video)  &&
-       IsEqualGUID( *pmt->Subtype(), MEDIASUBTYPE_YV12))
+       IsEqualGUID( *pmt->Subtype(), MEDIASUBTYPE_YV12) || IsEqualGUID( *pmt->Subtype(), MEDIASUBTYPE_NV12))
     {
         hr = S_OK;
     }
@@ -72,23 +72,38 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt)
 HRESULT my12doomRenderer::SetMediaType(const CMediaType *pmt)
 {
     // Retrive the size of this media type
-	BITMAPINFOHEADER *pbih = NULL;
 	if (*pmt->FormatType() == FORMAT_VideoInfo)
-		pbih = &((VIDEOINFOHEADER*)pmt->Format())->bmiHeader;
-	else if (*pmt->FormatType() == FORMAT_VideoInfo2)
-		pbih = &((VIDEOINFOHEADER2*)pmt->Format())->bmiHeader;
+	{
+		VIDEOINFOHEADER *vihIn = (VIDEOINFOHEADER*)pmt->Format();
+		m_lVidWidth = vihIn->bmiHeader.biWidth;
+		m_lVidHeight = vihIn->bmiHeader.biHeight;
+		source_aspect = (double)m_lVidWidth / m_lVidHeight;
 
-	if (!pbih)
+	}
+
+	else if (*pmt->FormatType() == FORMAT_VideoInfo2)
+	{
+		VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)pmt->Format();
+		m_lVidWidth = vihIn->bmiHeader.biWidth;
+		m_lVidHeight = vihIn->bmiHeader.biHeight;
+		source_aspect = (double)vihIn->dwPictAspectRatioX / vihIn->dwPictAspectRatioY;
+	}
+
+	else
 		return E_FAIL;
 
-	m_lVidWidth = pbih->biWidth;
-	m_lVidHeight = pbih->biHeight;
-
-	source_aspect = (double)m_lVidWidth / m_lVidHeight;
 	if (source_aspect> 2.425)
+	{
 		source_aspect /= 2;
+		input_layout = side_by_side;
+	}
 	else if (source_aspect< 1.2125)
+	{
 		source_aspect *= 2;
+		input_layout = top_bottom;
+	}
+	else
+		input_layout = mono2d;
 
 
 	if (m_data)

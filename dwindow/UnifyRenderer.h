@@ -7,6 +7,7 @@
 #include <vmr9.h>
 
 #include <evr9.h>
+#include "..\renderer_prototype\my12doomRenderer.h"
 
 typedef struct _UnifyVideoNormalizedRect
 {
@@ -49,6 +50,7 @@ public:
 	virtual HRESULT SetVideoClippingWindow(HWND hwnd)=0;
 	virtual HRESULT SetVideoClippingWindow2(HWND hwnd){return E_NOTIMPL;}
 	virtual HRESULT SetAspectRatioMode(DWORD mode)=0;
+	virtual HRESULT Pump(){return E_NOTIMPL;}
 
 	// mixer
 	virtual HRESULT SetOutputRect(DWORD stream, const UnifyVideoNormalizedRect *rect)=0;
@@ -140,4 +142,31 @@ protected:
 	CComPtr<IMFVideoMixerControl> m_mixer;
 	// D3D9 Surface
 	CComPtr<IDirect3DSurface9>	m_surface;
+};
+
+
+class Cmy12doomRenderer : public CUnifyRenderer
+{
+public:
+	Cmy12doomRenderer(HWND hwnd);
+	~Cmy12doomRenderer();
+
+	// basic config
+	virtual HRESULT DisplayModeChanged();
+	virtual HRESULT RepaintVideo(HWND hwnd, HDC hdc);
+	virtual HRESULT GetNativeVideoSize(LONG *lpWidth, LONG *lpHeight, LONG *lpARWidth, LONG *lpARHeight);
+	virtual HRESULT SetVideoPosition(const LPRECT lpSRCRect, const LPRECT lpDSTRect);
+	virtual HRESULT SetVideoClippingWindow(HWND hwnd);
+	virtual HRESULT Pump();
+	virtual HRESULT SetAspectRatioMode(DWORD mode);
+
+	// mixer
+	virtual HRESULT SetOutputRect(DWORD stream, const UnifyVideoNormalizedRect *rect);
+
+	// alpha bitmap
+	virtual HRESULT SetAlphaBitmap(UnifyAlphaBitmap &bitmap);
+	virtual HRESULT ClearAlphaBitmap();
+
+protected:
+	my12doomRenderer *m_renderer;
 };

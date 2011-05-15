@@ -96,6 +96,8 @@ HRESULT dx_player::CrackPD10(IBaseFilter *filter)
 
 // constructor & destructor
 dx_player::dx_player(RECT screen1, RECT screen2, HINSTANCE hExe):
+m_renderer1(NULL),
+m_renderer2(NULL),
 dwindow(screen1, screen2),
 m_lFontPointSize(L"FontSize", 40),
 m_FontName(L"Font", L"Arial"),
@@ -117,8 +119,6 @@ m_always_show_right(L"AlwaysShowRight", false)
 
 	// vars
 	m_file_loaded = false;
-	m_renderer1 = NULL;
-	m_renderer2 = NULL;
 	m_PD10 = false;
 	m_select_font_active = false;
 	m_log = (wchar_t*)malloc(100000);
@@ -173,6 +173,8 @@ m_always_show_right(L"AlwaysShowRight", false)
 	// set event notify
 	CComQIPtr<IMediaEventEx, &IID_IMediaEventEx> event_ex(m_gb);
 	event_ex->SetNotifyWindow((OAHWND)id_to_hwnd(1), DS_EVENT, 0);
+
+	init_done_flag = 0x12345678;
 }
 
 dx_player::~dx_player()
@@ -843,8 +845,8 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SendMessage(id_to_hwnd(id), WM_SETICON, FALSE, (LPARAM)h_icon);
 	
 	HWND video = CreateWindow(
-		"Static",
-		"HelloWorld",
+		_T("Static"),
+		_T("HelloWorld"),
 		WS_CHILDWINDOW | SS_OWNERDRAW,
 		0,
 		0,
@@ -1147,6 +1149,7 @@ HRESULT dx_player::update_video_pos()
 	// set window pos
 	if (m_renderer1)
 	{
+		m_renderer1->Pump();
 		int id = 1;
 		if (m_revert) id = 2;
 
@@ -1189,6 +1192,7 @@ HRESULT dx_player::update_video_pos()
 	memset(&source, 0, sizeof(source));
 	if (m_renderer2)
 	{
+		m_renderer2->Pump();
 		int id = 2;
 		if (m_revert) id = 1;
 
@@ -1310,8 +1314,8 @@ HRESULT dx_player::draw_ui()
 	get_volume(&volume);
 	if (m_mc)
 	{
-		OAFilterState fs;
-		HRESULT hr = m_mc->GetState(INFINITE, &fs);
+		static OAFilterState fs = State_Running;
+		HRESULT hr = m_mc->GetState(100, &fs);
 		if (fs == State_Running)
 			paused = false;
 	}
@@ -1371,6 +1375,17 @@ HRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 	return S_OK;
 }
 
+LRESULT dx_player::on_idle_time()
+{
+	if (init_done_flag != 0x12345678)
+		return S_FALSE;
+
+	if (m_renderer1)
+		m_renderer1->Pump();
+	if (m_renderer2)
+		m_renderer2->Pump();
+	return S_FALSE;
+}
 HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
 {
 	wchar_t file_to_play[MAX_PATH];
@@ -2042,8 +2057,8 @@ HRESULT dx_player::end_loading_step2(IPin *pin1, IPin *pin2)
 	//m_renderer2 = new CVMR9Windowless(m_hwnd2);
 
 	
-	m_renderer1 = new CEVRVista(m_hwnd1);
-	m_renderer2 = new CEVRVista(m_hwnd2);
+	m_renderer1 = new Cmy12doomRenderer(m_hwnd1);
+	m_renderer2 = new Cmy12doomRenderer(m_hwnd2);
 	if (m_renderer1 == NULL || m_renderer1->base_filter == NULL)
 	{
 		// no EVR, possible XP, try VMR9

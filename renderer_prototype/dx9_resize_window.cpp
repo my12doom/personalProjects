@@ -421,7 +421,7 @@ int WINAPI WinMain( HINSTANCE hInstance,
         }
         else
 		{
-			if (S_OK == renderer->handle_reset())
+			if (S_OK == renderer->pump())
 				Sleep(1);
 		}
     }
@@ -572,7 +572,7 @@ LRESULT CALLBACK WindowProc( HWND   hWnd,
 
         case WM_SIZE:
         {
-			if (renderer) renderer->handle_reset();
+			if (renderer) renderer->pump();
 			if(!g_bDeviceLost)
 			{
 				// If the device is not NULL and the WM_SIZE message is not a

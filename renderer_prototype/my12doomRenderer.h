@@ -29,7 +29,8 @@ public:
 	my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 = NULL, HWND hwnd2 = NULL);
 	~my12doomRenderer();
 
-	HRESULT handle_reset();
+	HRESULT pump();
+	HRESULT repaint_video();
 
 	HRESULT set_input_layout(int layout);
 	HRESULT set_output_mode(int mode);

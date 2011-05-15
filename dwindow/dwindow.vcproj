@@ -43,7 +43,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;E:\DX_SDK_LITE\Include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_OTHER_PROJECTS_AX"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -332,6 +332,18 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="my12doomRenderer"
+				>
+				<File
+					RelativePath="..\renderer_prototype\my12doomRenderer_dshow.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\my12doomRenderer_dx9.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -415,6 +427,14 @@
 				</File>
 				<File
 					RelativePath="..\libchecksum\SHA1.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="my12doomRenderer"
+				>
+				<File
+					RelativePath="..\renderer_prototype\my12doomRenderer.h"
 					>
 				</File>
 			</Filter>

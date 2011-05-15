@@ -54,6 +54,8 @@ const DWORD FVF_Flags = D3DFVF_XYZRHW | D3DFVF_TEX1 | D3DFVF_DIFFUSE | D3DFVF_SP
 
 HRESULT my12doomRenderer::handle_device_state()							//handle device create/recreate/lost/reset
 {
+	if (!m_pInputPin ||  !m_pInputPin->IsConnected())
+		return VFW_E_NOT_CONNECTED;
 	if (GetCurrentThreadId() != m_device_threadid)
 	{
 		if (m_device_state < device_lost)
@@ -283,7 +285,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 {
 
 	// device state check and restore
-	if (FAILED(handle_reset()) || !m_pInputPin->IsConnected())
+	if (FAILED(handle_device_state()))
 		return E_FAIL;
 
 
@@ -994,7 +996,7 @@ HRESULT my12doomRenderer::CompleteConnect(IPin *pRecievePin)
 	return __super::CompleteConnect(pRecievePin);
 }
 
-HRESULT my12doomRenderer::handle_reset()
+HRESULT my12doomRenderer::pump()
 {
 	RECT rect;
 	GetClientRect(g_hWnd, &rect);
@@ -1135,5 +1137,11 @@ HRESULT my12doomRenderer::set_window(HWND wnd, HWND wnd2)
 	g_hWnd = wnd;
 	g_hWnd2 = wnd2;
 	handle_device_state();
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::repaint_video()
+{
+	render(true);
 	return S_OK;
 }

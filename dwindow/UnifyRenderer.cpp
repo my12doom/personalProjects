@@ -433,3 +433,69 @@ HRESULT CEVRVista::ClearAlphaBitmap()
 {
 	return m_bmp->ClearAlphaBitmap();
 }
+
+// my12doom's renderer
+Cmy12doomRenderer::Cmy12doomRenderer(HWND hwnd)
+{
+	HRESULT hr;
+	m_renderer = new my12doomRenderer(NULL, &hr , hwnd);
+	if (FAILED(hr) || !m_renderer)
+		return;
+
+	m_renderer->QueryInterface(IID_IBaseFilter, (void**)&base_filter);
+}
+Cmy12doomRenderer::~Cmy12doomRenderer()
+{
+
+}
+// basic config
+HRESULT Cmy12doomRenderer::DisplayModeChanged()
+{
+	return S_OK;
+}
+HRESULT Cmy12doomRenderer::RepaintVideo(HWND hwnd, HDC hdc)
+{
+	return m_renderer->repaint_video();
+}
+HRESULT Cmy12doomRenderer::GetNativeVideoSize(LONG *lpWidth, LONG *lpHeight, LONG *lpARWidth, LONG *lpARHeight)
+{
+	return E_NOTIMPL;
+}
+HRESULT Cmy12doomRenderer::SetVideoPosition(const LPRECT lpSRCRect, const LPRECT lpDSTRect)
+{
+	return S_OK;
+}
+HRESULT Cmy12doomRenderer::SetVideoClippingWindow(HWND hwnd)
+{
+	return m_renderer->set_window(hwnd, NULL);
+}
+
+HRESULT Cmy12doomRenderer::Pump()
+{
+	return m_renderer->pump();
+}
+HRESULT Cmy12doomRenderer::SetAspectRatioMode(DWORD mode)
+{
+	if (mode == UnifyARMode_None)
+		return E_NOTIMPL;
+	else if (mode == UnifyARMode_LetterBox)
+		return S_OK;
+	else
+		return E_INVALIDARG;
+}
+
+// mixer
+HRESULT Cmy12doomRenderer::SetOutputRect(DWORD stream, const UnifyVideoNormalizedRect *rect)
+{
+	return E_NOTIMPL;
+}
+
+// alpha bitmap
+HRESULT Cmy12doomRenderer::SetAlphaBitmap(UnifyAlphaBitmap &bitmap)
+{
+	return E_NOTIMPL;
+}
+HRESULT Cmy12doomRenderer::ClearAlphaBitmap()
+{
+	return E_NOTIMPL;
+}
