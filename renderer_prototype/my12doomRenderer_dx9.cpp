@@ -1,7 +1,9 @@
 // Direct3D9 part of my12doom renderer
 
 #include "my12doomRenderer.h"
-#include "PixelShaders/ps.h"
+#include "PixelShaders/YV12.h"
+#include "PixelShaders/NV12.h"
+#include "PixelShaders/YUY2.h"
 #include "3dvideo.h"
 
 
@@ -202,7 +204,7 @@ HRESULT my12doomRenderer::terminate_render_thread()
 HRESULT my12doomRenderer::invalidate_objects()
 {
 	terminate_render_thread();
-	g_ps_yv12_to_rgb = NULL;
+	m_ps_YUV2RGB = NULL;
 	g_tex_mask = NULL;
 	g_tex_rgb_left = NULL;
 	g_tex_rgb_right = NULL;
@@ -237,9 +239,22 @@ HRESULT my12doomRenderer::restore_objects()
 	g_active_pp2.BackBufferHeight = rect.bottom - rect.top;
 	hr = g_pd3dDevice->CreateAdditionalSwapChain(&g_active_pp2, &g_swap2);
 
-	hr = g_pd3dDevice->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&g_tex_Y, NULL);
-	hr = g_pd3dDevice->CreateTexture(m_lVidWidth/2, m_lVidHeight/2, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&g_tex_U, NULL);	    
-	hr = g_pd3dDevice->CreateTexture(m_lVidWidth/2, m_lVidHeight/2, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&g_tex_V, NULL);
+	if (m_format == MEDIASUBTYPE_YUY2)
+	{
+		hr = g_pd3dDevice->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&g_tex_Y, NULL);
+	}
+	else if (m_format == MEDIASUBTYPE_NV12)
+	{
+		hr = g_pd3dDevice->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&g_tex_Y, NULL);
+		hr = g_pd3dDevice->CreateTexture(m_lVidWidth/2, m_lVidHeight/2, 1, NULL, D3DFMT_A8L8,D3DPOOL_MANAGED,	&g_tex_U, NULL);
+	}
+	else if (m_format == MEDIASUBTYPE_YV12)
+	{
+		hr = g_pd3dDevice->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&g_tex_Y, NULL);
+		hr = g_pd3dDevice->CreateTexture(m_lVidWidth/2, m_lVidHeight/2, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&g_tex_U, NULL);
+		hr = g_pd3dDevice->CreateTexture(m_lVidWidth/2, m_lVidHeight/2, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&g_tex_V, NULL);
+	}
+
 	hr = g_pd3dDevice->CreateTexture(g_temp_width, g_temp_height, 1, D3DUSAGE_RENDERTARGET, g_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &g_tex_rgb_left, NULL);
 	hr = g_pd3dDevice->CreateTexture(g_temp_width, g_temp_height, 1, D3DUSAGE_RENDERTARGET, g_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &g_tex_rgb_right, NULL);
 	hr = g_pd3dDevice->CreateTexture(g_active_pp.BackBufferWidth, g_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, g_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &g_mask_temp_left, NULL);
@@ -269,7 +284,14 @@ HRESULT my12doomRenderer::restore_objects()
 	calculate_vertex();
 
 	// pixel shader
-	hr = g_pd3dDevice->CreatePixelShader(g_code_planar_rgb, &g_ps_yv12_to_rgb);
+	if (m_format == MEDIASUBTYPE_YV12)
+		hr = g_pd3dDevice->CreatePixelShader(g_code_YV12toRGB, &m_ps_YUV2RGB);
+	else if (m_format == MEDIASUBTYPE_NV12)
+		hr = g_pd3dDevice->CreatePixelShader(g_code_NV12toRGB, &m_ps_YUV2RGB);
+	else if (m_format == MEDIASUBTYPE_YUY2)
+		hr = g_pd3dDevice->CreatePixelShader(g_code_YUY2toRGB, &m_ps_YUV2RGB);
+	else
+		return VFW_E_INVALID_FILE_FORMAT;
 
 	// Create the pixel shader
 	if (FAILED(hr)) return E_FAIL;
@@ -616,7 +638,6 @@ HRESULT my12doomRenderer::load_image(bool forced /* = false */)
 	if (!g_pd3dDevice || !g_tex_rgb_left ||!g_tex_rgb_right)
 		return E_FAIL;
 	HRESULT hr;
-	// loading YV12 image as three L8 texture
 	{
 		CAutoLock lck(&m_data_lock);
 		if (!forced && !m_data_changed)
@@ -628,56 +649,98 @@ HRESULT my12doomRenderer::load_image(bool forced /* = false */)
 		BYTE * src = m_data;
 		BYTE * dst;
 
-		if (!g_tex_Y || !g_tex_U ||!g_tex_V)
-			return E_FAIL;
-
-		// load Y
-		if( FAILED(hr = g_tex_Y->LockRect(0, &d3dlr, 0, NULL)))
-			return hr;
-		dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_lVidHeight; i++)
+		if (m_format == MEDIASUBTYPE_YUY2)
 		{
-			memcpy(dst, src, m_lVidWidth);
-			src += m_lVidWidth;
-			dst += d3dlr.Pitch;
+			// loading YUY2 image as one ARGB half width texture
+			if( FAILED(hr = g_tex_Y->LockRect(0, &d3dlr, 0, NULL)))
+				return hr;
+			dst = (BYTE*)d3dlr.pBits;
+			for(int i=0; i<m_lVidHeight; i++)
+			{
+				memcpy(dst, src, m_lVidWidth*2);
+				src += m_lVidWidth*2;
+				dst += d3dlr.Pitch;
+			}
+			g_tex_Y->UnlockRect(0);
 		}
-		// black level test
-		// memset(d3dlr.pBits, 0, d3dlr.Pitch * 100);
-		g_tex_Y->UnlockRect(0);
 
-		// load V
-		if( FAILED(hr = g_tex_V->LockRect(0, &d3dlr, 0, NULL)))
-			return hr;
-		dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_lVidHeight/2; i++)
+		else if (m_format == MEDIASUBTYPE_NV12)
 		{
-			memcpy(dst, src, m_lVidWidth/2);
-			src += m_lVidWidth/2;
-			dst += d3dlr.Pitch;
-		}
-		// black level test
-		// memset(d3dlr.pBits, 128, d3dlr.Pitch * 50);
-		g_tex_V->UnlockRect(0);
+			// loading NV12 image as one L8 texture and one A8L8 texture
 
-		// load U
-		if( FAILED(hr = g_tex_U->LockRect(0, &d3dlr, 0, NULL)))
-			return hr;
-		dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_lVidHeight/2; i++)
-		{
-			memcpy(dst, src, m_lVidWidth/2);
-			src += m_lVidWidth/2;
-			dst += d3dlr.Pitch;
+			//load Y
+			if( FAILED(hr = g_tex_Y->LockRect(0, &d3dlr, 0, NULL)))
+				return hr;
+			dst = (BYTE*)d3dlr.pBits;
+			for(int i=0; i<m_lVidHeight; i++)
+			{
+				memcpy(dst, src, m_lVidWidth);
+				src += m_lVidWidth;
+				dst += d3dlr.Pitch;
+			}
+			g_tex_Y->UnlockRect(0);
+
+			// load UV
+			if( FAILED(hr = g_tex_U->LockRect(0, &d3dlr, 0, NULL)))
+				return hr;
+			dst = (BYTE*)d3dlr.pBits;
+			for(int i=0; i<m_lVidHeight/2; i++)
+			{
+				memcpy(dst, src, m_lVidWidth);
+				src += m_lVidWidth;
+				dst += d3dlr.Pitch;
+			}
+			g_tex_U->UnlockRect(0);
 		}
-		// black level test
-		//memset(d3dlr.pBits, 128, d3dlr.Pitch * 50);
-		g_tex_U->UnlockRect(0);
+
+		else if (m_format == MEDIASUBTYPE_YV12)
+		{
+			// loading YV12 image as three L8 texture
+			// load Y
+			if( FAILED(hr = g_tex_Y->LockRect(0, &d3dlr, 0, NULL)))
+				return hr;
+			dst = (BYTE*)d3dlr.pBits;
+			for(int i=0; i<m_lVidHeight; i++)
+			{
+				memcpy(dst, src, m_lVidWidth);
+				src += m_lVidWidth;
+				dst += d3dlr.Pitch;
+			}
+			g_tex_Y->UnlockRect(0);
+
+			// load V
+			if( FAILED(hr = g_tex_V->LockRect(0, &d3dlr, 0, NULL)))
+				return hr;
+			dst = (BYTE*)d3dlr.pBits;
+			for(int i=0; i<m_lVidHeight/2; i++)
+			{
+				memcpy(dst, src, m_lVidWidth/2);
+				src += m_lVidWidth/2;
+				dst += d3dlr.Pitch;
+			}
+			g_tex_V->UnlockRect(0);
+
+			// load U
+			if( FAILED(hr = g_tex_U->LockRect(0, &d3dlr, 0, NULL)))
+				return hr;
+			dst = (BYTE*)d3dlr.pBits;
+			for(int i=0; i<m_lVidHeight/2; i++)
+			{
+				memcpy(dst, src, m_lVidWidth/2);
+				src += m_lVidWidth/2;
+				dst += d3dlr.Pitch;
+			}
+			g_tex_U->UnlockRect(0);
+		}
+
 	}
 
 
 	// pass 1: render full resolution to two seperate texture
 	hr = g_pd3dDevice->BeginScene();
-	hr = g_pd3dDevice->SetPixelShader(g_ps_yv12_to_rgb);
+	hr = g_pd3dDevice->SetPixelShader(m_ps_YUV2RGB);
+	float rect_data[4] = {m_lVidWidth, m_lVidHeight, m_lVidWidth/2, m_lVidHeight};
+	hr = g_pd3dDevice->SetPixelShaderConstantF(0, rect_data, 1);
 	hr = g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
 	CComPtr<IDirect3DSurface9> left_surface;
 	CComPtr<IDirect3DSurface9> right_surface;

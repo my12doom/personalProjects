@@ -262,7 +262,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /IGNORE:4089 /IGNORE:4098"
-				AdditionalDependencies="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode\strmbasd.lib strmiids.lib dxguid.lib d3d9.lib d3dx9d.lib winmm.lib odbc32.lib odbccp32.lib nvapi.lib"
+				AdditionalDependencies="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode\strmbasd.lib strmiids.lib dxguid.lib d3d9.lib d3dx9.lib winmm.lib odbc32.lib odbccp32.lib nvapi.lib"
 				OutputFile=".\Debug_Unicode/vmr9allocator.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

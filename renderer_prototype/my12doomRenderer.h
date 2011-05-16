@@ -69,7 +69,9 @@ protected:
 	double offset_x /*= -0.0*/;
 	double offset_y /*= 0.0*/;
 	double source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
-
+	int g_temp_width;
+	int g_temp_height;
+	GUID m_format;
 
 	// dx9 functions and variables
 	enum device_state
@@ -123,12 +125,10 @@ protected:
 	D3DPRESENT_PARAMETERS   g_active_pp2;
 	CCritSec m_frame_lock;
 	CCritSec m_device_lock;
-	int g_temp_width;
-	int g_temp_height;
 	int m_device_threadid;
 
 	CComPtr<IDirect3DVertexBuffer9> g_VertexBuffer;
-	CComPtr <IDirect3DPixelShader9> g_ps_yv12_to_rgb;
+	CComPtr <IDirect3DPixelShader9> m_ps_YUV2RGB;
 
 	CComPtr<IDirect3DTexture9> g_tex_Y;						// source texture x3, 
 	CComPtr<IDirect3DTexture9> g_tex_U;

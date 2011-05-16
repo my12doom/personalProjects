@@ -6,6 +6,16 @@ float4 p0 : register(c0);
 #define PI acos(-1)
 #define C1 (16.0/255.0)
 
+#define width (p0[0])
+#define height (p0[1])
+#define t_width (p0[2])
+#define t_height (p0[3])
+
+#define dx (1/width)
+#define dy (1/height)
+#define px (1/t_width)
+#define py (1/t_height)
+
 float4 main(float2 tex : TEXCOORD0) : COLOR
 {
 	if (tex.x > 0.5) tex.x -= 0.5;
@@ -79,31 +89,78 @@ float4 main3(float2 tex : TEXCOORD0) : COLOR
 	return yuv2rgb(float4(tex2D(s0, texY).r, tex2D(s0, texV).r, tex2D(s0, texU).r, 1));
 }
 
-float4 planar_rgb(float2 tex : TEXCOORD0) : COLOR
+float2 Y2Tex(float2 Y)
 {
-	float xx = (tex.x - 0.5/1680) * 1680 + 0.5;
-	xx = xx - frac(xx);
+	float xx = Y.x/t_width + 0.5/t_width;
+	float yy = Y.y/t_height + 0.5/t_height;
+	return float2(xx, yy);
+}
 
-	float yy = (tex.y - 0.5/2100) * 2100 + 0.5;
-	yy = yy - frac(yy);
+float4 NV12toRGB_1plane(float2 tex : TEXCOORD0) : COLOR		//NV12
+{
+	int x1 = floor((tex.x - 0.5/width) * width + 0.5);
+	int y1 = floor((tex.y - 0.5/height) * height + 0.5);		// (x1,y1) : coordinate in Y plane
 	
-	float2 t2 = {xx,yy};
-	t2.x *= 1.0/(1680);
-	t2.y *= 1.0/(2100);
+	int x2 = x1/2;
+	int y2 = y1/2;
 	
-	t2.x += 0.5/(1680);
-	t2.y += 0.5/(2100);
-	return tex2D(s0, t2);
+	int x3 = x2*2;
+	int y3 = y2;
 	
-	if (xx % 2 == 1)
-		return float4(1.0, 0.0, 0.0, 1.0);
-	else
-		return float4(0.0, 1.0, 0.0, 1.0);
-		
-	//tex -= frac(tex);
+	float2 tex_y = Y2Tex(float2(x1, y1));
+	float2 tex_v = Y2Tex(float2(x3+1, y3+height));
+	float2 tex_u = Y2Tex(float2(x3, y3+height));
+	
+	
+	return yuv2rgb(float4(tex2D(s0, tex_y).r, tex2D(s0, tex_u).r, tex2D(s0, tex_v).r, 1));
+}
+
+float4 planar_rgb_yv12(float2 tex : TEXCOORD0) : COLOR
+{
+	int x1 = floor((tex.x - 0.5/width) * width + 0.5);
+	int y1 = floor((tex.y - 0.5/height) * height + 0.5);		// (x1,y1) : coordinate in Y plane
+	
+	int x2 = x1/2;
+	int y2 = y1/2;
+	
+	int x3 = x2;
+	//if (y2 % 2 != 0) x3 += width/2;
+	x3 += width/2*(y2%2);
+	int y3 = y2/2;
+	
+	float2 tex_y = Y2Tex(float2(x1, y1));
+	float2 tex_v = Y2Tex(float2(x3, y3+height));
+	float2 tex_u = Y2Tex(float2(x3, y3+height*5/4));
+	
+	return yuv2rgb(float4(tex2D(s0, tex_y).r, tex2D(s0, tex_u).r, tex2D(s0, tex_v).r, 1));
+}
+
+
+float4 YV12toRGB(float2 tex : TEXCOORD0) : COLOR
+{
 	return yuv2rgb(float4(tex2D(s0, tex).r, tex2D(s1, tex).r, tex2D(s2, tex).r, 1));
 }
 
+float4 YUY2toRGB(float2 tex : TEXCOORD0) : COLOR
+{
+	float4 uv = tex2D(s0, tex);		//u:1,v:3
+	int x2 = floor((tex.x - 0.5/(width)) * (width) + 0.5);
+	
+	int x = floor((tex.x - 0.5/t_width) * t_width + 0.5);
+	float x1 = x/t_width + 0.5/t_width;
+	float4 y4 = tex2D(s0, float2(x1, tex.y));
+		
+	if (x2%2==0)
+		return yuv2rgb(float4(y4[2], uv[1], uv[3],1));
+	else
+		return yuv2rgb(float4(y4[0], uv[1], uv[3],1));
+		
+	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex)[1], tex2D(s1, tex)[3], 1));
+}
+float4 NV12toRGB(float2 tex : TEXCOORD0) : COLOR		//NV12
+{
+	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex)[0], tex2D(s1, tex)[3], 1));
+}
 float4 yuy2_argb_rgb(float2 tex : TEXCOORD0) : COLOR
 {
 	// BGRA = YUYV

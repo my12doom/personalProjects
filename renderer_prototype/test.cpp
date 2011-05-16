@@ -86,13 +86,13 @@ int WINAPI WinMain( HINSTANCE hInstance,
 		_T("Direct3D (DX9) - Resize Window"),
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		//WS_EX_TOPMOST | WS_POPUP,    // fullscreen values
-		600, 0, 808, 480, NULL, NULL, hInstance, NULL );
+		600, 0, 816, 480, NULL, NULL, hInstance, NULL );
 
 	g_hWnd2 = CreateWindowEx( NULL, _T("MY_WINDOWS_CLASS"),
 		_T("Direct3D (DX9) - Resize Window2"),
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		//WS_EX_TOPMOST | WS_POPUP,    // fullscreen values
-		700, 50, 808, 480, NULL, NULL, hInstance, NULL );
+		700, 50, 816, 480, NULL, NULL, hInstance, NULL );
 
 	if( g_hWnd == NULL  || g_hWnd2 == NULL)
 		return E_FAIL;

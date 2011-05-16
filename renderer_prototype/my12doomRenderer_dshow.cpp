@@ -60,8 +60,9 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt)
 
     pvi = (VIDEOINFO *)pmt->Format();
 
-    if(IsEqualGUID( *pmt->Type(),    MEDIATYPE_Video)  &&
-       IsEqualGUID( *pmt->Subtype(), MEDIASUBTYPE_YV12) || IsEqualGUID( *pmt->Subtype(), MEDIASUBTYPE_NV12))
+	GUID subtype = *pmt->Subtype();
+    if(*pmt->Type() == MEDIATYPE_Video  &&
+       (subtype == MEDIASUBTYPE_YV12 || subtype ==  MEDIASUBTYPE_NV12 || subtype == MEDIASUBTYPE_YUY2))
     {
         hr = S_OK;
     }
@@ -105,12 +106,26 @@ HRESULT my12doomRenderer::SetMediaType(const CMediaType *pmt)
 	else
 		input_layout = mono2d;
 
+	m_format = *pmt->Subtype();
 
 	if (m_data)
 		free(m_data);
-	m_data = (BYTE*)malloc(m_lVidWidth * m_lVidHeight * 3 / 2);
-	memset(m_data, 0, m_lVidWidth * m_lVidHeight);
-	memset(m_data + m_lVidWidth * m_lVidHeight, 128, m_lVidWidth * m_lVidHeight/2);
+
+	if (m_format  == MEDIASUBTYPE_YUY2)
+	{
+		m_data = (BYTE*)malloc(m_lVidWidth * m_lVidHeight * 2);
+		BYTE one_line[4096];
+		for(DWORD i=0; i<4096; i++)
+			one_line[i] = i%2 ? 128 : 0;
+		for(int i=0; i<m_lVidHeight; i++)
+			memcpy(m_data + m_lVidWidth*2*i, one_line, m_lVidWidth*2);
+	}
+	else
+	{
+		m_data = (BYTE*)malloc(m_lVidWidth * m_lVidHeight * 3 / 2);
+		memset(m_data, 0, m_lVidWidth * m_lVidHeight);
+		memset(m_data + m_lVidWidth * m_lVidHeight, 128, m_lVidWidth * m_lVidHeight/2);
+	}
 	m_data_changed = false;
 
     return S_OK;
@@ -125,7 +140,6 @@ HRESULT my12doomRenderer::DoRenderSample( IMediaSample * pSample )
 		CAutoLock lck(&m_data_lock);
 		m_data_changed = true;
 		memcpy(m_data, pBmpBuffer, pSample->GetActualDataLength());
-
 	}
 
 	if (output_mode != pageflipping)

@@ -16,7 +16,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	LPD3DXBUFFER pCode = NULL;
 	LPD3DXBUFFER pErrorMsgs = NULL;
-	HRESULT hr = D3DXCompileShaderFromFile(argv[1], NULL, NULL, T2A(argv[3]), "ps_2_0", 0, &pCode, &pErrorMsgs, NULL);
+	HRESULT hr = D3DXCompileShaderFromFile(argv[1], NULL, NULL, T2A(argv[3]), "ps_2_0", D3DXSHADER_OPTIMIZATION_LEVEL3, &pCode, &pErrorMsgs, NULL);
 	if (pErrorMsgs != NULL)
 	{
 		unsigned char* message = (unsigned char*)pErrorMsgs->GetBufferPointer();
@@ -24,6 +24,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	if ((FAILED(hr)))
 	{
+		printf("error : compile failed.\n");
 		return E_FAIL;
 	}
 	else
