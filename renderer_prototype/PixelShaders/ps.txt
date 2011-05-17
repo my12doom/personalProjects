@@ -68,7 +68,7 @@ float4 yuv2rgb(float4 yuv)
 			 1.164, 0.000, 1.596, 0.000,
 			 1.164,-0.391,-0.813, 0.000,
 			 1.164, 2.018, 0.000, 0.000,
-			 0.000, 0.000, 0.000, 0.000
+			 0.000, 0.000, 0.000, 1.000
 		};
 	
 	return (mul(coeffs2,yuv));
@@ -110,8 +110,7 @@ float4 NV12toRGB_1plane(float2 tex : TEXCOORD0) : COLOR		//NV12
 	float2 tex_y = Y2Tex(float2(x1, y1));
 	float2 tex_v = Y2Tex(float2(x3+1, y3+height));
 	float2 tex_u = Y2Tex(float2(x3, y3+height));
-	
-	
+		
 	return yuv2rgb(float4(tex2D(s0, tex_y).r, tex2D(s0, tex_u).r, tex2D(s0, tex_v).r, 1));
 }
 
@@ -135,10 +134,12 @@ float4 planar_rgb_yv12(float2 tex : TEXCOORD0) : COLOR
 	return yuv2rgb(float4(tex2D(s0, tex_y).r, tex2D(s0, tex_u).r, tex2D(s0, tex_v).r, 1));
 }
 
-
 float4 YV12toRGB(float2 tex : TEXCOORD0) : COLOR
 {
-	return yuv2rgb(float4(tex2D(s0, tex).r, tex2D(s1, tex).r, tex2D(s2, tex).r, 1));
+	float2 tex_v = {tex.x, tex.y/2};
+	float2 tex_u = {tex.x, tex.y/2+0.5};
+	
+	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex_u)[0], tex2D(s1, tex_v)[0], 1));
 }
 
 float4 YUY2toRGB(float2 tex : TEXCOORD0) : COLOR
@@ -157,38 +158,8 @@ float4 YUY2toRGB(float2 tex : TEXCOORD0) : COLOR
 		
 	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex)[1], tex2D(s1, tex)[3], 1));
 }
+
 float4 NV12toRGB(float2 tex : TEXCOORD0) : COLOR		//NV12
 {
 	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex)[0], tex2D(s1, tex)[3], 1));
-}
-float4 yuy2_argb_rgb(float2 tex : TEXCOORD0) : COLOR
-{
-	// BGRA = YUYV
-	tex.x = tex.x/5+0.5;
-	tex.y = tex.y/5+0.5;
-	
-	float x = tex.x / (1.0/1920.0);
-	x = 0;
-	float x1 = x % 1;
-	float x2 = 1 - x1;
-	float4 argb = tex2D(s0, tex);
-	float4 c1 = yuv2rgb(float4(argb.b, argb.g, argb.a, 1));
-	float4 c2 = yuv2rgb(float4(argb.r, argb.g, argb.a, 1));
-	
-	return c1*x1 + c2*x2;
-}
-
-float4 yuy2_a8l8_rgb(float2 tex : TEXCOORD0) : COLOR
-{
-	// BGRA = YUYV
-	float y = tex2D(s0, tex).r;
-	int x = tex.x / (1.0/1920.0);
-	float u = tex2D(s0, float2(x*(1.0/1920.0), tex.y)).a;
-	float v = tex2D(s0, float2((x+1)*(1.0/1920.0), tex.y)).a;
-	
-	return yuv2rgb(float4(y, u, v, 1));
-	
-	//float4 argb = tex2D(s0, tex);
-	//float4 c1 = yuv2rgb(float4(argb.b, argb.g, argb.a, 1));
-	//float4 c2 = yuv2rgb(float4(argb.r, argb.g, argb.a, 1));	
 }

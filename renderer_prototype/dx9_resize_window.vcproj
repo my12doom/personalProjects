@@ -300,10 +300,6 @@
 				RelativePath=".\my12doomRenderer.h"
 				>
 			</File>
-			<File
-				RelativePath=".\PixelShaders\ps.h"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

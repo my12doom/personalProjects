@@ -200,22 +200,6 @@ MyVertex g_myVertices[] =
 	{ 1.0f,-1.0f, 0.0f, 1.0f, D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,255,255),  1.0f,1.0f},
 
 };
-enum vertex_types
-{
-	vertex_pass1_types_count = 5,
-	vertex_point_per_type = 4,
-
-	vertex_pass1_whole = 0,
-	vertex_pass1_left = 4,
-	vertex_pass1_right = 8,
-	vertex_pass1_top = 12,
-	vertex_pass1_bottom = 16,
-
-	vertex_pass2_main = 20,
-	vertex_pass2_second = 24,
-
-	vertex_pass3 = 28,
-};
 
 enum output_mode_types
 {

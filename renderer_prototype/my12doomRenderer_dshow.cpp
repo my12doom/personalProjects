@@ -13,19 +13,19 @@ my12doomRenderer::my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 /* = 
 
 	timeBeginPeriod(1);
 	// aspect and offset
-	offset_x = 0.0;
-	offset_y = 0.0;
-	source_aspect = 0.0;
+	m_offset_x = 0.0;
+	m_offset_y = 0.0;
+	m_source_aspect = 0.0;
 
 	// window
-	g_hWnd = hwnd1;
-	g_hWnd2 = hwnd2;
+	m_hWnd = hwnd1;
+	m_hWnd2 = hwnd2;
 
 	// input / output
-	g_swapeyes = false;
-	output_mode = mono;
-	input_layout = mono2d;
-	mask_mode = row_interlace;
+	m_swapeyes = false;
+	m_output_mode = mono;
+	m_input_layout = mono2d;
+	m_mask_mode = row_interlace;
 	m_color1 = D3DCOLOR_XRGB(255, 0, 0);
 	m_color2 = D3DCOLOR_XRGB(0, 255, 255);
 
@@ -36,7 +36,7 @@ my12doomRenderer::my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 /* = 
 	m_render_thread_exit = false;
 
 	// D3D
-	g_pD3D = Direct3DCreate9( D3D_SDK_VERSION );
+	m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
 
 }
 
@@ -78,7 +78,7 @@ HRESULT my12doomRenderer::SetMediaType(const CMediaType *pmt)
 		VIDEOINFOHEADER *vihIn = (VIDEOINFOHEADER*)pmt->Format();
 		m_lVidWidth = vihIn->bmiHeader.biWidth;
 		m_lVidHeight = vihIn->bmiHeader.biHeight;
-		source_aspect = (double)m_lVidWidth / m_lVidHeight;
+		m_source_aspect = (double)m_lVidWidth / m_lVidHeight;
 
 	}
 
@@ -87,24 +87,24 @@ HRESULT my12doomRenderer::SetMediaType(const CMediaType *pmt)
 		VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)pmt->Format();
 		m_lVidWidth = vihIn->bmiHeader.biWidth;
 		m_lVidHeight = vihIn->bmiHeader.biHeight;
-		source_aspect = (double)vihIn->dwPictAspectRatioX / vihIn->dwPictAspectRatioY;
+		m_source_aspect = (double)vihIn->dwPictAspectRatioX / vihIn->dwPictAspectRatioY;
 	}
 
 	else
 		return E_FAIL;
 
-	if (source_aspect> 2.425)
+	if (m_source_aspect> 2.425)
 	{
-		source_aspect /= 2;
-		input_layout = side_by_side;
+		m_source_aspect /= 2;
+		m_input_layout = side_by_side;
 	}
-	else if (source_aspect< 1.2125)
+	else if (m_source_aspect< 1.2125)
 	{
-		source_aspect *= 2;
-		input_layout = top_bottom;
+		m_source_aspect *= 2;
+		m_input_layout = top_bottom;
 	}
 	else
-		input_layout = mono2d;
+		m_input_layout = mono2d;
 
 	m_format = *pmt->Subtype();
 
@@ -142,7 +142,7 @@ HRESULT my12doomRenderer::DoRenderSample( IMediaSample * pSample )
 		memcpy(m_data, pBmpBuffer, pSample->GetActualDataLength());
 	}
 
-	if (output_mode != pageflipping)
+	if (m_output_mode != pageflipping)
 		render(true);
 
 	return S_OK;

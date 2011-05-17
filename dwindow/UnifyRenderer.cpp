@@ -493,9 +493,17 @@ HRESULT Cmy12doomRenderer::SetOutputRect(DWORD stream, const UnifyVideoNormalize
 // alpha bitmap
 HRESULT Cmy12doomRenderer::SetAlphaBitmap(UnifyAlphaBitmap &bitmap)
 {
-	return E_NOTIMPL;
+	return m_renderer->set_bmp((BYTE*)bitmap.data, bitmap.width, bitmap.height, bitmap.fwidth, bitmap.fheight, bitmap.left, bitmap.top);
 }
 HRESULT Cmy12doomRenderer::ClearAlphaBitmap()
 {
-	return E_NOTIMPL;
+	return m_renderer->set_bmp(NULL, 0, 0, 0, 0, 0, 0);
+}
+HRESULT Cmy12doomRenderer::SetUI(void *data, int pitch)
+{
+	return m_renderer->set_ui(data, pitch);
+}
+HRESULT Cmy12doomRenderer::SetUIShow(bool show)
+{
+	return m_renderer->set_ui_visible(show);
 }

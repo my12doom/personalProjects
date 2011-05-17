@@ -51,6 +51,8 @@ public:
 	virtual HRESULT SetVideoClippingWindow2(HWND hwnd){return E_NOTIMPL;}
 	virtual HRESULT SetAspectRatioMode(DWORD mode)=0;
 	virtual HRESULT Pump(){return E_NOTIMPL;}
+	virtual HRESULT SetUI(void *data, int pitch){return E_NOTIMPL;}
+	virtual HRESULT SetUIShow(bool show){return E_NOTIMPL;}
 
 	// mixer
 	virtual HRESULT SetOutputRect(DWORD stream, const UnifyVideoNormalizedRect *rect)=0;
@@ -166,6 +168,10 @@ public:
 	// alpha bitmap
 	virtual HRESULT SetAlphaBitmap(UnifyAlphaBitmap &bitmap);
 	virtual HRESULT ClearAlphaBitmap();
+
+	// UI
+	virtual HRESULT SetUI(void *data, int pitch);
+	virtual HRESULT SetUIShow(bool show);
 
 protected:
 	my12doomRenderer *m_renderer;

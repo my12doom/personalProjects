@@ -202,6 +202,7 @@ HRESULT dx_player::reset()
 	exit_direct_show();
 	init_direct_show();
 	m_PD10 = false;
+	m_last_bar_width1 = m_last_bar_width2 = -1;
 	CAutoLock lck(&m_subtitle_sec);
 	m_srenderer = NULL;
 	m_external_subtitles.RemoveAll();
@@ -975,7 +976,6 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	}
 
 	{
-		m_lastCBtime = ms_start;
 		if (S_FALSE == hr)		// same subtitle, ignore
 			return S_OK;
 		else if (S_OK == hr)	// need to update
@@ -985,7 +985,6 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 			{
 				m_renderer1->ClearAlphaBitmap();
 				m_renderer2->ClearAlphaBitmap();
-				return S_OK;
 			}
 
 			// draw it
@@ -1008,6 +1007,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 				if (FAILED(hr)) 
 				{
 					free(sub.data);
+					m_lastCBtime = -1;				// failed, refresh on next frame
 					return hr;
 				}
 
@@ -1020,10 +1020,14 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 				bmp2.left += (double)m_subtitle_offset*sub.width/sub.width_pixel + sub.delta;
 				hr =  m_renderer2->SetAlphaBitmap(bmp2);
 				free(sub.data);
-				return hr;
+				if (FAILED(hr))
+				{
+					m_lastCBtime = -1;				// failed, refresh on next frame
+					return hr;
+				}
 			}
 		}
-
+		m_lastCBtime = ms_start;		// only do this if SetAlphaBitmap didn't fail, yes, it CAN FAIL!
 	}
 
 	return S_OK;
@@ -1156,7 +1160,7 @@ HRESULT dx_player::update_video_pos()
 		// move the video zone to proper position
 		GetClientRect(id_to_hwnd(id), &client);
 		if (m_show_ui)
-			client.bottom -= 30;
+			;//client.bottom -= 30;
 		MoveWindow(id_to_video(id), 0, 0, client.right - client.left, client.bottom - client.top, TRUE);
 
 		GetClientRect(id_to_hwnd(id), &client);
@@ -1199,7 +1203,7 @@ HRESULT dx_player::update_video_pos()
 		// move the video zone to proper position
 		GetClientRect(id_to_hwnd(id), &client);
 		if (m_show_ui)
-			client.bottom -= 30;
+			;//client.bottom -= 30;
 		MoveWindow(id_to_video(id), 0, 0, client.right - client.left, client.bottom, TRUE);
 
 		GetClientRect(id_to_hwnd(id), &client);
@@ -1303,7 +1307,13 @@ HRESULT dx_player::draw_ui()
 	CAutoLock lock(&m_draw_sec);
 
 	if (!m_show_ui)
+	{
+		if (m_renderer1)
+			m_renderer1->SetUIShow(false);
+		if (m_renderer2)
+			m_renderer2->SetUIShow(false);
 		return S_FALSE;
+	}
 
 	int _total = 0, current = 0;
 	double volume = 1.0;
@@ -1327,19 +1337,32 @@ HRESULT dx_player::draw_ui()
 		m_bar_drawer.total_width = client_rc.right - client_rc.left;
 		m_bar_drawer.draw_total(paused, current, _total, volume);
 
+		//TODO: it seems that it is not a good idea to draw UI here..
 
-		HDC hdc = GetDC(id_to_hwnd(id));
-		HDC hdcBmp = CreateCompatibleDC(hdc);
-		HBITMAP hbm = CreateCompatibleBitmap(hdc, 4096, 30);
-		HBITMAP hbmOld = (HBITMAP)SelectObject(hdcBmp, hbm);
+		CUnifyRenderer *r = id==1?m_renderer1:m_renderer2;
+		if (r)
+		{
+			if (m_bar_drawer.total_width != (id==1?m_last_bar_width1:m_last_bar_width2))
+				if (SUCCEEDED(r->SetUI(m_bar_drawer.result, 4096*4)))
+					(id==1?m_last_bar_width1:m_last_bar_width2) = m_bar_drawer.total_width;
+			r->SetUIShow(true);
+		}
+		else
+		{
+			HDC hdc = GetDC(id_to_hwnd(id));
+			HDC hdcBmp = CreateCompatibleDC(hdc);
+			HBITMAP hbm = CreateCompatibleBitmap(hdc, 4096, 30);
+			HBITMAP hbmOld = (HBITMAP)SelectObject(hdcBmp, hbm);
 
-		SetBitmapBits(hbm, 4096*30*4, m_bar_drawer.result);
-		BitBlt(hdc, client_rc.left, client_rc.bottom-30, m_bar_drawer.total_width, 30, hdcBmp, 0, 0, SRCCOPY);
+			SetBitmapBits(hbm, 4096*30*4, m_bar_drawer.result);
+			BitBlt(hdc, client_rc.left, client_rc.bottom-30, m_bar_drawer.total_width, 30, hdcBmp, 0, 0, SRCCOPY);
 
-		DeleteObject(SelectObject(hdcBmp, hbmOld));
-		DeleteObject(hbm);
-		DeleteDC(hdcBmp);
-		ReleaseDC(id_to_hwnd(id), hdc);
+			DeleteObject(SelectObject(hdcBmp, hbmOld));
+			DeleteObject(hbm);
+			DeleteDC(hdcBmp);
+			ReleaseDC(id_to_hwnd(id), hdc);
+		}
+
 	}
 
 	return S_OK;
