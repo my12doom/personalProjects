@@ -2,10 +2,9 @@
 #include "resource.h"
 #include "dx_player.h"
 #include "global_funcs.h"
-#include "pgs\PGSRenderer.h"
 #include "private_filter.h"
-#include "srt\srt_renderer.h"
 #include "..\libchecksum\libchecksum.h"
+#include "..\CoreAVS\CS2SBS.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
@@ -97,7 +96,6 @@ HRESULT dx_player::CrackPD10(IBaseFilter *filter)
 // constructor & destructor
 dx_player::dx_player(RECT screen1, RECT screen2, HINSTANCE hExe):
 m_renderer1(NULL),
-m_renderer2(NULL),
 dwindow(screen1, screen2),
 m_lFontPointSize(L"FontSize", 40),
 m_FontName(L"Font", L"Arial"),
@@ -119,7 +117,6 @@ m_always_show_right(L"AlwaysShowRight", false)
 
 	// vars
 	m_file_loaded = false;
-	m_PD10 = false;
 	m_select_font_active = false;
 	m_log = (wchar_t*)malloc(100000);
 	m_log[0] = NULL;
@@ -129,7 +126,6 @@ m_always_show_right(L"AlwaysShowRight", false)
 	m_mirror1 = 0;
 	m_mirror2 = 0;
 	m_letterbox_delta = 0.0;
-	m_filter_mode = FILTER_MODE_FAIL;
 	m_subtitle_center_x = 0.5;
 	m_subtitle_bottom_y = 0.95;
 	m_loading = false;
@@ -201,7 +197,6 @@ HRESULT dx_player::reset()
 	// reinit
 	exit_direct_show();
 	init_direct_show();
-	m_PD10 = false;
 	CAutoLock lck(&m_subtitle_sec);
 	m_srenderer = NULL;
 	m_external_subtitles.RemoveAll();
@@ -364,9 +359,6 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 
 LRESULT dx_player::on_display_change()
 {
-	m_renderer1->DisplayModeChanged();
-	m_renderer2->DisplayModeChanged();
-
 	return S_OK;
 }
 
@@ -376,12 +368,10 @@ LRESULT dx_player::on_key_down(int id, int key)
 	{
 	case '1':
 		m_mirror1 ++;
-		update_video_pos();
 		break;
 
 	case '2':
 		m_mirror2 ++;
-		update_video_pos();
 		break;
 
 	case VK_F12:
@@ -399,11 +389,11 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case VK_NUMPAD7:									// image up
-		set_letterbox(m_letterbox_delta + 0.05);
+		set_letterbox(m_letterbox_delta - 0.005);
 		break;
 
 	case VK_NUMPAD1:
-		set_letterbox(m_letterbox_delta - 0.05);		// down
+		set_letterbox(m_letterbox_delta + 0.005);		// down
 		break;
 
 	case VK_NUMPAD5:									// reset position
@@ -641,13 +631,15 @@ LRESULT dx_player::on_timer(int id)
 
 LRESULT dx_player::on_move(int id, int x, int y)
 {
-	update_video_pos();
+	if (m_renderer1)
+		m_renderer1->pump();
 	return S_OK;
 }
 
 LRESULT dx_player::on_size(int id, int type, int x, int y)
 {
-	update_video_pos();
+	if (m_renderer1)
+		m_renderer1->pump();
 	return S_OK;
 }
 
@@ -665,36 +657,16 @@ LRESULT dx_player::on_paint(int id, HDC hdc)
 	DrawIcon(hdc, x, y, hIcon);
 	*/
 
-	if (id == 1)
+	if (m_renderer1)
+		m_renderer1->repaint_video();
+	else
 	{
-		CUnifyRenderer *c = m_renderer1;
-		if (m_revert) c = m_renderer2;
-
-		if (c)
-			c->RepaintVideo(id_to_hwnd(id), hdc);
-		else
-		{
-			RECT client;
-			GetClientRect(id_to_hwnd(id), &client);
-			FillRect(hdc, &client, (HBRUSH)BLACK_BRUSH+1);
-		}
+		RECT client;
+		GetClientRect(id_to_hwnd(id), &client);
+		FillRect(hdc, &client, (HBRUSH)BLACK_BRUSH+1);
 	}
 
-	if (id == 2)
-	{
-		CUnifyRenderer *c = m_renderer2;
-		if (m_revert) c = m_renderer1;
-		if (c)
-			c->RepaintVideo(id_to_hwnd(id), hdc);
-		else
-		{
-			RECT client;
-			GetClientRect(id_to_hwnd(id), &client);
-			FillRect(hdc, &client, (HBRUSH)BLACK_BRUSH+1);
-		}
-	}
-
-	update_video_pos();	// for paint ui and letterbox
+	draw_ui();
 	return S_OK;
 }
 
@@ -705,7 +677,6 @@ LRESULT dx_player::on_double_click(int id, int button, int x, int y)
 	set_fullscreen(1, m_full2);
 	show_window(2, m_full2|| m_always_show_right);		// show/hide it again
 
-	update_video_pos();
 	return S_OK;
 }
 
@@ -829,7 +800,6 @@ LRESULT dx_player::on_sys_command(int id, WPARAM wParam, LPARAM lParam)
 		set_fullscreen(1, true);
 		set_fullscreen(2, true);
 		show_window(2, m_full2 || m_always_show_right);		// show/hide it again
-		update_video_pos();
 		return S_OK;
 	}
 	else if (LOWORD(wParam) == SC_SCREENSAVE)
@@ -844,6 +814,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SendMessage(id_to_hwnd(id), WM_SETICON, TRUE, (LPARAM)h_icon);
 	SendMessage(id_to_hwnd(id), WM_SETICON, FALSE, (LPARAM)h_icon);
 	
+	/*
 	HWND video = CreateWindow(
 		_T("Static"),
 		_T("HelloWorld"),
@@ -859,41 +830,9 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	ShowWindow(video, SW_SHOW);
 	SetWindowLongPtr(video, GWL_USERDATA, (LONG_PTR)(dwindow*)this);
 	//SetWindowLongPtr(video, GWL_WNDPROC, (LONG_PTR)MainWndProc);
-
-	if (id == 1)
-		m_video1 = video;
-	else if (id == 2)
-		m_video2 = video;
-	else 
-		return S_OK;
+	*/
 
 	return S_OK;
-}
-
-HWND dx_player::id_to_video(int id)
-{
-	if (id == 1)
-		return m_video1;
-	else if (id == 2)
-		return m_video2;
-	else
-		return NULL;
-}
-int dx_player::video_to_id(HWND video)
-{
-	if (video == m_video1)
-		return 1;
-	else if (video == m_video2)
-		return 2;
-	else
-		return 0;
-}
-int dx_player::hwnd_to_id(HWND hwnd)
-{
-	if (video_to_id(hwnd))
-		return video_to_id(hwnd);
-	else
-		return __super::hwnd_to_id(hwnd);
 }
 
 // directshow part
@@ -919,24 +858,11 @@ HRESULT dx_player::exit_direct_show()
 {
 	if (m_mc)
 		m_mc->Stop();
-		
-	if (m_renderer1)
-		{delete m_renderer1; m_renderer1=NULL;}
-	if (m_renderer2)
-		{delete m_renderer2; m_renderer2=NULL;}
-	if (m_stereo)
-		m_stereo->SetCallback(NULL);
-	if (m_mono1)
-		m_mono1->SetCallback(NULL);
-	if (m_mono2)
-		m_mono2->SetCallback(NULL);
+
+	m_renderer1=NULL;
 
 	m_file_loaded = false;
 	
-	m_stereo = NULL;
-	m_mono1 = NULL;
-	m_mono2 = NULL;
-
 	m_ba = NULL;
 	m_ms = NULL;
 	m_mc = NULL;
@@ -945,16 +871,10 @@ HRESULT dx_player::exit_direct_show()
 	return S_OK;
 }
 
-HRESULT dx_player::SetOffset(REFERENCE_TIME offset)
-{
-	m_splitter_offset = offset;
-	return S_OK;
-}
-
 HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn)
 {
-	int ms_start = (int)((TimeStart + m_splitter_offset) / 10000);
-	int ms_end = (int)((TimeEnd + m_splitter_offset) / 10000);
+	int ms_start = (int)(TimeStart / 10000);
+	int ms_end = (int)(TimeEnd / 10000);
 
 	// CSubtitleRenderer test
 	rendered_subtitle sub;
@@ -970,8 +890,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	// clear
 	if (m_lastCBtime == -1)
 	{
-		m_renderer1->ClearAlphaBitmap();
-		m_renderer2->ClearAlphaBitmap();
+		//m_renderer1->set_bmp(NULL, 0, 0, 0, 0, 0, 0); // FIXME: maybe we don't need to clear here?
 	}
 
 	{
@@ -982,8 +901,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 			// empty result, clear it
 			if( sub.width == 0 || sub.height ==0 || sub.width_pixel==0 || sub.height_pixel == 0 || sub.data == NULL)
 			{
-				m_renderer1->ClearAlphaBitmap();
-				m_renderer2->ClearAlphaBitmap();
+				m_renderer1->set_bmp(NULL, 0, 0, 0, 0, 0, 0);
 			}
 
 			// draw it
@@ -996,13 +914,10 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 				double delta1 = (1-aspect_screen1/sub.aspect);
 				double delta2 = (1-aspect_screen1/sub.aspect);
 
-				UnifyAlphaBitmap bmp1 = {sub.width_pixel, sub.height_pixel, sub.data, 
-					(float)sub.left + (m_subtitle_center_x-0.5),
-					(float)sub.top *(1-delta1) + delta1/2 + (m_subtitle_bottom_y-0.95),
-					(float)sub.width,
-					(float)sub.height * (1-delta1)};
-
-				HRESULT hr = m_renderer1->SetAlphaBitmap(bmp1);
+				hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
+					sub.height * (1-delta1),
+					sub.left + (m_subtitle_center_x-0.5),
+					sub.top *(1-delta1) + delta1/2 + (m_subtitle_bottom_y-0.95));
 				if (FAILED(hr)) 
 				{
 					free(sub.data);
@@ -1010,14 +925,11 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 					return hr;
 				}
 
-				// another eye
-				UnifyAlphaBitmap bmp2 = {sub.width_pixel, sub.height_pixel, sub.data, 
-					(float)sub.left + (m_subtitle_center_x-0.5),
-					(float)sub.top *(1-delta2) + delta2/2 + (m_subtitle_bottom_y-0.95),
-					(float)sub.width,
-					(float)sub.height * (1-delta2)};
-				bmp2.left += (double)m_subtitle_offset*sub.width/sub.width_pixel + sub.delta;
-				hr =  m_renderer2->SetAlphaBitmap(bmp2);
+				//TODO2
+				hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width, 
+					sub.height * (1-delta2),
+					sub.left + (m_subtitle_center_x-0.5) + (double)m_subtitle_offset*sub.width/sub.width_pixel + sub.delta,
+					sub.top *(1-delta2) + delta2/2 + (m_subtitle_bottom_y-0.95));
 				free(sub.data);
 				if (FAILED(hr))
 				{
@@ -1143,153 +1055,24 @@ HRESULT dx_player::on_dshow_event()
 	return S_OK;
 }
 
-HRESULT dx_player::update_video_pos()
-{
-	RECT client;
-	RECT source = {0,0,0,0};
-	RECT letterbox = {0,0,0,0};
-
-	// set window pos
-	if (m_renderer1)
-	{
-		m_renderer1->Pump();
-		int id = 1;
-		if (m_revert) id = 2;
-
-		// move the video zone to proper position
-		GetClientRect(id_to_hwnd(id), &client);
-		if (m_show_ui)
-			;//client.bottom -= 30;
-		MoveWindow(id_to_video(id), 0, 0, client.right - client.left, client.bottom - client.top, TRUE);
-
-		GetClientRect(id_to_hwnd(id), &client);
-		if (FAILED(m_renderer1->GetNativeVideoSize(&source.right, &source.bottom, NULL, NULL)) || source.right == source.left || source.bottom == source.top)
-		{
-			source.right = 1920;
-			source.bottom = 1920*(m_screen1.bottom - m_screen1.top) / (m_screen1.right - m_screen1.left);
-		};
-
-		m_renderer1->SetVideoPosition(&source, &client);
-
-		// mirror
-		UnifyVideoNormalizedRect mirror_rect = {0,0,1,1};
-		float tmp = 0.0;
-		if (m_mirror1 & 0x1) //mirror horizontal
-		{
-			tmp = mirror_rect.left;
-			mirror_rect.left = mirror_rect.right;
-			mirror_rect.right = tmp;
-		}
-		if (m_mirror1 & 0x2) //mirror horizontal
-		{
-			tmp = mirror_rect.top;
-			mirror_rect.top = mirror_rect.bottom;
-			mirror_rect.bottom = tmp;
-		}
-		m_renderer1->SetOutputRect(0, &mirror_rect);
-
-		// paint letterbox
-		paint_letterbox(id, letterbox);
-	}
-
-	memset(&source, 0, sizeof(source));
-	if (m_renderer2)
-	{
-		m_renderer2->Pump();
-		int id = 2;
-		if (m_revert) id = 1;
-
-		// move the video zone to proper position
-		GetClientRect(id_to_hwnd(id), &client);
-		if (m_show_ui)
-			;//client.bottom -= 30;
-		MoveWindow(id_to_video(id), 0, 0, client.right - client.left, client.bottom, TRUE);
-
-		GetClientRect(id_to_hwnd(id), &client);
-		if (FAILED(m_renderer1->GetNativeVideoSize(&source.right, &source.bottom, NULL, NULL)) || source.right == source.left || source.bottom == source.top)
-		{
-			source.right = 1920;
-			source.bottom = 1920*(m_screen2.bottom - m_screen1.top) / (m_screen2.right - m_screen2.left);
-		};
-		m_renderer2->SetVideoPosition(&source, &client);
-
-		// mirror
-		UnifyVideoNormalizedRect mirror_rect = {0,0,1,1};
-		float tmp = 0.0;
-		if (m_mirror2 & 0x1) //mirror horizontal
-		{
-			tmp = mirror_rect.left;
-			mirror_rect.left = mirror_rect.right;
-			mirror_rect.right = tmp;
-		}
-		if (m_mirror2 & 0x2) //mirror horizontal
-		{
-			tmp = mirror_rect.top;
-			mirror_rect.top = mirror_rect.bottom;
-			mirror_rect.bottom = tmp;
-		}
-		m_renderer2->SetOutputRect(0, &mirror_rect);
-
-		// paint letterbox
-		paint_letterbox(id, letterbox);
-	}
-
-	draw_ui();
-    
-	return S_OK;
-}
-
 HRESULT dx_player::set_revert(bool revert)
 {
 	m_revert = revert;
 
 	if (m_renderer1)
 	{
-		if (m_revert)
-			m_renderer1->SetVideoClippingWindow(id_to_video(2));
-		else
-			m_renderer1->SetVideoClippingWindow(id_to_video(1));
+		m_renderer1->set_swap_eyes(m_revert);
 	}
 
-	if (m_renderer2)
-	{
-		if (m_revert)
-			m_renderer2->SetVideoClippingWindow(id_to_video(1));
-		else
-			m_renderer2->SetVideoClippingWindow(id_to_video(2));
-	}
-	update_video_pos();
 	return S_OK;
 }
 
 HRESULT dx_player::set_letterbox(double delta)
 {
-	if (m_filter_mode == FILTER_MODE_FAIL)
-		return VFW_E_WRONG_STATE;
-
-	if (delta >1)
-		delta = 1;
-	if (delta <-1)
-		delta = -1;
-
 	m_letterbox_delta = delta;
 
-	if (m_filter_mode == FILTER_MODE_MONO)
-	{
-		int height = 0;
-		m_mono1->GetLetterboxHeight(&height);
-		m_mono1->SetLetterbox((int)(-height*m_letterbox_delta));
-
-		m_mono2->GetLetterboxHeight(&height);
-		m_mono2->SetLetterbox((int)(-height*m_letterbox_delta));
-	}
-
-	if (m_filter_mode == FILTER_MODE_STEREO)
-	{
-		int height = 0;
-		m_stereo->GetLetterboxHeight(&height);
-		m_stereo->SetLetterbox((int)(-height*m_letterbox_delta));
-	}
+	if (m_renderer1)
+		m_renderer1->set_offset(2, m_letterbox_delta);
 
 	return S_OK;
 }
@@ -1297,7 +1080,6 @@ HRESULT dx_player::set_letterbox(double delta)
 HRESULT dx_player::show_ui(bool show)
 {
 	m_show_ui = show;
-	update_video_pos();
 	return S_OK;
 }
 
@@ -1308,9 +1090,7 @@ HRESULT dx_player::draw_ui()
 	if (!m_show_ui)
 	{
 		if (m_renderer1)
-			m_renderer1->SetUIShow(false);
-		if (m_renderer2)
-			m_renderer2->SetUIShow(false);
+			m_renderer1->set_ui_visible(false);
 		return S_FALSE;
 	}
 
@@ -1329,22 +1109,21 @@ HRESULT dx_player::draw_ui()
 			paused = false;
 	}
 
-	for(int id=1; id<=2; id++)
+	RECT client_rc;
+	GetClientRect(id_to_hwnd(1), &client_rc);
+	m_bar_drawer.total_width = client_rc.right - client_rc.left;
+	m_bar_drawer.draw_total(paused, current, _total, volume);
+
+	//TODO: it seems that it is not a good idea to draw UI here..
+
+	if (m_renderer1)
 	{
-		RECT client_rc;
-		GetClientRect(id_to_hwnd(id), &client_rc);
-		m_bar_drawer.total_width = client_rc.right - client_rc.left;
-		m_bar_drawer.draw_total(paused, current, _total, volume);
-
-		//TODO: it seems that it is not a good idea to draw UI here..
-
-		CUnifyRenderer *r = id==1?m_renderer1:m_renderer2;
-		if (r)
-		{
-			r->SetUI(m_bar_drawer.result, 4096*4);
-			r->SetUIShow(true);
-		}
-		else
+		m_renderer1->set_ui(m_bar_drawer.result, 4096*4);
+		m_renderer1->set_ui_visible(true);
+	}
+	else
+	{
+		for(int id=1; id<=2; id++)
 		{
 			HDC hdc = GetDC(id_to_hwnd(id));
 			HDC hdcBmp = CreateCompatibleDC(hdc);
@@ -1359,7 +1138,6 @@ HRESULT dx_player::draw_ui()
 			DeleteDC(hdcBmp);
 			ReleaseDC(id_to_hwnd(id), hdc);
 		}
-
 	}
 
 	return S_OK;
@@ -1401,9 +1179,7 @@ LRESULT dx_player::on_idle_time()
 		return S_FALSE;
 
 	if (m_renderer1)
-		m_renderer1->Pump();
-	if (m_renderer2)
-		m_renderer2->Pump();
+		m_renderer1->pump();
 	return S_FALSE;
 }
 HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
@@ -1437,29 +1213,14 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 		return hr;
 	}
 
-	// reset offset
-	m_splitter_offset = 0;
-
 	// subtitle renderer
 	m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
 
 	// Legacy Remux file
 	if (verify_file(file_to_play) == 2)
 	{
-		log_line(L"loading remux file %s...", file_to_play);
-		hr = load_REMUX_file(file_to_play);
-		if (SUCCEEDED(hr))
-		{
-			log_line(L"loaded as remux file");
-			m_file_loaded = true;
-			return hr;
-		}
-		else
-		{
-			log_line(L"loading as remux file failed. error=0x%08x", hr);
-			m_file_loaded = false;
-			return hr;
-		}
+		log_line(L"remux file no longer supported! %s...", file_to_play);
+		return E_FAIL;
 	}
 
 	hr = beforeCreateCoreMVC();
@@ -1477,21 +1238,6 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 		CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source_source(source_base);
 		hr = source_source->Load(file_to_play, NULL);
 		hr = m_gb->AddFilter(source_base, L"Source");
-
-		// check MVC content, if is, Add a Cracked PD10 Decoder into graph, and set m_PD10=true
-		CComQIPtr<IMVC, &IID_IMVC> imvc(source_base);
-		if (imvc && imvc->IsMVC() == S_OK)
-			{
-				/*
-				CComPtr<IBaseFilter> pd10_decoder;
-				hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10_decoder);
-				hr = m_gb->AddFilter(pd10_decoder, L"PD10 Decoder");
-				hr = CrackPD10(pd10_decoder);
-				imvc->SetPD10(TRUE);
-				imvc->SetOffsetSink(this);
-				m_PD10 = true;
-				*/
-			}
 
 		// then render pins
 		CComPtr<IPin> pin;
@@ -1634,63 +1380,6 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 	return hr;
 }
 
-HRESULT dx_player::load_REMUX_file(const wchar_t *pathname)
-{
-	if (pathname == NULL)
-		return E_POINTER;
-
-	// create filters and add to graph
-	CComPtr<IBaseFilter> decoder;
-	myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&decoder);
-
-	CComPtr<IBaseFilter> source_base;
-	myCreateInstance(CLSID_SSIFSource, IID_IBaseFilter, (void**)&source_base);
-	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source(source_base);
-
-	if (decoder == NULL)
-	{
-		log_line(L"cyberlink PowerDVD10 module not found, register it first.");
-		return E_FAIL;		// cyberlink fail
-	}
-	if (source_base == NULL || source == NULL)
-		return E_FAIL;		// dshow fail
-
-	m_gb->AddFilter(source_base, L"Source");
-	m_gb->AddFilter(decoder, L"PD10 decoder");
-
-	// load file
-	HRESULT hr = source->Load(pathname, NULL);
-	if (FAILED(hr))
-		return E_FAIL;		//dshow fail
-	
-	// render demuxer output pins
-	CComPtr<IPin> pin;
-	CComPtr<IEnumPins> pEnum;
-	hr = source_base->EnumPins(&pEnum);
-	if (FAILED(hr))
-		return hr;
-	while (pEnum->Next(1, &pin, NULL) == S_OK)
-	{
-		PIN_DIRECTION ThisPinDir;
-		pin->QueryDirection(&ThisPinDir);
-		if (ThisPinDir == PINDIR_OUTPUT)
-		{
-			CComPtr<IPin> pin_tmp;
-			hr = pin->ConnectedTo(&pin_tmp);
-			if (SUCCEEDED(hr))  // Already connected, not the pin we want.
-				pin_tmp = NULL;
-			else  // Unconnected, this is the pin we may want.
-			{
-				m_gb->Render(pin);
-			}
-		}
-		pin = NULL;
-	}
-	m_PD10 = true;
-
-	return CrackPD10(decoder);
-}
-
 HRESULT dx_player::end_loading()
 {
 
@@ -1733,28 +1422,134 @@ HRESULT dx_player::end_loading()
 		log_line(L"%d video streams found.", num_renderer_found);
 	}
 
-	CComPtr<IPin> pin1;
-	CComPtr<IPin> pin2;
-
+	CComPtr<IPin> output;
 	if (num_renderer_found == 1)
-		end_loading_sidebyside(&pin1, &pin2);
-
-	if (num_renderer_found == 2)
-		end_loading_double_stream(&pin1, &pin2);
-
-	if (pin1 == NULL || pin2 == NULL)
 	{
-		log_line(L"pin connection failed.");
-		return E_FAIL;
-	}
+		// find the only renderer and replace it
+		bool hsbs_tested = false;
+		pEnum = NULL;
+		CComPtr<IBaseFilter> renderer;
+		hr = m_gb->EnumFilters(&pEnum);
+		ULONG fetched = 0;
+		while(pEnum->Next(1, &renderer, &fetched) == S_OK)
+		{
+			FILTER_INFO filter_info;
+			renderer->QueryFilterInfo(&filter_info);
+			if (filter_info.pGraph) filter_info.pGraph->Release();
+			if ( wcsstr(filter_info.achName, L"Video Renderer") )
+			{
+				CComPtr<IPin> video_renderer_input;
+				GetConnectedPin(renderer, PINDIR_INPUT, &video_renderer_input);
+				video_renderer_input->ConnectedTo(&output);
+				m_gb->RemoveFilter(renderer);
 
-	if ( FAILED(hr = end_loading_step2(pin1, pin2)))
+				// avisynth support
+				// remove "AVI Decompressor" and "Color Space Converter"
+	avisynth:
+				PIN_INFO pin_info;
+				output->QueryPinInfo(&pin_info);
+				FILTER_INFO filter_info;
+				pin_info.pFilter->QueryFilterInfo(&filter_info);
+				if (wcsstr(filter_info.achName, L"AVI Decompressor") || wcsstr(filter_info.achName, L"Color Space Converter"))
+				{
+					CComPtr<IPin> avi_de_input;
+					GetConnectedPin(pin_info.pFilter, PINDIR_INPUT, &avi_de_input);
+					output = NULL;
+					avi_de_input->ConnectedTo(&output);
+					m_gb->RemoveFilter(pin_info.pFilter);
+
+					filter_info.pGraph->Release();
+					pin_info.pFilter->Release();
+
+					wprintf(L"%s removed.\n", filter_info.achName);
+					goto avisynth;
+				}
+				filter_info.pGraph->Release();
+				pin_info.pFilter->Release();
+
+				break;
+			}
+			renderer = NULL;
+		}
+	}
+	
+	else if (num_renderer_found == 2)
 	{
-		log_line(L"failed connect dwindow stereo filter with renderer.(%08x)", hr);
-		return hr;
-	}
+		// find renderers and replace it
+		CComPtr<IEnumFilters> pEnum;
+		CComPtr<IBaseFilter> renderer;
 
-	// list filters
+		CS2SBS * cs2sbs = new CS2SBS(_T("Stereo Scope"), NULL, &hr);
+		CComQIPtr<IBaseFilter, &IID_IBaseFilter> stereo_scope(cs2sbs);
+		m_gb->AddFilter(stereo_scope, L"Stereo Scope");
+		GetUnconnectedPin(stereo_scope, PINDIR_OUTPUT, &output);
+restart:
+		renderer = NULL;
+		pEnum = NULL;
+		HRESULT hr = m_gb->EnumFilters(&pEnum);
+		ULONG fetched = 0;
+		while(pEnum->Next(1, &renderer, &fetched) == S_OK)
+		{
+			FILTER_INFO filter_info;
+			renderer->QueryFilterInfo(&filter_info);
+			if (filter_info.pGraph) filter_info.pGraph->Release();
+			if ( wcsstr(filter_info.achName, L"Video Renderer") )
+			{
+				CComPtr<IPin> renderer_input;
+				CComPtr<IPin> decoder_output;
+				GetConnectedPin(renderer, PINDIR_INPUT, &renderer_input);
+				renderer_input->ConnectedTo(&decoder_output);							//TODO: possible fail
+				m_gb->RemoveFilter(renderer);
+
+				// avisynth support
+avisynth2:
+				PIN_INFO pin_info;
+				decoder_output->QueryPinInfo(&pin_info);
+				FILTER_INFO filter_info;
+				pin_info.pFilter->QueryFilterInfo(&filter_info);
+				if (wcsstr(filter_info.achName, L"AVI Decompressor") || wcsstr(filter_info.achName, L"Color Space Converter"))
+				{
+					CComPtr<IPin> avi_de_input;
+					GetConnectedPin(pin_info.pFilter, PINDIR_INPUT, &avi_de_input);
+					decoder_output = NULL;
+					avi_de_input->ConnectedTo(&decoder_output);
+					m_gb->RemoveFilter(pin_info.pFilter);
+
+					filter_info.pGraph->Release();
+					pin_info.pFilter->Release();
+
+					wprintf(L"%s removed.\n", filter_info.achName);
+					goto avisynth2;
+				}
+				filter_info.pGraph->Release();
+				pin_info.pFilter->Release();
+
+				CComPtr<IPin> scope_in;
+				GetUnconnectedPin(stereo_scope, PINDIR_INPUT, &scope_in);
+				m_gb->ConnectDirect(decoder_output, scope_in, NULL);
+
+				goto restart;
+			}
+			renderer = NULL;
+		}
+
+	}
+	pEnum = NULL;
+
+	// connect renderer
+	m_renderer1 = new my12doomRenderer(NULL, &hr, id_to_hwnd(1), id_to_hwnd(2));
+	CComQIPtr<IBaseFilter, &IID_IBaseFilter> renderer_base(m_renderer1);
+	m_gb->AddFilter(renderer_base, L"The Renderer");
+	CComPtr<IPin> renderer_in;
+	GetUnconnectedPin(renderer_base, PINDIR_INPUT, &renderer_in);
+	m_gb->ConnectDirect(output, renderer_in, NULL);
+
+	m_renderer1->set_output_mode(dual_window);
+	m_renderer1->set_input_layout(side_by_side);
+	m_renderer1->set_callback(this);
+
+
+	// debug: list filters
 	log_line(L"Listing filters.");
 	pEnum = NULL;
 	filter = NULL;
@@ -1808,332 +1603,6 @@ HRESULT dx_player::end_loading()
 	log_line(L"");
 
 	m_loading = false;
-	return S_OK;
-}
-
-HRESULT dx_player::end_loading_sidebyside(IPin **pin1, IPin **pin2)
-{
-	m_filter_mode = FILTER_MODE_STEREO;
-	*pin1 = NULL;
-	*pin2 = NULL;
-
-	// create stereo splitter filter
-	if (FAILED(create_myfilter()))
-	{
-		return E_FAIL;
-	}
-
-	m_stereo->SetCallback(this);
-	double aspect = (double)(m_screen1.right - m_screen1.left) / (m_screen2.bottom - m_screen2.top);
-	if (m_PD10)
-		m_stereo->SetMode(DWindowFilter_CUT_MODE_PD10, DWindowFilter_EXTEND_CUSTOM_DECIMAL(aspect));
-	else
-		m_stereo->SetMode(DWindowFilter_CUT_MODE_AUTO, DWindowFilter_EXTEND_CUSTOM_DECIMAL(aspect));
-
-
-
-	CComQIPtr<IBaseFilter, &IID_IBaseFilter> stereo_base(m_stereo);
-	m_gb->AddFilter(stereo_base, L"Stereo Transform");
-
-	// find the only renderer and replace it
-	bool hsbs_tested = false;
-	CComPtr<IEnumFilters> pEnum;
-	CComPtr<IBaseFilter> renderer;
-	HRESULT hr = m_gb->EnumFilters(&pEnum);
-	ULONG fetched = 0;
-	while(pEnum->Next(1, &renderer, &fetched) == S_OK)
-	{
-		FILTER_INFO filter_info;
-		renderer->QueryFilterInfo(&filter_info);
-		if (filter_info.pGraph) filter_info.pGraph->Release();
-		if ( wcsstr(filter_info.achName, L"Video Renderer") )
-		{
-			CComPtr<IPin> video_renderer_input;
-			CComPtr<IPin> output;
-			GetConnectedPin(renderer, PINDIR_INPUT, &video_renderer_input);
-			video_renderer_input->ConnectedTo(&output);
-			m_gb->RemoveFilter(renderer);
-
-			// avisynth support
-			// remove "AVI Decompressor" and "Color Space Converter"
-avisynth:
-			PIN_INFO pin_info;
-			output->QueryPinInfo(&pin_info);
-			FILTER_INFO filter_info;
-			pin_info.pFilter->QueryFilterInfo(&filter_info);
-			if (wcsstr(filter_info.achName, L"AVI Decompressor") || wcsstr(filter_info.achName, L"Color Space Converter"))
-			{
-				CComPtr<IPin> avi_de_input;
-				GetConnectedPin(pin_info.pFilter, PINDIR_INPUT, &avi_de_input);
-				output = NULL;
-				avi_de_input->ConnectedTo(&output);
-				m_gb->RemoveFilter(pin_info.pFilter);
-
-				filter_info.pGraph->Release();
-				pin_info.pFilter->Release();
-
-				wprintf(L"%s removed.\n", filter_info.achName);
-				goto avisynth;
-			}
-			filter_info.pGraph->Release();
-			pin_info.pFilter->Release();
-
-			// connect them
-			CComPtr<IPin> stereo_pin;
-			GetUnconnectedPin(stereo_base, PINDIR_INPUT, &stereo_pin);
-test_hsbs:
-			m_gb->ConnectDirect(output, stereo_pin, NULL);
-			
-			CComPtr<IPin> check;
-			stereo_pin->ConnectedTo(&check);
-			if (check == NULL)
-			{
-				if (!hsbs_tested)
-				{
-					log_line(L"trying half SBS.");
-					hsbs_tested = true;
-					m_stereo->SetMode(DWindowFilter_CUT_MODE_LEFT_RIGHT_HALF, DWindowFilter_EXTEND_CUSTOM_DECIMAL(aspect));
-
-					FILE *f = fopen("lr.txt", "rb");
-					if (f)
-					{
-						m_stereo->SetMode(DWindowFilter_CUT_MODE_TOP_BOTTOM_HALF, DWindowFilter_EXTEND_CUSTOM_DECIMAL(aspect));
-						fclose(f);
-					}
-					goto test_hsbs;
-				}
-				log_line(L"input format not supported(half-width or half-height is not supported).");
-				return VFW_E_INVALID_MEDIA_TYPE;			// not connected
-			}
-
-			break;
-		}
-		renderer = NULL;
-	}
-	pEnum = NULL;
-
-	// find stereo output pins
-	CComPtr<IEnumPins> pEnumPin;
-	CComPtr<IPin> pin;
-	hr = stereo_base->EnumPins(&pEnumPin);
-	if (FAILED(hr))
-		return hr;
-	while (pEnumPin->Next(1, &pin, NULL) == S_OK)
-	{
-		PIN_DIRECTION ThisPinDir;
-		pin->QueryDirection(&ThisPinDir);
-		if (ThisPinDir == PINDIR_OUTPUT)
-		{
-			PIN_INFO info;
-			pin->QueryPinInfo(&info);
-			if (info.pFilter) info.pFilter->Release();
-
-			if (wcsstr(info.achName, L"1"))
-				*pin1 = pin;
-			else if (wcsstr(info.achName, L"2"))
-				*pin2 = pin;
-			((IPin*)pin)->AddRef();						//add ref...
-		}
-		pin = NULL;
-	}
-	return S_OK;
-}
-
-HRESULT dx_player::end_loading_double_stream(IPin **pin1, IPin **pin2)
-{
-	m_filter_mode = FILTER_MODE_MONO;
-	*pin1 = NULL;
-	*pin2 = NULL;
-
-	if (FAILED(create_myfilter()))
-	{
-		return E_FAIL;
-	}
-
-	m_mono1->SetCallback(this);							// set callback
-	
-	// set aspect
-	double aspect1 = (double)(m_screen1.right - m_screen1.left) / (m_screen2.bottom - m_screen2.top);
-	double aspect2 = (double)(m_screen1.right - m_screen1.left) / (m_screen2.bottom - m_screen2.top);
-	m_mono1->SetMode(DWindowFilter_CUT_MODE_AUTO, DWindowFilter_EXTEND_CUSTOM_DECIMAL(aspect1));
-	m_mono2->SetMode(DWindowFilter_CUT_MODE_AUTO, DWindowFilter_EXTEND_CUSTOM_DECIMAL(aspect2));
-
-
-	CComQIPtr<IBaseFilter, &IID_IBaseFilter> mono1base(m_mono1);
-	CComQIPtr<IBaseFilter, &IID_IBaseFilter> mono2base(m_mono2);
-
-	m_gb->AddFilter(mono1base, L"Mono Transform 1");
-	m_gb->AddFilter(mono2base, L"Mono Transform 2");
-
-
-	// find renderers and replace it
-	CComPtr<IEnumFilters> pEnum;
-	CComPtr<IBaseFilter> renderer;
-restart:
-	renderer = NULL;
-	pEnum = NULL;
-	HRESULT hr = m_gb->EnumFilters(&pEnum);
-	ULONG fetched = 0;
-	while(pEnum->Next(1, &renderer, &fetched) == S_OK)
-	{
-		FILTER_INFO filter_info;
-		renderer->QueryFilterInfo(&filter_info);
-		if (filter_info.pGraph) filter_info.pGraph->Release();
-		if ( wcsstr(filter_info.achName, L"Video Renderer") )
-		{
-			CComPtr<IPin> renderer_input;
-			CComPtr<IPin> output;
-			GetConnectedPin(renderer, PINDIR_INPUT, &renderer_input);
-			renderer_input->ConnectedTo(&output);							//TODO: possible fail
-			m_gb->RemoveFilter(renderer);
-
-			// avisynth support
-			avisynth:
-			PIN_INFO pin_info;
-			output->QueryPinInfo(&pin_info);
-			FILTER_INFO filter_info;
-			pin_info.pFilter->QueryFilterInfo(&filter_info);
-			if (wcsstr(filter_info.achName, L"AVI Decompressor") || wcsstr(filter_info.achName, L"Color Space Converter"))
-			{
-				CComPtr<IPin> avi_de_input;
-				GetConnectedPin(pin_info.pFilter, PINDIR_INPUT, &avi_de_input);
-				output = NULL;
-				avi_de_input->ConnectedTo(&output);
-				m_gb->RemoveFilter(pin_info.pFilter);
-
-				filter_info.pGraph->Release();
-				pin_info.pFilter->Release();
-
-				wprintf(L"%s removed.\n", filter_info.achName);
-				goto avisynth;
-			}
-			filter_info.pGraph->Release();
-			pin_info.pFilter->Release();
-
-
-			CComPtr<IPin> mono1_pin;
-			CComPtr<IPin> mono2_pin;
-			GetUnconnectedPin(mono1base, PINDIR_INPUT, &mono1_pin);
-			GetUnconnectedPin(mono2base, PINDIR_INPUT, &mono2_pin);
-
-			if (mono2_pin != NULL)
-			{
-				m_gb->ConnectDirect(output, mono2_pin, NULL);
-				GetUnconnectedPin(mono2base, PINDIR_OUTPUT, pin2);
-
-				goto restart;
-			}			
-			else if (mono1_pin != NULL)
-			{
-				m_gb->ConnectDirect(output, mono1_pin, NULL);
-				GetUnconnectedPin(mono1base, PINDIR_OUTPUT, pin1);
-
-				break;
-			}
-		}
-		renderer = NULL;
-	}
-	return S_OK;
-}
-
-
-HRESULT dx_player::create_myfilter()
-{
-	HRESULT hr = S_OK;
-	if (m_filter_mode == FILTER_MODE_FAIL)
-		return E_UNEXPECTED;
-
-	if (m_filter_mode == FILTER_MODE_MONO)
-	{
-		hr = myCreateInstance(CLSID_DWindowMono, IID_IDWindowExtender, (void**)&m_mono1);
-		hr = myCreateInstance(CLSID_DWindowMono, IID_IDWindowExtender, (void**)&m_mono2);
-
-		if (m_mono1 == NULL || m_mono2 == NULL)
-			hr = E_FAIL;
-	}
-
-	if (m_filter_mode == FILTER_MODE_STEREO)
-	{
-		hr = myCreateInstance(CLSID_DWindowStereo, IID_IDWindowExtender, (void**)&m_stereo);
-
-		if (m_stereo == NULL)
-			hr = E_FAIL;
-	}
-
-	return hr;
-}
-
-
-HRESULT dx_player::end_loading_step2(IPin *pin1, IPin *pin2)
-{
-	if (pin1 == NULL || pin2 == NULL)
-		return E_FAIL;
-
-	// create, config, and add vmr9 #1 & #2
-	//m_renderer1 = new CVMR7Windowless(m_hwnd1);
-	//m_renderer2 = new CVMR7Windowless(m_hwnd2);
-
-	//m_renderer1 = new CVMR9Windowless(m_hwnd1);
-	//m_renderer2 = new CVMR9Windowless(m_hwnd2);
-
-	
-	m_renderer1 = new Cmy12doomRenderer(m_hwnd1);
-	m_renderer2 = new Cmy12doomRenderer(m_hwnd2);
-	if (m_renderer1 == NULL || m_renderer1->base_filter == NULL)
-	{
-		// no EVR, possible XP, try VMR9
-		log_line(L"EVR Renderer failed.\n");
-		delete m_renderer1;
-		m_renderer1 = new CVMR9Windowless(m_hwnd1);
-		m_renderer2 = new CVMR9Windowless(m_hwnd2);
-	}
-
-	if (m_renderer1 == NULL || m_renderer1->base_filter == NULL)
-	{
-		// no VMR9, possible some ATI card?, try VMR7
-		log_line(L"VMR9 Renderer failed.\n");
-		delete m_renderer1;
-		m_renderer1 = new CVMR7Windowless(m_hwnd1);
-		m_renderer2 = new CVMR7Windowless(m_hwnd2);
-	}
-
-	if (m_renderer1 == NULL || m_renderer1->base_filter == NULL)
-	{
-		// no VMR7, FAIL
-		log_line(L"VMR7 Renderer failed.\n");
-		delete m_renderer1;
-		delete m_renderer2;
-		return E_FAIL;
-	}
-
-	
-
-	m_gb->AddFilter(m_renderer1->base_filter, L"Renderer #1");
-	m_gb->AddFilter(m_renderer2->base_filter, L"Renderer #2");
-
-	// config output window
-	m_renderer1->SetAspectRatioMode(UnifyARMode_LetterBox);
-	m_renderer2->SetAspectRatioMode(UnifyARMode_LetterBox);
-	set_revert(m_revert);
-
-	// connect pins
-	CComPtr<IPin> vmr1pin;
-	CComPtr<IPin> vmr2pin;
-
-	GetUnconnectedPin(m_renderer1->base_filter, PINDIR_INPUT, &vmr1pin);
-	GetUnconnectedPin(m_renderer2->base_filter, PINDIR_INPUT, &vmr2pin);
-
-	if (vmr1pin == NULL || vmr2pin == NULL)
-		return E_FAIL;
-
-	HRESULT hr = m_gb->ConnectDirect(pin1, vmr1pin, NULL);
-	if (FAILED(hr))
-		return hr;
-
-	hr = m_gb->ConnectDirect(pin2, vmr2pin, NULL);
-	if (FAILED(hr))
-		return hr;
-
 	return S_OK;
 }
 

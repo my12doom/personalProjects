@@ -979,10 +979,10 @@ HRESULT my12doomRenderer::calculate_vertex()
 	tar.bottom += (LONG)(tar_height * m_offset_y);
 
 	tmp = m_vertices + vertex_pass2_second;
-	tmp[0].x = tar.left-0.5f; tmp[0].y = tar.top-0.5f + 2048.0f;
-	tmp[1].x = tar.right-0.5f; tmp[1].y = tar.top-0.5f + 2048.0f;
-	tmp[2].x = tar.left-0.5f; tmp[2].y = tar.bottom-0.5f + 2048.0f;
-	tmp[3].x = tar.right-0.5f; tmp[3].y = tar.bottom-0.5f + 2048.0f;
+	tmp[0].x = tar.left-0.5f; tmp[0].y = tar.top-0.5f;
+	tmp[1].x = tar.right-0.5f; tmp[1].y = tar.top-0.5f;
+	tmp[2].x = tar.left-0.5f; tmp[2].y = tar.bottom-0.5f;
+	tmp[3].x = tar.right-0.5f; tmp[3].y = tar.bottom-0.5f;
 
 	// ui zone
 	tmp = m_vertices + vertex_ui;

@@ -23,7 +23,33 @@ enum mask_mode_types
 	row_interlace, line_interlace, checkboard_interlace, mask_mode_types_max
 };
 
-class my12doomRenderer : public CBaseVideoRenderer
+
+class Imy12doomRendererCallback
+{
+public:
+	virtual HRESULT SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn) = 0;
+};
+
+
+class DRendererInputPin : public CRendererInputPin
+{
+public:
+	DRendererInputPin(__inout CBaseRenderer *pRenderer,	__inout HRESULT *phr, __in_opt LPCWSTR Name) : CRendererInputPin(pRenderer, phr, Name){}
+	STDMETHODIMP NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
+};
+
+class DBaseVideoRenderer: public CBaseVideoRenderer
+{
+public:
+	DBaseVideoRenderer(REFCLSID clsid,LPCTSTR name , LPUNKNOWN pUnk,HRESULT *phr)
+		: CBaseVideoRenderer(clsid, name, pUnk, phr){};
+	virtual CBasePin * GetPin(int n);
+protected:
+	friend class DRendererInputPin;
+	REFERENCE_TIME m_thisstream;
+};
+
+class my12doomRenderer : public DBaseVideoRenderer
 {
 public:
 	my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 = NULL, HWND hwnd2 = NULL);
@@ -45,10 +71,12 @@ public:
 	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop);
 	HRESULT set_ui(void* data, int pitch);
 	HRESULT set_ui_visible(bool visible);
+	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
 	bool m_showui;
 	int m_last_ui_draw;
 	int m_bmp_width, m_bmp_height;
 	float m_bmp_fleft, m_bmp_ftop, m_bmp_fwidth, m_bmp_fheight;
+	Imy12doomRendererCallback *m_cb;
 
 	// get
 	DWORD get_mask_color(int id);
@@ -67,6 +95,9 @@ protected:
 	HRESULT DoRenderSample(IMediaSample *pMediaSample);
 	HRESULT	BreakConnect();
 	HRESULT CompleteConnect(IPin *pRecievePin);
+	REFERENCE_TIME m_t;
+	HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
+{m_t = tStart; return S_OK;}
 
 	// dshow variables
 	CCritSec m_data_lock;

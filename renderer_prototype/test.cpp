@@ -221,6 +221,7 @@ LRESULT CALLBACK WindowProc( HWND   hWnd,
 				break;
 			case VK_F3:
 				{
+					/*
 					CComQIPtr<IQualProp, &IID_IQualProp> qp(renderer);
 					int avg_fps = 0, avg_sync = 0, dev_sync = 0, n_drop = 0, jitter = 0;
 					qp->get_AvgFrameRate(&avg_fps);
@@ -232,6 +233,7 @@ LRESULT CALLBACK WindowProc( HWND   hWnd,
 					wchar_t tmp[256];
 					wsprintfW(tmp, L"avg_fps = %d, avg_sync = %d, dev_sync = %d, n_drop = %d, jitter = %d\n", avg_fps, avg_sync, dev_sync, n_drop, jitter);
 					SetWindowText(hWnd, tmp);
+					*/
 				}
 				break;
 

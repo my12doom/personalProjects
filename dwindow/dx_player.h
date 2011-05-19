@@ -5,12 +5,10 @@
 #include <InitGuid.h>
 
 // renderer
-#include "UnifyRenderer.h"
 #include "streams.h"
+#include "..\renderer_prototype\my12doomRenderer.h"
 #include "dwindow.h"
 #include "bar.h"
-#include "..\SsifSource\src\filters\parser\MpegSplitter\Imvc.h"
-#include "..\mySplitter\filter.h"
 
 // other
 #include "global_funcs.h"
@@ -44,7 +42,7 @@ public:
 	~subtitle_file_handler();
 };
 
-class dx_player : public IDWindowFilterCB, public dwindow, public COffsetSink
+class dx_player : public Imy12doomRendererCallback, public dwindow
 {
 public:
 	dx_player(RECT screen1, RECT screen2, HINSTANCE hExe);
@@ -57,7 +55,6 @@ public:
 	HRESULT start_loading();
 	HRESULT load_subtitle(const wchar_t *pathname, bool reset = true);
 	HRESULT load_file(const wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
-	HRESULT load_REMUX_file(const wchar_t *pathname);																				// for PD10 demuxer and mvc decoder
 	HRESULT end_loading();
 
 	// subtitle control functions
@@ -88,10 +85,6 @@ protected:
 	// image control vars
 	HINSTANCE m_hexe;
 	AutoSetting<bool> m_always_show_right/*(L"AlwaysShowRight", false)*/;
-	HWND m_video1;
-	HWND m_video2;
-	HWND id_to_video(int id);
-	int video_to_id(HWND video);
 
 	int m_mirror1;
 	int m_mirror2;			// 0x0:no mirror, 0x1 mirror horizontal, 0x2 mirror vertical, 0x3(0x3=0x1|0x2) mirror both
@@ -136,11 +129,8 @@ protected:
 	HRESULT enable_subtitle_track(int track);
 	HRESULT list_audio_track(HMENU submenu);
 	HRESULT list_subtitle_track(HMENU submenu);
-	int hwnd_to_id(HWND hwnd);
 
 	// filter callback function
-	REFERENCE_TIME m_splitter_offset;
-	HRESULT SetOffset(REFERENCE_TIME offset);
 	HRESULT SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn);
 
 	// directshow etc. core part
@@ -152,12 +142,8 @@ protected:
 	HRESULT draw_ui();
 
 	HRESULT on_dshow_event();		//"on move window"
-	HRESULT update_video_pos();		//"on move window"
 	HRESULT init_direct_show();
 	HRESULT exit_direct_show();
-	HRESULT end_loading_sidebyside(IPin **pin1, IPin **pin2);
-	HRESULT end_loading_double_stream(IPin **pin1, IPin **pin2);
-	HRESULT end_loading_step2(IPin *pin1, IPin *pin2);
 	bool m_loading;
 
 	// basic directshow vars
@@ -167,17 +153,8 @@ protected:
 	CComPtr<IMediaControl>		m_mc;
 	CComPtr<IBasicAudio>		m_ba;
 
-	// my filters
-	CComPtr<IDWindowExtender> m_stereo;
-	CComPtr<IDWindowExtender> m_mono1;
-	CComPtr<IDWindowExtender> m_mono2;
-	int m_filter_mode;
-	bool m_PD10;
-	HRESULT create_myfilter();
-
 	// renderer
-	CUnifyRenderer *m_renderer1;
-	CUnifyRenderer *m_renderer2;
+	my12doomRenderer *m_renderer1;
 
 	// subtitle control
 	CSubtitleRenderer *m_srenderer;

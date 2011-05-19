@@ -56,6 +56,70 @@ DWORD WINAPI MineGetModuleFileNameA(HMODULE hModule, LPSTR lpFilename, DWORD nSi
 }
 
 
+HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
+{
+	*ppPin = 0;
+	IEnumPins *pEnum = 0;
+	IPin *pPin = 0;
+	HRESULT hr = pFilter->EnumPins(&pEnum);
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+	while (pEnum->Next(1, &pPin, NULL) == S_OK)
+	{
+		PIN_DIRECTION ThisPinDir;
+		pPin->QueryDirection(&ThisPinDir);
+		if (ThisPinDir == PinDir)
+		{
+			IPin *pTmp = 0;
+			hr = pPin->ConnectedTo(&pTmp);
+			if (SUCCEEDED(hr))  // Already connected, not the pin we want.
+			{
+				pTmp->Release();
+			}
+			else  // Unconnected, this is the pin we want.
+			{
+				pEnum->Release();
+				*ppPin = pPin;
+				return S_OK;
+			}
+		}
+		pPin->Release();
+	}
+	pEnum->Release();
+	// Did not find a matching pin.
+	return E_FAIL;
+}
+
+HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *name, IPin **ppPin)
+{
+	*ppPin = NULL;
+	CComPtr<IEnumPins> ep;
+	pFilter->EnumPins(&ep);
+	CComPtr<IPin> pin;
+	while (ep->Next(1, &pin, NULL) == S_OK)
+	{
+		PIN_INFO pi;
+		pin->QueryPinInfo(&pi);
+
+		if (pi.pFilter)
+			pi.pFilter->Release();
+
+		PIN_DIRECTION ThisPinDir;
+		pin->QueryDirection(&ThisPinDir);
+		if (ThisPinDir == PinDir && wcsstr(pi.achName, name))
+		{
+			*ppPin = pin;
+			(*ppPin)->AddRef();
+			return S_OK;
+		}
+
+		pin = NULL;
+	}
+
+	return E_FAIL;
+}
 #define DSS_VERSION "2.5.8"
 
 /************************************

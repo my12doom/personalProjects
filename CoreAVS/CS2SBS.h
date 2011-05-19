@@ -3,9 +3,6 @@
 #include <dvdmedia.h>
 #include "..\two2one\two2one.h"
 
-HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
-HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *name, IPin **ppPin);
-
 class CS2SBS : public C2to1Filter
 {
 public:
