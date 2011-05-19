@@ -42,7 +42,7 @@ CBasePin *C2to1Filter::GetPin(int n)
 			L"XForm In2", 2);      // Pin name
 
 		m_pOutput = (CTransformOutputPin *)
-			new CQTransformOutputPin(NAME("Transform output pin"),
+			new CTransformOutputPin(NAME("Transform output pin"),
 			this,            // Owner filter
 			&hr,             // Result code
 			L"XForm Out");   // Pin name

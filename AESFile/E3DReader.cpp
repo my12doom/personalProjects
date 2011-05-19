@@ -47,17 +47,17 @@ file_reader::~file_reader()
 void file_reader::set_key(unsigned char*key)
 {
 	if (!m_is_encrypted)
-		printf("warning: not a encrypted file, ignored and set key.\n");
+		log_line("warning: not a encrypted file, ignored and set key.\n");
 
 	m_codec.set_key(key, 256);
 	m_codec.encrypt(m_keyhint, m_keyhint);
 	if (memcmp(m_keyhint, m_keyhint+16, 16))
 	{
-		printf("key error.\n");
+		log_line("key error.\n");
 	}
 	else
 	{
-		printf("key ok.\n");
+		log_line("key ok.\n");
 	}
 
 	m_codec.decrypt(m_keyhint, m_keyhint);

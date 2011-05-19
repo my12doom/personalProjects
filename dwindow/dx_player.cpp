@@ -202,7 +202,6 @@ HRESULT dx_player::reset()
 	exit_direct_show();
 	init_direct_show();
 	m_PD10 = false;
-	m_last_bar_width1 = m_last_bar_width2 = -1;
 	CAutoLock lck(&m_subtitle_sec);
 	m_srenderer = NULL;
 	m_external_subtitles.RemoveAll();
@@ -1342,9 +1341,7 @@ HRESULT dx_player::draw_ui()
 		CUnifyRenderer *r = id==1?m_renderer1:m_renderer2;
 		if (r)
 		{
-			if (m_bar_drawer.total_width != (id==1?m_last_bar_width1:m_last_bar_width2))
-				if (SUCCEEDED(r->SetUI(m_bar_drawer.result, 4096*4)))
-					(id==1?m_last_bar_width1:m_last_bar_width2) = m_bar_drawer.total_width;
+			r->SetUI(m_bar_drawer.result, 4096*4);
 			r->SetUIShow(true);
 		}
 		else

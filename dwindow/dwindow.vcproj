@@ -288,10 +288,6 @@
 				RelativePath=".\private_filter.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\UnifyRenderer.cpp"
-				>
-			</File>
 			<Filter
 				Name="subtitle"
 				>
@@ -333,7 +329,7 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="my12doomRenderer"
+				Name="Renderer"
 				>
 				<File
 					RelativePath="..\renderer_prototype\my12doomRenderer_dshow.cpp"
@@ -341,6 +337,10 @@
 				</File>
 				<File
 					RelativePath="..\renderer_prototype\my12doomRenderer_dx9.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\UnifyRenderer.cpp"
 					>
 				</File>
 			</Filter>
@@ -380,10 +380,6 @@
 			</File>
 			<File
 				RelativePath=".\resource.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UnifyRenderer.h"
 				>
 			</File>
 			<Filter
@@ -431,10 +427,14 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="my12doomRenderer"
+				Name="Renderer"
 				>
 				<File
 					RelativePath="..\renderer_prototype\my12doomRenderer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\UnifyRenderer.h"
 					>
 				</File>
 			</Filter>

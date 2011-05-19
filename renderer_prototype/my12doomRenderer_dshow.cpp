@@ -38,6 +38,8 @@ my12doomRenderer::my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 /* = 
 	// D3D
 	m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
 
+	// ui & bitmap
+	m_showui = false;
 }
 
 my12doomRenderer::~my12doomRenderer()
@@ -46,6 +48,9 @@ my12doomRenderer::~my12doomRenderer()
 	if (m_data)
 		free(m_data);
 	timeEndPeriod(1);
+	m_D3D = NULL;
+
+	m_D3D = NULL;
 }
 
 HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt)

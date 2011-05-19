@@ -14,15 +14,15 @@ protected:
 	int m_id;
 };
 
-class C2to1Filter: public CQTransformFilter
+class C2to1Filter: public CTransformFilter
 {
 public:
 	friend class C2to1InputPin;
 	C2to1Filter(TCHAR *name, LPUNKNOWN punk, REFCLSID clsid)
-		:CQTransformFilter(name, punk, clsid){};
+		:CTransformFilter(name, punk, clsid){};
 #ifdef UNICODE
 	C2to1Filter(CHAR * name, LPUNKNOWN punk, REFCLSID clsid)
-		:CQTransformFilter(name, punk, clsid){};
+		:CTransformFilter(name, punk, clsid){};
 #endif
 
 

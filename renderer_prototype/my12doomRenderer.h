@@ -46,6 +46,7 @@ public:
 	HRESULT set_ui(void* data, int pitch);
 	HRESULT set_ui_visible(bool visible);
 	bool m_showui;
+	int m_last_ui_draw;
 	int m_bmp_width, m_bmp_height;
 	float m_bmp_fleft, m_bmp_ftop, m_bmp_fwidth, m_bmp_fheight;
 

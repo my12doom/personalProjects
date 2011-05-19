@@ -216,6 +216,10 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
+				RelativePath=".\dual_head_renderer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\dx9_resize_window.cpp"
 				>
 				<FileConfiguration
@@ -294,6 +298,10 @@
 			>
 			<File
 				RelativePath=".\3dvideo.h"
+				>
+			</File>
+			<File
+				RelativePath=".\dual_head_renderer.h"
 				>
 			</File>
 			<File

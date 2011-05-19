@@ -91,7 +91,10 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 	else if (m_device_state == need_reset)
 	{
 		CAutoLock lck(&m_device_lock);
+		mylog("reseting device.\n");
+		int l = timeGetTime();
 		invalidate_objects();
+		mylog("invalidate objects: %dms.\n", timeGetTime() - l);
 		HRESULT hr = m_Device->Reset( &m_new_pp );
 		if( FAILED(hr ) )
 		{
@@ -99,7 +102,9 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			return hr;
 		}
 		m_active_pp = m_new_pp;
+		mylog("Device->Reset: %dms.\n", timeGetTime() - l);
 		restore_objects();
+		mylog("restore objects: %dms.\n", timeGetTime() - l);
 		m_device_state = fine;
 	}
 
@@ -1297,6 +1302,9 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 	if (g_tex_bmp == NULL)
 		return VFW_E_WRONG_STATE;
 
+	if (m_device_state >= device_lost)
+		return S_FALSE;			// TODO : of source it's not SUCCESS
+
 	CAutoLock lck(&m_device_lock);
 	CAutoLock lck2(&m_frame_lock);
 
@@ -1345,6 +1353,12 @@ HRESULT my12doomRenderer::set_ui(void* data, int pitch)
 {
 	if (g_tex_bmp == NULL)
 		return VFW_E_WRONG_STATE;
+
+	// set ui speed limit: 3fps
+	if (abs(m_last_ui_draw - timeGetTime()) < 333)
+		return E_FAIL;
+
+	m_last_ui_draw = timeGetTime();
 
 	CAutoLock lck(&m_device_lock);
 	CAutoLock lck2(&m_frame_lock);

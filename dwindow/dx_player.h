@@ -145,8 +145,6 @@ protected:
 
 	// directshow etc. core part
 	bar_drawer m_bar_drawer;
-	int m_last_bar_width1;
-	int m_last_bar_width2;
 	CCritSec m_draw_sec;
 	CCritSec m_seek_sec;
 	bool m_show_ui;
