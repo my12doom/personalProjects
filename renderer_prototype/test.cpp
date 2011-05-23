@@ -86,13 +86,14 @@ int WINAPI WinMain( HINSTANCE hInstance,
 		_T("Direct3D (DX9) - Resize Window"),
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		//WS_EX_TOPMOST | WS_POPUP,    // fullscreen values
-		600, 0, 816, 480, NULL, NULL, hInstance, NULL );
+		300, 0, 528-8, 294-4, NULL, NULL, hInstance, NULL );
 
 	g_hWnd2 = CreateWindowEx( NULL, _T("MY_WINDOWS_CLASS"),
 		_T("Direct3D (DX9) - Resize Window2"),
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		//WS_EX_TOPMOST | WS_POPUP,    // fullscreen values
-		700, 50, 816, 480, NULL, NULL, hInstance, NULL );
+		400, 50, 528-8, 294-4, NULL, NULL, hInstance, NULL );
+
 
 	if( g_hWnd == NULL  || g_hWnd2 == NULL)
 		return E_FAIL;
@@ -102,20 +103,25 @@ int WINAPI WinMain( HINSTANCE hInstance,
 	UpdateWindow( g_hWnd2 );
 
 	HRESULT hr;
-	renderer = new my12doomRenderer(NULL, &hr, g_hWnd, g_hWnd2);
+	renderer = new my12doomRenderer(g_hWnd, g_hWnd2);
 	ShowWindow(g_hWnd2, renderer->get_output_mode() == dual_window ? SW_SHOW : SW_HIDE);
 	// dshow
 	wchar_t file[MAX_PATH] = L"test.avi";
 	open_file_dlg(file, g_hWnd, NULL);
 	gb.CoCreateInstance(CLSID_FilterGraph);
-	CComQIPtr<IBaseFilter, &IID_IBaseFilter> renderer_base(renderer);
-	gb->AddFilter(renderer_base, L"Texture Renderer");
+	gb->AddFilter(renderer->m_dshow_renderer1, L"my12doom Renderer #1");
+	gb->AddFilter(renderer->m_dshow_renderer2, L"my12doom Renderer #2");
 	//gb->RenderFile(L"F:\\TDDOWNLOAD\\00019hsbs.mkv", NULL);
 	//gb->RenderFile(L"Z:\\avts.ts", NULL);
+	//if (FAILED(gb->RenderFile(L"Z:\\24_double.avi", NULL)))
+	//	exit(-1);
+	//if (FAILED(gb->RenderFile(L"Z:\\60fps.avi", NULL)))
+	//	exit(-1);
 	if (FAILED(gb->RenderFile(file, NULL)))
 		exit(-1);
 	renderer->set_mask_mode(row_interlace);
-	//renderer->set_aspect(16.0/9.0);
+	renderer->set_input_layout(mono2d);
+	renderer->set_aspect(16.0/9.0);
 	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
 	mc->Run();
 	// set event notify
@@ -263,6 +269,16 @@ LRESULT CALLBACK WindowProc( HWND   hWnd,
 				renderer->set_offset(2, 0.0);
 				break;
 			}
+		}
+		break;
+
+	case WM_RBUTTONDOWN:
+		{
+			HMENU menu = CreatePopupMenu();
+			BOOL rtn = InsertMenu(menu, 0, MF_STRING | MF_BYPOSITION, 0, _T("Test Menu Item"));
+			POINT mouse_pos;
+			GetCursorPos(&mouse_pos);
+			TrackPopupMenu(menu, TPM_TOPALIGN | TPM_LEFTALIGN, mouse_pos.x-5, mouse_pos.y-5, 0, hWnd, NULL);
 		}
 		break;
 

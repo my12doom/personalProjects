@@ -332,23 +332,11 @@
 				Name="Renderer"
 				>
 				<File
-					RelativePath="..\CoreAVS\CS2SBS.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\renderer_prototype\my12doomRenderer_dshow.cpp"
 					>
 				</File>
 				<File
 					RelativePath="..\renderer_prototype\my12doomRenderer_dx9.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\two2one\two2one.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\UnifyRenderer.cpp"
 					>
 				</File>
 			</Filter>
@@ -438,19 +426,7 @@
 				Name="Renderer"
 				>
 				<File
-					RelativePath="..\CoreAVS\CS2SBS.h"
-					>
-				</File>
-				<File
 					RelativePath="..\renderer_prototype\my12doomRenderer.h"
-					>
-				</File>
-				<File
-					RelativePath="..\two2one\two2one.h"
-					>
-				</File>
-				<File
-					RelativePath=".\UnifyRenderer.h"
 					>
 				</File>
 			</Filter>

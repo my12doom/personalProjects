@@ -15,7 +15,7 @@ enum output_mode_types
 
 enum input_layout_types
 {
-	side_by_side, top_bottom, mono2d, input_layout_types_max
+	side_by_side, top_bottom, mono2d, input_layout_types_max, input_layout_auto
 };
 
 enum mask_mode_types
@@ -49,12 +49,43 @@ protected:
 	REFERENCE_TIME m_thisstream;
 };
 
-class my12doomRenderer : public DBaseVideoRenderer
+class my12doomRenderer;
+class my12doomRendererDShow : public DBaseVideoRenderer
 {
 public:
-	my12doomRenderer(LPUNKNOWN pUnk,HRESULT *phr, HWND hwnd1 = NULL, HWND hwnd2 = NULL);
-	~my12doomRenderer();
+	my12doomRendererDShow(LPUNKNOWN pUnk,HRESULT *phr, my12doomRenderer *owner, int id);
+	~my12doomRendererDShow();
 
+	bool is_connected();
+
+protected:
+	friend class my12doomRenderer;
+	// dshow functions
+	HRESULT CheckMediaType(const CMediaType *pmt );
+	HRESULT SetMediaType(const CMediaType *pmt );
+	HRESULT DoRenderSample(IMediaSample *pMediaSample);
+	HRESULT	BreakConnect();
+	HRESULT CompleteConnect(IPin *pRecievePin);
+
+	// dshow variables
+	CCritSec m_data_lock;
+	BYTE *m_data;
+	bool m_data_changed;
+	GUID m_format;
+
+	// variables for contact to owner
+	my12doomRenderer *m_owner;
+	int m_id;
+};
+class my12doomRenderer
+{
+public:
+	my12doomRenderer(HWND hwnd, HWND hwnd2 = NULL);
+	~my12doomRenderer();
+	CComPtr<IBaseFilter> m_dshow_renderer1;
+	CComPtr<IBaseFilter> m_dshow_renderer2;
+
+	// public functions
 	HRESULT pump();
 	HRESULT repaint_video();
 
@@ -76,6 +107,11 @@ public:
 	int m_last_ui_draw;
 	int m_bmp_width, m_bmp_height;
 	float m_bmp_fleft, m_bmp_ftop, m_bmp_fwidth, m_bmp_fheight;
+	double m_offset_x /*= -0.0*/;
+	double m_offset_y /*= 0.0*/;
+	double m_source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
+	int m_pass1_width;
+	int m_pass1_height;
 	Imy12doomRendererCallback *m_cb;
 
 	// get
@@ -87,30 +123,21 @@ public:
 	bool get_fullscreen();
 	double get_offset(int dimention);
 	double get_aspect();
+	bool is_connected(int id){return (id?m_dsr1:m_dsr0)->is_connected();}
+
 
 protected:
-	// dshow functions
-	HRESULT CheckMediaType(const CMediaType *pmt );
-	HRESULT SetMediaType(const CMediaType *pmt );
-	HRESULT DoRenderSample(IMediaSample *pMediaSample);
-	HRESULT	BreakConnect();
-	HRESULT CompleteConnect(IPin *pRecievePin);
-	REFERENCE_TIME m_t;
-	HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
-{m_t = tStart; return S_OK;}
+	friend class my12doomRendererDShow;
 
-	// dshow variables
-	CCritSec m_data_lock;
-	BYTE *m_data;
-	bool m_data_changed;
+	// dshow related things
+	my12doomRendererDShow * m_dsr0;
+	my12doomRendererDShow * m_dsr1;
+	HRESULT CheckMediaType(const CMediaType *pmt, int id);
+	HRESULT	BreakConnect(int id);
+	HRESULT CompleteConnect(IPin *pRecievePin, int id);
+	HRESULT DataArrive(int id, IMediaSample *media_sample);
 	LONG m_lVidWidth;   // Video width
 	LONG m_lVidHeight;  // Video Height
-	double m_offset_x /*= -0.0*/;
-	double m_offset_y /*= 0.0*/;
-	double m_source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
-	int m_pass1_width;
-	int m_pass1_height;
-	GUID m_format;
 
 	// dx9 functions and variables
 	enum device_state
@@ -124,6 +151,7 @@ protected:
 		device_state_max,				// not used
 	} m_device_state;					// need_create
 
+	HRESULT create_swap_chains();
 	HRESULT handle_device_state();							//handle device create/recreate/lost/reset
 	HRESULT shutdown();
 	HRESULT create_render_thread();
@@ -135,8 +163,8 @@ protected:
 	static DWORD WINAPI render_thread(LPVOID param);
 
 	// dx9 helper functions
-	HRESULT load_image(bool forced = false);
-	HRESULT load_image_convert();
+	HRESULT load_image(int id = -1, bool forced = false);		// -1 = both dshow renderer
+	HRESULT load_image_convert(int id);
 	HRESULT calculate_vertex();
 	HRESULT generate_mask();
 	HRESULT set_device_state(device_state new_state);
@@ -149,7 +177,13 @@ protected:
 		DWORD diffuse;
 		DWORD specular;
 		float tu, tv;
-	} m_vertices[40];
+	} m_vertices[48];
+
+	typedef struct _my_quad 
+	{
+		MyVertex vertexes[4];
+	} my_quad;
+
 	bool m_swapeyes;
 	output_mode_types m_output_mode;
 	input_layout_types m_input_layout;
@@ -168,19 +202,33 @@ protected:
 	int m_device_threadid;
 
 	CComPtr<IDirect3DVertexBuffer9> g_VertexBuffer;
-	CComPtr <IDirect3DPixelShader9> m_ps_YUV2RGB;
+	CComPtr <IDirect3DPixelShader9> m_ps_yv12;
+	CComPtr <IDirect3DPixelShader9> m_ps_nv12;
+	CComPtr <IDirect3DPixelShader9> m_ps_yuy2;
+	CComPtr <IDirect3DPixelShader9> m_ps_test;
 
-	CComPtr<IDirect3DTexture9> g_tex_Y;						// source texture x3, 
-	CComPtr<IDirect3DTexture9> g_tex_UV;
-	CComPtr<IDirect3DTexture9> g_tex_rgb_left;				// source texture, converted to RGB32
-	CComPtr<IDirect3DTexture9> g_tex_rgb_right;
-	CComPtr<IDirect3DTexture9> g_tex_mask;					// mask txture
-	CComPtr<IDirect3DTexture9> g_mask_temp_left;			// two temp texture, you may need it in some case
-	CComPtr<IDirect3DTexture9> g_mask_temp_right;
+	CComPtr<IDirect3DTexture9> m_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
+	CComPtr<IDirect3DTexture9> m_tex_Y;							// Y plane of YV12/NV12, in L8
+	CComPtr<IDirect3DTexture9> m_tex_YV12_UV;					// UV plane of YV12, in L8, double height
+	CComPtr<IDirect3DTexture9> m_tex_NV12_UV;					// UV plane of NV12, in A8L8
 
-	CComPtr<IDirect3DTexture9> g_tex_bmp;
+	CComPtr<IDirect3DTexture9> m_tex_rgb_left;				// source texture, converted to RGB32
+	CComPtr<IDirect3DTexture9> m_tex_rgb_right;
+	CComPtr<IDirect3DTexture9> m_tex_rgb_full;
+	CComPtr<IDirect3DTexture9> m_tex_mask;					// mask txture
+	CComPtr<IDirect3DTexture9> m_mask_temp_left;			// two temp texture, you may need it in some case
+	CComPtr<IDirect3DTexture9> m_mask_temp_right;
 
-	CComPtr<IDirect3DSurface9> g_sbs_surface;				// nv3d temp surface
+	CComPtr<IDirect3DTexture9> m_tex_bmp;
+
+	CComPtr<IDirect3DSurface9> m_sbs_surface;				// nv3d temp surface
+
+	// stereo test surface
+	CComPtr<IDirect3DSurface9> m_test_rt64;
+	CComPtr<IDirect3DSurface9> m_mem;
+	int sbs;
+	int normal;
+	int tb;
 
 	// render thread variables
 	HANDLE m_render_thread;

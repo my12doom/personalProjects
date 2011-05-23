@@ -4,7 +4,6 @@
 #include "global_funcs.h"
 #include "private_filter.h"
 #include "..\libchecksum\libchecksum.h"
-#include "..\CoreAVS\CS2SBS.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
@@ -372,6 +371,14 @@ LRESULT dx_player::on_key_down(int id, int key)
 
 	case '2':
 		m_mirror2 ++;
+		break;
+
+	case '3':
+		m_renderer1->set_output_mode(m_renderer1->get_output_mode()+1);
+		break;
+
+	case VK_F11:
+		m_renderer1->set_fullscreen(!m_renderer1->get_fullscreen());
 		break;
 
 	case VK_F12:
@@ -859,6 +866,7 @@ HRESULT dx_player::exit_direct_show()
 	if (m_mc)
 		m_mc->Stop();
 
+	delete m_renderer1;
 	m_renderer1=NULL;
 
 	m_file_loaded = false;
@@ -867,6 +875,7 @@ HRESULT dx_player::exit_direct_show()
 	m_ms = NULL;
 	m_mc = NULL;
 	m_gb = NULL;
+
 
 	return S_OK;
 }
@@ -926,10 +935,11 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 				}
 
 				//TODO2
-				hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width, 
+				/*hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width, 
 					sub.height * (1-delta2),
 					sub.left + (m_subtitle_center_x-0.5) + (double)m_subtitle_offset*sub.width/sub.width_pixel + sub.delta,
 					sub.top *(1-delta2) + delta2/2 + (m_subtitle_bottom_y-0.95));
+				*/
 				free(sub.data);
 				if (FAILED(hr))
 				{
@@ -1423,6 +1433,10 @@ HRESULT dx_player::end_loading()
 	}
 
 	CComPtr<IPin> output;
+	m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
+	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
+	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
+
 	if (num_renderer_found == 1)
 	{
 		// find the only renderer and replace it
@@ -1471,6 +1485,10 @@ HRESULT dx_player::end_loading()
 			}
 			renderer = NULL;
 		}
+
+		CComPtr<IPin> renderer_in;
+		GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer_in);
+		m_gb->ConnectDirect(output, renderer_in, NULL);
 	}
 	
 	else if (num_renderer_found == 2)
@@ -1478,11 +1496,6 @@ HRESULT dx_player::end_loading()
 		// find renderers and replace it
 		CComPtr<IEnumFilters> pEnum;
 		CComPtr<IBaseFilter> renderer;
-
-		CS2SBS * cs2sbs = new CS2SBS(_T("Stereo Scope"), NULL, &hr);
-		CComQIPtr<IBaseFilter, &IID_IBaseFilter> stereo_scope(cs2sbs);
-		m_gb->AddFilter(stereo_scope, L"Stereo Scope");
-		GetUnconnectedPin(stereo_scope, PINDIR_OUTPUT, &output);
 restart:
 		renderer = NULL;
 		pEnum = NULL;
@@ -1495,6 +1508,12 @@ restart:
 			if (filter_info.pGraph) filter_info.pGraph->Release();
 			if ( wcsstr(filter_info.achName, L"Video Renderer") )
 			{
+				if (wcsstr(filter_info.achName, L"00") && !m_renderer1->is_connected(0))			// if this is the second renderer, then we skip it for first time..
+				{
+					renderer = NULL;
+					continue;
+				}
+
 				CComPtr<IPin> renderer_input;
 				CComPtr<IPin> decoder_output;
 				GetConnectedPin(renderer, PINDIR_INPUT, &renderer_input);
@@ -1524,9 +1543,12 @@ avisynth2:
 				filter_info.pGraph->Release();
 				pin_info.pFilter->Release();
 
-				CComPtr<IPin> scope_in;
-				GetUnconnectedPin(stereo_scope, PINDIR_INPUT, &scope_in);
-				m_gb->ConnectDirect(decoder_output, scope_in, NULL);
+
+				CComPtr<IPin> renderer_in;
+				renderer_in = NULL;
+				if (FAILED(GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer_in)))
+					GetUnconnectedPin(m_renderer1->m_dshow_renderer2, PINDIR_INPUT, &renderer_in);
+				hr = m_gb->ConnectDirect(decoder_output, renderer_in, NULL);
 
 				goto restart;
 			}
@@ -1537,13 +1559,6 @@ avisynth2:
 	pEnum = NULL;
 
 	// connect renderer
-	m_renderer1 = new my12doomRenderer(NULL, &hr, id_to_hwnd(1), id_to_hwnd(2));
-	CComQIPtr<IBaseFilter, &IID_IBaseFilter> renderer_base(m_renderer1);
-	m_gb->AddFilter(renderer_base, L"The Renderer");
-	CComPtr<IPin> renderer_in;
-	GetUnconnectedPin(renderer_base, PINDIR_INPUT, &renderer_in);
-	m_gb->ConnectDirect(output, renderer_in, NULL);
-
 	m_renderer1->set_output_mode(dual_window);
 	m_renderer1->set_input_layout(side_by_side);
 	m_renderer1->set_callback(this);

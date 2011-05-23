@@ -79,7 +79,7 @@ HANDLE h_render_thread = INVALID_HANDLE_VALUE;
 HINSTANCE g_instance;
 int g_device_threadid = GetCurrentThreadId();
 HRESULT hr;
-my12doomRenderer *renderer;
+my12doomRendererDShow *renderer;
 CComPtr<IGraphBuilder> gb;
 
 LONG g_style, g_exstyle;
@@ -379,7 +379,7 @@ int WINAPI WinMain( HINSTANCE hInstance,
 	ShowWindow( g_hWnd2, output_mode == dual_window ? nCmdShow : SW_HIDE );
 	UpdateWindow( g_hWnd2 );
 
-	renderer = new my12doomRenderer(NULL, &hr, g_hWnd, g_hWnd2);
+	renderer = new my12doomRendererDShow(NULL, &hr, g_hWnd, g_hWnd2);
 	// dshow
 	wchar_t file[MAX_PATH] = L"test.avi";
 	open_file_dlg(file, g_hWnd, NULL);

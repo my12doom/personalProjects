@@ -851,7 +851,7 @@ HRESULT CMpegSplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 			CStringW str;
 
 			if (i == CMpegSplitterFile::subpic && s.pid == NO_SUBTITLE_PID) {
-				str	= _T("No subtitles");
+				str	= _T("No Subtitles");
 			} else {
 				int iProgram;
 				const CHdmvClipInfo::Stream *pClipInfo;
@@ -1027,6 +1027,8 @@ STDMETHODIMP CMpegSplitterFilter::Count(DWORD* pcStreams)
 
 STDMETHODIMP CMpegSplitterFilter::Enable(long lIndex, DWORD dwFlags)
 {
+	return EnableCore(lIndex, dwFlags);
+
 	if(!(dwFlags & AMSTREAMSELECTENABLE_ENABLE))
 		return E_NOTIMPL;
 
@@ -1554,7 +1556,7 @@ STDMETHODIMP CMpegSplitterFilter::Info(long lIndex, AM_MEDIA_TYPE** ppmt, DWORD*
 				CStringW str;
 
 				if (i == CMpegSplitterFile::subpic && s.pid == NO_SUBTITLE_PID) {
-					str		= _T("No subtitles");
+					str		= _T("No Subtitles");
 					if (plcid) *plcid	= (LCID)LCID_NOSUBTITLES;
 				} else {
 					int iProgram;

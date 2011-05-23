@@ -204,8 +204,8 @@ HRESULT layout_detector::SampleCB(IMediaSample *sample)
 	BYTE *bottom = p + stride * m_height/2;
 	BYTE *right = p + m_width/2;
 
-	sbs_result[m_scaned] = image_quality(p, right, stride, stride, m_width/2, m_height, true, NULL, max(m_width/960,1));
-	tb_result[m_scaned++] = image_quality(p, bottom, stride, stride, m_width, m_height/2, true, NULL, max(m_width/960,1));
+	sbs_result[m_scaned] = image_quality(p, right, stride, stride, m_width/2, m_height, true, NULL, 1);
+	tb_result[m_scaned++] = image_quality(p, bottom, stride, stride, m_width, m_height/2, true, NULL, 1);
 	return S_OK;
 }
 

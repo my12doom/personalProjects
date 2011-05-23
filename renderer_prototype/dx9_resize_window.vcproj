@@ -268,6 +268,19 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\PixelShaders\ps2.txt"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test.h main"
+						Outputs=".\PixelShaders\stereo_test.h"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath=".\test.cpp"
 				>
 			</File>
