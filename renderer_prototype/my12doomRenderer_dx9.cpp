@@ -23,7 +23,7 @@ HRESULT mylog(wchar_t *format, ...)
 	va_end(valist);
 
 	wsprintfW(tmp2, L"(tid=%d)%s", GetCurrentThreadId(), tmp);
-	OutputDebugStringW(tmp2);
+	OutputDebugStringW(tmp);
 #endif
 	return S_OK;
 }
@@ -40,7 +40,7 @@ HRESULT mylog(const char *format, ...)
 	va_end(valist);
 
 	wsprintfA(tmp2, "(tid=%d)%s", GetCurrentThreadId(), tmp);
-	OutputDebugStringA(tmp2);
+	OutputDebugStringA(tmp);
 #endif
 	return S_OK;
 }
@@ -86,7 +86,7 @@ my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/)
 	m_hWnd2 = hwnd2;
 
 	// input / output
-	m_input_layout = mono2d;
+	m_input_layout = input_layout_auto;
 	m_swapeyes = false;
 	m_output_mode = mono;
 	m_mask_mode = row_interlace;
@@ -104,6 +104,7 @@ my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/)
 
 	// ui & bitmap
 	m_showui = false;
+	m_bmp_offset = 0;
 
 	// dshow creation
 	HRESULT hr;
@@ -121,12 +122,14 @@ my12doomRenderer::~my12doomRenderer()
 
 HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 {
-	int width, height;
+	int width, height, aspect_x, aspect_y;
 	if (*pmt->FormatType() == FORMAT_VideoInfo)
 	{
 		VIDEOINFOHEADER *vihIn = (VIDEOINFOHEADER*)pmt->Format();
 		width = vihIn->bmiHeader.biWidth;
 		height = vihIn->bmiHeader.biHeight;
+		aspect_x = width;
+		aspect_y = height;
 	}
 
 	else if (*pmt->FormatType() == FORMAT_VideoInfo2)
@@ -134,6 +137,8 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 		VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)pmt->Format();
 		width = vihIn->bmiHeader.biWidth;
 		height = vihIn->bmiHeader.biHeight;
+		aspect_x = vihIn->dwPictAspectRatioX;
+		aspect_y = vihIn->dwPictAspectRatioY;
 	}
 	else
 		return E_FAIL;
@@ -142,11 +147,23 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 	{
 		m_lVidWidth = width;
 		m_lVidHeight = height;
-		m_source_aspect = (double)width / height;
+		m_source_aspect = (double)aspect_x / aspect_y;
+		m_normal = m_sbs = m_tb = 0;
+		m_layout_detected = mono2d;
+		m_no_more_detect = false;
+
 		if (m_source_aspect > 2.425)
+		{
+			m_layout_detected = side_by_side;
+			m_no_more_detect = true;
 			m_source_aspect /= 2;
+		}
 		else if (m_source_aspect < 1.2125)
+		{
+			m_layout_detected = top_bottom;
+			m_no_more_detect = true;
 			m_source_aspect *= 2;
+		}
 
 		return S_OK;
 	}
@@ -156,7 +173,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 
 	if (width == m_lVidWidth && height == m_lVidHeight)			// format is not important, but resolution is
 	{
-		m_source_aspect = (double)width / height;
+		m_source_aspect = (double)aspect_x / aspect_y;
 		return S_OK;
 	}
 	else
@@ -168,7 +185,6 @@ HRESULT	my12doomRenderer::BreakConnect(int id)
 }
 HRESULT my12doomRenderer::CompleteConnect(IPin *pRecievePin, int id)
 {
-	normal = sbs = tb = 0;
 	return S_OK;
 }
 HRESULT my12doomRenderer::DataArrive(int id, IMediaSample *media_sample)
@@ -179,9 +195,10 @@ HRESULT my12doomRenderer::DataArrive(int id, IMediaSample *media_sample)
 	if (m_cb && id == 0)
 		m_cb->SampleCB(start + m_dsr0->m_thisstream, end + m_dsr0->m_thisstream, media_sample);
 
-	if (m_output_mode != pageflipping)
+	if (m_output_mode != pageflipping && (start == m_last_data_time) || !m_dsr0->is_connected() || !m_dsr1->is_connected() )
 		render(true);
 
+	m_last_data_time = start;
 	return S_OK;
 }
 
@@ -193,19 +210,21 @@ HRESULT my12doomRenderer::create_swap_chains()
 	m_swap1 = NULL;
 	m_swap2 = NULL;
 
-	HRESULT hr;
+	HRESULT hr = S_OK;
 	if (m_active_pp.Windowed)
 	{
 		RECT rect;
 		GetClientRect(m_hWnd, &rect);
 		m_active_pp.BackBufferWidth = rect.right - rect.left;
 		m_active_pp.BackBufferHeight = rect.bottom - rect.top;
-		hr = m_Device->CreateAdditionalSwapChain(&m_active_pp, &m_swap1);
+		if (m_active_pp.BackBufferWidth > 0 && m_active_pp.BackBufferHeight > 0)
+			hr = m_Device->CreateAdditionalSwapChain(&m_active_pp, &m_swap1);
 
 		GetClientRect(m_hWnd2, &rect);
 		m_active_pp2 = m_active_pp;
 		m_active_pp2.BackBufferWidth = rect.right - rect.left;
 		m_active_pp2.BackBufferHeight = rect.bottom - rect.top;
+		if (m_active_pp2.BackBufferWidth > 0 && m_active_pp2.BackBufferHeight > 0)
 		hr = m_Device->CreateAdditionalSwapChain(&m_active_pp2, &m_swap2);
 	}
 	else
@@ -412,9 +431,10 @@ HRESULT my12doomRenderer::restore_objects()
 	m_pass1_height = m_lVidHeight;
 	if (!(m_dsr0->is_connected() && m_dsr1->is_connected()))
 	{
-		if (m_input_layout == side_by_side)
+		input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
+		if (input == side_by_side)
 			m_pass1_width /= 2;
-		else if (m_input_layout == top_bottom)
+		else if (input == top_bottom)
 			m_pass1_height /= 2;
 	}
 
@@ -441,8 +461,8 @@ HRESULT my12doomRenderer::restore_objects()
 	hr = m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_right, NULL);
 	hr = m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8, D3DPOOL_DEFAULT, &m_tex_mask, NULL);
 	hr = m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, TRUE, &m_sbs_surface, NULL);
-	hr = m_Device->CreateRenderTarget(64, 64, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_test_rt64, NULL);
 	if(m_tex_bmp == NULL) hr = m_Device->CreateTexture(4096, 4096, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,	&m_tex_bmp, NULL);
+	hr = m_Device->CreateRenderTarget(64, 64, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_test_rt64, NULL);
 	if (m_mem == NULL) hr = m_Device->CreateOffscreenPlainSurface(64, 64, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_mem, NULL);
 	
 
@@ -524,7 +544,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	// set render target to back buffer
 	CComPtr<IDirect3DSurface9> back_buffer;
-	hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer);
+	if (m_swap1) hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer);
 	hr = m_Device->SetRenderTarget(0, back_buffer);
 
 	// back ground
@@ -816,7 +836,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	if (m_output_mode == dual_window)
 	{
-		if (m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT) == D3DERR_DEVICELOST)
+		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
+		if (hr == D3DERR_DEVICELOST)
 			set_device_state(device_lost);
 
 		if(m_swap2) if (m_swap2->Present(NULL, NULL, m_hWnd2, NULL, NULL) == D3DERR_DEVICELOST)
@@ -1023,6 +1044,7 @@ HRESULT my12doomRenderer::load_image_convert(int id)
 	hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags );
 
+	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
 	if (dual_stream)
 	{
 		hr = m_Device->SetRenderTarget(0, (id == 0) ^ m_swapeyes ? left_surface : right_surface);
@@ -1035,11 +1057,11 @@ HRESULT my12doomRenderer::load_image_convert(int id)
 		else
 			hr = m_Device->SetRenderTarget(0, right_surface);
 
-		if (m_input_layout == side_by_side)
+		if (input == side_by_side)
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_left, 2 );
-		else if (m_input_layout == top_bottom)
+		else if (input == top_bottom)
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_top, 2 );
-		else if (m_input_layout == mono2d)
+		else if (input == mono2d)
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
 
 		if (!m_swapeyes)
@@ -1047,67 +1069,59 @@ HRESULT my12doomRenderer::load_image_convert(int id)
 		else
 			hr = m_Device->SetRenderTarget(0, left_surface);
 
-		if (m_input_layout == side_by_side)
+		if (input == side_by_side)
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_right, 2 );
-		else if (m_input_layout == top_bottom)
+		else if (input == top_bottom)
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_bottom, 2 );
-		else if (m_input_layout == mono2d)
+		else if (input == mono2d)
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
 	}
 
 	// repack it up...
 	// no need to handle swap eyes
+	// warning : m_input_layout changed is not real time, so there might be some error
+	CComPtr<IDirect3DSurface9> target_surface;
+	m_tex_rgb_full->GetSurfaceLevel(0, &target_surface);
 	{
-		CComPtr<IDirect3DSurface9> target_surface;
-		m_tex_rgb_full->GetSurfaceLevel(0, &target_surface);
-		RECT tar = {0, 0, m_pass1_width, m_pass1_height};
-		if (m_input_layout == side_by_side)
+		if (input == side_by_side)
 		{
+			RECT tar = {0, 0, m_lVidWidth/2, m_lVidHeight};
 			hr = m_Device->StretchRect(left_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
-			tar.left += m_pass1_width;
-			tar.right += m_pass1_width;
+			tar.left += m_lVidWidth/2;
+			tar.right += m_lVidWidth/2;
 			hr = m_Device->StretchRect(right_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
 		}
-		else if (m_input_layout == top_bottom)
+		else if (input == top_bottom)
 		{
+			RECT tar = {0, 0, m_lVidWidth, m_lVidHeight/2};
 			hr = m_Device->StretchRect(left_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
-			tar.top += m_pass1_height;
-			tar.bottom += m_pass1_height;
+			tar.top += m_lVidHeight/2;
+			tar.bottom += m_lVidHeight/2;
 			hr = m_Device->StretchRect(right_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
 		}
-		else if (m_input_layout == mono2d)
+		else if (input == mono2d)
 		{
-			hr = m_Device->StretchRect(left_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
+			hr = m_Device->StretchRect(left_surface, NULL, target_surface, NULL, D3DTEXF_NONE);
 		}
 	}
 
-	hr = m_Device->SetRenderTarget(0, m_test_rt64);
-	hr = m_Device->SetTexture(0, m_tex_rgb_full);
-
-	float ps_const[4] = {0.0f,0.0f,0.0f,0.0f};
-	if (m_input_layout == side_by_side)
-		ps_const[0] = 1.0f;
-	else if (m_input_layout == top_bottom)
-		ps_const[0] = 2.0f;
-	hr = m_Device->SetPixelShader(m_ps_test);
-	hr = m_Device->SetPixelShaderConstantF(0, ps_const, 1);
-	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test, 2 );
-
-
-	hr = m_Device->EndScene();
-
-	hr = m_Device->GetRenderTargetData(m_test_rt64, m_mem);
-	//hr = m_Device->StretchRect(m_test_rt64, NULL, left_surface, NULL, D3DTEXF_LINEAR);
-	//hr = m_Device->StretchRect(m_test_rt64, NULL, right_surface, NULL, D3DTEXF_LINEAR);
-
+	if (!dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect)
 	{
-		static FILE * f = fopen("Z:\\6464.raw", "wb");
-		static FILE * f2 = fopen("Z:\stereo_test.log", "wb");
+		hr = m_Device->SetRenderTarget(0, m_test_rt64);
+		hr = m_Device->Clear(0, NULL, D3DCLEAR_TARGET,  D3DCOLOR_XRGB(0,0,0), 1.0f, 0L);
+		hr = m_Device->SetTexture(0, m_tex_rgb_full);
+
+		hr = m_Device->SetPixelShader(m_ps_test);
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test, 2 );
+
+
+		hr = m_Device->EndScene();
+
+		hr = m_Device->GetRenderTargetData(m_test_rt64, m_mem);
+		//hr = m_Device->StretchRect(m_test_rt64, NULL, left_surface, NULL, D3DTEXF_LINEAR);		//if you want to see debug image, decomment this line
 
 		D3DLOCKED_RECT locked;
 		m_mem->LockRect(&locked, NULL, NULL);
-		if(f) fwrite(locked.pBits, 64*64*4, 1, f);
-		if(f) fflush(f);
 
 		BYTE* src = (BYTE*)locked.pBits;
 		double average1 = 0;
@@ -1136,45 +1150,47 @@ HRESULT my12doomRenderer::load_image_convert(int id)
 				tdelta += delta * delta;
 				src += 4;
 			}
-
-		if(f2) fprintf(f2, "%.3f - %.3f, %.3f - %.3f\r\n", average1, average2, sqrt((double)delta1)/(32*64-1), sqrt((double)delta2)/(32*64-1));
-		if(f2) fflush(f2);
+		delta1 = sqrt((double)delta1)/(32*64-1);
+		delta2 = sqrt((double)delta2)/(32*64-1);
                       
-		double times1 = 0;
-		double times2 = 0;
-		if (average1 > 0.001 && average2 > 0.001)
-			times1 = average1 > average2 ? average1 / average2 : average2 / average1;
-		if (delta1 > 0.001 && delta2 > 0.001)
-			times2 = delta1 > delta2 ? delta1 / delta2 : delta2 / delta1;
-                                           
-		if (times1 > 10.0 || times2 > 10.0 )
+		double times = 0;
+		double var1 = average1 * delta1;
+		double var2 = average2 * delta2;
+		if ( (var1 > 0.001 && var2 > 0.001) || (var1>var2*10000) || (var2>var1*10000))
+			times = var1 > var2 ? var1 / var2 : var2 / var1;
+
+		printf("%f - %f, %f - %f, %f - %f, %f\r\n", average1, average2, delta1, delta2, var1, var2, times);
+
+		if (times > 31.62/2)		// 10^1.5
 		{
-			if(f2) fprintf(f2, "stereo(%s).\r\n", average1 > average2 ? "tb" : "sbs");
-			OutputDebugStringA(average1 > average2 ? "tb\n" : "sbs\n");
-			(average1 > average2 ? tb : sbs) ++ ;
+			mylog("stereo(%s).\r\n", var1 > var2 ? "tb" : "sbs");
+			(var1 > var2 ? m_tb : m_sbs) ++ ;
 		}
-		else if ( 1.0 < times1 && times1 < 2.8 /*&& 1.0 < times2 && times2 < 1.8*/)
+		else if ( 1.0 < times && times < 4.68 /*&& 1.0 < times2 && times2 < 1.8*/)
 		{
-			normal ++;
-			if(f2) fprintf(f2, "normal.\r\n");
-			OutputDebugStringA("normal\n");
+			m_normal ++;
+			mylog("normal.\r\n");
 		}
 		else
 		{
-			if(f2) fprintf(f2, "unkown.\r\n");
-			OutputDebugStringA("unkown\n");
+			mylog("unkown.\r\n");
 		}
 		m_mem->UnlockRect();
 
-		input_layout_types next_layout = mono2d;
-		if (sbs > normal)
+		input_layout_types next_layout = m_layout_detected;
+		if (m_normal - m_sbs > 5)
+			next_layout = mono2d;
+		if (m_sbs - m_normal > 5)
 			next_layout = side_by_side;
-		if (tb > max(sbs,normal))
+		if (m_tb - max(m_sbs,m_normal) > 5)
 			next_layout = top_bottom;
 
-		if (next_layout != m_input_layout)
+		if (m_normal - m_sbs > 500 || m_sbs - m_normal > 500 || m_tb - max(m_sbs,m_normal) > 500)
+			m_no_more_detect = true;
+
+		if (next_layout != m_layout_detected)
 		{
-			m_input_layout = next_layout;
+			m_layout_detected = next_layout;
 			set_device_state(need_reset_object);
 		}
 
@@ -1307,7 +1323,7 @@ HRESULT my12doomRenderer::calculate_vertex()
 	for(int i=0; i<4; i++)
 	{
 		bmp2[i] = bmp[i];
-		bmp2[i].x -= tar_width * 0.01;
+		bmp2[i].x -= tar_width * (0.01+m_bmp_offset);
 	}
 
 	tmp = m_vertices + vertex_pass3;
@@ -1483,21 +1499,22 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 
 HRESULT my12doomRenderer::pump()
 {
+	BOOL success = FALSE;
 	RECT rect;
 	if (m_hWnd)
 	{
-		GetClientRect(m_hWnd, &rect);
+		success = GetClientRect(m_hWnd, &rect);
+		//if (success && rect.right > 0 && rect.bottom > 0)
 		if (m_active_pp.BackBufferWidth != rect.right-rect.left || m_active_pp.BackBufferHeight != rect.bottom - rect.top)
 		{
-			m_new_pp.BackBufferWidth = 0;
-			m_new_pp.BackBufferHeight = 0;
 			set_device_state(need_reset_object);
 		}
 	}
 
 	if (m_hWnd2)
 	{
-		GetClientRect(m_hWnd2, &rect);
+		success = GetClientRect(m_hWnd2, &rect);
+		//if (success && rect.right > 0 && rect.bottom > 0)
 		if (m_active_pp2.BackBufferWidth != rect.right-rect.left || m_active_pp2.BackBufferHeight != rect.bottom - rect.top)
 			set_device_state(need_reset_object);
 	}
@@ -1507,7 +1524,7 @@ HRESULT my12doomRenderer::pump()
 
 HRESULT my12doomRenderer::set_input_layout(int layout)
 {
-	m_input_layout = (input_layout_types)(layout % input_layout_types_max);
+	m_input_layout = (input_layout_types)layout;
 	set_device_state(need_reset_object);
 	handle_device_state();
 	render(true);
@@ -1519,7 +1536,7 @@ HRESULT my12doomRenderer::set_output_mode(int mode)
 	m_output_mode = (output_mode_types)(mode % output_mode_types_max);
 
 	// add 3d vision tag at last line
-	if (m_output_mode == NV3D)
+	if (m_output_mode == NV3D && m_sbs_surface)
 	{
 		CAutoLock lck(&m_device_lock);
 		CAutoLock lck2(&m_frame_lock);
@@ -1774,5 +1791,17 @@ HRESULT my12doomRenderer::set_ui_visible(bool visible)
 	}
 
 	m_showui = visible;
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::set_bmp_offset(double offset)
+{
+	if (m_bmp_offset != offset)
+	{
+		m_bmp_offset = offset;
+		calculate_vertex();
+		render(true);
+	}
+
 	return S_OK;
 }

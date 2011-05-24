@@ -100,7 +100,10 @@ m_lFontPointSize(L"FontSize", 40),
 m_FontName(L"Font", L"Arial"),
 m_FontStyle(L"FontStyle", L"Regular"),
 m_font_color(L"FontColor", 0x00ffffff),
-m_always_show_right(L"AlwaysShowRight", false)
+m_always_show_right(L"AlwaysShowRight", false),
+m_input_layout(L"InputLayout", input_layout_auto),
+m_output_mode(L"OutputLayout", anaglyph),
+m_mask_mode(L"MaskMode", row_interlace)
 {
 	// Enable away mode and prevent the sleep idle time-out.
 	SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_AWAYMODE_REQUIRED);
@@ -135,7 +138,7 @@ m_always_show_right(L"AlwaysShowRight", false)
 	int height1 = screen1.bottom - screen1.top;
 	int width2 = screen2.right - screen2.left;
 	int height2 = screen2.bottom - screen2.top;
-	m_subtitle_offset = width1/100;	// offset set to 1% of width
+	m_subtitle_offset = 0;	// offset set to 1% of width
 
 	SetWindowPos(id_to_hwnd(1), NULL, screen1.left, screen1.top, width1, height1, SWP_NOZORDER);
 
@@ -373,10 +376,6 @@ LRESULT dx_player::on_key_down(int id, int key)
 		m_mirror2 ++;
 		break;
 
-	case '3':
-		m_renderer1->set_output_mode(m_renderer1->get_output_mode()+1);
-		break;
-
 	case VK_F11:
 		m_renderer1->set_fullscreen(!m_renderer1->get_fullscreen());
 		break;
@@ -516,10 +515,30 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		}
 		if (drive_found)
 			DeleteMenu(sub_open_BD, ID_OPENBLURAY3D_NONE, MF_BYCOMMAND);
-		
+
+		// input mode
+		CheckMenuItem(menu, ID_INPUTLAYOUT_AUTO,		m_input_layout == input_layout_auto ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_INPUTLAYOUT_SIDEBYSIDE,	m_input_layout == side_by_side ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_INPUTLAYOUT_TOPBOTTOM,	m_input_layout == top_bottom ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_INPUTLAYOUT_MONOSCOPIC,	m_input_layout == mono2d ? MF_CHECKED:MF_UNCHECKED);
+
+		// output mode
+		CheckMenuItem(menu, ID_OUTPUTMODE_NVIDIA3DVISION,		m_output_mode == NV3D ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_MONOSCOPIC2D,			m_output_mode == mono ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_ROWINTERLACE,			m_output_mode == masking && m_mask_mode == row_interlace ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_LINEINTERLACE,		m_output_mode == masking && m_mask_mode == line_interlace? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_CHECKBOARDINTERLACE,	m_output_mode == masking && m_mask_mode == checkboard_interlace ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR,		m_output_mode == dual_window ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_SBS,	m_output_mode == out_side_by_side ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_TB,		m_output_mode == out_top_bottom ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_GERNERAL120HZGLASSES,	m_output_mode == pageflipping ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				false ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				false ? MF_CHECKED:MF_UNCHECKED);
+
 
 		// subtitle menu
-		HMENU sub_subtitle = GetSubMenu(menu, 4);
+		HMENU sub_subtitle = GetSubMenu(menu, 7);
 		{
 			CAutoLock lck(&m_subtitle_sec);
 			if (!m_srenderer || FAILED(m_srenderer->set_font_color(m_font_color)))
@@ -538,14 +557,14 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		CheckMenuItem(menu, ID_SHOWRIGHTEYE, m_always_show_right?MF_CHECKED:MF_UNCHECKED);
 
 		// audio tracks
-		HMENU sub_audio = GetSubMenu(menu, 3);
+		HMENU sub_audio = GetSubMenu(menu, 6);
 		list_audio_track(sub_audio);
 
 		// subtitle tracks
 		list_subtitle_track(sub_subtitle);
 
 		// language
-		HMENU sub_language = GetSubMenu(menu, 10);
+		HMENU sub_language = GetSubMenu(menu, 13);
 		if (g_active_language == ENGLISH)
 		{
 			CheckMenuItem(sub_language, ID_LANGUAGE_ENGLISH, MF_CHECKED | MF_BYCOMMAND);
@@ -708,6 +727,117 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		{
 			reset_and_loadfile(file);
 		}
+	}
+
+	// input layouts
+	else if (uid == ID_INPUTLAYOUT_AUTO)
+	{
+		m_input_layout = input_layout_auto;
+		if (m_renderer1)
+			m_renderer1->set_input_layout(m_input_layout);			
+	}
+
+	else if (uid == ID_INPUTLAYOUT_SIDEBYSIDE)
+	{
+		m_input_layout = side_by_side;
+		if (m_renderer1)
+			m_renderer1->set_input_layout(m_input_layout);			
+	}
+
+	else if (uid == ID_INPUTLAYOUT_TOPBOTTOM)
+	{
+		m_input_layout = top_bottom;
+		if (m_renderer1)
+			m_renderer1->set_input_layout(m_input_layout);			
+	}
+
+	else if (uid == ID_INPUTLAYOUT_MONOSCOPIC)
+	{
+		m_input_layout = mono2d;
+		if (m_renderer1)
+			m_renderer1->set_input_layout(m_input_layout);			
+	}
+
+	// output mode
+	else if (uid == ID_OUTPUTMODE_NVIDIA3DVISION)
+	{
+		m_output_mode = NV3D;
+		if (m_renderer1)
+			m_renderer1->set_output_mode(m_output_mode);			
+	}
+	else if (uid == ID_OUTPUTMODE_MONOSCOPIC2D)
+	{
+		m_output_mode = mono;
+		if (m_renderer1)
+			m_renderer1->set_output_mode(m_output_mode);			
+	}
+	else if (uid == ID_OUTPUTMODE_ROWINTERLACE)
+	{
+		m_output_mode = masking;
+		m_mask_mode = row_interlace;
+		if (m_renderer1)
+		{
+			m_renderer1->set_mask_mode(m_mask_mode);
+			m_renderer1->set_output_mode(m_output_mode);
+		}
+	}
+	else if (uid == ID_OUTPUTMODE_LINEINTERLACE)
+	{
+		m_output_mode = masking;
+		m_mask_mode = line_interlace;
+		if (m_renderer1)
+		{
+			m_renderer1->set_mask_mode(m_mask_mode);
+			m_renderer1->set_output_mode(m_output_mode);
+		}
+	}
+	else if (uid == ID_OUTPUTMODE_CHECKBOARDINTERLACE)
+	{
+		m_output_mode = masking;
+		m_mask_mode = checkboard_interlace;
+		if (m_renderer1)
+		{
+			m_renderer1->set_mask_mode(m_mask_mode);
+			m_renderer1->set_output_mode(m_output_mode);
+		}
+	}
+	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR)
+	{
+		m_output_mode = dual_window;
+		if (m_renderer1)
+			m_renderer1->set_output_mode(m_output_mode);			
+	}
+	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR_SBS)
+	{
+		m_output_mode = out_side_by_side;
+		if (m_renderer1)
+			m_renderer1->set_output_mode(m_output_mode);			
+	}
+	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR_TB)
+	{
+		m_output_mode = out_top_bottom;
+		if (m_renderer1)
+			m_renderer1->set_output_mode(m_output_mode);			
+	}
+	else if (uid == ID_OUTPUTMODE_3DTV_SBS)
+	{
+		MessageBoxW(id_to_hwnd(id), C(L"Feature under development"), L"...", MB_OK);
+	}
+	else if (uid == ID_OUTPUTMODE_3DTV_TB)
+	{
+		MessageBoxW(id_to_hwnd(id), C(L"Feature under development"), L"...", MB_OK);
+	}
+	else if (uid == ID_OUTPUTMODE_ANAGLYPH)
+	{
+		m_output_mode = anaglyph;
+		if (m_renderer1)
+			m_renderer1->set_output_mode(m_output_mode);			
+	}
+	else if (uid == ID_OUTPUTMODE_GERNERAL120HZGLASSES)
+	{
+		m_output_mode = pageflipping;
+		if (m_renderer1)
+			m_renderer1->set_output_mode(m_output_mode);			
 	}
 
 	else if (uid == ID_SUBTITLE_LOADFILE)
@@ -1559,8 +1689,9 @@ avisynth2:
 	pEnum = NULL;
 
 	// connect renderer
-	m_renderer1->set_output_mode(dual_window);
-	m_renderer1->set_input_layout(side_by_side);
+	m_renderer1->set_output_mode(m_output_mode);
+	m_renderer1->set_input_layout(m_input_layout);
+	m_renderer1->set_mask_mode(m_mask_mode);
 	m_renderer1->set_callback(this);
 
 
@@ -1646,22 +1777,13 @@ HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME 
 
 HRESULT dx_player::draw_subtitle()
 {
-	// force refresh on next frame
-	m_lastCBtime = -1;
-
-	if (m_mc)
-	{
-		OAFilterState fs;
-		HRESULT hr = m_mc->GetState(50, &fs);
-		if (SUCCEEDED(hr) && fs != State_Running)
-			m_mc->StopWhenReady();
-	}
 	return S_OK;
 }
 
 HRESULT dx_player::set_subtitle_offset(int offset)
 {
 	m_subtitle_offset = offset;
+	m_renderer1->set_bmp_offset((double)m_subtitle_offset/1920);
 	draw_subtitle();
 	return S_OK;
 }
@@ -1670,7 +1792,11 @@ HRESULT dx_player::set_subtitle_pos(double center_x, double bottom_y)
 {
 	m_subtitle_center_x = center_x;
 	m_subtitle_bottom_y = bottom_y;
-	return set_subtitle_offset(m_subtitle_offset);	// this is for m_mc->StopWhenReady();
+
+	REFERENCE_TIME t = m_lastCBtime * 10000;
+	m_lastCBtime = -1;
+
+	return SampleCB(t+1, t+2, NULL);
 }
 
 HRESULT dx_player::log_line(wchar_t *format, ...)

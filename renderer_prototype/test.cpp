@@ -86,13 +86,13 @@ int WINAPI WinMain( HINSTANCE hInstance,
 		_T("Direct3D (DX9) - Resize Window"),
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		//WS_EX_TOPMOST | WS_POPUP,    // fullscreen values
-		300, 0, 528-8, 294-4, NULL, NULL, hInstance, NULL );
+		300, 0, 528-8, 394-4, NULL, NULL, hInstance, NULL );
 
 	g_hWnd2 = CreateWindowEx( NULL, _T("MY_WINDOWS_CLASS"),
 		_T("Direct3D (DX9) - Resize Window2"),
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		//WS_EX_TOPMOST | WS_POPUP,    // fullscreen values
-		400, 50, 528-8, 294-4, NULL, NULL, hInstance, NULL );
+		400, 50, 528-8, 394-4, NULL, NULL, hInstance, NULL );
 
 
 	if( g_hWnd == NULL  || g_hWnd2 == NULL)
@@ -104,7 +104,6 @@ int WINAPI WinMain( HINSTANCE hInstance,
 
 	HRESULT hr;
 	renderer = new my12doomRenderer(g_hWnd, g_hWnd2);
-	ShowWindow(g_hWnd2, renderer->get_output_mode() == dual_window ? SW_SHOW : SW_HIDE);
 	// dshow
 	wchar_t file[MAX_PATH] = L"test.avi";
 	open_file_dlg(file, g_hWnd, NULL);
@@ -121,7 +120,10 @@ int WINAPI WinMain( HINSTANCE hInstance,
 		exit(-1);
 	renderer->set_mask_mode(row_interlace);
 	renderer->set_input_layout(mono2d);
-	renderer->set_aspect(16.0/9.0);
+	renderer->set_output_mode(dual_window);
+	ShowWindow(g_hWnd2, renderer->get_output_mode() == dual_window ? SW_SHOW : SW_HIDE);
+
+	//renderer->set_aspect(16.0/9.0);
 	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
 	mc->Run();
 	// set event notify

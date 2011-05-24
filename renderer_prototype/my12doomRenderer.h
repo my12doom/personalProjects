@@ -100,15 +100,18 @@ public:
 	HRESULT set_aspect(double aspect);
 	HRESULT set_window(HWND wnd, HWND wnd2);
 	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop);
+	HRESULT set_bmp_offset(double offset);
 	HRESULT set_ui(void* data, int pitch);
 	HRESULT set_ui_visible(bool visible);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
+
 	bool m_showui;
 	int m_last_ui_draw;
 	int m_bmp_width, m_bmp_height;
 	float m_bmp_fleft, m_bmp_ftop, m_bmp_fwidth, m_bmp_fheight;
 	double m_offset_x /*= -0.0*/;
 	double m_offset_y /*= 0.0*/;
+	double m_bmp_offset;
 	double m_source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
 	int m_pass1_width;
 	int m_pass1_height;
@@ -124,6 +127,7 @@ public:
 	double get_offset(int dimention);
 	double get_aspect();
 	bool is_connected(int id){return (id?m_dsr1:m_dsr0)->is_connected();}
+	double get_bmp_offset(){return m_bmp_offset;}
 
 
 protected:
@@ -138,6 +142,7 @@ protected:
 	HRESULT DataArrive(int id, IMediaSample *media_sample);
 	LONG m_lVidWidth;   // Video width
 	LONG m_lVidHeight;  // Video Height
+	REFERENCE_TIME m_last_data_time;
 
 	// dx9 functions and variables
 	enum device_state
@@ -223,12 +228,14 @@ protected:
 
 	CComPtr<IDirect3DSurface9> m_sbs_surface;				// nv3d temp surface
 
-	// stereo test surface
+	// input layout detector
 	CComPtr<IDirect3DSurface9> m_test_rt64;
 	CComPtr<IDirect3DSurface9> m_mem;
-	int sbs;
-	int normal;
-	int tb;
+	int m_sbs;
+	int m_normal;
+	int m_tb;
+	input_layout_types m_layout_detected;
+	bool m_no_more_detect;
 
 	// render thread variables
 	HANDLE m_render_thread;

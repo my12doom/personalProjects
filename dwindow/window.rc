@@ -160,6 +160,29 @@ BEGIN
             MENUITEM "Folder...",                   ID_OPENBDFOLDER
         END
         MENUITEM SEPARATOR
+        POPUP "Input Layout"
+        BEGIN
+            MENUITEM "Auto",                        ID_INPUTLAYOUT_AUTO
+            MENUITEM "Side By Side",                ID_INPUTLAYOUT_SIDEBYSIDE
+            MENUITEM "Top Bottom",                  ID_INPUTLAYOUT_TOPBOTTOM
+            MENUITEM "Monoscopic",                  ID_INPUTLAYOUT_MONOSCOPIC
+        END
+        POPUP "Output Mode"
+        BEGIN
+            MENUITEM "Nvidia 3D Vision",            ID_OUTPUTMODE_NVIDIA3DVISION
+            MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
+            MENUITEM "Row Interlace",               ID_OUTPUTMODE_ROWINTERLACE
+            MENUITEM "Line Interlace",              ID_OUTPUTMODE_LINEINTERLACE
+            MENUITEM "Checkboard Interlace",        ID_OUTPUTMODE_CHECKBOARDINTERLACE
+            MENUITEM "Dual Projector (Horizontal Span)", ID_OUTPUTMODE_DUALPROJECTOR_SBS
+            MENUITEM "Dual Projector (Vertical Span)", ID_OUTPUTMODE_DUALPROJECTOR_TB
+            MENUITEM "Dual Projector (Independent)", ID_OUTPUTMODE_DUALPROJECTOR
+            MENUITEM "3DTV : Half Side By Side",    ID_OUTPUTMODE_3DTV_SBS
+            MENUITEM "3DTV : Half Top Bottom",      ID_OUTPUTMODE_3DTV_TB
+            MENUITEM "Anaglyph",                    ID_OUTPUTMODE_ANAGLYPH
+            MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
+        END
+        MENUITEM SEPARATOR
         POPUP "Audio"
         BEGIN
             MENUITEM "None",                        ID_AUDIO_NONE, GRAYED

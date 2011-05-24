@@ -153,8 +153,11 @@ protected:
 	CComPtr<IMediaControl>		m_mc;
 	CComPtr<IBasicAudio>		m_ba;
 
-	// renderer
+	// renderer and input layout and output mode
 	my12doomRenderer *m_renderer1;
+	AutoSetting<DWORD> m_input_layout; /* = input_layout_auto*/
+	AutoSetting<DWORD> m_output_mode;  /* = anaglyph*/
+	AutoSetting<DWORD> m_mask_mode;	   /* = row_interlace */
 
 	// subtitle control
 	CSubtitleRenderer *m_srenderer;

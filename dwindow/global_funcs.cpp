@@ -428,12 +428,36 @@ HRESULT set_localization_language(localization_language language)
 		{
 			add_localization(L"Open File...");
 			add_localization(L"Open BluRay3D");
+
+			add_localization(L"Input Layout");
+			add_localization(L"Auto");
+			add_localization(L"Side By Side");
+			add_localization(L"Top Bottom");
+			add_localization(L"Monoscopic");
+
+			add_localization(L"Output Mode");
+			add_localization(L"Nvidia 3D Vision");
+			add_localization(L"Monoscopic 2D");
+			add_localization(L"Row Interlace");
+			add_localization(L"Line Interlace");
+			add_localization(L"Checkboard Interlace");
+			add_localization(L"Dual Projector (Horizontal Span)");
+			add_localization(L"Dual Projector (Vertical Span)");
+			add_localization(L"Dual Projector (Independent)");
+			add_localization(L"3DTV : Half Side By Side");
+			add_localization(L"3DTV : Half Top Bottom");
+			add_localization(L"Anaglyph");
+			add_localization(L"Gerneral 120Hz Glasses");
+
 			add_localization(L"Audio");
+
 			add_localization(L"Subtitle");
+
 			add_localization(L"Play/Pause");
 			add_localization(L"Fullscreen");
 			add_localization(L"Always Show Right Eye");
 			add_localization(L"Exit");
+
 			add_localization(L"No BD Drive Found");
 			add_localization(L"Folder...");
 			add_localization(L"None");
@@ -445,18 +469,43 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Select Folder..");
 			add_localization(L"Open File");
 			add_localization(L"Language");
+			add_localization(L"Feature under development");
 		}
 		break;
 	case CHINESE:
 		{
 			add_localization(L"Open File...",			L"打开文件...");
 			add_localization(L"Open BluRay3D",			L"打开蓝光3D原盘");
+
+			add_localization(L"Input Layout",			L"输入格式");
+			add_localization(L"Auto",					L"自动判断");
+			add_localization(L"Side By Side",			L"左右格式");
+			add_localization(L"Top Bottom",				L"上下格式");
+			add_localization(L"Monoscopic",				L"非立体影片");
+
+			add_localization(L"Output Mode",					L"输出模式");
+			add_localization(L"Nvidia 3D Vision",				L"Nvidia 3D Vision");
+			add_localization(L"Monoscopic 2D",					L"平面(2D)");
+			add_localization(L"Row Interlace",					L"列交错");
+			add_localization(L"Line Interlace",					L"行交错");
+			add_localization(L"Checkboard Interlace",			L"棋盘交错");
+			add_localization(L"Dual Projector (Horizontal Span)",L"双投影(水平跨越模式)");
+			add_localization(L"Dual Projector (Vertical Span)",	L"双投影(垂直跨越模式)");
+			add_localization(L"Dual Projector (Independent)",	L"双投影(独立配置模式)");
+			add_localization(L"3DTV : Half Side By Side",		L"3D电视(左右半宽)");
+			add_localization(L"3DTV : Half Top Bottom",			L"3D电视(上下半宽)");
+			add_localization(L"Anaglyph",						L"有色眼镜");
+			add_localization(L"Gerneral 120Hz Glasses",			L"普通120Hz眼镜");
+
 			add_localization(L"Audio",					L"音频");
+
 			add_localization(L"Subtitle",				L"字幕");
+
 			add_localization(L"Play/Pause",				L"播放/暂停");
 			add_localization(L"Fullscreen",				L"全屏");
 			add_localization(L"Always Show Right Eye",	L"总是显示右眼");
 			add_localization(L"Exit",					L"退出");
+
 			add_localization(L"No BD Drive Found",		L"未找到蓝光驱动器");
 			add_localization(L"Folder...",				L"文件夹...");
 			add_localization(L"None",					L"无");
@@ -468,6 +517,7 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Select Folder..",		L"选择文件夹..");
 			add_localization(L"Open File",				L"打开文件");
 			add_localization(L"Language",				L"语言");
+			add_localization(L"Feature under development",				L"尚未完成的功能");
 		}
 		break;
 	}
