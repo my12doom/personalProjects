@@ -10,7 +10,7 @@ struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doom
 
 enum output_mode_types
 {
-	NV3D, masking, anaglyph, mono, pageflipping, dual_window, out_side_by_side, out_top_bottom, output_mode_types_max
+	NV3D, masking, anaglyph, mono, pageflipping, dual_window, out_sbs, out_tb, out_hsbs, out_htb, output_mode_types_max
 };
 
 enum input_layout_types
@@ -36,6 +36,7 @@ class DRendererInputPin : public CRendererInputPin
 public:
 	DRendererInputPin(__inout CBaseRenderer *pRenderer,	__inout HRESULT *phr, __in_opt LPCWSTR Name) : CRendererInputPin(pRenderer, phr, Name){}
 	STDMETHODIMP NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
+	STDMETHODIMP BeginFlush(void);
 };
 
 class DBaseVideoRenderer: public CBaseVideoRenderer
@@ -44,6 +45,8 @@ public:
 	DBaseVideoRenderer(REFCLSID clsid,LPCTSTR name , LPUNKNOWN pUnk,HRESULT *phr)
 		: CBaseVideoRenderer(clsid, name, pUnk, phr){};
 	virtual CBasePin * GetPin(int n);
+	virtual HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
+	virtual HRESULT BeginFlush(void);
 protected:
 	friend class DRendererInputPin;
 	REFERENCE_TIME m_thisstream;
@@ -66,11 +69,13 @@ protected:
 	HRESULT DoRenderSample(IMediaSample *pMediaSample);
 	HRESULT	BreakConnect();
 	HRESULT CompleteConnect(IPin *pRecievePin);
+	HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 
 	// dshow variables
 	CCritSec m_data_lock;
 	BYTE *m_data;
 	bool m_data_changed;
+	REFERENCE_TIME m_time;
 	GUID m_format;
 
 	// variables for contact to owner
@@ -142,7 +147,9 @@ protected:
 	HRESULT DataArrive(int id, IMediaSample *media_sample);
 	LONG m_lVidWidth;   // Video width
 	LONG m_lVidHeight;  // Video Height
-	REFERENCE_TIME m_last_data_time;
+	CGenericList<IMediaSample> m_left_queue;
+	CGenericList<IMediaSample> m_right_queue;
+	CCritSec m_queue_lock;
 
 	// dx9 functions and variables
 	enum device_state

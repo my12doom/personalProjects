@@ -6,8 +6,13 @@
 // base
 STDMETHODIMP DRendererInputPin::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {
-	((DBaseVideoRenderer*)m_pFilter)->m_thisstream = tStart;
+	((DBaseVideoRenderer*)m_pFilter)->NewSegment(tStart, tStop, dRate);
 	return __super::NewSegment(tStart, tStop, dRate);
+}
+STDMETHODIMP DRendererInputPin::BeginFlush()
+{
+	((DBaseVideoRenderer*)m_pFilter)->BeginFlush();
+	return __super::BeginFlush();
 }
 
 CBasePin * DBaseVideoRenderer::GetPin(int n)
@@ -45,6 +50,17 @@ CBasePin * DBaseVideoRenderer::GetPin(int n)
 	return m_pInputPin;
 }
 
+
+HRESULT DBaseVideoRenderer::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
+{
+	m_thisstream = tStart;
+	return S_OK;
+}
+
+HRESULT DBaseVideoRenderer::BeginFlush()
+{
+	return __super::BeginFlush();
+}
 
 // renderer dshow part
 my12doomRendererDShow::my12doomRendererDShow(LPUNKNOWN pUnk,HRESULT *phr, my12doomRenderer *owner, int id)
@@ -130,6 +146,23 @@ HRESULT my12doomRendererDShow::CompleteConnect(IPin *pRecievePin)
 	m_owner->CompleteConnect(pRecievePin, m_id);
 	return __super::CompleteConnect(pRecievePin);
 }
+HRESULT my12doomRendererDShow::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
+{	
+	IMediaSample *tmp;
+	CAutoLock lck(&m_owner->m_queue_lock);
+	while(m_owner->m_left_queue.GetCount())
+	{
+		tmp = m_owner->m_left_queue.RemoveTail();
+		tmp->Release();
+	}
+	while(m_owner->m_right_queue.GetCount())
+	{
+		tmp = m_owner->m_right_queue.RemoveTail();
+		tmp->Release();
+	}
+
+	return __super::NewSegment(tStart, tStop, dRate);
+}
 
 bool my12doomRendererDShow::is_connected()
 {
@@ -140,20 +173,12 @@ bool my12doomRendererDShow::is_connected()
 
 HRESULT my12doomRendererDShow::DoRenderSample( IMediaSample * pSample )
 {
-    BYTE  *pBmpBuffer;
-    pSample->GetPointer( &pBmpBuffer );
 
 	REFERENCE_TIME start, end;
 	pSample->GetTime(&start, &end);
 
-	{
-		CAutoLock lck(&m_data_lock);
-		m_data_changed = true;
-		int size = pSample->GetActualDataLength();
-		size = min(size,  m_format == MEDIASUBTYPE_YUY2 ? m_owner->m_lVidWidth * m_owner->m_lVidHeight * 2 : m_owner->m_lVidWidth * m_owner->m_lVidHeight * 3 / 2);
-		memcpy(m_data, pBmpBuffer, size);
-	}
 
+	m_time = start + m_thisstream;
 	m_owner->DataArrive(m_id, pSample);
 
 	return S_OK;

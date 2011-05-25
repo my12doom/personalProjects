@@ -12,6 +12,28 @@
 #define FAIL_RET(x) hr=x; if(FAILED(hr)){return hr;}
 #define FAIL_SLEEP_RET(x) hr=x; if(FAILED(hr)){Sleep(1); return hr;}
 
+
+typedef struct tagTHREADNAME_INFO {
+	DWORD dwType; // must be 0x1000
+	LPCSTR szName; // pointer to name (in user addr space)
+	DWORD dwThreadID; // thread ID (-1=caller thread)
+	DWORD dwFlags; // reserved for future use, must be zero
+} THREADNAME_INFO;
+void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName)
+{
+	THREADNAME_INFO info;
+	info.dwType = 0x1000;
+	info.szName = szThreadName;
+	info.dwThreadID = dwThreadID;
+	info.dwFlags = 0;
+
+	__try {
+		RaiseException( 0x406D1388, 0, sizeof(info)/sizeof(DWORD), (ULONG_PTR*)&info );
+	}
+	__except(EXCEPTION_CONTINUE_EXECUTION) {
+	}
+}
+
 HRESULT mylog(wchar_t *format, ...)
 {
 #ifdef DEBUG
@@ -71,7 +93,9 @@ enum vertex_types
 
 const DWORD FVF_Flags = D3DFVF_XYZRHW | D3DFVF_TEX1 | D3DFVF_DIFFUSE | D3DFVF_SPECULAR;
 
-my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/)
+my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/):
+m_left_queue(_T("left queue")),
+m_right_queue(_T("right queue"))
 {
 	// callback
 	m_cb = NULL;
@@ -192,13 +216,144 @@ HRESULT my12doomRenderer::DataArrive(int id, IMediaSample *media_sample)
 	REFERENCE_TIME start, end;
 	media_sample->GetTime(&start, &end);
 
+	SetThreadName(GetCurrentThreadId(), id==0?"Data thread 0":"Data thread 1");
+
+	if (!m_dsr0->is_connected() || !m_dsr1->is_connected())
+	{
+		// single stream
+
+		// copy to dsr 0
+		{
+			CAutoLock lck(&m_dsr0->m_data_lock);
+			m_dsr0->m_data_changed = true;
+			int size = media_sample->GetActualDataLength();
+			size = min(size,  m_dsr0->m_format == MEDIASUBTYPE_YUY2 ? m_lVidWidth * m_lVidHeight * 2 : m_lVidWidth * m_lVidHeight * 3 / 2);
+
+			BYTE  *pBmpBuffer;
+			media_sample->GetPointer( &pBmpBuffer );
+			memcpy(m_dsr0->m_data, pBmpBuffer, size);
+		}
+
+		if (m_output_mode != pageflipping)
+			render(true);		
+	}
+	else
+	{
+		// double stream
+
+		IMediaSample *sample_left = NULL;
+		IMediaSample *sample_right = NULL;
+
+		// media sample matching
+		{
+			// insert
+			CAutoLock lck(&m_queue_lock);
+			IMediaSample *pIn = media_sample;
+			pIn->AddRef();
+			if (id == 0)
+				m_left_queue.AddTail(pIn);
+			else
+				m_right_queue.AddTail(pIn);
+
+			// find match
+			bool matched = false;
+			REFERENCE_TIME matched_time = -1;
+			{
+				CAutoLock lck(&m_queue_lock);
+
+				for(POSITION pos_left = m_left_queue.GetHeadPosition(); pos_left; pos_left = m_left_queue.Next(pos_left))
+				{
+					IMediaSample *left_sample = m_left_queue.Get(pos_left);
+					for(POSITION pos_right = m_right_queue.GetHeadPosition(); pos_right; pos_right = m_right_queue.Next(pos_right))
+					{
+						IMediaSample *right_sample = m_right_queue.Get(pos_right);
+						REFERENCE_TIME lStart, lEnd, rStart, rEnd;
+						left_sample->GetTime(&lStart, &lEnd);
+						right_sample->GetTime(&rStart, &rEnd);
+						if (abs((int)(lStart - rStart)) < 10000)
+						{
+							matched_time = lStart;
+							matched = true;
+							break;
+						}
+					}
+				}
+			}
+
+			if(matched)
+			{
+				// release any unmatched and retrive matched
+
+				{
+					CAutoLock lck(&m_queue_lock);
+					while(true)
+					{
+						sample_left = m_left_queue.RemoveHead();
+						REFERENCE_TIME lStart, lEnd;
+						sample_left->GetTime(&lStart, &lEnd);
+
+						if(lStart != matched_time)
+						{
+							printf("drop left\n");
+							sample_left->Release();
+						}
+						else
+							break;
+					}
+
+					while(true)
+					{
+						sample_right = m_right_queue.RemoveHead();
+						REFERENCE_TIME lStart, lEnd;
+						sample_right->GetTime(&lStart, &lEnd);
+
+						if(lStart != matched_time)
+						{
+							printf("drop right\n");
+							sample_right->Release();
+						}
+						else
+							break;
+					}
+				}		
+			}
+		}
+
+		if (sample_left && sample_right)
+		{
+			// lock both
+			CAutoLock lck(&m_dsr0->m_data_lock);
+			CAutoLock lck2(&m_dsr1->m_data_lock);
+
+			// copy to dsr 0
+			m_dsr0->m_data_changed = true;
+			int size = sample_left->GetActualDataLength();
+			size = min(size,  m_dsr0->m_format == MEDIASUBTYPE_YUY2 ? m_lVidWidth * m_lVidHeight * 2 : m_lVidWidth * m_lVidHeight * 3 / 2);
+
+			BYTE  *pBmpBuffer;
+			sample_left->GetPointer( &pBmpBuffer );
+			memcpy(m_dsr0->m_data, pBmpBuffer, size);
+
+			// copy to dsr 1
+			m_dsr1->m_data_changed = true;
+			sample_right->GetPointer( &pBmpBuffer );
+			memcpy(m_dsr1->m_data, pBmpBuffer, size);
+
+			sample_left->Release();
+			sample_right->Release();
+		}
+
+		if (sample_left && sample_right)
+		{
+			if (m_output_mode != pageflipping)
+				render(true);
+		}
+
+	}
+
 	if (m_cb && id == 0)
 		m_cb->SampleCB(start + m_dsr0->m_thisstream, end + m_dsr0->m_thisstream, media_sample);
 
-	if (m_output_mode != pageflipping && (start == m_last_data_time) || !m_dsr0->is_connected() || !m_dsr1->is_connected() )
-		render(true);
-
-	m_last_data_time = start;
 	return S_OK;
 }
 
@@ -461,7 +616,7 @@ HRESULT my12doomRenderer::restore_objects()
 	hr = m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_right, NULL);
 	hr = m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8, D3DPOOL_DEFAULT, &m_tex_mask, NULL);
 	hr = m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, TRUE, &m_sbs_surface, NULL);
-	if(m_tex_bmp == NULL) hr = m_Device->CreateTexture(4096, 4096, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,	&m_tex_bmp, NULL);
+	if(m_tex_bmp == NULL) hr = m_Device->CreateTexture(2048, 1024, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,	&m_tex_bmp, NULL);
 	hr = m_Device->CreateRenderTarget(64, 64, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_test_rt64, NULL);
 	if (m_mem == NULL) hr = m_Device->CreateOffscreenPlainSurface(64, 64, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_mem, NULL);
 	
@@ -507,7 +662,6 @@ HRESULT my12doomRenderer::restore_objects()
 	mylog("restore 6th time:%dms\n", timeGetTime()-l);
 
 	load_image(-1, true);
-
 
 	// create render thread
 	create_render_thread();
@@ -612,10 +766,65 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		// StretchRect to backbuffer!, this is how 3D vision works
 		RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
 		hr = m_Device->StretchRect(m_sbs_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
+
+		// UI
+		if (m_showui)
+		{
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+			m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+			hr = m_Device->SetTexture( 0, m_tex_bmp );
+			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_ui, 2 );
+		}
+
 	}
 
 	else if (m_output_mode == anaglyph)
 	{
+		// draw left
+		CComPtr<IDirect3DSurface9> temp_surface;
+		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
+		hr = m_Device->SetRenderTarget(0, temp_surface);
+		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		m_Device->SetTexture( 0, m_tex_rgb_left );
+		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = m_Device->SetFVF( FVF_Flags );
+#ifdef DEBUG
+		m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+#else
+		m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+#endif
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+		// Alpha Bitmap
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		hr = m_Device->SetTexture( 0, m_tex_bmp );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+
+		// draw right
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+		temp_surface = NULL;
+		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
+		hr = m_Device->SetRenderTarget(0, temp_surface);
+		m_Device->SetTexture( 0, m_tex_rgb_right );
+#ifdef DEBUG
+		m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+#else
+		m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+#endif
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+		// Alpha Bitmap2
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		hr = m_Device->SetTexture( 0, m_tex_bmp );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp2, 2 );
+
+		// pass3: analyph
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+		m_Device->SetRenderTarget(0, back_buffer);
 		m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
 		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
@@ -629,12 +838,24 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 		m_Device->SetTextureStageState( 2, D3DTSS_COLOROP,   D3DTOP_DISABLE);
 
-		m_Device->SetTexture( 0, m_tex_rgb_left );
-		m_Device->SetTexture( 1, m_tex_rgb_right );
+		m_Device->SetTexture( 0, m_mask_temp_left );
+		m_Device->SetTexture( 1, m_mask_temp_right );
 
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+
+		// UI
+		if (m_showui)
+		{
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+			m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+			hr = m_Device->SetTexture( 0, m_tex_bmp );
+			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_ui, 2 );
+		}
+
 	}
 
 	else if (m_output_mode == masking)
@@ -656,7 +877,15 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 #endif
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
+		// Alpha Bitmap
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		hr = m_Device->SetTexture( 0, m_tex_bmp );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+
 		// draw right
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		temp_surface = NULL;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
 		hr = m_Device->SetRenderTarget(0, temp_surface);
@@ -668,8 +897,13 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 #endif
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
+		// Alpha Bitmap2
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		hr = m_Device->SetTexture( 0, m_tex_bmp );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp2, 2 );
 
 		// pass 3: render to backbuffer with masking
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		m_Device->SetRenderTarget(0, back_buffer);
 		m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
 		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );	// current = texture(mask)
@@ -692,6 +926,18 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+
+		// UI
+		if (m_showui)
+		{
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+			m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+			hr = m_Device->SetTexture( 0, m_tex_bmp );
+			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_ui, 2 );
+		}
+
 	}
 
 	else if (m_output_mode == mono)
@@ -703,6 +949,23 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
+		// Alpha Bitmap
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		hr = m_Device->SetTexture( 0, m_tex_bmp );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+
+		// UI
+		if (m_showui)
+		{
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+			m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+			hr = m_Device->SetTexture( 0, m_tex_bmp );
+			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_ui, 2 );
+		}
 	}
 
 	else if (m_output_mode == pageflipping)
@@ -716,6 +979,24 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+		// Alpha Bitmap
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		hr = m_Device->SetTexture( 0, m_tex_bmp );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, left ? vertex_bmp : vertex_bmp2, 2 );
+
+		// UI
+		if (m_showui)
+		{
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+			m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+			hr = m_Device->SetTexture( 0, m_tex_bmp );
+			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_ui, 2 );
+		}
 	}
 
 	else if (m_output_mode == dual_window)
@@ -726,6 +1007,24 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
+
+		// Alpha Bitmap
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		hr = m_Device->SetTexture( 0, m_tex_bmp );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+
+		// UI
+		if (m_showui)
+		{
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+			m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+			hr = m_Device->SetTexture( 0, m_tex_bmp );
+			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_ui, 2 );
+		}
 
 		// set render target to swap chain2
 		if (m_swap2)
@@ -744,14 +1043,31 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			// draw right
 			m_Device->SetTexture( 0, m_tex_rgb_right );
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_second, 2 );
+
+			// Alpha Bitmap 2
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+			m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+			m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			hr = m_Device->SetTexture( 0, m_tex_bmp );
+			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp2, 2 );
+
+			// UI
+			if (m_showui)
+			{
+				m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+				m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+				m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+				m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+				hr = m_Device->SetTexture( 0, m_tex_bmp );
+				hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_ui, 2 );
+			}
+
 		}
 
 	}
 
-	else if (m_output_mode == out_side_by_side || m_output_mode == out_top_bottom)
+	else if (m_output_mode == out_sbs || m_output_mode == out_tb || m_output_mode == out_hsbs || m_output_mode == out_htb)
 	{
-		// pass 2: render seperate to two temp texture
-
 		// draw left
 		CComPtr<IDirect3DSurface9> temp_surface;
 		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
@@ -767,6 +1083,24 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 #endif
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
+		// Alpha Bitmap
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		hr = m_Device->SetTexture( 0, m_tex_bmp );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+
+		// UI
+		if (m_showui)
+		{
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+			m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+			hr = m_Device->SetTexture( 0, m_tex_bmp );
+			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_ui, 2 );
+		}
+
 		// draw right
 		CComPtr<IDirect3DSurface9> temp_surface2;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface2);
@@ -779,9 +1113,26 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 #endif
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass2_main, 2 );
 
+		// Alpha Bitmap 2
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		hr = m_Device->SetTexture( 0, m_tex_bmp );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp2, 2 );
+
+		// UI
+		if (m_showui)
+		{
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+			m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+			m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+			hr = m_Device->SetTexture( 0, m_tex_bmp );
+			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_ui, 2 );
+		}
 
 		// pass 3: copy to backbuffer
-		if (m_output_mode == out_side_by_side)
+		if (m_output_mode == out_sbs)
 		{
 			RECT src = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
 			RECT dst = src;
@@ -793,7 +1144,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			m_Device->StretchRect(temp_surface2, &src, back_buffer, &dst, D3DTEXF_NONE);
 		}
 
-		else if (m_output_mode == out_top_bottom)
+		else if (m_output_mode == out_tb)
 		{
 			RECT src = {0, 0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight/2};
 			RECT dst = src;
@@ -805,31 +1156,29 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			m_Device->StretchRect(temp_surface2, &src, back_buffer, &dst, D3DTEXF_NONE);
 
 		}
-	}
 
-	/*
-	// Alpha Bitmap
-	m_Device->SetRenderTarget(0, back_buffer);
-	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
-	m_Device->SetTextureStageState( 0, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	m_Device->SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 0 );
-	m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE);
-	hr = m_Device->SetTexture( 0, g_tex_bmp );
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
-	*/
+		else if (m_output_mode == out_hsbs)
+		{
+			RECT dst = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
 
-	// UI
-	if (m_showui)
-	{
-		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
-		hr = m_Device->SetTexture( 0, m_tex_bmp );
-		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_ui, 2 );
+			m_Device->StretchRect(temp_surface, NULL, back_buffer, &dst, D3DTEXF_NONE);
+
+			dst.left += m_active_pp.BackBufferWidth/2;
+			dst.right += m_active_pp.BackBufferWidth/2;
+			m_Device->StretchRect(temp_surface2, NULL, back_buffer, &dst, D3DTEXF_NONE);
+		}
+
+		else if (m_output_mode == out_htb)
+		{
+			RECT dst = {0, 0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight/2};
+
+			m_Device->StretchRect(temp_surface, NULL, back_buffer, &dst, D3DTEXF_NONE);
+
+			dst.top += m_active_pp.BackBufferHeight/2;
+			dst.bottom += m_active_pp.BackBufferHeight/2;
+			m_Device->StretchRect(temp_surface2, NULL, back_buffer, &dst, D3DTEXF_NONE);
+
+		}
 	}
 
 	m_Device->EndScene();
@@ -1272,10 +1621,21 @@ HRESULT my12doomRenderer::calculate_vertex()
 	// pass2-3 coordinate
 	// main window coordinate
 	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
-	if (m_output_mode == out_side_by_side)
+	if (m_output_mode == out_sbs)
 		tar.right /= 2;
-	else if (m_output_mode == out_top_bottom)
+	else if (m_output_mode == out_tb)
 		tar.bottom /= 2;
+
+	// ui zone
+	MyVertex *ui = m_vertices + vertex_ui;
+	ui[0].x = -0.5f; ui[0].y = tar.bottom-30-0.5f;
+	ui[1].x = tar.right-0.5f; ui[1].y = ui[0].y;
+	ui[2].x = ui[0].x; ui[2].y = ui[0].y + 30;
+	ui[3].x = ui[1].x; ui[3].y = ui[1].y + 30;
+	ui[0].tu = 0; ui[0].tv = (1024-30)/1024.0f;
+	ui[1].tu = (tar.right-1)/2048.0f; ui[1].tv = ui[0].tv;
+	ui[2].tu = 0; ui[2].tv = ui[0].tv + (30-1)/1024.0f;
+	ui[3].tu = ui[1].tu; ui[3].tv = ui[1].tv + (30-1)/1024.0f;
 
 	int delta_w = (int)(tar.right - tar.bottom * m_source_aspect + 0.5);
 	int delta_h = (int)(tar.bottom - tar.right  / m_source_aspect + 0.5);
@@ -1289,6 +1649,7 @@ HRESULT my12doomRenderer::calculate_vertex()
 		tar.top += delta_h/2;
 		tar.bottom -= delta_h/2;
 	}
+
 
 	int tar_width = tar.right-tar.left;
 	int tar_height = tar.bottom - tar.top;
@@ -1315,9 +1676,9 @@ HRESULT my12doomRenderer::calculate_vertex()
 	bmp[3] = bmp[1]; bmp[3].y += m_bmp_fheight* tar_height;
 	bmp[2] = bmp[3]; bmp[2].x -= m_bmp_fwidth * tar_width;
 	bmp[0].tu = 0; bmp[0].tv = 0;
-	bmp[1].tu = (m_bmp_width-1)/4096.0f; bmp[1].tv = 0;
-	bmp[2].tu = 0; bmp[2].tv = (m_bmp_height-1)/4096.0f;
-	bmp[3].tu = (m_bmp_width-1)/4096.0f; bmp[3].tv = (m_bmp_height-1)/4096.0f;
+	bmp[1].tu = (m_bmp_width-1)/2048.0f; bmp[1].tv = 0;
+	bmp[2].tu = 0; bmp[2].tv = (m_bmp_height-1)/1024.0f;
+	bmp[3].tu = (m_bmp_width-1)/2048.0f; bmp[3].tv = (m_bmp_height-1)/1024.0f;
 
 	MyVertex *bmp2 = m_vertices + vertex_bmp2;
 	for(int i=0; i<4; i++)
@@ -1361,17 +1722,6 @@ HRESULT my12doomRenderer::calculate_vertex()
 	tmp[2].x = tar.left-0.5f; tmp[2].y = tar.bottom-0.5f;
 	tmp[3].x = tar.right-0.5f; tmp[3].y = tar.bottom-0.5f;
 
-	// ui zone
-	tmp = m_vertices + vertex_ui;
-	tmp[0].x = -0.5f; tmp[0].y = m_active_pp.BackBufferHeight-30-0.5f;
-	tmp[1].x = m_active_pp.BackBufferWidth-0.5f; tmp[1].y = tmp[0].y;
-	tmp[2].x = tmp[0].x; tmp[2].y = tmp[0].y + 30;
-	tmp[3].x = tmp[1].x; tmp[3].y = tmp[1].y + 30;
-	tmp[0].tu = 0; tmp[0].tv = 0.5f;
-	tmp[1].tu = (m_active_pp.BackBufferWidth-1)/4096.0f; tmp[1].tv = 0.5f;
-	tmp[2].tu = 0; tmp[2].tv = tmp[0].tv + (30-1)/4096.0f;
-	tmp[3].tu = tmp[1].tu; tmp[3].tv = tmp[1].tv + (30-1)/4096.0f;
-
 	MyVertex *test = m_vertices + vertex_test;
 	test[0].x = -0.5f; test[0].y = -0.5f;
 	test[1].x = 64-0.5f; test[1].y = -0.5f;
@@ -1412,8 +1762,8 @@ HRESULT my12doomRenderer::generate_mask()
 	if (m_mask_mode == row_interlace)
 	{
 		// init row mask texture
-		BYTE one_line[4096];
-		for(DWORD i=0; i<4096; i++)
+		BYTE one_line[2048];
+		for(DWORD i=0; i<2048; i++)
 			one_line[i] = (i+rect.left)%2 == 0 ? 0 : 255;
 
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
@@ -1433,8 +1783,8 @@ HRESULT my12doomRenderer::generate_mask()
 	else if (m_mask_mode == checkboard_interlace)
 	{
 		// init row mask texture
-		BYTE one_line[4096];
-		for(DWORD i=0; i<4096; i++)
+		BYTE one_line[2048];
+		for(DWORD i=0; i<2048; i++)
 			one_line[i] = (i+rect.left)%2 == 0 ? 0 : 255;
 
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
@@ -1454,6 +1804,21 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 	m_new_pp.BackBufferFormat       = d3ddm.Format;
 
 	mylog("mode:%dx%d@%dHz, format:%d.\n", d3ddm.Width, d3ddm.Height, d3ddm.RefreshRate, d3ddm.Format);
+
+
+	// clear queue
+	IMediaSample *tmp;
+	CAutoLock lck(&m_queue_lock);
+	while(m_left_queue.GetCount())
+	{
+		tmp = m_left_queue.RemoveTail();
+		tmp->Release();
+	}
+	while(m_right_queue.GetCount())
+	{
+		tmp = m_right_queue.RemoveTail();
+		tmp->Release();
+	}
 	if(full && m_active_pp.Windowed)
 	{
 		GetWindowRect(m_hWnd, &m_window_pos);
@@ -1475,7 +1840,22 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 
 		set_device_state(need_reset);
 		if (m_device_state < need_create)
+		{
 			handle_device_state();
+			// clear queue
+			IMediaSample *tmp;
+			CAutoLock lck(&m_queue_lock);
+			while(m_left_queue.GetCount())
+			{
+				tmp = m_left_queue.RemoveTail();
+				tmp->Release();
+			}
+			while(m_right_queue.GetCount())
+			{
+				tmp = m_right_queue.RemoveTail();
+				tmp->Release();
+			}
+		}
 	}
 	else if (!full && !m_active_pp.Windowed)
 	{
@@ -1491,7 +1871,22 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 
 		set_device_state(need_reset);
 		if (m_device_state < need_create)
+		{
 			handle_device_state();
+			// clear queue
+			IMediaSample *tmp;
+			CAutoLock lck(&m_queue_lock);
+			while(m_left_queue.GetCount())
+			{
+				tmp = m_left_queue.RemoveTail();
+				tmp->Release();
+			}
+			while(m_right_queue.GetCount())
+			{
+				tmp = m_right_queue.RemoveTail();
+				tmp->Release();
+			}
+		}
 	}
 
 	return S_OK;
@@ -1699,7 +2094,8 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 			changed = false;
 		m_bmp_fleft = m_bmp_ftop = -9999.0;
 		m_bmp_fwidth = m_bmp_fheight = 1.0;
-		m_bmp_width = m_bmp_height = 4096;
+		m_bmp_width = 2048;
+		m_bmp_height = 1024;
 	}
 	else
 	{
@@ -1760,7 +2156,7 @@ HRESULT my12doomRenderer::set_ui(void* data, int pitch)
 		int width = m_active_pp.BackBufferWidth;
 		int height = 30;
 
-		RECT lock_rect = {0, 2048, width, 2048+height};
+		RECT lock_rect = {0, 1024-30, width, 1024-30+height};
 		D3DLOCKED_RECT locked;
 		HRESULT hr = m_tex_bmp->LockRect(0, &locked, &lock_rect, NULL);
 		if (FAILED(hr))

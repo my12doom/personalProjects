@@ -129,6 +129,7 @@ protected:
 	HRESULT enable_subtitle_track(int track);
 	HRESULT list_audio_track(HMENU submenu);
 	HRESULT list_subtitle_track(HMENU submenu);
+	HRESULT toggle_fullscreen();
 
 	// filter callback function
 	HRESULT SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn);

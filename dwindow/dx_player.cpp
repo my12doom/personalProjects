@@ -102,7 +102,7 @@ m_FontStyle(L"FontStyle", L"Regular"),
 m_font_color(L"FontColor", 0x00ffffff),
 m_always_show_right(L"AlwaysShowRight", false),
 m_input_layout(L"InputLayout", input_layout_auto),
-m_output_mode(L"OutputLayout", anaglyph),
+m_output_mode(L"OutputMode", anaglyph),
 m_mask_mode(L"MaskMode", row_interlace)
 {
 	// Enable away mode and prevent the sleep idle time-out.
@@ -376,16 +376,6 @@ LRESULT dx_player::on_key_down(int id, int key)
 		m_mirror2 ++;
 		break;
 
-	case VK_F11:
-		m_renderer1->set_fullscreen(!m_renderer1->get_fullscreen());
-		break;
-
-	case VK_F12:
-		// create a new thread to avoid mouse hiding
-		if (!m_select_font_active)
-			HANDLE show_thread = CreateThread(0,0,select_font_thread, this, NULL, NULL);
-		break;
-
 	case VK_SPACE:
 		pause();
 		break;
@@ -455,8 +445,35 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 	double v;
 	GetClientRect(id_to_hwnd(id), &r);
 	m_bar_drawer.total_width = r.right - r.left;
-	int type = m_bar_drawer.hit_test(x, y-(r.bottom-r.top)+30, &v);
-	if (type == 3 && GetAsyncKeyState(VK_LBUTTON) < 0)
+	int height = r.bottom - r.top;
+	int hit_x = x;
+	int hit_y = y;
+
+	if (m_output_mode == out_tb)
+	{
+		if (hit_y < height/2)
+			hit_y += height/2;
+	}
+
+	if (m_output_mode == out_htb)
+	{
+		if (hit_y < height/2)
+			hit_y *= 2;
+	}
+
+	if (m_output_mode == out_sbs)
+	{
+		m_bar_drawer.total_width /= 2;
+		hit_x %= m_bar_drawer.total_width;
+	}
+
+	if (m_output_mode == out_hsbs)
+	{
+		hit_x *= 2;
+		hit_x %= m_bar_drawer.total_width;
+	}
+
+	int type = m_bar_drawer.hit_test(hit_x, hit_y-(r.bottom-r.top)+30, &v);	if (type == 3 && GetAsyncKeyState(VK_LBUTTON) < 0)
 	{
 		set_volume(v);
 	}
@@ -529,12 +546,12 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		CheckMenuItem(menu, ID_OUTPUTMODE_LINEINTERLACE,		m_output_mode == masking && m_mask_mode == line_interlace? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_CHECKBOARDINTERLACE,	m_output_mode == masking && m_mask_mode == checkboard_interlace ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR,		m_output_mode == dual_window ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_SBS,	m_output_mode == out_side_by_side ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_TB,		m_output_mode == out_top_bottom ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_SBS,	m_output_mode == out_sbs ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_TB,		m_output_mode == out_tb ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_GERNERAL120HZGLASSES,	m_output_mode == pageflipping ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				false ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				false ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				m_output_mode == out_hsbs ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
 
 
 		// subtitle menu
@@ -588,17 +605,42 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		int type;
 		
 		m_bar_drawer.total_width = r.right - r.left;
-		type = m_bar_drawer.hit_test(x, y-(r.bottom-r.top)+30, &v);
+		int height = r.bottom - r.top;
+		int hit_x = x;
+		int hit_y = y;
+
+		if (m_output_mode == out_tb)
+		{
+			if (hit_y < height/2)
+				hit_y += height/2;
+		}
+
+		if (m_output_mode == out_htb)
+		{
+			if (hit_y < height/2)
+				hit_y *= 2;
+		}
+
+		if (m_output_mode == out_sbs)
+		{
+			m_bar_drawer.total_width /= 2;
+			hit_x %= m_bar_drawer.total_width;
+		}
+
+		if (m_output_mode == out_hsbs)
+		{
+			hit_x *= 2;
+			hit_x %= m_bar_drawer.total_width;
+		}
+
+		type = m_bar_drawer.hit_test(hit_x, hit_y-(r.bottom-r.top)+30, &v);
 		if (type == 1)
 		{
 			pause();
 		}
 		else if (type == 2)
 		{
-			show_window(2, !m_full2|| m_always_show_right);		// show/hide it before set fullscreen, or you may got a strange window
-			set_fullscreen(2, !m_full2);		// yeah, this is not a bug
-			set_fullscreen(1, m_full2);
-			show_window(2, m_full2|| m_always_show_right);		// show/hide it again
+			toggle_fullscreen();
 		}
 		else if (type == 3)
 		{
@@ -637,11 +679,66 @@ LRESULT dx_player::on_timer(int id)
 		ScreenToClient(id_to_hwnd(2), &mouse2);
 
 		m_bar_drawer.total_width = client1.right - client1.left;
-		int test1 = m_bar_drawer.hit_test(mouse1.x, mouse1.y-(client1.bottom-client1.top)+30, NULL);
+		int height = client1.bottom - client1.top;
+		int hit_x = mouse1.x;
+		int hit_y = mouse1.y;
+
+		if (m_output_mode == out_tb)
+		{
+			if (hit_y < height/2)
+				hit_y += height/2;
+		}
+
+		if (m_output_mode == out_htb)
+		{
+			if (hit_y < height/2)
+				hit_y *= 2;
+		}
+
+		if (m_output_mode == out_sbs)
+		{
+			m_bar_drawer.total_width /= 2;
+			hit_x %= m_bar_drawer.total_width;
+		}
+
+		if (m_output_mode == out_hsbs)
+		{
+			hit_x *= 2;
+			hit_x %= m_bar_drawer.total_width;
+		}
+
+		int test1 = m_bar_drawer.hit_test(hit_x, hit_y-height+30, NULL);
 
 		m_bar_drawer.total_width = client2.right - client2.left;
-		int test2 = m_bar_drawer.hit_test(mouse2.x, mouse2.y-(client2.bottom-client2.top)+30, NULL);		// warning
+		height = client2.bottom - client2.top;
+		hit_x = mouse2.x;
+		hit_y = mouse2.y;
 
+		if (m_output_mode == out_tb)
+		{
+			if (hit_y < height/2)
+				hit_y += height/2;
+		}
+
+		if (m_output_mode == out_htb)
+		{
+			if (hit_y < height/2)
+				hit_y *= 2;
+		}
+
+		if (m_output_mode == out_sbs)
+		{
+			m_bar_drawer.total_width /= 2;
+			hit_x %= m_bar_drawer.total_width;
+		}
+
+		if (m_output_mode == out_hsbs)
+		{
+			hit_x *= 2;
+			hit_x %= m_bar_drawer.total_width;
+		}
+
+		int test2 = m_bar_drawer.hit_test(hit_x, hit_y-height+30, NULL);
 		if (test1 < 0 && test2 < 0)
 		{
 			show_mouse(false);
@@ -698,10 +795,7 @@ LRESULT dx_player::on_paint(int id, HDC hdc)
 
 LRESULT dx_player::on_double_click(int id, int button, int x, int y)
 {
-	show_window(2, !m_full2|| m_always_show_right);		// show/hide it before set fullscreen, or you may got a strange window
-	set_fullscreen(2, !m_full2);		// yeah, this is not a bug
-	set_fullscreen(1, m_full2);
-	show_window(2, m_full2|| m_always_show_right);		// show/hide it again
+	toggle_fullscreen();
 
 	return S_OK;
 }
@@ -809,23 +903,27 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR_SBS)
 	{
-		m_output_mode = out_side_by_side;
+		m_output_mode = out_sbs;
 		if (m_renderer1)
 			m_renderer1->set_output_mode(m_output_mode);			
 	}
 	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR_TB)
 	{
-		m_output_mode = out_top_bottom;
+		m_output_mode = out_tb;
 		if (m_renderer1)
 			m_renderer1->set_output_mode(m_output_mode);			
 	}
 	else if (uid == ID_OUTPUTMODE_3DTV_SBS)
 	{
-		MessageBoxW(id_to_hwnd(id), C(L"Feature under development"), L"...", MB_OK);
+		m_output_mode = out_hsbs;
+		if (m_renderer1)
+			m_renderer1->set_output_mode(m_output_mode);			
 	}
 	else if (uid == ID_OUTPUTMODE_3DTV_TB)
 	{
-		MessageBoxW(id_to_hwnd(id), C(L"Feature under development"), L"...", MB_OK);
+		m_output_mode = out_htb;
+		if (m_renderer1)
+			m_renderer1->set_output_mode(m_output_mode);			
 	}
 	else if (uid == ID_OUTPUTMODE_ANAGLYPH)
 	{
@@ -925,6 +1023,16 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		int trackid = uid - 'S0';
 		enable_subtitle_track(trackid);
 	}
+
+	if (m_output_mode == dual_window)
+	{
+		show_window(2, m_full1);
+		set_fullscreen(2, m_full1);
+	}
+	else
+	{
+		show_window(2, false);
+	}
 	reset_timer(1, 1000);
 	return S_OK;
 }
@@ -933,10 +1041,7 @@ LRESULT dx_player::on_sys_command(int id, WPARAM wParam, LPARAM lParam)
 	const int SC_MAXIMIZE2 = 0xF032;
 	if (wParam == SC_MAXIMIZE || wParam == SC_MAXIMIZE2)
 	{
-		show_window(2, !m_full2 || m_always_show_right);		// show/hide it before set fullscreen, or you may got a strange window
-		set_fullscreen(1, true);
-		set_fullscreen(2, true);
-		show_window(2, m_full2 || m_always_show_right);		// show/hide it again
+		toggle_fullscreen();
 		return S_OK;
 	}
 	else if (LOWORD(wParam) == SC_SCREENSAVE)
@@ -1252,6 +1357,7 @@ HRESULT dx_player::draw_ui()
 	RECT client_rc;
 	GetClientRect(id_to_hwnd(1), &client_rc);
 	m_bar_drawer.total_width = client_rc.right - client_rc.left;
+	if (m_output_mode == out_sbs) m_bar_drawer.total_width /= 2;
 	m_bar_drawer.draw_total(paused, current, _total, volume);
 
 	//TODO: it seems that it is not a good idea to draw UI here..
@@ -1862,6 +1968,30 @@ HRESULT dx_player::select_font(bool show_dlg)
 	//m_font_color = cf.rgbColors;
 	m_font = CreateFontIndirectW(cf.lpLogFont); 
 
+	return S_OK;
+}
+
+HRESULT dx_player::toggle_fullscreen()
+{
+	if (m_output_mode == pageflipping || m_output_mode == NV3D)
+	{
+		if (m_renderer1)
+			m_renderer1->set_fullscreen(!m_renderer1->get_fullscreen());
+	}
+
+	else if (m_output_mode == dual_window)
+	{
+		show_window(2, !m_full2);		// show/hide it before set fullscreen, or you may got a strange window
+		set_fullscreen(2, !m_full2);	// yeah, this is not a bug
+		set_fullscreen(1, m_full2);
+		show_window(2, m_full2);		// show/hide it again
+	}
+
+	else
+	{
+		show_window(2, false);
+		set_fullscreen(1, !m_full1);
+	}
 	return S_OK;
 }
 
