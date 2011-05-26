@@ -7,7 +7,10 @@
 #pragma comment(lib, "detours/detoured.lib")
 #pragma comment(lib, "detours/detours.lib")
 
+// public variables
 AutoSetting<localization_language> g_active_language(L"Language", CHINESE);
+char g_passkey[32];
+char g_passkey_big[128];
 
 int n_monitor_found = 0;
 RECT monitor_rect[MAX_MONITORS];
@@ -691,6 +694,63 @@ HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *
 	return E_FAIL;
 }
 
+HRESULT check_passkey()
+{
+	DWORD e[32];
+	DWORD m1[32];
+	BigNumberSetEqualdw(e, 65537, 32);
+	RSA(m1, (DWORD*)g_passkey_big, e, (DWORD*)dwindow_n, 32);
+	for(int i=0; i<8; i++)
+		if (m1[i] != m1[i+8] || m1[i+8] != m1[i+16] || m1[i+16] != m1[i+24])
+			return E_FAIL;
+	memcpy(g_passkey, m1, 32);
+	return S_OK;
+}
+
+HRESULT load_passkey()
+{
+	memset(g_passkey_big, 0x38, 128);
+	load_setting(L"passkey", g_passkey_big, 128);
+	return check_passkey();
+}
+
+HRESULT save_passkey()
+{
+	save_setting(L"passkey", g_passkey_big, 128);
+	return S_OK;
+}
+
+HRESULT load_e3d_key(const char *file_hash, char *file_key)
+{
+	wchar_t tmp[3] = L"";
+	wchar_t reg_key[50];
+	for(int i=0; i<20; i++)
+	{
+		wsprintfW(tmp, L"%02X", file_hash[i]);
+		wcscat(reg_key, tmp);
+	}
+	// TODO : AES it
+	load_setting(reg_key, file_key, 32);
+
+	return S_OK;
+}
+
+HRESULT save_e3d_key(const char *file_hash, const char *file_key)
+{
+	wchar_t tmp[3] = L"";
+	wchar_t reg_key[50];
+	for(int i=0; i<20; i++)
+	{
+		wsprintfW(tmp, L"%02X", file_hash[i]);
+		wcscat(reg_key, tmp);
+	}
+
+	// TODO : AES it
+	save_setting(reg_key, file_key, 32);
+
+	return S_OK;
+}
+
 HRESULT DeterminPin(IPin *pin, wchar_t *name, CLSID majortype)
 {
 	if (NULL == pin)
@@ -759,7 +819,7 @@ HRESULT localize_menu(HMENU menu)
 }
 
 const WCHAR* soft_key= L"Software\\DWindow";
-bool save_setting(const WCHAR *key, void *data, int len, DWORD REG_TYPE)
+bool save_setting(const WCHAR *key, const void *data, int len, DWORD REG_TYPE)
 {
 	HKEY hkey = NULL;
 	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, soft_key, 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );

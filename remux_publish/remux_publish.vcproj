@@ -32,7 +32,6 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\libchecksum\debug\libchecksum.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
@@ -125,10 +124,37 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
+				RelativePath="..\libchecksum\basicRSA.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libchecksum\basicRSA.h">
+			</File>
+			<File
+				RelativePath="..\libchecksum\libchecksum.h">
+			</File>
+			<File
 				RelativePath=".\remux_publish.cpp">
 			</File>
 			<File
 				RelativePath=".\remux_publishDlg.cpp">
+			</File>
+			<File
+				RelativePath="..\libchecksum\SHA1.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libchecksum\SHA1.h">
 			</File>
 			<File
 				RelativePath=".\stdafx.cpp">
@@ -143,6 +169,15 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libchecksum\video_checksum.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"/>
 				</FileConfiguration>
 			</File>
 		</Filter>

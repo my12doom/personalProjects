@@ -151,6 +151,13 @@ int encode_file(wchar_t *in, wchar_t *out)
 	leaf_block_size.SetData(&block_size, 8);
 	root.AddLeaf(&leaf_block_size);
 
+	// layout
+	__int64 layout = 0;
+	my12doom_leaf leaf_layout;
+	leaf_layout.m_leaf8cc = str2int64("layout");
+	leaf_layout.SetData(&layout, 8);
+	root.AddLeaf(&leaf_layout);
+
 	// key hint
 	unsigned char s_key_hint[32] = "test data";
 	unsigned char key[32] = "Hello World!";
@@ -166,7 +173,7 @@ int encode_file(wchar_t *in, wchar_t *out)
 	root.WriteTo(hout);
 
 	// copy file with encrypt
-	const int E3D_BLOCK_SIZE = 65536;
+	//const int E3D_BLOCK_SIZE = 65536;
 	unsigned char tmp[E3D_BLOCK_SIZE];
 	for(__int64 byte_left= file_size; byte_left>0; byte_left-= E3D_BLOCK_SIZE)
 	{

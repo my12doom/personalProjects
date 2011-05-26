@@ -131,13 +131,6 @@ IDI_ICON1               ICON                    "ico\\ico.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// RCDATA
-//
-
-IDR_DLL                 RCDATA                  "kill_ssaver.dll"
-
-/////////////////////////////////////////////////////////////////////////////
-//
 // RT_MANIFEST
 //
 
@@ -196,7 +189,6 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Play/Pause",                  ID_PLAY
         MENUITEM "Fullscreen",                  ID_FULLSCREEN
-        MENUITEM "Always Show Right Eye",       ID_SHOWRIGHTEYE
         MENUITEM SEPARATOR
         POPUP "Language"
         BEGIN

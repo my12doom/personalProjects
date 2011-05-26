@@ -1,3 +1,5 @@
+#pragma  once
+
 #include "basicRSA.h"
 #include "SHA1.h"
 

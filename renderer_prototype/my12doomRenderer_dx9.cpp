@@ -779,7 +779,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		// copy right to nv3d surface
 		dst.left += m_active_pp.BackBufferWidth;
 		dst.right += m_active_pp.BackBufferWidth;
-		hr = m_Device->StretchRect(back_buffer, NULL, m_sbs_surface, &dst, D3DTEXF_LINEAR);
+		hr = m_Device->StretchRect(back_buffer, NULL, m_sbs_surface, &dst, D3DTEXF_NONE);
 
 		// StretchRect to backbuffer!, this is how 3D vision works
 		RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
@@ -1179,22 +1179,22 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		{
 			RECT dst = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
 
-			m_Device->StretchRect(temp_surface, NULL, back_buffer, &dst, D3DTEXF_NONE);
+			m_Device->StretchRect(temp_surface, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 
 			dst.left += m_active_pp.BackBufferWidth/2;
 			dst.right += m_active_pp.BackBufferWidth/2;
-			m_Device->StretchRect(temp_surface2, NULL, back_buffer, &dst, D3DTEXF_NONE);
+			m_Device->StretchRect(temp_surface2, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 		}
 
 		else if (m_output_mode == out_htb)
 		{
 			RECT dst = {0, 0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight/2};
 
-			m_Device->StretchRect(temp_surface, NULL, back_buffer, &dst, D3DTEXF_NONE);
+			m_Device->StretchRect(temp_surface, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 
 			dst.top += m_active_pp.BackBufferHeight/2;
 			dst.bottom += m_active_pp.BackBufferHeight/2;
-			m_Device->StretchRect(temp_surface2, NULL, back_buffer, &dst, D3DTEXF_NONE);
+			m_Device->StretchRect(temp_surface2, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 
 		}
 	}

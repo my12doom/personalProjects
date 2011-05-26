@@ -2,6 +2,12 @@
 #include <Windows.h>
 #include <atlbase.h>
 #include <dshow.h>
+#include "..\libchecksum\libchecksum.h"
+
+
+// public variables
+extern char g_passkey_big[128];
+extern char g_passkey[32];
 
 //definitions
 #define AmHresultFromWin32(x) (MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, x))
@@ -34,6 +40,12 @@ HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 HRESULT RemoveUselessFilters(IGraphBuilder *gb);
 HRESULT DeterminPin(IPin *pin, wchar_t *name = NULL, CLSID majortype = CLSID_NULL);
 HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *name, IPin **ppPin);
+HRESULT load_passkey();
+HRESULT save_passkey();
+HRESULT save_e3d_key(const char *file_hash, const char *file_key);
+HRESULT load_e3d_key(const char *file_hash, char *file_key);
+
+#define g_bomb_function {DWORD e[32];DWORD m1[32]={0,1,2,3,4,5,6,7,8,9,10};BigNumberSetEqualdw(e, 65537, 32);RSA(m1, (DWORD*)g_passkey_big, e, (DWORD*)dwindow_n, 32);for(int i=0; i<8; i++)if (m1[i] != m1[i+8] || m1[i+8] != m1[i+16] || m1[i+16] != m1[i+24])TerminateProcess(GetCurrentProcess(), 0);memcpy(g_passkey, m1, 32);}
 
 // CoreMVC
 HRESULT ActiveCoreMVC(IBaseFilter *decoder);
@@ -41,7 +53,7 @@ HRESULT beforeCreateCoreMVC();
 
 
 // Settings loader & saver
-bool save_setting(const WCHAR *key, void *data, int len, DWORD REG_TYPE=REG_BINARY);
+bool save_setting(const WCHAR *key, const void *data, int len, DWORD REG_TYPE=REG_BINARY);
 int load_setting(const WCHAR *key, void *data, int len);
 template<class ValueType>
 class AutoSetting

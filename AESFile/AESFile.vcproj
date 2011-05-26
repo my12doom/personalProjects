@@ -204,6 +204,14 @@
 			<File
 				RelativePath=".\RIJNDAEL.CPP"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\simple_test.cpp"

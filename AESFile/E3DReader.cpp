@@ -19,7 +19,7 @@ void log_line(char *format, ...)
 }
 
 
-__int64 str2int64(char *str)
+__int64 str2int64(const char *str)
 {
 	__int64 rtn = 0;
 	int len = strlen(str);
@@ -32,8 +32,11 @@ __int64 str2int64(char *str)
 
 file_reader::file_reader()
 {
+	m_file_size = 0;
+	m_block_size = 0;
 	m_cache_pos = -1;
 	m_is_encrypted = false;
+	m_key_ok = false;
 	m_file = INVALID_HANDLE_VALUE;
 	m_block_cache = NULL;
 }
@@ -54,10 +57,12 @@ void file_reader::set_key(unsigned char*key)
 	if (memcmp(m_keyhint, m_keyhint+16, 16))
 	{
 		log_line("key error.\n");
+		m_key_ok = false;
 	}
 	else
 	{
 		log_line("key ok.\n");
+		m_key_ok = true;
 	}
 
 	m_codec.decrypt(m_keyhint, m_keyhint);
@@ -82,13 +87,52 @@ void file_reader::SetFile(HANDLE file)
 	if (eightcc != str2int64("my12doom"))
 		goto rewind;
 
-	__int64 size;
-	if (!::ReadFile(m_file, &size, 8, &byte_read, NULL) || byte_read != 8)
+	__int64 root_size;
+	if (!::ReadFile(m_file, &root_size, 8, &byte_read, NULL) || byte_read != 8)
 		goto rewind;
-	m_start_in_file = size + 16;
+	m_start_in_file = root_size + 16;
 
-	unsigned char *tmp = (unsigned char*)malloc(size);
-	if (!::ReadFile(m_file, tmp, size, &byte_read, NULL) || byte_read != size)
+
+	__int64 total_byte_read = 0;
+	do
+	{
+		__int64 leaf_size;
+		if (!::ReadFile(m_file, &eightcc, 8, &byte_read, NULL) || byte_read != 8)
+			goto rewind;
+		if (!::ReadFile(m_file, &leaf_size, 8, &byte_read, NULL) || byte_read != 8)
+			goto rewind;
+		
+		if (eightcc == str2int64("filesize"))
+		{
+			if (!::ReadFile(m_file, &m_file_size, 8, &byte_read, NULL) || byte_read != 8)
+				goto rewind;
+		}
+		else if (eightcc == str2int64("blocksize"))
+		{
+			if (!::ReadFile(m_file, &m_block_size, 8, &byte_read, NULL) || byte_read != 8)
+				goto rewind;
+
+			printf("block size = %d.\n", (int)m_block_size);
+		}
+		else if (eightcc == str2int64("keyhint"))
+		{
+			if (!::ReadFile(m_file, m_keyhint, 32, &byte_read, NULL) || byte_read != 32)
+				goto rewind;
+		}
+		else if (eightcc == str2int64("layout"))
+		{
+			if (!::ReadFile(m_file, &m_layout, 8, &byte_read, NULL) || byte_read != 8)
+				goto rewind;
+
+			printf("layout = %d.\n", (int)m_layout);
+		}
+
+		SetFilePointer(m_file, leaf_size - byte_read, NULL, SEEK_CUR);
+		total_byte_read += 16 + leaf_size;
+
+	} while (total_byte_read < root_size);
+
+	if (m_file_size == 0 ||  m_block_size == 0)
 		goto rewind;
 
 	// set member
@@ -96,11 +140,7 @@ void file_reader::SetFile(HANDLE file)
 	m_is_encrypted = true;
 	m_cache_pos = -1;
 	m_pos = 0;
-	m_file_size = *(__int64*)(tmp+0x10);
-	m_block_size = *(__int64*)(tmp+0x28);
 	m_block_cache = (unsigned char*)malloc(m_block_size);
-	memcpy(m_keyhint, tmp+0x40, 32);
-	free(tmp);
 	return;
 
 rewind:
@@ -110,7 +150,7 @@ rewind:
 BOOL file_reader::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVERLAPPED lpOverlap)
 {
 	log_line("ReadFile %d", nToRead);
-	if (!m_is_encrypted)
+	if (!m_is_encrypted || !m_key_ok)
 		return ::ReadFile(m_file, lpBuffer, nToRead, nRead, lpOverlap);
 
 	// caculate size
@@ -138,7 +178,7 @@ BOOL file_reader::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVER
 			}
 
 			::ReadFile(m_file, m_block_cache, m_block_size, &byte_read, NULL);
-			m_file_pos_cache += byte_read;
+			m_file_pos_cache += m_block_size;		// assume read success
 			for(int i=0; i<m_block_size; i+=16)
 				m_codec.decrypt(m_block_cache+i, m_block_cache+i);
 		}
@@ -162,7 +202,7 @@ BOOL file_reader::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVER
 			::SetFilePointerEx(m_file, li, NULL, SEEK_SET);
 		}
 		::ReadFile(m_file, tmp, nToRead / m_block_size * m_block_size, &byte_read, NULL);
-		byte_read = nToRead / m_block_size * m_block_size, &byte_read; // assume always right
+		byte_read = nToRead / m_block_size * m_block_size, &byte_read; // assume read success
 		m_file_pos_cache += byte_read;
 		for(int i=0; i<nToRead / m_block_size * m_block_size; i+=16)
 			m_codec.decrypt(tmp+i, tmp+i);
@@ -202,7 +242,7 @@ BOOL file_reader::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVER
 BOOL file_reader::GetFileSizeEx(PLARGE_INTEGER lpFileSize)
 {
 	log_line("GetFileSizeEx");
-	if (!m_is_encrypted)
+	if (!m_is_encrypted || !m_key_ok)
 		return ::GetFileSizeEx(m_file, lpFileSize);
 
 	if (!lpFileSize)
@@ -214,7 +254,7 @@ BOOL file_reader::GetFileSizeEx(PLARGE_INTEGER lpFileSize)
 BOOL file_reader::SetFilePointerEx(__in LARGE_INTEGER liDistanceToMove, __out_opt PLARGE_INTEGER lpNewFilePointer, __in DWORD dwMoveMethod)
 {
 	log_line("SetFilePointerEx, %d, %d", liDistanceToMove, dwMoveMethod);
-	if (!m_is_encrypted)
+	if (!m_is_encrypted || !m_key_ok)
 		return ::SetFilePointerEx(m_file, liDistanceToMove, lpNewFilePointer, dwMoveMethod);
 
 	__int64 old_pos = m_pos;

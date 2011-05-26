@@ -49,7 +49,22 @@ BOOL Cremux_publishDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	char passkey[32] = "Hello Guys!";
+	unsigned char passkey_big[128];
+
 	
+	unsigned int dwindow_d[32] = {0x46bbf241, 0xd39c0d91, 0x5c9b9170, 0x43187399, 0x6568c96b, 0xe8a5445b, 0x99791d5d, 0x38e1f280, 0xb0e7bbee, 0x3c5a66a0, 0xe8d38c65, 0x5a16b7bc, 0x53b49e94, 0x11ef976d, 0xd212257e, 0xb374c4f2, 0xc67a478a, 0xe9905e86, 0x52198bc5, 0x1c2b4777, 0x8389d925, 0x33211e75, 0xc2cab10e, 0x4673bf76, 0xfdd2332e, 0x32b10a08, 0x4e64f572, 0x52586369, 0x7a3980e0, 0x7ce9ba99, 0x6eaf6bfe, 0x707b1206};
+	DWORD m[32];
+	memcpy(m, passkey, 32);
+	memcpy(m+8, passkey, 32);
+	memcpy(m+16, passkey, 32);
+	memcpy(m+24, passkey, 32);
+
+
+	RSA((DWORD*)passkey_big, m, (DWORD*)dwindow_d, (DWORD*)dwindow_n, 32);
+	for(int i=0; i<128; i++)
+		TRACE("%02X,", (int)passkey_big[i]);
+
 	return TRUE;  // 除非设置了控件的焦点，否则返回 TRUE
 }
 

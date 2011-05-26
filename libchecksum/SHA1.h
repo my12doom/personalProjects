@@ -1,3 +1,5 @@
+#pragma  once 
+
 #include "windows.h"
 typedef struct SHA1_STATETYPE_TAG
 {   

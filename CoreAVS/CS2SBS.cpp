@@ -178,7 +178,7 @@ HRESULT CS2SBS::Transform(IMediaSample * pIn, IMediaSample *pOut, int id)
 			//if(lStart != matched_time)
 			if (sample_left->start != matched_time)
 			{
-				printf("drop left\n");
+				//printf("drop left\n");
 				//sample_left->Release();
 				delete sample_left;
 			}
@@ -195,7 +195,7 @@ HRESULT CS2SBS::Transform(IMediaSample * pIn, IMediaSample *pOut, int id)
 			//if(lStart != matched_time)
 			if (sample_right->start != matched_time)
 			{
-				printf("drop right\n");
+				//printf("drop right\n");
 				//sample_right->Release();
 				delete sample_right;
 			}

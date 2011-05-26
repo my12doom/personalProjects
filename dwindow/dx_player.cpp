@@ -100,7 +100,6 @@ m_lFontPointSize(L"FontSize", 40),
 m_FontName(L"Font", L"Arial"),
 m_FontStyle(L"FontStyle", L"Regular"),
 m_font_color(L"FontColor", 0x00ffffff),
-m_always_show_right(L"AlwaysShowRight", false),
 m_input_layout(L"InputLayout", input_layout_auto),
 m_output_mode(L"OutputMode", anaglyph),
 m_mask_mode(L"MaskMode", row_interlace)
@@ -156,7 +155,6 @@ m_mask_mode(L"MaskMode", row_interlace)
 
 	// show it!
 	show_window(1, true);
-	show_window(2, m_always_show_right);
 
 	// to init video zone
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);
@@ -492,8 +490,9 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	show_ui(true);
 	show_mouse(true);
 	reset_timer(1, 99999999);
-	if (button == VK_RBUTTON || !m_file_loaded)
+	if ( (button == VK_RBUTTON || !m_file_loaded) && !m_full1 && (!m_renderer1 || !m_renderer1->get_fullscreen()))
 	{
+
 		HMENU menu = LoadMenu(m_hexe, MAKEINTRESOURCE(IDR_MENU1));
 		menu = GetSubMenu(menu, 0);
 		localize_menu(menu);
@@ -569,9 +568,6 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 				EnableMenuItem(sub_subtitle, ID_SUBTITLE_COLOR, MF_ENABLED);
 			}
 		}
-
-		// check/uncheck always show right eye
-		CheckMenuItem(menu, ID_SHOWRIGHTEYE, m_always_show_right?MF_CHECKED:MF_UNCHECKED);
 
 		// audio tracks
 		HMENU sub_audio = GetSubMenu(menu, 6);
@@ -795,7 +791,8 @@ LRESULT dx_player::on_paint(int id, HDC hdc)
 
 LRESULT dx_player::on_double_click(int id, int button, int x, int y)
 {
-	toggle_fullscreen();
+	if (button == VK_LBUTTON)
+		toggle_fullscreen();
 
 	return S_OK;
 }
@@ -945,12 +942,6 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		{
 			load_subtitle(file, false);
 		}
-	}
-
-	else if (uid == ID_SHOWRIGHTEYE)
-	{
-		m_always_show_right = !m_always_show_right;
-		show_window(2, m_always_show_right);
 	}
 
 	else if (uid == ID_SUBTITLE_FONT)
@@ -1403,9 +1394,17 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname)
 
 	reset();
 	start_loading();
-	load_file(pathname);
+	hr = load_file(pathname);
+	if (FAILED(hr))
+		goto fail;
 	hr = end_loading();
+	if (FAILED(hr))
+		goto fail;
 	play();
+
+	return hr;
+fail:
+	reset();
 	return hr;
 }
 
@@ -1878,7 +1877,7 @@ HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME 
 		return E_FAIL;
 
 	m_external_subtitles.AddTail(tmp);
-	return S_OK;
+	return enable_subtitle_track(m_external_subtitles.GetCount()-1);
 }
 
 HRESULT dx_player::draw_subtitle()
