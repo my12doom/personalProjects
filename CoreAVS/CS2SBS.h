@@ -3,6 +3,26 @@
 #include <dvdmedia.h>
 #include "..\two2one\two2one.h"
 
+class packet
+{
+public:
+	packet(IMediaSample *sample)
+	{
+		m_data = (BYTE*) malloc(sample->GetActualDataLength());
+		sample->GetTime(&start, &end);
+		BYTE *src;
+		sample->GetPointer(&src);
+		memcpy(m_data, src, sample->GetActualDataLength());
+	}
+	~packet()
+	{
+		free(m_data);
+	}
+
+	REFERENCE_TIME start, end;
+	BYTE *m_data;
+};
+
 class CS2SBS : public C2to1Filter
 {
 public:
@@ -20,8 +40,8 @@ public:
 
 protected:
 
-	CGenericList<IMediaSample> m_left_queue;
-	CGenericList<IMediaSample> m_right_queue;
+	CGenericList<packet> m_left_queue;
+	CGenericList<packet> m_right_queue;
 
 	int m_in_x;
 	int m_in_y;

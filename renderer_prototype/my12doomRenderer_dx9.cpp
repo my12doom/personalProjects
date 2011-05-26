@@ -237,7 +237,39 @@ HRESULT my12doomRenderer::DataArrive(int id, IMediaSample *media_sample)
 		if (m_output_mode != pageflipping)
 			render(true);		
 	}
+
 	else
+	{
+		// copy to dsr 0
+		if (id == 0)
+		{
+			CAutoLock lck(&m_dsr0->m_data_lock);
+			m_dsr0->m_data_changed = true;
+			int size = media_sample->GetActualDataLength();
+			size = min(size,  m_dsr0->m_format == MEDIASUBTYPE_YUY2 ? m_lVidWidth * m_lVidHeight * 2 : m_lVidWidth * m_lVidHeight * 3 / 2);
+
+			BYTE  *pBmpBuffer;
+			media_sample->GetPointer( &pBmpBuffer );
+			memcpy(m_dsr0->m_data, pBmpBuffer, size);
+		}
+
+		// copy to dsr 1
+		if (id == 1)
+		{
+			CAutoLock lck(&m_dsr1->m_data_lock);
+			m_dsr1->m_data_changed = true;
+			int size = media_sample->GetActualDataLength();
+			size = min(size,  m_dsr1->m_format == MEDIASUBTYPE_YUY2 ? m_lVidWidth * m_lVidHeight * 2 : m_lVidWidth * m_lVidHeight * 3 / 2);
+
+			BYTE  *pBmpBuffer;
+			media_sample->GetPointer( &pBmpBuffer );
+			memcpy(m_dsr1->m_data, pBmpBuffer, size);
+		}
+
+		if (m_output_mode != pageflipping && id == 0)
+			render(true);
+	}
+/*	else
 	{
 		// double stream
 
@@ -351,6 +383,7 @@ HRESULT my12doomRenderer::DataArrive(int id, IMediaSample *media_sample)
 
 	}
 
+*/
 	if (m_cb && id == 0)
 		m_cb->SampleCB(start + m_dsr0->m_thisstream, end + m_dsr0->m_thisstream, media_sample);
 
@@ -599,73 +632,58 @@ HRESULT my12doomRenderer::restore_objects()
 
 	if (m_tex_Y == NULL)
 	{
-		hr = m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&m_tex_YUY2, NULL);
+		FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&m_tex_YUY2, NULL));
 
-		hr = m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_Y, NULL);
-		hr = m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight/2, 1, NULL, D3DFMT_A8L8,D3DPOOL_MANAGED,	&m_tex_NV12_UV, NULL);
+		FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_Y, NULL));
+		FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight/2, 1, NULL, D3DFMT_A8L8,D3DPOOL_MANAGED,	&m_tex_NV12_UV, NULL));
 
-		hr = m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_YV12_UV, NULL);
+		FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_YV12_UV, NULL));
 	}
 
 	DWORD use_mipmap = D3DUSAGE_AUTOGENMIPMAP;
 
-	hr = m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_full, NULL);
-	hr = m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_left, NULL);
-	hr = m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL);
-	hr = m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_left, NULL);
-	hr = m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_right, NULL);
-	hr = m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8, D3DPOOL_DEFAULT, &m_tex_mask, NULL);
-	hr = m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, TRUE, &m_sbs_surface, NULL);
-	if(m_tex_bmp == NULL) hr = m_Device->CreateTexture(2048, 1024, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,	&m_tex_bmp, NULL);
-	hr = m_Device->CreateRenderTarget(64, 64, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_test_rt64, NULL);
-	if (m_mem == NULL) hr = m_Device->CreateOffscreenPlainSurface(64, 64, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_mem, NULL);
+	FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_full, NULL));
+	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_left, NULL));
+	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
+	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_left, NULL));
+	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_right, NULL));
+	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8, D3DPOOL_DEFAULT, &m_tex_mask, NULL));
+	FAIL_RET( m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, TRUE, &m_sbs_surface, NULL));
+	if(m_tex_bmp == NULL) FAIL_RET( m_Device->CreateTexture(2048, 1024, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,	&m_tex_bmp, NULL));
+	FAIL_RET( m_Device->CreateRenderTarget(64, 64, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_test_rt64, NULL));
+	if (m_mem == NULL) FAIL_RET( m_Device->CreateOffscreenPlainSurface(64, 64, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_mem, NULL));
 	
-
-	mylog("restore 1st time:%dms\n", timeGetTime()-l);
-	generate_mask();
-	mylog("restore 2nd time:%dms\n", timeGetTime()-l);
-
-	if (FAILED(hr))
-		return hr;
+	FAIL_RET(generate_mask());
 
 	// add 3d vision tag at last line
 	if (m_output_mode == NV3D)
 	{
 		D3DLOCKED_RECT lr;
 		RECT lock_tar={0, m_active_pp.BackBufferHeight, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1};
-		m_sbs_surface->LockRect(&lr,&lock_tar,0);
+		FAIL_RET(m_sbs_surface->LockRect(&lr,&lock_tar,0));
 		LPNVSTEREOIMAGEHEADER pSIH = (LPNVSTEREOIMAGEHEADER)(((unsigned char *) lr.pBits) + (lr.Pitch * (0)));	
 		pSIH->dwSignature = NVSTEREO_IMAGE_SIGNATURE;
 		pSIH->dwBPP = 32;
 		pSIH->dwFlags = SIH_SIDE_BY_SIDE;
 		pSIH->dwWidth = m_active_pp.BackBufferWidth;
 		pSIH->dwHeight = m_active_pp.BackBufferHeight;
-		m_sbs_surface->UnlockRect();
+		FAIL_RET(m_sbs_surface->UnlockRect());
 	}
-	mylog("restore 3rd time:%dms\n", timeGetTime()-l);
 
 
 	// vertex
-	m_Device->CreateVertexBuffer( sizeof(m_vertices), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, FVF_Flags, D3DPOOL_DEFAULT, &g_VertexBuffer, NULL );
-	mylog("restore 4th time:%dms\n", timeGetTime()-l);
-	calculate_vertex();
-	mylog("restore 5th time:%dms\n", timeGetTime()-l);
+	FAIL_RET(m_Device->CreateVertexBuffer( sizeof(m_vertices), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, FVF_Flags, D3DPOOL_DEFAULT, &g_VertexBuffer, NULL ));
+	FAIL_RET(calculate_vertex());
 
 	// pixel shader
-	hr = m_Device->CreatePixelShader(g_code_YV12toRGB, &m_ps_yv12);
-	hr = m_Device->CreatePixelShader(g_code_NV12toRGB, &m_ps_nv12);
-	hr = m_Device->CreatePixelShader(g_code_YUY2toRGB, &m_ps_yuy2);
-	hr = m_Device->CreatePixelShader(g_code_main, &m_ps_test);
+	FAIL_RET( m_Device->CreatePixelShader(g_code_YV12toRGB, &m_ps_yv12));
+	FAIL_RET( m_Device->CreatePixelShader(g_code_NV12toRGB, &m_ps_nv12));
+	FAIL_RET( m_Device->CreatePixelShader(g_code_YUY2toRGB, &m_ps_yuy2));
+	FAIL_RET( m_Device->CreatePixelShader(g_code_main, &m_ps_test));
 
-	// Create the pixel shader
-	if (FAILED(hr)) return E_FAIL;
-	mylog("restore 6th time:%dms\n", timeGetTime()-l);
-
+	// load and start thread
 	load_image(-1, true);
-
-	// create render thread
 	create_render_thread();
-	mylog("restore last time:%dms\n", timeGetTime()-l);
 	return S_OK;
 }
 HRESULT my12doomRenderer::render_nolock(bool forced)

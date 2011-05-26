@@ -128,31 +128,35 @@ HRESULT CS2SBS::Transform(IMediaSample * pIn, IMediaSample *pOut, int id)
 	pIn->GetMediaTime(&MediaStart, &MediaEnd);
 	int fn;
 	if (m_in_x == 1280)
-		fn = (int)((double)(TimeStart+m_stream_time)/10000*120/1001 + 0.5);
+		fn = (int)((double)(TimeStart+m_stream_time)/10000*60/1001 + 0.5);
 	else
-		fn = (int)((double)(TimeStart+m_stream_time)/10000*48/1001 + 0.5);
+		fn = (int)((double)(TimeStart+m_stream_time)/10000*24/1001 + 0.5);
 
-	pIn->AddRef();
+	static int i = 0;
+	//printf("%d(%d):adding to (%d,%d)\n", fn, id, m_left_queue.GetCount(), m_right_queue.GetCount());
+	//pIn->AddRef();
 	if (id == 1)
-		m_left_queue.AddTail(pIn);
+		m_left_queue.AddTail(new packet(pIn));
 	else
-		m_right_queue.AddTail(pIn);
+		m_right_queue.AddTail(new packet(pIn));
 
 	// find match
 	bool matched = false;
 	REFERENCE_TIME matched_time = -1;
 	for(POSITION pos_left = m_left_queue.GetHeadPosition(); pos_left; pos_left = m_left_queue.Next(pos_left))
 	{
-		IMediaSample *left_sample = m_left_queue.Get(pos_left);
+		packet *left_sample = m_left_queue.Get(pos_left);
 		for(POSITION pos_right = m_right_queue.GetHeadPosition(); pos_right; pos_right = m_right_queue.Next(pos_right))
 		{
-			IMediaSample *right_sample = m_right_queue.Get(pos_right);
-			REFERENCE_TIME lStart, lEnd, rStart, rEnd;
-			left_sample->GetTime(&lStart, &lEnd);
-			right_sample->GetTime(&rStart, &rEnd);
-			if (lStart == rStart && lEnd == rEnd)
+			packet *right_sample = m_right_queue.Get(pos_right);
+			//REFERENCE_TIME lStart, lEnd, rStart, rEnd;
+			//left_sample->GetTime(&lStart, &lEnd);
+			//right_sample->GetTime(&rStart, &rEnd);
+			//if (lStart == rStart && lEnd == rEnd)
+			if (left_sample->start == right_sample->start)
 			{
-				matched_time = lStart;
+				//matched_time = lStart;
+				matched_time = left_sample->start;
 				matched = true;
 				break;
 			}
@@ -162,19 +166,21 @@ HRESULT CS2SBS::Transform(IMediaSample * pIn, IMediaSample *pOut, int id)
 	if(matched)
 	{
 		// release any unmatched and retrive matched
-		IMediaSample *sample_left;
-		IMediaSample *sample_right;
+		packet *sample_left;
+		packet *sample_right;
 
 		while(true)
 		{
 			sample_left = m_left_queue.RemoveHead();
 			REFERENCE_TIME lStart, lEnd;
-			sample_left->GetTime(&lStart, &lEnd);
+			//sample_left->GetTime(&lStart, &lEnd);
 
-			if(lStart != matched_time)
+			//if(lStart != matched_time)
+			if (sample_left->start != matched_time)
 			{
 				printf("drop left\n");
-				sample_left->Release();
+				//sample_left->Release();
+				delete sample_left;
 			}
 			else
 				break;
@@ -184,12 +190,14 @@ HRESULT CS2SBS::Transform(IMediaSample * pIn, IMediaSample *pOut, int id)
 		{
 			sample_right = m_right_queue.RemoveHead();
 			REFERENCE_TIME lStart, lEnd;
-			sample_right->GetTime(&lStart, &lEnd);
+			//sample_right->GetTime(&lStart, &lEnd);
 
-			if(lStart != matched_time)
+			//if(lStart != matched_time)
+			if (sample_right->start != matched_time)
 			{
 				printf("drop right\n");
-				sample_right->Release();
+				//sample_right->Release();
+				delete sample_right;
 			}
 			else
 				break;
@@ -200,10 +208,12 @@ HRESULT CS2SBS::Transform(IMediaSample * pIn, IMediaSample *pOut, int id)
 		int stride_i = len_in *2/3/m_in_y;
 		int stride_o = len_out *2/3/m_in_y;
 
-		BYTE *ptr_in1 = NULL;
-		sample_left->GetPointer(&ptr_in1);
-		BYTE *ptr_in2 = NULL;
-		sample_right->GetPointer(&ptr_in2);
+		//BYTE *ptr_in1 = NULL;
+		//sample_left->GetPointer(&ptr_in1);
+		//BYTE *ptr_in2 = NULL;
+		//sample_right->GetPointer(&ptr_in2);
+		BYTE *ptr_in1 = sample_left->m_data;
+		BYTE *ptr_in2 = sample_right->m_data;
 
 		BYTE *ptr_out = NULL;
 		pOut->GetPointer(&ptr_out);
@@ -232,8 +242,10 @@ HRESULT CS2SBS::Transform(IMediaSample * pIn, IMediaSample *pOut, int id)
 			ptr_out += (stride_o-m_in_x/2);
 		}
 
-		sample_left->Release();
-		sample_right->Release();
+		//sample_left->Release();
+		//sample_right->Release();
+		delete sample_left;
+		delete sample_right;
 
 		// add mask here
 		// assume file = CoreAVS.dll
@@ -279,6 +291,7 @@ HRESULT CS2SBS::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double d
 
 	m_stream_time = tStart;
 
+	/*
 	IMediaSample *tmp;
 	while(m_left_queue.GetCount())
 	{
@@ -290,5 +303,8 @@ HRESULT CS2SBS::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double d
 		tmp = m_right_queue.RemoveTail();
 		tmp->Release();
 	}
+	*/
+	m_left_queue.RemoveAll();
+	m_right_queue.RemoveAll();
 	return __super::NewSegment(tStart, tStop, dRate);
 }

@@ -66,7 +66,7 @@ HRESULT Create_my12doomSource(IBaseFilter **out)
 		return E_FAIL;
 
 	CComPtr<IClassFactory> factory;
-	pGetClass(CLSID_my12doomSource, IID_IClassFactory, (void**)&factory);
+	pGetClass(CLSID_3dtvMPEGSource, IID_IClassFactory, (void**)&factory);
 	if (factory)
 	{
 		return factory->CreateInstance(NULL, IID_IBaseFilter, (void**) out);

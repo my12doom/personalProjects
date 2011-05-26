@@ -652,7 +652,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 			total(&total_time);
 			seek((int)(total_time * v));
 		}
-		else if (type == -1 && !m_full2)
+		else if (type == -1 && !m_full1)
 		{
 			// move this window
 			ReleaseCapture();
