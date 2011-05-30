@@ -74,6 +74,16 @@ BEGIN
     COMBOBOX        IDC_COMBO2,221,41,39,150,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
+IDD_DIALOG2 DIALOGEX 0, 0, 316, 173
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Enter User ID"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,205,152,50,14
+    PUSHBUTTON      "取消",IDCANCEL,259,152,50,14
+    EDITTEXT        IDC_EDIT1,14,14,284,133,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -198,6 +208,25 @@ BEGIN
         MENUITEM "Exit",                        ID_EXIT
     END
 END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_DIALOG2, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 166
+    END
+END
+#endif    // APSTUDIO_INVOKED
 
 #endif    // 中文(中华人民共和国) resources
 /////////////////////////////////////////////////////////////////////////////

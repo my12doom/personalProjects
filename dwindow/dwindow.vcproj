@@ -353,6 +353,22 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="E3D"
+				>
+				<File
+					RelativePath="..\AESFile\E3DReader.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\AESFile\E3DWriter.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\AESFile\RIJNDAEL.CPP"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -440,6 +456,22 @@
 				>
 				<File
 					RelativePath="..\renderer_prototype\my12doomRenderer.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="E3D"
+				>
+				<File
+					RelativePath="..\AESFile\E3DReader.h"
+					>
+				</File>
+				<File
+					RelativePath="..\AESFile\E3DWriter.h"
+					>
+				</File>
+				<File
+					RelativePath="..\AESFile\RIJNDAEL.H"
 					>
 				</File>
 			</Filter>

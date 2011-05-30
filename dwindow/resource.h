@@ -8,6 +8,7 @@
 #define IDR_DATA1                       114
 #define IDR_DLL                         114
 #define IDR_MENU1                       115
+#define IDD_DIALOG2                     116
 #define IDC_CHECK_SOUND1                1009
 #define IDC_CHECK_MKV1                  1010
 #define IDC_EDIT_INPUT1                 1011
@@ -15,6 +16,7 @@
 #define IDC_PLAY                        1013
 #define IDC_COMBO1                      1014
 #define IDC_COMBO2                      1015
+#define IDC_EDIT1                       1017
 #define IDC_CHECK_SOUND2                1021
 #define IDC_CHECK_MKV2                  1022
 #define IDC_EDIT_INPUT2                 1023
@@ -89,9 +91,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        116
+#define _APS_NEXT_RESOURCE_VALUE        117
 #define _APS_NEXT_COMMAND_VALUE         40062
-#define _APS_NEXT_CONTROL_VALUE         1017
+#define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

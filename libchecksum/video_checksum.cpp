@@ -213,3 +213,14 @@ bool save_license(wchar_t *file, dwindow_license in)	// false = fail
 	// TODO
 	return false;
 }
+
+HRESULT RSA_dwindow_public(const void *input, void *output)
+{
+	DWORD o[32];
+	DWORD e[32];
+	BigNumberSetEqualdw(e, 65537, 32);
+	RSA(o, (DWORD*)input, e, (DWORD*)dwindow_n, 32);
+	memcpy(output, o, 128);
+
+	return S_OK;
+}

@@ -1511,6 +1511,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 						if ( (video_track>=0 && (MKV_TRACK_NUMBER(video_num) & video_track ))
 							|| video_track == MKV_ALL_TRACK)
 						{
+							make_xvid_support_mp4v();
 							CComPtr<IBaseFilter> xvid;
 							hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
 							hr = m_gb->AddFilter(xvid, L"Xvid Deocder");

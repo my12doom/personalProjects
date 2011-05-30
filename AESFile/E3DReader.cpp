@@ -76,6 +76,7 @@ void file_reader::SetFile(HANDLE file)
 	::SetFilePointerEx(file, li, &li, SEEK_CUR);
 	m_file = file;
 	m_is_encrypted = false;
+	memset(m_hash, 0, 32);
 	if (m_block_cache)
 		free(m_block_cache);
 
@@ -102,6 +103,7 @@ void file_reader::SetFile(HANDLE file)
 		if (!::ReadFile(m_file, &leaf_size, 8, &byte_read, NULL) || byte_read != 8)
 			goto rewind;
 		
+		byte_read = 0;
 		if (eightcc == str2int64("filesize"))
 		{
 			if (!::ReadFile(m_file, &m_file_size, 8, &byte_read, NULL) || byte_read != 8)
@@ -111,8 +113,6 @@ void file_reader::SetFile(HANDLE file)
 		{
 			if (!::ReadFile(m_file, &m_block_size, 8, &byte_read, NULL) || byte_read != 8)
 				goto rewind;
-
-			printf("block size = %d.\n", (int)m_block_size);
 		}
 		else if (eightcc == str2int64("keyhint"))
 		{
@@ -123,8 +123,11 @@ void file_reader::SetFile(HANDLE file)
 		{
 			if (!::ReadFile(m_file, &m_layout, 8, &byte_read, NULL) || byte_read != 8)
 				goto rewind;
-
-			printf("layout = %d.\n", (int)m_layout);
+		}
+		else if (eightcc == str2int64("srchash"))
+		{
+			if (!::ReadFile(m_file, m_hash, 20, &byte_read, NULL) || byte_read != 20)
+				goto rewind;
 		}
 
 		SetFilePointer(m_file, leaf_size - byte_read, NULL, SEEK_CUR);
@@ -278,4 +281,56 @@ BOOL file_reader::SetFilePointerEx(__in LARGE_INTEGER liDistanceToMove, __out_op
 		lpNewFilePointer->QuadPart = m_pos;
 
 	return TRUE;
+}
+
+const WCHAR* e3d_soft_key= L"Software\\DWindow\\E3D";
+HRESULT e3d_get_process_key(BYTE * key)
+{
+	int len = 32;
+	wchar_t pid[100];
+	wsprintfW(pid, L"%d", GetCurrentProcessId());
+
+	HKEY hkey = NULL;
+	int ret = RegOpenKeyExW(HKEY_CURRENT_USER, e3d_soft_key,0,STANDARD_RIGHTS_REQUIRED |KEY_READ  , &hkey);
+	if (ret != ERROR_SUCCESS || hkey == NULL)
+		return E_FAIL;
+	RegQueryValueExW(hkey, pid, 0, NULL, (LPBYTE)key, (LPDWORD)&len);
+
+	RegCloseKey(hkey);
+
+	return e3d_del_process_key();
+}
+HRESULT e3d_set_process_key(const BYTE *key)
+{
+	int len = 32;
+	wchar_t pid[100];
+	wsprintfW(pid, L"%d", GetCurrentProcessId());
+
+	HKEY hkey = NULL;
+	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, e3d_soft_key, 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+	ret = RegSetValueExW(hkey, pid, 0, REG_BINARY, (const byte*)key, len );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+
+	RegCloseKey(hkey);
+
+	return S_OK;
+}
+HRESULT e3d_del_process_key()
+{
+	wchar_t pid[100];
+	wsprintfW(pid, L"%d", GetCurrentProcessId());
+
+	HKEY hkey = NULL;
+	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, e3d_soft_key, 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+	ret = RegDeleteValueW(hkey, pid);
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+	RegCloseKey(hkey);
+
+	return S_OK;
 }

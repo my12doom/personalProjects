@@ -189,13 +189,18 @@ BOOL CMultiFiles::OpenPart(int nPart)
 		if (m_hFile != INVALID_HANDLE_VALUE) {
 			unsigned char key[32] = "Hello World!";
 			m_E3DReader.SetFile(m_hFile);
-			fn = fn + _T(".txt");
+			fn = fn + _T(".key");
 			FILE * f = _tfopen(fn, _T("rb"));
 			if (f)
 			{
 				memset(key, 0, 32);
 				fread(key, 1, 32, f);
 				fclose(f);
+				m_E3DReader.set_key(key);
+			}
+			if (!m_E3DReader.m_key_ok)
+			{
+				e3d_get_process_key(key);
 				m_E3DReader.set_key(key);
 			}
 			m_nCurPart	= nPart;

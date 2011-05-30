@@ -61,10 +61,14 @@ BOOL Cremux_publishDlg::OnInitDialog()
 	memcpy(m+24, passkey, 32);
 
 
-	RSA((DWORD*)passkey_big, m, (DWORD*)dwindow_d, (DWORD*)dwindow_n, 32);
+	RSA_dwindow_public((unsigned char*)m, passkey_big);
 	for(int i=0; i<128; i++)
-		TRACE("%02X,", (int)passkey_big[i]);
+		TRACE("%02X", (int)passkey_big[i]);
 
+	memset(m, 0, 128);
+	RSA(m, (DWORD*)passkey_big, (DWORD*)dwindow_d, (DWORD*)dwindow_n, 32);
+
+	char * test = (char*) m;
 	return TRUE;  // 除非设置了控件的焦点，否则返回 TRUE
 }
 

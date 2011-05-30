@@ -2,7 +2,7 @@
 #include <windows.h>
 #include "rijndael.h"
 
-int encode_file(wchar_t *in, wchar_t *out);
+int encode_file(wchar_t *in, wchar_t *out, unsigned char *key, unsigned char *source_hash, FILE *progress_out = NULL);
 
 class my12doom_leaf
 {

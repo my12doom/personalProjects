@@ -186,7 +186,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 		{
 			m_layout_detected = top_bottom;
 			m_no_more_detect = true;
-			m_source_aspect *= 2;
+			//m_source_aspect *= 2;
 		}
 
 		return S_OK;

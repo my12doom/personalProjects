@@ -2,6 +2,7 @@
 #include <Shlobj.h>
 #include <streams.h>
 #include "detours/detours.h"
+#include "..\AESFile\rijndael.h"
 
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "detours/detoured.lib")
@@ -694,6 +695,7 @@ HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *
 	return E_FAIL;
 }
 
+
 HRESULT check_passkey()
 {
 	DWORD e[32];
@@ -723,13 +725,19 @@ HRESULT save_passkey()
 HRESULT load_e3d_key(const char *file_hash, char *file_key)
 {
 	wchar_t tmp[3] = L"";
-	wchar_t reg_key[50];
+	wchar_t reg_key[41] = L"";
 	for(int i=0; i<20; i++)
 	{
 		wsprintfW(tmp, L"%02X", file_hash[i]);
 		wcscat(reg_key, tmp);
 	}
-	// TODO : AES it
+
+	// AES it
+	AESCryptor codec;
+	codec.set_key((unsigned char*)g_passkey, 256);
+	codec.decrypt((unsigned char*)file_key, (unsigned char*)file_key);
+	codec.decrypt((unsigned char*)file_key+16, (unsigned char*)file_key+16);
+
 	load_setting(reg_key, file_key, 32);
 
 	return S_OK;
@@ -738,16 +746,40 @@ HRESULT load_e3d_key(const char *file_hash, char *file_key)
 HRESULT save_e3d_key(const char *file_hash, const char *file_key)
 {
 	wchar_t tmp[3] = L"";
-	wchar_t reg_key[50];
+	wchar_t reg_key[41] = L"";
 	for(int i=0; i<20; i++)
 	{
 		wsprintfW(tmp, L"%02X", file_hash[i]);
 		wcscat(reg_key, tmp);
 	}
 
-	// TODO : AES it
-	save_setting(reg_key, file_key, 32);
+	// AES it
+	unsigned char encrypted_key[32];
+	AESCryptor codec;
+	codec.set_key((const unsigned char*)g_passkey, 256);
+	codec.encrypt((const unsigned char*)file_key, (unsigned char*)encrypted_key);
+	codec.encrypt((const unsigned char*)file_key+16, (unsigned char*)encrypted_key+16);
 
+	save_setting(reg_key, encrypted_key, 32);
+
+	return S_OK;
+}
+
+HRESULT make_xvid_support_mp4v()
+{
+	HKEY hkey = NULL;
+	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\GNU\\XviD", 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+
+	DWORD value = 4, size=4;
+	ret = RegQueryValueExW(hkey, L"Supported_4CC", 0, NULL, (LPBYTE)&value, (LPDWORD)&size);
+	value |= 4;
+	ret = RegSetValueExW(hkey, L"Supported_4CC", 0, REG_DWORD, (const byte*)&value, size );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+
+	RegCloseKey(hkey);
 	return S_OK;
 }
 

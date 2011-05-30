@@ -122,7 +122,7 @@ void my12doom_leaf::WriteTo(FILE *file)
 }
 
 
-int encode_file(wchar_t *in, wchar_t *out)
+int encode_file(wchar_t *in, wchar_t *out, unsigned char *key, unsigned char *source_hash, FILE *progress_out)
 {
 	HANDLE hin = CreateFileW (in, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	HANDLE hout = CreateFileW (out, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, 0, NULL);
@@ -158,9 +158,14 @@ int encode_file(wchar_t *in, wchar_t *out)
 	leaf_layout.SetData(&layout, 8);
 	root.AddLeaf(&leaf_layout);
 
+	// source hash
+	my12doom_leaf leaf_hash;
+	leaf_hash.m_leaf8cc = str2int64("srchash");
+	leaf_hash.SetData(source_hash, 20);
+	root.AddLeaf(&leaf_hash);
+
 	// key hint
 	unsigned char s_key_hint[32] = "test data";
-	unsigned char key[32] = "Hello World!";
 	AESCryptor codec;
 	codec.set_key(key, 256);
 	codec.encrypt(s_key_hint, s_key_hint+16);
@@ -173,22 +178,33 @@ int encode_file(wchar_t *in, wchar_t *out)
 	root.WriteTo(hout);
 
 	// copy file with encrypt
-	//const int E3D_BLOCK_SIZE = 65536;
-	unsigned char tmp[E3D_BLOCK_SIZE];
-	for(__int64 byte_left= file_size; byte_left>0; byte_left-= E3D_BLOCK_SIZE)
+	const int E3D_ENCODING_BLOCK_SIZE = 655360;
+	unsigned char *tmp = new unsigned char [E3D_ENCODING_BLOCK_SIZE];
+	for(__int64 byte_left= file_size; byte_left>0; byte_left-= E3D_ENCODING_BLOCK_SIZE)
 	{
 		DWORD byte_written = 0;
 		DWORD byte_read = 0;
-		memset(tmp, 0, E3D_BLOCK_SIZE);
-		ReadFile(hin, tmp, (DWORD)E3D_BLOCK_SIZE, &byte_read, NULL);
-		for(int i=0; i<E3D_BLOCK_SIZE/16; i++)
+		memset(tmp, 0, E3D_ENCODING_BLOCK_SIZE);
+		ReadFile(hin, tmp, (DWORD)E3D_ENCODING_BLOCK_SIZE, &byte_read, NULL);
+		for(int i=0; i<E3D_ENCODING_BLOCK_SIZE/16; i++)
 			codec.encrypt(tmp+i*16, tmp+i*16);
-		WriteFile(hout, tmp, E3D_BLOCK_SIZE, &byte_written, NULL);
+		WriteFile(hout, tmp, E3D_ENCODING_BLOCK_SIZE, &byte_written, NULL);
 
-		if (byte_read < E3D_BLOCK_SIZE)
+		if (byte_read < E3D_ENCODING_BLOCK_SIZE)
 			break;
+
+		if (progress_out)
+			fprintf(progress_out, "\r%lld / %lld, %.1f%%", file_size-byte_left, file_size, (double)(file_size-byte_left) * 100 / file_size);
+
 	}
 
+	if (progress_out)
+	{
+		fprintf(progress_out, "\r%lld/ %lld\n", file_size, file_size);
+		fprintf(progress_out, "OK.\n");
+	}
+
+	delete [] tmp;
 	CloseHandle(hin);
 	CloseHandle(hout);
 	return 0;

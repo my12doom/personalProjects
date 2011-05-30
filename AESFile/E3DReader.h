@@ -6,6 +6,9 @@
 __int64 str2int64(const char *str);
 HRESULT save_key(const char *hint, const char *key);
 HRESULT load_key(const char *, char *key);
+HRESULT e3d_get_process_key(BYTE * key);
+HRESULT e3d_set_process_key(const BYTE *key);
+HRESULT e3d_del_process_key();
 
 class file_reader
 {
@@ -22,6 +25,7 @@ public:
 	int m_block_size;
 	unsigned char *m_block_cache;
 	unsigned char m_keyhint[32];
+	unsigned char m_hash[20];
 	__int64 m_cache_pos;
 	__int64 m_pos;
 	__int64 m_file_size;

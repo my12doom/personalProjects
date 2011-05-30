@@ -26,6 +26,14 @@ typedef struct dwindow_license_detail_struct
 	DWORD signature[32];
 } dwindow_license_detail;
 
+typedef struct _dwindow_message_uncrypt
+{
+	unsigned char passkey[32];
+	unsigned char requested_hash[20];
+	unsigned char random_AES_key[32];
+	unsigned char reserved[43];
+	unsigned char zero;
+}dwindow_message_uncrypt;
 
 
 extern unsigned int dwindow_n[32];
@@ -33,6 +41,7 @@ bool verify_signature(const DWORD *checksum, const DWORD *signature); // checksu
 int verify_file(wchar_t *file); //return value:
 int video_checksum(wchar_t *file, DWORD *checksum);	// checksum is 20byte
 int find_startcode(wchar_t *file);
+HRESULT RSA_dwindow_public(const void *input, void *output);
 
 // license funcs
 bool is_valid_license(dwindow_license license);			// true = valid

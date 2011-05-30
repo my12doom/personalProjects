@@ -42,8 +42,10 @@ HRESULT DeterminPin(IPin *pin, wchar_t *name = NULL, CLSID majortype = CLSID_NUL
 HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *name, IPin **ppPin);
 HRESULT load_passkey();
 HRESULT save_passkey();
+HRESULT check_passkey();
 HRESULT save_e3d_key(const char *file_hash, const char *file_key);
 HRESULT load_e3d_key(const char *file_hash, char *file_key);
+HRESULT make_xvid_support_mp4v();
 
 #define g_bomb_function {DWORD e[32];DWORD m1[32]={0,1,2,3,4,5,6,7,8,9,10};BigNumberSetEqualdw(e, 65537, 32);RSA(m1, (DWORD*)g_passkey_big, e, (DWORD*)dwindow_n, 32);for(int i=0; i<8; i++)if (m1[i] != m1[i+8] || m1[i+8] != m1[i+16] || m1[i+16] != m1[i+24])TerminateProcess(GetCurrentProcess(), 0);memcpy(g_passkey, m1, 32);}
 

@@ -86,7 +86,7 @@ int WINAPI WinMain( HINSTANCE hInstance,
 		_T("Direct3D (DX9) - Resize Window"),
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		//WS_EX_TOPMOST | WS_POPUP,    // fullscreen values
-		300, 0, 528-8, 394-4, NULL, NULL, hInstance, NULL );
+		300, 0, 816, 525, NULL, NULL, hInstance, NULL );
 
 	g_hWnd2 = CreateWindowEx( NULL, _T("MY_WINDOWS_CLASS"),
 		_T("Direct3D (DX9) - Resize Window2"),
@@ -124,6 +124,7 @@ int WINAPI WinMain( HINSTANCE hInstance,
 	ShowWindow(g_hWnd2, renderer->get_output_mode() == dual_window ? SW_SHOW : SW_HIDE);
 
 	//renderer->set_aspect(16.0/9.0);
+	renderer->set_input_layout(side_by_side);
 	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
 	mc->Run();
 	// set event notify
