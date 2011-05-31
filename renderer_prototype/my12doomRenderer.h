@@ -118,6 +118,7 @@ public:
 	double m_offset_y /*= 0.0*/;
 	double m_bmp_offset;
 	double m_source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
+	double m_forced_aspect /* = -1 */;
 	int m_pass1_width;
 	int m_pass1_height;
 	Imy12doomRendererCallback *m_cb;
@@ -236,6 +237,8 @@ protected:
 	CComPtr<IDirect3DSurface9> m_sbs_surface;				// nv3d temp surface
 
 	// input layout detector
+	input_layout_types get_active_input_layout();
+	double get_active_aspect();
 	CComPtr<IDirect3DSurface9> m_test_rt64;
 	CComPtr<IDirect3DSurface9> m_mem;
 	int m_sbs;

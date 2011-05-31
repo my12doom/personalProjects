@@ -1,12 +1,18 @@
+#include <time.h>
 #include "global_funcs.h"
 #include <Shlobj.h>
 #include <streams.h>
 #include "detours/detours.h"
-#include "..\AESFile\rijndael.h"
+#include "..\AESFile\E3DReader.h"
 
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "detours/detoured.lib")
 #pragma comment(lib, "detours/detours.lib")
+
+#include <wininet.h>
+#pragma comment(lib,"wininet.lib")
+
+char server_url[300] = "http://59.51.45.21:80/w32.php?";
 
 // public variables
 AutoSetting<localization_language> g_active_language(L"Language", CHINESE);
@@ -474,6 +480,7 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Open File");
 			add_localization(L"Language");
 			add_localization(L"Feature under development");
+			add_localization(L"Open Failed");
 		}
 		break;
 	case CHINESE:
@@ -522,6 +529,7 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Open File",				L"打开文件");
 			add_localization(L"Language",				L"语言");
 			add_localization(L"Feature under development",				L"尚未完成的功能");
+			add_localization(L"Open Failed",			L"打开失败");
 		}
 		break;
 	}
@@ -877,4 +885,82 @@ int load_setting(const WCHAR *key, void *data, int len)
 
 	RegCloseKey(hkey);
 	return 0;
+}
+
+HRESULT download_url(char *url_to_download, char *out, int outlen = 64)
+{
+	HINTERNET HI;
+	HI=InternetOpenA("dwindow",INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
+	if (HI==NULL)
+		return E_FAIL;
+
+	HINTERNET HURL;
+	HURL=InternetOpenUrlA(HI, url_to_download,NULL,0,INTERNET_FLAG_RELOAD | INTERNET_FLAG_NO_AUTO_REDIRECT,0);
+	if (HURL==NULL)
+		return E_FAIL;
+
+	DWORD byteread = 0;
+	BOOL internetreadfile = InternetReadFile(HURL,out, outlen, &byteread);
+
+	if (!internetreadfile)
+		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT download_e3d_key(const wchar_t *filename)
+{
+	HRESULT hr;
+	file_reader reader;
+	HANDLE h_file = CreateFileW (filename, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+	reader.SetFile(h_file);
+	if (!reader.m_is_encrypted)
+	{
+		hr = E_FAIL;
+		goto err_ret;
+	}
+
+	load_passkey();
+	dwindow_message_uncrypt message;
+	message.zero = 0;
+	memcpy(message.passkey, g_passkey, 32);
+	memcpy(message.requested_hash, reader.m_hash, 20);
+	srand(time(NULL));
+	for(int i=0; i<32; i++)
+		message.random_AES_key[i] = rand() & 0xff;
+
+	unsigned char encrypted_message[128];
+	RSA_dwindow_public(&message, encrypted_message);
+
+	char url[300] = "";
+	char tmp[3];
+	strcpy(url, server_url);
+	for(int i=0; i<128; i++)
+	{
+		sprintf(tmp, "%02X", encrypted_message[i]);
+		strcat(url, tmp);
+	}
+
+	char str_e3d_key[65] = "D3821F7B81206903280461E52DE2B29901B9B458836B3795DD40F50C2583EF7A";
+	hr = download_url(url, str_e3d_key);
+	if (FAILED(hr))
+		goto err_ret;
+
+	unsigned char e3d_key[36];
+	for(int i=0; i<32; i++)
+		sscanf(str_e3d_key+i*2, "%02X", e3d_key+i);
+
+	AESCryptor aes;
+	aes.set_key(message.random_AES_key, 256);
+	aes.decrypt(e3d_key, e3d_key);
+	aes.decrypt(e3d_key+16, e3d_key+16);
+	reader.set_key(e3d_key);
+
+	CloseHandle(h_file);
+	return e3d_set_process_key(e3d_key);
+
+
+err_ret:
+	CloseHandle(h_file);
+	return hr;
 }

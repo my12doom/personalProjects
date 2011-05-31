@@ -1405,6 +1405,7 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname)
 	return hr;
 fail:
 	reset();
+	set_window_text(1, C(L"Open Failed"));
 	return hr;
 }
 
@@ -1473,6 +1474,10 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 	// check private source and whether is MVC content
 	CLSID source_clsid;
 	hr = GetFileSource(file_to_play, &source_clsid);
+	if (source_clsid == CLSID_E3DSource)
+	{
+		download_e3d_key(pathname);
+	}
 	if (SUCCEEDED(hr))
 	{
 		log_line(L"loading with private filter");

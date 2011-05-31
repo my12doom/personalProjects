@@ -104,6 +104,7 @@ m_right_queue(_T("right queue"))
 	m_offset_x = 0.0;
 	m_offset_y = 0.0;
 	m_source_aspect = 0.0;
+	m_forced_aspect = -1;
 
 	// window
 	m_hWnd = hwnd;
@@ -180,13 +181,11 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 		{
 			m_layout_detected = side_by_side;
 			m_no_more_detect = true;
-			m_source_aspect /= 2;
 		}
 		else if (m_source_aspect < 1.2125)
 		{
 			m_layout_detected = top_bottom;
 			m_no_more_detect = true;
-			//m_source_aspect *= 2;
 		}
 
 		return S_OK;
@@ -1371,6 +1370,38 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 	return hr;
 }
 
+input_layout_types my12doomRenderer::get_active_input_layout()
+{
+	if (m_input_layout != input_layout_auto)
+		return m_input_layout;
+	else
+		return m_layout_detected;
+}
+
+double my12doomRenderer::get_active_aspect()
+{
+	if (m_forced_aspect > 0)
+		return m_forced_aspect;
+
+	bool dual_stream = m_dsr0->is_connected() && m_dsr1->is_connected();
+	if (dual_stream || get_active_input_layout() == mono2d)
+		return m_source_aspect;
+	else if (get_active_input_layout() == side_by_side)
+	{
+		if (m_source_aspect > 2.425)
+			return m_source_aspect / 2;
+		else
+			return m_source_aspect;
+	}
+	else if (get_active_input_layout() == top_bottom)
+	{
+		if (m_source_aspect < 1.2125)
+			return m_source_aspect * 2;
+		else
+			return m_source_aspect;
+	}
+}
+
 HRESULT my12doomRenderer::load_image_convert(int id)
 {
 	//warnig: no lock
@@ -1568,6 +1599,8 @@ HRESULT my12doomRenderer::load_image_convert(int id)
 
 HRESULT my12doomRenderer::calculate_vertex()
 {
+	double active_aspect = get_active_aspect();
+
 	CAutoLock lck(&m_frame_lock);
 	// w,color
 	for(int i=0; i<sizeof(m_vertices) / sizeof(MyVertex); i++)
@@ -1655,8 +1688,8 @@ HRESULT my12doomRenderer::calculate_vertex()
 	ui[2].tu = 0; ui[2].tv = ui[0].tv + (30-1)/1024.0f;
 	ui[3].tu = ui[1].tu; ui[3].tv = ui[1].tv + (30-1)/1024.0f;
 
-	int delta_w = (int)(tar.right - tar.bottom * m_source_aspect + 0.5);
-	int delta_h = (int)(tar.bottom - tar.right  / m_source_aspect + 0.5);
+	int delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
+	int delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
 	if (delta_w > 0)
 	{
 		tar.left += delta_w/2;
@@ -1714,8 +1747,8 @@ HRESULT my12doomRenderer::calculate_vertex()
 	// second window coordinate
 	tar.left = tar.top = 0;
 	tar.right = m_active_pp2.BackBufferWidth; tar.bottom = m_active_pp2.BackBufferHeight;
-	delta_w = (int)(tar.right - tar.bottom * m_source_aspect + 0.5);
-	delta_h = (int)(tar.bottom - tar.right  / m_source_aspect + 0.5);
+	delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
+	delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
 	if (delta_w > 0)
 	{
 		tar.left += delta_w/2;
@@ -2055,7 +2088,7 @@ HRESULT my12doomRenderer::set_offset(int dimention, double offset)		// dimention
 }
 HRESULT my12doomRenderer::set_aspect(double aspect)
 {
-	m_source_aspect = aspect;
+	m_forced_aspect = aspect;
 	calculate_vertex();
 	if (m_output_mode == pageflipping)
 		terminate_render_thread();
@@ -2076,7 +2109,7 @@ double my12doomRenderer::get_offset(int dimention)
 }
 double my12doomRenderer::get_aspect()
 {
-	return m_source_aspect;
+	return get_active_aspect();
 }
 
 HRESULT my12doomRenderer::set_window(HWND wnd, HWND wnd2)

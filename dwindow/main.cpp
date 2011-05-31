@@ -5,27 +5,6 @@
 #include "..\AESFile\rijndael.h"
 #include "resource.h"
 
-#include <wininet.h>
-#pragma comment(lib,"wininet.lib")
-
-char url[300] = "http://59.51.45.21:80/w32.php?";
-
-void download(char *url_to_download, char *out)
-{
-	HINTERNET HI;
-	HI=InternetOpenA("dwindow",INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
-	if (HI==NULL)
-		return;
-
-	HINTERNET HURL;
-	HURL=InternetOpenUrlA(HI, url_to_download,NULL,0,INTERNET_FLAG_RELOAD | INTERNET_FLAG_NO_AUTO_REDIRECT,0);
-	if (HURL==NULL)
-		return;
-
-
-	DWORD byteread = 0;
-	BOOL internetreadfile = InternetReadFile(HURL,out, 64,&byteread);
-}
 
 // main window
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
@@ -191,47 +170,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 int main()
 {
-	/*
-	file_reader reader;
-	//reader.SetFile(CreateFileW (L"Z:\\00013.e3d", GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL));
-	reader.SetFile(CreateFileW (L"F:\\Movie\\卑鄙的我.Despicable_me.3DBDRip.SBS.720P-3D4Dnet.test.e3d", GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL));
-
-	load_passkey();
-	dwindow_message_uncrypt message;
-	message.zero = 0;
-	memcpy(message.passkey, g_passkey, 32);
-	memcpy(message.requested_hash, reader.m_hash, 20);
-	srand(time(NULL));
-	for(int i=0; i<32; i++)
-		message.random_AES_key[i] = rand() & 0xff;
-
-	char tmp[300];
-	memcpy(tmp, &message, 128);
-
-	unsigned char encrypted_message[128];
-	RSA_dwindow_public(tmp, encrypted_message);
-
-	for(int i=0; i<128; i++)
-	{
-		sprintf(tmp, "%02X", encrypted_message[i]);
-		strcat(url, tmp);
-	}
-
-	char str_e3d_key[65] = "D3821F7B81206903280461E52DE2B29901B9B458836B3795DD40F50C2583EF7A";
-	download(url, str_e3d_key);
-	unsigned char e3d_key[36];
-	for(int i=0; i<32; i++)
-		sscanf(str_e3d_key+i*2, "%02X", e3d_key+i);
-
-	AESCryptor aes;
-	aes.set_key(message.random_AES_key, 256);
-	aes.decrypt(e3d_key, e3d_key);
-	aes.decrypt(e3d_key+16, e3d_key+16);
-	reader.set_key(e3d_key);
-
-	e3d_set_process_key(e3d_key);
-	*/
-
 	/*
 	BYTE szSystemInfo[4096]; // 在程序执行完毕后，此处存储取得的系统特征码
 	UINT uSystemInfoLen = 0; // 在程序执行完毕后，此处存储取得的系统特征码的长度	//结构定义 
