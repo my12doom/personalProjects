@@ -158,7 +158,7 @@ BOOL file_reader::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVER
 
 	// caculate size
 	DWORD got = 0;
-	nToRead = min(nToRead, m_file_size - m_pos);
+	nToRead = (DWORD)min(nToRead, m_file_size - m_pos);
 
 	if (nToRead<=0 || m_pos<0)
 		return FALSE;
@@ -287,7 +287,7 @@ const WCHAR* e3d_soft_key= L"Software\\DWindow\\E3D";
 unsigned char * key_in_process = NULL;
 HRESULT e3d_get_process_key(BYTE * key)
 {
-	int len = 32;
+	int len = 4;
 	wchar_t pid[100];
 	wsprintfW(pid, L"%d", GetCurrentProcessId());
 
@@ -314,7 +314,7 @@ HRESULT e3d_set_process_key(const BYTE *key)
 	key_in_process = new unsigned char[32];
 	memcpy(key_in_process, key, 32);
 
-	int len = 32;
+	int len = 4;
 	wchar_t pid[100];
 	wsprintfW(pid, L"%d", GetCurrentProcessId());
 

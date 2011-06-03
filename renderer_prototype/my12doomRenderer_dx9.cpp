@@ -8,6 +8,7 @@
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
+#include "..\dwindow\nvapi.h"
 
 #define FAIL_RET(x) hr=x; if(FAILED(hr)){return hr;}
 #define FAIL_SLEEP_RET(x) hr=x; if(FAILED(hr)){Sleep(1); return hr;}
@@ -124,8 +125,14 @@ m_right_queue(_T("right queue"))
 	m_render_thread = INVALID_HANDLE_VALUE;
 	m_render_thread_exit = false;
 
-	// D3D
+	// D3D && NV3D
 	m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
+	m_nv3d_enabled = false;
+	NvAPI_Status res = NvAPI_Initialize();
+	NvU8 enabled3d;
+	res = NvAPI_Stereo_IsEnabled(&enabled3d);
+	if (res == NVAPI_OK)
+		m_nv3d_enabled = (bool)enabled3d;
 
 	// ui & bitmap
 	m_showui = false;
@@ -531,10 +538,21 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			&m_active_pp, &m_Device );
 
 		if (FAILED(hr))
-		{
 			return hr;
-		}
 		m_new_pp = m_active_pp;
+
+		// NV3D acitivation check
+		StereoHandle h3d;
+		NvAPI_Status res;
+		res = NvAPI_Stereo_CreateHandleFromIUnknown(m_Device, &h3d);
+		res = NvAPI_Stereo_Activate(h3d);
+
+		if (res == NVAPI_OK)
+			m_nv3d_actived = true;
+
+		res = NvAPI_Stereo_SetNotificationMessage(h3d, (NvU64)m_hWnd, WM_NV_NOTIFY);
+		res = NvAPI_Stereo_DestroyHandle(h3d);
+
 		FAIL_SLEEP_RET(restore_objects());
 		m_device_state = fine;
 	}
@@ -675,10 +693,40 @@ HRESULT my12doomRenderer::restore_objects()
 	FAIL_RET(calculate_vertex());
 
 	// pixel shader
-	FAIL_RET( m_Device->CreatePixelShader(g_code_YV12toRGB, &m_ps_yv12));
-	FAIL_RET( m_Device->CreatePixelShader(g_code_NV12toRGB, &m_ps_nv12));
-	FAIL_RET( m_Device->CreatePixelShader(g_code_YUY2toRGB, &m_ps_yuy2));
-	FAIL_RET( m_Device->CreatePixelShader(g_code_main, &m_ps_test));
+	unsigned char *yv12 = (unsigned char *)malloc(sizeof(g_code_YV12toRGB));
+	unsigned char *nv12 = (unsigned char *)malloc(sizeof(g_code_NV12toRGB));
+	unsigned char *yuy2 = (unsigned char *)malloc(sizeof(g_code_YUY2toRGB));
+	unsigned char *tester = (unsigned char *)malloc(sizeof(g_code_main));
+
+	memcpy(yv12, g_code_YV12toRGB, sizeof(g_code_YV12toRGB));
+	memcpy(nv12, g_code_NV12toRGB, sizeof(g_code_NV12toRGB));
+	memcpy(yuy2, g_code_YUY2toRGB, sizeof(g_code_YUY2toRGB));
+	memcpy(tester, g_code_main, sizeof(g_code_main));
+
+	int size = sizeof(g_code_main);
+	for(int i=0; i<16384; i+=16)
+	{
+		if (i<sizeof(g_code_YV12toRGB)/16*16)
+			m_codec.decrypt(yv12+i, yv12+i);
+		if (i<sizeof(g_code_NV12toRGB)/16*16)
+			m_codec.decrypt(nv12+i, nv12+i);
+		if (i<sizeof(g_code_YUY2toRGB)/16*16)
+			m_codec.decrypt(yuy2+i, yuy2+i);
+		if (i<sizeof(g_code_main)/16*16)
+			m_codec.decrypt(tester+i, tester+i);
+	}
+
+	int r = memcmp(yv12, g_code_YV12toRGB, sizeof(g_code_YV12toRGB));
+
+	m_Device->CreatePixelShader((DWORD*)yv12, &m_ps_yv12);
+	m_Device->CreatePixelShader((DWORD*)nv12, &m_ps_nv12);
+	m_Device->CreatePixelShader((DWORD*)yuy2, &m_ps_yuy2);
+	m_Device->CreatePixelShader((DWORD*)tester, &m_ps_test);
+
+	free(yv12);
+	free(nv12);
+	free(yuy2);
+	free(tester);
 
 	// load and start thread
 	load_image(-1, true);
@@ -738,7 +786,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetSamplerState( 1, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
 
-	if (m_output_mode == NV3D)
+	if (m_output_mode == NV3D && m_nv3d_enabled && m_nv3d_actived && !m_active_pp.Windowed)
 	{
 		// draw left
 		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
@@ -803,7 +851,10 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		CComPtr<IDirect3DSurface9> temp_surface;
 		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
 		hr = m_Device->SetRenderTarget(0, temp_surface);
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+		m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
 		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
 		m_Device->SetTexture( 0, m_tex_rgb_left );
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
@@ -842,7 +893,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		// pass3: analyph
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		m_Device->SetRenderTarget(0, back_buffer);
-		m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
+		m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE);		
 		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
 		m_Device->SetTextureStageState( 0, D3DTSS_RESULTARG, D3DTA_CURRENT);	// current = texture * diffuse(red)
@@ -957,7 +1008,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	}
 
-	else if (m_output_mode == mono)
+	else if (m_output_mode == mono || (m_output_mode == NV3D && !(m_nv3d_enabled && m_nv3d_actived && !m_active_pp.Windowed)))
 	{
 		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 		m_Device->SetTexture( 0, m_tex_rgb_left );
@@ -1413,6 +1464,9 @@ HRESULT my12doomRenderer::load_image_convert(int id)
 
 	// pass 1: render full resolution to two seperate texture
 	HRESULT hr = m_Device->BeginScene();
+	m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+	m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+	m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
 	if (r->m_format == MEDIASUBTYPE_YV12) hr = m_Device->SetPixelShader(m_ps_yv12);
 	if (r->m_format == MEDIASUBTYPE_NV12) hr = m_Device->SetPixelShader(m_ps_nv12);
 	if (r->m_format == MEDIASUBTYPE_YUY2) hr = m_Device->SetPixelShader(m_ps_yuy2);
@@ -1426,8 +1480,11 @@ HRESULT my12doomRenderer::load_image_convert(int id)
 
 
 	// drawing
+
 	hr = m_Device->SetTexture( 0, r->m_format == MEDIASUBTYPE_YUY2 ? m_tex_YUY2 : m_tex_Y );
 	hr = m_Device->SetTexture( 1, r->m_format == MEDIASUBTYPE_NV12 ? m_tex_NV12_UV : m_tex_YV12_UV);
+	hr = m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE);
+	hr = m_Device->SetTextureStageState( 2, D3DTSS_COLOROP,   D3DTOP_DISABLE);
 	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
 	hr = m_Device->SetSamplerState( 1, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
 	hr = m_Device->SetSamplerState( 2, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
@@ -1478,33 +1535,33 @@ HRESULT my12doomRenderer::load_image_convert(int id)
 	// repack it up...
 	// no need to handle swap eyes
 	// warning : m_input_layout changed is not real time, so there might be some error
-	CComPtr<IDirect3DSurface9> target_surface;
-	m_tex_rgb_full->GetSurfaceLevel(0, &target_surface);
-	{
-		if (input == side_by_side)
-		{
-			RECT tar = {0, 0, m_lVidWidth/2, m_lVidHeight};
-			hr = m_Device->StretchRect(left_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
-			tar.left += m_lVidWidth/2;
-			tar.right += m_lVidWidth/2;
-			hr = m_Device->StretchRect(right_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
-		}
-		else if (input == top_bottom)
-		{
-			RECT tar = {0, 0, m_lVidWidth, m_lVidHeight/2};
-			hr = m_Device->StretchRect(left_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
-			tar.top += m_lVidHeight/2;
-			tar.bottom += m_lVidHeight/2;
-			hr = m_Device->StretchRect(right_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
-		}
-		else if (input == mono2d)
-		{
-			hr = m_Device->StretchRect(left_surface, NULL, target_surface, NULL, D3DTEXF_NONE);
-		}
-	}
-
 	if (!dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect)
 	{
+		CComPtr<IDirect3DSurface9> target_surface;
+		m_tex_rgb_full->GetSurfaceLevel(0, &target_surface);
+		{
+			if (input == side_by_side)
+			{
+				RECT tar = {0, 0, m_lVidWidth/2, m_lVidHeight};
+				hr = m_Device->StretchRect(left_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
+				tar.left += m_lVidWidth/2;
+				tar.right += m_lVidWidth/2;
+				hr = m_Device->StretchRect(right_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
+			}
+			else if (input == top_bottom)
+			{
+				RECT tar = {0, 0, m_lVidWidth, m_lVidHeight/2};
+				hr = m_Device->StretchRect(left_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
+				tar.top += m_lVidHeight/2;
+				tar.bottom += m_lVidHeight/2;
+				hr = m_Device->StretchRect(right_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
+			}
+			else if (input == mono2d)
+			{
+				hr = m_Device->StretchRect(left_surface, NULL, target_surface, NULL, D3DTEXF_NONE);
+			}
+		}
+
 		hr = m_Device->SetRenderTarget(0, m_test_rt64);
 		hr = m_Device->Clear(0, NULL, D3DCLEAR_TARGET,  D3DCOLOR_XRGB(0,0,0), 1.0f, 0L);
 		hr = m_Device->SetTexture(0, m_tex_rgb_full);
@@ -1968,6 +2025,20 @@ HRESULT my12doomRenderer::pump()
 	return handle_device_state();
 }
 
+
+HRESULT my12doomRenderer::NV3D_notify(WPARAM wparam)
+{
+	BOOL actived = LOWORD(wparam);
+	WORD separation = HIWORD(wparam);
+	
+	if (actived)
+		m_nv3d_actived = true;
+	else
+		m_nv3d_actived = false;
+
+	return S_OK;
+}
+
 HRESULT my12doomRenderer::set_input_layout(int layout)
 {
 	m_input_layout = (input_layout_types)layout;
@@ -2188,8 +2259,8 @@ HRESULT my12doomRenderer::set_ui(void* data, int pitch)
 	if (m_tex_bmp == NULL)
 		return VFW_E_WRONG_STATE;
 
-	// set ui speed limit: 3fps
-	if (abs((int)(m_last_ui_draw - timeGetTime())) < 333)
+	// set ui speed limit: 15fps
+	if (abs((int)(m_last_ui_draw - timeGetTime())) < 66)
 		return E_FAIL;
 
 	m_last_ui_draw = timeGetTime();

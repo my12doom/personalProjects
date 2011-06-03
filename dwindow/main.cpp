@@ -168,6 +168,12 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	return 0;
 }
 
+int test(int in)
+{
+	printf("%d", in);
+	return 0;
+}
+
 int main()
 {
 	/*

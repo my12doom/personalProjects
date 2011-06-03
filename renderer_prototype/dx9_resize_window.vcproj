@@ -263,7 +263,7 @@
 						Name="VCCustomBuildTool"
 						Description="Compiling planar_rgb of ps.txt"
 						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\YV12.h YV12toRGB&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\NV12.h NV12toRGB&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\YUY2.h YUY2toRGB&#x0D;&#x0A;"
-						Outputs=".\PixelShaders\ps.h"
+						Outputs=".\PixelShaders\YV12.h"
 					/>
 				</FileConfiguration>
 			</File>
@@ -271,14 +271,29 @@
 				RelativePath=".\PixelShaders\ps2.txt"
 				>
 				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Compiling planar_rgb of ps2.txt"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\ps.h planar_rgb&#x0D;&#x0A;"
+						Outputs=".\PixelShaders\ps.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test.h main"
+						Description="Compiling main of ps2.txt"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test.h main&#x0D;&#x0A;"
 						Outputs=".\PixelShaders\stereo_test.h"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\AESFile\RIJNDAEL.CPP"
+				>
 			</File>
 			<File
 				RelativePath=".\test.cpp"
@@ -311,6 +326,10 @@
 			</File>
 			<File
 				RelativePath=".\my12doomRenderer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\AESFile\RIJNDAEL.H"
 				>
 			</File>
 		</Filter>

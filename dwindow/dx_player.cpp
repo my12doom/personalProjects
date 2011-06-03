@@ -4,6 +4,7 @@
 #include "global_funcs.h"
 #include "private_filter.h"
 #include "..\libchecksum\libchecksum.h"
+#include "..\AESFile\E3DReader.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
@@ -274,6 +275,7 @@ HRESULT dx_player::seek(int time)
 
 	REFERENCE_TIME target = (REFERENCE_TIME)time *10000;
 
+	if(m_renderer1) m_renderer1->set_bmp(NULL, 0, 0, 0, 0, 0, 0);				// refresh subtitle on next frame
 	printf("seeking to %I64d\n", target);
 	HRESULT hr = m_ms->SetPositions(&target, AM_SEEKING_AbsolutePositioning, NULL, NULL);
 	m_ms->GetPositions(&target, NULL);
@@ -352,6 +354,12 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 	if (message == DS_EVENT)
 	{
 		on_dshow_event();
+	}
+
+	else if (message == WM_NV_NOTIFY)
+	{
+		if (m_renderer1)
+			m_renderer1->NV3D_notify(wParam);
 	}
 	return dwindow::on_unhandled_msg(id, message, wParam, lParam);
 }
@@ -1237,7 +1245,6 @@ HRESULT dx_player::calculate_movie_rect(RECT *source, RECT *client, RECT *letter
 
 HRESULT dx_player::paint_letterbox(int id, RECT letterbox)
 {
-	RECT client;
 	HDC hdc = GetDC(id_to_hwnd(id));
 	HBRUSH brush = (HBRUSH)BLACK_BRUSH+1;
 	
@@ -1476,7 +1483,39 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 	hr = GetFileSource(file_to_play, &source_clsid);
 	if (source_clsid == CLSID_E3DSource)
 	{
-		download_e3d_key(pathname);
+		log_line(L"loading local E3D key for %s", file_to_play);
+		HANDLE h_file = CreateFileW (file_to_play, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+		file_reader reader;
+		reader.SetFile(h_file);
+		CloseHandle(h_file);
+
+		if (!reader.m_is_encrypted)
+		{
+			// normal file, do nothing
+		}
+		else
+		{
+			unsigned char key[32];
+			load_e3d_key(reader.m_hash, key);
+			reader.set_key((unsigned char*)key);
+
+			if (!reader.m_key_ok)
+			{
+				log_line(L"local E3D key failed.");
+				log_line(L"downloading E3D key for %s", file_to_play);
+				if (SUCCEEDED(download_e3d_key(file_to_play)))
+				{
+					log_line(L"download E3D key OK, saving to local store.");
+					e3d_get_process_key(key);
+					save_e3d_key(reader.m_hash, key);
+				}
+			}
+			else
+			{
+				log_line(L"local E3D key OK.");
+			}
+			e3d_set_process_key(key);
+		}
 	}
 	if (SUCCEEDED(hr))
 	{
@@ -1674,7 +1713,12 @@ HRESULT dx_player::end_loading()
 	}
 
 	CComPtr<IPin> output;
+
+	unsigned char passkey_big_decrypted[128];
+	RSA_dwindow_public(g_passkey_big, passkey_big_decrypted);
+
 	m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
+	m_renderer1->m_codec.set_key((unsigned char*)passkey_big_decrypted+64, 256);
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
 
@@ -1883,7 +1927,7 @@ HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME 
 		return E_FAIL;
 
 	m_external_subtitles.AddTail(tmp);
-	return enable_subtitle_track(m_external_subtitles.GetCount()-1);
+	return enable_subtitle_track((int)m_external_subtitles.GetCount()-1);
 }
 
 HRESULT dx_player::draw_subtitle()
@@ -1904,7 +1948,7 @@ HRESULT dx_player::set_subtitle_pos(double center_x, double bottom_y)
 	m_subtitle_center_x = center_x;
 	m_subtitle_bottom_y = bottom_y;
 
-	REFERENCE_TIME t = m_lastCBtime * 10000;
+	REFERENCE_TIME t = (REFERENCE_TIME)m_lastCBtime * 10000;
 	m_lastCBtime = -1;
 
 	return SampleCB(t+1, t+2, NULL);
@@ -1912,6 +1956,7 @@ HRESULT dx_player::set_subtitle_pos(double center_x, double bottom_y)
 
 HRESULT dx_player::log_line(wchar_t *format, ...)
 {
+#ifdef DEBUG
 	wcscat(m_log, L"\r\n");
 
 	wchar_t tmp[10240];
@@ -1922,6 +1967,7 @@ HRESULT dx_player::log_line(wchar_t *format, ...)
 
 	wprintf(L"log: %s\n", tmp);
 	wcscat(m_log, tmp);
+#endif
 	return S_OK;
 }
 
@@ -2090,7 +2136,7 @@ HRESULT dx_player::enable_audio_track(int track)
 
 		DWORD stream_count = 0;
 		stream_select->Count(&stream_count);
-		for(int i=0; i<stream_count; i++)
+		for(DWORD i=0; i<stream_count; i++)
 		{
 			WCHAR *name = NULL;
 			DWORD enabled = 0;
@@ -2148,7 +2194,7 @@ HRESULT dx_player::enable_subtitle_track(int track)
 	int subtitle_track_found = 0;
 
 	POSITION t = m_external_subtitles.GetHeadPosition();
-	for(int i=0; i<m_external_subtitles.GetCount(); i++, m_external_subtitles.GetNext(t))
+	for(DWORD i=0; i<m_external_subtitles.GetCount(); i++, m_external_subtitles.GetNext(t))
 	{
 		CAutoPtr<subtitle_file_handler> &tmp = m_external_subtitles.GetAt(t);
 		if (i == track)

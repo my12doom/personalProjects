@@ -190,15 +190,14 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 	*((window_proc_param*)lpParame)->hwnd2 = hwnd;
 
 	dwindow * that = ((window_proc_param*)lpParame)->that;
-	BOOL fGotMessage1;
-	MSG msg1;
-	memset(&msg1,0,sizeof(msg1));
-	while( msg1.message != WM_QUIT )
+	MSG msg;
+	memset(&msg,0,sizeof(msg));
+	while( msg.message != WM_QUIT )
 	{
-		if( PeekMessage( &msg1, NULL, 0, 0, PM_REMOVE ) )
+		if( PeekMessage( &msg, NULL, 0, 0, PM_REMOVE ) )
 		{ 
-			TranslateMessage( &msg1 );
-			DispatchMessage( &msg1 );
+			TranslateMessage( &msg );
+			DispatchMessage( &msg );
 		}
 		else
 		{
@@ -206,14 +205,7 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 				Sleep(1);
 		}
 	}
-	/*
-	while ((fGotMessage1 = GetMessage(&msg1, (HWND) NULL, 0, 0)) != 0 && fGotMessage1 != -1) 
-	{
-		TranslateMessage(&msg1); 
-		DispatchMessage(&msg1); 
-	}
-	*/
-	return (DWORD)msg1.wParam; 
+	return (DWORD)msg.wParam; 
 } 
 
 HRESULT dwindow::show_window(int id, bool show)

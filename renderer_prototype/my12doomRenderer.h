@@ -1,8 +1,10 @@
 #include <d3d9.h>
 #include <streams.h>
 #include <atlbase.h>
+#include "..\AESFile\rijndael.h"
 
 struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
+#define WM_NV_NOTIFY (WM_USER+10086)
 
 // this renderer must have a valid first window, if not, connection will fail.
 // setting window to invalid window during 
@@ -89,12 +91,15 @@ public:
 	~my12doomRenderer();
 	CComPtr<IBaseFilter> m_dshow_renderer1;
 	CComPtr<IBaseFilter> m_dshow_renderer2;
+	AESCryptor m_codec;
 
 	// public functions
 	HRESULT pump();
 	HRESULT repaint_video();
+	HRESULT NV3D_notify(WPARAM wparam);
 
-	// set
+
+	// settings SET function
 	HRESULT set_input_layout(int layout);
 	HRESULT set_output_mode(int mode);
 	HRESULT set_mask_mode(int mode);
@@ -110,6 +115,21 @@ public:
 	HRESULT set_ui_visible(bool visible);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
 
+
+	// settings GET function
+	DWORD get_mask_color(int id);
+	bool get_swap_eyes();
+	input_layout_types get_input_layout();
+	output_mode_types get_output_mode();
+	mask_mode_types get_mask_mode();
+	bool get_fullscreen();
+	double get_offset(int dimention);
+	double get_aspect();
+	bool is_connected(int id){return (id?m_dsr1:m_dsr0)->is_connected();}
+	double get_bmp_offset(){return m_bmp_offset;}
+
+protected:
+
 	bool m_showui;
 	int m_last_ui_draw;
 	int m_bmp_width, m_bmp_height;
@@ -122,19 +142,6 @@ public:
 	int m_pass1_width;
 	int m_pass1_height;
 	Imy12doomRendererCallback *m_cb;
-
-	// get
-	DWORD get_mask_color(int id);
-	bool get_swap_eyes();
-	input_layout_types get_input_layout();
-	output_mode_types get_output_mode();
-	mask_mode_types get_mask_mode();
-	bool get_fullscreen();
-	double get_offset(int dimention);
-	double get_aspect();
-	bool is_connected(int id){return (id?m_dsr1:m_dsr0)->is_connected();}
-	double get_bmp_offset(){return m_bmp_offset;}
-
 
 protected:
 	friend class my12doomRendererDShow;
@@ -183,6 +190,8 @@ protected:
 	HRESULT set_device_state(device_state new_state);
 
 	// variables
+	bool m_nv3d_enabled;			// false if ATI card
+	bool m_nv3d_actived;
 	struct MyVertex
 	{
 		float x , y, z;

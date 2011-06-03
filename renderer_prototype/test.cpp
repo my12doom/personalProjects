@@ -2,6 +2,7 @@
 #include <atlbase.h>
 #include "my12doomRenderer.h"
 #include "resource.h"
+#include "ps_aes_key.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -104,6 +105,8 @@ int WINAPI WinMain( HINSTANCE hInstance,
 
 	HRESULT hr;
 	renderer = new my12doomRenderer(g_hWnd, g_hWnd2);
+	renderer->m_codec.set_key(ps_aes_key, 256);
+
 	// dshow
 	wchar_t file[MAX_PATH] = L"test.avi";
 	open_file_dlg(file, g_hWnd, NULL);

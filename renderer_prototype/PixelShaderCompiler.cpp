@@ -3,8 +3,14 @@
 #include <stdio.h>
 #include <atlbase.h>
 
+#include "ps_aes_key.h"
+#include "../AESFile/rijndael.h"
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+	AESCryptor codec;
+	codec.set_key(ps_aes_key, 256);
+
 	if (argc<4)
 	{
 		printf("Invalid Arguments!.\n");
@@ -33,13 +39,20 @@ int _tmain(int argc, _TCHAR* argv[])
 		if (f)
 		{
 			int size = pCode->GetBufferSize();
-			//fwrite(pCode->GetBufferPointer(), 1, pCode->GetBufferSize(), f);
-			fprintf(f, "#include <windows.h>\r\nconst DWORD g_code_%s[%d] = {", T2A(argv[3]), size/4);
+			DWORD *codes = (DWORD *)malloc(size);
+			memcpy(codes, pCode->GetBufferPointer(), size);
+			for(int i=0; i<size/16*16; i+=16)
+				codec.encrypt(((unsigned char*)codes)+i, ((unsigned char*)codes)+i);
+
+			fprintf(f, "// pixel size = %d.\r\n#include <windows.h>\r\nconst DWORD g_code_%s[%d] = {", size, T2A(argv[3]), size/4);
 			for(int i=0; i<size/4; i++)
-				fprintf(f, "0x%x, ", ((DWORD*)pCode->GetBufferPointer())[i]);
+			{
+				fprintf(f, "0x%x, ", codes[i]);
+			}
 			fprintf(f, "};\r\n");
 			fflush(f);
 			fclose(f);
+			free(codes);
 
 			_tprintf(_T("PixelShaderCompiler: \"%s\" of %s Compiled to %s\n"), argv[3], argv[1], argv[2]);
 		}

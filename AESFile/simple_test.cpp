@@ -14,7 +14,7 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	if (argc<3)
+	if (argc<2)
 		return 0;
 
 	if (argc == 4 && argv[3][0] == L'd')
@@ -138,7 +138,7 @@ decrypting:
 		printf("OK.\n");
 		fclose(output);
 	}
-	else
+	else if (argc == 3)
 	{
 		// hash
 		unsigned char hash[20];
@@ -239,5 +239,114 @@ decrypting:
 
 
 
+	else if (argc == 2)
+	{
+		// hash
+		file_reader reader;
+		HANDLE h_file = CreateFileW (argv[1], GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+		reader.SetFile(h_file);
+		CloseHandle(h_file);
+
+		if (!reader.m_is_encrypted)
+		{
+			printf("not a E3D encrypted file, exiting.\n");
+			return -1;
+		}
+
+		char str_hash[41] = "";
+		char tmp[3] = "";
+		for(int i=0; i<20; i++)
+		{
+			sprintf(tmp, "%02X", reader.m_hash[i]);
+			strcat(str_hash, tmp);
+		}
+
+		// key
+		unsigned char key[36] = "";		// with a int NULL terminator
+		char str_key[65] = "";
+		for(int i=0; i<32; i++)
+		{
+			key[i] = rand()%256;
+			sprintf(tmp, "%02X", key[i]);
+			strcat(str_key, tmp);
+		}
+
+		wchar_t file_key[MAX_PATH];
+		wcscpy(file_key, argv[1]);
+		wcscat(file_key, L".key");
+		FILE * f = _wfopen(file_key, L"rb");
+		if (!f)
+		{
+			printf("Key file not found, exiting.\n");
+			return -1;
+		}
+		fread(key, 1, 32, f);
+		fclose(f);
+		reader.set_key(key);
+		if (!reader.m_key_ok)
+		{
+			printf("Key file didn't match, exiting.\n");
+			return -1;
+		}
+
+
+
+		// database
+		MYSQL mysql;
+		mysql_init(&mysql);
+		if (mysql_real_connect(&mysql, "127.0.0.1", "root", "tester88", "mydb",3306, NULL, 0))
+		{
+			printf("db connected.\n");
+
+			// search for existing record
+			printf("searching for file %s.\n", str_hash);
+			char select_command[1024];
+			sprintf(select_command, "select * from movies where hash=\'%s\';", str_hash);
+
+			if(mysql_real_query(&mysql, select_command, (UINT)strlen(select_command)))
+			{
+				printf("db error.\n");
+				return -1;
+			}
+
+			MYSQL_RES *select_result = mysql_use_result(&mysql);
+
+			int record_found = 0;
+			MYSQL_ROW row;
+			while (row = mysql_fetch_row(select_result))
+			{
+				printf("found: record %s,  pass = %s.\n", row[0], row[2]);
+				strcpy(str_key, row[2]);
+				for(int i=0; i<32; i++)
+					sscanf(str_key+2*i, "%02X", key+i);
+				reader.set_key(key);
+				printf(reader.m_key_ok ? "key match.\n":"key didn't match.\n");
+				record_found++;
+			}
+			mysql_free_result(select_result);
+
+
+			if (record_found == 0 || !reader.m_key_ok)
+			{
+				char insert_command[1024];
+				sprintf(insert_command, "insert into movies (hash, pass) values (\'%s\', \'%s\');", str_hash, str_key);
+				printf("inserting to database....");
+				if (mysql_real_query(&mysql, insert_command, (UINT)strlen(insert_command)))
+				{
+					printf("DB ERROR : %s.\n", mysql_error(&mysql));
+				}
+				else
+				{
+					printf("OK.\n");
+				}
+			}
+		}
+
+		else
+		{
+			printf("db fail.\n");
+		}
+		mysql_close(&mysql);
+	}
 	return 0;
 }

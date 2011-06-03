@@ -711,8 +711,14 @@ HRESULT check_passkey()
 	BigNumberSetEqualdw(e, 65537, 32);
 	RSA(m1, (DWORD*)g_passkey_big, e, (DWORD*)dwindow_n, 32);
 	for(int i=0; i<8; i++)
-		if (m1[i] != m1[i+8] || m1[i+8] != m1[i+16] || m1[i+16] != m1[i+24])
+		if (m1[i] != m1[i+8])
 			return E_FAIL;
+
+	__time64_t *time_start = (__time64_t *)(m1+24);
+	__time64_t *time_end = (__time64_t*)(m1+26);
+	if (*time_start > _time64(NULL) || _time64(NULL) > *time_end)
+		return E_FAIL;
+
 	memcpy(g_passkey, m1, 32);
 	return S_OK;
 }
@@ -730,8 +736,9 @@ HRESULT save_passkey()
 	return S_OK;
 }
 
-HRESULT load_e3d_key(const char *file_hash, char *file_key)
+HRESULT load_e3d_key(const unsigned char *file_hash, unsigned char *file_key)
 {
+	unsigned char key_tmp[32+16];
 	wchar_t tmp[3] = L"";
 	wchar_t reg_key[41] = L"";
 	for(int i=0; i<20; i++)
@@ -739,19 +746,34 @@ HRESULT load_e3d_key(const char *file_hash, char *file_key)
 		wsprintfW(tmp, L"%02X", file_hash[i]);
 		wcscat(reg_key, tmp);
 	}
+
+	load_setting(reg_key, key_tmp, 32+16);
 
 	// AES it
 	AESCryptor codec;
 	codec.set_key((unsigned char*)g_passkey, 256);
-	codec.decrypt((unsigned char*)file_key, (unsigned char*)file_key);
-	codec.decrypt((unsigned char*)file_key+16, (unsigned char*)file_key+16);
+	codec.decrypt((unsigned char*)key_tmp, (unsigned char*)key_tmp);
+	codec.decrypt((unsigned char*)key_tmp+16, (unsigned char*)key_tmp+16);
+	codec.decrypt((unsigned char*)key_tmp+32, (unsigned char*)key_tmp+32);
 
-	load_setting(reg_key, file_key, 32);
+	// time
+	__time64_t time = _time64(NULL);
+	__time64_t key_start_time;
+	__time64_t key_end_time;
+	memcpy(&key_start_time, key_tmp+32, 8);
+	memcpy(&key_end_time, key_tmp+40, 8);
 
+	if (key_start_time > time || time > key_end_time || (key_start_time >> 32) || (key_end_time >> 32))
+	{
+		del_setting(reg_key);
+		return E_FAIL;
+	}
+
+	memcpy(file_key, key_tmp, 32);
 	return S_OK;
 }
 
-HRESULT save_e3d_key(const char *file_hash, const char *file_key)
+HRESULT save_e3d_key(const unsigned char *file_hash, const unsigned char *file_key)
 {
 	wchar_t tmp[3] = L"";
 	wchar_t reg_key[41] = L"";
@@ -761,14 +783,21 @@ HRESULT save_e3d_key(const char *file_hash, const char *file_key)
 		wcscat(reg_key, tmp);
 	}
 
+	unsigned char encrypted_key[32+16];
+	// time
+	__time64_t time = _time64(NULL);
+	memcpy(encrypted_key+32, &time, 8);
+	time += 7*24*3600;		// 7 days
+	memcpy(encrypted_key+40, &time, 8);
+
 	// AES it
-	unsigned char encrypted_key[32];
 	AESCryptor codec;
 	codec.set_key((const unsigned char*)g_passkey, 256);
 	codec.encrypt((const unsigned char*)file_key, (unsigned char*)encrypted_key);
 	codec.encrypt((const unsigned char*)file_key+16, (unsigned char*)encrypted_key+16);
+	codec.encrypt((const unsigned char*)encrypted_key+32, (unsigned char*)encrypted_key+32);
 
-	save_setting(reg_key, encrypted_key, 32);
+	save_setting(reg_key, encrypted_key, 32+16);
 
 	return S_OK;
 }
@@ -879,12 +908,27 @@ int load_setting(const WCHAR *key, void *data, int len)
 	int ret = RegOpenKeyExW(HKEY_CURRENT_USER, soft_key,0,STANDARD_RIGHTS_REQUIRED |KEY_READ  , &hkey);
 	if (ret != ERROR_SUCCESS || hkey == NULL)
 		return false;
-	RegQueryValueExW(hkey, key, 0, NULL, (LPBYTE)data, (LPDWORD)&len);
+	ret = RegQueryValueExW(hkey, key, 0, NULL, (LPBYTE)data, (LPDWORD)&len);
 	if (ret == ERROR_SUCCESS || ret == ERROR_MORE_DATA)
 		return len;
 
 	RegCloseKey(hkey);
 	return 0;
+}
+
+bool del_setting(const WCHAR *key)
+{
+	HKEY hkey = NULL;
+	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, soft_key, 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS || hkey == NULL)
+		return false;
+
+	ret = RegDeleteValueW(hkey, key);
+	if (ret != ERROR_SUCCESS)
+		return false;
+
+	RegCloseKey(hkey);
+	return true;
 }
 
 HRESULT download_url(char *url_to_download, char *out, int outlen = 64)
@@ -955,8 +999,14 @@ HRESULT download_e3d_key(const wchar_t *filename)
 	aes.decrypt(e3d_key, e3d_key);
 	aes.decrypt(e3d_key+16, e3d_key+16);
 	reader.set_key(e3d_key);
+	if (!reader.m_key_ok)
+	{
+		hr = E_FAIL;
+		goto err_ret;
+	}
 
 	CloseHandle(h_file);
+
 	return e3d_set_process_key(e3d_key);
 
 

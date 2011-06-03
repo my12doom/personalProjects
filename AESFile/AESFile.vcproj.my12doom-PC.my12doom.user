@@ -11,7 +11,7 @@
 			<DebugSettings
 				Command="$(TargetPath)"
 				WorkingDirectory=""
-				CommandArguments="Z:\00013.mkv Z:\00013.e3d"
+				CommandArguments="Z:\00013.e3d"
 				Attach="false"
 				DebuggerType="3"
 				Remote="1"

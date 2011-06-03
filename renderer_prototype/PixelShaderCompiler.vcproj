@@ -176,12 +176,24 @@
 				RelativePath=".\PixelShaderCompiler.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\ps_aes_key.h"
+				>
+			</File>
+			<File
+				RelativePath="..\AESFile\RIJNDAEL.CPP"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="头文件"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\AESFile\RIJNDAEL.H"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"

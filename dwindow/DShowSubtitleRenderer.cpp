@@ -36,7 +36,7 @@ HRESULT DShowSubtitleRenderer::SampleCB(IMediaSample *sample)
 
 	//CAutoLock lck(&m_subtitle_sec);
 	if (m_srenderer)
-		m_srenderer->add_data(p, sample->GetActualDataLength(), (start+m_subtitle_seg_time)/10000, (end+m_subtitle_seg_time)/10000);
+		m_srenderer->add_data(p, sample->GetActualDataLength(), (int)((start+m_subtitle_seg_time)/10000), (int)((end+m_subtitle_seg_time)/10000));
 
 	return S_OK;
 }

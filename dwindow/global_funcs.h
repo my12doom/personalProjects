@@ -44,12 +44,12 @@ HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *
 HRESULT load_passkey();
 HRESULT save_passkey();
 HRESULT check_passkey();
-HRESULT save_e3d_key(const char *file_hash, const char *file_key);
-HRESULT load_e3d_key(const char *file_hash, char *file_key);
+HRESULT save_e3d_key(const unsigned char *file_hash, const unsigned char *file_key);
+HRESULT load_e3d_key(const unsigned char *file_hash, unsigned char *file_key);
 HRESULT download_e3d_key(const wchar_t *filename);
 HRESULT make_xvid_support_mp4v();
 
-#define g_bomb_function {DWORD e[32];DWORD m1[32]={0,1,2,3,4,5,6,7,8,9,10};BigNumberSetEqualdw(e, 65537, 32);RSA(m1, (DWORD*)g_passkey_big, e, (DWORD*)dwindow_n, 32);for(int i=0; i<8; i++)if (m1[i] != m1[i+8] || m1[i+8] != m1[i+16] || m1[i+16] != m1[i+24])TerminateProcess(GetCurrentProcess(), 0);memcpy(g_passkey, m1, 32);}
+#define g_bomb_function {DWORD e[32];DWORD m1[32]={0,1,2,3,4,5,6,7,8,9,10};BigNumberSetEqualdw(e, 65537, 32);RSA(m1, (DWORD*)g_passkey_big, e, (DWORD*)dwindow_n, 32);	__time64_t *time_start = (__time64_t *)(m1+24);__time64_t *time_end = (__time64_t*)(m1+26);for(int i=0; i<8; i++)if (m1[i] != m1[i+8] || *time_start > _time64(NULL) || _time64(NULL) > *time_end)TerminateProcess(GetCurrentProcess(), 0);memcpy(g_passkey, m1, 32);}
 
 // CoreMVC
 HRESULT ActiveCoreMVC(IBaseFilter *decoder);
@@ -59,6 +59,7 @@ HRESULT beforeCreateCoreMVC();
 // Settings loader & saver
 bool save_setting(const WCHAR *key, const void *data, int len, DWORD REG_TYPE=REG_BINARY);
 int load_setting(const WCHAR *key, void *data, int len);
+bool del_setting(const WCHAR *key);
 template<class ValueType>
 class AutoSetting
 {
