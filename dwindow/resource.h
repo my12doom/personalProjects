@@ -86,13 +86,18 @@
 #define ID_OUTPUTMODE_3DTV_TB           40059
 #define ID_OUTPUTMODE_SBS               40060
 #define ID_OUTPUTMODE_3DTV_SBS          40061
+#define ID_SUBTITLE_DISPLAYSUBTITLE     40062
+#define ID_OUTPUTMODE_ANAGLYPHCOLOR     40063
+#define ID_OUTPUTMODE_ANAGLYPHCOLORRIGHTEYE 40064
+#define ID_ENGLISH_CLOSE                40065
+#define ID_CLOSE                        40066
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        117
-#define _APS_NEXT_COMMAND_VALUE         40062
+#define _APS_NEXT_COMMAND_VALUE         40067
 #define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

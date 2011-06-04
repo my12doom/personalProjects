@@ -49,13 +49,9 @@ Section "DWindow(required)"
   File "dwindow.exe"
   File "dwindow.ini"
   File "detoured.dll"
-  ;File "launcher.exe"
-  ;File "regsvr.exe"
   SetOutPath $INSTDIR\codec
   File "codec\*"
   SetOutPath $INSTDIR
-
-  ;ExecWait '"$INSTDIR\regsvr.exe" -silent'
 
   ; Write the installation path into the registry
   WriteRegStr HKLM SOFTWARE\DWindow "Install_Dir" "$INSTDIR"
@@ -73,10 +69,15 @@ SectionEnd
 Section "Start Menu Shortcuts"
 
   CreateDirectory "$SMPROGRAMS\DWindow"
-  ;CreateShortCut "$SMPROGRAMS\DWindow\DWindow.lnk" "$INSTDIR\launcher.exe" "" "$INSTDIR\launcher.exe" 0
-  ;CreateShortCut "$SMPROGRAMS\DWindow\Re-Register modules.lnk" "$INSTDIR\regsvr.exe" "" "$INSTDIR\regsvr.exe" 0
   CreateShortCut "$SMPROGRAMS\DWindow\DWindow.lnk" "$INSTDIR\dwindow.exe" "" "$INSTDIR\dwindow.exe" 0
   CreateShortCut "$SMPROGRAMS\DWindow\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+  
+SectionEnd
+
+; Optional section (can be disabled by the user)
+Section "Desktop Shortcuts"
+
+  CreateShortCut "$DESKTOP\DWindow.lnk" "$INSTDIR\dwindow.exe" "" "$INSTDIR\dwindow.exe" 0
   
 SectionEnd
 

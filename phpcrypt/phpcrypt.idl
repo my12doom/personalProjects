@@ -1,0 +1,43 @@
+// phpcrypt.idl : phpcrypt 的 IDL 源
+//
+
+// 此文件将由 MIDL 工具处理以
+// 产生类型库(phpcrypt.tlb)和封送处理代码。
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+	object,
+	uuid(C2B9965B-1935-4122-BC33-B3BFC21A1703),
+	dual,
+	nonextensible,
+	helpstring("Icrypt 接口"),
+	pointer_default(unique)
+]
+interface Icrypt : IDispatch{
+	[id(1), helpstring("方法test")] HRESULT test(BSTR* ret);
+	[id(2), helpstring("方法test2")] HRESULT test2([out,retval] BSTR* rtn);
+	[id(3), helpstring("方法get_passkey")] HRESULT get_passkey(BSTR input, [out,retval] BSTR* ret);
+	[id(4), helpstring("方法get_hash")] HRESULT get_hash([in] BSTR input, [out,retval] BSTR* rtn);
+	[id(5), helpstring("方法get_key")] HRESULT get_key([in] BSTR input, [out,retval] BSTR* ret);
+	[id(6), helpstring("方法decode_message")] HRESULT decode_message([in] BSTR input, [out,retval] BSTR* ret);
+	[id(7), helpstring("方法AES")] HRESULT AES(BSTR data, BSTR key, [out,retval] BSTR* ret);
+};
+[
+	uuid(D49AC205-730C-4F01-A52A-B49F9F4621B4),
+	version(1.0),
+	helpstring("phpcrypt 1.0 类型库")
+]
+library phpcryptLib
+{
+	importlib("stdole2.tlb");
+	[
+		uuid(735CAF26-1894-4D00-B5A9-9F94A1BC51CA),
+		helpstring("crypt Class")
+	]
+	coclass crypt
+	{
+		[default] interface Icrypt;
+	};
+};

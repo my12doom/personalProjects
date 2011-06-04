@@ -13,6 +13,7 @@
 #pragma comment(lib,"wininet.lib")
 
 char server_url[300] = "http://59.51.45.21:80/w32.php?";
+//char server_url[300] = "http://127.0.0.1:8080/w32.php?";
 
 // public variables
 AutoSetting<localization_language> g_active_language(L"Language", CHINESE);
@@ -143,6 +144,7 @@ bool open_file_dlg(wchar_t *pathname, HWND hDlg, wchar_t *filter/* = NULL*/)
 bool select_color(DWORD *color, HWND parent)
 {
 	static COLORREF customColor[16];
+	customColor[0] = *color;
 	CHOOSECOLOR cc = {sizeof(CHOOSECOLOR), parent, NULL, *color, customColor, CC_RGBINIT, 0, NULL, NULL};
 	bool rtn = ChooseColor(&cc);
 
@@ -438,6 +440,7 @@ HRESULT set_localization_language(localization_language language)
 		{
 			add_localization(L"Open File...");
 			add_localization(L"Open BluRay3D");
+			add_localization(L"Close");
 
 			add_localization(L"Input Layout");
 			add_localization(L"Auto");
@@ -464,6 +467,8 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Subtitle");
 
 			add_localization(L"Play/Pause");
+			add_localization(L"Play");
+			add_localization(L"Pause");
 			add_localization(L"Fullscreen");
 			add_localization(L"Always Show Right Eye");
 			add_localization(L"Exit");
@@ -481,12 +486,16 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Language");
 			add_localization(L"Feature under development");
 			add_localization(L"Open Failed");
+			add_localization(L"Display Subtitle");
+			add_localization(L"Anaglyph Left Eye Color...");
+			add_localization(L"Anaglyph Right Eye Color...");
 		}
 		break;
 	case CHINESE:
 		{
 			add_localization(L"Open File...",			L"打开文件...");
 			add_localization(L"Open BluRay3D",			L"打开蓝光3D原盘");
+			add_localization(L"Close",					L"关闭");
 
 			add_localization(L"Input Layout",			L"输入格式");
 			add_localization(L"Auto",					L"自动判断");
@@ -513,6 +522,8 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Subtitle",				L"字幕");
 
 			add_localization(L"Play/Pause",				L"播放/暂停");
+			add_localization(L"Play",					L"播放");
+			add_localization(L"Pause",					L"暂停");
 			add_localization(L"Fullscreen",				L"全屏");
 			add_localization(L"Always Show Right Eye",	L"总是显示右眼");
 			add_localization(L"Exit",					L"退出");
@@ -530,6 +541,9 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Language",				L"语言");
 			add_localization(L"Feature under development",				L"尚未完成的功能");
 			add_localization(L"Open Failed",			L"打开失败");
+			add_localization(L"Display Subtitle",		L"显示字幕");
+			add_localization(L"Anaglyph Left Eye Color...",L"左眼镜颜色...");
+			add_localization(L"Anaglyph Right Eye Color...",L"右眼镜颜色...");
 		}
 		break;
 	}

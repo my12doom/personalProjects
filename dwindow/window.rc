@@ -162,6 +162,7 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Folder...",                   ID_OPENBDFOLDER
         END
+        MENUITEM "Close",                       ID_CLOSE
         MENUITEM SEPARATOR
         POPUP "Input Layout"
         BEGIN
@@ -184,6 +185,9 @@ BEGIN
             MENUITEM "3DTV : Half Top Bottom",      ID_OUTPUTMODE_3DTV_TB
             MENUITEM "Anaglyph",                    ID_OUTPUTMODE_ANAGLYPH
             MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
+            MENUITEM SEPARATOR
+            MENUITEM "Anaglyph Left Eye Color...",  ID_OUTPUTMODE_ANAGLYPHCOLOR
+            MENUITEM "Anaglyph Right Eye Color...", ID_OUTPUTMODE_ANAGLYPHCOLORRIGHTEYE
         END
         MENUITEM SEPARATOR
         POPUP "Audio"
@@ -195,6 +199,7 @@ BEGIN
             MENUITEM "Load Subtitle File...",       ID_SUBTITLE_LOADFILE
             MENUITEM "Font...",                     ID_SUBTITLE_FONT
             MENUITEM "Color...",                    ID_SUBTITLE_COLOR
+            MENUITEM "Display Subtitle",            ID_SUBTITLE_DISPLAYSUBTITLE
         END
         MENUITEM SEPARATOR
         MENUITEM "Play/Pause",                  ID_PLAY

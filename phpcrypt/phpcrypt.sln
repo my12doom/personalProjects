@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "phpcrypt", "phpcrypt.vcproj", "{45E30809-7F51-4E4E-AAAD-4B30580C0E7C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "phpcryptPS", "phpcryptPS.vcproj", "{22A2D258-AFF9-42B8-9DDD-86AD84824486}"
+	ProjectSection(ProjectDependencies) = postProject
+		{45E30809-7F51-4E4E-AAAD-4B30580C0E7C} = {45E30809-7F51-4E4E-AAAD-4B30580C0E7C}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{45E30809-7F51-4E4E-AAAD-4B30580C0E7C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{45E30809-7F51-4E4E-AAAD-4B30580C0E7C}.Debug|Win32.Build.0 = Debug|Win32
+		{45E30809-7F51-4E4E-AAAD-4B30580C0E7C}.Release|Win32.ActiveCfg = Release|Win32
+		{45E30809-7F51-4E4E-AAAD-4B30580C0E7C}.Release|Win32.Build.0 = Release|Win32
+		{22A2D258-AFF9-42B8-9DDD-86AD84824486}.Debug|Win32.ActiveCfg = Debug|Win32
+		{22A2D258-AFF9-42B8-9DDD-86AD84824486}.Release|Win32.ActiveCfg = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,26 @@
+HKCR
+{
+	phpcrypt.crypt.1 = s 'crypt Class'
+	{
+		CLSID = s '{735CAF26-1894-4D00-B5A9-9F94A1BC51CA}'
+	}
+	phpcrypt.crypt = s 'crypt Class'
+	{
+		CLSID = s '{735CAF26-1894-4D00-B5A9-9F94A1BC51CA}'
+		CurVer = s 'phpcrypt.crypt.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {735CAF26-1894-4D00-B5A9-9F94A1BC51CA} = s 'crypt Class'
+		{
+			ProgID = s 'phpcrypt.crypt.1'
+			VersionIndependentProgID = s 'phpcrypt.crypt'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{D49AC205-730C-4F01-A52A-B49F9F4621B4}'
+		}
+	}
+}

@@ -72,7 +72,7 @@ public:
 	HRESULT seek(int time);
 	HRESULT tell(int *time);
 	HRESULT total(int *time);
-	HRESULT set_volume(double volume);			// 0 - 1.0 = 0% - 100%
+	HRESULT set_volume(double volume);			// 0 - 1.0 = 0% - 100%, linear
 	HRESULT get_volume(double *volume);
 	bool is_closed();
 	POINT m_mouse;
@@ -139,6 +139,7 @@ protected:
 	CCritSec m_draw_sec;
 	CCritSec m_seek_sec;
 	bool m_show_ui;
+	AutoSetting<double> m_volume;	// = 1.0
 	HRESULT show_ui(bool show);
 	HRESULT draw_ui();
 
@@ -159,6 +160,8 @@ protected:
 	AutoSetting<DWORD> m_input_layout; /* = input_layout_auto*/
 	AutoSetting<DWORD> m_output_mode;  /* = anaglyph*/
 	AutoSetting<DWORD> m_mask_mode;	   /* = row_interlace */
+	AutoSetting<DWORD> m_anaglygh_left_color;	   /* = row_interlace */
+	AutoSetting<DWORD> m_anaglygh_right_color;	   /* = row_interlace */
 
 	// subtitle control
 	CSubtitleRenderer *m_srenderer;
@@ -175,6 +178,7 @@ protected:
 	HFONT m_font;
 	AutoSetting<DWORD> m_font_color/*L"FontColor", 0x00ffffff)*/;
 	AutoSetting<LONG> m_lFontPointSize/*(L"FontSize", 40)*/;
+	AutoSetting<bool> m_display_subtitle;
 	AutoSettingString m_FontName/*(L"Font", L"Arial")*/;
 	AutoSettingString m_FontStyle/*(L"FontStyle", L"Regular")*/;
 	HRESULT select_font(bool show_dlg);

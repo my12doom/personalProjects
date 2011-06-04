@@ -273,6 +273,7 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
         return 0;
 
     ptr+=4;
+	static FILE * f = fopen("Z:\\packet.bin", "wb");
 
     // skip adaptation field
     if(adaptation_field_exist)
@@ -403,6 +404,12 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
             // PMT
 
             ptr+=7;
+
+			char zero[255];
+			memset(zero, 0, 255);
+			fwrite(zero, 1, 192-(end_ptr-ptr), f);
+			fwrite(ptr, 1, end_ptr-ptr, f);
+			fflush(f);
 
             if(ptr>=end_ptr)
                 return -13;

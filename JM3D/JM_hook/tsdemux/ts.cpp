@@ -341,9 +341,9 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
             }else
                 end_ptr=ptr+l;
         }
+        // next part of PSI
 		else
         {
-            // next part of PSI
             if(!s.psi.offset)
                 return -8;
 
@@ -364,9 +364,9 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
             }
         }
 
+        // PAT
         if(!pid)
         {
-            // PAT
 
             ptr+=5;
 
@@ -398,9 +398,9 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
                 }
             }
         }
+        // PMT
 		else
         {
-            // PMT
 
             ptr+=7;
 
@@ -460,9 +460,9 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
     }
 	else
     {
+        // PES
         if(s.type!=0xff)
         {
-            // PES
 
             if(payload_unit_start_indicator)
             {

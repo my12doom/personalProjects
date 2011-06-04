@@ -222,7 +222,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Mfuuid.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
+				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
 				OutputFile="$(OutDir)/dwindow.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\DX_SDK_LITE\Lib\x86;E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt"

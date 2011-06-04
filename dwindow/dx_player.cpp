@@ -11,6 +11,19 @@
 
 // helper functions
 
+DWORD color_GDI2ARGB(DWORD in)
+{
+	BYTE tmp[5];
+	*((DWORD*)tmp) = in;
+	tmp[3] = 0xff;
+
+	tmp[4] = tmp[0];
+	tmp[0] = tmp[2];
+	tmp[2] = tmp[4];
+
+	return *((DWORD*)tmp);
+}
+
 HRESULT dx_player::CrackPD10(IBaseFilter *filter)
 {
 	if (!filter)
@@ -103,7 +116,11 @@ m_FontStyle(L"FontStyle", L"Regular"),
 m_font_color(L"FontColor", 0x00ffffff),
 m_input_layout(L"InputLayout", input_layout_auto),
 m_output_mode(L"OutputMode", anaglyph),
-m_mask_mode(L"MaskMode", row_interlace)
+m_mask_mode(L"MaskMode", row_interlace),
+m_display_subtitle(L"DisplaySubtitle", true),
+m_anaglygh_left_color(L"AnaglyghLeftColor", 0x00ff0000),
+m_anaglygh_right_color(L"AnaglyghRightColor", 0x0000ffff),
+m_volume(L"Volume", 1.0)
 {
 	// Enable away mode and prevent the sleep idle time-out.
 	SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_AWAYMODE_REQUIRED);
@@ -205,6 +222,13 @@ HRESULT dx_player::reset()
 	// set event notify
 	CComQIPtr<IMediaEventEx, &IID_IMediaEventEx> event_ex(m_gb);
 	event_ex->SetNotifyWindow((OAHWND)id_to_hwnd(1), DS_EVENT, 0);
+
+	// caption
+	set_window_text(1, L"");
+	set_window_text(2, L"");
+	
+	// repaint
+	InvalidateRect(m_hwnd1, NULL, FALSE);
 
 	return S_OK;
 }
@@ -317,29 +341,26 @@ HRESULT dx_player::total(int *time)
 }
 HRESULT dx_player::set_volume(double volume)
 {
-	if (m_ba == NULL)
-		return VFW_E_WRONG_STATE;
+	m_volume = volume;
+	if (m_ba)
+	{
+		LONG ddb;
+		if (volume>0)
+			ddb = (int)(2000 * log10(volume));
+		else
+			ddb = -10000;
+		m_ba->put_Volume(ddb);
+	}
 
-	LONG ddb;
-	if (volume>0)
-		ddb = (int)(2000 * log10(volume));
-	else
-		ddb = -10000;
-	return m_ba->put_Volume(ddb);
+	return S_OK;
 }
 HRESULT dx_player::get_volume(double *volume)
 {
 	if (volume == NULL)
 		return E_POINTER;
 
-	if (m_ba == NULL)
-		return VFW_E_WRONG_STATE;
-
-	LONG ddb = 0;
-	HRESULT hr = m_ba->get_Volume(&ddb);
-	if (SUCCEEDED(hr))
-		*volume = pow(10.0, (double)ddb/2000);
-	return hr;
+	*volume = m_volume;
+	return S_OK;
 }
 
 bool dx_player::is_closed()
@@ -506,6 +527,18 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		localize_menu(menu);
 
 
+		// play / pause
+		bool paused = true;
+		if (m_mc)
+		{
+			static OAFilterState fs = State_Running;
+			HRESULT hr = m_mc->GetState(100, &fs);
+			if (fs == State_Running)
+				paused = false;
+		}
+		int flag = GetMenuState(menu, ID_PLAY, MF_BYCOMMAND);
+		ModifyMenuW(menu, ID_PLAY, MF_BYCOMMAND| flag, ID_PLAY, paused ? C(L"Play") : C(L"Pause"));
+
 		// find BD drives
 		HMENU sub_open_BD = GetSubMenu(menu, 1);
 		bool drive_found = false;
@@ -562,7 +595,8 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 
 		// subtitle menu
-		HMENU sub_subtitle = GetSubMenu(menu, 7);
+		CheckMenuItem(menu, ID_SUBTITLE_DISPLAYSUBTITLE, MF_BYCOMMAND | (m_display_subtitle ? MF_CHECKED : MF_UNCHECKED));
+		HMENU sub_subtitle = GetSubMenu(menu, 8);
 		{
 			CAutoLock lck(&m_subtitle_sec);
 			if (!m_srenderer || FAILED(m_srenderer->set_font_color(m_font_color)))
@@ -578,23 +612,17 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		}
 
 		// audio tracks
-		HMENU sub_audio = GetSubMenu(menu, 6);
+		HMENU sub_audio = GetSubMenu(menu, 7);
 		list_audio_track(sub_audio);
 
 		// subtitle tracks
 		list_subtitle_track(sub_subtitle);
 
 		// language
-		HMENU sub_language = GetSubMenu(menu, 13);
 		if (g_active_language == ENGLISH)
-		{
-			CheckMenuItem(sub_language, ID_LANGUAGE_ENGLISH, MF_CHECKED | MF_BYCOMMAND);
-		}
+			CheckMenuItem(menu, ID_LANGUAGE_ENGLISH, MF_CHECKED | MF_BYCOMMAND);
 		else if (g_active_language == CHINESE)
-		{
-			CheckMenuItem(sub_language, ID_LANGUAGE_CHINESE, MF_CHECKED | MF_BYCOMMAND);
-		}
-
+			CheckMenuItem(menu, ID_LANGUAGE_CHINESE, MF_CHECKED | MF_BYCOMMAND);
 
 		// show it
 		POINT mouse_pos;
@@ -943,6 +971,26 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			m_renderer1->set_output_mode(m_output_mode);			
 	}
 
+	// anaglygh color
+	else if (uid == ID_OUTPUTMODE_ANAGLYPHCOLOR)
+	{
+		DWORD tmp = m_anaglygh_left_color;
+		if (select_color(&tmp, id_to_hwnd(id)))
+			m_anaglygh_left_color = tmp;
+
+		// reverse byte order
+		if (m_renderer1)
+			m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
+	}
+	else if (uid == ID_OUTPUTMODE_ANAGLYPHCOLORRIGHTEYE)
+	{
+		DWORD tmp = m_anaglygh_right_color;
+		if (select_color(&tmp, id_to_hwnd(id)))
+			m_anaglygh_right_color = tmp;
+		if (m_renderer1)
+			m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
+	}
+
 	else if (uid == ID_SUBTITLE_LOADFILE)
 	{
 		wchar_t file[MAX_PATH] = L"";
@@ -950,6 +998,11 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		{
 			load_subtitle(file, false);
 		}
+	}
+
+	else if (uid == ID_CLOSE)
+	{
+		reset();
 	}
 
 	else if (uid == ID_SUBTITLE_FONT)
@@ -960,7 +1013,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 	else if (uid == ID_SUBTITLE_COLOR)
 	{
-		DWORD tmp;
+		DWORD tmp = m_font_color;
 		bool ok;
 		if (ok = select_color(&tmp, id_to_hwnd(id)))
 			m_font_color = tmp;
@@ -968,6 +1021,15 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		if (m_srenderer && ok)
 			m_srenderer->set_font_color(m_font_color);
 		m_lastCBtime = -1;
+	}
+
+	else if (uid == ID_SUBTITLE_DISPLAYSUBTITLE)
+	{
+		m_display_subtitle = !m_display_subtitle;
+		if (m_display_subtitle)
+			set_subtitle_pos(m_subtitle_center_x, m_subtitle_bottom_y);
+		else
+			if (m_renderer1) m_renderer1->set_bmp(NULL, 0, 0, 0, 0, 0, 0);
 	}
 
 	else if (uid == ID_OPENBDFOLDER)
@@ -1116,6 +1178,9 @@ HRESULT dx_player::exit_direct_show()
 
 HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn)
 {
+	if (!m_display_subtitle || !m_renderer1)
+		return S_OK;
+
 	int ms_start = (int)(TimeStart / 10000);
 	int ms_end = (int)(TimeEnd / 10000);
 
@@ -1661,10 +1726,40 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 		
 		m_srenderer = m_grenderer.GetSubtitleRenderer();
 
-
 		m_file_loaded = true;
 		set_window_text(1, file_to_play);
 		set_window_text(2, file_to_play);
+
+		// load corresponding subtitle file
+		wchar_t subtitle_file[MAX_PATH];
+		wcscpy(subtitle_file, file_to_play);
+		wcscat(subtitle_file, L".srt");
+		load_subtitle(subtitle_file, false);
+
+		wcscpy(subtitle_file, file_to_play);
+		wcscat(subtitle_file, L".sup");
+		load_subtitle(subtitle_file, false);
+
+		int i;
+		for(i=wcslen(file_to_play); i>0; i--)
+		{
+			if (file_to_play[i] == L'.')
+			{
+				file_to_play[i] = NULL;
+				break;
+			}
+		}
+
+		if (i>0)
+		{
+			wcscpy(subtitle_file, file_to_play);
+			wcscat(subtitle_file, L".srt");
+			load_subtitle(subtitle_file, false);
+
+			wcscpy(subtitle_file, file_to_play);
+			wcscat(subtitle_file, L".sup");
+			load_subtitle(subtitle_file, false);
+		}
 	}
 
 	return hr;
@@ -1672,6 +1767,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 
 HRESULT dx_player::end_loading()
 {
+	set_volume(m_volume);
 
 	int num_renderer_found = 0;
 
@@ -1848,6 +1944,8 @@ avisynth2:
 	m_renderer1->set_input_layout(m_input_layout);
 	m_renderer1->set_mask_mode(m_mask_mode);
 	m_renderer1->set_callback(this);
+	m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
+	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
 
 
 	// debug: list filters
@@ -1931,8 +2029,11 @@ HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME 
 }
 
 HRESULT dx_player::draw_subtitle()
-{
-	return S_OK;
+{	
+	REFERENCE_TIME t = (REFERENCE_TIME)m_lastCBtime * 10000;
+	m_lastCBtime = -1;
+
+	return SampleCB(t+1, t+2, NULL);
 }
 
 HRESULT dx_player::set_subtitle_offset(int offset)
@@ -1948,10 +2049,7 @@ HRESULT dx_player::set_subtitle_pos(double center_x, double bottom_y)
 	m_subtitle_center_x = center_x;
 	m_subtitle_bottom_y = bottom_y;
 
-	REFERENCE_TIME t = (REFERENCE_TIME)m_lastCBtime * 10000;
-	m_lastCBtime = -1;
-
-	return SampleCB(t+1, t+2, NULL);
+	return draw_subtitle();
 }
 
 HRESULT dx_player::log_line(wchar_t *format, ...)
@@ -2193,6 +2291,13 @@ HRESULT dx_player::enable_subtitle_track(int track)
 	CComPtr<IPin> pin;
 	int subtitle_track_found = 0;
 
+	// Save Filter State
+	bool filter_stopped = false;
+	OAFilterState state_before, state;
+	m_mc->GetState(INFINITE, &state_before);
+	CComPtr<IPin> grenderer_input_pin;
+	GetConnectedPin(m_grenderer.m_filter, PINDIR_INPUT, &grenderer_input_pin);
+
 	POSITION t = m_external_subtitles.GetHeadPosition();
 	for(DWORD i=0; i<m_external_subtitles.GetCount(); i++, m_external_subtitles.GetNext(t))
 	{
@@ -2202,6 +2307,16 @@ HRESULT dx_player::enable_subtitle_track(int track)
 			tmp->actived = true;
 			CAutoLock lck(&m_subtitle_sec);
 			m_srenderer = tmp->m_renderer;
+
+			// disable dshow subtitle if needed
+			if (state_before != State_Stopped && !filter_stopped && grenderer_input_pin)
+			{
+				m_mc->Stop();
+				m_mc->GetState(INFINITE, &state);
+
+				// remove (and re-add later if needed) the subtitle renderer
+				m_gb->RemoveFilter(m_grenderer.m_filter);
+			}
 		}
 		else
 		{
@@ -2210,17 +2325,7 @@ HRESULT dx_player::enable_subtitle_track(int track)
 		subtitle_track_found++;
 	}
 
-	// Save Filter State
-	OAFilterState state_before, state;
-	m_mc->GetState(INFINITE, &state_before);
-	if (state_before != State_Stopped)
-	{
-		m_mc->Stop();
-		m_mc->GetState(INFINITE, &state);
-	}
 
-	// just remove (and re-add) the subtitle renderer
-	m_gb->RemoveFilter(m_grenderer.m_filter);
 	if (track >= m_external_subtitles.GetCount())
 	{
 		m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
@@ -2273,6 +2378,17 @@ HRESULT dx_player::enable_subtitle_track(int track)
 				{
 					if (subtitle_track_found == track)
 					{
+						// stop filters if needed
+						if (state_before != State_Stopped && !filter_stopped)
+						{
+							m_mc->Stop();
+							m_mc->GetState(INFINITE, &state);
+
+						}
+						// remove (and re-add later if needed) the subtitle renderer
+						m_gb->RemoveFilter(m_grenderer.m_filter);
+
+						// render new subtitle pin
 						m_gb->Render(pin);
 					}
 
@@ -2302,6 +2418,16 @@ HRESULT dx_player::enable_subtitle_track(int track)
 					if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"S:", &pin);
 					if (subtitle_track_found == track)
 					{
+						if (state_before != State_Stopped && !filter_stopped)
+						{
+							m_mc->Stop();
+							m_mc->GetState(INFINITE, &state);
+
+						}
+						// remove (and re-add later if needed) the subtitle renderer
+						m_gb->RemoveFilter(m_grenderer.m_filter);
+
+						// render new subtitle pin
 						stream_select->Enable(i, AMSTREAMSELECTENABLE_ENABLE);
 						m_gb->Render(pin);
 					}
@@ -2542,6 +2668,11 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	wcscpy(m_pathname, pathname);
 	actived = false;
 	m_renderer = NULL;
+
+	FILE * f = _wfopen(pathname, L"rb");
+	if (!f)
+		return;
+	fclose(f);
 
 	const wchar_t *p_3 = pathname + wcslen(pathname) -3;
 	if ( (p_3[0] == L's' || p_3[0] == L'S') &&

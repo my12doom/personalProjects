@@ -128,11 +128,15 @@ m_right_queue(_T("right queue"))
 	// D3D && NV3D
 	m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
 	m_nv3d_enabled = false;
+	m_nv3d_actived = false;
 	NvAPI_Status res = NvAPI_Initialize();
-	NvU8 enabled3d;
-	res = NvAPI_Stereo_IsEnabled(&enabled3d);
-	if (res == NVAPI_OK)
-		m_nv3d_enabled = (bool)enabled3d;
+	if (NVAPI_OK == res)
+	{
+		NvU8 enabled3d;
+		res = NvAPI_Stereo_IsEnabled(&enabled3d);
+		if (res == NVAPI_OK)
+			m_nv3d_enabled = (bool)enabled3d;
+	}
 
 	// ui & bitmap
 	m_showui = false;
@@ -542,16 +546,19 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		m_new_pp = m_active_pp;
 
 		// NV3D acitivation check
-		StereoHandle h3d;
-		NvAPI_Status res;
-		res = NvAPI_Stereo_CreateHandleFromIUnknown(m_Device, &h3d);
-		res = NvAPI_Stereo_Activate(h3d);
+		if (m_nv3d_enabled)
+		{
+			StereoHandle h3d;
+			NvAPI_Status res;
+			res = NvAPI_Stereo_CreateHandleFromIUnknown(m_Device, &h3d);
+			res = NvAPI_Stereo_Activate(h3d);
 
-		if (res == NVAPI_OK)
-			m_nv3d_actived = true;
+			if (res == NVAPI_OK)
+				m_nv3d_actived = true;
 
-		res = NvAPI_Stereo_SetNotificationMessage(h3d, (NvU64)m_hWnd, WM_NV_NOTIFY);
-		res = NvAPI_Stereo_DestroyHandle(h3d);
+			res = NvAPI_Stereo_SetNotificationMessage(h3d, (NvU64)m_hWnd, WM_NV_NOTIFY);
+			res = NvAPI_Stereo_DestroyHandle(h3d);
+		}
 
 		FAIL_SLEEP_RET(restore_objects());
 		m_device_state = fine;
