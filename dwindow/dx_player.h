@@ -129,6 +129,7 @@ protected:
 	HRESULT enable_subtitle_track(int track);
 	HRESULT list_audio_track(HMENU submenu);
 	HRESULT list_subtitle_track(HMENU submenu);
+	HRESULT debug_list_filters();
 	HRESULT toggle_fullscreen();
 
 	// filter callback function

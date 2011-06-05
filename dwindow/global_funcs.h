@@ -54,6 +54,13 @@ HRESULT make_xvid_support_mp4v();
 // CoreMVC
 HRESULT ActiveCoreMVC(IBaseFilter *decoder);
 HRESULT beforeCreateCoreMVC();
+HRESULT afterCreateCoreMVC();
+class coremvc_hooker
+{
+public:
+	coremvc_hooker();
+	~coremvc_hooker();
+};
 
 
 // Settings loader & saver

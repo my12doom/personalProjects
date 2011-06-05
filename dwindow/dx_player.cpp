@@ -118,8 +118,8 @@ m_input_layout(L"InputLayout", input_layout_auto),
 m_output_mode(L"OutputMode", anaglyph),
 m_mask_mode(L"MaskMode", row_interlace),
 m_display_subtitle(L"DisplaySubtitle", true),
-m_anaglygh_left_color(L"AnaglyghLeftColor", 0x00ff0000),
-m_anaglygh_right_color(L"AnaglyghRightColor", 0x0000ffff),
+m_anaglygh_left_color(L"AnaglyghLeftColor", RGB(255,0,0)),
+m_anaglygh_right_color(L"AnaglyghRightColor", RGB(0,255,255)),
 m_volume(L"Volume", 1.0)
 {
 	// Enable away mode and prevent the sleep idle time-out.
@@ -1041,7 +1041,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		}
 	}
 
-	else if (uid == ID_PLAY)
+	else if (uid == ID_PLAY) 
 	{
 		pause();
 	}
@@ -1455,18 +1455,23 @@ HRESULT dx_player::draw_ui()
 HRESULT dx_player::start_loading()
 {
 	m_loading = true;
+
+	unsigned char passkey_big_decrypted[128];
+	RSA_dwindow_public(g_passkey_big, passkey_big_decrypted);
+
+	m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
+	m_renderer1->m_codec.set_key((unsigned char*)passkey_big_decrypted+64, 256);
+	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
+	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
+
 	return S_OK;
 }
 
 HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname)
 {
-	HRESULT hr = load_subtitle(pathname, false);
-	if (SUCCEEDED(hr))
-		return S_OK;
-
 	reset();
 	start_loading();
-	hr = load_file(pathname);
+	HRESULT hr = load_file(pathname);
 	if (FAILED(hr))
 		goto fail;
 	hr = end_loading();
@@ -1485,6 +1490,10 @@ HRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 {
 	if (count>0)
 	{
+
+		HRESULT hr = load_subtitle(filenames[0], false);
+		if (SUCCEEDED(hr))
+			return S_OK;
 		reset_and_loadfile(filenames[0]);
 	}
 
@@ -1541,7 +1550,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 		return E_FAIL;
 	}
 
-	hr = beforeCreateCoreMVC();
+
+	coremvc_hooker mvc_hooker;
 
 	// check private source and whether is MVC content
 	CLSID source_clsid;
@@ -1631,14 +1641,18 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 							hr = m_gb->AddFilter(coremvc, L"CoreMVC");
 
 							FILTER_INFO fi;
-							coremvc->QueryFilterInfo(&fi);
+							fi.pGraph = NULL;
+							if (coremvc) coremvc->QueryFilterInfo(&fi);
 							if (fi.pGraph)
 								fi.pGraph->Release();
 							else
 								log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
 
 							log_line(L"CoreMVC hr = 0x%08x", hr);
+							log_line(L"renderering video pin #%d", video_num);
+							//debug_list_filters();
 							hr = m_gb->Render(pin);
+							log_line(L"done renderering video pin #%d", video_num);
 						}
 						video_num ++;
 					}
@@ -1651,6 +1665,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 							CComPtr<IBaseFilter> lav_audio;
 							hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
 							hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
+							log_line(L"renderering audio pin #%d", audio_num);
 							m_gb->Render(pin);
 						}
 						audio_num ++;
@@ -1674,7 +1689,10 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 			hr = m_gb->RenderFile(file_to_play, NULL);
 		}
 		else
+		{
+			log_line(L"private filter OK");
 			hr = S_OK;
+		}
 	}
 
 
@@ -1697,7 +1715,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 		hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
 
 		FILTER_INFO fi;
-		coremvc->QueryFilterInfo(&fi);
+		fi.pGraph = NULL;
+		if (coremvc) coremvc->QueryFilterInfo(&fi);
 		if (fi.pGraph)
 			fi.pGraph->Release();
 		else
@@ -1773,173 +1792,7 @@ HRESULT dx_player::end_loading()
 
 	RemoveUselessFilters(m_gb);
 
-
-	// enum video renderers
-	CComPtr<IEnumFilters> pEnum;
-	CComPtr<IBaseFilter> filter;
-	HRESULT hr = m_gb->EnumFilters(&pEnum);
-
-	while(pEnum->Next(1, &filter, NULL) == S_OK)
-	{
-		FILTER_INFO filter_info;
-		filter->QueryFilterInfo(&filter_info);
-		if (filter_info.pGraph) filter_info.pGraph->Release();
-		if ( wcsstr(filter_info.achName, L"Video Renderer") )
-			num_renderer_found ++;
-
-		filter = NULL;
-	}
-	pEnum = NULL;
-
-	if (num_renderer_found < 1)
-	{
-		log_line(L"no video stream found.");
-		return VFW_E_INVALID_MEDIA_TYPE;
-	}
-
-	if (num_renderer_found > 2)
-	{
-		log_line(L"too many video stream (%d video streams found).", num_renderer_found);
-		return VFW_E_INVALID_MEDIA_TYPE;
-	}
-
-	else
-	{
-		log_line(L"%d video streams found.", num_renderer_found);
-	}
-
-	CComPtr<IPin> output;
-
-	unsigned char passkey_big_decrypted[128];
-	RSA_dwindow_public(g_passkey_big, passkey_big_decrypted);
-
-	m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
-	m_renderer1->m_codec.set_key((unsigned char*)passkey_big_decrypted+64, 256);
-	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
-	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
-
-	if (num_renderer_found == 1)
-	{
-		// find the only renderer and replace it
-		bool hsbs_tested = false;
-		pEnum = NULL;
-		CComPtr<IBaseFilter> renderer;
-		hr = m_gb->EnumFilters(&pEnum);
-		ULONG fetched = 0;
-		while(pEnum->Next(1, &renderer, &fetched) == S_OK)
-		{
-			FILTER_INFO filter_info;
-			renderer->QueryFilterInfo(&filter_info);
-			if (filter_info.pGraph) filter_info.pGraph->Release();
-			if ( wcsstr(filter_info.achName, L"Video Renderer") )
-			{
-				CComPtr<IPin> video_renderer_input;
-				GetConnectedPin(renderer, PINDIR_INPUT, &video_renderer_input);
-				video_renderer_input->ConnectedTo(&output);
-				m_gb->RemoveFilter(renderer);
-
-				// avisynth support
-				// remove "AVI Decompressor" and "Color Space Converter"
-	avisynth:
-				PIN_INFO pin_info;
-				output->QueryPinInfo(&pin_info);
-				FILTER_INFO filter_info;
-				pin_info.pFilter->QueryFilterInfo(&filter_info);
-				if (wcsstr(filter_info.achName, L"AVI Decompressor") || wcsstr(filter_info.achName, L"Color Space Converter"))
-				{
-					CComPtr<IPin> avi_de_input;
-					GetConnectedPin(pin_info.pFilter, PINDIR_INPUT, &avi_de_input);
-					output = NULL;
-					avi_de_input->ConnectedTo(&output);
-					m_gb->RemoveFilter(pin_info.pFilter);
-
-					filter_info.pGraph->Release();
-					pin_info.pFilter->Release();
-
-					wprintf(L"%s removed.\n", filter_info.achName);
-					goto avisynth;
-				}
-				filter_info.pGraph->Release();
-				pin_info.pFilter->Release();
-
-				break;
-			}
-			renderer = NULL;
-		}
-
-		CComPtr<IPin> renderer_in;
-		GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer_in);
-		m_gb->ConnectDirect(output, renderer_in, NULL);
-	}
-	
-	else if (num_renderer_found == 2)
-	{
-		// find renderers and replace it
-		CComPtr<IEnumFilters> pEnum;
-		CComPtr<IBaseFilter> renderer;
-restart:
-		renderer = NULL;
-		pEnum = NULL;
-		HRESULT hr = m_gb->EnumFilters(&pEnum);
-		ULONG fetched = 0;
-		while(pEnum->Next(1, &renderer, &fetched) == S_OK)
-		{
-			FILTER_INFO filter_info;
-			renderer->QueryFilterInfo(&filter_info);
-			if (filter_info.pGraph) filter_info.pGraph->Release();
-			if ( wcsstr(filter_info.achName, L"Video Renderer") )
-			{
-				if (wcsstr(filter_info.achName, L"00") && !m_renderer1->is_connected(0))			// if this is the second renderer, then we skip it for first time..
-				{
-					renderer = NULL;
-					continue;
-				}
-
-				CComPtr<IPin> renderer_input;
-				CComPtr<IPin> decoder_output;
-				GetConnectedPin(renderer, PINDIR_INPUT, &renderer_input);
-				renderer_input->ConnectedTo(&decoder_output);							//TODO: possible fail
-				m_gb->RemoveFilter(renderer);
-
-				// avisynth support
-avisynth2:
-				PIN_INFO pin_info;
-				decoder_output->QueryPinInfo(&pin_info);
-				FILTER_INFO filter_info;
-				pin_info.pFilter->QueryFilterInfo(&filter_info);
-				if (wcsstr(filter_info.achName, L"AVI Decompressor") || wcsstr(filter_info.achName, L"Color Space Converter"))
-				{
-					CComPtr<IPin> avi_de_input;
-					GetConnectedPin(pin_info.pFilter, PINDIR_INPUT, &avi_de_input);
-					decoder_output = NULL;
-					avi_de_input->ConnectedTo(&decoder_output);
-					m_gb->RemoveFilter(pin_info.pFilter);
-
-					filter_info.pGraph->Release();
-					pin_info.pFilter->Release();
-
-					wprintf(L"%s removed.\n", filter_info.achName);
-					goto avisynth2;
-				}
-				filter_info.pGraph->Release();
-				pin_info.pFilter->Release();
-
-
-				CComPtr<IPin> renderer_in;
-				renderer_in = NULL;
-				if (FAILED(GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer_in)))
-					GetUnconnectedPin(m_renderer1->m_dshow_renderer2, PINDIR_INPUT, &renderer_in);
-				hr = m_gb->ConnectDirect(decoder_output, renderer_in, NULL);
-
-				goto restart;
-			}
-			renderer = NULL;
-		}
-
-	}
-	pEnum = NULL;
-
-	// connect renderer
+	// config renderer
 	m_renderer1->set_output_mode(m_output_mode);
 	m_renderer1->set_input_layout(m_input_layout);
 	m_renderer1->set_mask_mode(m_mask_mode);
@@ -1947,11 +1800,19 @@ avisynth2:
 	m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
 	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
 
+	debug_list_filters();
 
+
+	m_loading = false;
+	return S_OK;
+}
+
+HRESULT dx_player::debug_list_filters()
+{
 	// debug: list filters
 	log_line(L"Listing filters.");
-	pEnum = NULL;
-	filter = NULL;
+	CComPtr<IEnumFilters> pEnum;
+	CComPtr<IBaseFilter> filter;
 	m_gb->EnumFilters(&pEnum);
 	while(pEnum->Next(1, &filter, NULL) == S_OK)
 	{
@@ -2001,7 +1862,6 @@ avisynth2:
 	}
 	log_line(L"");
 
-	m_loading = false;
 	return S_OK;
 }
 
@@ -2088,7 +1948,7 @@ HRESULT dx_player::select_font(bool show_dlg)
 	lf.lfCharSet = GB2312_CHARSET;
 	lf.lfOutPrecision =  OUT_STROKE_PRECIS;
 	lf.lfClipPrecision = CLIP_STROKE_PRECIS;
-	lf.lfQuality = DRAFT_QUALITY;
+	lf.lfQuality = DEFAULT_QUALITY;
 	lf.lfPitchAndFamily = VARIABLE_PITCH;
 
 	// Initialize members of the CHOOSEFONT structure. 
@@ -2328,7 +2188,6 @@ HRESULT dx_player::enable_subtitle_track(int track)
 
 	if (track >= m_external_subtitles.GetCount())
 	{
-		m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
 
 		// find splitter, which supports IFileSourceFilter, if it is AsyncReader, use its downstream
 		m_gb->EnumFilters(&ef);
@@ -2387,6 +2246,7 @@ HRESULT dx_player::enable_subtitle_track(int track)
 						}
 						// remove (and re-add later if needed) the subtitle renderer
 						m_gb->RemoveFilter(m_grenderer.m_filter);
+						m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
 
 						// render new subtitle pin
 						m_gb->Render(pin);
@@ -2426,6 +2286,7 @@ HRESULT dx_player::enable_subtitle_track(int track)
 						}
 						// remove (and re-add later if needed) the subtitle renderer
 						m_gb->RemoveFilter(m_grenderer.m_filter);
+						m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
 
 						// render new subtitle pin
 						stream_select->Enable(i, AMSTREAMSELECTENABLE_ENABLE);

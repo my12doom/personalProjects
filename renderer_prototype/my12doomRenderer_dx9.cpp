@@ -524,6 +524,8 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 		UINT AdapterToUse=D3DADAPTER_DEFAULT;
 		D3DDEVTYPE DeviceType=D3DDEVTYPE_HAL;
+
+#ifdef PERFHUD
 		for (UINT Adapter=0;Adapter<m_D3D->GetAdapterCount();Adapter++)
 		{ 
 			D3DADAPTER_IDENTIFIER9  Identifier; 
@@ -537,6 +539,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 				break; 
 			}
 		}
+#endif
 		HRESULT hr = m_D3D->CreateDevice( AdapterToUse, DeviceType,
 			m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
 			&m_active_pp, &m_Device );
@@ -764,7 +767,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	hr = m_Device->BeginScene();
 	hr = m_Device->SetPixelShader(NULL);
 	CComPtr<IDirect3DSurface9> left_surface;
-	CComPtr<IDirect3DSurface9> right_surface;
+	CComPtr<IDirect3DSurface9> right_surface;	
 	hr = m_tex_rgb_left->GetSurfaceLevel(0, &left_surface);
 	hr = m_tex_rgb_right->GetSurfaceLevel(0, &right_surface);
 
@@ -1338,6 +1341,8 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 	for(int i=s; i<e; i++)
 	{
 		my12doomRendererDShow * r = i == 0 ? m_dsr0 : m_dsr1;
+		if (!r->is_connected())
+			continue;
 		CAutoLock lck(&r->m_data_lock);
 		if (!forced && !r->m_data_changed)
 		{

@@ -489,6 +489,10 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Display Subtitle");
 			add_localization(L"Anaglyph Left Eye Color...");
 			add_localization(L"Anaglyph Right Eye Color...");
+
+			add_localization(L"Enter User ID");
+			add_localization(L"This program will exit now, Restart it to use new user id.");
+			add_localization(L"Exiting");
 		}
 		break;
 	case CHINESE:
@@ -535,15 +539,20 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Font...",				L"字体...");
 			add_localization(L"Color...",				L"颜色...");
 			add_localization(L" (No Disc)",				L" (无光盘)");
-			add_localization(L" (No Movie Disc)",		L" (无电影光盘)");
+			add_localization(L" (No Movie Disc)",		L" (非电影光盘)");
 			add_localization(L"Select Folder..",		L"选择文件夹..");
 			add_localization(L"Open File",				L"打开文件");
 			add_localization(L"Language",				L"语言");
-			add_localization(L"Feature under development",				L"尚未完成的功能");
+			add_localization(L"Feature under development",L"尚未完成的功能");
 			add_localization(L"Open Failed",			L"打开失败");
 			add_localization(L"Display Subtitle",		L"显示字幕");
 			add_localization(L"Anaglyph Left Eye Color...",L"左眼镜颜色...");
 			add_localization(L"Anaglyph Right Eye Color...",L"右眼镜颜色...");
+
+			add_localization(L"Enter User ID",			L"输入用户号");
+			add_localization(L"This program will exit now, Restart it to use new user id.",	L"现在程序将自动退出，新用户号在下次启动后生效");
+			add_localization(L"Exiting",				L"正在退出");
+
 		}
 		break;
 	}
@@ -603,6 +612,34 @@ HRESULT beforeCreateCoreMVC()
 	}
 
 	return S_OK;
+}
+
+HRESULT afterCreateCoreMVC()
+{
+	if (coremvc_hooked)
+	{
+		// apihook
+		DetourRestoreAfterWith();
+		DetourTransactionBegin();
+
+		int id = GetCurrentThreadId();
+		DetourUpdateThread(GetCurrentThread());
+		DetourDetach(&(PVOID&)TrueGetModuleFileNameA, MineGetModuleFileNameA);
+		LONG error = DetourTransactionCommit();
+		coremvc_hooked = false;
+	}
+
+	return S_OK;
+}
+
+coremvc_hooker::coremvc_hooker()
+{
+	beforeCreateCoreMVC();
+}
+
+coremvc_hooker::~coremvc_hooker()
+{
+	afterCreateCoreMVC();
 }
 
 HRESULT ActiveCoreMVC(IBaseFilter *decoder)
