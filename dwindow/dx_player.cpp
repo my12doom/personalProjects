@@ -305,6 +305,7 @@ HRESULT dx_player::seek(int time)
 	m_ms->GetPositions(&target, NULL);
 
 	printf("seeked to %I64d\n", target);
+	m_lastCBtime = (REFERENCE_TIME)time * 10000;
 	draw_subtitle();
 	return hr;
 }
@@ -405,6 +406,23 @@ LRESULT dx_player::on_key_down(int id, int key)
 
 	case VK_SPACE:
 		pause();
+		break;
+
+	case VK_LEFT:
+		{
+			int t;
+			tell(&t);
+			seek(max(0, t-5000));
+		}
+		break;
+
+	case VK_RIGHT:
+		{
+			int t, mt;
+			total(&mt);
+			tell(&t);
+			seek(min(t+5000, mt));
+		}
 		break;
 
 	case VK_TAB:
@@ -1521,42 +1539,36 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname)
 		goto fail;
 	play();
 
-	// load corresponding subtitle file
-	wchar_t file_to_play[MAX_PATH];
-	GetWindowTextW(m_hwnd1, file_to_play, MAX_PATH);
-	wchar_t subtitle_file[MAX_PATH];
-	wcscpy(subtitle_file, file_to_play);
-	wcscat(subtitle_file, L".srt");
-	load_subtitle(subtitle_file, false);
-
-	wcscpy(subtitle_file, file_to_play);
-	wcscat(subtitle_file, L".sup");
-	load_subtitle(subtitle_file, false);
-
-	int i;
-	for(i=wcslen(file_to_play); i>0; i--)
-	{
-		if (file_to_play[i] == L'.')
+	// search and load subtitles
+	wchar_t file_to_search[MAX_PATH];
+	GetWindowTextW(m_hwnd1, file_to_search, MAX_PATH);
+	for(int i=wcslen(file_to_search); i>0; i--)
+		if (file_to_search[i] == L'.')
 		{
-			file_to_play[i] = NULL;
+			file_to_search[i] = NULL;
 			break;
 		}
-	}
 
-	if (i>0)
+	wchar_t search_pattern[MAX_PATH];
+	for(int i=0; i<2; i++)
 	{
-		wcscpy(subtitle_file, file_to_play);
-		wcscat(subtitle_file, L".srt");
-		load_subtitle(subtitle_file, false);
+		wcscpy(search_pattern, file_to_search);
+		wcscat(search_pattern, i == 0 ? L"*.srt" : L"*.sup");
 
-		wcscpy(subtitle_file, file_to_play);
-		wcscat(subtitle_file, L".sup");
-		load_subtitle(subtitle_file, false);
+		WIN32_FIND_DATAW find_data;
+		HANDLE find_handle = FindFirstFileW(search_pattern, &find_data);
+
+		if (find_handle != INVALID_HANDLE_VALUE)
+		{
+			load_subtitle(find_data.cFileName, false);
+			while( FindNextFile(find_handle, &find_data ) )
+				load_subtitle(find_data.cFileName, false);
+		}
 	}
 	return hr;
 fail:
-	reset();
 	set_window_text(1, C(L"Open Failed"));
+	reset();
 	return hr;
 }
 
@@ -1564,9 +1576,8 @@ HRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 {
 	if (count>0)
 	{
-
 		HRESULT hr = load_subtitle(filenames[0], false);
-		if (SUCCEEDED(hr))
+		if (SUCCEEDED(hr) && m_file_loaded)
 			return S_OK;
 		reset_and_loadfile(filenames[0]);
 	}
@@ -1834,6 +1845,14 @@ HRESULT dx_player::end_loading()
 	int num_renderer_found = 0;
 
 	RemoveUselessFilters(m_gb);
+
+	CComPtr<IPin> renderer1_input;
+	GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer1_input);
+	if (renderer1_input)
+	{
+		log_line(L"no video stream found.");
+		return E_FAIL;
+	}
 
 	// config renderer
 	m_renderer1->set_output_mode(m_output_mode);
@@ -2195,8 +2214,10 @@ HRESULT dx_player::enable_subtitle_track(int track)
 
 	// Save Filter State
 	bool filter_stopped = false;
-	OAFilterState state_before, state;
-	m_mc->GetState(INFINITE, &state_before);
+	OAFilterState state_before = 3, state;
+	HRESULT hr = m_mc->GetState(1000, &state_before);
+	if (state_before == 3)
+		return E_FAIL;
 	CComPtr<IPin> grenderer_input_pin;
 	GetConnectedPin(m_grenderer.m_filter, PINDIR_INPUT, &grenderer_input_pin);
 
