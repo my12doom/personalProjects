@@ -365,6 +365,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\localization.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\main.cpp"
 				>
 				<FileConfiguration

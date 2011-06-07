@@ -19,5 +19,6 @@
 #include <atlbase.h>
 #include <atlcom.h>
 #include <atlctl.h>
+#include <windows.h>
 
 using namespace ATL;

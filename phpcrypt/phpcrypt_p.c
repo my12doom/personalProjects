@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0500 */
-/* at Sun May 29 13:10:33 2011
+/* at Mon Jun 06 21:34:06 2011
  */
 /* Compiler settings for .\phpcrypt.idl:
     Oicf, W1, Zp8, env=Win32 (32b run)
@@ -50,7 +50,7 @@
 #include "phpcrypt_i.h"
 
 #define TYPE_FORMAT_STRING_SIZE   61                                
-#define PROC_FORMAT_STRING_SIZE   289                               
+#define PROC_FORMAT_STRING_SIZE   481                               
 #define EXPR_FORMAT_STRING_SIZE   1                                 
 #define TRANSMIT_AS_TABLE_SIZE    0            
 #define WIRE_MARSHAL_TABLE_SIZE   1            
@@ -355,6 +355,180 @@ static const phpcrypt_MIDL_PROC_FORMAT_STRING phpcrypt__MIDL_ProcFormatString =
 /* 286 */	0x8,		/* FC_LONG */
 			0x0,		/* 0 */
 
+	/* Procedure gen_key */
+
+/* 288 */	0x33,		/* FC_AUTO_HANDLE */
+			0x6c,		/* Old Flags:  object, Oi2 */
+/* 290 */	NdrFcLong( 0x0 ),	/* 0 */
+/* 294 */	NdrFcShort( 0xe ),	/* 14 */
+/* 296 */	NdrFcShort( 0x8 ),	/* x86 Stack size/offset = 8 */
+/* 298 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 300 */	NdrFcShort( 0x8 ),	/* 8 */
+/* 302 */	0x44,		/* Oi2 Flags:  has return, has ext, */
+			0x1,		/* 1 */
+/* 304 */	0x8,		/* 8 */
+			0x1,		/* Ext Flags:  new corr desc, */
+/* 306 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 308 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 310 */	NdrFcShort( 0x0 ),	/* 0 */
+
+	/* Return value */
+
+/* 312 */	NdrFcShort( 0x70 ),	/* Flags:  out, return, base type, */
+/* 314 */	NdrFcShort( 0x4 ),	/* x86 Stack size/offset = 4 */
+/* 316 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
+	/* Procedure gen_keys */
+
+/* 318 */	0x33,		/* FC_AUTO_HANDLE */
+			0x6c,		/* Old Flags:  object, Oi2 */
+/* 320 */	NdrFcLong( 0x0 ),	/* 0 */
+/* 324 */	NdrFcShort( 0xf ),	/* 15 */
+/* 326 */	NdrFcShort( 0x20 ),	/* x86 Stack size/offset = 32 */
+/* 328 */	NdrFcShort( 0x20 ),	/* 32 */
+/* 330 */	NdrFcShort( 0x8 ),	/* 8 */
+/* 332 */	0x47,		/* Oi2 Flags:  srv must size, clt must size, has return, has ext, */
+			0x5,		/* 5 */
+/* 334 */	0x8,		/* 8 */
+			0x7,		/* Ext Flags:  new corr desc, clt corr check, srv corr check, */
+/* 336 */	NdrFcShort( 0x1 ),	/* 1 */
+/* 338 */	NdrFcShort( 0x1 ),	/* 1 */
+/* 340 */	NdrFcShort( 0x0 ),	/* 0 */
+
+	/* Parameter passkey */
+
+/* 342 */	NdrFcShort( 0x8b ),	/* Flags:  must size, must free, in, by val, */
+/* 344 */	NdrFcShort( 0x4 ),	/* x86 Stack size/offset = 4 */
+/* 346 */	NdrFcShort( 0x20 ),	/* Type Offset=32 */
+
+	/* Parameter time_start */
+
+/* 348 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
+/* 350 */	NdrFcShort( 0x8 ),	/* x86 Stack size/offset = 8 */
+/* 352 */	0xc,		/* FC_DOUBLE */
+			0x0,		/* 0 */
+
+	/* Parameter time_end */
+
+/* 354 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
+/* 356 */	NdrFcShort( 0x10 ),	/* x86 Stack size/offset = 16 */
+/* 358 */	0xc,		/* FC_DOUBLE */
+			0x0,		/* 0 */
+
+	/* Parameter out */
+
+/* 360 */	NdrFcShort( 0x2113 ),	/* Flags:  must size, must free, out, simple ref, srv alloc size=8 */
+/* 362 */	NdrFcShort( 0x18 ),	/* x86 Stack size/offset = 24 */
+/* 364 */	NdrFcShort( 0x32 ),	/* Type Offset=50 */
+
+	/* Return value */
+
+/* 366 */	NdrFcShort( 0x70 ),	/* Flags:  out, return, base type, */
+/* 368 */	NdrFcShort( 0x1c ),	/* x86 Stack size/offset = 28 */
+/* 370 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
+	/* Procedure gen_keys_int */
+
+/* 372 */	0x33,		/* FC_AUTO_HANDLE */
+			0x6c,		/* Old Flags:  object, Oi2 */
+/* 374 */	NdrFcLong( 0x0 ),	/* 0 */
+/* 378 */	NdrFcShort( 0x10 ),	/* 16 */
+/* 380 */	NdrFcShort( 0x18 ),	/* x86 Stack size/offset = 24 */
+/* 382 */	NdrFcShort( 0x10 ),	/* 16 */
+/* 384 */	NdrFcShort( 0x8 ),	/* 8 */
+/* 386 */	0x47,		/* Oi2 Flags:  srv must size, clt must size, has return, has ext, */
+			0x5,		/* 5 */
+/* 388 */	0x8,		/* 8 */
+			0x7,		/* Ext Flags:  new corr desc, clt corr check, srv corr check, */
+/* 390 */	NdrFcShort( 0x1 ),	/* 1 */
+/* 392 */	NdrFcShort( 0x1 ),	/* 1 */
+/* 394 */	NdrFcShort( 0x0 ),	/* 0 */
+
+	/* Parameter passkey */
+
+/* 396 */	NdrFcShort( 0x8b ),	/* Flags:  must size, must free, in, by val, */
+/* 398 */	NdrFcShort( 0x4 ),	/* x86 Stack size/offset = 4 */
+/* 400 */	NdrFcShort( 0x20 ),	/* Type Offset=32 */
+
+	/* Parameter time_start */
+
+/* 402 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
+/* 404 */	NdrFcShort( 0x8 ),	/* x86 Stack size/offset = 8 */
+/* 406 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
+	/* Parameter time_end */
+
+/* 408 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
+/* 410 */	NdrFcShort( 0xc ),	/* x86 Stack size/offset = 12 */
+/* 412 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
+	/* Parameter out */
+
+/* 414 */	NdrFcShort( 0x2113 ),	/* Flags:  must size, must free, out, simple ref, srv alloc size=8 */
+/* 416 */	NdrFcShort( 0x10 ),	/* x86 Stack size/offset = 16 */
+/* 418 */	NdrFcShort( 0x32 ),	/* Type Offset=50 */
+
+	/* Return value */
+
+/* 420 */	NdrFcShort( 0x70 ),	/* Flags:  out, return, base type, */
+/* 422 */	NdrFcShort( 0x14 ),	/* x86 Stack size/offset = 20 */
+/* 424 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
+	/* Procedure genkeys */
+
+/* 426 */	0x33,		/* FC_AUTO_HANDLE */
+			0x6c,		/* Old Flags:  object, Oi2 */
+/* 428 */	NdrFcLong( 0x0 ),	/* 0 */
+/* 432 */	NdrFcShort( 0x11 ),	/* 17 */
+/* 434 */	NdrFcShort( 0x18 ),	/* x86 Stack size/offset = 24 */
+/* 436 */	NdrFcShort( 0x10 ),	/* 16 */
+/* 438 */	NdrFcShort( 0x8 ),	/* 8 */
+/* 440 */	0x47,		/* Oi2 Flags:  srv must size, clt must size, has return, has ext, */
+			0x5,		/* 5 */
+/* 442 */	0x8,		/* 8 */
+			0x7,		/* Ext Flags:  new corr desc, clt corr check, srv corr check, */
+/* 444 */	NdrFcShort( 0x1 ),	/* 1 */
+/* 446 */	NdrFcShort( 0x1 ),	/* 1 */
+/* 448 */	NdrFcShort( 0x0 ),	/* 0 */
+
+	/* Parameter passkey */
+
+/* 450 */	NdrFcShort( 0x8b ),	/* Flags:  must size, must free, in, by val, */
+/* 452 */	NdrFcShort( 0x4 ),	/* x86 Stack size/offset = 4 */
+/* 454 */	NdrFcShort( 0x20 ),	/* Type Offset=32 */
+
+	/* Parameter time_start */
+
+/* 456 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
+/* 458 */	NdrFcShort( 0x8 ),	/* x86 Stack size/offset = 8 */
+/* 460 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
+	/* Parameter time_end */
+
+/* 462 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
+/* 464 */	NdrFcShort( 0xc ),	/* x86 Stack size/offset = 12 */
+/* 466 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
+	/* Parameter out */
+
+/* 468 */	NdrFcShort( 0x2113 ),	/* Flags:  must size, must free, out, simple ref, srv alloc size=8 */
+/* 470 */	NdrFcShort( 0x10 ),	/* x86 Stack size/offset = 16 */
+/* 472 */	NdrFcShort( 0x32 ),	/* Type Offset=50 */
+
+	/* Return value */
+
+/* 474 */	NdrFcShort( 0x70 ),	/* Flags:  out, return, base type, */
+/* 476 */	NdrFcShort( 0x14 ),	/* x86 Stack size/offset = 20 */
+/* 478 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
 			0x0
         }
     };
@@ -450,7 +624,11 @@ static const unsigned short Icrypt_FormatStringOffsetTable[] =
     114,
     156,
     198,
-    240
+    240,
+    288,
+    318,
+    372,
+    426
     };
 
 static const MIDL_STUBLESS_PROXY_INFO Icrypt_ProxyInfo =
@@ -474,7 +652,7 @@ static const MIDL_SERVER_INFO Icrypt_ServerInfo =
     0,
     0,
     0};
-CINTERFACE_PROXY_VTABLE(14) _IcryptProxyVtbl = 
+CINTERFACE_PROXY_VTABLE(18) _IcryptProxyVtbl = 
 {
     &Icrypt_ProxyInfo,
     &IID_Icrypt,
@@ -491,7 +669,11 @@ CINTERFACE_PROXY_VTABLE(14) _IcryptProxyVtbl =
     (void *) (INT_PTR) -1 /* Icrypt::get_hash */ ,
     (void *) (INT_PTR) -1 /* Icrypt::get_key */ ,
     (void *) (INT_PTR) -1 /* Icrypt::decode_message */ ,
-    (void *) (INT_PTR) -1 /* Icrypt::AES */
+    (void *) (INT_PTR) -1 /* Icrypt::AES */ ,
+    (void *) (INT_PTR) -1 /* Icrypt::gen_key */ ,
+    (void *) (INT_PTR) -1 /* Icrypt::gen_keys */ ,
+    (void *) (INT_PTR) -1 /* Icrypt::gen_keys_int */ ,
+    (void *) (INT_PTR) -1 /* Icrypt::genkeys */
 };
 
 
@@ -507,6 +689,10 @@ static const PRPC_STUB_FUNCTION Icrypt_table[] =
     NdrStubCall2,
     NdrStubCall2,
     NdrStubCall2,
+    NdrStubCall2,
+    NdrStubCall2,
+    NdrStubCall2,
+    NdrStubCall2,
     NdrStubCall2
 };
 
@@ -514,7 +700,7 @@ CInterfaceStubVtbl _IcryptStubVtbl =
 {
     &IID_Icrypt,
     &Icrypt_ServerInfo,
-    14,
+    18,
     &Icrypt_table[-3],
     CStdStubBuffer_DELEGATING_METHODS
 };

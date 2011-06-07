@@ -622,5 +622,3 @@ int RSA(DWORD out[], const DWORD in[], const DWORD private_key_or_e[], const DWO
 	BigNumberFree(&y);
 	return 0;
 }
-
-

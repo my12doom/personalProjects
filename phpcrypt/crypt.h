@@ -13,6 +13,7 @@
 
 
 // Ccrypt
+#include "..\libchecksum\libchecksum.h"
 
 class ATL_NO_VTABLE Ccrypt :
 	public CComObjectRootEx<CComSingleThreadModel>,
@@ -54,6 +55,12 @@ public:
 	STDMETHOD(get_key)(BSTR input, BSTR* ret);
 	STDMETHOD(decode_message)(BSTR input, BSTR* ret);
 	STDMETHOD(AES)(BSTR data, BSTR key, BSTR* ret);
+protected:
+public:
+	STDMETHOD(gen_key)(void);
+	STDMETHOD(gen_keys)(BSTR passkey, DATE time_start, DATE time_end, BSTR* out);
+	STDMETHOD(gen_keys_int)(BSTR passkey, ULONG time_start, ULONG time_end, BSTR* out);
+	STDMETHOD(genkeys)(BSTR passkey, LONG time_start, LONG time_end, BSTR* out);
 };
 
 OBJECT_ENTRY_AUTO(__uuidof(crypt), Ccrypt)

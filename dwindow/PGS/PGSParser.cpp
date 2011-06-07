@@ -236,6 +236,12 @@ HRESULT PGSParser::parsePalette(BYTE *data, int size)
 	BYTE *tmp = data+2;
 	for(int i=0; i<n_colors; i++)
 	{
+		if (tmp[0] >= 256 || n_colors >= 256)
+		{
+			printf("bad palette.\n");
+			return E_FAIL;
+		}
+
 		m_current_subtitle.palette[tmp[0]] = YUV2RGB(tmp[1], tmp[2], tmp[3], tmp[4]);
 		tmp += 5;
 	}
@@ -248,20 +254,33 @@ HRESULT PGSParser::parseObject(BYTE *data, int size)
 	if (!m_has_seg)
 		return S_OK;
 
-	WORD object_id = readWORD(data);
-	BYTE version_number = data[2];
 	BYTE seq_desc = data[3];
-	BYTE n_data_size[3];
-	m_current_subtitle.width = readWORD(data+7);
-	m_current_subtitle.height = readWORD(data+9);
-	m_current_subtitle.left = m_current_subtitle.window_left + (m_current_subtitle.window_width - m_current_subtitle.width)/2;
-	m_current_subtitle.top = m_current_subtitle.window_top + (m_current_subtitle.window_height - m_current_subtitle.height)/2;
+	DWORD n_data_size;
+	n_data_size = data[4] + readWORD(data+5);
+	if (m_current_subtitle.rle_size == 0)
+	{
+		WORD object_id = readWORD(data);
+		BYTE version_number = data[2];
+		BYTE seq_desc = data[3];
+		BYTE n_data_size[3];
+		m_current_subtitle.width = readWORD(data+7);
+		m_current_subtitle.height = readWORD(data+9);
+		m_current_subtitle.left = m_current_subtitle.window_left + (m_current_subtitle.window_width - m_current_subtitle.width)/2;
+		m_current_subtitle.top = m_current_subtitle.window_top + (m_current_subtitle.window_height - m_current_subtitle.height)/2;
 
-	// copy to rle buffer;
-	m_current_subtitle.rle_size = size-11;
-	m_current_subtitle.rle = (BYTE*) malloc(size-11);
-	memcpy(m_current_subtitle.rle, data+11, size-11);
-
+		// copy to rle buffer;
+		m_current_subtitle.rle_size = size-11;
+		m_current_subtitle.rle = (BYTE*) malloc(size-11);
+		memcpy(m_current_subtitle.rle, data+11, size-11);
+	}
+	else
+	{
+		// append to rle buffer;
+		int last_size = m_current_subtitle.rle_size;
+		m_current_subtitle.rle_size += size-4;
+		m_current_subtitle.rle = (BYTE*) realloc(m_current_subtitle.rle, m_current_subtitle.rle_size);
+		memcpy(m_current_subtitle.rle + last_size, data+4, size-4);
+	}
 	return S_OK;
 }
 

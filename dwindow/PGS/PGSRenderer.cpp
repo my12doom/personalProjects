@@ -4,6 +4,7 @@
 PGSRenderer::PGSRenderer()
 {
 	m_seg_buffer = (BYTE*) malloc(655360);
+	m_seg_buffer_pos = 0;
 	m_last_found = -1;
 }
 
@@ -31,6 +32,11 @@ HRESULT PGSRenderer::load_file(wchar_t *filename)
 HRESULT PGSRenderer::add_data(BYTE *data, int size, int start, int end)
 {
 	HRESULT hr = S_OK;
+
+	if (size + m_seg_buffer_pos >= 655360)
+	{
+		printf("buffer overrun!.\n");
+	}
 
 	// pack together
 	memcpy(m_seg_buffer+m_seg_buffer_pos, data, size);

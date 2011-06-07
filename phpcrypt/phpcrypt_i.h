@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0500 */
-/* at Sun May 29 13:10:33 2011
+/* at Mon Jun 06 21:34:06 2011
  */
 /* Compiler settings for .\phpcrypt.idl:
     Oicf, W1, Zp8, env=Win32 (32b run)
@@ -114,6 +114,26 @@ EXTERN_C const IID IID_Icrypt;
             BSTR key,
             /* [retval][out] */ BSTR *ret) = 0;
         
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE gen_key( void) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE gen_keys( 
+            BSTR passkey,
+            DATE time_start,
+            DATE time_end,
+            /* [retval][out] */ BSTR *out) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE gen_keys_int( 
+            BSTR passkey,
+            ULONG time_start,
+            ULONG time_end,
+            /* [retval][out] */ BSTR *out) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE genkeys( 
+            BSTR passkey,
+            LONG time_start,
+            LONG time_end,
+            /* [retval][out] */ BSTR *out) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -197,6 +217,30 @@ EXTERN_C const IID IID_Icrypt;
             BSTR key,
             /* [retval][out] */ BSTR *ret);
         
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *gen_key )( 
+            Icrypt * This);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *gen_keys )( 
+            Icrypt * This,
+            BSTR passkey,
+            DATE time_start,
+            DATE time_end,
+            /* [retval][out] */ BSTR *out);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *gen_keys_int )( 
+            Icrypt * This,
+            BSTR passkey,
+            ULONG time_start,
+            ULONG time_end,
+            /* [retval][out] */ BSTR *out);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *genkeys )( 
+            Icrypt * This,
+            BSTR passkey,
+            LONG time_start,
+            LONG time_end,
+            /* [retval][out] */ BSTR *out);
+        
         END_INTERFACE
     } IcryptVtbl;
 
@@ -253,6 +297,18 @@ EXTERN_C const IID IID_Icrypt;
 
 #define Icrypt_AES(This,data,key,ret)	\
     ( (This)->lpVtbl -> AES(This,data,key,ret) ) 
+
+#define Icrypt_gen_key(This)	\
+    ( (This)->lpVtbl -> gen_key(This) ) 
+
+#define Icrypt_gen_keys(This,passkey,time_start,time_end,out)	\
+    ( (This)->lpVtbl -> gen_keys(This,passkey,time_start,time_end,out) ) 
+
+#define Icrypt_gen_keys_int(This,passkey,time_start,time_end,out)	\
+    ( (This)->lpVtbl -> gen_keys_int(This,passkey,time_start,time_end,out) ) 
+
+#define Icrypt_genkeys(This,passkey,time_start,time_end,out)	\
+    ( (This)->lpVtbl -> genkeys(This,passkey,time_start,time_end,out) ) 
 
 #endif /* COBJMACROS */
 

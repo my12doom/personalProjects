@@ -3,6 +3,7 @@
 #include "libchecksum.h"
 
 unsigned int dwindow_n[32] = {0x5cc5db57, 0x881651da, 0x7981477c, 0xa65785e0, 0x5fe54c72, 0x5247aeff, 0xd2b635f7, 0x24781e90, 0x3d4e298e, 0x92f1bb41, 0x90494ef2, 0x2f0f6eeb, 0xb151c299, 0x6641acf9, 0x8a0681de, 0x9dd53c21, 0x623631ca, 0x906c24ff, 0x14980fce, 0xbbd5419f, 0x1ef0366c, 0xb759416a, 0x1a214b0f, 0x070c6972, 0x382d1969, 0xb9a02637, 0xeadffc31, 0xcd13093a, 0xfd273caf, 0xd2140f85, 0x2800ba50, 0x877d04f0};
+DWORD dwindow_network_n[32] = {0x0429c977, 0xb16e4217, 0x91009d67, 0x984ede2a, 0xb9c4d087, 0x8b7067a4, 0x8ef2ec12, 0x40b89949, 0x5688ead8, 0xa6133eeb, 0x8ef6eb10, 0x0cff6754, 0xfdb87672, 0x6abe98b0, 0x7659b09c, 0xdb9ce7bf, 0x69cf481a, 0xccf1eef7, 0xf1502363, 0x2d0a6b98, 0x40e16c81, 0xce6e58da, 0xe4cd380a, 0x381fe321, 0x143d1e8d, 0xffe014c3, 0x8f36fec1, 0xb3fc8ff3, 0x7a4c3eff, 0xe990f2eb, 0xff356d87, 0x70cd2187};
 
 LONGLONG FileSize(const wchar_t *filename);
 BOOL my_setfilepointer(HANDLE file, LONGLONG target);
@@ -220,6 +221,17 @@ HRESULT RSA_dwindow_public(const void *input, void *output)
 	DWORD e[32];
 	BigNumberSetEqualdw(e, 65537, 32);
 	RSA(o, (DWORD*)input, e, (DWORD*)dwindow_n, 32);
+	memcpy(output, o, 128);
+
+	return S_OK;
+}
+
+HRESULT RSA_dwindow_network_public(const void *input, void *output)
+{
+	DWORD o[32];
+	DWORD e[32];
+	BigNumberSetEqualdw(e, 65537, 32);
+	RSA(o, (DWORD*)input, e, (DWORD*)dwindow_network_n, 32);
 	memcpy(output, o, 128);
 
 	return S_OK;

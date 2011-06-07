@@ -23,6 +23,10 @@ interface Icrypt : IDispatch{
 	[id(5), helpstring("方法get_key")] HRESULT get_key([in] BSTR input, [out,retval] BSTR* ret);
 	[id(6), helpstring("方法decode_message")] HRESULT decode_message([in] BSTR input, [out,retval] BSTR* ret);
 	[id(7), helpstring("方法AES")] HRESULT AES(BSTR data, BSTR key, [out,retval] BSTR* ret);
+	[id(8), helpstring("方法gen_key")] HRESULT gen_key(void);
+	[id(9), helpstring("方法gen_keys")] HRESULT gen_keys(BSTR passkey, DATE time_start, DATE time_end, [out,retval] BSTR* out);
+	[id(10), helpstring("方法gen_keys_int")] HRESULT gen_keys_int(BSTR passkey, ULONG time_start, ULONG time_end, [out,retval] BSTR* out);
+	[id(11), helpstring("方法genkeys")] HRESULT genkeys(BSTR passkey, LONG time_start, LONG time_end, [out,retval] BSTR* out);
 };
 [
 	uuid(D49AC205-730C-4F01-A52A-B49F9F4621B4),

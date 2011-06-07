@@ -93,7 +93,7 @@ int on_command(HWND hWnd, int uid)
 		char new_key[256];
 		for(int i=0; i<128; i++)
 			swscanf(str_key+i*2, L"%02X", new_key+i);
-		memcpy(g_passkey_big, new_key, 128);
+		memcpy(&g_passkey_big, new_key, 128);
 		save_passkey();
 
 		MessageBoxW(hWnd, C(L"This program will exit now, Restart it to use new user id."), C(L"Exiting"), MB_ICONINFORMATION);

@@ -47,6 +47,7 @@ Section "DWindow(required)"
   
   ; Put file there
   File "dwindow.exe"
+  File "xvidcore.dll"
   File "dwindow.ini"
   File "detoured.dll"
   SetOutPath $INSTDIR\codec
@@ -100,9 +101,11 @@ Section "Uninstall"
   Delete $INSTDIR\launcher.exe
   Delete $INSTDIR\regsvr.exe
   Delete $INSTDIR\uninstall.exe
+  Delete $INSTDIR\xvidcore.dll
 
   ; Remove shortcuts, if any
   Delete "$SMPROGRAMS\DWindow\*.*"
+  Delete "$DESKTOP\DWindow.lnk"
 
   ; Remove directories used
   RMDir "$SMPROGRAMS\DWindow"

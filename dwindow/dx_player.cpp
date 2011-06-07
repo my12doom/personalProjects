@@ -588,10 +588,18 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR,		m_output_mode == dual_window ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_SBS,	m_output_mode == out_sbs ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_TB,		m_output_mode == out_tb ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_GERNERAL120HZGLASSES,	m_output_mode == pageflipping ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				m_output_mode == out_hsbs ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
+
+		if (m_output_mode == anaglyph)
+		{
+			if (m_anaglygh_left_color == RGB(255, 0, 0) && m_anaglygh_right_color == RGB(0, 255, 255))
+				CheckMenuItem(menu, ID_ANAGLYPH_REDCYAN, MF_CHECKED);
+			else
+				CheckMenuItem(menu, ID_ANAGLYPH_CUSTOMCOLOR, MF_CHECKED);
+
+		}
 
 
 		// subtitle menu
@@ -958,12 +966,6 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		if (m_renderer1)
 			m_renderer1->set_output_mode(m_output_mode);			
 	}
-	else if (uid == ID_OUTPUTMODE_ANAGLYPH)
-	{
-		m_output_mode = anaglyph;
-		if (m_renderer1)
-			m_renderer1->set_output_mode(m_output_mode);			
-	}
 	else if (uid == ID_OUTPUTMODE_GERNERAL120HZGLASSES)
 	{
 		m_output_mode = pageflipping;
@@ -971,24 +973,63 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			m_renderer1->set_output_mode(m_output_mode);			
 	}
 
-	// anaglygh color
+	// anaglygh
+	else if (uid == ID_ANAGLYPH_REDCYAN)
+	{
+		m_anaglygh_left_color = RGB(255,0,0);
+		m_anaglygh_right_color = RGB(0,255,255);
+		m_output_mode = anaglyph;
+		if (m_renderer1)
+		{
+			m_renderer1->set_output_mode(m_output_mode);
+			m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
+			m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
+		}
+
+	}
+	else if (uid == ID_ANAGLYPH_CUSTOMCOLOR)
+	{
+		m_output_mode = anaglyph;
+		if (m_renderer1)
+		{
+			m_renderer1->set_output_mode(m_output_mode);
+			m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
+			m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
+		}
+	}
+
+
 	else if (uid == ID_OUTPUTMODE_ANAGLYPHCOLOR)
 	{
 		DWORD tmp = m_anaglygh_left_color;
 		if (select_color(&tmp, id_to_hwnd(id)))
+		{
 			m_anaglygh_left_color = tmp;
 
-		// reverse byte order
-		if (m_renderer1)
-			m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
+			m_output_mode = anaglyph;
+
+			if (m_renderer1)
+			{
+				m_renderer1->set_output_mode(m_output_mode);
+				m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
+			}
+		}
 	}
 	else if (uid == ID_OUTPUTMODE_ANAGLYPHCOLORRIGHTEYE)
 	{
 		DWORD tmp = m_anaglygh_right_color;
 		if (select_color(&tmp, id_to_hwnd(id)))
+		{
 			m_anaglygh_right_color = tmp;
-		if (m_renderer1)
-			m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
+
+			m_output_mode = anaglyph;
+
+			if (m_renderer1)
+			{
+				m_renderer1->set_output_mode(m_output_mode);
+				m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
+			}
+		}
 	}
 
 	else if (uid == ID_SUBTITLE_LOADFILE)
@@ -1048,7 +1089,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 	else if (uid == ID_FULLSCREEN)
 	{
-		on_double_click(id, 0, 0, 0);	// should only trigger fullscreen
+		toggle_fullscreen();
 	}
 	else if (uid == ID_EXIT)
 	{
@@ -1457,10 +1498,11 @@ HRESULT dx_player::start_loading()
 	m_loading = true;
 
 	unsigned char passkey_big_decrypted[128];
-	RSA_dwindow_public(g_passkey_big, passkey_big_decrypted);
+	RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
 
 	m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
 	m_renderer1->m_codec.set_key((unsigned char*)passkey_big_decrypted+64, 256);
+	memset(passkey_big_decrypted, 0, 128);
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
 
@@ -1479,6 +1521,38 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname)
 		goto fail;
 	play();
 
+	// load corresponding subtitle file
+	wchar_t file_to_play[MAX_PATH];
+	GetWindowTextW(m_hwnd1, file_to_play, MAX_PATH);
+	wchar_t subtitle_file[MAX_PATH];
+	wcscpy(subtitle_file, file_to_play);
+	wcscat(subtitle_file, L".srt");
+	load_subtitle(subtitle_file, false);
+
+	wcscpy(subtitle_file, file_to_play);
+	wcscat(subtitle_file, L".sup");
+	load_subtitle(subtitle_file, false);
+
+	int i;
+	for(i=wcslen(file_to_play); i>0; i--)
+	{
+		if (file_to_play[i] == L'.')
+		{
+			file_to_play[i] = NULL;
+			break;
+		}
+	}
+
+	if (i>0)
+	{
+		wcscpy(subtitle_file, file_to_play);
+		wcscat(subtitle_file, L".srt");
+		load_subtitle(subtitle_file, false);
+
+		wcscpy(subtitle_file, file_to_play);
+		wcscat(subtitle_file, L".sup");
+		load_subtitle(subtitle_file, false);
+	}
 	return hr;
 fail:
 	reset();
@@ -1748,37 +1822,6 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 		m_file_loaded = true;
 		set_window_text(1, file_to_play);
 		set_window_text(2, file_to_play);
-
-		// load corresponding subtitle file
-		wchar_t subtitle_file[MAX_PATH];
-		wcscpy(subtitle_file, file_to_play);
-		wcscat(subtitle_file, L".srt");
-		load_subtitle(subtitle_file, false);
-
-		wcscpy(subtitle_file, file_to_play);
-		wcscat(subtitle_file, L".sup");
-		load_subtitle(subtitle_file, false);
-
-		int i;
-		for(i=wcslen(file_to_play); i>0; i--)
-		{
-			if (file_to_play[i] == L'.')
-			{
-				file_to_play[i] = NULL;
-				break;
-			}
-		}
-
-		if (i>0)
-		{
-			wcscpy(subtitle_file, file_to_play);
-			wcscat(subtitle_file, L".srt");
-			load_subtitle(subtitle_file, false);
-
-			wcscpy(subtitle_file, file_to_play);
-			wcscat(subtitle_file, L".sup");
-			load_subtitle(subtitle_file, false);
-		}
 	}
 
 	return hr;
@@ -1801,7 +1844,6 @@ HRESULT dx_player::end_loading()
 	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
 
 	debug_list_filters();
-
 
 	m_loading = false;
 	return S_OK;
@@ -2313,6 +2355,7 @@ HRESULT dx_player::enable_subtitle_track(int track)
 		m_srenderer->set_font(m_font);
 		m_srenderer->set_font_color(m_font_color);
 	}
+	m_display_subtitle = true;
 	draw_subtitle();
 	return S_OK;
 }

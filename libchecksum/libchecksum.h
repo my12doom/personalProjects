@@ -2,6 +2,7 @@
 
 #include "basicRSA.h"
 #include "SHA1.h"
+#include <time.h>
 
 typedef struct dwindow_license_struct
 {
@@ -35,13 +36,25 @@ typedef struct _dwindow_message_uncrypt
 	unsigned char zero;
 }dwindow_message_uncrypt;
 
+typedef struct _dwindow_passkey_big
+{
+	unsigned char passkey[32];
+	unsigned char passkey2[32];		// should be same
+	unsigned char ps_aes_key[32];
+	__time64_t time_start;			// 8 byte
+	__time64_t time_end;			// 8 byte
+	unsigned char reserved[15];
+	unsigned char zero;				// = 0
+} dwindow_passkey_big;
 
 extern unsigned int dwindow_n[32];
+extern DWORD dwindow_network_n[32];
 bool verify_signature(const DWORD *checksum, const DWORD *signature); // checksum is 20byte, signature is 128byte, true = match
 int verify_file(wchar_t *file); //return value:
 int video_checksum(wchar_t *file, DWORD *checksum);	// checksum is 20byte
 int find_startcode(wchar_t *file);
 HRESULT RSA_dwindow_public(const void *input, void *output);
+HRESULT RSA_dwindow_network_public(const void *input, void *output);
 
 // license funcs
 bool is_valid_license(dwindow_license license);			// true = valid

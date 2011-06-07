@@ -1,0 +1,91 @@
+4	type
+4	version
+{32byte
+	4x8	start_address x8(5 of them are reserved)
+}
+
+{4+14byte	AppInfoPlayList
+1	unkown
+1	6bit unkown + 2bit playback_type
+2	playback_count
+4	mask code 1
+4	mask code 2
+2	1bit random asscess + 1bit audio mix + 1bit bypass mixer + 13bit reserved
+}
+
+
+PlayList
+4	length
+2	reserved
+2	number_of_playitems
+2	number_of_SubPaths
+
+PlayListItem
+2	length
+5	clip_filename
+4	codec
+2	unkown
+1	unkown
+4	TimeIn
+4	TimeOut
+4	U01
+4	U02
+4	An
+
+SubPathItem
+4	length
+1	unkown
+1	subpath_type
+1	repeat
+2	number_of_subPlayItems
+
+
+ExtensionData
+4	length
+4	Unkown
+3	Unkown
+1	number of ext data entries
+
+ExtensionData entrys
+2	ID1
+2	ID2
+4	start address
+4	length
+
+
+extensiondata_subpath
+4	length
+2	n of entries
+
+ext_data_subpath_entries
+4	subpath_length
+1	unkown
+1	subpath_type
+
+ext_data_subpath_entry_type8
+3	unkown
+1	nsubitem
+
+subPlayItem
+2	length
+5	clip_filename
+4	codec_identifier
+4	unkown
+1	unkown
+4	TimeIn
+4	TimeOut
+2	sync PI
+4	syncPTS
+
+const char* Mpls_Offsets[]=
+{
+    "AppInfoPlayList",
+    "PlayList",
+    "PlayListMarks",
+    "ExtensionData",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+};
