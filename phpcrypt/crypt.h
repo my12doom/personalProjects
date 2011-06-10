@@ -61,6 +61,8 @@ public:
 	STDMETHOD(gen_keys)(BSTR passkey, DATE time_start, DATE time_end, BSTR* out);
 	STDMETHOD(gen_keys_int)(BSTR passkey, ULONG time_start, ULONG time_end, BSTR* out);
 	STDMETHOD(genkeys)(BSTR passkey, LONG time_start, LONG time_end, BSTR* out);
+	STDMETHOD(decode_binarystring)(BSTR in, BSTR* out);
+	STDMETHOD(SHA1)(BSTR in, BSTR* out);
 };
 
 OBJECT_ENTRY_AUTO(__uuidof(crypt), Ccrypt)

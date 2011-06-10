@@ -5,9 +5,17 @@
 #include "..\libchecksum\libchecksum.h"
 
 
+// register window proc
+INT_PTR CALLBACK register_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
+
+
 // public variables
 extern char g_passkey_big[128];
 extern char g_passkey[32];
+extern char *g_server_address;
+#define g_server_E3D "w32.php"
+#define g_server_gen_key "gen_key.php"
+#define g_server_reg_check "reg_check.php"
 
 //definitions
 #define AmHresultFromWin32(x) (MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, x))
@@ -48,8 +56,7 @@ HRESULT save_e3d_key(const unsigned char *file_hash, const unsigned char *file_k
 HRESULT load_e3d_key(const unsigned char *file_hash, unsigned char *file_key);
 HRESULT download_e3d_key(const wchar_t *filename);
 HRESULT make_xvid_support_mp4v();
-
-#define g_bomb_function {DWORD e[32];DWORD m1[32]={0,1,2,3,4,5,6,7,8,9,10};BigNumberSetEqualdw(e, 65537, 32);RSA(m1, (DWORD*)g_passkey_big, e, (DWORD*)dwindow_n, 32);	__time64_t *time_start = (__time64_t *)(m1+24);__time64_t *time_end = (__time64_t*)(m1+26);for(int i=0; i<8; i++)if (m1[i] != m1[i+8] || *time_start > _time64(NULL) || _time64(NULL) > *time_end)TerminateProcess(GetCurrentProcess(), 0);memcpy(g_passkey, m1, 32);memset(m1,0,128);}
+HRESULT download_url(char *url_to_download, char *out, int outlen = 64);
 
 // CoreMVC
 HRESULT ActiveCoreMVC(IBaseFilter *decoder);

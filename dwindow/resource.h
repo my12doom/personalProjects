@@ -17,6 +17,7 @@
 #define IDC_COMBO1                      1014
 #define IDC_COMBO2                      1015
 #define IDC_EDIT1                       1017
+#define IDC_EDIT2                       1018
 #define IDC_CHECK_SOUND2                1021
 #define IDC_CHECK_MKV2                  1022
 #define IDC_EDIT_INPUT2                 1023
@@ -98,14 +99,17 @@
 #define ID_ANAGLYPH_RED                 40071
 #define ID_ANAGLYPH_REDCYAN             40072
 #define ID_ANAGLYPH_CUSTOMCOLOR         40073
+#define ID_ENGLISH_SWAPLEFT             40074
+#define ID_SWAPEYES                     40075
+#define ID_ENGLISH_DISPLAYASPECT        40076
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        117
-#define _APS_NEXT_COMMAND_VALUE         40074
-#define _APS_NEXT_CONTROL_VALUE         1018
+#define _APS_NEXT_COMMAND_VALUE         40077
+#define _APS_NEXT_CONTROL_VALUE         1020
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

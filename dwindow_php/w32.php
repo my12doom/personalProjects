@@ -41,7 +41,7 @@ mysql_select_db("mydb", $db);
 
 $result = mysql_query("INSERT INTO logs (ip, date, passkey, hash) values('".$ip."', '".$date."', '".$passkey."', '".$hash."');");
 
-$result = mysql_query("SELECT * FROM users where passkey = '".$passkey."'");
+$result = mysql_query("SELECT * FROM active_passkeys where passkey = '".$passkey."'");
 if (mysql_num_rows($result) <= 0)
 {
 	printf("ERROR:INVALID PASSKEY");

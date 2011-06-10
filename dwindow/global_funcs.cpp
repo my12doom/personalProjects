@@ -12,8 +12,11 @@
 #include <wininet.h>
 #pragma comment(lib,"wininet.lib")
 
-//char server_url[300] = "http://59.51.45.21:80/w32.php?";
-char server_url[300] = "http://127.0.0.1:8080/w32.php?";
+char *g_server_address = "http://59.51.45.21:80/";
+
+//char server_url[300] = "http://127.0.0.1:8080/w32.php?";
+//char url[512] = "http://127.0.0.1:8080/gen_key.php?";
+char url[512] = "http://59.51.45.21/gen_key.php?";
 
 // public variables
 AutoSetting<localization_language> g_active_language(L"Language", CHINESE);
@@ -573,6 +576,8 @@ HRESULT check_passkey()
 
 	__time64_t t = _time64(NULL);
 
+	tm * t2 = _localtime64(&m1.time_end);
+
 	if (m1.time_start > _time64(NULL) || _time64(NULL) > m1.time_end)
 	{
 		memset(&m1, 0, 128);
@@ -792,7 +797,7 @@ bool del_setting(const WCHAR *key)
 	return true;
 }
 
-HRESULT download_url(char *url_to_download, char *out, int outlen = 64)
+HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/)
 {
 	HINTERNET HI;
 	HI=InternetOpenA("dwindow",INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
@@ -839,7 +844,9 @@ HRESULT download_e3d_key(const wchar_t *filename)
 
 	char url[300] = "";
 	char tmp[3];
-	strcpy(url, server_url);
+	strcpy(url, g_server_address);
+	strcat(url, g_server_E3D);
+	strcat(url, "?");
 	for(int i=0; i<128; i++)
 	{
 		sprintf(tmp, "%02X", encrypted_message[i]);

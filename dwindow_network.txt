@@ -1,0 +1,25 @@
+client use GET method to send request to server
+32 byte : passkey
+20 byte : requested video file hash
+32 byte : a random AES key
+44 byte : reserved free space
+
+total: 128 byte
+encrypt with dwindow public key to a new 128byte encrypted message, then convert to hex string
+
+so the GET request would be
+"http://127.0.0.1:8080/request.php?010203xxxx...."
+
+
+server:
+request.php get the 256 length GET string, send it to my dll
+dll do:
+1. checks if it is 0-F
+2. convert it to 128byte array
+3. decrypt it with dwindow private key
+4. retrive 3 part of sended message
+5. check passkey in database.
+7. find video key for the requested video
+if any of the first 7 step fail, it returns a "ERROR"
+else, return a "OK" followed by AES encrypted video file key. that is 34 byte.
+

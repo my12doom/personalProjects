@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0500 */
-/* at Mon Jun 06 21:34:06 2011
+/* at Fri Jun 10 18:37:28 2011
  */
 /* Compiler settings for .\phpcrypt.idl:
     Oicf, W1, Zp8, env=Win32 (32b run)
@@ -134,6 +134,14 @@ EXTERN_C const IID IID_Icrypt;
             LONG time_end,
             /* [retval][out] */ BSTR *out) = 0;
         
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE decode_binarystring( 
+            BSTR in,
+            /* [retval][out] */ BSTR *out) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE SHA1( 
+            BSTR in,
+            /* [retval][out] */ BSTR *out) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -241,6 +249,16 @@ EXTERN_C const IID IID_Icrypt;
             LONG time_end,
             /* [retval][out] */ BSTR *out);
         
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *decode_binarystring )( 
+            Icrypt * This,
+            BSTR in,
+            /* [retval][out] */ BSTR *out);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *SHA1 )( 
+            Icrypt * This,
+            BSTR in,
+            /* [retval][out] */ BSTR *out);
+        
         END_INTERFACE
     } IcryptVtbl;
 
@@ -309,6 +327,12 @@ EXTERN_C const IID IID_Icrypt;
 
 #define Icrypt_genkeys(This,passkey,time_start,time_end,out)	\
     ( (This)->lpVtbl -> genkeys(This,passkey,time_start,time_end,out) ) 
+
+#define Icrypt_decode_binarystring(This,in,out)	\
+    ( (This)->lpVtbl -> decode_binarystring(This,in,out) ) 
+
+#define Icrypt_SHA1(This,in,out)	\
+    ( (This)->lpVtbl -> SHA1(This,in,out) ) 
 
 #endif /* COBJMACROS */
 

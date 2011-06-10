@@ -51,8 +51,8 @@ public:
 	// load functions
 	bool m_file_loaded /*= false*/;
 	HRESULT reset();								// unload all video and subtitle files
-	HRESULT reset_and_loadfile(const wchar_t *pathname);
 	HRESULT start_loading();
+	HRESULT reset_and_loadfile(const wchar_t *pathname);
 	HRESULT load_subtitle(const wchar_t *pathname, bool reset = true);
 	HRESULT load_file(const wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
 	HRESULT end_loading();
@@ -74,6 +74,11 @@ public:
 	HRESULT total(int *time);
 	HRESULT set_volume(double volume);			// 0 - 1.0 = 0% - 100%, linear
 	HRESULT get_volume(double *volume);
+	HRESULT show_mouse(bool show)
+	{
+		GetCursorPos(&m_mouse);
+		return __super::show_mouse(show);
+	}
 	bool is_closed();
 	POINT m_mouse;
 
@@ -99,6 +104,9 @@ protected:
 	HRESULT paint_letterbox(int id, RECT letterbox);
 	bool m_select_font_active;
 	static DWORD WINAPI select_font_thread(LPVOID lpParame);
+	HRESULT reset_and_loadfile_internal(const wchar_t *pathname);
+	bool m_reset_and_load;
+	wchar_t m_file_to_load[MAX_PATH];
 
 
 	// window handler

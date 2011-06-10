@@ -94,6 +94,7 @@ public:
 	AESCryptor m_codec;
 
 	// public functions
+	HRESULT recaculate_mask();
 	HRESULT pump();
 	HRESULT repaint_video();
 	HRESULT NV3D_notify(WPARAM wparam);

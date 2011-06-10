@@ -981,6 +981,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp2, 2 );
 
 		// pass 3: render to backbuffer with masking
+		// black = left
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		m_Device->SetRenderTarget(0, back_buffer);
 		m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
@@ -1896,7 +1897,7 @@ HRESULT my12doomRenderer::generate_mask()
 	{
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
 		{
-			memset(dst, (i+rect.top)%2 == 0 ? 0 : 255 ,m_active_pp.BackBufferWidth);
+			memset(dst, (i+rect.top)%2 == 0 ? 255 : 0 ,m_active_pp.BackBufferWidth);
 			dst += locked.Pitch;
 		}
 	}
@@ -2010,6 +2011,11 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 	}
 
 	return S_OK;
+}
+
+HRESULT my12doomRenderer::recaculate_mask()
+{
+	return generate_mask();
 }
 
 HRESULT my12doomRenderer::pump()

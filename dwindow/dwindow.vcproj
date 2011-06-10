@@ -483,6 +483,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\bomb_function.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bomb_network.h"
+				>
+			</File>
+			<File
 				RelativePath=".\detours\detours.h"
 				>
 			</File>

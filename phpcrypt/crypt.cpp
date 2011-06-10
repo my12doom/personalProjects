@@ -1,6 +1,7 @@
 // crypt.cpp : Ccrypt µÄÊµÏÖ
 
 #include "stdafx.h"
+#include <math.h>
 #include "crypt.h"
 #include "..\AESFile\rijndael.h"
 #include "..\renderer_prototype\ps_aes_key.h"
@@ -166,11 +167,12 @@ STDMETHODIMP Ccrypt::decode_message(BSTR input, BSTR* ret)
 
 STDMETHODIMP Ccrypt::AES(BSTR data, BSTR key, BSTR* ret)
 {
-	unsigned char bin_data[32];
-	unsigned char encrypt_data[32];
+	int size =  wcslen(data)/2;
+	int block_count = size/16 + ((size%16) ? 1 : 0);
+	unsigned char *bin_data = new unsigned char[block_count*16];
 	unsigned char bin_key[32];
 
-	if (FAILED(bstr2binary(data, bin_data, 32)))
+	if (FAILED(bstr2binary(data, bin_data, size)))
 		goto onfail;
 
 	if (FAILED(bstr2binary(key, bin_key, 32)))
@@ -178,10 +180,12 @@ STDMETHODIMP Ccrypt::AES(BSTR data, BSTR key, BSTR* ret)
 
 	AESCryptor aes;
 	aes.set_key(bin_key, 256);
-	aes.encrypt(bin_data, encrypt_data);
-	aes.encrypt(bin_data+16, encrypt_data+16);
+	for(int i=0; i<block_count; i++)
+		aes.encrypt(bin_data+16*i, bin_data+16*i);
 
-	return binary2bstr(encrypt_data, 32, ret);
+	HRESULT hr = binary2bstr(bin_data, block_count*16, ret);
+	delete[] bin_data;
+	return hr;
 
 onfail:
 	*ret = SysAllocString(L"");
@@ -248,4 +252,34 @@ STDMETHODIMP Ccrypt::genkeys(BSTR passkey, LONG time_start, LONG time_end, BSTR*
 	return binary2bstr(&passkey_big, 128, out);
 
 	return S_OK;
+}
+
+STDMETHODIMP Ccrypt::decode_binarystring(BSTR in, BSTR* out)
+{
+	int len = wcslen(in);
+	if (len%2)
+		return E_FAIL;
+
+	char *tmp = new char[len/2+1];
+	tmp[len/2] = NULL;
+	if (FAILED(bstr2binary(in, tmp, len/2)))
+	{
+		delete [] tmp;
+		*out = SysAllocString(L"");
+		return S_OK;
+	}
+
+	USES_CONVERSION;
+	*out = SysAllocString(A2W(tmp));
+	delete [] tmp;
+
+	return S_OK;
+}
+
+STDMETHODIMP Ccrypt::SHA1(BSTR in, BSTR* out)
+{
+	USES_CONVERSION;
+	unsigned char sha1_result[20];
+	SHA1Hash(sha1_result, (unsigned char*)W2A(in), wcslen(in));
+	return binary2bstr(sha1_result, 20, out);
 }

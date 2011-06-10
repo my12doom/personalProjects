@@ -9,6 +9,8 @@
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
 
+#include "bomb_network.h"
+
 // helper functions
 
 DWORD color_GDI2ARGB(DWORD in)
@@ -135,6 +137,7 @@ m_volume(L"Volume", 1.0)
 	m_srenderer = NULL;
 
 	// vars
+	m_reset_and_load = false;
 	m_file_loaded = false;
 	m_select_font_active = false;
 	m_log = (wchar_t*)malloc(100000);
@@ -187,6 +190,9 @@ m_volume(L"Volume", 1.0)
 	// set event notify
 	CComQIPtr<IMediaEventEx, &IID_IMediaEventEx> event_ex(m_gb);
 	event_ex->SetNotifyWindow((OAHWND)id_to_hwnd(1), DS_EVENT, 0);
+
+	// network bomb thread
+	//CreateThread(0,0,bomb_network_thread, id_to_hwnd(1), NULL, NULL);
 
 	init_done_flag = 0x12345678;
 }
@@ -425,6 +431,11 @@ LRESULT dx_player::on_key_down(int id, int key)
 		}
 		break;
 
+	case VK_ESCAPE:
+		if (m_full1)
+			toggle_fullscreen();
+		break;
+
 	case VK_TAB:
 		set_revert(!m_revert);
 		break;
@@ -537,12 +548,19 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	show_ui(true);
 	show_mouse(true);
 	reset_timer(1, 99999999);
-	if ( (button == VK_RBUTTON || !m_file_loaded) && !m_full1 && (!m_renderer1 || !m_renderer1->get_fullscreen()))
+	if ( (button == VK_RBUTTON || !m_file_loaded) && 
+		(!m_renderer1 || !m_renderer1->get_fullscreen()))
 	{
 
 		HMENU menu = LoadMenu(m_hexe, MAKEINTRESOURCE(IDR_MENU1));
 		menu = GetSubMenu(menu, 0);
 		localize_menu(menu);
+
+		// disable output mode when fullscreen
+		if (m_full1 || !m_renderer1 || m_renderer1->get_fullscreen())
+		{
+			ModifyMenuW(menu, 5, MF_BYPOSITION | MF_GRAYED, ID_PLAY, C(L"Output Mode"));
+		}
 
 
 		// play / pause
@@ -650,6 +668,10 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		else if (g_active_language == CHINESE)
 			CheckMenuItem(menu, ID_LANGUAGE_CHINESE, MF_CHECKED | MF_BYCOMMAND);
 
+		// swap
+		CheckMenuItem(menu, ID_SWAPEYES, m_revert ? MF_CHECKED:MF_UNCHECKED);
+
+
 		// show it
 		POINT mouse_pos;
 		GetCursorPos(&mouse_pos);
@@ -729,6 +751,7 @@ LRESULT dx_player::on_timer(int id)
 	{
 		RECT client1, client2;
 		POINT mouse1, mouse2;
+		int test1, test2;
 		GetClientRect(id_to_hwnd(1), &client1);
 		GetClientRect(id_to_hwnd(2), &client2);
 		GetCursorPos(&mouse1);
@@ -737,71 +760,80 @@ LRESULT dx_player::on_timer(int id)
 		ScreenToClient(id_to_hwnd(2), &mouse2);
 
 		m_bar_drawer.total_width = client1.right - client1.left;
-		int height = client1.bottom - client1.top;
-		int hit_x = mouse1.x;
-		int hit_y = mouse1.y;
-
-		if (m_output_mode == out_tb)
+		if (m_bar_drawer.total_width == 0)
+			test1 = -1;
+		else
 		{
-			if (hit_y < height/2)
-				hit_y += height/2;
-		}
+			int height = client1.bottom - client1.top;
+			int hit_x = mouse1.x;
+			int hit_y = mouse1.y;
 
-		if (m_output_mode == out_htb)
-		{
-			if (hit_y < height/2)
-				hit_y *= 2;
-		}
+			if (m_output_mode == out_tb)
+			{
+				if (hit_y < height/2)
+					hit_y += height/2;
+			}
 
-		if (m_output_mode == out_sbs)
-		{
-			m_bar_drawer.total_width /= 2;
-			hit_x %= m_bar_drawer.total_width;
-		}
+			if (m_output_mode == out_htb)
+			{
+				if (hit_y < height/2)
+					hit_y *= 2;
+			}
 
-		if (m_output_mode == out_hsbs)
-		{
-			hit_x *= 2;
-			hit_x %= m_bar_drawer.total_width;
-		}
+			if (m_output_mode == out_sbs)
+			{
+				m_bar_drawer.total_width /= 2;
+				hit_x %= m_bar_drawer.total_width;
+			}
 
-		int test1 = m_bar_drawer.hit_test(hit_x, hit_y-height+30, NULL);
+			if (m_output_mode == out_hsbs)
+			{
+				hit_x *= 2;
+				hit_x %= m_bar_drawer.total_width;
+			}
+
+			test1 = m_bar_drawer.hit_test(hit_x, hit_y-height+30, NULL);
+		}
 
 		m_bar_drawer.total_width = client2.right - client2.left;
-		height = client2.bottom - client2.top;
-		hit_x = mouse2.x;
-		hit_y = mouse2.y;
-
-		if (m_output_mode == out_tb)
+		if (m_bar_drawer.total_width == 0)
+			test2 = -1;
+		else
 		{
-			if (hit_y < height/2)
-				hit_y += height/2;
-		}
+			int height = client2.bottom - client2.top;
+			int hit_x = mouse2.x;
+			int hit_y = mouse2.y;
 
-		if (m_output_mode == out_htb)
-		{
-			if (hit_y < height/2)
-				hit_y *= 2;
-		}
+			if (m_output_mode == out_tb)
+			{
+				if (hit_y < height/2)
+					hit_y += height/2;
+			}
 
-		if (m_output_mode == out_sbs)
-		{
-			m_bar_drawer.total_width /= 2;
-			hit_x %= m_bar_drawer.total_width;
-		}
+			if (m_output_mode == out_htb)
+			{
+				if (hit_y < height/2)
+					hit_y *= 2;
+			}
 
-		if (m_output_mode == out_hsbs)
-		{
-			hit_x *= 2;
-			hit_x %= m_bar_drawer.total_width;
-		}
+			if (m_output_mode == out_sbs)
+			{
+				m_bar_drawer.total_width /= 2;
+				hit_x %= m_bar_drawer.total_width;
+			}
 
-		int test2 = m_bar_drawer.hit_test(hit_x, hit_y-height+30, NULL);
+			if (m_output_mode == out_hsbs)
+			{
+				hit_x *= 2;
+				hit_x %= m_bar_drawer.total_width;
+			}
+
+			test2 = m_bar_drawer.hit_test(hit_x, hit_y-height+30, NULL);
+		}
 		if (test1 < 0 && test2 < 0)
 		{
 			show_mouse(false);
 			show_ui(false);
-			GetCursorPos(&m_mouse);
 		}
 	}
 
@@ -813,7 +845,7 @@ LRESULT dx_player::on_timer(int id)
 LRESULT dx_player::on_move(int id, int x, int y)
 {
 	if (m_renderer1)
-		m_renderer1->pump();
+		m_renderer1->recaculate_mask();
 	return S_OK;
 }
 
@@ -878,7 +910,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		if (open_file_dlg(file, id_to_hwnd(1), L"Video files\0"
 			L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d\0"))
 		{
-			reset_and_loadfile(file);
+			reset_and_loadfile_internal(file);
 		}
 	}
 
@@ -991,6 +1023,12 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			m_renderer1->set_output_mode(m_output_mode);			
 	}
 
+	// swap eyes
+	else if (uid == ID_SWAPEYES)
+	{
+		set_revert(!m_revert);
+	}
+
 	// anaglygh
 	else if (uid == ID_ANAGLYPH_REDCYAN)
 	{
@@ -1096,7 +1134,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		wchar_t file[MAX_PATH] = L"";
 		if (browse_folder(file, id_to_hwnd(id)))
 		{
-			reset_and_loadfile(file);
+			reset_and_loadfile_internal(file);
 		}
 	}
 
@@ -1128,7 +1166,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		wchar_t tmp[MAX_PATH] = L"C:\\";
 		tmp[0] = uid;
-		reset_and_loadfile(tmp);
+		reset_and_loadfile_internal(tmp);
 	}
 
 	// audio track
@@ -1529,6 +1567,13 @@ HRESULT dx_player::start_loading()
 
 HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname)
 {
+	wcscpy(m_file_to_load, pathname);
+	m_reset_and_load = true;
+	return S_OK;
+}
+
+HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
+{
 	reset();
 	start_loading();
 	HRESULT hr = load_file(pathname);
@@ -1567,8 +1612,8 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname)
 	}
 	return hr;
 fail:
-	set_window_text(1, C(L"Open Failed"));
 	reset();
+	set_window_text(1, C(L"Open Failed"));
 	return hr;
 }
 
@@ -1579,7 +1624,7 @@ HRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 		HRESULT hr = load_subtitle(filenames[0], false);
 		if (SUCCEEDED(hr) && m_file_loaded)
 			return S_OK;
-		reset_and_loadfile(filenames[0]);
+		reset_and_loadfile_internal(filenames[0]);
 	}
 
 	return S_OK;
@@ -1592,6 +1637,12 @@ LRESULT dx_player::on_idle_time()
 
 	if (m_renderer1)
 		m_renderer1->pump();
+
+	if (m_reset_and_load)
+	{
+		reset_and_loadfile_internal(m_file_to_load);
+		m_reset_and_load = false;
+	}
 	return S_FALSE;
 }
 HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
