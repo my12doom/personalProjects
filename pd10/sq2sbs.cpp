@@ -232,6 +232,45 @@ public:
 	}
 };
 
+class IZ3D : public GenericVideoFilter 
+{
+public:
+	IZ3D(PClip _child, IScriptEnvironment* env):GenericVideoFilter(_child)
+	{
+	}
+
+	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env)
+	{
+		PVideoFrame dst = env->NewVideoFrame(vi);
+		PVideoFrame src = child->GetFrame(n, env);
+
+		const BYTE * psrc = src->GetReadPtr(PLANAR_Y);
+		BYTE * pdst = (BYTE*)dst->GetReadPtr(PLANAR_Y);
+		memset(pdst, 0, vi.width*vi.height);
+		memset(pdst+vi.width*vi.height, 128, vi.width*vi.height/2);
+		for(int y=0; y<vi.height; y++)
+		{
+			for(int x=0; x<vi.width/2; x++)
+			{
+				pdst[0] = (psrc[0] + psrc[vi.width/2])/2;
+
+				if(psrc[0] + psrc[vi.width/2] <= 32)
+					pdst[vi.width/2] = 16;
+				else
+					pdst[vi.width/2] = (psrc[0]-16) * 219 / (psrc[0] + psrc[vi.width/2] - 32) + 16;
+
+				pdst++;
+				psrc++;
+			}
+			psrc = src->GetReadPtr(PLANAR_Y) + y*vi.width;
+			pdst = (BYTE*)dst->GetReadPtr(PLANAR_Y) + y*vi.width;
+		}
+
+		return dst;
+
+	}
+};
+
 AVSValue __cdecl Create_DeSelect(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
     return new DeSelct(args[0].AsClip(), args[1].AsClip());
@@ -244,6 +283,10 @@ AVSValue __cdecl Create_sq2sbs(AVSValue args, void* user_data, IScriptEnvironmen
 AVSValue __cdecl Create_Inter2SBS(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
     return new Inter2SBS(args[0].AsClip(), env);
+}
+AVSValue __cdecl Create_IZ3D(AVSValue args, void* user_data, IScriptEnvironment* env)
+{
+	return new IZ3D(args[0].AsClip(), env);
 }
 AVSValue __cdecl func_create_grf(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
@@ -326,5 +369,6 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScri
 	env->AddFunction("Inter2SBS", "c", Create_Inter2SBS, 0);
 	env->AddFunction("DeSelect", "[clip1]c[clip]c", Create_DeSelect, 0);
     env->AddFunction("CreateGRF", "s", func_create_grf, 0);
-    return 0;
+	env->AddFunction("IZ3D", "c", Create_IZ3D, 0);
+   return 0;
 }

@@ -17,6 +17,7 @@
 #include "..\lrtb\mySink.h"
 #include "PGS\PGSParser.h"
 #include "DShowSubtitleRenderer.h"
+#include "..\my12doomSource\src\filters\parser\MpegSplitter\IOffsetMetadata.h"
 
 #define _AFX
 #define __AFX_H__
@@ -49,10 +50,10 @@ public:
 	~dx_player();
 
 	// load functions
-	bool m_file_loaded /*= false*/;
+	bool m_reset_load_done;
 	HRESULT reset();								// unload all video and subtitle files
 	HRESULT start_loading();
-	HRESULT reset_and_loadfile(const wchar_t *pathname);
+	HRESULT reset_and_loadfile(const wchar_t *pathname, bool stop);
 	HRESULT load_subtitle(const wchar_t *pathname, bool reset = true);
 	HRESULT load_file(const wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
 	HRESULT end_loading();
@@ -80,6 +81,7 @@ public:
 		return __super::show_mouse(show);
 	}
 	bool is_closed();
+	HRESULT toggle_fullscreen();
 	POINT m_mouse;
 
 	// error reporting vars and functions
@@ -87,6 +89,7 @@ public:
 	wchar_t *m_log;
 
 protected:
+	bool m_file_loaded /*= false*/;
 	// image control vars
 	HINSTANCE m_hexe;
 	//AutoSetting<bool> m_always_show_right/*(L"AlwaysShowRight", false)*/;
@@ -106,6 +109,7 @@ protected:
 	static DWORD WINAPI select_font_thread(LPVOID lpParame);
 	HRESULT reset_and_loadfile_internal(const wchar_t *pathname);
 	bool m_reset_and_load;
+	bool m_stop_after_load;
 	wchar_t m_file_to_load[MAX_PATH];
 
 
@@ -138,7 +142,6 @@ protected:
 	HRESULT list_audio_track(HMENU submenu);
 	HRESULT list_subtitle_track(HMENU submenu);
 	HRESULT debug_list_filters();
-	HRESULT toggle_fullscreen();
 
 	// filter callback function
 	HRESULT SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn);
@@ -173,6 +176,7 @@ protected:
 	AutoSetting<DWORD> m_anaglygh_right_color;	   /* = row_interlace */
 
 	// subtitle control
+	CComPtr<IOffsetMetadata> m_offset_metadata;
 	CSubtitleRenderer *m_srenderer;
 	DShowSubtitleRenderer m_grenderer;
 	CAutoPtrList<subtitle_file_handler> m_external_subtitles;

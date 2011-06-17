@@ -47,7 +47,7 @@ HRESULT find_main_movie(const wchar_t *folder, wchar_t *out);
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
 HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
 HRESULT RemoveUselessFilters(IGraphBuilder *gb);
-HRESULT DeterminPin(IPin *pin, wchar_t *name = NULL, CLSID majortype = CLSID_NULL);
+HRESULT DeterminPin(IPin *pin, wchar_t *name = NULL, CLSID majortype = CLSID_NULL, CLSID subtype = CLSID_NULL);
 HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *name, IPin **ppPin);
 HRESULT load_passkey();
 HRESULT save_passkey();

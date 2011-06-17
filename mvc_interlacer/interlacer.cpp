@@ -71,8 +71,11 @@ int read_a_nal(CFileBuffer *f)
 	return data_read;
 }
 
+int max_sei_size = 0;
 int read_a_delimeter(CFileBuffer *f)
 {
+	max_sei_size = 0;
+
 	n_slice = 0;
 	int size = 0;
 	int current_start = false;
@@ -91,6 +94,30 @@ int read_a_delimeter(CFileBuffer *f)
 		printf("%x ", _nal_type);
 		*/
 
+		if (_nal_type == 6)
+		{
+			unsigned char* psei = read_buffer+5;
+			int sei_payload_type = 0;
+			while (true)
+			{
+				sei_payload_type += *psei;
+				psei ++;
+				if (*psei < 0xFF)
+					break;
+			}
+			int sei_payload_size = 0;
+			while (true)
+			{
+				sei_payload_size += *psei;
+				psei++;
+				if (*psei < 0xFF)
+					break;
+			}
+
+			if (sei_payload_size > 50)
+				max_sei_size += sei_payload_size;
+		}
+
 		if ( (1 <= _nal_type && _nal_type <= 5) || _nal_type == 20)
 			n_slice ++;
 
@@ -101,7 +128,7 @@ int read_a_delimeter(CFileBuffer *f)
 		}
 
 		// test remove SEI
-		if (_nal_type == 6) //my12doom's watermark
+		if (_nal_type == 6)
 		{
 			f->remove_data(nal_size);
 			continue;
@@ -408,15 +435,14 @@ void main3(int argc, char * argv[])
 {
 	memset(nal_type_found, 0, sizeof(nal_type_found));
 	feeder_thread_parameter * para = new feeder_thread_parameter;
-	strcpy(para->filename, argv[1]);
+	//strcpy(para->filename, argv[1]);
 	para->demux = false;
 	para->out = &left;
 
-	/*
+	strcpy(para->filename, "K:\\BDMV\\STREAM\\00002.M2TS");
 	para->demux = true;
-	para->out_left = &left;
-	para->out_right = &right;
-	*/
+	para->out_left = NULL;
+	para->out_right = &left;//&right;
 
 	CreateThread(NULL, NULL, feeder_thread, para, NULL, NULL);
 
@@ -424,6 +450,7 @@ void main3(int argc, char * argv[])
 
 	int n = 0;
 	int id = 0;
+	int i = 0;
 	while (true)
 	{
 		/*
@@ -437,12 +464,17 @@ void main3(int argc, char * argv[])
 		fprintf(log, "%d : %d bytes, %d slices.\r\n", n-1, delimeter_size, n_slice);
 		*/
 
-		int nal_size = read_a_nal(&left);
-		if (nal_size == 0)
+		int delimeter_size = read_a_delimeter(&left);
+		if (delimeter_size == 0)
 			break;
-		int _nal_type = nal_type(left.m_the_buffer + left.m_data_start);
-		nal_type_found[_nal_type]++;
-		left.remove_data(nal_size);
+		fprintf(log, "%d\r\n", i++);
+		if (max_sei_size > 50)
+		{
+			fprintf(log, "SEI:%d byte.\r\n", max_sei_size);
+			i = 0;
+		}
+		fflush(log);
+		left.remove_data(delimeter_size);
 	}
 
 	fclose(log);

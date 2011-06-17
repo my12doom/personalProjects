@@ -6,7 +6,6 @@
 #define MPC_VERSION_PATCH               0
 #define MPC_VERSION_MAJOR               1
 #define MPC_VERSION_MINOR               4
-#define IDI_ICON1                       101
 
 // Next default values for new objects
 // 

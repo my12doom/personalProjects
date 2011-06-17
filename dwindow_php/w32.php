@@ -39,7 +39,9 @@ else
 $db = mysql_connect("localhost", "root", "tester88");
 mysql_select_db("mydb", $db);
 
-$result = mysql_query("INSERT INTO logs (ip, date, passkey, hash) values('".$ip."', '".$date."', '".$passkey."', '".$hash."');");
+//$result = mysql_query("INSERT INTO logs (ip, date, passkey, hash) values('".$ip."', '".$date."', '".$passkey."', '".$hash."');");
+$sql = sprintf("INSERT INTO logs (ip, date, passkey, hash, operation) values ('%s', '%s', '%s', '%s', '%s');", $ip, $date, $passkey, $hash, "REQUEST_E3D");
+$result = mysql_query($sql);
 
 $result = mysql_query("SELECT * FROM active_passkeys where passkey = '".$passkey."'");
 if (mysql_num_rows($result) <= 0)

@@ -636,6 +636,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\IOffsetMetadata.h"
+				>
+			</File>
+			<File
 				RelativePath=".\MpegSplitter.h"
 				>
 			</File>

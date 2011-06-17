@@ -34,6 +34,13 @@ INT_PTR CALLBACK register_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 }
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
+	char volumeName[MAX_PATH];
+	DWORD sn;
+	DWORD max_component_length;
+	DWORD filesystem;
+	char str_filesystem[MAX_PATH];
+	GetVolumeInformationA("C:\\", volumeName, MAX_PATH, &sn, &max_component_length, &filesystem, str_filesystem, MAX_PATH);
+
 	CoInitialize(NULL);
 
 	RECT screen1;
@@ -55,21 +62,55 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 	dx_player test(screen1, screen2, hinstance);
+	BringWindowToTop(test.m_hwnd1);
 
 	int argc = 1;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 
 	if (argc>1)
-		test.reset_and_loadfile(argv[1]);
+	{
+		test.reset_and_loadfile(argv[1], false);
+		while(!test.m_reset_load_done)
+			Sleep(50);
+
+		//test.toggle_fullscreen();
+		SetFocus(test.m_hwnd1);
+	}
 	while (!test.is_closed())
 		Sleep(100);
 
 	return 0;
 }
 
+
+typedef DWORD ADDR;
+
 int main()
 {
 	WinMain(LoadLibraryW(L"dwindow.exe"), 0, "", SW_SHOW);
+
+
+	__try 
+	{
+	}
+	__except(EXCEPTION_EXECUTE_HANDLER) 
+	{
+		long			StackIndex				= 0;
+
+		ADDR			block[63];
+		memset(block,0,sizeof(block));
+
+
+		USHORT frames = CaptureStackBackTrace(3,59,(void**)block,NULL);
+
+		for (int i = 0; i < frames ; i++)
+		{
+			ADDR			InstructionPtr = (ADDR)block[i];
+
+			printf("0x%08x\n", block[i]);
+			StackIndex++;
+		}
+	}
 }
 
 

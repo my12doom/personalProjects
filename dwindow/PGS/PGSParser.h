@@ -44,6 +44,7 @@ protected:
 	int m_data_pos;
 	pgs_subtitle *m_subtitles;
 	int m_subtitle_count;
+	int m_possible_start;
 
 	pgs_subtitle m_current_subtitle;
 
@@ -52,7 +53,7 @@ protected:
 	HRESULT parse();
 	HRESULT parsePalette(BYTE*data, int size);
 	HRESULT parseObject(BYTE*data, int size);
-	HRESULT parseSEG(BYTE*data, int size, int time);
+	HRESULT parsePresentaionSegment(BYTE*data, int size, int time);
 	HRESULT parseDisplay(BYTE*data, int size, int time);
 	HRESULT parseWindow(BYTE*data, int size);
 	HRESULT decodeRLE(pgs_subtitle *sub);

@@ -47,10 +47,12 @@ mysql_select_db("mydb", $db);
 $result = mysql_query("SELECT * FROM users where name = '".$user."' and pass_hash = '".$password_hash."'");		//warning: possible SQL injection
 if (mysql_num_rows($result) <= 0)
 {
-	$result = mysql_query("INSERT INTO logs (ip, date, passkey, hash) values('".$ip."', '".$date."', 'FAIL_ACTIVATION:".$user."', '".$password_hash."');");
+	$sql = sprintf("INSERT INTO logs (ip, date, passkey, hash, operation) values ('%s', '%s', '%s', '%s', '%s');", $ip, $date, $user, $password_hash, "ACTIVATION:INVALID USERNAME OR PASSWORD");
+	$result = mysql_query($sql);
 	die("ERROR:INVALID USERNAME OR PASSWORD");
 }
-$result = mysql_query("INSERT INTO logs (ip, date, passkey, hash) values('".$ip."', '".$date."', 'OK_ACTIVATION:".$user."', '".$password_hash."');");
+$sql = sprintf("INSERT INTO logs (ip, date, passkey, hash, operation) values ('%s', '%s', '%s', '%s', '%s');", $ip, $date, $user, $password_hash, "ACTIVATION:OK");
+$result = mysql_query($sql);
 
 
 // generate a random passkey and test if in dropped_passkey table

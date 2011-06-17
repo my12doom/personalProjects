@@ -83,6 +83,13 @@ DWORD PGSParser::YUV2RGB(BYTE Y, BYTE Cr, BYTE Cb, BYTE A)
 
 HRESULT PGSParser::add_data(BYTE *data, int size)
 {
+	if (m_data_pos + size >= 2048000)
+	{
+		// buffer overrun, reset buffer and drop this packet
+		m_data_pos = 0;
+		return S_OK;
+	}
+
 	memcpy(m_data + m_data_pos, data, size);
 	m_data_pos += size;
 
@@ -151,9 +158,24 @@ HRESULT PGSParser::parse()
 
 HRESULT PGSParser::parse_raw_element(BYTE *data, int type, int size, int start, int end)
 {
+	/*
+	static char * un = "Unkown";
+	char* tbl[256];
+	for(int i=0; i<256; i++)
+		tbl[i] = un;
+	tbl[PRESENTATION_SEG] = "PRESENTATION_SEG";
+	tbl[WINDOW_DEF] = "WINDOW_DEF";
+	tbl[PALETTE] = "PALETTE";
+	tbl[OBJECT] = "OBJECT";
+	tbl[DISPLAY] = "DISPLAY";
+
+	static FILE * f = fopen("Z:\\avt.txt", "wb");
+	if(f)fprintf(f, "(#%d)type=%02x(%s), size=%d\r\n", m_subtitle_count, type, tbl[type], size);
+	*/
+
 	HRESULT hr = S_OK;
 	if (type == PRESENTATION_SEG)
-		hr = parseSEG(data, size, start);
+		hr = parsePresentaionSegment(data, size, start);
 	else if (type == WINDOW_DEF)
 		hr = parseWindow(data, size);
 	else if (type == PALETTE)
@@ -168,7 +190,7 @@ HRESULT PGSParser::parse_raw_element(BYTE *data, int type, int size, int start, 
 	return hr;
 }
 
-HRESULT PGSParser::parseSEG(BYTE *data, int size, int time)
+HRESULT PGSParser::parsePresentaionSegment(BYTE *data, int size, int time)
 {
 	if (m_current_subtitle.start != -1 && m_current_subtitle.rle &&
 		0 < m_current_subtitle.width && m_current_subtitle.width < 4096 &&
@@ -198,6 +220,7 @@ HRESULT PGSParser::parseSEG(BYTE *data, int size, int time)
 	}
 	memset(&m_current_subtitle, 0, sizeof(pgs_subtitle));
 	m_current_subtitle.start = -1;
+	m_possible_start = time;
 	m_has_seg = true;
 
 	if (size >= 4)
@@ -263,6 +286,8 @@ HRESULT PGSParser::parseObject(BYTE *data, int size)
 		BYTE version_number = data[2];
 		BYTE seq_desc = data[3];
 		BYTE n_data_size[3];
+		memcpy(n_data_size, data+4, 3);
+		DWORD data_size = (n_data_size[0] << 16) + (n_data_size[1] << 8) + n_data_size[2];
 		m_current_subtitle.width = readWORD(data+7);
 		m_current_subtitle.height = readWORD(data+9);
 		m_current_subtitle.left = m_current_subtitle.window_left + (m_current_subtitle.window_width - m_current_subtitle.width)/2;
@@ -290,7 +315,7 @@ HRESULT PGSParser::parseDisplay(BYTE *data, int size, int time)
 	if (!m_has_seg)
 		return S_OK;
 
-	m_current_subtitle.start = time;
+	m_current_subtitle.start = m_possible_start;
 
 	return S_OK;
 }
@@ -409,7 +434,7 @@ HRESULT PGSParser::seek()	// just clear current incompleted data, to support dsh
 HRESULT PGSParser::reset()
 {
 	if (NULL == m_data)
-		m_data = (BYTE*) malloc(1280000);
+		m_data = (BYTE*) malloc(2048000);
 	if (NULL == m_subtitles)
 		m_subtitles = (pgs_subtitle*) malloc(4096*sizeof(pgs_subtitle));
 	m_data_pos = 0;

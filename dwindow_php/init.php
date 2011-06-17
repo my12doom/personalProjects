@@ -22,7 +22,13 @@ $result = mysql_query("CREATE TABLE dropped_passkeys (id INT NOT NULL AUTO_INCRE
 if (!$result)
 	printf("CREATE TABLE dropped_passkeys FAILED<br>\n");
 	
-$result = mysql_query("CREATE TABLE logs (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, ip varchar(15), date varchar(40), passkey varchar(64), hash varchar(40));", $db);
+$result = mysql_query("CREATE TABLE logs (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+											 ip varchar(15),
+											 date varchar(40),
+											 passkey varchar(64),
+											 hash varchar(40),
+											 operation varchar(40),
+											 reserved1 varchar(64));", $db);
 if (!$result)
 	printf("CREATE TABLE logs FAILED<br>\n");
 

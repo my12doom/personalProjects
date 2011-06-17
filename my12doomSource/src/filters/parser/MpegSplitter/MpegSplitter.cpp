@@ -502,7 +502,7 @@ CMpegSplitterFilter::CMpegSplitterFilter(LPUNKNOWN pUnk, HRESULT* phr, const CLS
 	, m_PD10(false)
 	, m_fHasAccessUnitDelimiters(false)
 	, m_rtMaxShift(50000000)
-	, m_offset_sink(NULL)
+	, m_offset_index(0)
 {
 }
 
@@ -531,12 +531,46 @@ HRESULT CMpegSplitterFilter::SetPD10(BOOL Enable)
 	return S_OK;
 }
 
-HRESULT CMpegSplitterFilter::SetOffsetSink(COffsetSink *sink)
+HRESULT CMpegSplitterFilter::GetOffset(REFERENCE_TIME time, REFERENCE_TIME frame_time, int * offset_out)
 {
-	m_offset_sink = sink;
-	return S_OK;
-}
+	if (!offset_out)
+		return E_POINTER;
 
+	if (time < 0)
+		return E_INVALIDARG;
+
+	CAutoLock lck(&m_offset_item_lock);
+	if (m_offset_index == 0)
+		return E_FAIL;
+
+	int start = m_offset_index<max_offset_items ? 0 : m_offset_index%max_offset_items;
+	int end = m_offset_index<max_offset_items ? m_offset_index : start+max_offset_items;
+
+	int request = (int)((double)time/frame_time + 0.5);
+	int giving = 0x7fffffff;
+	for(int i = start;i < end; i++)
+	{
+		offset_item &item =  m_offset_items[i%max_offset_items];
+		int tmp_giving;
+		tmp_giving = (int)((double)item.time_start / frame_time + 0.5);
+		if (tmp_giving <= request && request < tmp_giving + item.frame_count)
+		{
+			giving = request;
+			*offset_out = item.offsets[request-tmp_giving];
+			return S_OK;
+		}
+		else
+		{
+			tmp_giving = (int)((double)item.time_start / frame_time + 0.5);
+			if (abs(request - tmp_giving) < abs(request - giving))
+			{
+				giving = tmp_giving;
+				*offset_out = item.offsets[0];
+			}			
+		}
+	}
+	return S_FALSE;	//indirect match
+}
 
 HRESULT CMpegSplitterFilter::BeforeShow()
 {
@@ -586,7 +620,7 @@ STDMETHODIMP CMpegSplitterFilter::NonDelegatingQueryInterface(REFIID riid, void*
 	CheckPointer(ppv, E_POINTER);
 
 	return
-		QI(IMVC)
+		QI(IOffsetMetadata)
 		QI(IAMStreamSelect)
 		__super::NonDelegatingQueryInterface(riid, ppv);
 }
@@ -980,9 +1014,6 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 			seekpos = (__int64)(1.0*rt/m_rtDuration*len);
 			m_pFile->Seek(seekpos);
 			m_rtStartOffset = m_pFile->m_rtMin + m_pFile->NextPTS(pMasterStream->GetHead()) - rt;
-			printf("seeking by bitrate(offset=%lld).\n", m_rtStartOffset);
-			if (m_offset_sink) 
-				m_offset_sink->SetOffset(m_rtStartOffset);
 		}
 
 		m_pFile->Seek(seekpos);
@@ -1898,6 +1929,77 @@ HRESULT CMpegSplitterOutputPin::DeliverPacket(CAutoPtr<Packet> p)
 
 				while(pos != m_pl.GetHeadPosition()) {
 					CAutoPtr<Packet> p2 = m_pl.RemoveHead();
+
+					// check for offset sequence here
+					BYTE * data = p2->GetData();
+					if (p->TrackNumber == 0x1012 && ((data[4]&0x1f) == 6) )
+					{
+						int pos = 5;
+						int sei_type = 0;
+						int sei_size = 0;
+						while(data[pos] == 0xff) 
+							sei_type += data[pos++];
+						sei_type += data[pos++];
+						while(data[pos] == 0xff)
+							sei_size += data[pos++];
+						sei_size += data[pos++];
+
+						typedef struct _offset_meta_header
+						{
+							unsigned char unkown1[27];
+							unsigned char point_count;
+							unsigned char unkown2[2];
+						} offset_meta_header;
+
+						if (sei_type != 37 || sei_size <= 3+sizeof(offset_meta_header))
+							goto non_offset;
+						if (data[pos] >> 7 )
+							goto non_offset;
+
+						data += pos;
+						pos = 2;
+						int nest_size = 0;
+						while(data[pos] == 0xff) 
+							nest_size += data[pos++];
+						nest_size += data[pos++];
+
+
+						if (nest_size <= sizeof(offset_meta_header))
+							goto non_offset;	// empty or incomplete packet
+						if (data+nest_size-p2->GetData() > p2->GetDataSize())
+							goto non_offset;	// incomplete packet
+
+						data += pos;
+						offset_meta_header header;
+						memcpy(&header, data, sizeof(header));
+						data += sizeof(header);
+
+
+						CMpegSplitterFilter * filter = (CMpegSplitterFilter*) m_pFilter;
+						{
+							CAutoLock lck(&filter->m_offset_item_lock);
+							offset_item *item = filter->m_offset_items+(filter->m_offset_index % max_offset_items);
+							item->frame_count = 0;
+							item->time_start = m_rtStart + p->rtStart;
+
+							for(int i=0; i<header.point_count && i<max_offset_frame_count; i++)
+							{
+								if (data+i-p2->GetData() > p2->GetDataSize())
+									goto non_offset;	// incomplete packet
+
+								int point = ((unsigned char*)data)[i];
+								point = point & 0x80 ? -(point&0x7f) : (point&0x7f);
+								item->offsets[item->frame_count++] = point;
+							}
+
+							filter->m_offset_index ++;
+						}
+
+						// TODO: check some header
+					}
+
+non_offset:
+
 					p->Append(*p2);
 				}
 

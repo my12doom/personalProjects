@@ -78,6 +78,7 @@ m_id(id)
 
 my12doomRendererDShow::~my12doomRendererDShow()
 {
+	CAutoLock lck(&m_data_lock);
 	if (m_data)
 		free(m_data);
 	timeEndPeriod(1);
@@ -97,7 +98,7 @@ HRESULT my12doomRendererDShow::CheckMediaType(const CMediaType *pmt)
 
 	GUID subtype = *pmt->Subtype();
     if(*pmt->Type() == MEDIATYPE_Video  &&
-       (subtype == MEDIASUBTYPE_YV12 || subtype ==  MEDIASUBTYPE_NV12 || subtype == MEDIASUBTYPE_YUY2))
+       (subtype == MEDIASUBTYPE_YV12 || subtype ==  MEDIASUBTYPE_NV12 || subtype == MEDIASUBTYPE_YUY2 || subtype == MEDIASUBTYPE_RGB32))
     {
         hr = m_owner->CheckMediaType(pmt, m_id);
     }
@@ -112,6 +113,7 @@ HRESULT my12doomRendererDShow::SetMediaType(const CMediaType *pmt)
 
 	m_format = *pmt->Subtype();
 
+	CAutoLock lck(&m_data_lock);
 	if (m_data)
 		free(m_data);
 
@@ -123,6 +125,11 @@ HRESULT my12doomRendererDShow::SetMediaType(const CMediaType *pmt)
 			one_line[i] = i%2 ? 128 : 0;
 		for(int i=0; i<height; i++)
 			memcpy(m_data + width*2*i, one_line, width*2);
+	}
+	else if (m_format == MEDIASUBTYPE_RGB32)
+	{
+		m_data = (BYTE*)malloc(width * height * 4);
+		memset(m_data, 0, width * height * 4);
 	}
 	else
 	{
@@ -173,7 +180,6 @@ bool my12doomRendererDShow::is_connected()
 
 HRESULT my12doomRendererDShow::DoRenderSample( IMediaSample * pSample )
 {
-
 	REFERENCE_TIME start, end;
 	pSample->GetTime(&start, &end);
 

@@ -3,7 +3,7 @@
 
 PGSRenderer::PGSRenderer()
 {
-	m_seg_buffer = (BYTE*) malloc(655360);
+	m_seg_buffer = (BYTE*) malloc(2048000);
 	m_seg_buffer_pos = 0;
 	m_last_found = -1;
 }
@@ -33,9 +33,11 @@ HRESULT PGSRenderer::add_data(BYTE *data, int size, int start, int end)
 {
 	HRESULT hr = S_OK;
 
-	if (size + m_seg_buffer_pos >= 655360)
+	if (size + m_seg_buffer_pos >= 2048000)
 	{
-		printf("buffer overrun!.\n");
+		// buffer overrun! reset buffer and drop this packet
+		m_seg_buffer_pos = 0;
+		return S_OK;
 	}
 
 	// pack together

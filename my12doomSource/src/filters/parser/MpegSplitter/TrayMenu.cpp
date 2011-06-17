@@ -2,7 +2,7 @@
 #include "resource.h"
 
 #define UM_ICONNOTIFY (WM_USER + 101)
-
+#define IDI_ICON1 0
 
 TrayMenu::TrayMenu(ITrayMenuCallback *cb, LPCTSTR tooltip)
 {

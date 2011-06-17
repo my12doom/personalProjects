@@ -23,14 +23,23 @@
 
 #include "../BaseSplitter/BaseSplitter.h"
 #include "MpegSplitterFile.h"
-#include "IMVC.h"
 #include "TrayMenu.h"
+#include "IOffsetMetadata.h"
 
 class CMpegSplitterOutputPin;
 
+#define max_offset_frame_count 128
+#define max_offset_items 128
+typedef struct _offset_items
+{
+	REFERENCE_TIME time_start;
+	int frame_count;
+	int offsets[max_offset_frame_count];
+} offset_item;
+
 // changed GUID to diff from 3dtv.at's
 class __declspec(uuid("8eD7B1DE-3B84-4817-A96F-4C94728B1AAE"))
-	CMpegSplitterFilter : public CBaseSplitterFilter, public IAMStreamSelect, public IMVC, public ITrayMenuCallback
+	CMpegSplitterFilter : public CBaseSplitterFilter, public IAMStreamSelect, public ITrayMenuCallback, public IOffsetMetadata
 {
 	friend class CMpegSplitterOutputPin;
 
@@ -42,7 +51,6 @@ protected:
 	// my12doom's codes
 	CAutoPtr<TrayMenu> m_traymenu;
 	bool m_PD10;
-	COffsetSink *m_offset_sink;
 	// mvc right eye handle codes
 	bool m_for_encoding;
 	bool m_mvc_found;
@@ -54,6 +62,11 @@ protected:
 	CCritSec m_queuelock;
 	CAutoPtrList<Packet> m_queue;
 	HRESULT dummy_deliver_packet(CAutoPtr<Packet> p);
+	// offset metadata
+	offset_item m_offset_items[max_offset_items];
+	int m_offset_index; //=0
+	CCritSec m_offset_item_lock;
+
 	// end my12doom
 
 
@@ -94,7 +107,9 @@ public:
 	STDMETHODIMP IsMVC();
 	STDMETHODIMP GetPD10(BOOL *Enabled);
 	STDMETHODIMP SetPD10(BOOL Enable);
-	STDMETHODIMP SetOffsetSink(COffsetSink *sink);
+
+	// IOffsetMetadata
+	HRESULT GetOffset(REFERENCE_TIME time, REFERENCE_TIME frame_time, int * offset_out);
 
 	// ITrayMenuCallback
 	HRESULT Click(int id);

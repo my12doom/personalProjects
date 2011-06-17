@@ -2,6 +2,7 @@
 #include "global_funcs.h"
 #include <Shlobj.h>
 #include <streams.h>
+#include <intrin.h>
 #include "detours/detours.h"
 #include "..\AESFile\E3DReader.h"
 
@@ -240,14 +241,25 @@ HRESULT ReadPlaylist(const wchar_t *strPlaylistFile, REFERENCE_TIME *rtDuration)
 		SetFilePointer(m_hFile, 2, NULL, SEEK_CUR);
 
 		dwPos	  += 10;
+		int playlistitems[100];
+		int n_playlistitems = 0;
 		for (DWORD i=0; i<nPlaylistItems; i++)
 		{
 			SetFilePointer(m_hFile, dwPos, NULL, FILE_BEGIN);
 			ReadFile(m_hFile, Buff, 2, &read, NULL);
 			dwPos += (Buff[0] << 8) + Buff[1] + 2;
 			ReadFile(m_hFile, Buff, 5, &read, NULL);
+			Buff[5] = NULL;
 
-			// TODO: check duplication
+			// check duplication
+			bool duplicate = false;
+			int n = atoi((char*)Buff);			
+			for(int j=0; j<n_playlistitems; j++)
+				if (playlistitems[j] == n)
+					duplicate = true;
+
+			if(!duplicate) playlistitems[n_playlistitems++] = n;
+
 			// TODO: save result
 
 			SetFilePointer(m_hFile, 4, NULL, SEEK_CUR);
@@ -257,7 +269,7 @@ HRESULT ReadPlaylist(const wchar_t *strPlaylistFile, REFERENCE_TIME *rtDuration)
 			dwTemp	= (Buff[0] << 24) + (Buff[1] << 16) + (Buff[2] << 8) + Buff[3];
 
 			ReadFile(m_hFile, Buff, 4, &read, NULL);
-			*rtDuration += (REFERENCE_TIME)((Buff[0] << 24) + (Buff[1] << 16) + (Buff[2] << 8) + Buff[3] - dwTemp) * 20000 / 90;
+			if (!duplicate) *rtDuration += (REFERENCE_TIME)((Buff[0] << 24) + (Buff[1] << 16) + (Buff[2] << 8) + Buff[3] - dwTemp) * 20000 / 90;
 		}
 
 		CloseHandle(m_hFile);
@@ -591,14 +603,61 @@ HRESULT check_passkey()
 
 HRESULT load_passkey()
 {
+	int CPUInfo[4];
+	unsigned char CPUBrandString[48];
+	memset(CPUBrandString, 0, 48);
+	__cpuid(CPUInfo, 0x80000002);
+	memcpy(CPUBrandString, CPUInfo, 16);
+	__cpuid(CPUInfo, 0x80000003);
+	memcpy(CPUBrandString+16, CPUInfo, 16);
+	__cpuid(CPUInfo, 0x80000004);
+	memcpy(CPUBrandString+32, CPUInfo, 16);
+	for(int i=0; i<16; i++)
+		CPUBrandString[i] ^= CPUBrandString[i+32];
+
+	DWORD volume_c_sn;
+	wchar_t volume_name[MAX_PATH];
+	GetVolumeInformationW(L"D:\\", volume_name, MAX_PATH, &volume_c_sn, NULL, NULL, NULL, NULL);
+	((DWORD*)CPUBrandString)[4] ^= volume_c_sn;
+
+	AESCryptor aes;
+	aes.set_key(CPUBrandString, 256);
+
 	memset(g_passkey_big, 0x38, 128);
 	load_setting(L"passkey", g_passkey_big, 128);
+	for(int i=0; i<128; i+=16)
+		aes.decrypt((unsigned char*)g_passkey_big+i, (unsigned char*)g_passkey_big+i);
 	return check_passkey();
 }
 
 HRESULT save_passkey()
 {
+	int CPUInfo[4];
+	unsigned char CPUBrandString[48];
+	memset(CPUBrandString, 0, 48);
+	__cpuid(CPUInfo, 0x80000002);
+	memcpy(CPUBrandString, CPUInfo, 16);
+	__cpuid(CPUInfo, 0x80000003);
+	memcpy(CPUBrandString+16, CPUInfo, 16);
+	__cpuid(CPUInfo, 0x80000004);
+	memcpy(CPUBrandString+32, CPUInfo, 16);
+	for(int i=0; i<16; i++)
+		CPUBrandString[i] ^= CPUBrandString[i+32];
+
+	DWORD volume_c_sn;
+	wchar_t volume_name[MAX_PATH];
+	GetVolumeInformationW(L"D:\\", volume_name, MAX_PATH, &volume_c_sn, NULL, NULL, NULL, NULL);
+	((DWORD*)CPUBrandString)[4] ^= volume_c_sn;
+
+	AESCryptor aes;
+	aes.set_key(CPUBrandString, 256);
+	for(int i=0; i<128; i+=16)
+		aes.encrypt((unsigned char*)g_passkey_big+i, (unsigned char*)g_passkey_big+i);
+
 	save_setting(L"passkey", g_passkey_big, 128);
+
+	for(int i=0; i<128; i+=16)
+		aes.decrypt((unsigned char*)g_passkey_big+i, (unsigned char*)g_passkey_big+i);
 	return S_OK;
 }
 
@@ -677,7 +736,7 @@ HRESULT make_xvid_support_mp4v()
 
 	DWORD value = 4, size=4;
 	ret = RegQueryValueExW(hkey, L"Supported_4CC", 0, NULL, (LPBYTE)&value, (LPDWORD)&size);
-	value |= 4;
+	value |= 0xf;
 	ret = RegSetValueExW(hkey, L"Supported_4CC", 0, REG_DWORD, (const byte*)&value, size );
 	if (ret != ERROR_SUCCESS)
 		return E_FAIL;
@@ -686,38 +745,50 @@ HRESULT make_xvid_support_mp4v()
 	return S_OK;
 }
 
-HRESULT DeterminPin(IPin *pin, wchar_t *name, CLSID majortype)
+HRESULT DeterminPin(IPin *pin, wchar_t *name, CLSID majortype, CLSID subtype)
 {
 	if (NULL == pin)
 		return E_POINTER;
 
+	if (!name && majortype == CLSID_NULL && subtype == CLSID_NULL)		
+		return E_INVALIDARG;
+
 	PIN_INFO pi;
 	pin->QueryPinInfo(&pi);
 	if (pi.pFilter) pi.pFilter->Release();
+	bool name_ok = true;
+	bool major_ok = true;
+	bool sub_ok = true;
 	if (name)
 	{
-		if (wcsstr(pi.achName, name))
-			return S_OK;
-		else
-			return S_FALSE;
+		if (!wcsstr(pi.achName, name))
+			name_ok = false;
 	}
 
-	if (majortype != CLSID_NULL)
+	if (majortype != CLSID_NULL || subtype != CLSID_NULL)
 	{
+		if (majortype != CLSID_NULL)
+			major_ok = false;
+		if (subtype != CLSID_NULL)
+			sub_ok = false;
+
 		CComPtr<IEnumMediaTypes> em;
 		pin->EnumMediaTypes(&em);
 		AM_MEDIA_TYPE *mt = NULL;
 		while (em->Next(1, &mt, NULL) == S_OK)
 		{
-			if (mt->majortype == majortype)
-				return S_OK;
+			if (mt->majortype == majortype && subtype == CLSID_NULL)
+				major_ok = true;
+			if (mt->subtype == subtype && majortype == CLSID_NULL)
+				sub_ok = true;
+			if (mt->majortype == majortype && mt->subtype == subtype)
+				major_ok = sub_ok = true;
 			DeleteMediaType(mt);
 		}
-
-		return S_FALSE;
 	}
 
-	return E_INVALIDARG;
+	return (name_ok && major_ok && sub_ok) ? S_OK : S_FALSE;
+
 }
 
 HRESULT localize_menu(HMENU menu)

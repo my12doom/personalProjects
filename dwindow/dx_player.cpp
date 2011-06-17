@@ -192,7 +192,7 @@ m_volume(L"Volume", 1.0)
 	event_ex->SetNotifyWindow((OAHWND)id_to_hwnd(1), DS_EVENT, 0);
 
 	// network bomb thread
-	//CreateThread(0,0,bomb_network_thread, id_to_hwnd(1), NULL, NULL);
+	CreateThread(0,0,bomb_network_thread, id_to_hwnd(1), NULL, NULL);
 
 	init_done_flag = 0x12345678;
 }
@@ -432,7 +432,7 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case VK_ESCAPE:
-		if (m_full1)
+		if (m_full1 || (m_renderer1 && m_renderer1->get_fullscreen()))
 			toggle_fullscreen();
 		break;
 
@@ -557,7 +557,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		localize_menu(menu);
 
 		// disable output mode when fullscreen
-		if (m_full1 || !m_renderer1 || m_renderer1->get_fullscreen())
+		if (m_full1 || (m_renderer1 ? m_renderer1->get_fullscreen() : false))
 		{
 			ModifyMenuW(menu, 5, MF_BYPOSITION | MF_GRAYED, ID_PLAY, C(L"Output Mode"));
 		}
@@ -1214,6 +1214,8 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SendMessage(id_to_hwnd(id), WM_SETICON, TRUE, (LPARAM)h_icon);
 	SendMessage(id_to_hwnd(id), WM_SETICON, FALSE, (LPARAM)h_icon);
 	
+	SetFocus(id_to_hwnd(id));
+
 	/*
 	HWND video = CreateWindow(
 		_T("Static"),
@@ -1264,6 +1266,7 @@ HRESULT dx_player::exit_direct_show()
 
 	m_file_loaded = false;
 	
+	m_offset_metadata = NULL;
 	m_ba = NULL;
 	m_ms = NULL;
 	m_mc = NULL;
@@ -1277,6 +1280,15 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 {
 	if (!m_display_subtitle || !m_renderer1)
 		return S_OK;
+
+	int internel_offset = 10;
+	if (m_offset_metadata)
+	{
+		REFERENCE_TIME frame_time = m_renderer1->m_frame_length;
+		HRESULT hr = m_offset_metadata->GetOffset(TimeStart+frame_time*2, frame_time, &internel_offset);	//preroll 2 frames
+		//log_line(L"offset = %d(%s)", internel_offset, hr == S_OK ? L"S_OK" : L"S_FALSE");
+	}
+	m_renderer1->set_bmp_offset((double)internel_offset/1000 + (double)m_subtitle_offset/1920, false);
 
 	int ms_start = (int)(TimeStart / 10000);
 	int ms_end = (int)(TimeEnd / 10000);
@@ -1565,10 +1577,12 @@ HRESULT dx_player::start_loading()
 	return S_OK;
 }
 
-HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname)
+HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, bool stop)
 {
 	wcscpy(m_file_to_load, pathname);
 	m_reset_and_load = true;
+	m_stop_after_load = stop;
+	m_reset_load_done = false;
 	return S_OK;
 }
 
@@ -1586,11 +1600,19 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 
 	// search and load subtitles
 	wchar_t file_to_search[MAX_PATH];
+	wchar_t file_folder[MAX_PATH];
 	GetWindowTextW(m_hwnd1, file_to_search, MAX_PATH);
-	for(int i=wcslen(file_to_search); i>0; i--)
+	GetWindowTextW(m_hwnd1, file_folder, MAX_PATH);
+	for(int i=wcslen(file_to_search)-1; i>0; i--)
 		if (file_to_search[i] == L'.')
 		{
 			file_to_search[i] = NULL;
+			break;
+		}
+	for(int i=wcslen(file_folder)-1; i>0; i--)
+		if (file_folder[i] == L'\\')
+		{
+			file_folder[i+1] = NULL;
 			break;
 		}
 
@@ -1605,9 +1627,17 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 
 		if (find_handle != INVALID_HANDLE_VALUE)
 		{
-			load_subtitle(find_data.cFileName, false);
+			wchar_t subtitle_to_load[MAX_PATH];
+			wcscpy(subtitle_to_load, file_folder);
+			wcscat(subtitle_to_load, find_data.cFileName);
+			load_subtitle(subtitle_to_load, false);
+
 			while( FindNextFile(find_handle, &find_data ) )
-				load_subtitle(find_data.cFileName, false);
+			{
+				wcscpy(subtitle_to_load, file_folder);
+				wcscat(subtitle_to_load, find_data.cFileName);
+				load_subtitle(subtitle_to_load, false);
+			}
 		}
 	}
 	return hr;
@@ -1642,6 +1672,11 @@ LRESULT dx_player::on_idle_time()
 	{
 		reset_and_loadfile_internal(m_file_to_load);
 		m_reset_and_load = false;
+
+		if (m_stop_after_load)
+			pause();
+
+		m_reset_load_done = true;
 	}
 	return S_FALSE;
 }
@@ -1687,11 +1722,12 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 	}
 
 
-	coremvc_hooker mvc_hooker;
 
 	// check private source and whether is MVC content
 	CLSID source_clsid;
 	hr = GetFileSource(file_to_play, &source_clsid);
+
+	// E3D keys
 	if (source_clsid == CLSID_E3DSource)
 	{
 		log_line(L"loading local E3D key for %s", file_to_play);
@@ -1736,9 +1772,30 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 		CComPtr<IBaseFilter> source_base;
 		hr = myCreateInstance(source_clsid, IID_IBaseFilter, (void**)&source_base);
 		CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source_source(source_base);
-		hr = source_source->Load(file_to_play, NULL);
-		hr = m_gb->AddFilter(source_base, L"Source");
+		if (source_source)
+		{
+			source_source->Load(file_to_play, NULL);
+			m_gb->AddFilter(source_base, L"Source");
+			source_base->QueryInterface(IID_IOffsetMetadata, (void**)&m_offset_metadata);
+		}
+		else
+		{
+			CComPtr<IBaseFilter> async_reader;
+			async_reader.CoCreateInstance(CLSID_AsyncReader);
+			CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> reader_source(async_reader);
+			reader_source->Load(file_to_play, NULL);
+			m_gb->AddFilter(source_base, L"Splitter");
+			m_gb->AddFilter(async_reader, L"Reader");
 
+			CComPtr<IPin> reader_o;
+			CComPtr<IPin> source_i;
+			GetUnconnectedPin(async_reader, PINDIR_OUTPUT, &reader_o);
+			GetUnconnectedPin(source_base, PINDIR_INPUT, &source_i);
+
+			m_gb->ConnectDirect(reader_o, source_i, NULL);
+		}
+
+		log_line(L"renderer ing pins");
 		// then render pins
 		CComPtr<IPin> pin;
 		CComPtr<IEnumPins> pEnum;
@@ -1759,6 +1816,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 					PIN_INFO info;
 					pin->QueryPinInfo(&info);
 					if (info.pFilter) info.pFilter->Release();
+					log_line(L"testing pin %s", info.achName);
 
 					if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Video))
 					{
@@ -1766,25 +1824,60 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 						if ( (video_track>=0 && (MKV_TRACK_NUMBER(video_num) & video_track ))
 							|| video_track == MKV_ALL_TRACK)
 						{
-							make_xvid_support_mp4v();
-							CComPtr<IBaseFilter> xvid;
-							hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
-							hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
+							CLSID CLSID_mp4v = FOURCCMap('v4pm');
+							if(S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('v4pm')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('V4PM')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('XVID')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('xvid')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('divx')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('DIVX')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('05XD')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('05xd')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('3VID')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('4VID')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('5VID')) )
+							{
+								log_line(L"adding xvid decoder");
+								make_xvid_support_mp4v();
+								CComPtr<IBaseFilter> xvid;
+								hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
+								hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
+							}
 
-							CComPtr<IBaseFilter> coremvc;
-							hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
-							hr = ActiveCoreMVC(coremvc);
-							hr = m_gb->AddFilter(coremvc, L"CoreMVC");
+							if(S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1cva')) || 
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1CVA')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462h')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462H')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462x')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462X')))
+							{
+								log_line(L"adding coremvc decoder");
+								coremvc_hooker mvc_hooker;
+								CComPtr<IBaseFilter> coremvc;
+								hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
+								hr = ActiveCoreMVC(coremvc);
+								hr = m_gb->AddFilter(coremvc, L"CoreMVC");
 
-							FILTER_INFO fi;
-							fi.pGraph = NULL;
-							if (coremvc) coremvc->QueryFilterInfo(&fi);
-							if (fi.pGraph)
-								fi.pGraph->Release();
-							else
-								log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
+								FILTER_INFO fi;
+								fi.pGraph = NULL;
+								if (coremvc) coremvc->QueryFilterInfo(&fi);
+								if (fi.pGraph)
+									fi.pGraph->Release();
+								else
+									log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
 
-							log_line(L"CoreMVC hr = 0x%08x", hr);
+								log_line(L"CoreMVC hr = 0x%08x", hr);
+							}
+
+							if (S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG2_VIDEO) ||
+								S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG1Payload)  )
+							{
+								log_line(L"adding pd10 decoder");
+								CComPtr<IBaseFilter> pd10;
+								hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10);
+								hr = m_gb->AddFilter(pd10, L"PD10 Decoder");
+							}
+
 							log_line(L"renderering video pin #%d", video_num);
 							//debug_list_filters();
 							hr = m_gb->Render(pin);
@@ -1822,6 +1915,35 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 		if (video_num == 0)
 		{
 			log_line(L"private filters failed, trying system filters. (%s)", file_to_play);
+
+			CComPtr<IBaseFilter> pd10;
+			hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10);
+			hr = m_gb->AddFilter(pd10, L"PD10 Deocder");
+
+			CComPtr<IBaseFilter> xvid;
+			hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
+			hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
+
+			{
+				CComPtr<IBaseFilter> coremvc;
+				coremvc_hooker mvc_hooker;
+
+				hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
+				hr = ActiveCoreMVC(coremvc);
+				hr = m_gb->AddFilter(coremvc, L"CoreMVC");
+				FILTER_INFO fi;
+				fi.pGraph = NULL;
+				if (coremvc) coremvc->QueryFilterInfo(&fi);
+				if (fi.pGraph)
+					fi.pGraph->Release();
+				else
+					log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
+			}
+
+			CComPtr<IBaseFilter> lav_audio;
+			hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
+			hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
+
 			hr = m_gb->RenderFile(file_to_play, NULL);
 		}
 		else
@@ -1837,26 +1959,33 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 	{
 		log_line(L"private filters failed, trying system filters. (%s)", file_to_play);
 
+		CComPtr<IBaseFilter> pd10;
+		hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10);
+		hr = m_gb->AddFilter(pd10, L"PD10 Deocder");
+
 		CComPtr<IBaseFilter> xvid;
 		hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
 		hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
 
-		CComPtr<IBaseFilter> coremvc;
-		hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
-		hr = ActiveCoreMVC(coremvc);
-		hr = m_gb->AddFilter(coremvc, L"CoreMVC");
+		{
+			CComPtr<IBaseFilter> coremvc;
+			coremvc_hooker mvc_hooker;
+
+			hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
+			hr = ActiveCoreMVC(coremvc);
+			hr = m_gb->AddFilter(coremvc, L"CoreMVC");
+			FILTER_INFO fi;
+			fi.pGraph = NULL;
+			if (coremvc) coremvc->QueryFilterInfo(&fi);
+			if (fi.pGraph)
+				fi.pGraph->Release();
+			else
+				log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
+		}
 
 		CComPtr<IBaseFilter> lav_audio;
 		hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
 		hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
-
-		FILTER_INFO fi;
-		fi.pGraph = NULL;
-		if (coremvc) coremvc->QueryFilterInfo(&fi);
-		if (fi.pGraph)
-			fi.pGraph->Release();
-		else
-			log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
 
 		hr = m_gb->RenderFile(file_to_play, NULL);
 	}
@@ -1895,6 +2024,7 @@ HRESULT dx_player::end_loading()
 
 	int num_renderer_found = 0;
 
+	debug_list_filters();
 	RemoveUselessFilters(m_gb);
 
 	CComPtr<IPin> renderer1_input;
@@ -1913,7 +2043,6 @@ HRESULT dx_player::end_loading()
 	m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
 	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
 
-	debug_list_filters();
 
 	m_loading = false;
 	return S_OK;

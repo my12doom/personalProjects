@@ -92,6 +92,7 @@ public:
 	CComPtr<IBaseFilter> m_dshow_renderer1;
 	CComPtr<IBaseFilter> m_dshow_renderer2;
 	AESCryptor m_codec;
+	REFERENCE_TIME m_frame_length;
 
 	// public functions
 	HRESULT recaculate_mask();
@@ -111,7 +112,7 @@ public:
 	HRESULT set_aspect(double aspect);
 	HRESULT set_window(HWND wnd, HWND wnd2);
 	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop);
-	HRESULT set_bmp_offset(double offset);
+	HRESULT set_bmp_offset(double offset, bool render = true);
 	HRESULT set_ui(void* data, int pitch);
 	HRESULT set_ui_visible(bool visible);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
@@ -143,6 +144,7 @@ protected:
 	int m_pass1_width;
 	int m_pass1_height;
 	Imy12doomRendererCallback *m_cb;
+	bool m_revert_RGB32;
 
 protected:
 	friend class my12doomRendererDShow;
@@ -230,6 +232,7 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_yuy2;
 	CComPtr <IDirect3DPixelShader9> m_ps_test;
 
+	CComPtr<IDirect3DTexture9> m_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
 	CComPtr<IDirect3DTexture9> m_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
 	CComPtr<IDirect3DTexture9> m_tex_Y;							// Y plane of YV12/NV12, in L8
 	CComPtr<IDirect3DTexture9> m_tex_YV12_UV;					// UV plane of YV12, in L8, double height
