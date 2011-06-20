@@ -185,7 +185,8 @@ protected:
 	HRESULT draw_subtitle();
 	double m_subtitle_center_x;
 	double m_subtitle_bottom_y;
-	int m_subtitle_offset;
+	int m_user_offset;
+	int m_internel_offset;
 
 	// font
 	HFONT m_font;

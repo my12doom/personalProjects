@@ -3,7 +3,7 @@
 
 bar_drawer::bar_drawer()
 {
-	resource = new DWORD[206*14];
+	resource = new DWORD[222*14];
 	result = new DWORD[4096*30];
 	draw_x = draw_y = 0;
 	total_width = 500;
@@ -17,8 +17,8 @@ bar_drawer::~bar_drawer()
 
 void bar_drawer::load_resource(HINSTANCE hExe)
 {
-	HBITMAP bm = (HBITMAP)LoadImage(hExe, MAKEINTRESOURCE(IDB_BAR), IMAGE_BITMAP, 206, 14, LR_DEFAULTCOLOR);
-	GetBitmapBits(bm, 206*14*4, resource);
+	HBITMAP bm = (HBITMAP)LoadImage(hExe, MAKEINTRESOURCE(IDB_BAR), IMAGE_BITMAP, 222, 14, LR_DEFAULTCOLOR);
+	GetBitmapBits(bm, 222*14*4, resource);
 	DeleteObject(bm);
 }
 
@@ -38,7 +38,7 @@ int bar_drawer::copy_to_result_bar(int sx, int sy, int cx, int cy, int dx, int d
 	for (int y=sy; y<sy+cy; y++)
 	{
 		memcpy( result + (y - delta_y) * 4096 + dx,
-			resource + (y) * 206 + sx,
+			resource + (y) * 222 + sx,
 			sizeof(DWORD) * cx
 			);
 
@@ -135,12 +135,12 @@ int bar_drawer::draw_progress(double progress)
 {
 	int progress_width = get_progress_total();
 
-	DWORD color1 = resource[206*3-16];
-	DWORD color2 = resource[206*2+7];
+	DWORD color1 = resource[222*3-32];
+	DWORD color2 = resource[222*2+7];
 
 	move(0, 6);
 	color_fill(progress_width, 2, color1);
-	color_fill((int)(progress_width*progress), 2, color2);
+	color_fill((int)(progress_width*min(progress,1.0)), 2, color2);
 
 	move(0,-6);
 

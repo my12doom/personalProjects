@@ -2,6 +2,8 @@ sampler s0 : register(s0);
 sampler s1 : register(s1);
 sampler s2 : register(s2);
 float4 p0 : register(c0);
+float4 p1 : register(c1);
+float4 p2 : register(c2);
 
 #define PI acos(-1)
 #define C1 (16.0/255.0)
@@ -10,6 +12,9 @@ float4 p0 : register(c0);
 #define height (p0[1])
 #define t_width (p0[2])
 #define t_height (p0[3])
+
+#define repeat_x (p0[0])
+#define repeat_y (p0[1])
 
 #define dx (1/width)
 #define dy (1/height)
@@ -159,7 +164,45 @@ float4 YUY2toRGB(float2 tex : TEXCOORD0) : COLOR
 	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex)[1], tex2D(s1, tex)[3], 1));
 }
 
+float4 anaglyph(float2 tex : TEXCOORD0) : COLOR
+{
+	float4 l = tex2D(s0, tex);
+	float4 r = tex2D(s1, tex);
+	
+	r.r = 0;
+	l.r = 0.299 * l.r + 0.587 * l.g + 0.114 * l.b;
+	l.g = 0;
+	l.b = 0;
+	
+	return l + r;
+}
+
 float4 NV12toRGB(float2 tex : TEXCOORD0) : COLOR		//NV12
 {
 	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex)[0], tex2D(s1, tex)[3], 1));
+}
+
+
+#define tx (p0[0])
+#define ty (p0[1])
+#define sx (p0[2])
+#define sy (p0[3])
+
+#define cx (p1[0])
+#define cy (p1[1])
+#define rx (p1[2])
+#define ry (p1[3])
+
+#define v (p2[0])
+float4 UI(float2 tex : TEXCOORD0) : COLOR
+{
+	float2 sv = {sx/tx, sy/ty};
+	float2 cv = {cx/tx, cy/ty};
+	
+	float2 pv = {frac(tex.x*rx)*cv.x, frac(tex.y*ry)*cv.y};
+	pv += sv;
+	if (tex.x>v)
+		pv += cv;
+	
+	return tex2D(s0, pv);
 }

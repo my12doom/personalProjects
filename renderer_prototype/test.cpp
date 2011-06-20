@@ -105,7 +105,7 @@ int WINAPI WinMain( HINSTANCE hInstance,
 
 	HRESULT hr;
 	renderer = new my12doomRenderer(g_hWnd, g_hWnd2);
-	renderer->m_codec.set_key(ps_aes_key, 256);
+	renderer->m_AES.set_key(ps_aes_key, 256);
 
 	// dshow
 	wchar_t file[MAX_PATH] = L"test.avi";

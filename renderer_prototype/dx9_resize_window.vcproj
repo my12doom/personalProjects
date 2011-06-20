@@ -244,6 +244,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\my12doomRenderer_UI.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\PixelShaders\ps.txt"
 				>
 				<FileConfiguration
@@ -262,7 +266,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling planar_rgb of ps.txt"
-						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\YV12.h YV12toRGB&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\NV12.h NV12toRGB&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\YUY2.h YUY2toRGB&#x0D;&#x0A;"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\YV12.h YV12toRGB&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\NV12.h NV12toRGB&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\YUY2.h YUY2toRGB&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\anaglyph.h anaglyph&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps.txt .\PixelShaders\UI.h UI no&#x0D;&#x0A;"
 						Outputs=".\PixelShaders\YV12.h"
 					/>
 				</FileConfiguration>

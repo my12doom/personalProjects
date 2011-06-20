@@ -226,6 +226,7 @@
 				OutputFile="$(OutDir)/dwindow.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\DX_SDK_LITE\Lib\x86;E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt"
+				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -453,6 +454,10 @@
 							AssemblerOutput="2"
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\my12doomRenderer_UI.cpp"
+					>
 				</File>
 			</Filter>
 			<Filter

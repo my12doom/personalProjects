@@ -612,12 +612,13 @@ HRESULT load_passkey()
 	memcpy(CPUBrandString+16, CPUInfo, 16);
 	__cpuid(CPUInfo, 0x80000004);
 	memcpy(CPUBrandString+32, CPUInfo, 16);
+	memset(CPUBrandString + strlen((char*)CPUBrandString), 0, 48-strlen((char*)CPUBrandString));
 	for(int i=0; i<16; i++)
 		CPUBrandString[i] ^= CPUBrandString[i+32];
 
-	DWORD volume_c_sn;
+	DWORD volume_c_sn = 0;
 	wchar_t volume_name[MAX_PATH];
-	GetVolumeInformationW(L"D:\\", volume_name, MAX_PATH, &volume_c_sn, NULL, NULL, NULL, NULL);
+	GetVolumeInformationW(L"C:\\", volume_name, MAX_PATH, &volume_c_sn, NULL, NULL, NULL, NULL);
 	((DWORD*)CPUBrandString)[4] ^= volume_c_sn;
 
 	AESCryptor aes;
@@ -641,20 +642,28 @@ HRESULT save_passkey()
 	memcpy(CPUBrandString+16, CPUInfo, 16);
 	__cpuid(CPUInfo, 0x80000004);
 	memcpy(CPUBrandString+32, CPUInfo, 16);
+	memset(CPUBrandString + strlen((char*)CPUBrandString), 0, 48-strlen((char*)CPUBrandString));
 	for(int i=0; i<16; i++)
 		CPUBrandString[i] ^= CPUBrandString[i+32];
 
-	DWORD volume_c_sn;
+
+	DWORD volume_c_sn = 0;
 	wchar_t volume_name[MAX_PATH];
-	GetVolumeInformationW(L"D:\\", volume_name, MAX_PATH, &volume_c_sn, NULL, NULL, NULL, NULL);
+	GetVolumeInformationW(L"C:\\", volume_name, MAX_PATH, &volume_c_sn, NULL, NULL, NULL, NULL);
 	((DWORD*)CPUBrandString)[4] ^= volume_c_sn;
 
+	//char tmp [32];
+	//sprintf(tmp, "%d", volume_c_sn);
+	//MessageBoxA(NULL, (char*)CPUBrandString, "...", MB_OK);
+	//MessageBoxA(NULL, tmp, "...", MB_OK);
 	AESCryptor aes;
 	aes.set_key(CPUBrandString, 256);
 	for(int i=0; i<128; i+=16)
 		aes.encrypt((unsigned char*)g_passkey_big+i, (unsigned char*)g_passkey_big+i);
 
 	save_setting(L"passkey", g_passkey_big, 128);
+
+
 
 	for(int i=0; i<128; i+=16)
 		aes.decrypt((unsigned char*)g_passkey_big+i, (unsigned char*)g_passkey_big+i);

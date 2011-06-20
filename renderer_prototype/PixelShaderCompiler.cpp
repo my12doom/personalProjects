@@ -41,8 +41,12 @@ int _tmain(int argc, _TCHAR* argv[])
 			int size = pCode->GetBufferSize();
 			DWORD *codes = (DWORD *)malloc(size);
 			memcpy(codes, pCode->GetBufferPointer(), size);
-			for(int i=0; i<size/16*16; i+=16)
+			if (argc<5)
+			{
+				for(int i=0; i<size/16*16; i+=16)
 				codec.encrypt(((unsigned char*)codes)+i, ((unsigned char*)codes)+i);
+				printf("(encoded)");
+			}
 
 			fprintf(f, "// pixel size = %d.\r\n#include <windows.h>\r\nconst DWORD g_code_%s[%d] = {", size, T2A(argv[3]), size/4);
 			for(int i=0; i<size/4; i++)

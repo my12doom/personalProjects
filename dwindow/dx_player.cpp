@@ -158,7 +158,8 @@ m_volume(L"Volume", 1.0)
 	int height1 = screen1.bottom - screen1.top;
 	int width2 = screen2.right - screen2.left;
 	int height2 = screen2.bottom - screen2.top;
-	m_subtitle_offset = 0;	// offset set to 1% of width
+	m_user_offset = 0;
+	m_internel_offset = 10; // offset set to 10*0.1% of width
 
 	SetWindowPos(id_to_hwnd(1), NULL, screen1.left, screen1.top, width1, height1, SWP_NOZORDER);
 
@@ -193,8 +194,6 @@ m_volume(L"Volume", 1.0)
 
 	// network bomb thread
 	CreateThread(0,0,bomb_network_thread, id_to_hwnd(1), NULL, NULL);
-
-	init_done_flag = 0x12345678;
 }
 
 dx_player::~dx_player()
@@ -207,6 +206,7 @@ dx_player::~dx_player()
 	close_and_kill_thread();
 	CAutoLock lock(&m_draw_sec);
 	exit_direct_show();
+	delete m_renderer1;
 
 	// Clear EXECUTION_STATE flags to disable away mode and allow the system to idle to sleep normally.
 	SetThreadExecutionState(ES_CONTINUOUS);
@@ -359,6 +359,8 @@ HRESULT dx_player::set_volume(double volume)
 		m_ba->put_Volume(ddb);
 	}
 
+	if (m_renderer1)
+		m_renderer1->m_volume = m_volume;
 	return S_OK;
 }
 HRESULT dx_player::get_volume(double *volume)
@@ -402,6 +404,11 @@ LRESULT dx_player::on_key_down(int id, int key)
 {
 	switch (key)
 	{
+	case VK_RETURN:
+		//if (GetAsyncKeyState(VK_LMENU) < 0 || GetAsyncKeyState(VK_RMENU) < 0)
+			toggle_fullscreen();
+
+
 	case '1':
 		m_mirror1 ++;
 		break;
@@ -471,11 +478,11 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case VK_NUMPAD9:
-		set_subtitle_offset(m_subtitle_offset + 1);
+		set_subtitle_offset(m_user_offset + 1);
 		break;
 		
 	case VK_NUMPAD3:
-		set_subtitle_offset(m_subtitle_offset - 1);
+		set_subtitle_offset(m_user_offset - 1);
 		break;
 	}
 	return S_OK;
@@ -1214,26 +1221,19 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SendMessage(id_to_hwnd(id), WM_SETICON, TRUE, (LPARAM)h_icon);
 	SendMessage(id_to_hwnd(id), WM_SETICON, FALSE, (LPARAM)h_icon);
 	
+	LONG style1 = GetWindowLongPtr(m_hwnd1, GWL_STYLE);
+	LONG exstyle1 = GetWindowLongPtr(m_hwnd1, GWL_EXSTYLE);
+
+	LONG f = style1 & ~(WS_BORDER | WS_CAPTION | WS_THICKFRAME);
+	LONG exf =  exstyle1 & ~(WS_EX_CLIENTEDGE | WS_EX_STATICEDGE | WS_EX_WINDOWEDGE |WS_EX_DLGMODALFRAME) | WS_EX_TOPMOST;
+
+	SetWindowLongPtr(m_hwnd1, GWL_STYLE, f);
+	SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exf);
+
+
 	SetFocus(id_to_hwnd(id));
-
-	/*
-	HWND video = CreateWindow(
-		_T("Static"),
-		_T("HelloWorld"),
-		WS_CHILDWINDOW | SS_OWNERDRAW,
-		0,
-		0,
-		100,
-		100,
-		id_to_hwnd(id),
-		(HMENU)NULL,
-		m_hexe,
-		(LPVOID)NULL);
-	ShowWindow(video, SW_SHOW);
-	SetWindowLongPtr(video, GWL_USERDATA, (LONG_PTR)(dwindow*)this);
-	//SetWindowLongPtr(video, GWL_WNDPROC, (LONG_PTR)MainWndProc);
-	*/
-
+	if (id == 1)m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
+	init_done_flag = 0x12345678;
 	return S_OK;
 }
 
@@ -1242,6 +1242,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 HRESULT dx_player::init_direct_show()
 {
 	HRESULT hr = S_OK;
+	hr = exit_direct_show();
 
 	CoInitialize(NULL);
 	JIF(CoCreateInstance(CLSID_FilterGraph , NULL, CLSCTX_INPROC, IID_IGraphBuilder, (void **)&m_gb));
@@ -1261,8 +1262,20 @@ HRESULT dx_player::exit_direct_show()
 	if (m_mc)
 		m_mc->Stop();
 
-	delete m_renderer1;
-	m_renderer1=NULL;
+	if(m_gb)
+	{
+		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer1);
+		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer2);
+	}
+
+	// reconfig renderer
+	m_renderer1->reset();
+	m_renderer1->set_output_mode(m_output_mode);
+	m_renderer1->set_input_layout(m_input_layout);
+	m_renderer1->set_mask_mode(m_mask_mode);
+	m_renderer1->set_callback(this);
+	m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
+	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
 
 	m_file_loaded = false;
 	
@@ -1281,14 +1294,14 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	if (!m_display_subtitle || !m_renderer1)
 		return S_OK;
 
-	int internel_offset = 10;
+	m_internel_offset = 10;
 	if (m_offset_metadata)
 	{
 		REFERENCE_TIME frame_time = m_renderer1->m_frame_length;
-		HRESULT hr = m_offset_metadata->GetOffset(TimeStart+frame_time*2, frame_time, &internel_offset);	//preroll 2 frames
+		HRESULT hr = m_offset_metadata->GetOffset(TimeStart+frame_time*2, frame_time, &m_internel_offset);	//preroll 2 frames
 		//log_line(L"offset = %d(%s)", internel_offset, hr == S_OK ? L"S_OK" : L"S_FALSE");
 	}
-	m_renderer1->set_bmp_offset((double)internel_offset/1000 + (double)m_subtitle_offset/1920, false);
+	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920, false);
 
 	int ms_start = (int)(TimeStart / 10000);
 	int ms_end = (int)(TimeEnd / 10000);
@@ -1568,8 +1581,7 @@ HRESULT dx_player::start_loading()
 	unsigned char passkey_big_decrypted[128];
 	RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
 
-	m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
-	m_renderer1->m_codec.set_key((unsigned char*)passkey_big_decrypted+64, 256);
+	m_renderer1->m_AES.set_key((unsigned char*)passkey_big_decrypted+64, 256);
 	memset(passkey_big_decrypted, 0, 128);
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
@@ -2035,15 +2047,6 @@ HRESULT dx_player::end_loading()
 		return E_FAIL;
 	}
 
-	// config renderer
-	m_renderer1->set_output_mode(m_output_mode);
-	m_renderer1->set_input_layout(m_input_layout);
-	m_renderer1->set_mask_mode(m_mask_mode);
-	m_renderer1->set_callback(this);
-	m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
-	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
-
-
 	m_loading = false;
 	return S_OK;
 }
@@ -2139,8 +2142,8 @@ HRESULT dx_player::draw_subtitle()
 
 HRESULT dx_player::set_subtitle_offset(int offset)
 {
-	m_subtitle_offset = offset;
-	m_renderer1->set_bmp_offset((double)m_subtitle_offset/1920);
+	m_user_offset = offset;
+	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
 	draw_subtitle();
 	return S_OK;
 }
