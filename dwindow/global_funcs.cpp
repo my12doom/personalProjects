@@ -69,10 +69,32 @@ HRESULT split_span_rect(const RECT in, RECT *out1, RECT *out2)
 	}
 }
 
+int find_monitors()
+{
+	CoInitialize(NULL);
+	CComPtr<IDirect3D9> d3d;
+	d3d = Direct3DCreate9( D3D_SDK_VERSION );
+	if (!d3d)
+		return 0;
+
+	int i = 0;
+	for(i=0; i<min(16, d3d->GetAdapterCount()); i++)
+	{
+		d3d->GetAdapterIdentifier(i, NULL, g_ids+i);
+		g_monitors[i] = d3d->GetAdapterMonitor(i);
+	}
+	d3d = NULL;
+	CoUninitialize();
+	return i;
+}
+
+int g_monitor_count = find_monitors();
+HMONITOR g_monitors[16];
+D3DADAPTER_IDENTIFIER9 g_ids[16];
+
+
 HRESULT get_monitors_rect(RECT *screen1, RECT *screen2)
 {
-	EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, NULL);
-
 	if (screen1 == NULL || screen2 == NULL)
 		return E_POINTER;
 
@@ -453,6 +475,20 @@ HRESULT afterCreateCoreMVC()
 	return S_OK;
 }
 
+wchar_t g_apppath[MAX_PATH];
+wchar_t *get_apppath()
+{
+	GetModuleFileNameW(NULL, g_apppath, MAX_PATH);
+	for(int i=wcslen(g_apppath); i>0; i--)
+		if (g_apppath[i] == L'\\')
+		{
+			g_apppath[i+1] = NULL;
+			break;
+		}
+	return g_apppath;
+}
+wchar_t *apppath = get_apppath();
+
 coremvc_hooker::coremvc_hooker()
 {
 	beforeCreateCoreMVC();
@@ -463,6 +499,7 @@ coremvc_hooker::~coremvc_hooker()
 	afterCreateCoreMVC();
 }
 
+AutoSetting<bool> g_CUDA(L"CUDA", true);
 HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 {
 
@@ -471,7 +508,7 @@ HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 	{
 		write_property(pbag, L"use_tray=0");
 		write_property(pbag, L"low_latency=0");
-		write_property(pbag, L"use_cuda=0");
+		write_property(pbag, g_CUDA ? L"use_cuda=1" : L"use_cuda=1");
 		return write_property(pbag, L"app_mode=1");
 	}
 	else
@@ -885,7 +922,7 @@ HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/)
 		return E_FAIL;
 
 	HINTERNET HURL;
-	HURL=InternetOpenUrlA(HI, url_to_download,NULL,0,INTERNET_FLAG_RELOAD | INTERNET_FLAG_NO_AUTO_REDIRECT,0);
+	HURL=InternetOpenUrlA(HI, url_to_download,NULL,0,INTERNET_FLAG_RELOAD | NULL,0);
 	if (HURL==NULL)
 		return E_FAIL;
 

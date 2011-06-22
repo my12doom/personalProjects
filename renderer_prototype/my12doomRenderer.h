@@ -1,7 +1,9 @@
+#pragma  once
 #include <d3d9.h>
 #include <streams.h>
 #include <atlbase.h>
 #include "..\AESFile\rijndael.h"
+#include "my12doomUI.h"
 
 struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
 #define WM_NV_NOTIFY (WM_USER+10086)
@@ -26,17 +28,7 @@ enum mask_mode_types
 	row_interlace, line_interlace, checkboard_interlace, mask_mode_types_max
 };
 
-struct MyVertex
-{
-	float x , y, z;
-	float w;
-	float tu, tv;
-};
 
-typedef struct _my_quad 
-{
-	MyVertex vertexes[4];
-} my_quad;
 
 class Imy12doomRendererCallback
 {
@@ -117,6 +109,7 @@ protected:
 	int m_id;
 };
 
+
 class gpu_sample
 {
 public:
@@ -157,6 +150,7 @@ public:
 	HRESULT repaint_video();
 	HRESULT NV3D_notify(WPARAM wparam);
 	HRESULT reset();
+	int hittest(int x, int y, double*outv){int o = -1; if(m_uidrawer) m_uidrawer->hittest(x, y, &o, outv); return o;}
 
 
 	// settings SET function
@@ -229,6 +223,7 @@ protected:
 	enum device_state
 	{
 		fine,							// device is fine
+		need_resize_back_buffer,		// just resize back buffer and recaculate vertex
 		need_reset_object,				// objects size changed, should recreate objects
 		need_reset,						// reset requested by program, usually to change back buffer size, but program can continue rendering without reset
 		device_lost,					// device lost, can't continue
@@ -237,7 +232,8 @@ protected:
 		device_state_max,				// not used
 	} m_device_state;					// need_create
 
-	HRESULT create_swap_chains();
+	HRESULT create_render_targets();
+	HRESULT delete_render_targets();
 	HRESULT handle_device_state();							//handle device create/recreate/lost/reset
 	HRESULT create_render_thread();
 	HRESULT terminate_render_thread();
@@ -296,7 +292,6 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_yuy2;
 	CComPtr <IDirect3DPixelShader9> m_ps_anaglyph;
 	CComPtr <IDirect3DPixelShader9> m_ps_test;
-	CComPtr <IDirect3DPixelShader9> m_ps_UI;
 
 
 	CComPtr<IDirect3DTexture9> m_tex_rgb_left;				// source texture, converted to RGB32
@@ -332,11 +327,8 @@ protected:
 
 
 	// test draw ui
-	CComPtr<IDirect3DVertexBuffer9> m_vertex;
-	CComPtr<IDirect3DTexture9> m_ui_tex;
-	CComPtr<IDirect3DTexture9> m_ui_background;
-	HRESULT init_ui2(IDirect3DSurface9 * surface);
-	HRESULT draw_ui2(IDirect3DSurface9 * surface);
+	ui_drawer_base *m_uidrawer;
+
 	REFERENCE_TIME m_total_time;
 
 public:

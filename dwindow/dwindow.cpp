@@ -147,7 +147,7 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 	HWND hwnd; 	// Create the main window. 
 	hwnd = CreateWindowExA(
 		WS_EX_ACCEPTFILES,
-		"MainWClass",        // name of window class 
+		"DWindowClass",        // name of window class 
 		"",					 // title-bar string 
 		WS_OVERLAPPEDWINDOW, // top-level window 
 		CW_USEDEFAULT,       // default horizontal position 
@@ -169,7 +169,7 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 
 	hwnd = CreateWindowExA(
 		WS_EX_ACCEPTFILES,
-		"MainWClass",        // name of window class 
+		"DWindowClass",        // name of window class 
 		"",					 // title-bar string 
 		WS_OVERLAPPEDWINDOW, // top-level window 
 		CW_USEDEFAULT,       // default horizontal position 
@@ -347,7 +347,7 @@ dwindow::dwindow(RECT screen1, RECT screen2)
 	wcx.hCursor = LoadCursor(NULL, IDC_ARROW);  // predefined arrow 
 	wcx.hbrBackground = NULL;
 	wcx.lpszMenuName =  _T("MainMenu");    // name of menu resource 
-	wcx.lpszClassName = _T("MainWClass");  // name of window class 
+	wcx.lpszClassName = _T("DWindowClass");  // name of window class 
 	wcx.hIconSm = (HICON)LoadImage(hinstance, // small class icon 
 		MAKEINTRESOURCE(IDI_ICON1),
 		IMAGE_ICON, 
@@ -383,7 +383,7 @@ void dwindow::close_and_kill_thread()
 	WaitForSingleObject(m_thread1, INFINITE);
 	WaitForSingleObject(m_thread2, INFINITE);
 
-	UnregisterClass(_T("MainWClass"), GetModuleHandle(NULL));
+	UnregisterClass(_T("DWindowClass"), GetModuleHandle(NULL));
 }
 HWND dwindow::id_to_hwnd(int id)
 {

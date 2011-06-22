@@ -32,6 +32,60 @@ INT_PTR CALLBACK register_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 	return TRUE; // Handled message
 }
+
+int select1=0, select2=0;
+INT_PTR CALLBACK select_monitor_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+	switch( msg ) 
+	{
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK)
+		{
+			HWND combo1 = GetDlgItem(hDlg, IDC_COMBO1);
+			HWND combo2 = GetDlgItem(hDlg, IDC_COMBO2);
+			select1 = SendMessage(combo1, CB_GETCURSEL, 0, 0);
+			select2 = SendMessage(combo2, CB_GETCURSEL, 0, 0);
+
+			if (select1 == select2)
+				MessageBoxW(hDlg, C(L"You selected the same monitor!"), C(L"Warning"), MB_ICONERROR);
+			EndDialog(hDlg, 0);
+		}
+
+		break;
+
+	case WM_INITDIALOG:
+		{
+			USES_CONVERSION;
+			HWND combo1 = GetDlgItem(hDlg, IDC_COMBO1);
+			HWND combo2 = GetDlgItem(hDlg, IDC_COMBO2);
+			for(int i=0; i<g_monitor_count; i++)
+			{
+				wchar_t tmp[1024];
+				MONITORINFOEXW info;
+				memset(&info, 0, sizeof(MONITORINFOEXW));
+				info.cbSize = sizeof(MONITORINFOEXW);
+				GetMonitorInfoW(g_monitors[i], &info);
+
+				wsprintfW(tmp, L"%s @ %s(%dx%d)", info.szDevice, A2W(g_ids[i].Description),
+					info.rcMonitor.right - info.rcMonitor.left, info.rcMonitor.bottom - info.rcMonitor.top);
+				SendMessage(combo1, CB_ADDSTRING, 0, (LPARAM) tmp);
+				SendMessage(combo2, CB_ADDSTRING, 0, (LPARAM) tmp);
+				SendMessage(combo1, CB_SETCURSEL, 0, 0);
+				SendMessage(combo2, CB_SETCURSEL, 1, 0);
+			}
+		}
+		break;
+
+	case WM_CLOSE:
+		EndDialog(hDlg, -1);
+		break;
+
+	default:
+		return FALSE;
+	}
+
+	return TRUE; // Handled message
+}
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
 	char volumeName[MAX_PATH];
@@ -60,12 +114,50 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	save_passkey();
 #include "bomb_function.h"
 
+	HMONITOR monitor1;
+	HMONITOR monitor2;
 
-	dx_player test(screen1, screen2, hinstance);
-	BringWindowToTop(test.m_hwnd1);
+	if (g_monitor_count == 1)
+		monitor1 = monitor2 = g_monitors[0];
+	else if (g_monitor_count == 2)
+	{
+		monitor1 = g_monitors[0];
+		monitor2 = g_monitors[1];
+	}
+	else
+	{
+		if (DialogBox(hinstance, MAKEINTRESOURCE(IDD_SELECTMONITOR), NULL, select_monitor_proc) < 0)
+			ExitProcess(-1);
+
+		monitor1 = g_monitors[select1];
+		monitor2 = g_monitors[select2];
+	}
+
+	MONITORINFOEX info1, info2;
+	memset(&info1, 0, sizeof(MONITORINFOEX));
+	memset(&info2, 0, sizeof(MONITORINFOEX));
+	info1.cbSize = info2.cbSize = sizeof(MONITORINFOEX);
+	GetMonitorInfo(monitor1, &info1);
+	GetMonitorInfo(monitor2, &info2);
 
 	int argc = 1;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	HWND pre_instance = FindWindowA("DWindowClass", NULL);
+	if (pre_instance)
+	{
+		SendMessageW(pre_instance, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
+		SetForegroundWindow(pre_instance);
+		if (argc>1)
+		{
+			COPYDATASTRUCT copy = {WM_LOADFILE, wcslen(argv[1])*2+2, argv[1]};
+			SendMessageW(pre_instance, WM_COPYDATA, (WPARAM)NULL, (LPARAM)&copy);
+		}
+		return 0;
+	}
+
+	dx_player test(info1.rcMonitor, info2.rcMonitor, hinstance);
+	BringWindowToTop(test.m_hwnd1);
+
 
 	if (argc>1)
 	{

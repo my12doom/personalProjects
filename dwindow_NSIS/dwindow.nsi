@@ -50,6 +50,7 @@ Section "DWindow(required)"
   File "xvidcore.dll"
   File "dwindow.ini"
   File "detoured.dll"
+  File "alpha.raw"
   SetOutPath $INSTDIR\codec
   File "codec\*"
   SetOutPath $INSTDIR

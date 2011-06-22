@@ -145,6 +145,7 @@ HRESULT my12doomRendererDShow::CompleteConnect(IPin *pRecievePin)
 }
 HRESULT my12doomRendererDShow::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {
+	m_time = 0;
 	{
 		CAutoLock lck(&m_queue_lock);
 		m_queue_count = 0;

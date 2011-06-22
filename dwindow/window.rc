@@ -87,6 +87,18 @@ BEGIN
     LTEXT           "密码",IDC_STATIC,7,57,112,13
 END
 
+IDD_SELECTMONITOR DIALOGEX 0, 0, 316, 136
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,106,97,96,21
+    COMBOBOX        IDC_COMBO1,78,29,203,18,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "输出1",IDC_STATIC,28,31,38,17
+    LTEXT           "输出2",IDC_STATIC,27,52,35,12
+    COMBOBOX        IDC_COMBO2,77,50,203,18,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -199,8 +211,8 @@ BEGIN
                 MENUITEM "Anaglyph Right Eye Color...", ID_OUTPUTMODE_ANAGLYPHCOLORRIGHTEYE
             END
             MENUITEM "Nvidia 3D Vision",            ID_OUTPUTMODE_NVIDIA3DVISION
-            MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
             MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
+            MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES, GRAYED
         END
         MENUITEM SEPARATOR
         POPUP "Audio"
@@ -219,6 +231,7 @@ BEGIN
         MENUITEM "Fullscreen",                  ID_FULLSCREEN
         MENUITEM "Swap Left/Right",             ID_SWAPEYES
         MENUITEM SEPARATOR
+        MENUITEM "CUDA Accelaration",           ID_CUDA
         POPUP "Language"
         BEGIN
             MENUITEM "English",                     ID_LANGUAGE_ENGLISH
@@ -243,6 +256,14 @@ BEGIN
         RIGHTMARGIN, 309
         TOPMARGIN, 7
         BOTTOMMARGIN, 114
+    END
+
+    IDD_SELECTMONITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 129
     END
 END
 #endif    // APSTUDIO_INVOKED

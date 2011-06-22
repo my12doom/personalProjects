@@ -312,6 +312,15 @@ HRESULT dx_player::seek(int time)
 
 	printf("seeked to %I64d\n", target);
 	m_lastCBtime = (REFERENCE_TIME)time * 10000;
+
+	OAFilterState state = State_Running;
+	m_mc->GetState(500, &state);
+	if (state != State_Running)
+	{
+		m_mc->Run();
+		m_mc->StopWhenReady();
+	}
+
 	draw_subtitle();
 	return hr;
 }
@@ -385,6 +394,18 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 	{
 		on_dshow_event();
 	}
+
+	else if (message == WM_COPYDATA)
+	{
+		COPYDATASTRUCT *copy = (COPYDATASTRUCT*) lParam;
+		wchar_t next_to_load[MAX_PATH];
+		memcpy(next_to_load, copy->lpData, min(MAX_PATH*2, copy->cbData));
+		next_to_load[MAX_PATH-1] = NULL;
+
+		if (copy->dwData == WM_LOADFILE)
+			reset_and_loadfile_internal(next_to_load);
+	}
+
 
 	else if (message == WM_NV_NOTIFY)
 	{
@@ -536,7 +557,9 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 		hit_x %= m_bar_drawer.total_width;
 	}
 
-	int type = m_bar_drawer.hit_test(hit_x, hit_y-(r.bottom-r.top)+30, &v);	if (type == 3 && GetAsyncKeyState(VK_LBUTTON) < 0)
+	int type = -1;
+	if (m_renderer1) type = m_renderer1->hittest(hit_x, hit_y, &v);
+	if (type == hit_volume && GetAsyncKeyState(VK_LBUTTON) < 0)
 	{
 		set_volume(v);
 	}
@@ -678,6 +701,9 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		// swap
 		CheckMenuItem(menu, ID_SWAPEYES, m_revert ? MF_CHECKED:MF_UNCHECKED);
 
+		// CUDA
+		CheckMenuItem(menu, ID_CUDA, g_CUDA ? MF_CHECKED:MF_UNCHECKED);
+
 
 		// show it
 		POINT mouse_pos;
@@ -720,20 +746,22 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 			hit_x %= m_bar_drawer.total_width;
 		}
 
-		type = m_bar_drawer.hit_test(hit_x, hit_y-(r.bottom-r.top)+30, &v);
-		if (type == 1)
+		type = -1;
+		if (m_renderer1) type = m_renderer1->hittest(hit_x, hit_y, &v);
+
+		if (type == hit_play)
 		{
 			pause();
 		}
-		else if (type == 2)
+		else if (type == hit_full)
 		{
 			toggle_fullscreen();
 		}
-		else if (type == 3)
+		else if (type == hit_volume)
 		{
 			set_volume(v);
 		}
-		else if (type == 4)
+		else if (type == hit_progress)
 		{
 			int total_time = 0;
 			total(&total_time);
@@ -758,7 +786,7 @@ LRESULT dx_player::on_timer(int id)
 	{
 		RECT client1, client2;
 		POINT mouse1, mouse2;
-		int test1, test2;
+		int test1 = -1, test2 = -1;
 		GetClientRect(id_to_hwnd(1), &client1);
 		GetClientRect(id_to_hwnd(2), &client2);
 		GetCursorPos(&mouse1);
@@ -799,7 +827,7 @@ LRESULT dx_player::on_timer(int id)
 				hit_x %= m_bar_drawer.total_width;
 			}
 
-			test1 = m_bar_drawer.hit_test(hit_x, hit_y-height+30, NULL);
+			if (m_renderer1) test1 = m_renderer1->hittest(hit_x, hit_y, NULL);
 		}
 
 		m_bar_drawer.total_width = client2.right - client2.left;
@@ -835,7 +863,7 @@ LRESULT dx_player::on_timer(int id)
 				hit_x %= m_bar_drawer.total_width;
 			}
 
-			test2 = m_bar_drawer.hit_test(hit_x, hit_y-height+30, NULL);
+			if(m_renderer1) test2 = m_renderer1->hittest(hit_x, hit_y, NULL);
 		}
 		if (test1 < 0 && test2 < 0)
 		{
@@ -919,6 +947,13 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		{
 			reset_and_loadfile_internal(file);
 		}
+	}
+
+	// CUDA
+	else if (uid == ID_CUDA)
+	{
+		g_CUDA = !g_CUDA;
+		MessageBoxW(id_to_hwnd(1), C(L"CUDA setting will apply on next file play."), L"...", MB_OK);
 	}
 
 	// input layouts
@@ -1221,6 +1256,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SendMessage(id_to_hwnd(id), WM_SETICON, TRUE, (LPARAM)h_icon);
 	SendMessage(id_to_hwnd(id), WM_SETICON, FALSE, (LPARAM)h_icon);
 	
+	/*
 	LONG style1 = GetWindowLongPtr(m_hwnd1, GWL_STYLE);
 	LONG exstyle1 = GetWindowLongPtr(m_hwnd1, GWL_EXSTYLE);
 
@@ -1229,6 +1265,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 
 	SetWindowLongPtr(m_hwnd1, GWL_STYLE, f);
 	SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exf);
+	*/
 
 
 	SetFocus(id_to_hwnd(id));

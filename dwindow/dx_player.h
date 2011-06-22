@@ -33,6 +33,8 @@
 #define FILTER_MODE_MONO 1
 #define FILTER_MODE_STEREO 2
 
+#define WM_LOADFILE (WM_USER + 5)
+
 class subtitle_file_handler
 {
 public:

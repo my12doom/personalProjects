@@ -1,6 +1,7 @@
 #pragma  once
 #include <Windows.h>
 #include <atlbase.h>
+#include <d3d9.h>
 #include <dshow.h>
 #include "..\libchecksum\libchecksum.h"
 
@@ -16,6 +17,9 @@ extern char *g_server_address;
 #define g_server_E3D "w32.php"
 #define g_server_gen_key "gen_key.php"
 #define g_server_reg_check "reg_check.php"
+extern int g_monitor_count;
+extern HMONITOR g_monitors[16];
+extern D3DADAPTER_IDENTIFIER9 g_ids[16];
 
 //definitions
 #define AmHresultFromWin32(x) (MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, x))
@@ -38,6 +42,7 @@ DEFINE_GUID(MEDIASUBTYPE_UTF8, 0x87c0b230, 0x3a8, 0x4fdf, 0x80, 0x10, 0xb2, 0x7a
 DEFINE_GUID(MEDIASUBTYPE_PGS, 0x4eba53e, 0x9330, 0x436c, 0x91, 0x33, 0x55, 0x3e, 0xc8, 0x70, 0x31, 0xdc);
 
 // funcs
+extern wchar_t g_apppath[MAX_PATH];
 HRESULT get_monitors_rect(RECT *screen1, RECT *screen2);
 bool open_file_dlg(wchar_t *pathname, HWND hDlg, wchar_t *filter = NULL);
 bool select_color(DWORD *color, HWND parent);
@@ -144,3 +149,7 @@ wchar_t *C(const wchar_t *English);
 HRESULT add_localization(const wchar_t *English, const wchar_t *Localized = NULL);
 HRESULT set_localization_language(localization_language language);
 HRESULT localize_menu(HMENU menu);
+
+
+// CUDA
+extern AutoSetting<bool> g_CUDA;
