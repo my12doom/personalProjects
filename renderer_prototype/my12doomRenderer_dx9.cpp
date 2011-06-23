@@ -127,6 +127,11 @@ m_right_queue(_T("right queue"))
 	m_render_thread = INVALID_HANDLE_VALUE;
 	m_render_thread_exit = false;
 
+
+	// ui
+	m_showui = false;
+	m_ui_visible_last_change_time = m_last_ui_draw = timeGetTime();
+
 	init_variables();
 }
 
@@ -134,7 +139,6 @@ void my12doomRenderer::init_variables()
 {
 	// just for surface creation
 	m_lVidWidth = m_lVidHeight = 64;
-
 	// assume already removed from graph
 	m_recreating_dshow_renderer = true;
 	m_dshow_renderer1 = NULL;
@@ -171,7 +175,6 @@ void my12doomRenderer::init_variables()
 
 	// ui & bitmap
 	m_volume = 0;
-	m_showui = false;
 	m_bmp_offset = 0;
 	m_bmp_width = 0;
 	m_bmp_height = 0;
@@ -457,7 +460,7 @@ HRESULT my12doomRenderer::create_render_targets()
 
 	HRESULT hr = S_OK;
 	// add 3d vision tag at last line
-	if (m_output_mode == NV3D)
+	if (m_output_mode == NV3D && m_sbs_surface)
 	{
 		D3DLOCKED_RECT lr;
 		RECT lock_tar={0, m_active_pp.BackBufferHeight, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1};
@@ -1117,8 +1120,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
 		hr = m_Device->StretchRect(m_sbs_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
 
-		if (m_showui)
-			draw_ui(back_buffer);
+		draw_ui(back_buffer);
 	}
 
 	else if (m_output_mode == mono || (m_output_mode == NV3D && !(m_nv3d_enabled && m_nv3d_actived && !m_active_pp.Windowed)))
@@ -1155,7 +1157,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 		// UI
 		m_Device->SetPixelShader(NULL);
-		if (m_showui) draw_ui(back_buffer);
+		draw_ui(back_buffer);
 	}
 
 	else if (m_output_mode == masking)
@@ -1199,8 +1201,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
 
 		// UI
-		if (m_showui)
-			draw_ui(back_buffer);
+		draw_ui(back_buffer);
 	}
 
 	else if (m_output_mode == pageflipping)
@@ -1211,8 +1212,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(back_buffer);
 		draw_movie(back_buffer, left);
 		draw_bmp(back_buffer, left);
-		if (m_showui)
-			draw_ui(back_buffer);
+		draw_ui(back_buffer);
 	}
 
 	else if (m_output_mode == dual_window)
@@ -1220,8 +1220,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(back_buffer);
 		draw_movie(back_buffer, true);
 		draw_bmp(back_buffer, true);
-		if (m_showui)
-			draw_ui(back_buffer);
+		draw_ui(back_buffer);
 
 		// set render target to swap chain2
 		if (m_swap2)
@@ -1240,8 +1239,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			clear(back_buffer2);
 			draw_movie(back_buffer2, false);
 			draw_bmp(back_buffer2, false);
-			if (m_showui)
-				draw_ui(back_buffer2);
+			draw_ui(back_buffer2);
 		}
 
 	}
@@ -1259,11 +1257,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		draw_movie(temp_surface2, false);
 		draw_bmp(temp_surface, true);
 		draw_bmp(temp_surface2, false);
-		if (m_showui)
-		{
-			draw_ui(temp_surface);
-			draw_ui(temp_surface2);
-		}
+		draw_ui(temp_surface);
+		draw_ui(temp_surface2);
 
 
 		// pass 3: copy to backbuffer
@@ -1326,7 +1321,7 @@ presant:
 	if (m_output_mode == dual_window)
 	{
 		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
-		if (hr == D3DERR_DEVICELOST)
+		if (FAILED(hr))
 			set_device_state(device_lost);
 
 		if(m_swap2) if (m_swap2->Present(NULL, NULL, m_hWnd2, NULL, NULL) == D3DERR_DEVICELOST)
@@ -1336,7 +1331,7 @@ presant:
 	else
 	{
 		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
-		if (FAILED(hr))// == D3DERR_DEVICELOST)
+		if (FAILED(hr))
 			set_device_state(device_lost);
 	}
 
@@ -1358,7 +1353,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 		return E_POINTER;
 
 	if (!m_dsr0->is_connected() && m_uidrawer)
-		return m_uidrawer->draw_nonmovie_bg(surface);
+		return m_uidrawer->draw_nonmovie_bg(surface, left_eye);
 
 	D3DSURFACE_DESC desc;
 	surface->GetDesc(&desc);
@@ -1395,7 +1390,13 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 }
 HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 {
-	if (!m_showui)
+	float delta_alpha = 1-(float)(timeGetTime()-m_ui_visible_last_change_time)/fade_in_out_time;
+	delta_alpha = max(0, delta_alpha);
+	delta_alpha = min(1, delta_alpha);
+	float alpha = m_showui ? 1.0f : 0.0f;
+	alpha -= m_showui ? delta_alpha : -delta_alpha;
+
+	if (alpha <=0)
 		return S_FALSE;
 
 	if (!surface)
@@ -1412,9 +1413,7 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 		if (ms)
 			ms->GetDuration(&m_total_time);			
 	}
-
-	return m_uidrawer->draw_ui(surface, m_dsr0->m_thisstream + m_dsr0->m_time, m_total_time, m_volume, m_dsr0->m_State == State_Running);
-
+	return m_uidrawer->draw_ui(surface, m_dsr0->m_thisstream + m_dsr0->m_time, m_total_time, m_volume, m_dsr0->m_State == State_Running, alpha);
 }
 
 HRESULT my12doomRenderer::render(bool forced)
@@ -1451,7 +1450,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 			{
 				_this->render_nolock(true);
 				l = timeGetTime();
-				while (timeGetTime() - l < 333 && !_this->m_render_thread_exit)
+				while (timeGetTime() - l < 33 && !_this->m_render_thread_exit)
 					Sleep(1);
 			}
 		}
@@ -2340,8 +2339,7 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 
 HRESULT my12doomRenderer::set_ui(void* data, int pitch)
 {
-	if (m_tex_bmp == NULL)
-		return VFW_E_WRONG_STATE;
+	return VFW_E_WRONG_STATE;
 
 	// set ui speed limit: 15fps
 	if (abs((int)(m_last_ui_draw - timeGetTime())) < 66)
@@ -2391,6 +2389,7 @@ HRESULT my12doomRenderer::set_ui_visible(bool visible)
 	if (m_showui != visible)
 	{
 		m_showui = visible;
+		m_ui_visible_last_change_time = timeGetTime();
 		render(true);
 	}
 

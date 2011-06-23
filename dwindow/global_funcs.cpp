@@ -435,7 +435,7 @@ DWORD WINAPI MineGetModuleFileNameA(HMODULE hModule, LPSTR lpFilename, DWORD nSi
 {
 	DWORD rtn = TrueGetModuleFileNameA(hModule, lpFilename, nSize);
 	if (hModule == NULL)
-		strcat(lpFilename, "StereoPlayer.exe");
+		strcat(lpFilename, ".StereoPlayer.exe.MVCToAVI.exe");
 	return rtn;
 }
 
@@ -508,7 +508,7 @@ HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 	{
 		write_property(pbag, L"use_tray=0");
 		write_property(pbag, L"low_latency=0");
-		write_property(pbag, g_CUDA ? L"use_cuda=1" : L"use_cuda=1");
+		write_property(pbag, g_CUDA ? L"use_cuda=1" : L"use_cuda=0");
 		return write_property(pbag, L"app_mode=1");
 	}
 	else

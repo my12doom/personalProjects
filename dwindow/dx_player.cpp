@@ -150,7 +150,6 @@ m_volume(L"Volume", 1.0)
 	m_letterbox_delta = 0.0;
 	m_subtitle_center_x = 0.5;
 	m_subtitle_bottom_y = 0.95;
-	m_loading = false;
 	m_hexe = hExe;
 
 	// window size & pos
@@ -522,7 +521,7 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 	{
 		show_mouse(true);
 		show_ui(true);
-		reset_timer(1, 1000);
+		reset_timer(1, 2000);
 	}
 
 	RECT r;
@@ -578,8 +577,8 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	show_ui(true);
 	show_mouse(true);
 	reset_timer(1, 99999999);
-	if ( (button == VK_RBUTTON || !m_file_loaded) && 
-		(!m_renderer1 || !m_renderer1->get_fullscreen()))
+	if ( (button == VK_RBUTTON || (!m_file_loaded && m_renderer1 && m_renderer1->hittest(x, y, NULL) == -2) && 
+		(!m_renderer1 || !m_renderer1->get_fullscreen())))
 	{
 
 		HMENU menu = LoadMenu(m_hexe, MAKEINTRESOURCE(IDR_MENU1));
@@ -767,7 +766,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 			total(&total_time);
 			seek((int)(total_time * v));
 		}
-		else if (type == -1 && !m_full1)
+		else if (type < 0 && !m_full1)
 		{
 			// move this window
 			ReleaseCapture();
@@ -775,7 +774,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		}
 	}
 
-	reset_timer(1, 1000);
+	reset_timer(1, 2000);
 
 	return S_OK;
 }
@@ -953,7 +952,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_CUDA)
 	{
 		g_CUDA = !g_CUDA;
-		MessageBoxW(id_to_hwnd(1), C(L"CUDA setting will apply on next file play."), L"...", MB_OK);
+		if (m_file_loaded) MessageBoxW(id_to_hwnd(1), C(L"CUDA setting will apply on next file play."), L"...", MB_OK);
 	}
 
 	// input layouts
@@ -1130,6 +1129,15 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		}
 	}
 
+	else if (uid == ID_LOADAUDIOTRACK)
+	{
+		wchar_t file[MAX_PATH] = L"";
+		if (open_file_dlg(file, id_to_hwnd(1), L"Audio Tracks\0*.mp3;*.dts;*.ac3;*.aac;*.m4a;*.mka\0All Files\0*.*\0\0"))
+		{
+			load_audiotrack(file);
+		}
+	}
+
 	else if (uid == ID_SUBTITLE_LOADFILE)
 	{
 		wchar_t file[MAX_PATH] = L"";
@@ -1233,7 +1241,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		show_window(2, false);
 	}
-	reset_timer(1, 1000);
+	reset_timer(1, 2000);
 	return S_OK;
 }
 LRESULT dx_player::on_sys_command(int id, WPARAM wParam, LPARAM lParam)
@@ -1591,6 +1599,7 @@ HRESULT dx_player::draw_ui()
 	}
 	else
 	{
+		/*
 		for(int id=1; id<=2; id++)
 		{
 			HDC hdc = GetDC(id_to_hwnd(id));
@@ -1606,6 +1615,7 @@ HRESULT dx_player::draw_ui()
 			DeleteDC(hdcBmp);
 			ReleaseDC(id_to_hwnd(id), hdc);
 		}
+		*/
 	}
 
 	return S_OK;
@@ -1613,7 +1623,6 @@ HRESULT dx_player::draw_ui()
 
 HRESULT dx_player::start_loading()
 {
-	m_loading = true;
 
 	unsigned char passkey_big_decrypted[128];
 	RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
@@ -1639,8 +1648,10 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 {
 	reset();
 	start_loading();
-	HRESULT hr = load_file(pathname);
-	hr = load_file(L"Z:\\00013.dts");
+	HRESULT hr;
+	hr = load_file(pathname);
+	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00005n.m2ts");
+	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00006.m2ts");
 	if (FAILED(hr))
 		goto fail;
 	hr = end_loading();
@@ -1730,7 +1741,7 @@ LRESULT dx_player::on_idle_time()
 	}
 	return S_FALSE;
 }
-HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
+HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = false */, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
 {
 	wchar_t file_to_play[MAX_PATH];
 	wcscpy(file_to_play, pathname);
@@ -2062,11 +2073,14 @@ HRESULT dx_player::load_file(const wchar_t *pathname, int audio_track /* = MKV_F
 	{
 		log_line(L"load OK.");
 		
-		m_srenderer = m_grenderer.GetSubtitleRenderer();
 
-		m_file_loaded = true;
-		set_window_text(1, file_to_play);
-		set_window_text(2, file_to_play);
+		if (!non_mainfile)
+		{
+			m_srenderer = m_grenderer.GetSubtitleRenderer();
+			m_file_loaded = true;
+			set_window_text(1, file_to_play);
+			set_window_text(2, file_to_play);
+		}
 	}
 
 	return hr;
@@ -2089,7 +2103,6 @@ HRESULT dx_player::end_loading()
 		return E_FAIL;
 	}
 
-	m_loading = false;
 	return S_OK;
 }
 
@@ -2152,6 +2165,25 @@ HRESULT dx_player::debug_list_filters()
 }
 
 // font/d3d/subtitle part
+
+HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
+{
+	// Save Filter State and Stop
+	int time;
+	tell(&time);
+	OAFilterState state_before, state;
+	m_mc->GetState(INFINITE, &state_before);
+	if (state_before != State_Stopped)
+	{
+		m_mc->Stop();
+		m_mc->GetState(INFINITE, &state);
+	}
+	enable_audio_track(9999);	//disable all audio first
+	HRESULT hr = load_file(pathname, true);
+	if (state_before == State_Running)
+		m_mc->Run();
+	return seek(time);
+}
 HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME : always reset 
 {
 	if (pathname == NULL)
@@ -2295,6 +2327,8 @@ HRESULT dx_player::enable_audio_track(int track)
 	CComPtr<IEnumFilters> ef;
 
 	// Save Filter State
+	int time;
+	tell(&time);
 	OAFilterState state_before, state;
 	m_mc->GetState(INFINITE, &state_before);
 	if (state_before != State_Stopped)
@@ -2309,7 +2343,7 @@ HRESULT dx_player::enable_audio_track(int track)
 
 	CComPtr<IPin> pin_to_render;
 
-	// find splitter, which supports IFileSourceFilter, if it is AsyncReader, use its downstream
+	// delete any downstream of audio pins
 	m_gb->EnumFilters(&ef);
 	while (ef->Next(1, &filter, NULL) == S_OK)
 	{
@@ -2331,7 +2365,6 @@ HRESULT dx_player::enable_audio_track(int track)
 				filter = NULL;
 				filter.Attach(pi.pFilter);
 			}
-			//break;
 
 			CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
 			if (stream_select == NULL)
@@ -2361,15 +2394,72 @@ HRESULT dx_player::enable_audio_track(int track)
 
 					pin = NULL;
 				}
+			}
+			else
+			{
+				// splitter that supports IAMStreamSelect should have only one Audio Pin
 
-				if (efreset = true)
+				DWORD stream_count = 0;
+				stream_select->Count(&stream_count);
+				for(DWORD i=0; i<stream_count; i++)
 				{
+					WCHAR *name = NULL;
+					DWORD enabled = 0;
+					stream_select->Info(i, NULL, &enabled, NULL, NULL, &name, NULL, NULL);
+
 					pin = NULL;
-					filter = NULL;
-					continue;
+					GetPinByName(filter, PINDIR_OUTPUT, name, &pin);
+					if (DeterminPin(pin, NULL, MEDIATYPE_Audio) == S_OK || wcsstr(name , L"Audio") || wcsstr(name, L"A:"))
+					{
+						if (pin == NULL) GetPinByName(filter, PINDIR_OUTPUT, L"Audio", &pin);
+						if (pin == NULL) GetPinByName(filter, PINDIR_OUTPUT, L"A:", &pin);
+
+						CComPtr<IPin> connected;
+						if (pin) pin->ConnectedTo(&connected);
+
+						if (connected)
+						{
+							RemoveDownstream(connected);
+							ef->Reset();
+						}
+					}
+					CoTaskMemFree (name);
 				}
 
+			}
 
+		}
+		filter = NULL;
+	}
+
+	ef = NULL;
+	m_gb->EnumFilters(&ef);
+	while (ef->Next(1, &filter, NULL) == S_OK)
+	{
+		CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter>  fs(filter);
+		if (fs != NULL)
+		{
+			CLSID clsid;
+			filter->GetClassID(&clsid);
+			if (clsid == CLSID_AsyncReader)
+			{
+				// assume connected
+				GetConnectedPin(filter, PINDIR_OUTPUT, &pin);
+				CComPtr<IPin> connected;
+				pin->ConnectedTo(&connected);
+
+				PIN_INFO pi;
+				connected->QueryPinInfo(&pi);
+				pin = NULL;
+				filter = NULL;
+				filter.Attach(pi.pFilter);
+			}
+			//break;
+
+			CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
+			if (stream_select == NULL)
+			{
+				// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
 				ep = NULL;
 				filter->EnumPins(&ep);
 				while (ep->Next(1, &pin, NULL) == S_OK)
@@ -2416,18 +2506,9 @@ HRESULT dx_player::enable_audio_track(int track)
 						CComPtr<IPin> connected;
 						if (pin) pin->ConnectedTo(&connected);
 
-						if (connected)
-						{
-							RemoveDownstream(connected);
-							ef->Reset();
-							pin = NULL;
-							continue;
-						}
-
 						if (audio_track_found == track)
 						{
 							stream_select->Enable(i, AMSTREAMSELECTENABLE_ENABLE);
-							CoTaskMemFree(name);
 							pin_to_render = pin;
 						}
 
@@ -2442,6 +2523,9 @@ HRESULT dx_player::enable_audio_track(int track)
 		filter = NULL;
 	}
 
+
+
+
 	HRESULT hr = S_OK;
 	if (pin_to_render)
 	{
@@ -2455,6 +2539,7 @@ HRESULT dx_player::enable_audio_track(int track)
 
 
 	// restore filter state
+	seek(time);
 	if (state_before == State_Running) 
 		m_mc->Run();
 	else if (state_before == State_Paused)
@@ -2534,93 +2619,90 @@ HRESULT dx_player::enable_subtitle_track(int track)
 					filter = NULL;
 					filter.Attach(pi.pFilter);
 				}
-				break;
+				CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
+				if (stream_select == NULL)
+				{
+					// splitter that doesn't support IAMStreamSelect should have multiple Pins
+					ep = NULL;
+					filter->EnumPins(&ep);
+					while (ep->Next(1, &pin, NULL) == S_OK)
+					{
+						PIN_INFO pi;
+						pin->QueryPinInfo(&pi);
+						if (pi.pFilter) pi.pFilter->Release();
+
+						CComPtr<IPin> connected;
+						pin->ConnectedTo(&connected);
+
+						if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK)
+						{
+							if (subtitle_track_found == track)
+							{
+								// stop filters if needed
+								if (state_before != State_Stopped && !filter_stopped)
+								{
+									m_mc->Stop();
+									m_mc->GetState(INFINITE, &state);
+
+								}
+								// remove (and re-add later if needed) the subtitle renderer
+								m_gb->RemoveFilter(m_grenderer.m_filter);
+								m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
+
+								// render new subtitle pin
+								m_gb->Render(pin);
+							}
+
+							subtitle_track_found++;
+						}
+
+						pin = NULL;
+					}
+				}
+				else
+				{
+					// splitter that supports IAMStreamSelect should have only one subtitle Pin
+					DWORD stream_count = 0;
+					stream_select->Count(&stream_count);
+					for(int i=0; i<stream_count; i++)
+					{
+						WCHAR *name = NULL;
+						DWORD enabled = 0;
+						stream_select->Info(i, NULL, &enabled, NULL, NULL, &name, NULL, NULL);
+
+						pin = NULL;
+						GetPinByName(filter, PINDIR_OUTPUT, name, &pin);
+
+						if (DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK || wcsstr(name , L"Subtitle") || wcsstr(name, L"S:"))
+						{
+							if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"Subtitle", &pin);
+							if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"S:", &pin);
+							if (subtitle_track_found == track)
+							{
+								if (state_before != State_Stopped && !filter_stopped)
+								{
+									m_mc->Stop();
+									m_mc->GetState(INFINITE, &state);
+
+								}
+								// remove (and re-add later if needed) the subtitle renderer
+								m_gb->RemoveFilter(m_grenderer.m_filter);
+								m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
+
+								// render new subtitle pin
+								stream_select->Enable(i, AMSTREAMSELECTENABLE_ENABLE);
+								m_gb->Render(pin);
+							}
+
+							subtitle_track_found++;
+						}
+						CoTaskMemFree (name);
+					}
+				}
 			}
 			filter = NULL;
 		}
 
-		if (NULL == filter)
-			return VFW_E_NOT_CONNECTED;
-
-		CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
-		if (stream_select == NULL)
-		{
-			// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
-			filter->EnumPins(&ep);
-			while (ep->Next(1, &pin, NULL) == S_OK)
-			{
-				PIN_INFO pi;
-				pin->QueryPinInfo(&pi);
-				if (pi.pFilter) pi.pFilter->Release();
-
-				CComPtr<IPin> connected;
-				pin->ConnectedTo(&connected);
-
-				if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK)
-				{
-					if (subtitle_track_found == track)
-					{
-						// stop filters if needed
-						if (state_before != State_Stopped && !filter_stopped)
-						{
-							m_mc->Stop();
-							m_mc->GetState(INFINITE, &state);
-
-						}
-						// remove (and re-add later if needed) the subtitle renderer
-						m_gb->RemoveFilter(m_grenderer.m_filter);
-						m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
-
-						// render new subtitle pin
-						m_gb->Render(pin);
-					}
-
-					subtitle_track_found++;
-				}
-
-				pin = NULL;
-			}
-		}
-		else
-		{
-			// splitter that supports IAMStreamSelect should have only one subtitle Pin
-			DWORD stream_count = 0;
-			stream_select->Count(&stream_count);
-			for(int i=0; i<stream_count; i++)
-			{
-				WCHAR *name = NULL;
-				DWORD enabled = 0;
-				stream_select->Info(i, NULL, &enabled, NULL, NULL, &name, NULL, NULL);
-
-				pin = NULL;
-				GetPinByName(filter, PINDIR_OUTPUT, name, &pin);
-
-				if (DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK || wcsstr(name , L"Subtitle") || wcsstr(name, L"S:"))
-				{
-					if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"Subtitle", &pin);
-					if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"S:", &pin);
-					if (subtitle_track_found == track)
-					{
-						if (state_before != State_Stopped && !filter_stopped)
-						{
-							m_mc->Stop();
-							m_mc->GetState(INFINITE, &state);
-
-						}
-						// remove (and re-add later if needed) the subtitle renderer
-						m_gb->RemoveFilter(m_grenderer.m_filter);
-						m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
-
-						// render new subtitle pin
-						stream_select->Enable(i, AMSTREAMSELECTENABLE_ENABLE);
-						m_gb->Render(pin);
-					}
-
-					subtitle_track_found++;
-				}
-				CoTaskMemFree (name);
-			}
-		}
 	}
 
 	// restore filter state
@@ -2688,9 +2770,9 @@ HRESULT dx_player::list_audio_track(HMENU submenu)
 
 					if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Audio) == S_OK)
 					{
-						int flag = MF_STRING;
+						int flag = MF_STRING | MF_BYPOSITION;
 						if (connected) flag |= MF_CHECKED;
-						AppendMenuW(submenu, flag, 'A0'+audio_track_found, pi.achName);
+						InsertMenuW(submenu, audio_track_found, flag, 'A0'+audio_track_found, pi.achName);
 						audio_track_found++;
 					}
 
@@ -2713,9 +2795,14 @@ HRESULT dx_player::list_audio_track(HMENU submenu)
 
 					if (DeterminPin(pin, NULL, MEDIATYPE_Audio) == S_OK || wcsstr(name , L"Audio") || wcsstr(name, L"A:"))
 					{
-						int flag = MF_STRING;
-						if (enabled) flag |= MF_CHECKED;
-						AppendMenuW(submenu, flag, 'A0'+audio_track_found, name);
+						if (pin == NULL) GetPinByName(filter, PINDIR_OUTPUT, L"Audio", &pin);
+						if (pin == NULL) GetPinByName(filter, PINDIR_OUTPUT, L"A:", &pin);
+
+						CComPtr<IPin> connected;
+						if (pin) pin->ConnectedTo(&connected);
+						int flag = MF_STRING | MF_BYPOSITION;
+						if (enabled && connected) flag |= MF_CHECKED;
+						InsertMenuW(submenu, audio_track_found, flag, 'A0'+audio_track_found, name);
 						audio_track_found++;
 					}
 					CoTaskMemFree (name);
@@ -2733,6 +2820,7 @@ HRESULT dx_player::list_audio_track(HMENU submenu)
 
 	return S_OK;
 }
+
 HRESULT dx_player::list_subtitle_track(HMENU submenu)
 {
 	CComPtr<IEnumFilters> ef;
@@ -2773,67 +2861,64 @@ HRESULT dx_player::list_subtitle_track(HMENU submenu)
 				filter = NULL;
 				filter.Attach(pi.pFilter);
 			}
-			break;
+
+			CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
+			if (stream_select == NULL)
+			{
+				// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
+				ep = NULL;
+				filter->EnumPins(&ep);
+				while (ep->Next(1, &pin, NULL) == S_OK)
+				{
+					PIN_INFO pi;
+					pin->QueryPinInfo(&pi);
+					if (pi.pFilter) pi.pFilter->Release();
+
+					CComPtr<IPin> connected;
+					pin->ConnectedTo(&connected);
+
+					if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK)
+					{
+						int flag = MF_STRING | MF_BYPOSITION;
+						if (connected) flag |= MF_CHECKED;
+						InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, pi.achName);
+						subtitle_track_found++;
+					}
+
+					pin = NULL;
+				}
+			}
+			else
+			{
+				// splitter that supports IAMStreamSelect should have only one Audio Pin
+				DWORD stream_count = 0;
+				stream_select->Count(&stream_count);
+				for(int i=0; i<stream_count; i++)
+				{
+					WCHAR *name = NULL;
+					DWORD enabled = 0;
+					stream_select->Info(i, NULL, &enabled, NULL, NULL, &name, NULL, NULL);
+
+					pin = NULL;
+					GetPinByName(filter, PINDIR_OUTPUT, name, &pin);
+
+					if (DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK || wcsstr(name , L"Subtitle") || wcsstr(name, L"S:"))
+					{
+						if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"Subtitle", &pin);
+						if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"S:", &pin);
+						CComPtr<IPin> connected;
+						if (pin) pin->ConnectedTo(&connected);
+
+						int flag = MF_STRING | MF_BYPOSITION;
+						if (enabled && connected) flag |= MF_CHECKED;
+						InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, name);
+						subtitle_track_found++;
+					}
+					CoTaskMemFree (name);
+				}
+			}
 		}
 		filter = NULL;
-	}
-
-	if (NULL == filter)
-		return VFW_E_NOT_CONNECTED;
-
-	CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
-	if (stream_select == NULL)
-	{
-		// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
-		filter->EnumPins(&ep);
-		while (ep->Next(1, &pin, NULL) == S_OK)
-		{
-			PIN_INFO pi;
-			pin->QueryPinInfo(&pi);
-			if (pi.pFilter) pi.pFilter->Release();
-
-			CComPtr<IPin> connected;
-			pin->ConnectedTo(&connected);
-
-			if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK)
-			{
-				int flag = MF_STRING | MF_BYPOSITION;
-				if (connected) flag |= MF_CHECKED;
-				InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, pi.achName);
-				subtitle_track_found++;
-			}
-
-			pin = NULL;
-		}
-	}
-	else
-	{
-		// splitter that supports IAMStreamSelect should have only one Audio Pin
-		DWORD stream_count = 0;
-		stream_select->Count(&stream_count);
-		for(int i=0; i<stream_count; i++)
-		{
-			WCHAR *name = NULL;
-			DWORD enabled = 0;
-			stream_select->Info(i, NULL, &enabled, NULL, NULL, &name, NULL, NULL);
-
-			pin = NULL;
-			GetPinByName(filter, PINDIR_OUTPUT, name, &pin);
-
-			if (DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK || wcsstr(name , L"Subtitle") || wcsstr(name, L"S:"))
-			{
-				if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"Subtitle", &pin);
-				if (NULL == pin) GetPinByName(filter, PINDIR_OUTPUT, L"S:", &pin);
-				CComPtr<IPin> connected;
-				if (pin) pin->ConnectedTo(&connected);
-
-				int flag = MF_STRING | MF_BYPOSITION;
-				if (enabled && connected) flag |= MF_CHECKED;
-				InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, name);
-				subtitle_track_found++;
-			}
-			CoTaskMemFree (name);
-		}
 	}
 
 	if (subtitle_track_found != 0)

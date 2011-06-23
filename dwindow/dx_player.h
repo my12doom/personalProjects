@@ -56,8 +56,9 @@ public:
 	HRESULT reset();								// unload all video and subtitle files
 	HRESULT start_loading();
 	HRESULT reset_and_loadfile(const wchar_t *pathname, bool stop);
+	HRESULT load_audiotrack(const wchar_t *pathname);
 	HRESULT load_subtitle(const wchar_t *pathname, bool reset = true);
-	HRESULT load_file(const wchar_t *pathname, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
+	HRESULT load_file(const wchar_t *pathname, bool non_mainfile = false, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
 	HRESULT end_loading();
 
 	// subtitle control functions
@@ -160,7 +161,6 @@ protected:
 	HRESULT on_dshow_event();		//"on move window"
 	HRESULT init_direct_show();
 	HRESULT exit_direct_show();
-	bool m_loading;
 
 	// basic directshow vars
 	DWORD rot_id;

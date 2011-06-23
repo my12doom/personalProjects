@@ -105,13 +105,16 @@
 #define ID_ENGLISH_DISPLAYASPECT        40076
 #define ID_ENGLISH_CUDAACCELARATION     40077
 #define ID_CUDA                         40078
+#define ID_AUDIO_                       40079
+#define ID_AUDIO_LOADAUDIOTRACK         40080
+#define ID_LOADAUDIOTRACK               40081
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        118
-#define _APS_NEXT_COMMAND_VALUE         40079
+#define _APS_NEXT_COMMAND_VALUE         40082
 #define _APS_NEXT_CONTROL_VALUE         1022
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

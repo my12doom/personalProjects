@@ -194,6 +194,7 @@ float4 NV12toRGB(float2 tex : TEXCOORD0) : COLOR		//NV12
 #define ry (p1[3])
 
 #define v (p2[0])
+#define a (p2[1])
 float4 UI(float2 tex : TEXCOORD0) : COLOR
 {
 	float2 sv = {sx/tx, sy/ty};
@@ -204,5 +205,7 @@ float4 UI(float2 tex : TEXCOORD0) : COLOR
 	if (tex.x>v)
 		pv += cv;
 	
-	return tex2D(s0, pv);
+	float4 o = tex2D(s0, pv);
+	o[3] *= a;
+	return o;
 }

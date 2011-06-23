@@ -17,6 +17,10 @@ public:
 	}
 	STDMETHODIMP Write(LPCOLESTR pszPropName, VARIANT *pVar)
 	{
+		OutputDebugStringW(pszPropName);
+		OutputDebugStringW(L":");
+		OutputDebugStringW(pVar->bstrVal);
+		OutputDebugStringW(L"\n");
 		return S_OK;
 	}
 

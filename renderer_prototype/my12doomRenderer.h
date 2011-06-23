@@ -7,6 +7,7 @@
 
 struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
 #define WM_NV_NOTIFY (WM_USER+10086)
+const int fade_in_out_time = 500;
 void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName);
 
 // this renderer must have a valid first window, if not, connection will fail.
@@ -185,6 +186,7 @@ public:
 protected:
 
 	bool m_showui;
+	int m_ui_visible_last_change_time;
 	int m_last_ui_draw;
 	int m_bmp_width, m_bmp_height;
 	float m_bmp_fleft, m_bmp_ftop, m_bmp_fwidth, m_bmp_fheight;

@@ -51,6 +51,7 @@ Section "DWindow(required)"
   File "dwindow.ini"
   File "detoured.dll"
   File "alpha.raw"
+  File "logo.raw"
   SetOutPath $INSTDIR\codec
   File "codec\*"
   SetOutPath $INSTDIR
