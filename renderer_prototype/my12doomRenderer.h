@@ -55,11 +55,11 @@ typedef struct _dummy_packet
 } dummy_packet;
 #define my12doom_queue_size 5
 
-class DBaseVideoRenderer: public CBaseVideoRenderer
+class DBaseVideoRenderer: public CBaseRenderer
 {
 public:
 	DBaseVideoRenderer(REFCLSID clsid,LPCTSTR name , LPUNKNOWN pUnk,HRESULT *phr)
-		: CBaseVideoRenderer(clsid, name, pUnk, phr){};
+		: CBaseRenderer(clsid, name, pUnk, phr){};
 	virtual CBasePin * GetPin(int n);
 	virtual HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 	virtual HRESULT BeginFlush(void);

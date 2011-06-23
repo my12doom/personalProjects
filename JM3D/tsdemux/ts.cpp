@@ -301,9 +301,9 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
     {
         // PSI
 
+            // begin of PSI table
         if(payload_unit_start_indicator)
         {
-            // begin of PSI table
 
             ptr++;
 
@@ -342,9 +342,9 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
             }else
                 end_ptr=ptr+l;
         }
+            // next part of PSI
 		else
         {
-            // next part of PSI
             if(!s.psi.offset)
                 return -8;
 
@@ -365,9 +365,9 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
             }
         }
 
-        if(!pid)
+             // PAT
+       if(!pid)
         {
-            // PAT
 
             ptr+=5;
 
@@ -399,9 +399,9 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
                 }
             }
         }
+            // PMT
 		else
         {
-            // PMT
 
             ptr+=7;
 
@@ -467,9 +467,9 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
     }
 	else
     {
+            // PES
         if(s.type!=0xff)
         {
-            // PES
 
             if(payload_unit_start_indicator)
             {
@@ -514,6 +514,10 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
                 case 0x80:          // PTS only
                     {
                         u_int64_t pts=decode_pts(s.psi.buf+9);
+						if (pid == 0x1011 || pid == 0x1012)
+						{
+							printf("..");
+						}
 
                         if(dump==2)
                             printf("%.4x: %llu\n",pid,pts);
@@ -536,6 +540,10 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
                         u_int64_t pts=decode_pts(s.psi.buf+9);
                         u_int64_t dts=decode_pts(s.psi.buf+14);
 
+						if (pid == 0x1011 || pid == 0x1012)
+						{
+							printf("..");
+						}
                         if(dump==2)
                             printf("%.4x: %llu %llu\n",pid,pts,dts);
                         else if(dump==3)

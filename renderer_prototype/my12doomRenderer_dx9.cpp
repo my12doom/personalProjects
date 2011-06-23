@@ -713,6 +713,9 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 HRESULT my12doomRenderer::set_device_state(device_state new_state)
 {
 	m_device_state = max(m_device_state, new_state);
+
+	if (m_device_state >= device_lost)
+		Sleep(50);
 	return S_OK;
 }
 HRESULT my12doomRenderer::reset()
@@ -1333,7 +1336,7 @@ presant:
 	else
 	{
 		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
-		if (hr == D3DERR_DEVICELOST)
+		if (FAILED(hr))// == D3DERR_DEVICELOST)
 			set_device_state(device_lost);
 	}
 

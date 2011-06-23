@@ -211,6 +211,8 @@ HRESULT my12doomRendererDShow::ShouldDrawSampleNow(IMediaSample *pMediaSample,
 												__inout REFERENCE_TIME *ptrEnd)
 {
 
+	return S_FALSE;
+	/*
 	// Don't call us unless there's a clock interface to synchronise with
 	ASSERT(m_pClock);
 
@@ -511,6 +513,7 @@ HRESULT my12doomRendererDShow::ShouldDrawSampleNow(IMediaSample *pMediaSample,
 	m_nNormal = -1;
 	return E_FAIL;                         // drop it
 
+	*/
 } // ShouldDrawSampleNow
 
 
