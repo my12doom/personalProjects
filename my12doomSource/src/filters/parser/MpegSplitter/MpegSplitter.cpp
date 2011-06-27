@@ -671,9 +671,9 @@ void CMpegSplitterFilter::ReadClipInfo(LPCOLESTR pszFileName)
 
 STDMETHODIMP CMpegSplitterFilter::Load(LPCOLESTR pszFileName, const AM_MEDIA_TYPE* pmt)
 {
-	HRESULT		hr;
+	HRESULT		hr = __super::Load (pszFileName, pmt);
 
-	return __super::Load (pszFileName, pmt);
+	return hr;
 }
 
 
@@ -873,6 +873,9 @@ HRESULT CMpegSplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 
 	m_rtNewStart = m_rtCurrent = 0;
 	m_rtNewStop = m_rtStop = m_rtDuration = 0;
+
+	if (m_pFile->m_streams[m_pFile->subpic].GetCount() == 0)
+		m_pFile->AddHdmvPGStream (NO_SUBTITLE_PID, "---");
 
 	for(int i = 0; i < countof(m_pFile->m_streams); i++) {
 		POSITION pos = m_pFile->m_streams[i].GetHeadPosition();
@@ -1990,6 +1993,7 @@ HRESULT CMpegSplitterOutputPin::DeliverPacket(CAutoPtr<Packet> p)
 								int point = ((unsigned char*)data)[i];
 								point = point & 0x80 ? -(point&0x7f) : (point&0x7f);
 								item->offsets[item->frame_count++] = point;
+
 							}
 
 							filter->m_offset_index ++;

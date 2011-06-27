@@ -214,6 +214,12 @@ BEGIN
             MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
             MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
         END
+        POPUP "Aspect Ratio"
+        BEGIN
+            MENUITEM "Default",                     ID_ASPECTRATIO_DEFAULT
+            MENUITEM "16:9",                        ID_ASPECTRATIO_169
+            MENUITEM "4:3",                         ID_ASPECTRATIO_43
+        END
         MENUITEM SEPARATOR
         POPUP "Audio"
         BEGIN

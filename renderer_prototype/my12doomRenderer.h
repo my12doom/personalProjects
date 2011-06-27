@@ -44,6 +44,17 @@ public:
 	DRendererInputPin(__inout CBaseRenderer *pRenderer,	__inout HRESULT *phr, __in_opt LPCWSTR Name) : CRendererInputPin(pRenderer, phr, Name){}
 	STDMETHODIMP NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 	STDMETHODIMP BeginFlush(void);
+	STDMETHODIMP GetAllocator(__deref_out IMemAllocator ** ppAllocator)
+	{
+		return __super::GetAllocator(ppAllocator);
+	}
+
+	STDMETHODIMP NotifyAllocator(
+		IMemAllocator * pAllocator,
+		BOOL bReadOnly)
+	{
+		return __super::NotifyAllocator(pAllocator, bReadOnly);
+	}
 protected:
 	friend class my12doomRenderer;
 };
@@ -135,6 +146,34 @@ public:
 	bool m_topdown;
 };
 
+
+enum vertex_types
+{
+	vertex_pass1_types_count = 5,
+	vertex_point_per_type = 4,
+
+	vertex_pass1_whole = 0,
+	vertex_pass1_left = 4,
+	vertex_pass1_right = 8,
+	vertex_pass1_top = 12,
+	vertex_pass1_bottom = 16,
+
+	vertex_pass2_main = 20,
+	vertex_pass2_second = 24,
+	vertex_pass3 = 28,
+
+	vertex_bmp = 32,
+	vertex_bmp2 = 36,
+
+	vertex_ui = 40,
+
+	vertex_test = 44,
+	vertex_pass2_main_r = 48,
+
+
+	vertex_total = 52,
+};
+
 class my12doomRenderer
 {
 public:
@@ -161,11 +200,12 @@ public:
 	HRESULT set_mask_color(int id, DWORD color);
 	HRESULT set_swap_eyes(bool swap);
 	HRESULT set_fullscreen(bool full);
-	HRESULT set_offset(int dimention, double offset);		// dimention1 = x, dimention2 = y
+	HRESULT set_movie_pos(int dimention, double offset);		// dimention1 = x, dimention2 = y
 	HRESULT set_aspect(double aspect);
 	HRESULT set_window(HWND wnd, HWND wnd2);
 	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop);
-	HRESULT set_bmp_offset(double offset, bool render = true);
+	HRESULT set_bmp_offset(double offset);
+	HRESULT set_parallax(double parallax);
 	HRESULT set_ui(void* data, int pitch);
 	HRESULT set_ui_visible(bool visible);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
@@ -182,16 +222,18 @@ public:
 	double get_aspect();
 	bool is_connected(int id){return (id?m_dsr1:m_dsr0)->is_connected();}
 	double get_bmp_offset(){return m_bmp_offset;}
+	double get_parallax(){return m_parallax;}
 
 protected:
 
+	double m_parallax;
 	bool m_showui;
 	int m_ui_visible_last_change_time;
 	int m_last_ui_draw;
 	int m_bmp_width, m_bmp_height;
 	float m_bmp_fleft, m_bmp_ftop, m_bmp_fwidth, m_bmp_fheight;
-	double m_offset_x /*= -0.0*/;
-	double m_offset_y /*= 0.0*/;
+	double m_bmp_offset_x /*= -0.0*/;
+	double m_bmp_offset_y /*= 0.0*/;
 	double m_bmp_offset;
 	double m_source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
 	double m_forced_aspect /* = -1 */;
@@ -269,7 +311,7 @@ protected:
 	bool m_nv3d_enabled;			// false if ATI card
 	bool m_nv3d_actived;
 
-	MyVertex m_vertices[48];
+	MyVertex m_vertices[vertex_total];
 	bool m_swapeyes;
 	output_mode_types m_output_mode;
 	input_layout_types m_input_layout;

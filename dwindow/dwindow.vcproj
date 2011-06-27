@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;E:\DX_SDK_LITE\Include"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;E:\DX_SDK_LITE\Include;C:\DS_SDK_LITE\BaseClasses;C:\DX_SDK_LITE\Include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -65,7 +65,7 @@
 				AdditionalDependencies="nvapi.lib strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
 				OutputFile="$(OutDir)/dwindow.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode"
+				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode;C:\DS_SDK_LITE\BaseClasses\Debug_Unicode"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/dwindow.pdb"
 				SubSystem="1"

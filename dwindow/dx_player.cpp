@@ -122,7 +122,8 @@ m_mask_mode(L"MaskMode", row_interlace),
 m_display_subtitle(L"DisplaySubtitle", true),
 m_anaglygh_left_color(L"AnaglyghLeftColor", RGB(255,0,0)),
 m_anaglygh_right_color(L"AnaglyghRightColor", RGB(0,255,255)),
-m_volume(L"Volume", 1.0)
+m_volume(L"Volume", 1.0),
+m_aspect(L"Aspect", -1)
 {
 	// Enable away mode and prevent the sleep idle time-out.
 	SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_AWAYMODE_REQUIRED);
@@ -148,6 +149,7 @@ m_volume(L"Volume", 1.0)
 	m_mirror1 = 0;
 	m_mirror2 = 0;
 	m_letterbox_delta = 0.0;
+	m_parallax = 0;
 	m_subtitle_center_x = 0.5;
 	m_subtitle_bottom_y = 0.95;
 	m_hexe = hExe;
@@ -479,6 +481,8 @@ LRESULT dx_player::on_key_down(int id, int key)
 		set_letterbox(0);
 		set_subtitle_pos(0.5, 0.95);
 		set_subtitle_offset(0);
+		m_parallax = 0;
+		if (m_renderer1) m_renderer1->set_parallax(m_parallax);
 		break;
 
 	case VK_NUMPAD4:		//subtitle left
@@ -503,6 +507,16 @@ LRESULT dx_player::on_key_down(int id, int key)
 		
 	case VK_NUMPAD3:
 		set_subtitle_offset(m_user_offset - 1);
+		break;
+
+	case VK_MULTIPLY:
+		m_parallax += 0.001;
+		if (m_renderer1)m_renderer1->set_parallax(m_parallax);
+		break;
+
+	case VK_DIVIDE:
+		m_parallax -= 0.001;
+		if (m_renderer1)m_renderer1->set_parallax(m_parallax);
 		break;
 	}
 	return S_OK;
@@ -666,10 +680,14 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 		}
 
+		// Aspect Ration
+		if (m_aspect == -1) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
+		if (m_aspect == (double)16/9) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
+		if (m_aspect == (double)4/3) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
 
 		// subtitle menu
 		CheckMenuItem(menu, ID_SUBTITLE_DISPLAYSUBTITLE, MF_BYCOMMAND | (m_display_subtitle ? MF_CHECKED : MF_UNCHECKED));
-		HMENU sub_subtitle = GetSubMenu(menu, 8);
+		HMENU sub_subtitle = GetSubMenu(menu, 9);
 		{
 			CAutoLock lck(&m_subtitle_sec);
 			if (!m_srenderer || FAILED(m_srenderer->set_font_color(m_font_color)))
@@ -684,8 +702,9 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 			}
 		}
 
+
 		// audio tracks
-		HMENU sub_audio = GetSubMenu(menu, 7);
+		HMENU sub_audio = GetSubMenu(menu, 8);
 		list_audio_track(sub_audio);
 
 		// subtitle tracks
@@ -1064,6 +1083,29 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			m_renderer1->set_output_mode(m_output_mode);			
 	}
 
+	// aspect ratio
+
+	else if (uid == ID_ASPECTRATIO_DEFAULT)
+	{
+		m_aspect = -1;
+		if (m_renderer1)
+			m_renderer1->set_aspect(m_aspect);
+	}
+
+	else if (uid == ID_ASPECTRATIO_169)
+	{
+		m_aspect = (double)16/9;
+		if (m_renderer1)
+			m_renderer1->set_aspect(m_aspect);
+	}
+
+	else if (uid == ID_ASPECTRATIO_43)
+	{
+		m_aspect = (double)4/3;
+		if (m_renderer1)
+			m_renderer1->set_aspect(m_aspect);
+	}
+
 	// swap eyes
 	else if (uid == ID_SWAPEYES)
 	{
@@ -1321,6 +1363,8 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_callback(this);
 	m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
 	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
+	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
+	m_renderer1->set_aspect(m_aspect);
 
 	m_file_loaded = false;
 	
@@ -1344,9 +1388,9 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	{
 		REFERENCE_TIME frame_time = m_renderer1->m_frame_length;
 		HRESULT hr = m_offset_metadata->GetOffset(TimeStart+frame_time*2, frame_time, &m_internel_offset);	//preroll 2 frames
-		//log_line(L"offset = %d(%s)", internel_offset, hr == S_OK ? L"S_OK" : L"S_FALSE");
+		//log_line(L"offset = %d(%s)", m_internel_offset, hr == S_OK ? L"S_OK" : L"S_FALSE");
 	}
-	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920, false);
+	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
 
 	int ms_start = (int)(TimeStart / 10000);
 	int ms_end = (int)(TimeEnd / 10000);
@@ -1547,7 +1591,7 @@ HRESULT dx_player::set_letterbox(double delta)
 	m_letterbox_delta = delta;
 
 	if (m_renderer1)
-		m_renderer1->set_offset(2, m_letterbox_delta);
+		m_renderer1->set_movie_pos(2, m_letterbox_delta);
 
 	return S_OK;
 }
@@ -1649,9 +1693,12 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 	reset();
 	start_loading();
 	HRESULT hr;
+	//hr = load_file(L"Z:\\00001.m2ts");
 	hr = load_file(pathname);
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00005n.m2ts");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00006.m2ts");
+	//hr = load_file(L"K:\\BDMV\\STREAM\\00001.m2ts");
+	//hr = load_file(L"K:\\BDMV\\STREAM\\00002.m2ts");
 	if (FAILED(hr))
 		goto fail;
 	hr = end_loading();

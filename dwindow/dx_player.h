@@ -96,11 +96,13 @@ protected:
 	// image control vars
 	HINSTANCE m_hexe;
 	//AutoSetting<bool> m_always_show_right/*(L"AlwaysShowRight", false)*/;
+	AutoSetting<double> m_aspect;/*(L"AlwaysShowRight", false)*/;
 
 	int m_mirror1;
 	int m_mirror2;			// 0x0:no mirror, 0x1 mirror horizontal, 0x2 mirror vertical, 0x3(0x3=0x1|0x2) mirror both
 	bool m_revert;
 	double m_letterbox_delta;
+	double m_parallax;
 
 	int init_done_flag;
 

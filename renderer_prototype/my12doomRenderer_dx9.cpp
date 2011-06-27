@@ -70,29 +70,6 @@ HRESULT mylog(const char *format, ...)
 	return S_OK;
 }
 
-enum vertex_types
-{
-	vertex_pass1_types_count = 5,
-	vertex_point_per_type = 4,
-
-	vertex_pass1_whole = 0,
-	vertex_pass1_left = 4,
-	vertex_pass1_right = 8,
-	vertex_pass1_top = 12,
-	vertex_pass1_bottom = 16,
-
-	vertex_pass2_main = 20,
-	vertex_pass2_second = 24,
-	vertex_pass3 = 28,
-
-	vertex_bmp = 32,
-	vertex_bmp2 = 36,
-
-	vertex_ui = 40,
-
-	vertex_test = 44,
-};
-
 my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/):
 m_left_queue(_T("left queue")),
 m_right_queue(_T("right queue"))
@@ -107,7 +84,10 @@ m_right_queue(_T("right queue"))
 		NvU8 enabled3d;
 		res = NvAPI_Stereo_IsEnabled(&enabled3d);
 		if (res == NVAPI_OK)
+		{
+			printf("NV3D enabled.\n");
 			m_nv3d_enabled = (bool)enabled3d;
+		}
 	}
 
 	// UI
@@ -137,6 +117,9 @@ m_right_queue(_T("right queue"))
 
 void my12doomRenderer::init_variables()
 {
+	// parallax
+	m_parallax = 0;
+
 	// just for surface creation
 	m_lVidWidth = m_lVidHeight = 64;
 	// assume already removed from graph
@@ -157,8 +140,8 @@ void my12doomRenderer::init_variables()
 	m_cb = NULL;
 
 	// aspect and offset
-	m_offset_x = 0.0;
-	m_offset_y = 0.0;
+	m_bmp_offset_x = 0.0;
+	m_bmp_offset_y = 0.0;
 	m_source_aspect = 1.0;
 	m_forced_aspect = -1;
 
@@ -459,21 +442,6 @@ HRESULT my12doomRenderer::create_render_targets()
 
 
 	HRESULT hr = S_OK;
-	// add 3d vision tag at last line
-	if (m_output_mode == NV3D && m_sbs_surface)
-	{
-		D3DLOCKED_RECT lr;
-		RECT lock_tar={0, m_active_pp.BackBufferHeight, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1};
-		FAIL_RET(m_sbs_surface->LockRect(&lr,&lock_tar,0));
-		LPNVSTEREOIMAGEHEADER pSIH = (LPNVSTEREOIMAGEHEADER)(((unsigned char *) lr.pBits) + (lr.Pitch * (0)));	
-		pSIH->dwSignature = NVSTEREO_IMAGE_SIGNATURE;
-		pSIH->dwBPP = 32;
-		pSIH->dwFlags = SIH_SIDE_BY_SIDE;
-		pSIH->dwWidth = m_active_pp.BackBufferWidth;
-		pSIH->dwHeight = m_active_pp.BackBufferHeight;
-		FAIL_RET(m_sbs_surface->UnlockRect());
-	}
-
 	if (m_active_pp.Windowed)
 	{
 		RECT rect;
@@ -500,6 +468,21 @@ HRESULT my12doomRenderer::create_render_targets()
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8, D3DPOOL_DEFAULT, &m_tex_mask, NULL));
 	FAIL_RET( m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, TRUE, &m_sbs_surface, NULL));
 	FAIL_RET(generate_mask());
+
+	// add 3d vision tag at last line on need
+	if (m_output_mode == NV3D && m_sbs_surface)
+	{
+		D3DLOCKED_RECT lr;
+		RECT lock_tar={0, m_active_pp.BackBufferHeight, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1};
+		FAIL_RET(m_sbs_surface->LockRect(&lr,&lock_tar,0));
+		LPNVSTEREOIMAGEHEADER pSIH = (LPNVSTEREOIMAGEHEADER)(((unsigned char *) lr.pBits) + (lr.Pitch * (0)));	
+		pSIH->dwSignature = NVSTEREO_IMAGE_SIGNATURE;
+		pSIH->dwBPP = 32;
+		pSIH->dwFlags = SIH_SIDE_BY_SIDE;
+		pSIH->dwWidth = m_active_pp.BackBufferWidth;
+		pSIH->dwHeight = m_active_pp.BackBufferHeight;
+		FAIL_RET(m_sbs_surface->UnlockRect());
+	}
 
 	return hr;
 }
@@ -606,7 +589,8 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 	else if (m_device_state == device_lost)
 	{
 		Sleep(100);
-		if( m_Device->TestCooperativeLevel() == D3DERR_DEVICENOTRESET )
+		hr = m_Device->TestCooperativeLevel();
+		if( hr  == D3DERR_DEVICENOTRESET )
 		{
 			terminate_render_thread();
 			CAutoLock lck(&m_frame_lock);
@@ -624,6 +608,9 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			m_device_state = fine;
 			return hr;
 		}
+
+		else if (hr == S_OK)
+			m_device_state = fine;
 
 		else
 			return E_FAIL;
@@ -697,12 +684,24 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			StereoHandle h3d;
 			NvAPI_Status res;
 			res = NvAPI_Stereo_CreateHandleFromIUnknown(m_Device, &h3d);
+			res = NvAPI_Stereo_SetNotificationMessage(h3d, (NvU64)m_hWnd, WM_NV_NOTIFY);
 			res = NvAPI_Stereo_Activate(h3d);
+			NvU8 actived = 0;
+			res = NvAPI_Stereo_IsActivated(h3d, &actived);
+			if (actived)
+			{
+				printf("init: NV3D actived\n");
+				m_nv3d_actived = true;
+			}
+			else
+			{
+				printf("init: NV3D deactived\n");
+				m_nv3d_actived = false;
+			}
 
 			if (res == NVAPI_OK)
 				m_nv3d_actived = true;
 
-			res = NvAPI_Stereo_SetNotificationMessage(h3d, (NvU64)m_hWnd, WM_NV_NOTIFY);
 			res = NvAPI_Stereo_DestroyHandle(h3d);
 		}
 
@@ -1333,6 +1332,10 @@ presant:
 		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
 		if (FAILED(hr))
 			set_device_state(device_lost);
+
+		//static int n = timeGetTime();
+		//if (timeGetTime()-n > 15)printf("delta = %d.\n", timeGetTime()-n);
+		//n = timeGetTime();
 	}
 
 	return S_OK;
@@ -1368,7 +1371,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	m_Device->SetTexture( 0, left_eye ? m_tex_rgb_left : m_tex_rgb_right );
 	hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags );
-	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, main ? vertex_pass2_main : vertex_pass2_second, 2 );
+	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, left_eye ? vertex_pass2_main : vertex_pass2_main_r, 2 );
 	return S_OK;
 }
 HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
@@ -1599,7 +1602,7 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample1_tex_YUY2 : sample1_tex_Y );
 			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample1_tex_NV12_UV : sample1_tex_YV12_UV);
 		}
-		hr = m_Device->SetRenderTarget(0, left_surface);
+		hr = m_Device->SetRenderTarget(0, m_swapeyes ? right_surface : left_surface);
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
 
 
@@ -1611,7 +1614,7 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample2_tex_YUY2 : sample2_tex_Y );
 			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample2_tex_NV12_UV : sample2_tex_YV12_UV);
 		}
-		hr = m_Device->SetRenderTarget(0, right_surface);
+		hr = m_Device->SetRenderTarget(0, m_swapeyes ? left_surface : right_surface);
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
 	}
 	else
@@ -1891,16 +1894,37 @@ HRESULT my12doomRenderer::calculate_vertex()
 
 	int tar_width = tar.right-tar.left;
 	int tar_height = tar.bottom - tar.top;
-	tar.left += (LONG)(tar_width * m_offset_x);
-	tar.right += (LONG)(tar_width * m_offset_x);
-	tar.top += (LONG)(tar_height * m_offset_y);
-	tar.bottom += (LONG)(tar_height * m_offset_y);
+	tar.left += (LONG)(tar_width * m_bmp_offset_x);
+	tar.right += (LONG)(tar_width * m_bmp_offset_x);
+	tar.top += (LONG)(tar_height * m_bmp_offset_y);
+	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
 
 	MyVertex *tmp = m_vertices + vertex_pass2_main;
 	tmp[0].x = tar.left-0.5f; tmp[0].y = tar.top-0.5f;
 	tmp[1].x = tar.right-0.5f; tmp[1].y = tar.top-0.5f;
 	tmp[2].x = tar.left-0.5f; tmp[2].y = tar.bottom-0.5f;
 	tmp[3].x = tar.right-0.5f; tmp[3].y = tar.bottom-0.5f;
+
+	MyVertex *pass2_main_r = m_vertices + vertex_pass2_main_r;
+	memcpy(pass2_main_r, tmp, sizeof(MyVertex) * 4);
+
+	if (m_parallax > 0)
+	{
+		// cut right edge of right eye and left edge of left eye
+		tmp[0].tu += m_parallax;
+		tmp[2].tu += m_parallax;
+		pass2_main_r[1].tu -= m_parallax;
+		pass2_main_r[3].tu -= m_parallax;
+
+	}
+	else if (m_parallax < 0)
+	{
+		// cut left edge of right eye and right edge of left eye
+		pass2_main_r[0].tu += abs(m_parallax);
+		pass2_main_r[2].tu += abs(m_parallax);
+		tmp[1].tu -= abs(m_parallax);
+		tmp[3].tu -= abs(m_parallax);
+	}
 
 	MyVertex *bmp = m_vertices + vertex_bmp;
 	tar_width = tar.right-tar.left;
@@ -1949,10 +1973,10 @@ HRESULT my12doomRenderer::calculate_vertex()
 
 	tar_width = tar.right-tar.left;
 	tar_height = tar.bottom - tar.top;
-	tar.left += (LONG)(tar_width * m_offset_x);
-	tar.right += (LONG)(tar_width * m_offset_x);
-	tar.top += (LONG)(tar_height * m_offset_y);
-	tar.bottom += (LONG)(tar_height * m_offset_y);
+	tar.left += (LONG)(tar_width * m_bmp_offset_x);
+	tar.right += (LONG)(tar_width * m_bmp_offset_x);
+	tar.top += (LONG)(tar_height * m_bmp_offset_y);
+	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
 
 	tmp = m_vertices + vertex_pass2_second;
 	tmp[0].x = tar.left-0.5f; tmp[0].y = tar.top-0.5f;
@@ -2089,7 +2113,7 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 HRESULT my12doomRenderer::recaculate_mask()
 {
 	return generate_mask();
-	render(true);
+	repaint_video();
 }
 
 HRESULT my12doomRenderer::pump()
@@ -2125,9 +2149,16 @@ HRESULT my12doomRenderer::NV3D_notify(WPARAM wparam)
 	WORD separation = HIWORD(wparam);
 	
 	if (actived)
+	{
 		m_nv3d_actived = true;
+		printf("actived!\n");
+	}
 	else
+	{
 		m_nv3d_actived = false;
+		printf("deactived!\n");
+	}
+
 
 	return S_OK;
 }
@@ -2137,7 +2168,7 @@ HRESULT my12doomRenderer::set_input_layout(int layout)
 	m_input_layout = (input_layout_types)layout;
 	set_device_state(need_reset_object);
 	handle_device_state();
-	render(true);
+	repaint_video();
 	return S_OK;
 }
 
@@ -2154,7 +2185,7 @@ HRESULT my12doomRenderer::set_mask_mode(int mode)
 	m_mask_mode = (mask_mode_types)(mode % mask_mode_types_max);
 	calculate_vertex();
 	generate_mask();
-	render(true);
+	repaint_video();
 	return S_OK;
 }
 
@@ -2168,7 +2199,7 @@ HRESULT my12doomRenderer::set_mask_color(int id, DWORD color)
 		return E_INVALIDARG;
 
 	calculate_vertex();
-	render(true);
+	repaint_video();
 	return S_OK;
 }
 
@@ -2189,7 +2220,7 @@ HRESULT my12doomRenderer::set_swap_eyes(bool swap)
 	if (m_output_mode == pageflipping)
 		terminate_render_thread();
 	restore_rgb();
-	render(true);
+	repaint_video();
 	if (m_output_mode == pageflipping)
 		create_render_thread();
 	return S_OK;
@@ -2218,17 +2249,17 @@ bool my12doomRenderer::get_fullscreen()
 {
 	return !m_active_pp.Windowed;
 }
-HRESULT my12doomRenderer::set_offset(int dimention, double offset)		// dimention1 = x, dimention2 = y
+HRESULT my12doomRenderer::set_movie_pos(int dimention, double offset)		// dimention1 = x, dimention2 = y
 {
 	if (dimention == 1)
-		m_offset_x = offset;
+		m_bmp_offset_x = offset;
 	else if (dimention == 2)
-		m_offset_y = offset;
+		m_bmp_offset_y = offset;
 	else
 		return E_INVALIDARG;
 
 	calculate_vertex();
-	render(true);
+	repaint_video();
 	return S_OK;
 }
 HRESULT my12doomRenderer::set_aspect(double aspect)
@@ -2237,7 +2268,7 @@ HRESULT my12doomRenderer::set_aspect(double aspect)
 	calculate_vertex();
 	if (m_output_mode == pageflipping)
 		terminate_render_thread();
-	render(true);
+	repaint_video();
 	if (m_output_mode == pageflipping)
 		create_render_thread();
 	return S_OK;
@@ -2245,9 +2276,9 @@ HRESULT my12doomRenderer::set_aspect(double aspect)
 double my12doomRenderer::get_offset(int dimention)
 {
 	if (dimention == 1)
-		return m_offset_x;
+		return m_bmp_offset_x;
 	else if (dimention == 2)
-		return m_offset_y;
+		return m_bmp_offset_y;
 	else
 		return 0.0;
 }
@@ -2269,7 +2300,7 @@ HRESULT my12doomRenderer::set_window(HWND wnd, HWND wnd2)
 
 HRESULT my12doomRenderer::repaint_video()
 {
-	if (m_dsr0->m_State != State_Running)
+	if (m_dsr0->m_State != State_Running && m_output_mode != pageflipping)
 		render(true);
 	return S_OK;
 }
@@ -2331,8 +2362,7 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 	if (changed)
 	{
 		calculate_vertex();
-		if (m_dsr0->m_State != State_Running)
-			render(true);
+		repaint_video();
 	}
 	return S_OK;
 }
@@ -2379,8 +2409,7 @@ HRESULT my12doomRenderer::set_ui(void* data, int pitch)
 		}
 	}
 
-	if (m_dsr0->m_State != State_Running)
-		render(true);
+	repaint_video();
 	return S_OK;
 }
 
@@ -2390,21 +2419,32 @@ HRESULT my12doomRenderer::set_ui_visible(bool visible)
 	{
 		m_showui = visible;
 		m_ui_visible_last_change_time = timeGetTime();
-		render(true);
+		repaint_video();
 	}
 
 	m_showui = visible;
 	return S_OK;
 }
 
-HRESULT my12doomRenderer::set_bmp_offset(double offset, bool brender)
+HRESULT my12doomRenderer::set_bmp_offset(double offset)
 {
 	if (m_bmp_offset != offset)
 	{
 		m_bmp_offset = offset;
 		calculate_vertex();
-		if (m_dsr0->m_State != State_Running && brender)
-			render(true);
+		repaint_video();
+	}
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::set_parallax(double parallax)
+{
+	if (m_parallax != parallax)
+	{
+		m_parallax = parallax;
+		calculate_vertex();
+		repaint_video();
 	}
 
 	return S_OK;

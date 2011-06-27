@@ -52,7 +52,11 @@ int srt_parser::time_to_decimal(wchar_t *str)
 		return -1;
 
 	int h,m,s,ms;
-	swscanf(str, L"%d:%d:%d,%d", &h,&m,&s,&ms);
+	if (str[8] == L',')
+		swscanf(str, L"%d:%d:%d,%d", &h,&m,&s,&ms);
+	else
+		swscanf(str, L"%d:%d:%d.%d", &h,&m,&s,&ms);
+
 
 	return h*3600000 + m*60000 +s*1000 +ms;
 }

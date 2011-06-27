@@ -254,7 +254,7 @@ void main(int argc, char * argv[])
 {
 	//main2();
 	//return;
-	return main3(argc, argv);
+	//return main3(argc, argv);
 	printf("my12doom's mvc interlacer\n");
 	printf("my12doom.googlecode.com\n");
 	printf("mailto:my12doom@gmail.com\n");
@@ -330,17 +330,25 @@ void main(int argc, char * argv[])
 	int out_data_count = 0;
 
 	create_watermark();
+	int first = 5;
 	while (true)
 	{
-		int delimeter_size_left = read_a_delimeter(&left);
-		//fwrite(delimeter_buffer, 1, delimeter_size_left, o);
-		memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_left);
-		out_data_count += delimeter_size_left;
+		// right first
 
 		int delimeter_size_right = read_a_delimeter(&right);
 		//fwrite(delimeter_buffer, 1, delimeter_size_right, o);
 		memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_right);
 		out_data_count += delimeter_size_right;
+
+		//fwrite(delimeter_buffer, 1, delimeter_size_left, o);
+		int delimeter_size_left = 0;
+		if (first)
+		{
+			delimeter_size_left = read_a_delimeter(&left);
+			first --;
+		}
+		memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_left);
+		out_data_count += delimeter_size_left;
 
 		//watermark
 		memcpy(out_buffer+out_data_count, watermark, watermark_size);
