@@ -15,7 +15,7 @@ public:
 	HRESULT reset_timer(int id, int new_interval);
 	HRESULT show_window(int id, bool show);
 	HRESULT show_mouse(bool show);
-	HRESULT set_window_text(int id, wchar_t *text);
+	HRESULT set_window_text(int id, const wchar_t *text);
 	bool m_full1;
 	bool m_full2;
 	HWND m_hwnd1;
@@ -60,6 +60,7 @@ protected:
 	bool is_visible(int id);
 
 	// need init:
+	HACCEL m_accel;				// should be inited by devired class
 	HANDLE m_thread1;
 	HANDLE m_thread2;
 	LONG m_style1;

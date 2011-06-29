@@ -858,8 +858,7 @@ HRESULT localize_menu(HMENU menu)
 			wchar_t text[1024];
 			GetMenuStringW(menu, i, text, 1024, MF_BYPOSITION);
 
-			wchar_t *local = C(text);
-			if (NULL == local) local = text;
+			const wchar_t *local = C(text);
 			if (sub)
 				ModifyMenuW(menu, i, MF_BYPOSITION | MF_POPUP, (UINT_PTR)sub, local);
 			else

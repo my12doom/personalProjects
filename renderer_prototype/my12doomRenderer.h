@@ -295,6 +295,7 @@ protected:
 
 	HRESULT render(bool forced = false);
 	static DWORD WINAPI render_thread(LPVOID param);
+	static DWORD WINAPI test_thread(LPVOID param);
 
 	// dx9 helper functions
 	HRESULT load_image(int id = -1, bool forced = false);		// -1 = both dshow renderer
@@ -349,6 +350,9 @@ protected:
 	CComPtr<IDirect3DTexture9> m_tex_bmp;
 
 	CComPtr<IDirect3DSurface9> m_sbs_surface;				// nv3d temp surface
+
+
+	CComPtr<IDirect3DSurface9> m_just_a_test_surface;
 
 	// input layout detector
 	input_layout_types get_active_input_layout();

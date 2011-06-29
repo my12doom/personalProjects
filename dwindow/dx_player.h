@@ -191,6 +191,8 @@ protected:
 	double m_subtitle_bottom_y;
 	int m_user_offset;
 	int m_internel_offset;
+	AutoSetting<int> m_subtitle_latency;
+	AutoSetting<double> m_subtitle_ratio;
 
 	// font
 	HFONT m_font;

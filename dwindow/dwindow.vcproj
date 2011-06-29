@@ -365,6 +365,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\latency_dialog.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\localization.cpp"
 				>
 			</File>
@@ -508,6 +512,10 @@
 			</File>
 			<File
 				RelativePath=".\global_funcs.h"
+				>
+			</File>
+			<File
+				RelativePath=".\latency_dialog.h"
 				>
 			</File>
 			<File

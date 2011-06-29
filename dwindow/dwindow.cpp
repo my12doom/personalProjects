@@ -195,7 +195,9 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 	while( msg.message != WM_QUIT )
 	{
 		if( PeekMessage( &msg, NULL, 0, 0, PM_REMOVE ) )
-		{ 
+		{
+			if(TranslateAccelerator(that->m_hwnd1, that->m_accel, &msg))
+				continue;
 			TranslateMessage( &msg );
 			DispatchMessage( &msg );
 		}
@@ -223,7 +225,7 @@ HRESULT dwindow::show_window(int id, bool show)
 	return S_OK;
 }
 
-HRESULT dwindow::set_window_text(int id, wchar_t *text)
+HRESULT dwindow::set_window_text(int id, const wchar_t *text)
 {
 	SetWindowTextW(id_to_hwnd(id), text);
 

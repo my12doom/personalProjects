@@ -113,6 +113,8 @@ m_right_queue(_T("right queue"))
 	m_ui_visible_last_change_time = m_last_ui_draw = timeGetTime();
 
 	init_variables();
+
+	//CreateThread(0,0,test_thread, this, NULL, NULL);
 }
 
 void my12doomRenderer::init_variables()
@@ -519,6 +521,22 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 	}
 
 	HRESULT hr;
+	if (m_device_state != fine)
+	{
+		char * states[10]=
+		{
+			"fine",							// device is fine
+			"need_resize_back_buffer",		// just resize back buffer and recaculate vertex
+			"need_reset_object",				// objects size changed, should recreate objects
+			"need_reset",						// reset requested by program, usually to change back buffer size, but program can continue rendering without reset
+			"device_lost",					// device lost, can't continue
+			"need_create",					// device not created, or need to recreate, can't continue
+			"create_failed",					// 
+			"device_state_max",				// not used
+		};
+		printf("handling device state(%s)\n", states[m_device_state]);
+	}
+
 	if (m_device_state == fine)
 		return S_OK;
 
@@ -1320,7 +1338,7 @@ presant:
 	if (m_output_mode == dual_window)
 	{
 		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
-		if (FAILED(hr))
+		if (FAILED(hr) && hr != DDERR_WASSTILLDRAWING)
 			set_device_state(device_lost);
 
 		if(m_swap2) if (m_swap2->Present(NULL, NULL, m_hWnd2, NULL, NULL) == D3DERR_DEVICELOST)
@@ -1329,7 +1347,7 @@ presant:
 
 	else
 	{
-		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
+		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, NULL);
 		if (FAILED(hr))
 			set_device_state(device_lost);
 
@@ -1430,6 +1448,39 @@ HRESULT my12doomRenderer::render(bool forced)
 	else
 		return E_FAIL;
 	return S_OK;
+}
+DWORD WINAPI my12doomRenderer::test_thread(LPVOID param)
+{
+	my12doomRenderer *_this = (my12doomRenderer*)param;
+	while(_this->m_Device == NULL)
+		Sleep(1);
+
+	Sleep(5000);
+
+	while (!_this->m_render_thread_exit)
+	{
+		D3DLOCKED_RECT locked;
+		HRESULT hr;
+
+		int l1 = timeGetTime();
+		//hr = _this->m_Device->CreateOffscreenPlainSurface(1920, 1080, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &_this->m_just_a_test_surface, NULL);
+		int l2 = timeGetTime();
+		//hr = _this->m_just_a_test_surface->LockRect(&locked, NULL, NULL);
+		int l3 = timeGetTime();
+		//memset(locked.pBits, 0, locked.Pitch * 1080);
+		int l4 = timeGetTime();
+		//hr = _this->m_just_a_test_surface->UnlockRect();
+		int l5 = timeGetTime();
+		//_this->m_just_a_test_surface = NULL;
+		int l6 = timeGetTime();
+
+		if (l6-l1 > 2)
+			mylog("thread: %d,%d,%d,%d,%d\n", l2-l1, l3-l2, l4-l3, l5-l4, l6-l5);
+
+		Sleep(1);
+	}
+
+	return 0;
 }
 DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 {
@@ -2123,7 +2174,7 @@ HRESULT my12doomRenderer::pump()
 	if (m_hWnd)
 	{
 		success = GetClientRect(m_hWnd, &rect);
-		//if (success && rect.right > 0 && rect.bottom > 0)
+		if (success && rect.right > 0 && rect.bottom > 0)
 		if (m_active_pp.BackBufferWidth != rect.right-rect.left || m_active_pp.BackBufferHeight != rect.bottom - rect.top)
 		{
 			set_device_state(need_resize_back_buffer);
@@ -2133,7 +2184,7 @@ HRESULT my12doomRenderer::pump()
 	if (m_hWnd2)
 	{
 		success = GetClientRect(m_hWnd2, &rect);
-		//if (success && rect.right > 0 && rect.bottom > 0)
+		if (success && rect.right > 0 && rect.bottom > 0)
 		if (m_active_pp2.BackBufferWidth != rect.right-rect.left || m_active_pp2.BackBufferHeight != rect.bottom - rect.top)
 			set_device_state(need_resize_back_buffer);
 	}

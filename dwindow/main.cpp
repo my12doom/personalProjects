@@ -108,7 +108,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	load_passkey();
 	if (FAILED(check_passkey()))
 	{
-		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_DIALOG2), NULL, register_proc );
+		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), NULL, register_proc );
 		return 0;
 	}
 	save_passkey();

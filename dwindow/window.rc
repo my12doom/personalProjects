@@ -74,7 +74,7 @@ BEGIN
     COMBOBOX        IDC_COMBO2,221,41,39,150,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_DIALOG2 DIALOGEX 0, 0, 316, 121
+IDD_USERID DIALOGEX 0, 0, 316, 121
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Enter User ID"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -97,6 +97,25 @@ BEGIN
     LTEXT           "输出1",IDC_STATIC,28,31,38,17
     LTEXT           "输出2",IDC_STATIC,27,52,35,12
     COMBOBOX        IDC_COMBO2,77,50,203,18,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_LATENCY DIALOGEX 0, 0, 222, 126
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "延迟/拉伸设定"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,111,105,50,14
+    PUSHBUTTON      "取消",IDCANCEL,165,105,50,14
+    CONTROL         "",IDC_SPIN1,"msctls_updown32",UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_NOTHOUSANDS,125,14,11,15
+    EDITTEXT        IDC_EDIT2,49,14,77,16,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "延迟",IDC_STATIC,15,17,21,14
+    LTEXT           "毫秒",IDC_STATIC,141,17,26,12
+    CONTROL         "",IDC_SPIN2,"msctls_updown32",UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_NOTHOUSANDS,125,36,11,15
+    EDITTEXT        IDC_EDIT3,49,36,77,16,ES_AUTOHSCROLL
+    LTEXT           "拉伸比",IDC_STATIC,15,38,27,14
+    LTEXT           "%",IDC_STATIC,143,38,23,12
+    PUSHBUTTON      "重置",IDC_RESET,172,17,35,29
+    LTEXT           "注意，提前/缩短功能对内置字幕支持较差，调整时尽量不要超过10秒，否则可能出现字幕丢失，延迟/拉伸功能不受限制，独立字幕亦不受限制。",IDC_STATIC,15,75,191,27
 END
 
 
@@ -173,57 +192,59 @@ BEGIN
         MENUITEM "Open File...",                ID_OPENFILE
         POPUP "Open BluRay3D"
         BEGIN
-            MENUITEM "No BD Drive Found",           ID_OPENBLURAY3D_NONE, GRAYED
+            MENUITEM "No BD Drive Found",           ID_OPENBLURAY3D_NONE
             MENUITEM SEPARATOR
             MENUITEM "Folder...",                   ID_OPENBDFOLDER
         END
         MENUITEM "Close",                       ID_CLOSE
         MENUITEM SEPARATOR
-        POPUP "Input Layout"
+        POPUP "Video"
         BEGIN
-            MENUITEM "Auto",                        ID_INPUTLAYOUT_AUTO
-            MENUITEM "Side By Side",                ID_INPUTLAYOUT_SIDEBYSIDE
-            MENUITEM "Top Bottom",                  ID_INPUTLAYOUT_TOPBOTTOM
-            MENUITEM "Monoscopic",                  ID_INPUTLAYOUT_MONOSCOPIC
-        END
-        POPUP "Output Mode"
-        BEGIN
-            POPUP "3DTV"
+            POPUP "Input Layout"
             BEGIN
-                MENUITEM "Half Side By Side",           ID_OUTPUTMODE_3DTV_SBS
-                MENUITEM "Half Top Bottom",             ID_OUTPUTMODE_3DTV_TB
-                MENUITEM "Line Interlace",              ID_OUTPUTMODE_LINEINTERLACE
-                MENUITEM "3D Ready DLP",                ID_OUTPUTMODE_CHECKBOARDINTERLACE
-                MENUITEM "Naked eye 3D",                ID_OUTPUTMODE_ROWINTERLACE
+                MENUITEM "Auto",                        ID_INPUTLAYOUT_AUTO
+                MENUITEM "Side By Side",                ID_INPUTLAYOUT_SIDEBYSIDE
+                MENUITEM "Top Bottom",                  ID_INPUTLAYOUT_TOPBOTTOM
+                MENUITEM "Monoscopic",                  ID_INPUTLAYOUT_MONOSCOPIC
             END
-            POPUP "Dual Projector"
+            POPUP "Output Mode"
             BEGIN
-                MENUITEM "Vertical Span Mode",          ID_OUTPUTMODE_DUALPROJECTOR_TB
-                MENUITEM "Horizontal Span Mode",        ID_OUTPUTMODE_DUALPROJECTOR_SBS
-                MENUITEM "Independent Mode",            ID_OUTPUTMODE_DUALPROJECTOR
+                POPUP "3DTV"
+                BEGIN
+                    MENUITEM "Half Side By Side",           ID_OUTPUTMODE_3DTV_SBS
+                    MENUITEM "Half Top Bottom",             ID_OUTPUTMODE_3DTV_TB
+                    MENUITEM "Line Interlace",              ID_OUTPUTMODE_LINEINTERLACE
+                    MENUITEM "3D Ready DLP",                ID_OUTPUTMODE_CHECKBOARDINTERLACE
+                    MENUITEM "Naked eye 3D",                ID_OUTPUTMODE_ROWINTERLACE
+                END
+                POPUP "Dual Projector"
+                BEGIN
+                    MENUITEM "Vertical Span Mode",          ID_OUTPUTMODE_DUALPROJECTOR_TB
+                    MENUITEM "Horizontal Span Mode",        ID_OUTPUTMODE_DUALPROJECTOR_SBS
+                    MENUITEM "Independent Mode",            ID_OUTPUTMODE_DUALPROJECTOR
+                END
+                POPUP "Anaglyph"
+                BEGIN
+                    MENUITEM "Red - Cyan (Red - Blue, Red- Green)", ID_ANAGLYPH_REDCYAN
+                    MENUITEM SEPARATOR
+                    MENUITEM "Custom Color",                ID_ANAGLYPH_CUSTOMCOLOR
+                    MENUITEM "Anaglyph Left Eye Color...",  ID_OUTPUTMODE_ANAGLYPHCOLOR
+                    MENUITEM "Anaglyph Right Eye Color...", ID_OUTPUTMODE_ANAGLYPHCOLORRIGHTEYE
+                END
+                MENUITEM "Nvidia 3D Vision",            ID_OUTPUTMODE_NVIDIA3DVISION
+                MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
+                MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
             END
-            POPUP "Anaglyph"
+            POPUP "Aspect Ratio"
             BEGIN
-                MENUITEM "Red - Cyan (Red - Blue, Red- Green)", ID_ANAGLYPH_REDCYAN
-                MENUITEM SEPARATOR
-                MENUITEM "Custom Color",                ID_ANAGLYPH_CUSTOMCOLOR
-                MENUITEM "Anaglyph Left Eye Color...",  ID_OUTPUTMODE_ANAGLYPHCOLOR
-                MENUITEM "Anaglyph Right Eye Color...", ID_OUTPUTMODE_ANAGLYPHCOLORRIGHTEYE
+                MENUITEM "Default",                     ID_ASPECTRATIO_DEFAULT
+                MENUITEM "16:9",                        ID_ASPECTRATIO_169
+                MENUITEM "4:3",                         ID_ASPECTRATIO_43
             END
-            MENUITEM "Nvidia 3D Vision",            ID_OUTPUTMODE_NVIDIA3DVISION
-            MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
-            MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
         END
-        POPUP "Aspect Ratio"
-        BEGIN
-            MENUITEM "Default",                     ID_ASPECTRATIO_DEFAULT
-            MENUITEM "16:9",                        ID_ASPECTRATIO_169
-            MENUITEM "4:3",                         ID_ASPECTRATIO_43
-        END
-        MENUITEM SEPARATOR
         POPUP "Audio"
         BEGIN
-            MENUITEM "None",                        ID_AUDIO_NONE, GRAYED
+            MENUITEM "None",                        ID_AUDIO_NONE
             MENUITEM SEPARATOR
             MENUITEM "Load Audio Track...",         ID_LOADAUDIOTRACK
         END
@@ -232,12 +253,13 @@ BEGIN
             MENUITEM "Load Subtitle File...",       ID_SUBTITLE_LOADFILE
             MENUITEM "Font...",                     ID_SUBTITLE_FONT
             MENUITEM "Color...",                    ID_SUBTITLE_COLOR
+            MENUITEM "Latency && Stretch...",       ID_SUBTITLE_LATENCY
             MENUITEM "Display Subtitle",            ID_SUBTITLE_DISPLAYSUBTITLE
         END
         MENUITEM SEPARATOR
-        MENUITEM "Play/Pause",                  ID_PLAY
-        MENUITEM "Fullscreen",                  ID_FULLSCREEN
-        MENUITEM "Swap Left/Right",             ID_SWAPEYES
+        MENUITEM "Play/Pause\t(Space)",         ID_PLAY
+        MENUITEM "Fullscreen\t(Alt+Enter)",     ID_FULLSCREEN
+        MENUITEM "Swap Left/Right\t(Tab)",      ID_SWAPEYES
         MENUITEM SEPARATOR
         MENUITEM "CUDA Accelaration",           ID_CUDA
         POPUP "Language"
@@ -258,7 +280,7 @@ END
 #ifdef APSTUDIO_INVOKED
 GUIDELINES DESIGNINFO 
 BEGIN
-    IDD_DIALOG2, DIALOG
+    IDD_USERID, DIALOG
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 309
@@ -273,8 +295,27 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 129
     END
+
+    IDD_LATENCY, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 215
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 119
+    END
 END
 #endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_ACCELERATOR1 ACCELERATORS 
+BEGIN
+    VK_RETURN,      ID_FULLSCREEN,          VIRTKEY, ALT, NOINVERT
+END
 
 #endif    // 中文(中华人民共和国) resources
 /////////////////////////////////////////////////////////////////////////////

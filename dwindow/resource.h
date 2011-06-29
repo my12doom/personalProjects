@@ -8,8 +8,10 @@
 #define IDR_DATA1                       114
 #define IDR_DLL                         114
 #define IDR_MENU1                       115
-#define IDD_DIALOG2                     116
+#define IDD_USERID                      116
 #define IDD_SELECTMONITOR               117
+#define IDR_ACCELERATOR1                118
+#define IDD_LATENCY                     119
 #define IDC_CHECK_SOUND1                1009
 #define IDC_CHECK_MKV1                  1010
 #define IDC_EDIT_INPUT1                 1011
@@ -19,10 +21,14 @@
 #define IDC_COMBO2                      1015
 #define IDC_EDIT1                       1017
 #define IDC_EDIT2                       1018
+#define IDC_EDIT3                       1019
 #define IDC_CHECK_SOUND2                1021
 #define IDC_CHECK_MKV2                  1022
+#define IDC_SPIN1                       1022
 #define IDC_EDIT_INPUT2                 1023
+#define IDC_SPIN2                       1023
 #define IDC_BUTTON_INPUT2               1024
+#define IDC_RESET                       1024
 #define IDC_EDIT_SOUND                  1027
 #define IDC_BUTTON_SOUND                1028
 #define IDC_EDIT_SUBTITLE               1029
@@ -114,14 +120,16 @@
 #define ID_ASPECTRATIO_4                40085
 #define ID_ASPECTRATIO_169              40086
 #define ID_ASPECTRATIO_43               40087
+#define ID_SUBTITLE_LATENCY             40090
+#define ID_ENGLISH_VIDEO                40091
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        118
-#define _APS_NEXT_COMMAND_VALUE         40088
-#define _APS_NEXT_CONTROL_VALUE         1022
+#define _APS_NEXT_RESOURCE_VALUE        120
+#define _APS_NEXT_COMMAND_VALUE         40092
+#define _APS_NEXT_CONTROL_VALUE         1025
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -145,7 +145,7 @@ protected:
 // localization
 typedef enum{ENGLISH, CHINESE} localization_language;
 extern AutoSetting<localization_language> g_active_language;
-wchar_t *C(const wchar_t *English);
+const wchar_t *C(const wchar_t *English);
 HRESULT add_localization(const wchar_t *English, const wchar_t *Localized = NULL);
 HRESULT set_localization_language(localization_language language);
 HRESULT localize_menu(HMENU menu);

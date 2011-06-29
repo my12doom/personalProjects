@@ -5,6 +5,7 @@
 #include "private_filter.h"
 #include "..\libchecksum\libchecksum.h"
 #include "..\AESFile\E3DReader.h"
+#include "latency_dialog.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
@@ -123,7 +124,9 @@ m_display_subtitle(L"DisplaySubtitle", true),
 m_anaglygh_left_color(L"AnaglyghLeftColor", RGB(255,0,0)),
 m_anaglygh_right_color(L"AnaglyghRightColor", RGB(0,255,255)),
 m_volume(L"Volume", 1.0),
-m_aspect(L"Aspect", -1)
+m_aspect(L"Aspect", -1),
+m_subtitle_latency(L"SubtitleLatency", 0),
+m_subtitle_ratio(L"SubtitleRatio", 1.0)
 {
 	// Enable away mode and prevent the sleep idle time-out.
 	SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_AWAYMODE_REQUIRED);
@@ -426,11 +429,6 @@ LRESULT dx_player::on_key_down(int id, int key)
 {
 	switch (key)
 	{
-	case VK_RETURN:
-		//if (GetAsyncKeyState(VK_LMENU) < 0 || GetAsyncKeyState(VK_RMENU) < 0)
-			toggle_fullscreen();
-
-
 	case '1':
 		m_mirror1 ++;
 		break;
@@ -588,6 +586,8 @@ LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 
 LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 {
+	if (!m_gb)
+		return __super::on_mouse_down(id, button, x, y);
 	show_ui(true);
 	show_mouse(true);
 	reset_timer(1, 99999999);
@@ -616,7 +616,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 				paused = false;
 		}
 		int flag = GetMenuState(menu, ID_PLAY, MF_BYCOMMAND);
-		ModifyMenuW(menu, ID_PLAY, MF_BYCOMMAND| flag, ID_PLAY, paused ? C(L"Play") : C(L"Pause"));
+		ModifyMenuW(menu, ID_PLAY, MF_BYCOMMAND| flag, ID_PLAY, paused ? C(L"Play\t(Space)") : C(L"Pause\t(Space)"));
 
 		// find BD drives
 		HMENU sub_open_BD = GetSubMenu(menu, 1);
@@ -687,7 +687,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 		// subtitle menu
 		CheckMenuItem(menu, ID_SUBTITLE_DISPLAYSUBTITLE, MF_BYCOMMAND | (m_display_subtitle ? MF_CHECKED : MF_UNCHECKED));
-		HMENU sub_subtitle = GetSubMenu(menu, 9);
+		HMENU sub_subtitle = GetSubMenu(menu, 6);
 		{
 			CAutoLock lck(&m_subtitle_sec);
 			if (!m_srenderer || FAILED(m_srenderer->set_font_color(m_font_color)))
@@ -704,7 +704,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 
 		// audio tracks
-		HMENU sub_audio = GetSubMenu(menu, 8);
+		HMENU sub_audio = GetSubMenu(menu, 5);
 		list_audio_track(sub_audio);
 
 		// subtitle tracks
@@ -1194,6 +1194,17 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		reset();
 	}
 
+	else if (uid == ID_SUBTITLE_LATENCY)
+	{
+		int t_latency = m_subtitle_latency;
+		double t_ratio = m_subtitle_ratio;
+		HRESULT hr = latency_modify_dialog(m_hexe, id_to_hwnd(id), &t_latency, &t_ratio);
+		m_subtitle_latency = t_latency;
+		m_subtitle_ratio = t_ratio;
+
+		draw_subtitle();
+	}
+
 	else if (uid == ID_SUBTITLE_FONT)
 	{
 		if (!m_select_font_active)
@@ -1306,6 +1317,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SendMessage(id_to_hwnd(id), WM_SETICON, TRUE, (LPARAM)h_icon);
 	SendMessage(id_to_hwnd(id), WM_SETICON, FALSE, (LPARAM)h_icon);
 	
+	m_accel = LoadAccelerators(m_hexe, MAKEINTRESOURCE(IDR_ACCELERATOR1));
 	/*
 	LONG style1 = GetWindowLongPtr(m_hwnd1, GWL_STYLE);
 	LONG exstyle1 = GetWindowLongPtr(m_hwnd1, GWL_EXSTYLE);
@@ -1382,6 +1394,10 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 {
 	if (!m_display_subtitle || !m_renderer1)
 		return S_OK;
+
+	// latency and ratio
+	TimeStart -= m_subtitle_latency * 10000;
+	TimeStart /= m_subtitle_ratio;
 
 	m_internel_offset = 10;
 	if (m_offset_metadata)
