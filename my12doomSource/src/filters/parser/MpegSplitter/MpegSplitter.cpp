@@ -2307,6 +2307,7 @@ STDMETHODIMP CMpegSplitterOutputPin::Connect(IPin* pReceivePin, const AM_MEDIA_T
 			}
 			// AC3 Filter did not support DTS-MA
 			else if (FilterClsid == CLSID_AC3Filter) {
+				printf("Filter DTSHD!\n");
 				m_bFilterDTSMA = true;
 			}
 		}

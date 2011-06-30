@@ -313,6 +313,7 @@ protected:
 	bool m_nv3d_actived;
 
 	MyVertex m_vertices[vertex_total];
+	int m_pageflipping_start;
 	bool m_swapeyes;
 	output_mode_types m_output_mode;
 	input_layout_types m_input_layout;

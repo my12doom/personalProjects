@@ -2040,7 +2040,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		}
 
 		// if it doesn't work....
-		if (video_num == 0)
+		if (video_num == 0 && audio_num == 0)
 		{
 			log_line(L"private filters failed, trying system filters. (%s)", file_to_play);
 
@@ -2436,6 +2436,7 @@ HRESULT dx_player::enable_audio_track(int track)
 				ep = NULL;
 				filter->EnumPins(&ep);
 				bool efreset = false;
+				pin = NULL;
 				while (ep->Next(1, &pin, NULL) == S_OK)
 				{
 					PIN_INFO pi;
@@ -2524,6 +2525,7 @@ HRESULT dx_player::enable_audio_track(int track)
 			{
 				// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
 				ep = NULL;
+				pin = NULL;
 				filter->EnumPins(&ep);
 				while (ep->Next(1, &pin, NULL) == S_OK)
 				{
@@ -2821,6 +2823,7 @@ HRESULT dx_player::list_audio_track(HMENU submenu)
 			{
 				// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
 				ep = NULL;
+				pin = NULL;
 				filter->EnumPins(&ep);
 				while (ep->Next(1, &pin, NULL) == S_OK)
 				{

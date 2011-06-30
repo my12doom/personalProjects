@@ -1223,13 +1223,31 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	else if (m_output_mode == pageflipping)
 	{
-		static bool left = true;
-		left = !left;
 
-		clear(back_buffer);
-		draw_movie(back_buffer, left);
-		draw_bmp(back_buffer, left);
-		draw_ui(back_buffer);
+		CComPtr<IDirect3DSurface9> temp_surface;
+		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
+		clear(temp_surface);
+		draw_movie(temp_surface, true);
+		draw_bmp(temp_surface, true);
+		draw_ui(temp_surface);
+		temp_surface = NULL;
+
+		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
+		clear(temp_surface);
+		draw_movie(temp_surface, false);
+		draw_bmp(temp_surface, false);
+		draw_ui(temp_surface);
+		temp_surface = NULL;
+
+		static int left = 0;
+		double delta = (double)timeGetTime()-m_pageflipping_start;
+		int frame_passed = ceil(delta/9);
+		if (frame_passed>1)
+			printf("delta=%f.\n", delta);
+		left += frame_passed;
+		left %= 2;
+		(left?m_mask_temp_left:m_mask_temp_right)->GetSurfaceLevel(0, &temp_surface);
+		m_Device->StretchRect(temp_surface, NULL, back_buffer, NULL, D3DTEXF_NONE);
 	}
 
 	else if (m_output_mode == dual_window)
@@ -1351,10 +1369,13 @@ presant:
 		if (FAILED(hr))
 			set_device_state(device_lost);
 
-		//static int n = timeGetTime();
-		//if (timeGetTime()-n > 15)printf("delta = %d.\n", timeGetTime()-n);
-		//n = timeGetTime();
+		static int n = timeGetTime();
+		//if (timeGetTime()-n > 0)printf("delta = %d.\n", timeGetTime()-n);
+		n = timeGetTime();
 	}
+
+	if (m_output_mode == pageflipping)
+		m_pageflipping_start = timeGetTime();
 
 	return S_OK;
 }
@@ -1490,7 +1511,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 	while (timeGetTime() - l < 0 && !_this->m_render_thread_exit)
 		Sleep(1);
 
-	//SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 	while(!_this->m_render_thread_exit)
 	{
 		if (_this->m_output_mode != pageflipping)
@@ -2227,6 +2248,7 @@ HRESULT my12doomRenderer::set_output_mode(int mode)
 {
 	m_output_mode = (output_mode_types)(mode % output_mode_types_max);
 
+	m_pageflipping_start = -1;
 	set_device_state(need_resize_back_buffer);
 	return S_OK;
 }
