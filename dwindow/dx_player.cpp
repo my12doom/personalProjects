@@ -325,7 +325,6 @@ HRESULT dx_player::seek(int time)
 		m_mc->StopWhenReady();
 	}
 
-	draw_subtitle();
 	return hr;
 }
 HRESULT dx_player::tell(int *time)
@@ -1902,8 +1901,10 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		{
 			source_source->Load(file_to_play, NULL);
 			m_gb->AddFilter(source_base, L"Source");
-			m_offset_metadata = NULL;
-			source_base->QueryInterface(IID_IOffsetMetadata, (void**)&m_offset_metadata);
+
+			CComQIPtr<IOffsetMetadata, &IID_IOffsetMetadata> offset(source_base);
+			if (offset)
+				m_offset_metadata = offset;
 		}
 		else
 		{
@@ -2231,9 +2232,10 @@ HRESULT dx_player::debug_list_filters()
 
 HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
 {
-	// Save Filter State and Stop
-	enable_audio_track(9999);	//disable all audio first
+	//disable all audio first
+	enable_audio_track(-1);
 
+	// Save Filter State and Stop
 	int time = 0;
 	tell(&time);
 	time += 10;
@@ -2244,6 +2246,8 @@ HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
 		m_mc->Stop();
 		m_mc->GetState(INFINITE, &state);
 	}
+
+	// load and restore
 	HRESULT hr = load_file(pathname, true, LOADFILE_FIRST_TRACK, LOADFILE_NO_TRACK);
 	if (state_before == State_Running)
 		m_mc->Run();
@@ -2923,6 +2927,7 @@ HRESULT dx_player::list_subtitle_track(HMENU submenu)
 			if (clsid == CLSID_AsyncReader)
 			{
 				// assume connected
+				pin = NULL;
 				GetConnectedPin(filter, PINDIR_OUTPUT, &pin);
 				CComPtr<IPin> connected;
 				pin->ConnectedTo(&connected);
@@ -2940,6 +2945,7 @@ HRESULT dx_player::list_subtitle_track(HMENU submenu)
 				// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
 				ep = NULL;
 				filter->EnumPins(&ep);
+				pin = NULL;
 				while (ep->Next(1, &pin, NULL) == S_OK)
 				{
 					PIN_INFO pi;
