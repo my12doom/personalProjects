@@ -1948,8 +1948,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 					if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Video))
 					{
 
-						if ( (video_track>=0 && (MKV_TRACK_NUMBER(video_num) & video_track ))
-							|| video_track == MKV_ALL_TRACK)
+						if ( (video_track>=0 && (LOADFILE_TRACK_NUMBER(video_num) & video_track ))
+							|| video_track == LOADFILE_ALL_TRACK)
 						{
 							CLSID CLSID_mp4v = FOURCCMap('v4pm');
 							if(S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('v4pm')) ||
@@ -2016,8 +2016,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 					else if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Audio))
 					{
-						if ( (audio_track>=0 && (MKV_TRACK_NUMBER(audio_num) & audio_track ))
-							|| audio_track == MKV_ALL_TRACK)
+						if ( (audio_track>=0 && (LOADFILE_TRACK_NUMBER(audio_num) & audio_track ))
+							|| audio_track == LOADFILE_ALL_TRACK)
 						{
 							CComPtr<IBaseFilter> lav_audio;
 							hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
@@ -2232,8 +2232,11 @@ HRESULT dx_player::debug_list_filters()
 HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
 {
 	// Save Filter State and Stop
-	int time;
+	enable_audio_track(9999);	//disable all audio first
+
+	int time = 0;
 	tell(&time);
+	time += 10;
 	OAFilterState state_before, state;
 	m_mc->GetState(INFINITE, &state_before);
 	if (state_before != State_Stopped)
@@ -2241,11 +2244,12 @@ HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
 		m_mc->Stop();
 		m_mc->GetState(INFINITE, &state);
 	}
-	enable_audio_track(9999);	//disable all audio first
-	HRESULT hr = load_file(pathname, true);
+	HRESULT hr = load_file(pathname, true, LOADFILE_FIRST_TRACK, LOADFILE_NO_TRACK);
 	if (state_before == State_Running)
 		m_mc->Run();
-	return seek(time);
+	m_mc->GetState(INFINITE, &state);
+	hr = seek(time);
+	return hr;
 }
 HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME : always reset 
 {
@@ -2418,6 +2422,7 @@ HRESULT dx_player::enable_audio_track(int track)
 			if (clsid == CLSID_AsyncReader)
 			{
 				// assume connected
+				pin = NULL;
 				GetConnectedPin(filter, PINDIR_OUTPUT, &pin);
 				CComPtr<IPin> connected;
 				pin->ConnectedTo(&connected);
@@ -2508,6 +2513,7 @@ HRESULT dx_player::enable_audio_track(int track)
 			if (clsid == CLSID_AsyncReader)
 			{
 				// assume connected
+				pin = NULL;
 				GetConnectedPin(filter, PINDIR_OUTPUT, &pin);
 				CComPtr<IPin> connected;
 				pin->ConnectedTo(&connected);

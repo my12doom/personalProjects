@@ -24,10 +24,10 @@
 #include <atlcoll.h>
 
 // some definition
-#define MKV_NO_TRACK -1
-#define MKV_ALL_TRACK -2
-#define MKV_TRACK_NUMBER(x) (0x01 << x)
-#define MKV_FIRST_TRACK MKV_TRACK_NUMBER(0)
+#define LOADFILE_NO_TRACK -1
+#define LOADFILE_ALL_TRACK -2
+#define LOADFILE_TRACK_NUMBER(x) (0x01 << x)
+#define LOADFILE_FIRST_TRACK LOADFILE_TRACK_NUMBER(0)
 
 #define FILTER_MODE_FAIL 0
 #define FILTER_MODE_MONO 1
@@ -58,7 +58,7 @@ public:
 	HRESULT reset_and_loadfile(const wchar_t *pathname, bool stop);
 	HRESULT load_audiotrack(const wchar_t *pathname);
 	HRESULT load_subtitle(const wchar_t *pathname, bool reset = true);
-	HRESULT load_file(const wchar_t *pathname, bool non_mainfile = false, int audio_track = MKV_FIRST_TRACK, int video_track = MKV_ALL_TRACK);			// for multi stream mkv
+	HRESULT load_file(const wchar_t *pathname, bool non_mainfile = false, int audio_track = LOADFILE_FIRST_TRACK, int video_track = LOADFILE_ALL_TRACK);			// for multi stream mkv
 	HRESULT end_loading();
 
 	// subtitle control functions
