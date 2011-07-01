@@ -689,10 +689,6 @@ HRESULT save_passkey()
 	GetVolumeInformationW(L"C:\\", volume_name, MAX_PATH, &volume_c_sn, NULL, NULL, NULL, NULL);
 	((DWORD*)CPUBrandString)[4] ^= volume_c_sn;
 
-	//char tmp [32];
-	//sprintf(tmp, "%d", volume_c_sn);
-	//MessageBoxA(NULL, (char*)CPUBrandString, "...", MB_OK);
-	//MessageBoxA(NULL, tmp, "...", MB_OK);
 	AESCryptor aes;
 	aes.set_key(CPUBrandString, 256);
 	for(int i=0; i<128; i+=16)
