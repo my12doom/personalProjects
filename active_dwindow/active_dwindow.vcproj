@@ -307,6 +307,10 @@
 			</File>
 		</Filter>
 		<File
+			RelativePath=".\active.manifest"
+			>
+		</File>
+		<File
 			RelativePath=".\ReadMe.txt"
 			>
 		</File>

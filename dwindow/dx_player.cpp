@@ -601,7 +601,8 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		// disable output mode when fullscreen
 		if (m_full1 || (m_renderer1 ? m_renderer1->get_fullscreen() : false))
 		{
-			ModifyMenuW(menu, 5, MF_BYPOSITION | MF_GRAYED, ID_PLAY, C(L"Output Mode"));
+			HMENU video = GetSubMenu(menu, 4);
+			ModifyMenuW(video, 1, MF_BYPOSITION | MF_GRAYED, ID_PLAY, C(L"Output Mode"));
 		}
 
 
