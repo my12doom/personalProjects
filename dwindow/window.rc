@@ -246,6 +246,7 @@ BEGIN
         BEGIN
             MENUITEM "None",                        ID_AUDIO_NONE
             MENUITEM SEPARATOR
+            MENUITEM "Bitstreaming",                ID_AUDIO_BITSTREAM
             MENUITEM "Load Audio Track...",         ID_LOADAUDIOTRACK
         END
         POPUP "Subtitle"

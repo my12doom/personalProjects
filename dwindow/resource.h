@@ -122,13 +122,14 @@
 #define ID_ASPECTRATIO_43               40087
 #define ID_SUBTITLE_LATENCY             40090
 #define ID_ENGLISH_VIDEO                40091
+#define ID_AUDIO_BITSTREAM              40092
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        120
-#define _APS_NEXT_COMMAND_VALUE         40092
+#define _APS_NEXT_COMMAND_VALUE         40093
 #define _APS_NEXT_CONTROL_VALUE         1025
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

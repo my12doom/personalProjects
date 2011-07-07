@@ -5,6 +5,8 @@
 #include <intrin.h>
 #include "detours/detours.h"
 #include "..\AESFile\E3DReader.h"
+#include <initguid.h>
+#include "LAVAudioSettings.h"
 
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "detours/detoured.lib")
@@ -515,6 +517,25 @@ HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 	{
 		return E_FAIL;
 	}
+}
+
+HRESULT set_lav_audio_bitstreaming(IBaseFilter *filter, bool active)
+{
+	if (filter == NULL)
+		return E_POINTER;
+
+	CComQIPtr<ILAVAudioSettings, &IID_ILAVAudioSettings> setting(filter);
+	if (setting == NULL)
+		return E_NOINTERFACE;
+
+	HRESULT hr = S_OK;
+	hr = setting->SetBitstreamConfig(Bitstream_AC3, active);
+	hr = setting->SetBitstreamConfig(Bitstream_EAC3, active);
+	hr = setting->SetBitstreamConfig(Bitstream_TRUEHD, active);
+	hr = setting->SetBitstreamConfig(Bitstream_DTS, active);
+	hr = setting->SetBitstreamConfig(Bitstream_DTSHD, active);
+
+	return hr;
 }
 
 bool isUselessFilter(IBaseFilter *filter)

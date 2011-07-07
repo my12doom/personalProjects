@@ -157,6 +157,7 @@ protected:
 	CCritSec m_seek_sec;
 	bool m_show_ui;
 	AutoSetting<double> m_volume;	// = 1.0
+	AutoSetting<bool> m_bitstreaming;	// = 1.0
 	HRESULT show_ui(bool show);
 	HRESULT draw_ui();
 

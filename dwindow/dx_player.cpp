@@ -126,7 +126,8 @@ m_anaglygh_right_color(L"AnaglyghRightColor", RGB(0,255,255)),
 m_volume(L"Volume", 1.0),
 m_aspect(L"Aspect", -1),
 m_subtitle_latency(L"SubtitleLatency", 0),
-m_subtitle_ratio(L"SubtitleRatio", 1.0)
+m_subtitle_ratio(L"SubtitleRatio", 1.0),
+m_bitstreaming(L"BitStreaming", false)
 {
 	// Enable away mode and prevent the sleep idle time-out.
 	SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_AWAYMODE_REQUIRED);
@@ -704,6 +705,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 
 		// audio tracks
+		CheckMenuItem(menu, ID_AUDIO_BITSTREAM, MF_BYCOMMAND | (m_bitstreaming?MF_CHECKED : MF_UNCHECKED));
 		HMENU sub_audio = GetSubMenu(menu, 5);
 		list_audio_track(sub_audio);
 
@@ -965,6 +967,22 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		{
 			reset_and_loadfile_internal(file);
 		}
+	}
+
+	// Bitstreaming
+	else if (uid == ID_AUDIO_BITSTREAM)
+	{
+		m_bitstreaming = !m_bitstreaming;
+		CComPtr<IEnumFilters> ep;
+		CComPtr<IBaseFilter> filter;
+		m_gb->EnumFilters(&ep);
+
+		while (ep->Next(1, &filter, NULL) == S_OK)
+		{
+			set_lav_audio_bitstreaming(filter, m_bitstreaming);
+			filter = NULL;
+		}
+		if (m_file_loaded) MessageBoxW(id_to_hwnd(1), C(L"Bitstreaming setting will apply on next file play or audio swtiching."), L"...", MB_OK);
 	}
 
 	// CUDA
@@ -1715,6 +1733,7 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00006.m2ts");
 	//hr = load_file(L"K:\\BDMV\\STREAM\\00001.m2ts");
 	//hr = load_file(L"K:\\BDMV\\STREAM\\00002.m2ts");
+	//hr = load_file(L"D:\\Users\\my12doom\\Documents\\00002.m2ts");
 	if (FAILED(hr))
 		goto fail;
 	hr = end_loading();
@@ -2023,6 +2042,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 						{
 							CComPtr<IBaseFilter> lav_audio;
 							hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
+							set_lav_audio_bitstreaming(lav_audio, m_bitstreaming);
 							hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
 							log_line(L"renderering audio pin #%d", audio_num);
 							m_gb->Render(pin);
@@ -2072,6 +2092,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 			CComPtr<IBaseFilter> lav_audio;
 			hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
+			set_lav_audio_bitstreaming(lav_audio, m_bitstreaming);
 			hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
 
 			hr = m_gb->RenderFile(file_to_play, NULL);
@@ -2115,6 +2136,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 		CComPtr<IBaseFilter> lav_audio;
 		hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
+		set_lav_audio_bitstreaming(lav_audio, m_bitstreaming);
 		hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
 
 		hr = m_gb->RenderFile(file_to_play, NULL);
@@ -2607,6 +2629,7 @@ HRESULT dx_player::enable_audio_track(int track)
 	{
 		CComPtr<IBaseFilter> LAV;
 		HRESULT hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&LAV);
+		set_lav_audio_bitstreaming(LAV, m_bitstreaming);
 		m_gb->AddFilter(LAV, L"LAV Audio Deocder");
 		m_gb->Render(pin_to_render);
 	}

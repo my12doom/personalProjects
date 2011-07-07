@@ -48,6 +48,7 @@ bool open_file_dlg(wchar_t *pathname, HWND hDlg, wchar_t *filter = NULL);
 bool select_color(DWORD *color, HWND parent);
 bool browse_folder(wchar_t *out, HWND owner = NULL);
 HRESULT RemoveDownstream(CComPtr<IPin> &input_pin);
+HRESULT set_lav_audio_bitstreaming(IBaseFilter *filter, bool active);
 HRESULT find_main_movie(const wchar_t *folder, wchar_t *out);
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
 HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
