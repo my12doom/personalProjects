@@ -982,7 +982,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			set_lav_audio_bitstreaming(filter, m_bitstreaming);
 			filter = NULL;
 		}
-		if (m_file_loaded) MessageBoxW(id_to_hwnd(1), C(L"Bitstreaming setting will apply on next file play or audio swtiching."), L"...", MB_OK);
+		if (m_file_loaded) MessageBoxW(id_to_hwnd(1), C(L"Bitstreaming setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
 	}
 
 	// CUDA

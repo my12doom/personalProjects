@@ -13,8 +13,9 @@
 
 #define FAIL_RET(x) hr=x; if(FAILED(hr)){return hr;}
 #define FAIL_SLEEP_RET(x) hr=x; if(FAILED(hr)){Sleep(1); return hr;}
+#define safe_delete(x) if(x){delete x;x=NULL;}
 
-bool DWINDOW_SURFACE_MANAGED = LOBYTE(GetVersion()) <= 5 ? true : false;
+bool DWINDOW_SURFACE_MANAGED = LOBYTE(GetVersion()) <= 5 ? false : false;
 
 typedef struct tagTHREADNAME_INFO {
 	DWORD dwType; // must be 0x1000
@@ -75,6 +76,8 @@ m_left_queue(_T("left queue")),
 m_right_queue(_T("right queue"))
 {
 	// D3D && NV3D
+	m_pool = NULL;
+	m_sample2render_1 = m_sample2render_2 = NULL;
 	m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
 	m_nv3d_enabled = false;
 	m_nv3d_actived = false;
@@ -170,6 +173,7 @@ my12doomRenderer::~my12doomRenderer()
 {
 	terminate_render_thread();
 	invalidate_objects();
+	if (m_pool) delete m_pool;
 	m_Device = NULL;
 	m_D3D = NULL;
 }
@@ -291,8 +295,8 @@ HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 		if(sample)
 		{
 			CAutoLock lck(&m_packet_lock);
-			m_sample2render_1.Free();
-			m_sample2render_1.Attach(sample);
+			safe_delete(m_sample2render_1);
+			m_sample2render_1 = sample;
 			should_render = true;
 		}
 	}
@@ -356,7 +360,7 @@ find_match:
 
 		if (sample_left && sample_right)
 		{
-			if (matched_time < start)
+			if (matched_time < start && false)
 			{
 				printf("drop a matched pair\n");
 				delete sample_left;
@@ -368,10 +372,10 @@ find_match:
 			else
 			{
 				CAutoLock lck(&m_packet_lock);
-				m_sample2render_1.Free();
-				m_sample2render_1.Attach(sample_left);
-				m_sample2render_2.Free();
-				m_sample2render_2.Attach(sample_right);
+				safe_delete (m_sample2render_1);
+				m_sample2render_1 = sample_left;
+				safe_delete(m_sample2render_2);
+				m_sample2render_2 = sample_right;
 				should_render = true;
 			}
 		}
@@ -399,7 +403,7 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 		bit_per_pixel = 32;
 
 	bool should_render = false;
-	gpu_sample * loaded_sample = new gpu_sample(media_sample, m_Device, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, m_output_mode == pageflipping);
+	gpu_sample * loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, m_output_mode == pageflipping);
 	int l2 = timeGetTime();
 	if (!m_dsr1->is_connected())
 	{
@@ -636,7 +640,6 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 	else if (m_device_state == need_create)
 	{
-
 		ZeroMemory( &m_active_pp, sizeof(m_active_pp) );
 		m_active_pp.Windowed               = TRUE;
 		m_active_pp.SwapEffect             = D3DSWAPEFFECT_DISCARD;
@@ -695,6 +698,9 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			return hr;
 		m_new_pp = m_active_pp;
 		m_device_state = need_reset_object;
+
+		if (m_pool) delete m_pool;
+		m_pool = new CTexturePool(m_Device);
 
 		// NV3D acitivation check
 		if (m_nv3d_enabled)
@@ -792,9 +798,11 @@ HRESULT my12doomRenderer::invalidate_objects()
 	}
 	{
 		CAutoLock lck(&m_packet_lock);
-		m_sample2render_1.Free();
-		m_sample2render_2.Free();
+		safe_delete(m_sample2render_1);
+		safe_delete(m_sample2render_2);
 	}
+
+	if (m_pool) m_pool->DestroyPool();
 
 	// surfaces
 	m_test_rt64 = NULL;
@@ -1552,10 +1560,6 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 	}
 
 	int l = timeGetTime();
-	if(m_sample2render_1)
-		m_sample2render_1->load();
-	if(m_sample2render_2)
-		m_sample2render_2->load();
 
 	HRESULT hr = load_image_convert(m_sample2render_1, m_sample2render_2);
 
@@ -1600,6 +1604,32 @@ double my12doomRenderer::get_active_aspect()
 	return m_source_aspect;
 }
 
+enum helper_sample_format
+{
+	helper_sample_format_rgb32,
+	helper_sample_format_yuy2,
+	helper_sample_format_y,
+	helper_sample_format_yv12,
+	helper_sample_format_nv12,
+};
+IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format format)
+{
+	if (!sample)
+		return NULL;
+
+	CPooledTexture *texture = NULL;
+	if (format == helper_sample_format_rgb32) texture = sample->m_tex_RGB32;
+	if (format == helper_sample_format_yuy2) texture = sample->m_tex_YUY2;
+	if (format == helper_sample_format_y) texture = sample->m_tex_Y;
+	if (format == helper_sample_format_yv12) texture = sample->m_tex_YV12_UV;
+	if (format == helper_sample_format_nv12) texture = sample->m_tex_NV12_UV;
+
+	if (!texture)
+		return NULL;
+
+	return texture->texture;
+}
+
 HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *sample2)
 {
 	if (!sample1)
@@ -1609,23 +1639,32 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	CLSID format = sample1->m_format;
 	bool topdown = sample1->m_topdown;
 
-	CComPtr<IDirect3DTexture9> sample1_tex_RGB32 = !sample1 ? NULL : sample1->m_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
-	CComPtr<IDirect3DTexture9> sample1_tex_YUY2 = !sample1 ? NULL : sample1->m_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
-	CComPtr<IDirect3DTexture9> sample1_tex_Y = !sample1 ? NULL : sample1->m_tex_Y;							// Y plane of YV12/NV12, in L8
-	CComPtr<IDirect3DTexture9> sample1_tex_YV12_UV = !sample1 ? NULL : sample1->m_tex_YV12_UV;					// UV plane of YV12, in L8, double height
-	CComPtr<IDirect3DTexture9> sample1_tex_NV12_UV = !sample1 ? NULL : sample1->m_tex_NV12_UV;					// UV plane of NV12, in A8L8
+	IDirect3DTexture9* sample1_tex_RGB32 = helper_get_texture(sample1, helper_sample_format_rgb32);						// RGB32 planes, in A8R8G8B8, full width
+	IDirect3DTexture9* sample1_tex_YUY2 = helper_get_texture(sample1, helper_sample_format_yuy2);						// YUY2 planes, in A8R8G8B8, half width
+	IDirect3DTexture9* sample1_tex_Y = helper_get_texture(sample1, helper_sample_format_y);								// Y plane of YV12/NV12, in L8
+	IDirect3DTexture9* sample1_tex_YV12_UV = helper_get_texture(sample1, helper_sample_format_yv12);					// UV plane of YV12, in L8, double height
+	IDirect3DTexture9* sample1_tex_NV12_UV = helper_get_texture(sample1, helper_sample_format_nv12);					// UV plane of NV12, in A8L8
 
-	CComPtr<IDirect3DTexture9> sample2_tex_RGB32 = !sample2 ? NULL : sample2->m_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
-	CComPtr<IDirect3DTexture9> sample2_tex_YUY2 = !sample2 ? NULL : sample2->m_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
-	CComPtr<IDirect3DTexture9> sample2_tex_Y = !sample2 ? NULL : sample2->m_tex_Y;							// Y plane of YV12/NV12, in L8
-	CComPtr<IDirect3DTexture9> sample2_tex_YV12_UV = !sample2 ? NULL : sample2->m_tex_YV12_UV;					// UV plane of YV12, in L8, double height
-	CComPtr<IDirect3DTexture9> sample2_tex_NV12_UV = !sample2 ? NULL : sample2->m_tex_NV12_UV;					// UV plane of NV12, in A8L8
-	m_sample2render_1.Free();
-	m_sample2render_2.Free();
+	IDirect3DTexture9* sample2_tex_RGB32 = helper_get_texture(sample2, helper_sample_format_rgb32);						// RGB32 planes, in A8R8G8B8, full width
+	IDirect3DTexture9* sample2_tex_YUY2 = helper_get_texture(sample2, helper_sample_format_yuy2);						// YUY2 planes, in A8R8G8B8, half width
+	IDirect3DTexture9* sample2_tex_Y = helper_get_texture(sample2, helper_sample_format_y);								// Y plane of YV12/NV12, in L8
+	IDirect3DTexture9* sample2_tex_YV12_UV = helper_get_texture(sample2, helper_sample_format_yv12);					// UV plane of YV12, in L8, double height
+	IDirect3DTexture9* sample2_tex_NV12_UV = helper_get_texture(sample2, helper_sample_format_nv12);					// UV plane of NV12, in A8L8
 
+
+	gpu_sample *t1 = m_sample2render_1;
+	gpu_sample *t2 = m_sample2render_2;
+
+	m_sample2render_1 = NULL;
+	m_sample2render_2 = NULL;
 	m_packet_lock.Unlock();	//release queue lock!
 
 	CAutoLock lck(&m_frame_lock);
+
+	int l1 = timeGetTime();
+	if (t1) t1->prepare_rendering();
+	if (t2) t2->prepare_rendering();
+	mylog("prepare_rendering = %dms\n", timeGetTime()-l1);
 
 	// pass 1: render full resolution to two seperate texture
 	HRESULT hr = m_Device->BeginScene();
@@ -1844,6 +1883,9 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 		}
 
 	}
+
+	safe_delete(t1);
+	safe_delete(t2);
 
 	return S_OK;
 }
@@ -2528,19 +2570,37 @@ gpu_sample::~gpu_sample()
 	if(m_data)free(m_data);
 	m_data = NULL;
 
+	safe_delete(m_tex_RGB32);
+	safe_delete(m_tex_YUY2);
+	safe_delete(m_tex_Y);
+	safe_delete(m_tex_YV12_UV);
+	safe_delete(m_tex_NV12_UV);
+
 }
 
-gpu_sample::gpu_sample(IMediaSample *memory_sample, IDirect3DDevice9 *device, int width, int height, CLSID format, bool topdown_RGB32, bool to_memory)
+CCritSec g_gpu_lock;
+HRESULT gpu_sample::prepare_rendering()
 {
+	if (m_tex_RGB32) m_tex_RGB32->Unlock();
+	if (m_tex_YUY2) m_tex_YUY2->Unlock();
+	if (m_tex_Y) m_tex_Y->Unlock();
+	if (m_tex_YV12_UV) m_tex_YV12_UV->Unlock();
+	if (m_tex_NV12_UV) m_tex_NV12_UV->Unlock();
+
+	return S_OK;
+}
+gpu_sample::gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int width, int height, CLSID format, bool topdown_RGB32, bool to_memory)
+{
+	CAutoLock lck(&g_gpu_lock);
+	m_tex_RGB32 = m_tex_YUY2 = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
 	m_width = width;
 	m_height = height;
 	m_ready = false;
 	m_format = format;
 	m_topdown = topdown_RGB32;
 	m_data = NULL;
-	m_device = device;
 	HRESULT hr;
-	if (!device || !memory_sample)
+	if (!pool || !memory_sample)
 		goto clearup;
 
 	memory_sample->GetTime(&m_start, &m_end);
@@ -2562,48 +2622,48 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, IDirect3DDevice9 *device, in
 	{
 		if (m_format == MEDIASUBTYPE_YUY2)
 		{
-			JIF( device->CreateTexture(m_width/2, m_height, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&m_tex_YUY2, NULL));
+			JIF( pool->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&m_tex_YUY2));
 		}
 
 		else if (m_format == MEDIASUBTYPE_RGB32)
 		{
-			JIF( device->CreateTexture(m_width, m_height, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&m_tex_RGB32, NULL));
+			JIF( pool->CreateTexture(m_width, m_height, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&m_tex_RGB32));
 		}
 
 		else if (m_format == MEDIASUBTYPE_NV12)
 		{
-			JIF( device->CreateTexture(m_width, m_height, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_Y, NULL));
-			JIF( device->CreateTexture(m_width/2, m_height/2, 1, NULL, D3DFMT_A8L8,D3DPOOL_MANAGED,	&m_tex_NV12_UV, NULL));
+			JIF( pool->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_Y));
+			JIF( pool->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,D3DPOOL_MANAGED,	&m_tex_NV12_UV));
 		}
 
 		else if (m_format == MEDIASUBTYPE_YV12)
 		{
-			JIF( device->CreateTexture(m_width, m_height, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_Y, NULL));
-			JIF( device->CreateTexture(m_width/2, m_height, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_YV12_UV, NULL));
+			JIF( pool->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_Y));
+			JIF( pool->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_YV12_UV));
 		}
 	}
 	else
 	{
 		if (m_format == MEDIASUBTYPE_YUY2)
 		{
-			JIF( device->CreateTexture(m_width/2, m_height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_YUY2, NULL));
+			JIF( pool->CreateTexture(m_width/2, m_height, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_YUY2));
 		}
 
 		else if (m_format == MEDIASUBTYPE_RGB32)
 		{
-			JIF( device->CreateTexture(m_width, m_height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_RGB32, NULL));
+			JIF( pool->CreateTexture(m_width, m_height, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_RGB32));
 		}
 
 		else if (m_format == MEDIASUBTYPE_NV12)
 		{
-			JIF( device->CreateTexture(m_width, m_height, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_Y, NULL));
-			JIF( device->CreateTexture(m_width/2, m_height/2, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_NV12_UV, NULL));
+			JIF( pool->CreateTexture(m_width, m_height, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_Y));
+			JIF( pool->CreateTexture(m_width/2, m_height/2, D3DUSAGE_DYNAMIC, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_NV12_UV));
 		}
 
 		else if (m_format == MEDIASUBTYPE_YV12)
 		{
-			JIF( device->CreateTexture(m_width, m_height, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_Y, NULL));
-			JIF( device->CreateTexture(m_width/2, m_height, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_YV12_UV, NULL));
+			JIF( pool->CreateTexture(m_width, m_height, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_Y));
+			JIF( pool->CreateTexture(m_width/2, m_height, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_YV12_UV));
 		}
 	}
 
@@ -2611,29 +2671,27 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, IDirect3DDevice9 *device, in
 	int l2 = timeGetTime();
 
 	// data loading
-	D3DLOCKED_RECT d3dlr;
 	BYTE * src;
 	BYTE * dst;
 	memory_sample->GetPointer(&src);
 	DWORD lock_flag = DWINDOW_SURFACE_MANAGED ? NULL : D3DLOCK_DISCARD;
 	if (m_format == MEDIASUBTYPE_RGB32)
 	{
-		JIF(hr = m_tex_RGB32->LockRect(0, &d3dlr, 0, lock_flag))
 		for(int i=0; i<m_height; i++)
 		{
+			D3DLOCKED_RECT &d3dlr = m_tex_RGB32->locked_rect;
 			memory_sample->GetPointer(&src);
 			src += m_width*4*(topdown_RGB32?m_height-i-1:i);
 			dst = (BYTE*)d3dlr.pBits + d3dlr.Pitch*i;
 
 			memcpy(dst, src, m_width*4);
 		}
-		m_tex_RGB32->UnlockRect(0);
 	}
 
 	else if (m_format == MEDIASUBTYPE_YUY2)
 	{
 		// loading YUY2 image as one ARGB half width texture
-		JIF(hr = m_tex_YUY2->LockRect(0, &d3dlr, 0, lock_flag))
+		D3DLOCKED_RECT &d3dlr = m_tex_YUY2->locked_rect;
 		dst = (BYTE*)d3dlr.pBits;
 		for(int i=0; i<m_height; i++)
 		{
@@ -2641,7 +2699,6 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, IDirect3DDevice9 *device, in
 			src += m_width*2;
 			dst += d3dlr.Pitch;
 		}
-		m_tex_YUY2->UnlockRect(0);
 	}
 
 	else if (m_format == MEDIASUBTYPE_NV12)
@@ -2649,7 +2706,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, IDirect3DDevice9 *device, in
 		// loading NV12 image as one L8 texture and one A8L8 texture
 
 		//load Y
-		JIF(hr = m_tex_Y->LockRect(0, &d3dlr, 0, lock_flag))
+		D3DLOCKED_RECT &d3dlr = m_tex_Y->locked_rect;
 		dst = (BYTE*)d3dlr.pBits;
 		for(int i=0; i<m_height; i++)
 		{
@@ -2657,25 +2714,23 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, IDirect3DDevice9 *device, in
 			src += m_width;
 			dst += d3dlr.Pitch;
 		}
-		m_tex_Y->UnlockRect(0);
 
 		// load UV
-		JIF(hr = m_tex_NV12_UV->LockRect(0, &d3dlr, 0, lock_flag))
-		dst = (BYTE*)d3dlr.pBits;
+		D3DLOCKED_RECT &d3dlr2 = m_tex_NV12_UV->locked_rect;
+		dst = (BYTE*)d3dlr2.pBits;
 		for(int i=0; i<m_height/2; i++)
 		{
 			memcpy(dst, src, m_width);
 			src += m_width;
-			dst += d3dlr.Pitch;
+			dst += d3dlr2.Pitch;
 		}
-		m_tex_NV12_UV->UnlockRect(0);
 	}
 
 	else if (m_format == MEDIASUBTYPE_YV12)
 	{
 		// loading YV12 image as two L8 texture
 		// load Y
-		JIF(hr = m_tex_Y->LockRect(0, &d3dlr, 0, lock_flag))
+		D3DLOCKED_RECT &d3dlr = m_tex_Y->locked_rect;
 		dst = (BYTE*)d3dlr.pBits;
 		for(int i=0; i<m_height; i++)
 		{
@@ -2683,18 +2738,16 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, IDirect3DDevice9 *device, in
 			src += m_width;
 			dst += d3dlr.Pitch;
 		}
-		m_tex_Y->UnlockRect(0);
 
 		// load UV
-		JIF(hr = m_tex_YV12_UV->LockRect(0, &d3dlr, 0, lock_flag))
-		dst = (BYTE*)d3dlr.pBits;
+		D3DLOCKED_RECT &d3dlr2 = m_tex_YV12_UV->locked_rect;
+		dst = (BYTE*)d3dlr2.pBits;
 		for(int i=0; i<m_height; i++)
 		{
 			memcpy(dst, src, m_width/2);
 			src += m_width/2;
-			dst += d3dlr.Pitch;
+			dst += d3dlr2.Pitch;
 		}
-		m_tex_YV12_UV->UnlockRect(0);
 	}
 	//if (timeGetTime() - l > 5)
 		mylog("load():createTexture time:%d ms, load data to GPU cost %d ms.\n", l2- l, timeGetTime()-l2);
@@ -2702,166 +2755,9 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, IDirect3DDevice9 *device, in
 	return;
 
 clearup:
-	m_tex_RGB32 = NULL;
-	m_tex_YUY2 = NULL;
-	m_tex_Y = NULL;
-	m_tex_YV12_UV = NULL;
-	m_tex_NV12_UV = NULL;
-}
-
-HRESULT gpu_sample::load()
-{
-	if(!m_data)
-		return S_FALSE;
-
-
-	int l = timeGetTime();
-	// texture creation
-	HRESULT hr;
-	if (DWINDOW_SURFACE_MANAGED)
-	{
-		if (m_format == MEDIASUBTYPE_YUY2)
-		{
-			JIF( m_device->CreateTexture(m_width/2, m_height, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&m_tex_YUY2, NULL));
-		}
-
-		else if (m_format == MEDIASUBTYPE_RGB32)
-		{
-			JIF( m_device->CreateTexture(m_width, m_height, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&m_tex_RGB32, NULL));
-		}
-
-		else if (m_format == MEDIASUBTYPE_NV12)
-		{
-			JIF( m_device->CreateTexture(m_width, m_height, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_Y, NULL));
-			JIF( m_device->CreateTexture(m_width/2, m_height/2, 1, NULL, D3DFMT_A8L8,D3DPOOL_MANAGED,	&m_tex_NV12_UV, NULL));
-		}
-
-		else if (m_format == MEDIASUBTYPE_YV12)
-		{
-			JIF( m_device->CreateTexture(m_width, m_height, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_Y, NULL));
-			JIF( m_device->CreateTexture(m_width/2, m_height, 1, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_YV12_UV, NULL));
-		}
-	}
-	else
-	{
-		if (m_format == MEDIASUBTYPE_YUY2)
-		{
-			JIF( m_device->CreateTexture(m_width/2, m_height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_YUY2, NULL));
-		}
-
-		else if (m_format == MEDIASUBTYPE_RGB32)
-		{
-			JIF( m_device->CreateTexture(m_width, m_height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_RGB32, NULL));
-		}
-
-		else if (m_format == MEDIASUBTYPE_NV12)
-		{
-			JIF( m_device->CreateTexture(m_width, m_height, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_Y, NULL));
-			JIF( m_device->CreateTexture(m_width/2, m_height/2, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_NV12_UV, NULL));
-		}
-
-		else if (m_format == MEDIASUBTYPE_YV12)
-		{
-			JIF( m_device->CreateTexture(m_width, m_height, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_Y, NULL));
-			JIF( m_device->CreateTexture(m_width/2, m_height, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_YV12_UV, NULL));
-		}
-	}
-
-	// data loading
-	int l2 = timeGetTime();
-	D3DLOCKED_RECT d3dlr;
-	BYTE * src = m_data;
-	BYTE * dst;
-	DWORD lock_flag = DWINDOW_SURFACE_MANAGED ? NULL : D3DLOCK_DISCARD;
-	if (m_format == MEDIASUBTYPE_RGB32)
-	{
-		JIF(hr = m_tex_RGB32->LockRect(0, &d3dlr, 0, lock_flag))
-			for(int i=0; i<m_height; i++)
-			{
-				
-				src = m_data + m_width*4*(m_topdown?m_height-i-1:i);
-				dst = (BYTE*)d3dlr.pBits + d3dlr.Pitch*i;
-
-				memcpy(dst, src, m_width*4);
-			}
-			m_tex_RGB32->UnlockRect(0);
-	}
-
-	else if (m_format == MEDIASUBTYPE_YUY2)
-	{
-		// loading YUY2 image as one ARGB half width texture
-		JIF(hr = m_tex_YUY2->LockRect(0, &d3dlr, 0, lock_flag))
-			dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_height; i++)
-		{
-			memcpy(dst, src, m_width*2);
-			src += m_width*2;
-			dst += d3dlr.Pitch;
-		}
-		m_tex_YUY2->UnlockRect(0);
-	}
-
-	else if (m_format == MEDIASUBTYPE_NV12)
-	{
-		// loading NV12 image as one L8 texture and one A8L8 texture
-
-		//load Y
-		JIF(hr = m_tex_Y->LockRect(0, &d3dlr, 0, lock_flag))
-			dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_height; i++)
-		{
-			memcpy(dst, src, m_width);
-			src += m_width;
-			dst += d3dlr.Pitch;
-		}
-		m_tex_Y->UnlockRect(0);
-
-		// load UV
-		JIF(hr = m_tex_NV12_UV->LockRect(0, &d3dlr, 0, lock_flag))
-			dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_height/2; i++)
-		{
-			memcpy(dst, src, m_width);
-			src += m_width;
-			dst += d3dlr.Pitch;
-		}
-		m_tex_NV12_UV->UnlockRect(0);
-	}
-
-	else if (m_format == MEDIASUBTYPE_YV12)
-	{
-		// loading YV12 image as two L8 texture
-		// load Y
-		JIF(hr = m_tex_Y->LockRect(0, &d3dlr, 0, lock_flag))
-			dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_height; i++)
-		{
-			memcpy(dst, src, m_width);
-			src += m_width;
-			dst += d3dlr.Pitch;
-		}
-		m_tex_Y->UnlockRect(0);
-
-		// load UV
-		JIF(hr = m_tex_YV12_UV->LockRect(0, &d3dlr, 0, lock_flag))
-			dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_height; i++)
-		{
-			memcpy(dst, src, m_width/2);
-			src += m_width/2;
-			dst += d3dlr.Pitch;
-		}
-		m_tex_YV12_UV->UnlockRect(0);
-	}
-
-	free(m_data);
-	m_data = NULL;
-
-	if (timeGetTime() - l > 10)
-		mylog("load():createTexture time:%d ms, load data to GPU cost %d ms.\n", l2- l, timeGetTime()-l2);
-
-	return hr;
-clearup:
-	m_ready = false;
-	return hr;
+	safe_delete(m_tex_RGB32);
+	safe_delete(m_tex_YUY2);
+	safe_delete(m_tex_Y);
+	safe_delete(m_tex_YV12_UV);
+	safe_delete(m_tex_NV12_UV);
 }

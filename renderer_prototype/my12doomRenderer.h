@@ -4,6 +4,7 @@
 #include <atlbase.h>
 #include "..\AESFile\rijndael.h"
 #include "my12doomUI.h"
+#include "TextureAllocator.h"
 
 struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
 #define WM_NV_NOTIFY (WM_USER+10086)
@@ -67,11 +68,11 @@ typedef struct _dummy_packet
 } dummy_packet;
 #define my12doom_queue_size 5
 
-class DBaseVideoRenderer: public CBaseRenderer
+class DBaseVideoRenderer: public CBaseVideoRenderer
 {
 public:
 	DBaseVideoRenderer(REFCLSID clsid,LPCTSTR name , LPUNKNOWN pUnk,HRESULT *phr)
-		: CBaseRenderer(clsid, name, pUnk, phr){};
+		: CBaseVideoRenderer(clsid, name, pUnk, phr){};
 	virtual CBasePin * GetPin(int n);
 	virtual HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 	virtual HRESULT BeginFlush(void);
@@ -80,6 +81,28 @@ protected:
 	REFERENCE_TIME m_thisstream;
 };
 
+class gpu_sample
+{
+public:
+	gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int width, int height, CLSID format, bool topdown_RGB32, bool to_memory = false);
+	HRESULT prepare_rendering();		// it's just lock textures
+	~gpu_sample();
+
+	bool m_ready;
+	CLSID m_format;
+	REFERENCE_TIME m_start;
+	REFERENCE_TIME m_end;
+	CPooledTexture *m_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
+	CPooledTexture *m_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
+	CPooledTexture *m_tex_Y;							// Y plane of YV12/NV12, in L8
+	CPooledTexture *m_tex_YV12_UV;					// UV plane of YV12, in L8, double height
+	CPooledTexture *m_tex_NV12_UV;					// UV plane of NV12, in A8L8
+
+	int m_width;
+	int m_height;
+	BYTE* m_data;
+	bool m_topdown;
+};
 class my12doomRendererDShow : public DBaseVideoRenderer
 {
 public:
@@ -102,6 +125,7 @@ protected:
 	HRESULT ShouldDrawSampleNow(IMediaSample *pMediaSample,
 		__inout REFERENCE_TIME *ptrStart,
 		__inout REFERENCE_TIME *ptrEnd);			// override to send Quality Message only when queue empty
+	HRESULT ShouldDrawSampleNow(gpu_sample *pMediaSample);		//mine
 
 	// dshow variables
 	REFERENCE_TIME m_time;
@@ -122,29 +146,6 @@ protected:
 };
 
 
-class gpu_sample
-{
-public:
-	gpu_sample(IMediaSample *memory_sample, IDirect3DDevice9 *device, int width, int height, CLSID format, bool topdown_RGB32, bool to_memory = false);
-	~gpu_sample();
-	HRESULT load();
-
-	bool m_ready;
-	CLSID m_format;
-	REFERENCE_TIME m_start;
-	REFERENCE_TIME m_end;
-	CComPtr<IDirect3DDevice9> m_device;						// RGB32 planes, in A8R8G8B8, full width
-	CComPtr<IDirect3DTexture9> m_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
-	CComPtr<IDirect3DTexture9> m_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
-	CComPtr<IDirect3DTexture9> m_tex_Y;							// Y plane of YV12/NV12, in L8
-	CComPtr<IDirect3DTexture9> m_tex_YV12_UV;					// UV plane of YV12, in L8, double height
-	CComPtr<IDirect3DTexture9> m_tex_NV12_UV;					// UV plane of NV12, in A8L8
-
-	int m_width;
-	int m_height;
-	BYTE* m_data;
-	bool m_topdown;
-};
 
 
 enum vertex_types
@@ -259,8 +260,8 @@ protected:
 	CGenericList<gpu_sample> m_left_queue;
 	CGenericList<gpu_sample> m_right_queue;
 	CCritSec m_queue_lock;
-	CAutoPtr<gpu_sample> m_sample2render_1;
-	CAutoPtr<gpu_sample> m_sample2render_2;
+	gpu_sample * m_sample2render_1;
+	gpu_sample * m_sample2render_2;
 	CCritSec m_packet_lock;
 
 	// dx9 functions and variables
@@ -331,6 +332,7 @@ protected:
 	CCritSec m_frame_lock;
 	CCritSec m_device_lock;
 	int m_device_threadid;
+	CTexturePool *m_pool;
 
 	CComPtr<IDirect3DVertexBuffer9> g_VertexBuffer;
 	CComPtr <IDirect3DPixelShader9> m_ps_yv12;

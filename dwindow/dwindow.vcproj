@@ -463,6 +463,10 @@
 					RelativePath="..\renderer_prototype\my12doomRenderer_UI.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\renderer_prototype\TextureAllocator.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="E3D"
@@ -583,6 +587,10 @@
 				</File>
 				<File
 					RelativePath="..\renderer_prototype\my12doomUI.h"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\TextureAllocator.h"
 					>
 				</File>
 			</Filter>
