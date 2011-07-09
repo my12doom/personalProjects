@@ -77,7 +77,7 @@ m_right_queue(_T("right queue"))
 {
 	// D3D && NV3D
 	m_pool = NULL;
-	m_sample2render_1 = m_sample2render_2 = NULL;
+	m_last_rendered_sample1 = m_last_rendered_sample2 = m_sample2render_1 = m_sample2render_2 = NULL;
 	m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
 	m_nv3d_enabled = false;
 	m_nv3d_actived = false;
@@ -407,7 +407,7 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 		bit_per_pixel = 32;
 
 	bool should_render = false;
-	gpu_sample * loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, m_output_mode == pageflipping);
+	gpu_sample * loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32);
 	int l2 = timeGetTime();
 	if (!m_dsr1->is_connected())
 	{
@@ -1654,8 +1654,10 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	IDirect3DTexture9* sample2_tex_NV12_UV = helper_get_texture(sample2, helper_sample_format_nv12);					// UV plane of NV12, in A8L8
 
 
-	gpu_sample *t1 = m_sample2render_1;
-	gpu_sample *t2 = m_sample2render_2;
+	safe_delete(m_last_rendered_sample1);
+	safe_delete(m_last_rendered_sample2);
+	gpu_sample * m_last_rendered_sample1 = m_sample2render_1;
+	gpu_sample * m_last_rendered_sample2 = m_sample2render_2;
 
 	m_sample2render_1 = NULL;
 	m_sample2render_2 = NULL;
@@ -1664,8 +1666,8 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	CAutoLock lck(&m_frame_lock);
 
 	int l1 = timeGetTime();
-	if (t1) t1->prepare_rendering();
-	if (t2) t2->prepare_rendering();
+	if (m_last_rendered_sample1) m_last_rendered_sample1->prepare_rendering();
+	if (m_last_rendered_sample2) m_last_rendered_sample2->prepare_rendering();
 	mylog("prepare_rendering = %dms\n", timeGetTime()-l1);
 
 	// pass 1: render full resolution to two seperate texture
@@ -1886,8 +1888,8 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 
 	}
 
-	safe_delete(t1);
-	safe_delete(t2);
+	safe_delete(m_last_rendered_sample1);
+	safe_delete(m_last_rendered_sample2);
 
 	return S_OK;
 }
@@ -2569,15 +2571,11 @@ HRESULT my12doomRenderer::set_parallax(double parallax)
 
 gpu_sample::~gpu_sample()
 {
-	if(m_data)free(m_data);
-	m_data = NULL;
-
 	safe_delete(m_tex_RGB32);
 	safe_delete(m_tex_YUY2);
 	safe_delete(m_tex_Y);
 	safe_delete(m_tex_YV12_UV);
 	safe_delete(m_tex_NV12_UV);
-
 }
 
 CCritSec g_gpu_lock;
@@ -2591,7 +2589,7 @@ HRESULT gpu_sample::prepare_rendering()
 
 	return S_OK;
 }
-gpu_sample::gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int width, int height, CLSID format, bool topdown_RGB32, bool to_memory)
+gpu_sample::gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int width, int height, CLSID format, bool topdown_RGB32)
 {
 	CAutoLock lck(&g_gpu_lock);
 	m_tex_RGB32 = m_tex_YUY2 = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
@@ -2600,7 +2598,6 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int widt
 	m_ready = false;
 	m_format = format;
 	m_topdown = topdown_RGB32;
-	m_data = NULL;
 	HRESULT hr;
 	if (!pool || !memory_sample)
 		goto clearup;
@@ -2608,15 +2605,6 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int widt
 	memory_sample->GetTime(&m_start, &m_end);
 
 	m_ready = true;
-	if (to_memory)
-	{
-		m_data = (BYTE*)malloc(memory_sample->GetActualDataLength());
-		BYTE* src=NULL;
-		memory_sample->GetPointer(&src);
-		memcpy(m_data, src, memory_sample->GetActualDataLength());
-
-		return;
-	}
 
 	int l = timeGetTime();
 	// texture creation

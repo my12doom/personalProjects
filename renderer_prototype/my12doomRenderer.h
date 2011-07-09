@@ -84,7 +84,7 @@ protected:
 class gpu_sample
 {
 public:
-	gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int width, int height, CLSID format, bool topdown_RGB32, bool to_memory = false);
+	gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int width, int height, CLSID format, bool topdown_RGB32);
 	HRESULT prepare_rendering();		// it's just lock textures
 	~gpu_sample();
 
@@ -100,7 +100,6 @@ public:
 
 	int m_width;
 	int m_height;
-	BYTE* m_data;
 	bool m_topdown;
 };
 class my12doomRendererDShow : public DBaseVideoRenderer
@@ -263,6 +262,8 @@ protected:
 	CCritSec m_queue_lock;
 	gpu_sample * m_sample2render_1;
 	gpu_sample * m_sample2render_2;
+	gpu_sample * m_last_rendered_sample1;
+	gpu_sample * m_last_rendered_sample2;
 	CCritSec m_packet_lock;
 
 	// dx9 functions and variables

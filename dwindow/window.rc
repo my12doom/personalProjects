@@ -241,6 +241,7 @@ BEGIN
                 MENUITEM "16:9",                        ID_ASPECTRATIO_169
                 MENUITEM "4:3",                         ID_ASPECTRATIO_43
             END
+            MENUITEM "CUDA Accelaration",           ID_CUDA
         END
         POPUP "Audio"
         BEGIN
@@ -262,7 +263,6 @@ BEGIN
         MENUITEM "Fullscreen\t(Alt+Enter)",     ID_FULLSCREEN
         MENUITEM "Swap Left/Right\t(Tab)",      ID_SWAPEYES
         MENUITEM SEPARATOR
-        MENUITEM "CUDA Accelaration",           ID_CUDA
         POPUP "Language"
         BEGIN
             MENUITEM "English",                     ID_LANGUAGE_ENGLISH
