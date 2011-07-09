@@ -242,6 +242,7 @@ protected:
 	int m_pass1_height;
 	Imy12doomRendererCallback *m_cb;
 	bool m_revert_RGB32;
+	REFERENCE_TIME m_last_frame_time;
 
 protected:
 	friend class my12doomRendererDShow;

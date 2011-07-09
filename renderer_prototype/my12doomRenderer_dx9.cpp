@@ -221,6 +221,8 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 		aspect_y = 9;
 	}
 
+	m_last_frame_time = 0;
+
 	if (id == 0)
 	{
 		m_lVidWidth = width;
@@ -267,6 +269,8 @@ HRESULT my12doomRenderer::CompleteConnect(IPin *pRecievePin, int id)
 
 HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 {
+	m_last_frame_time = timeGetTime();
+
 	int l1 = timeGetTime();
 	bool should_render = true;
 	REFERENCE_TIME start, end;
@@ -507,9 +511,9 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 		if (!dual_stream)
 		{
-			if (input == side_by_side && (m_lVidWidth != desc.Width*2 || m_lVidHeight != desc.Height))
+			if (input == side_by_side && (m_lVidWidth/2 != desc.Width || m_lVidHeight != desc.Height))
 				set_device_state(need_reset_object);
-			if (input == top_bottom && (m_lVidWidth != desc.Width || m_lVidHeight != desc.Height*2))
+			if (input == top_bottom && (m_lVidWidth != desc.Width || m_lVidHeight /2 != desc.Height))
 				set_device_state(need_reset_object);
 			if (input == mono2d && (m_lVidWidth != desc.Width || m_lVidHeight != desc.Height))
 				set_device_state(need_reset_object);
@@ -903,15 +907,13 @@ HRESULT my12doomRenderer::restore_objects()
 
 HRESULT my12doomRenderer::backup_rgb()
 {
-	if (m_dsr0->m_State == State_Running)		// don't backup or restore when running, that cause great jitter
+	if (m_dsr0->m_State == State_Running && timeGetTime() - m_last_frame_time < 333)		// don't backup or restore when running, that cause great jitter
 		return S_FALSE;
 
 	if (m_backuped)								// no repeated backup
 		return S_OK;
 
 	HRESULT hr = S_OK;
-
-
 
 	mylog("backup_rgb() start\n");
 
@@ -982,7 +984,7 @@ HRESULT my12doomRenderer::backup_rgb()
 
 HRESULT my12doomRenderer::restore_rgb()
 {
-	if (m_dsr0->m_State == State_Running)		// don't backup or restore when running, that cause great jitter
+	if (m_dsr0->m_State == State_Running&& timeGetTime() - m_last_frame_time < 333)		// don't backup or restore when running, that cause great jitter
 		return S_FALSE;
 
 	mylog("restore_rgb() start\n");
@@ -1524,7 +1526,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 	{
 		if (_this->m_output_mode != pageflipping)
 		{
-			if (_this->m_dsr0->m_State == State_Running)
+			if (_this->m_dsr0->m_State == State_Running && timeGetTime() - _this->m_last_frame_time < 333)
 			{
 				Sleep(1);
 				continue;
@@ -2415,7 +2417,7 @@ HRESULT my12doomRenderer::set_window(HWND wnd, HWND wnd2)
 
 HRESULT my12doomRenderer::repaint_video()
 {
-	if (m_dsr0->m_State != State_Running && m_output_mode != pageflipping)
+	if (m_dsr0->m_State != State_Running && timeGetTime() - m_last_frame_time < 333 && m_output_mode != pageflipping)
 		render(true);
 	return S_OK;
 }
