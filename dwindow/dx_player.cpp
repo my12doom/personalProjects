@@ -899,8 +899,6 @@ LRESULT dx_player::on_timer(int id)
 
 LRESULT dx_player::on_move(int id, int x, int y)
 {
-	if (m_renderer1)
-		m_renderer1->recaculate_mask();
 	return S_OK;
 }
 
@@ -1448,7 +1446,9 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 
 	{
 		if (S_FALSE == hr)		// same subtitle, ignore
+		{
 			return S_OK;
+		}
 		else if (S_OK == hr)	// need to update
 		{
 			// empty result, clear it
@@ -1471,19 +1471,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 					sub.height * (1-delta1),
 					sub.left + (m_subtitle_center_x-0.5),
 					sub.top *(1-delta1) + delta1/2 + (m_subtitle_bottom_y-0.95));
-				if (FAILED(hr)) 
-				{
-					free(sub.data);
-					m_lastCBtime = -1;				// failed, refresh on next frame
-					return hr;
-				}
 
-				//TODO2
-				/*hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width, 
-					sub.height * (1-delta2),
-					sub.left + (m_subtitle_center_x-0.5) + (double)m_subtitle_offset*sub.width/sub.width_pixel + sub.delta,
-					sub.top *(1-delta2) + delta2/2 + (m_subtitle_bottom_y-0.95));
-				*/
 				free(sub.data);
 				if (FAILED(hr))
 				{
@@ -1672,7 +1660,6 @@ HRESULT dx_player::draw_ui()
 
 	if (m_renderer1)
 	{
-		m_renderer1->set_ui(m_bar_drawer.result, 4096*4);
 		m_renderer1->set_ui_visible(true);
 	}
 	else

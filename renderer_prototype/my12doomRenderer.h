@@ -84,7 +84,7 @@ protected:
 class gpu_sample
 {
 public:
-	gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int width, int height, CLSID format, bool topdown_RGB32);
+	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, D3DPOOL pool = D3DPOOL_SYSTEMMEM);
 	HRESULT prepare_rendering();		// it's just lock textures
 	~gpu_sample();
 
@@ -101,6 +101,7 @@ public:
 	int m_width;
 	int m_height;
 	bool m_topdown;
+	D3DPOOL m_pool;
 };
 class my12doomRendererDShow : public DBaseVideoRenderer
 {
@@ -185,7 +186,6 @@ public:
 	REFERENCE_TIME m_frame_length;
 
 	// public functions
-	HRESULT recaculate_mask();
 	HRESULT pump();
 	HRESULT repaint_video();
 	HRESULT NV3D_notify(WPARAM wparam);
@@ -206,7 +206,6 @@ public:
 	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop);
 	HRESULT set_bmp_offset(double offset);
 	HRESULT set_parallax(double parallax);
-	HRESULT set_ui(void* data, int pitch);
 	HRESULT set_ui_visible(bool visible);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
 
@@ -228,6 +227,7 @@ protected:
 
 	double m_parallax;
 	bool m_showui;
+	bool m_has_subtitle;
 	int m_ui_visible_last_change_time;
 	int m_last_ui_draw;
 	int m_bmp_width, m_bmp_height;
@@ -316,6 +316,7 @@ protected:
 	bool m_nv3d_actived;
 
 	MyVertex m_vertices[vertex_total];
+	MyVertex_subtitle m_vertices_subtitle[vertex_total];
 	int m_pageflipping_start;
 	bool m_swapeyes;
 	output_mode_types m_output_mode;
@@ -333,28 +334,48 @@ protected:
 	HANDLE m_device_not_reseting;
 	CCritSec m_frame_lock;
 	CCritSec m_device_lock;
+	HANDLE m_render_event;
 	int m_device_threadid;
-	CTexturePool *m_pool;
+	CTextureAllocator *m_pool;
 
 	CComPtr<IDirect3DVertexBuffer9> g_VertexBuffer;
+	CComPtr<IDirect3DVertexBuffer9> m_vertex_subtitle;
+	bool m_vertex_changed;
+	CComPtr <IDirect3DVertexShader9> m_vs_subtitle;
 	CComPtr <IDirect3DPixelShader9> m_ps_yv12;
 	CComPtr <IDirect3DPixelShader9> m_ps_nv12;
 	CComPtr <IDirect3DPixelShader9> m_ps_yuy2;
 	CComPtr <IDirect3DPixelShader9> m_ps_anaglyph;
 	CComPtr <IDirect3DPixelShader9> m_ps_test;
 
+	CComPtr<IDirect3DTexture9> m1_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
+	CComPtr<IDirect3DTexture9> m1_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
+	CComPtr<IDirect3DTexture9> m1_tex_Y;							// Y plane of YV12/NV12, in L8
+	CComPtr<IDirect3DTexture9> m1_tex_YV12_UV;					// UV plane of YV12, in L8, double height
+	CComPtr<IDirect3DTexture9> m1_tex_NV12_UV;					// UV plane of NV12, in A8L8
+
+	CComPtr<IDirect3DTexture9> m2_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
+	CComPtr<IDirect3DTexture9> m2_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
+	CComPtr<IDirect3DTexture9> m2_tex_Y;							// Y plane of YV12/NV12, in L8
+	CComPtr<IDirect3DTexture9> m2_tex_YV12_UV;					// UV plane of YV12, in L8, double height
+	CComPtr<IDirect3DTexture9> m2_tex_NV12_UV;					// UV plane of NV12, in A8L8
 
 	CComPtr<IDirect3DTexture9> m_tex_rgb_left;				// source texture, converted to RGB32
 	CComPtr<IDirect3DTexture9> m_tex_rgb_right;
 	CComPtr<IDirect3DSurface9> m_surface_rgb_backup_full;		// back up converted RGB32 texture when stop, to restore after device lost or reset
 	CComPtr<IDirect3DTexture9> m_tex_rgb_full;
+	RECT m_window_rect;
 	CComPtr<IDirect3DTexture9> m_tex_mask;					// mask txture
 	CComPtr<IDirect3DTexture9> m_mask_temp_left;			// two temp texture, you may need it in some case
 	CComPtr<IDirect3DTexture9> m_mask_temp_right;
 
 	CComPtr<IDirect3DTexture9> m_tex_bmp;
+	CComPtr<IDirect3DSurface9> m_tex_bmp_mem;
+	D3DLOCKED_RECT m_bmp_locked_rect;
+	bool m_bmp_changed;
+	CCritSec m_bmp_lock;
 
-	CComPtr<IDirect3DSurface9> m_sbs_surface;				// nv3d temp surface
+	CComPtr<IDirect3DSurface9> m_nv3d_surface;				// nv3d temp surface
 
 
 	CComPtr<IDirect3DSurface9> m_just_a_test_surface;

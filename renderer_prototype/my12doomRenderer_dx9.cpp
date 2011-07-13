@@ -6,6 +6,7 @@
 #include "PixelShaders/YUY2.h"
 #include "PixelShaders/anaglyph.h"
 #include "PixelShaders/stereo_test.h"
+#include "PixelShaders/vs_subtitle.h"
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
@@ -14,8 +15,9 @@
 #define FAIL_RET(x) hr=x; if(FAILED(hr)){return hr;}
 #define FAIL_SLEEP_RET(x) hr=x; if(FAILED(hr)){Sleep(1); return hr;}
 #define safe_delete(x) if(x){delete x;x=NULL;}
-
-bool DWINDOW_SURFACE_MANAGED = LOBYTE(GetVersion()) <= 5 ? false : false;
+#ifndef DEBUG
+#define printf
+#endif
 
 typedef struct tagTHREADNAME_INFO {
 	DWORD dwType; // must be 0x1000
@@ -57,7 +59,7 @@ HRESULT mylog(wchar_t *format, ...)
 
 HRESULT mylog(const char *format, ...)
 {
-#ifdef DEBUG
+//#ifdef DEBUG
 	char tmp[10240];
 	char tmp2[10240];
 	va_list valist;
@@ -66,8 +68,8 @@ HRESULT mylog(const char *format, ...)
 	va_end(valist);
 
 	wsprintfA(tmp2, "(tid=%d)%s", GetCurrentThreadId(), tmp);
-	OutputDebugStringA(tmp);
-#endif
+	OutputDebugStringA(tmp2);
+//#endif
 	return S_OK;
 }
 
@@ -76,6 +78,7 @@ m_left_queue(_T("left queue")),
 m_right_queue(_T("right queue"))
 {
 	// D3D && NV3D
+	m_render_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_pool = NULL;
 	m_last_rendered_sample1 = m_last_rendered_sample2 = m_sample2render_1 = m_sample2render_2 = NULL;
 	m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
@@ -162,6 +165,7 @@ void my12doomRenderer::init_variables()
 	m_surface_rgb_backup_full = NULL;
 
 	// ui & bitmap
+	m_has_subtitle = false;
 	m_volume = 0;
 	m_bmp_offset = 0;
 	m_bmp_width = 0;
@@ -441,7 +445,7 @@ HRESULT my12doomRenderer::delete_render_targets()
 	m_swap2 = NULL;
 	m_mask_temp_left = NULL;
 	m_mask_temp_right = NULL;
-	m_sbs_surface = NULL;
+	m_nv3d_surface = NULL;
 	m_tex_mask = NULL;
 	return S_OK;
 }
@@ -473,25 +477,41 @@ HRESULT my12doomRenderer::create_render_targets()
 		FAIL_RET(m_Device->GetSwapChain(0, &m_swap1));
 	}
 
+	if (m_swap1)
+	{
+		CComPtr<IDirect3DSurface9> surface;
+		m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &surface);
+		D3DSURFACE_DESC desc;
+
+		RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+		if (m_output_mode == out_sbs)
+			tar.right /= 2;
+		else if (m_output_mode == out_tb)
+			tar.bottom /= 2;
+
+		if(m_Device && m_uidrawer ) m_uidrawer->init(tar.right, tar.bottom, m_Device);
+	}
+
+
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_left, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_right, NULL));
-	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8, D3DPOOL_DEFAULT, &m_tex_mask, NULL));
-	FAIL_RET( m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, TRUE, &m_sbs_surface, NULL));
+	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, NULL, D3DFMT_L8, D3DPOOL_MANAGED, &m_tex_mask, NULL));
+	FAIL_RET( m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, TRUE, &m_nv3d_surface, NULL));
 	FAIL_RET(generate_mask());
 
 	// add 3d vision tag at last line on need
-	if (m_output_mode == NV3D && m_sbs_surface)
+	if (m_output_mode == NV3D && m_nv3d_surface)
 	{
 		D3DLOCKED_RECT lr;
 		RECT lock_tar={0, m_active_pp.BackBufferHeight, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1};
-		FAIL_RET(m_sbs_surface->LockRect(&lr,&lock_tar,0));
+		FAIL_RET(m_nv3d_surface->LockRect(&lr,&lock_tar,0));
 		LPNVSTEREOIMAGEHEADER pSIH = (LPNVSTEREOIMAGEHEADER)(((unsigned char *) lr.pBits) + (lr.Pitch * (0)));	
 		pSIH->dwSignature = NVSTEREO_IMAGE_SIGNATURE;
 		pSIH->dwBPP = 32;
 		pSIH->dwFlags = SIH_SIDE_BY_SIDE;
 		pSIH->dwWidth = m_active_pp.BackBufferWidth;
 		pSIH->dwHeight = m_active_pp.BackBufferHeight;
-		FAIL_RET(m_sbs_surface->UnlockRect());
+		FAIL_RET(m_nv3d_surface->UnlockRect());
 	}
 
 	return hr;
@@ -564,7 +584,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		CAutoLock lck(&m_frame_lock);
 		FAIL_RET(delete_render_targets());
 		FAIL_RET(create_render_targets());
-		FAIL_RET(calculate_vertex());
+		m_vertex_changed = true;
 		m_device_state = fine;		
 		/*
 		terminate_render_thread();
@@ -704,7 +724,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		m_device_state = need_reset_object;
 
 		if (m_pool) delete m_pool;
-		m_pool = new CTexturePool(m_Device);
+		m_pool = new CTextureAllocator(m_Device);
 
 		// NV3D acitivation check
 		if (m_nv3d_enabled)
@@ -785,11 +805,25 @@ HRESULT my12doomRenderer::invalidate_objects()
 	m_ps_yuy2 = NULL;
 	m_ps_test = NULL;
 	m_ps_anaglyph = NULL;
+	m_vs_subtitle = NULL;
 
 	// textures
 	m_tex_rgb_left = NULL;
 	m_tex_rgb_right = NULL;
 	m_tex_rgb_full = NULL;
+	m_tex_bmp = NULL;
+
+	// source textures
+	m1_tex_RGB32 = NULL;						// RGB32 planes, in A8R8G8B8, full width
+	m1_tex_YUY2 = NULL;						// YUY2 planes, in A8R8G8B8, half width
+	m1_tex_Y = NULL;							// Y plane of YV12/NV12, in L8
+	m1_tex_YV12_UV = NULL;					// UV plane of YV12, in L8, double height
+	m1_tex_NV12_UV = NULL;					// UV plane of NV12, in A8L8
+	m2_tex_RGB32 = NULL;						// RGB32 planes, in A8R8G8B8, full width
+	m2_tex_YUY2 = NULL;						// YUY2 planes, in A8R8G8B8, half width
+	m2_tex_Y = NULL;							// Y plane of YV12/NV12, in L8
+	m2_tex_YV12_UV = NULL;					// UV plane of YV12, in L8, double height
+	m2_tex_NV12_UV = NULL;					// UV plane of NV12, in A8L8
 
 	// pending samples
 	{
@@ -813,6 +847,7 @@ HRESULT my12doomRenderer::invalidate_objects()
 
 	// vertex buffers
 	g_VertexBuffer = NULL;
+	m_vertex_subtitle = NULL;
 
 	// swap chains
 	delete_render_targets();
@@ -841,10 +876,47 @@ HRESULT my12doomRenderer::restore_objects()
 	FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_full, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_left, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
-	if(m_tex_bmp == NULL) FAIL_RET( m_Device->CreateTexture(2048, 1024, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,	&m_tex_bmp, NULL));
+	FAIL_RET( m_Device->CreateTexture(2048, 1024, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
+	if(m_tex_bmp_mem == NULL)
+	{
+		// only first time, so we don't need lock CritSec
+		FAIL_RET( m_Device->CreateOffscreenPlainSurface(2048, 1024, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM,	&m_tex_bmp_mem, NULL));
+		m_tex_bmp_mem->LockRect(&m_bmp_locked_rect, NULL, NULL);
+		m_bmp_changed = false;
+	}
 	FAIL_RET( m_Device->CreateRenderTarget(64, 64, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_test_rt64, NULL));
 	if (m_mem == NULL) FAIL_RET( m_Device->CreateOffscreenPlainSurface(64, 64, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_mem, NULL));
 	
+	// source texture
+	if (m_dsr0->m_format == MEDIASUBTYPE_YUY2)
+	{
+		if(!m1_tex_YUY2) FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m1_tex_YUY2, NULL));
+		if(!m2_tex_YUY2) FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m2_tex_YUY2, NULL));
+	}
+
+	else if (m_dsr0->m_format == MEDIASUBTYPE_RGB32)
+	{
+		if(!m1_tex_RGB32) FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m1_tex_RGB32, NULL));
+		if(!m2_tex_RGB32) FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m2_tex_RGB32, NULL));
+	}
+
+	else if (m_dsr0->m_format == MEDIASUBTYPE_NV12)
+	{
+		if(!m1_tex_Y) FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m1_tex_Y, NULL));
+		if(!m1_tex_NV12_UV) FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight/2, 1, NULL, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m1_tex_NV12_UV, NULL));
+		if(!m2_tex_Y) FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m2_tex_Y, NULL));
+		if(!m2_tex_NV12_UV) FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight/2, 1, NULL, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m2_tex_NV12_UV, NULL));
+	}
+
+	else if (m_dsr0->m_format == MEDIASUBTYPE_YV12)
+	{
+		if(!m1_tex_Y) FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m1_tex_Y, NULL));
+		if(!m1_tex_YV12_UV) FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m1_tex_YV12_UV, NULL));
+		if(!m2_tex_Y) FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m2_tex_Y, NULL));
+		if(!m2_tex_YV12_UV) FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m2_tex_YV12_UV, NULL));
+	}
+
+
 	// clear m_tex_rgb_left & right
 	CComPtr<IDirect3DSurface9> rgb_surface;
 	FAIL_RET(m_tex_rgb_left->GetSurfaceLevel(0, &rgb_surface));
@@ -854,8 +926,9 @@ HRESULT my12doomRenderer::restore_objects()
 	clear(rgb_surface);
 
 	// vertex
-	FAIL_RET(m_Device->CreateVertexBuffer( sizeof(m_vertices), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, FVF_Flags, D3DPOOL_DEFAULT, &g_VertexBuffer, NULL ));
-	FAIL_RET(calculate_vertex());
+	FAIL_RET(m_Device->CreateVertexBuffer( sizeof(m_vertices), D3DUSAGE_WRITEONLY, FVF_Flags, D3DPOOL_DEFAULT, &g_VertexBuffer, NULL ));
+	FAIL_RET(m_Device->CreateVertexBuffer( sizeof(m_vertices), D3DUSAGE_WRITEONLY, FVF_Flags_subtitle, D3DPOOL_DEFAULT, &m_vertex_subtitle, NULL ));
+	m_vertex_changed = true;
 
 	// pixel shader
 	unsigned char *yv12 = (unsigned char *)malloc(sizeof(g_code_YV12toRGB));
@@ -887,11 +960,13 @@ HRESULT my12doomRenderer::restore_objects()
 
 	int r = memcmp(yv12, g_code_YV12toRGB, sizeof(g_code_YV12toRGB));
 
+	// shaders
 	m_Device->CreatePixelShader((DWORD*)yv12, &m_ps_yv12);
 	m_Device->CreatePixelShader((DWORD*)nv12, &m_ps_nv12);
 	m_Device->CreatePixelShader((DWORD*)yuy2, &m_ps_yuy2);
 	m_Device->CreatePixelShader((DWORD*)tester, &m_ps_test);
 	m_Device->CreatePixelShader((DWORD*)anaglyph, &m_ps_anaglyph);
+	m_Device->CreateVertexShader((DWORD*)g_code_vs_subtitle, &m_vs_subtitle);
 
 	free(yv12);
 	free(nv12);
@@ -975,7 +1050,7 @@ HRESULT my12doomRenderer::backup_rgb()
 	FAIL_RET(m_Device->CreateOffscreenPlainSurface(dual_stream ? m_lVidWidth*2 : m_lVidWidth, m_lVidHeight, desc.Format, D3DPOOL_SYSTEMMEM, &m_surface_rgb_backup_full, NULL));
 	FAIL_RET(m_Device->GetRenderTargetData(full_surface, m_surface_rgb_backup_full));
 
-	mylog("backup_rgb() ok\n");
+	//mylog("backup_rgb() ok\n");
 	m_backuped = true;
 	return S_OK;
 }
@@ -1075,11 +1150,39 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	HRESULT hr;
 
 	CAutoLock lck(&m_frame_lock);
+
 	if (!m_tex_rgb_left)
 		return VFW_E_NOT_CONNECTED;
 
 	// pass 2: drawing to back buffer!
 	hr = m_Device->BeginScene();
+
+	// load subtitle
+	CAutoPtr<CAutoLock> bmp_lock;
+	bmp_lock.Attach(new CAutoLock(&m_bmp_lock));
+	if (m_bmp_changed)
+	{
+		int l = timeGetTime();
+		if (!m_tex_bmp || !m_tex_bmp_mem)
+			return VFW_E_WRONG_STATE;
+
+		m_tex_bmp_mem->UnlockRect();
+
+		CComPtr<IDirect3DSurface9> dst;
+		RECT src = {0,0,m_bmp_width, m_bmp_height};
+
+		FAIL_RET(m_tex_bmp->GetSurfaceLevel(0, &dst));
+
+		m_Device->UpdateSurface(m_tex_bmp_mem, &src, dst, NULL);
+
+		mylog("UpdateSurface = %d ms.\n", timeGetTime() - l);
+	}
+	else
+	{
+		bmp_lock.Free();
+	}
+
+
 	hr = m_Device->SetPixelShader(NULL);
 	CComPtr<IDirect3DSurface9> left_surface;
 	CComPtr<IDirect3DSurface9> right_surface;
@@ -1124,6 +1227,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	hr = m_Device->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
+	int l = timeGetTime();
 	if (m_output_mode == NV3D && m_nv3d_enabled && m_nv3d_actived && !m_active_pp.Windowed)
 	{
 		clear(back_buffer);
@@ -1132,7 +1236,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 		// copy left to nv3d surface
 		RECT dst = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
-		hr = m_Device->StretchRect(back_buffer, NULL, m_sbs_surface, &dst, D3DTEXF_NONE);
+		hr = m_Device->StretchRect(back_buffer, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
 
 		clear(back_buffer);
 		draw_movie(back_buffer, false);
@@ -1141,11 +1245,11 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		// copy right to nv3d surface
 		dst.left += m_active_pp.BackBufferWidth;
 		dst.right += m_active_pp.BackBufferWidth;
-		hr = m_Device->StretchRect(back_buffer, NULL, m_sbs_surface, &dst, D3DTEXF_NONE);
+		hr = m_Device->StretchRect(back_buffer, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
 
 		// StretchRect to backbuffer!, this is how 3D vision works
 		RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
-		hr = m_Device->StretchRect(m_sbs_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
+		hr = m_Device->StretchRect(m_nv3d_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
 
 		draw_ui(back_buffer);
 	}
@@ -1219,9 +1323,21 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_Device->SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_MULTIPLYADD ); // Modulate then add... to show only white then add with temp(black)
 		m_Device->SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);     // current = texture(right) * current(mask) + temp
 
+
 		m_Device->SetTexture( 0, m_tex_mask );
 		m_Device->SetTexture( 1, m_mask_temp_left );
 		m_Device->SetTexture( 2, m_mask_temp_right );
+
+		// swap on need
+		int x = m_window_rect.left&1;
+		int y = m_window_rect.top&1;
+		if ( (m_mask_mode == row_interlace && x) ||
+			 (m_mask_mode == line_interlace && y) ||
+			 (m_mask_mode == checkboard_interlace && ((x+y)%2)))
+		{
+			m_Device->SetTexture( 2, m_mask_temp_left );
+			m_Device->SetTexture( 1, m_mask_temp_right );
+		}
 
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
@@ -1233,31 +1349,18 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	else if (m_output_mode == pageflipping)
 	{
-
-		CComPtr<IDirect3DSurface9> temp_surface;
-		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
-		clear(temp_surface);
-		draw_movie(temp_surface, true);
-		draw_bmp(temp_surface, true);
-		draw_ui(temp_surface);
-		temp_surface = NULL;
-
-		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
-		clear(temp_surface);
-		draw_movie(temp_surface, false);
-		draw_bmp(temp_surface, false);
-		draw_ui(temp_surface);
-		temp_surface = NULL;
-
 		static int left = 0;
 		double delta = (double)timeGetTime()-m_pageflipping_start;
-		int frame_passed = ceil(delta/9);
-		if (frame_passed>1)
-			printf("delta=%f.\n", delta);
+		int frame_passed = max(1, floor(delta/8));
+		if (frame_passed>1 || frame_passed <= 0)
+			mylog("delta=%d.\n", (int)delta);
 		left += frame_passed;
 		left %= 2;
-		(left?m_mask_temp_left:m_mask_temp_right)->GetSurfaceLevel(0, &temp_surface);
-		m_Device->StretchRect(temp_surface, NULL, back_buffer, NULL, D3DTEXF_NONE);
+
+		clear(back_buffer);
+		draw_movie(back_buffer, left);
+		draw_bmp(back_buffer, left);
+		draw_ui(back_buffer);
 	}
 
 	else if (m_output_mode == dual_window)
@@ -1291,7 +1394,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	else if (m_output_mode == out_sbs || m_output_mode == out_tb || m_output_mode == out_hsbs || m_output_mode == out_htb)
 	{
-
 		CComPtr<IDirect3DSurface9> temp_surface;
 		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
 		CComPtr<IDirect3DSurface9> temp_surface2;
@@ -1357,11 +1459,17 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	}
 
 	m_Device->EndScene();
-
+	if (timeGetTime() - l > 5)printf("EndScene = %dms\n", timeGetTime() - l);
 presant:
 	static int n = timeGetTime();
-	//printf("presant delta: %dms\n", timeGetTime()-n);
+	if (timeGetTime() - n > 9)
+		printf("(%d):presant delta: %dms\n", timeGetTime(), timeGetTime()-n);
 	n = timeGetTime();
+
+	int l2 = timeGetTime();
+
+	if (m_output_mode == pageflipping)
+		m_pageflipping_start = timeGetTime();
 
 	if (m_output_mode == dual_window)
 	{
@@ -1384,8 +1492,19 @@ presant:
 		n = timeGetTime();
 	}
 
-	if (m_output_mode == pageflipping)
-		m_pageflipping_start = timeGetTime();
+	if (timeGetTime()-l2 > 9) printf("Presant() cost %dms.\n", timeGetTime() - l2);
+
+	FAIL_RET(calculate_vertex());
+	if (bmp_lock != NULL)
+	{
+		int l = timeGetTime();
+		m_tex_bmp_mem->LockRect(&m_bmp_locked_rect, NULL, NULL);
+		mylog("LockRect for subtitle cost %dms \n", timeGetTime()-l);
+
+		m_bmp_changed = false;
+	}
+
+
 
 	return S_OK;
 }
@@ -1428,16 +1547,30 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	if (!surface)
 		return E_POINTER;
 
+	if (!m_has_subtitle)
+		return S_FALSE;
+
 	HRESULT hr = E_FAIL;
+
 
 	m_Device->SetRenderTarget(0, surface);
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 	hr = m_Device->SetTexture( 0, m_tex_bmp );
-	hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
-	hr = m_Device->SetFVF( FVF_Flags );
-	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, left_eye ? vertex_bmp : vertex_bmp2, 2 );
+	hr = m_Device->SetStreamSource( 0, m_vertex_subtitle, 0, sizeof(MyVertex) );
+	hr = m_Device->SetFVF( FVF_Flags_subtitle );
+
+	// config position
+	float cfg[8] = {(m_bmp_fleft+m_bmp_offset_x)*2-1, (m_bmp_ftop+m_bmp_offset_y)*-2+1, m_bmp_fwidth*2, m_bmp_fheight*-2,
+					0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1024};
+
+	if (!left_eye)
+		cfg[0] -= m_bmp_offset * 2;
+	hr = m_Device->SetVertexShader(m_vs_subtitle);
+	hr = m_Device->SetVertexShaderConstantF(0, cfg, 2);
+	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+	hr = m_Device->SetVertexShader(NULL);
 	return S_OK;
 }
 HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
@@ -1470,14 +1603,16 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 
 HRESULT my12doomRenderer::render(bool forced)
 {
-	if(GetCurrentThread() != m_render_thread && m_output_mode == pageflipping)
+	if(m_output_mode == pageflipping)
 		return S_FALSE;
 
-	CAutoLock lck(&m_frame_lock);
-	if (m_Device)
-		return render_nolock(forced);
-	else
-		return E_FAIL;
+	SetEvent(m_render_event);
+
+	//CAutoLock lck(&m_frame_lock);
+	//if (m_Device)
+	//	return render_nolock(forced);
+	//else
+	//	return E_FAIL;
 	return S_OK;
 }
 DWORD WINAPI my12doomRenderer::test_thread(LPVOID param)
@@ -1521,14 +1656,17 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 	while (timeGetTime() - l < 0 && !_this->m_render_thread_exit)
 		Sleep(1);
 
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+	//SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
+	//SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 	while(!_this->m_render_thread_exit)
 	{
 		if (_this->m_output_mode != pageflipping)
 		{
 			if (_this->m_dsr0->m_State == State_Running && timeGetTime() - _this->m_last_frame_time < 333)
 			{
-				Sleep(1);
+				if (WaitForSingleObject(_this->m_render_event, 1) != WAIT_TIMEOUT)
+					_this->render_nolock(true);
+
 				continue;
 			}
 			else
@@ -1544,8 +1682,6 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 			_this->render_nolock(true);
 			Sleep(1);
 		}
-
-		Sleep(0);		// always let other thread to do their job
 	}	
 	
 	return S_OK;
@@ -1566,7 +1702,7 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 	HRESULT hr = load_image_convert(m_sample2render_1, m_sample2render_2);
 
 	static int n = timeGetTime();
-	printf("load and convert time:%dms, presant delta: %dms(%.02f circle)\n", timeGetTime()-l, timeGetTime()-n, (double)(timeGetTime()-n) / (1000/60));
+	//printf("load and convert time:%dms, presant delta: %dms(%.02f circle)\n", timeGetTime()-l, timeGetTime()-n, (double)(timeGetTime()-n) / (1000/60));
 	n = timeGetTime();
 
 	return hr;
@@ -1656,8 +1792,8 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 
 	safe_delete(m_last_rendered_sample1);
 	safe_delete(m_last_rendered_sample2);
-	gpu_sample * m_last_rendered_sample1 = m_sample2render_1;
-	gpu_sample * m_last_rendered_sample2 = m_sample2render_2;
+	m_last_rendered_sample1 = m_sample2render_1;
+	m_last_rendered_sample2 = m_sample2render_2;
 
 	m_sample2render_1 = NULL;
 	m_sample2render_2 = NULL;
@@ -1668,7 +1804,48 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	int l1 = timeGetTime();
 	if (m_last_rendered_sample1) m_last_rendered_sample1->prepare_rendering();
 	if (m_last_rendered_sample2) m_last_rendered_sample2->prepare_rendering();
-	mylog("prepare_rendering = %dms\n", timeGetTime()-l1);
+
+	IDirect3DTexture9* sample1_tex_RGB32_gpu = sample1_tex_RGB32;
+	IDirect3DTexture9* sample1_tex_YUY2_gpu = sample1_tex_YUY2;
+	IDirect3DTexture9* sample1_tex_Y_gpu = sample1_tex_Y;
+	IDirect3DTexture9* sample1_tex_YV12_gpu = sample1_tex_YV12_UV;
+	IDirect3DTexture9* sample1_tex_NV12_gpu = sample1_tex_NV12_UV;
+
+	IDirect3DTexture9* sample2_tex_RGB32_gpu = sample2_tex_RGB32;
+	IDirect3DTexture9* sample2_tex_YUY2_gpu = sample2_tex_YUY2;
+	IDirect3DTexture9* sample2_tex_Y_gpu = sample2_tex_Y;
+	IDirect3DTexture9* sample2_tex_YV12_gpu = sample2_tex_YV12_UV;
+	IDirect3DTexture9* sample2_tex_NV12_gpu = sample2_tex_NV12_UV;
+
+	if (m_last_rendered_sample1->m_pool == D3DPOOL_SYSTEMMEM)
+	{
+		int l = timeGetTime();
+
+		if (sample1_tex_RGB32) m_Device->UpdateTexture(sample1_tex_RGB32, m1_tex_RGB32);
+		if (sample1_tex_YUY2) m_Device->UpdateTexture(sample1_tex_YUY2, m1_tex_YUY2);
+		if (sample1_tex_Y) m_Device->UpdateTexture(sample1_tex_Y, m1_tex_Y);
+		if (sample1_tex_YV12_UV) m_Device->UpdateTexture(sample1_tex_YV12_UV, m1_tex_YV12_UV);
+		if (sample1_tex_NV12_UV) m_Device->UpdateTexture(sample1_tex_NV12_UV, m1_tex_NV12_UV);
+
+		if (sample2_tex_RGB32) m_Device->UpdateTexture(sample2_tex_RGB32, m2_tex_RGB32);
+		if (sample2_tex_YUY2) m_Device->UpdateTexture(sample2_tex_YUY2, m2_tex_YUY2);
+		if (sample2_tex_Y) m_Device->UpdateTexture(sample2_tex_Y, m2_tex_Y);
+		if (sample2_tex_YV12_UV) m_Device->UpdateTexture(sample2_tex_YV12_UV, m2_tex_YV12_UV);
+		if (sample2_tex_NV12_UV) m_Device->UpdateTexture(sample2_tex_NV12_UV, m2_tex_NV12_UV);
+
+		sample1_tex_RGB32_gpu = m1_tex_RGB32;
+		sample1_tex_YUY2_gpu = m1_tex_YUY2;
+		sample1_tex_Y_gpu = m1_tex_Y;
+		sample1_tex_YV12_gpu = m1_tex_YV12_UV;
+		sample1_tex_NV12_gpu = m1_tex_NV12_UV;
+
+		sample2_tex_RGB32_gpu = m2_tex_RGB32;
+		sample2_tex_YUY2_gpu = m2_tex_YUY2;
+		sample2_tex_Y_gpu = m2_tex_Y;
+		sample2_tex_YV12_gpu = m2_tex_YV12_UV;
+		sample2_tex_NV12_gpu = m2_tex_NV12_UV;
+	}
+	//mylog("prepare_rendering = %dms\n", timeGetTime()-l1);
 
 	// pass 1: render full resolution to two seperate texture
 	HRESULT hr = m_Device->BeginScene();
@@ -1711,11 +1888,11 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	{
 		// left sample
 		if (format == MEDIASUBTYPE_RGB32)
-			hr = m_Device->SetTexture(0, sample1_tex_RGB32);
+			hr = m_Device->SetTexture(0, sample1_tex_RGB32_gpu);
 		else
 		{
-			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample1_tex_YUY2 : sample1_tex_Y );
-			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample1_tex_NV12_UV : sample1_tex_YV12_UV);
+			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample1_tex_YUY2_gpu : sample1_tex_Y_gpu );
+			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample1_tex_NV12_gpu : sample1_tex_YV12_gpu);
 		}
 		hr = m_Device->SetRenderTarget(0, m_swapeyes ? right_surface : left_surface);
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
@@ -1723,11 +1900,11 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 
 		// right sample
 		if (format == MEDIASUBTYPE_RGB32)
-			hr = m_Device->SetTexture(0, sample2_tex_RGB32);
+			hr = m_Device->SetTexture(0, sample2_tex_RGB32_gpu);
 		else
 		{
-			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample2_tex_YUY2 : sample2_tex_Y );
-			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample2_tex_NV12_UV : sample2_tex_YV12_UV);
+			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample2_tex_YUY2_gpu : sample2_tex_Y_gpu );
+			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample2_tex_NV12_gpu : sample2_tex_YV12_gpu);
 		}
 		hr = m_Device->SetRenderTarget(0, m_swapeyes ? left_surface : right_surface);
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
@@ -1735,12 +1912,12 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	else
 	{
 		if (format == MEDIASUBTYPE_RGB32)
-			hr = m_Device->SetTexture(0, sample1_tex_RGB32);
+			hr = m_Device->SetTexture(0, sample1_tex_RGB32_gpu);
 		else
 		{
 
-			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample1_tex_YUY2 : sample1_tex_Y );
-			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample1_tex_NV12_UV : sample1_tex_YV12_UV);
+			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample1_tex_YUY2_gpu : sample1_tex_Y_gpu );
+			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample1_tex_NV12_gpu : sample1_tex_YV12_gpu);
 		}
 
 		if (!m_swapeyes)
@@ -1888,25 +2065,21 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 
 	}
 
-	safe_delete(m_last_rendered_sample1);
-	safe_delete(m_last_rendered_sample2);
+	//safe_delete(m_last_rendered_sample1);
+	//safe_delete(m_last_rendered_sample2);
 
 	return S_OK;
 }
 
 HRESULT my12doomRenderer::calculate_vertex()
 {
+	int l = timeGetTime();
+	if (!m_vertex_changed)
+		return S_FALSE;
+
 	double active_aspect = get_active_aspect();
 
 	CAutoLock lck(&m_frame_lock);
-	if (m_swap1)
-	{
-		CComPtr<IDirect3DSurface9> surface;
-		m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &surface);
-		D3DSURFACE_DESC desc;
-		if (SUCCEEDED(surface->GetDesc(&desc)))
-			m_uidrawer->init(desc.Width, desc.Height, m_Device);
-	}
 
 	// w,color
 	for(int i=0; i<sizeof(m_vertices) / sizeof(MyVertex); i++)
@@ -1983,8 +2156,6 @@ HRESULT my12doomRenderer::calculate_vertex()
 	else if (m_output_mode == out_tb)
 		tar.bottom /= 2;
 
-	if(m_Device && m_uidrawer ) m_uidrawer->init(tar.right, tar.bottom, m_Device);
-
 	// ui zone
 	MyVertex *ui = m_vertices + vertex_ui;
 	ui[0].x = -0.5f; ui[0].y = tar.bottom-30-0.5f;
@@ -2051,20 +2222,29 @@ HRESULT my12doomRenderer::calculate_vertex()
 	bmp[1] = tmp[1];
 	bmp[2] = tmp[2];
 	bmp[3] = tmp[3];
-	bmp[0].x += m_bmp_fleft * tar_width; bmp[0].y += m_bmp_ftop * tar_height;
-	bmp[1] = bmp[0]; bmp[1].x += m_bmp_fwidth * tar_width;
-	bmp[3] = bmp[1]; bmp[3].y += m_bmp_fheight* tar_height;
-	bmp[2] = bmp[3]; bmp[2].x -= m_bmp_fwidth * tar_width;
+	//bmp[0].x += m_bmp_fleft * tar_width; bmp[0].y += m_bmp_ftop * tar_height;
+	//bmp[1] = bmp[0]; bmp[1].x += m_bmp_fwidth * tar_width;
+	//bmp[3] = bmp[1]; bmp[3].y += m_bmp_fheight* tar_height;
+	//bmp[2] = bmp[3]; bmp[2].x -= m_bmp_fwidth * tar_width;
+	bmp[0].x = 0; bmp[0].y = 0;
+	bmp[1].x = 1; bmp[1].y = 0;
+	bmp[2].x = 0; bmp[2].y = 1;
+	bmp[3].x = 1; bmp[3].y = 1;
+
+	//bmp[0].tu = 0; bmp[0].tv = 0;
+	//bmp[1].tu = (m_bmp_width-1)/2048.0f; bmp[1].tv = 0;
+	//bmp[2].tu = 0; bmp[2].tv = (m_bmp_height-1)/1024.0f;
+	//bmp[3].tu = (m_bmp_width-1)/2048.0f; bmp[3].tv = (m_bmp_height-1)/1024.0f;
 	bmp[0].tu = 0; bmp[0].tv = 0;
-	bmp[1].tu = (m_bmp_width-1)/2048.0f; bmp[1].tv = 0;
-	bmp[2].tu = 0; bmp[2].tv = (m_bmp_height-1)/1024.0f;
-	bmp[3].tu = (m_bmp_width-1)/2048.0f; bmp[3].tv = (m_bmp_height-1)/1024.0f;
+	bmp[1].tu = 1; bmp[1].tv = 0;
+	bmp[2].tu = 0; bmp[2].tv = 1;
+	bmp[3].tu = 1; bmp[3].tv = 1;
 
 	MyVertex *bmp2 = m_vertices + vertex_bmp2;
 	for(int i=0; i<4; i++)
 	{
 		bmp2[i] = bmp[i];
-		bmp2[i].x -= tar_width * (m_bmp_offset);
+		//bmp2[i].x -= tar_width * (m_bmp_offset);
 	}
 
 	tmp = m_vertices + vertex_pass3;
@@ -2115,11 +2295,18 @@ HRESULT my12doomRenderer::calculate_vertex()
 	if (!g_VertexBuffer)
 		return S_FALSE;
 
+	int l2 = timeGetTime();
+
 	void *pVertices = NULL;
-	g_VertexBuffer->Lock( 0, sizeof(m_vertices), (void**)&pVertices, D3DLOCK_DISCARD );
+	g_VertexBuffer->Lock( 0, sizeof(m_vertices), (void**)&pVertices, NULL );
 	memcpy( pVertices, m_vertices, sizeof(m_vertices) );
 	g_VertexBuffer->Unlock();
-	
+	m_vertex_subtitle->Lock( 0, sizeof(m_vertices), (void**)&pVertices, NULL );
+	memcpy( pVertices, m_vertices, sizeof(m_vertices) );
+	m_vertex_subtitle->Unlock();
+
+	mylog("calculate_vertex(): calculate = %dms, Lock()=%dms.\n", l2-l, timeGetTime()-l2);
+	m_vertex_changed = false;
 	return S_OK;
 }
 HRESULT my12doomRenderer::generate_mask()
@@ -2132,11 +2319,9 @@ HRESULT my12doomRenderer::generate_mask()
 
 	CAutoLock lck(&m_frame_lock);
 	D3DLOCKED_RECT locked;
-	HRESULT hr = m_tex_mask->LockRect(0, &locked, NULL, D3DLOCK_DISCARD);
+	HRESULT hr = m_tex_mask->LockRect(0, &locked, NULL, NULL);
 	if (FAILED(hr)) return hr;
 
-	RECT rect;
-	GetWindowRect(m_hWnd, &rect);
 	BYTE *dst = (BYTE*) locked.pBits;
 
 	if (m_mask_mode == row_interlace)
@@ -2144,7 +2329,7 @@ HRESULT my12doomRenderer::generate_mask()
 		// init row mask texture
 		BYTE one_line[2048];
 		for(DWORD i=0; i<2048; i++)
-			one_line[i] = (i+rect.left)%2 == 0 ? 0 : 255;
+			one_line[i] = i%2 == 0 ? 0 : 255;
 
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
 		{
@@ -2156,7 +2341,7 @@ HRESULT my12doomRenderer::generate_mask()
 	{
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
 		{
-			memset(dst, (i+rect.top)%2 == 0 ? 255 : 0 ,m_active_pp.BackBufferWidth);
+			memset(dst, i%2 == 0 ? 255 : 0 ,m_active_pp.BackBufferWidth);
 			dst += locked.Pitch;
 		}
 	}
@@ -2165,7 +2350,7 @@ HRESULT my12doomRenderer::generate_mask()
 		// init row mask texture
 		BYTE one_line[2048];
 		for(DWORD i=0; i<2048; i++)
-			one_line[i] = (i+rect.left)%2 == 0 ? 0 : 255;
+			one_line[i] = i%2 == 0 ? 0 : 255;
 
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
 		{
@@ -2228,18 +2413,13 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 	return S_OK;
 }
 
-HRESULT my12doomRenderer::recaculate_mask()
-{
-	return generate_mask();
-	repaint_video();
-}
-
 HRESULT my12doomRenderer::pump()
 {
 	BOOL success = FALSE;
 	RECT rect;
 	if (m_hWnd)
 	{
+		GetWindowRect(m_hWnd, &m_window_rect);
 		success = GetClientRect(m_hWnd, &rect);
 		if (success && rect.right > 0 && rect.bottom > 0)
 		if (m_active_pp.BackBufferWidth != rect.right-rect.left || m_active_pp.BackBufferHeight != rect.bottom - rect.top)
@@ -2302,7 +2482,6 @@ HRESULT my12doomRenderer::set_output_mode(int mode)
 HRESULT my12doomRenderer::set_mask_mode(int mode)
 {
 	m_mask_mode = (mask_mode_types)(mode % mask_mode_types_max);
-	calculate_vertex();
 	generate_mask();
 	repaint_video();
 	return S_OK;
@@ -2317,7 +2496,6 @@ HRESULT my12doomRenderer::set_mask_color(int id, DWORD color)
 	else
 		return E_INVALIDARG;
 
-	calculate_vertex();
 	repaint_video();
 	return S_OK;
 }
@@ -2377,14 +2555,14 @@ HRESULT my12doomRenderer::set_movie_pos(int dimention, double offset)		// diment
 	else
 		return E_INVALIDARG;
 
-	calculate_vertex();
+	m_vertex_changed = true;
 	repaint_video();
 	return S_OK;
 }
 HRESULT my12doomRenderer::set_aspect(double aspect)
 {
 	m_forced_aspect = aspect;
-	calculate_vertex();
+	m_vertex_changed = true;
 	if (m_output_mode == pageflipping)
 		terminate_render_thread();
 	repaint_video();
@@ -2432,25 +2610,14 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 	if (m_device_state >= device_lost)
 		return S_FALSE;			// TODO : of source it's not SUCCESS
 
-	CAutoLock lck2(&m_frame_lock);
-
-	bool changed = true;
 	if (data == NULL)
 	{
-		if (m_bmp_fleft < -9990.0 && m_bmp_ftop < -9990.0)
-			changed = false;
-		m_bmp_fleft = m_bmp_ftop = -9999.0;
-		m_bmp_fwidth = m_bmp_fheight = 1.0;
-		m_bmp_width = 2048;
-		m_bmp_height = 1024;
+		m_has_subtitle = false;
 	}
+
 	else
 	{
-		RECT lock_rect = {0, 0, 2048, min(1024, height+16)};
-		D3DLOCKED_RECT locked;
-		HRESULT hr = m_tex_bmp->LockRect(0, &locked, &lock_rect, NULL);
-		if (FAILED(hr))
-			return hr;		// device might be lost
+		m_has_subtitle = true;
 
 		m_bmp_fleft = fleft;
 		m_bmp_ftop = ftop;
@@ -2460,75 +2627,24 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 		m_bmp_height = height;
 
 
-		BYTE *src = (BYTE*)data;
-		BYTE *dst = (BYTE*) locked.pBits;
-		for(int y=0; y<min(994,height); y++)
 		{
-			memset(dst, 0, locked.Pitch);
-			memcpy(dst, src, width*4);
-			dst += locked.Pitch;
-			src += width*4;
-		}
-		for(int y=min(994,height); y<min(994, height+16); y++)
-		{
-			memset(dst, 0, locked.Pitch);
-			dst += locked.Pitch;
+			CAutoLock lck2(&m_bmp_lock);
+			BYTE *src = (BYTE*)data;
+			BYTE *dst = (BYTE*) m_bmp_locked_rect.pBits;
+			for(int y=0; y<min(1024,height); y++)
+			{
+				memset(dst, 0, m_bmp_locked_rect.Pitch);
+				memcpy(dst, src, width*4);
+				dst += m_bmp_locked_rect.Pitch;
+				src += width*4;
+			}
+			m_bmp_changed = true;
 		}
 
-		m_tex_bmp->UnlockRect(0);
-	}
-
-	if (changed)
-	{
-		calculate_vertex();
+		//m_vertex_changed = true;
 		repaint_video();
 	}
-	return S_OK;
-}
 
-HRESULT my12doomRenderer::set_ui(void* data, int pitch)
-{
-	return VFW_E_WRONG_STATE;
-
-	// set ui speed limit: 15fps
-	if (abs((int)(m_last_ui_draw - timeGetTime())) < 66)
-		return E_FAIL;
-
-	m_last_ui_draw = timeGetTime();
-
-	{
-		CAutoLock lck2(&m_frame_lock);
-
-		bool should_recalculate_vertex = true;
-		if (data == NULL)
-		{
-			m_showui = false;
-		}
-		else
-		{
-			int width = m_active_pp.BackBufferWidth;
-			int height = 30;
-
-			RECT lock_rect = {0, 1024-30, width, 1024-30+height};
-			D3DLOCKED_RECT locked;
-			HRESULT hr = m_tex_bmp->LockRect(0, &locked, &lock_rect, NULL);
-			if (FAILED(hr))
-				return hr;		// device might be lost
-
-			BYTE *src = (BYTE*)data;
-			BYTE *dst = (BYTE*) locked.pBits;
-			for(int y=0; y<height; y++)
-			{
-				memcpy(dst, src, width*4);
-				dst += locked.Pitch;
-				src += pitch;
-			}
-			m_tex_bmp->UnlockRect(0);
-			m_showui = true;
-		}
-	}
-
-	repaint_video();
 	return S_OK;
 }
 
@@ -2550,7 +2666,7 @@ HRESULT my12doomRenderer::set_bmp_offset(double offset)
 	if (m_bmp_offset != offset)
 	{
 		m_bmp_offset = offset;
-		calculate_vertex();
+		m_vertex_changed = true;
 		repaint_video();
 	}
 
@@ -2562,7 +2678,7 @@ HRESULT my12doomRenderer::set_parallax(double parallax)
 	if (m_parallax != parallax)
 	{
 		m_parallax = parallax;
-		calculate_vertex();
+		m_vertex_changed = true;
 		repaint_video();
 	}
 
@@ -2589,7 +2705,7 @@ HRESULT gpu_sample::prepare_rendering()
 
 	return S_OK;
 }
-gpu_sample::gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int width, int height, CLSID format, bool topdown_RGB32)
+gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, D3DPOOL pool)
 {
 	CAutoLock lck(&g_gpu_lock);
 	m_tex_RGB32 = m_tex_YUY2 = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
@@ -2599,7 +2715,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int widt
 	m_format = format;
 	m_topdown = topdown_RGB32;
 	HRESULT hr;
-	if (!pool || !memory_sample)
+	if (!allocator || !memory_sample)
 		goto clearup;
 
 	memory_sample->GetTime(&m_start, &m_end);
@@ -2608,54 +2724,29 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int widt
 
 	int l = timeGetTime();
 	// texture creation
-	if (DWINDOW_SURFACE_MANAGED)
+	if (m_format == MEDIASUBTYPE_YUY2)
 	{
-		if (m_format == MEDIASUBTYPE_YUY2)
-		{
-			JIF( pool->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&m_tex_YUY2));
-		}
-
-		else if (m_format == MEDIASUBTYPE_RGB32)
-		{
-			JIF( pool->CreateTexture(m_width, m_height, NULL, D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,	&m_tex_RGB32));
-		}
-
-		else if (m_format == MEDIASUBTYPE_NV12)
-		{
-			JIF( pool->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_Y));
-			JIF( pool->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,D3DPOOL_MANAGED,	&m_tex_NV12_UV));
-		}
-
-		else if (m_format == MEDIASUBTYPE_YV12)
-		{
-			JIF( pool->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_Y));
-			JIF( pool->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,D3DPOOL_MANAGED,	&m_tex_YV12_UV));
-		}
+		JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8,pool,	&m_tex_YUY2));
 	}
-	else
+
+	else if (m_format == MEDIASUBTYPE_RGB32)
 	{
-		if (m_format == MEDIASUBTYPE_YUY2)
-		{
-			JIF( pool->CreateTexture(m_width/2, m_height, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_YUY2));
-		}
-
-		else if (m_format == MEDIASUBTYPE_RGB32)
-		{
-			JIF( pool->CreateTexture(m_width, m_height, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_RGB32));
-		}
-
-		else if (m_format == MEDIASUBTYPE_NV12)
-		{
-			JIF( pool->CreateTexture(m_width, m_height, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_Y));
-			JIF( pool->CreateTexture(m_width/2, m_height/2, D3DUSAGE_DYNAMIC, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_NV12_UV));
-		}
-
-		else if (m_format == MEDIASUBTYPE_YV12)
-		{
-			JIF( pool->CreateTexture(m_width, m_height, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_Y));
-			JIF( pool->CreateTexture(m_width/2, m_height, D3DUSAGE_DYNAMIC, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_YV12_UV));
-		}
+		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_A8R8G8B8,pool,	&m_tex_RGB32));
 	}
+
+	else if (m_format == MEDIASUBTYPE_NV12)
+	{
+		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,pool,	&m_tex_Y));
+		JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,pool,	&m_tex_NV12_UV));
+	}
+
+	else if (m_format == MEDIASUBTYPE_YV12)
+	{
+		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,pool,	&m_tex_Y));
+		JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,pool,	&m_tex_YV12_UV));
+	}
+
+	m_pool = pool;
 
 
 	int l2 = timeGetTime();
@@ -2664,7 +2755,6 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int widt
 	BYTE * src;
 	BYTE * dst;
 	memory_sample->GetPointer(&src);
-	DWORD lock_flag = DWINDOW_SURFACE_MANAGED ? NULL : D3DLOCK_DISCARD;
 	if (m_format == MEDIASUBTYPE_RGB32)
 	{
 		for(int i=0; i<m_height; i++)
@@ -2739,8 +2829,9 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTexturePool *pool, int widt
 			dst += d3dlr2.Pitch;
 		}
 	}
+	//prepare_rendering();
 	//if (timeGetTime() - l > 5)
-		mylog("load():createTexture time:%d ms, load data to GPU cost %d ms.\n", l2- l, timeGetTime()-l2);
+		//mylog("load():createTexture time:%d ms, load data to GPU cost %d ms.\n", l2- l, timeGetTime()-l2);
 
 	return;
 

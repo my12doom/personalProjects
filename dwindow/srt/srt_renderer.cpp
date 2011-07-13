@@ -83,8 +83,8 @@ HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_ti
 
 		HFONT hOldFont = (HFONT) SelectObject(hdcBmp, m_font);
 
-		RECT rect = {0,0,0,0};
-		DrawTextW(hdcBmp, found, (int)wcslen(found), &rect, DT_CENTER | DT_CALCRECT);
+		RECT rect = {0,0,1920,1080};
+		DrawTextW(hdcBmp, found, (int)wcslen(found), &rect, DT_CENTER | DT_CALCRECT | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL);
 		out->pixel_type = out->pixel_type_RGB;
 		out->height_pixel = rect.bottom - rect.top;
 		out->width_pixel  = rect.right - rect.left;

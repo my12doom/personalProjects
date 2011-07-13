@@ -209,3 +209,29 @@ float4 UI(float2 tex : TEXCOORD0) : COLOR
 	o[3] *= a;
 	return o;
 }
+
+#define sx2 (p0[0])
+#define sy2 (p0[1])
+#define cx2 (p0[2])
+#define cy2 (p0[3])
+#define tsx (p1[0])
+#define tsy (p1[1])
+#define tcx (p1[2])
+#define tcy (p1[3])
+struct VS_OUTPUT
+{
+	float4 position : POSITION;
+	float2 tex : TEXCOORD0;
+};
+VS_OUTPUT vs_subtitle(VS_OUTPUT IN)
+{
+	VS_OUTPUT o;
+	o.position.z = IN.position.z;
+	o.position.w = 1;
+	o.position.x = IN.position.x * cx2 + sx2;
+	o.position.y = IN.position.y * cy2 + sy2;
+	o.tex.x = IN.tex.x * tcx + tsx;
+	o.tex.y = IN.tex.y * tcy + tsy;
+	
+	return o;
+}

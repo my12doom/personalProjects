@@ -210,9 +210,17 @@ HRESULT my12doomRendererDShow::ShouldDrawSampleNow(IMediaSample *pMediaSample,
 												__inout REFERENCE_TIME *ptrStart,
 												__inout REFERENCE_TIME *ptrEnd)
 {
+	return S_FALSE;
+
+	REFERENCE_TIME start = *ptrStart;
+	REFERENCE_TIME end = *ptrEnd;
+
 	HRESULT hr = __super::ShouldDrawSampleNow(pMediaSample, ptrStart, ptrEnd);
 
-	if (FAILED(hr) && m_owner->m_frame_length > (1000*10000/45))		// only drop frame on file with 45+fps
+	*ptrStart = start;
+	*ptrEnd = end;
+
+	if (FAILED(hr) /*&& m_owner->m_frame_length > (1000*10000/45)*/)		// only drop frame on file with 45+fps
 		hr = S_OK;
 
 	return hr;

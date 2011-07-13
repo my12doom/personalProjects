@@ -22,7 +22,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	LPD3DXBUFFER pCode = NULL;
 	LPD3DXBUFFER pErrorMsgs = NULL;
-	HRESULT hr = D3DXCompileShaderFromFile(argv[1], NULL, NULL, T2A(argv[3]), "ps_3_0", D3DXSHADER_OPTIMIZATION_LEVEL3, &pCode, &pErrorMsgs, NULL);
+
+	HRESULT hr ;
+	if (argc>=6)
+		hr = D3DXCompileShaderFromFile(argv[1], NULL, NULL, T2A(argv[3]), T2A(argv[5]), D3DXSHADER_OPTIMIZATION_LEVEL3, &pCode, &pErrorMsgs, NULL);
+	else
+		hr = D3DXCompileShaderFromFile(argv[1], NULL, NULL, T2A(argv[3]), "ps_3_0", D3DXSHADER_OPTIMIZATION_LEVEL3, &pCode, &pErrorMsgs, NULL);
 	if (pErrorMsgs != NULL)
 	{
 		unsigned char* message = (unsigned char*)pErrorMsgs->GetBufferPointer();
@@ -41,7 +46,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			int size = pCode->GetBufferSize();
 			DWORD *codes = (DWORD *)malloc(size);
 			memcpy(codes, pCode->GetBufferPointer(), size);
-			if (argc<5)
+			if (argc<5 || wcscmp(argv[4], L"yes") == 0)
 			{
 				for(int i=0; i<size/16*16; i+=16)
 				codec.encrypt(((unsigned char*)codes)+i, ((unsigned char*)codes)+i);
