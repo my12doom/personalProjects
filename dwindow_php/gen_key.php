@@ -74,7 +74,7 @@ $result = mysql_query("delete FROM active_passkeys WHERE user='".$user."'");
 $result = mysql_query("INSERT INTO active_passkeys (passkey, user) values('".$passkey."', '".$user."')");
 
 // encode them to RSA activation code
-$passkey = $com->genkeys($passkey, time(), 0x7fffffff);
+$passkey = $com->genkeys($passkey, time() - (12*7*3600), 0x7fffffff);
 $passkey = $com->AES($passkey, $return_key);
 echo $passkey;
 ?>
