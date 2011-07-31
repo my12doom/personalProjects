@@ -265,6 +265,7 @@ protected:
 	gpu_sample * m_last_rendered_sample1;
 	gpu_sample * m_last_rendered_sample2;
 	CCritSec m_packet_lock;
+	CCritSec m_pool_lock;
 
 	// dx9 functions and variables
 	enum device_state
@@ -284,8 +285,10 @@ protected:
 	HRESULT handle_device_state();							//handle device create/recreate/lost/reset
 	HRESULT create_render_thread();
 	HRESULT terminate_render_thread();
-	HRESULT invalidate_objects();
-	HRESULT restore_objects();
+	HRESULT invalidate_gpu_objects();
+	HRESULT invalidate_cpu_objects();
+	HRESULT restore_gpu_objects();
+	HRESULT restore_cpu_objects();
 	HRESULT render_nolock(bool forced = false);
 	HRESULT draw_movie(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_bmp(IDirect3DSurface9 *surface, bool left_eye);
@@ -408,3 +411,37 @@ protected:
 public:
 	float m_volume;
 };
+
+/*
+main gpu:
+
+m_mask_temp_left
+m_mask_temp_right
+m_tex_rgb_full
+m_tex_rgb_left
+m_tex_rgb_right
+m_tex_bmp
+m1_tex_YUY2
+m2_tex_YUY2
+m1_tex_RGB32
+m2_tex_RGB32
+m1_tex_Y
+m1_tex_NV12_UV
+m2_tex_Y
+m2_tex_NV12_UV
+m1_tex_Y
+m1_tex_YV12_UV
+m2_tex_Y
+m2_tex_YV12_UV
+
+g_VertexBuffer
+m_vertex_subtitle
+
+
+main cpu:
+m_tex_mask
+m_tex_bmp_mem
+m_mem
+m_surface_rgb_backup_full
+
+*/

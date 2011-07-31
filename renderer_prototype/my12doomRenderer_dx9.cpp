@@ -176,7 +176,7 @@ void my12doomRenderer::init_variables()
 my12doomRenderer::~my12doomRenderer()
 {
 	terminate_render_thread();
-	invalidate_objects();
+	invalidate_gpu_objects();
 	if (m_pool) delete m_pool;
 	m_Device = NULL;
 	m_D3D = NULL;
@@ -411,7 +411,20 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 		bit_per_pixel = 32;
 
 	bool should_render = false;
-	gpu_sample * loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32);
+
+	gpu_sample * loaded_sample = NULL;
+	{
+retry:
+		CAutoLock lck(&m_pool_lock);
+		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32);
+
+		if ( (m_dsr0->m_format == MEDIASUBTYPE_RGB32 && (!loaded_sample->m_tex_RGB32 || loaded_sample->m_tex_RGB32->creator != m_Device)) ||
+			 (m_dsr0->m_format == MEDIASUBTYPE_YUY2 && (!loaded_sample->m_tex_YUY2 || loaded_sample->m_tex_YUY2->creator != m_Device)) ||
+			 ((!loaded_sample->m_tex_Y || loaded_sample->m_tex_Y->creator != m_Device) && (m_dsr0->m_format == MEDIASUBTYPE_YV12 || m_dsr1->m_format == MEDIASUBTYPE_NV12))  )
+		{
+			goto retry;
+		}
+	}
 	int l2 = timeGetTime();
 	if (!m_dsr1->is_connected())
 	{
@@ -496,12 +509,13 @@ HRESULT my12doomRenderer::create_render_targets()
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_left, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_right, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, NULL, D3DFMT_L8, D3DPOOL_MANAGED, &m_tex_mask, NULL));
-	FAIL_RET( m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, TRUE, &m_nv3d_surface, NULL));
+	FAIL_RET( m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, TRUE, &m_nv3d_surface, NULL));
 	FAIL_RET(generate_mask());
 
 	// add 3d vision tag at last line on need
 	if (m_output_mode == NV3D && m_nv3d_surface)
 	{
+		mylog("Adding NV3D Tag.\n");
 		D3DLOCKED_RECT lr;
 		RECT lock_tar={0, m_active_pp.BackBufferHeight, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1};
 		FAIL_RET(m_nv3d_surface->LockRect(&lr,&lock_tar,0));
@@ -509,9 +523,11 @@ HRESULT my12doomRenderer::create_render_targets()
 		pSIH->dwSignature = NVSTEREO_IMAGE_SIGNATURE;
 		pSIH->dwBPP = 32;
 		pSIH->dwFlags = SIH_SIDE_BY_SIDE;
-		pSIH->dwWidth = m_active_pp.BackBufferWidth;
+		pSIH->dwWidth = m_active_pp.BackBufferWidth*2;
 		pSIH->dwHeight = m_active_pp.BackBufferHeight;
 		FAIL_RET(m_nv3d_surface->UnlockRect());
+
+		mylog("NV3D Tag Added.\n");
 	}
 
 	return hr;
@@ -602,8 +618,8 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 	{
 		terminate_render_thread();
 		CAutoLock lck(&m_frame_lock);
-		FAIL_SLEEP_RET(invalidate_objects());
-		FAIL_SLEEP_RET(restore_objects());
+		FAIL_SLEEP_RET(invalidate_gpu_objects());
+		FAIL_SLEEP_RET(restore_gpu_objects());
 		m_device_state = fine;
 	}
 
@@ -613,7 +629,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		CAutoLock lck(&m_frame_lock);
 		mylog("reseting device.\n");
 		int l = timeGetTime();
-		FAIL_SLEEP_RET(invalidate_objects());
+		FAIL_SLEEP_RET(invalidate_gpu_objects());
 		mylog("invalidate objects: %dms.\n", timeGetTime() - l);
 		HRESULT hr = m_Device->Reset( &m_new_pp );
 		hr = m_Device->Reset( &m_new_pp );
@@ -624,7 +640,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		}
 		m_active_pp = m_new_pp;
 		mylog("Device->Reset: %dms.\n", timeGetTime() - l);
-		FAIL_SLEEP_RET(restore_objects());
+		FAIL_SLEEP_RET(restore_gpu_objects());
 		mylog("restore objects: %dms.\n", timeGetTime() - l);
 		m_device_state = fine;
 
@@ -640,7 +656,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		{
 			terminate_render_thread();
 			CAutoLock lck(&m_frame_lock);
-			FAIL_SLEEP_RET(invalidate_objects());
+			FAIL_SLEEP_RET(invalidate_gpu_objects());
 			HRESULT hr = m_Device->Reset( &m_new_pp );
 
 			if( FAILED(hr ) )
@@ -649,7 +665,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 				return hr;
 			}
 			m_active_pp = m_new_pp;
-			FAIL_SLEEP_RET(restore_objects());
+			FAIL_SLEEP_RET(restore_gpu_objects());
 			
 			m_device_state = fine;
 			return hr;
@@ -664,18 +680,44 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 	else if (m_device_state == need_create)
 	{
-		ZeroMemory( &m_active_pp, sizeof(m_active_pp) );
-		m_active_pp.Windowed               = TRUE;
-		m_active_pp.SwapEffect             = D3DSWAPEFFECT_DISCARD;
-		m_active_pp.PresentationInterval   = D3DPRESENT_INTERVAL_ONE;
-		m_active_pp.BackBufferCount = 1;
-		m_active_pp.Flags = D3DPRESENTFLAG_VIDEO;
+		if (!m_Device)
+		{
+			ZeroMemory( &m_active_pp, sizeof(m_active_pp) );
+			m_active_pp.Windowed               = TRUE;
+			m_active_pp.SwapEffect             = D3DSWAPEFFECT_DISCARD;
+			m_active_pp.PresentationInterval   = D3DPRESENT_INTERVAL_ONE;
+			m_active_pp.BackBufferCount = 1;
+			m_active_pp.Flags = D3DPRESENTFLAG_VIDEO;
+			m_active_pp.BackBufferFormat = D3DFMT_A8R8G8B8;
 
-		m_style = GetWindowLongPtr(m_hWnd, GWL_STYLE);
-		m_exstyle = GetWindowLongPtr(m_hWnd, GWL_EXSTYLE);
-		GetWindowRect(m_hWnd, &m_window_pos);
+			m_style = GetWindowLongPtr(m_hWnd, GWL_STYLE);
+			m_exstyle = GetWindowLongPtr(m_hWnd, GWL_EXSTYLE);
+			GetWindowRect(m_hWnd, &m_window_pos);
 
-		set_fullscreen(false);
+			set_fullscreen(false);
+
+			/*
+			set_fullscreen(true);
+			m_active_pp.BackBufferWidth = 1680;
+			m_active_pp.BackBufferHeight = 1050;
+			m_active_pp.Windowed = FALSE;
+			*/
+		}
+		else
+		{
+			terminate_render_thread();
+			CAutoLock lck(&m_frame_lock);
+			invalidate_gpu_objects();
+			invalidate_cpu_objects();
+			if(m_uidrawer)
+			{
+				delete m_uidrawer;
+				m_uidrawer = NULL;
+			}
+			m_uidrawer = new ui_drawer_dwindow;
+			m_Device = NULL;
+			m_active_pp = m_new_pp;
+		}
 
 		UINT AdapterToUse=D3DADAPTER_DEFAULT;
 		D3DDEVTYPE DeviceType=D3DDEVTYPE_HAL;
@@ -714,6 +756,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			}
 #endif
 		}
+		CAutoLock lck(&m_frame_lock);
 		HRESULT hr = m_D3D->CreateDevice( AdapterToUse, DeviceType,
 			m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
 			&m_active_pp, &m_Device );
@@ -723,8 +766,11 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		m_new_pp = m_active_pp;
 		m_device_state = need_reset_object;
 
-		if (m_pool) delete m_pool;
-		m_pool = new CTextureAllocator(m_Device);
+		{
+			CAutoLock lck(&m_pool_lock);
+			if (m_pool) delete m_pool;
+			m_pool = new CTextureAllocator(m_Device);
+		}
 
 		// NV3D acitivation check
 		if (m_nv3d_enabled)
@@ -753,7 +799,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			res = NvAPI_Stereo_DestroyHandle(h3d);
 		}
 
-		FAIL_SLEEP_RET(restore_objects());
+		FAIL_SLEEP_RET(restore_gpu_objects());
 		m_device_state = fine;
 	}
 
@@ -772,7 +818,7 @@ HRESULT my12doomRenderer::reset()
 {
 	terminate_render_thread();
 	CAutoLock lck(&m_frame_lock);
-	invalidate_objects();
+	invalidate_gpu_objects();
 	set_device_state(need_reset_object);
 	init_variables();
 
@@ -796,9 +842,19 @@ HRESULT my12doomRenderer::terminate_render_thread()
 
 	return S_OK;
 }
-HRESULT my12doomRenderer::invalidate_objects()
+
+HRESULT my12doomRenderer::invalidate_cpu_objects()
 {
-	m_uidrawer->invalidate();
+	m_uidrawer->invalidate_cpu();
+	if (m_pool) m_pool->DestroyPool(D3DPOOL_MANAGED);
+	if (m_pool) m_pool->DestroyPool(D3DPOOL_SYSTEMMEM);
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::invalidate_gpu_objects()
+{
+	m_uidrawer->invalidate_gpu();
 	// pixel shader
 	m_ps_yv12 = NULL;
 	m_ps_nv12 = NULL;
@@ -840,7 +896,7 @@ HRESULT my12doomRenderer::invalidate_objects()
 		safe_delete(m_sample2render_2);
 	}
 
-	if (m_pool) m_pool->DestroyPool();
+	if (m_pool) m_pool->DestroyPool(D3DPOOL_DEFAULT);
 
 	// surfaces
 	m_test_rt64 = NULL;
@@ -854,7 +910,7 @@ HRESULT my12doomRenderer::invalidate_objects()
 
 	return S_OK;
 }
-HRESULT my12doomRenderer::restore_objects()
+HRESULT my12doomRenderer::restore_gpu_objects()
 {
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
@@ -1063,10 +1119,10 @@ HRESULT my12doomRenderer::restore_rgb()
 		return S_FALSE;
 
 	mylog("restore_rgb() start\n");
+	CAutoLock lck(&m_frame_lock);
 	HRESULT hr = S_OK;
 	CComPtr<IDirect3DSurface9> live_surface_left;
 	CComPtr<IDirect3DSurface9> live_surface_right;
-	CAutoLock lck(&m_frame_lock);
 	if (!m_tex_rgb_left || ! m_tex_rgb_right || !m_surface_rgb_backup_full)
 		goto clearup;
 
@@ -1351,7 +1407,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	{
 		static int left = 0;
 		double delta = (double)timeGetTime()-m_pageflipping_start;
-		int frame_passed = max(1, floor(delta/8));
+		int frame_passed = max(1, floor(delta/9));
 		if (frame_passed>1 || frame_passed <= 0)
 			mylog("delta=%d.\n", (int)delta);
 		left += frame_passed;
@@ -2424,6 +2480,7 @@ HRESULT my12doomRenderer::pump()
 		if (success && rect.right > 0 && rect.bottom > 0)
 		if (m_active_pp.BackBufferWidth != rect.right-rect.left || m_active_pp.BackBufferHeight != rect.bottom - rect.top)
 		{
+			if (m_active_pp.Windowed)
 			set_device_state(need_resize_back_buffer);
 		}
 	}
@@ -2433,6 +2490,7 @@ HRESULT my12doomRenderer::pump()
 		success = GetClientRect(m_hWnd2, &rect);
 		if (success && rect.right > 0 && rect.bottom > 0)
 		if (m_active_pp2.BackBufferWidth != rect.right-rect.left || m_active_pp2.BackBufferHeight != rect.bottom - rect.top)
+			if (m_active_pp.Windowed)
 			set_device_state(need_resize_back_buffer);
 	}
 
