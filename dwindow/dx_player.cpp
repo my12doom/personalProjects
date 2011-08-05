@@ -182,7 +182,7 @@ m_bitstreaming(L"BitStreaming", false)
 
 	// show it!
 	show_window(1, true);
-	show_window(2, m_output_mode == dual_window);
+	show_window(2, m_output_mode == dual_window || m_output_mode == iz3d);
 
 	// to init video zone
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);
@@ -669,6 +669,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR,		m_output_mode == dual_window ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_SBS,	m_output_mode == out_sbs ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_TB,		m_output_mode == out_tb ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_OUTPUTMODE_IZ3D,					m_output_mode == iz3d ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_GERNERAL120HZGLASSES,	m_output_mode == pageflipping ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				m_output_mode == out_hsbs ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
@@ -900,7 +901,7 @@ LRESULT dx_player::on_timer(int id)
 
 LRESULT dx_player::on_move(int id, int x, int y)
 {
-	if (id == 1 && init_done_flag == 0x12345678)
+	if (id == 1 && init_done_flag == 0x12345678 && !m_full1)
 	{
 		RECT rect1;
 		GetWindowRect(id_to_hwnd(1), &rect1);
@@ -909,16 +910,32 @@ LRESULT dx_player::on_move(int id, int x, int y)
 		SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + x, m_screen2.top + y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 	}
 
+	else if (id == 2 && init_done_flag == 0x12345678 && !m_full2)
+	{
+		RECT rect2;
+		GetWindowRect(id_to_hwnd(2), &rect2);
+		x = rect2.left - m_screen2.left;
+		y = rect2.top - m_screen2.top;
+		SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + x, m_screen1.top + y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+	}
+
 	return S_OK;
 }
 
 LRESULT dx_player::on_size(int id, int type, int x, int y)
 {
-	if (id == 1 && init_done_flag == 0x12345678)
+	if (id == 1 && init_done_flag == 0x12345678 && !m_full1)
 	{
 		RECT rect1;
 		GetWindowRect(id_to_hwnd(1), &rect1);
 		SetWindowPos(id_to_hwnd(2), NULL, 0, 0, rect1.right - rect1.left, rect1.bottom - rect1.top, SWP_NOZORDER | SWP_NOMOVE);
+	}
+
+	else if (id == 2 && init_done_flag == 0x12345678 && !m_full2)
+	{
+		RECT rect2;
+		GetWindowRect(id_to_hwnd(2), &rect2);
+		SetWindowPos(id_to_hwnd(1), NULL, 0, 0, rect2.right - rect2.left, rect2.bottom - rect2.top, SWP_NOZORDER | SWP_NOMOVE);
 	}
 
 	if (m_renderer1)
@@ -1108,6 +1125,12 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		m_output_mode = out_htb;
 		if (m_renderer1)
 			m_renderer1->set_output_mode(m_output_mode);			
+	}
+	else if (uid == ID_OUTPUTMODE_IZ3D)
+	{
+		m_output_mode = iz3d;
+		if (m_renderer1)
+			m_renderer1->set_output_mode(m_output_mode);
 	}
 	else if (uid == ID_OUTPUTMODE_GERNERAL120HZGLASSES)
 	{
@@ -1318,7 +1341,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		enable_subtitle_track(trackid);
 	}
 
-	if (m_output_mode == dual_window)
+	if (m_output_mode == dual_window || m_output_mode == iz3d)
 	{
 		show_window(2, true);
 		set_fullscreen(2, m_full1);
@@ -2405,7 +2428,7 @@ HRESULT dx_player::toggle_fullscreen()
 			m_renderer1->set_fullscreen(!m_renderer1->get_fullscreen());
 	}
 
-	else if (m_output_mode == dual_window)
+	else if (m_output_mode == dual_window || m_output_mode == iz3d)
 	{
 		//show_window(2, !m_full2);		// show/hide it before set fullscreen, or you may got a strange window
 		show_window(2, true);

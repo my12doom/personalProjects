@@ -233,6 +233,7 @@ BEGIN
                 END
                 MENUITEM "Nvidia 3D Vision",            ID_OUTPUTMODE_NVIDIA3DVISION
                 MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
+                MENUITEM "IZ3D Displayer",              ID_OUTPUTMODE_IZ3D
                 MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
             END
             POPUP "Aspect Ratio"

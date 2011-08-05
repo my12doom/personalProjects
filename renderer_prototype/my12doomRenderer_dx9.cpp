@@ -1343,7 +1343,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_Device->SetTexture( 0, m_mask_temp_left );
 		m_Device->SetTexture( 1, m_mask_temp_right );
 		m_Device->SetPixelShader(m_ps_anaglyph);
-		m_Device->SetPixelShader(m_ps_iz3d_front);
 
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
@@ -1455,6 +1454,55 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	}
 
+	else if (m_output_mode == iz3d)
+	{
+		CComPtr<IDirect3DSurface9> temp_surface;
+		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
+		clear(temp_surface);
+		draw_movie(temp_surface, true);
+		draw_bmp(temp_surface, true);
+		temp_surface = NULL;
+		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
+		clear(temp_surface);
+		draw_movie(temp_surface, false);
+		draw_bmp(temp_surface, false);
+
+		// pass3: analyph
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+		m_Device->SetRenderTarget(0, back_buffer);
+		m_Device->SetTexture( 0, m_mask_temp_left );
+		m_Device->SetTexture( 1, m_mask_temp_right );
+		m_Device->SetPixelShader(m_ps_iz3d_back);
+
+		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = m_Device->SetFVF( FVF_Flags );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+
+		// set render target to swap chain2
+		if (m_swap2)
+		{
+			CComPtr<IDirect3DSurface9> back_buffer2;
+			m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
+			hr = m_Device->SetRenderTarget(0, back_buffer2);
+
+			// back ground
+			#ifdef DEBUG
+			m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
+			#else
+			m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
+			#endif
+
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetPixelShader(m_ps_iz3d_front);
+			hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+			hr = m_Device->SetFVF( FVF_Flags );
+			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+		}
+
+		// UI
+		m_Device->SetPixelShader(NULL);
+		draw_ui(back_buffer);
+	}
 	else if (m_output_mode == out_sbs || m_output_mode == out_tb || m_output_mode == out_hsbs || m_output_mode == out_htb)
 	{
 		CComPtr<IDirect3DSurface9> temp_surface;
@@ -1534,7 +1582,7 @@ presant:
 	if (m_output_mode == pageflipping)
 		m_pageflipping_start = timeGetTime();
 
-	if (m_output_mode == dual_window)
+	if (m_output_mode == dual_window || m_output_mode == iz3d)
 	{
 		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
 		if (FAILED(hr) && hr != DDERR_WASSTILLDRAWING)
