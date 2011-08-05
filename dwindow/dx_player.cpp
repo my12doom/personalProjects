@@ -159,30 +159,31 @@ m_bitstreaming(L"BitStreaming", false)
 	m_hexe = hExe;
 
 	// window size & pos
-	int width1 = screen1.right - screen1.left;
-	int height1 = screen1.bottom - screen1.top;
-	int width2 = screen2.right - screen2.left;
-	int height2 = screen2.bottom - screen2.top;
+	int width1 = m_screen1.right - m_screen1.left;
+	int height1 = m_screen1.bottom - m_screen1.top;
+	int width2 = m_screen2.right - m_screen2.left;
+	int height2 = m_screen2.bottom - m_screen2.top;
 	m_user_offset = 0;
 	m_internel_offset = 10; // offset set to 10*0.1% of width
 
-	SetWindowPos(id_to_hwnd(1), NULL, screen1.left, screen1.top, width1, height1, SWP_NOZORDER);
+	SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left, m_screen1.top, width1, height1, SWP_NOZORDER);
 
 	RECT result;
 	GetClientRect(id_to_hwnd(1), &result);
 
-	int dcx = screen1.right - screen1.left - (result.right - result.left);
-	int dcy = screen1.bottom - screen1.top - (result.bottom - result.top);
+	int dcx = m_screen1.right - m_screen1.left - (result.right - result.left);
+	int dcy = m_screen1.bottom - m_screen1.top - (result.bottom - result.top);
 
-	SetWindowPos(id_to_hwnd(1), NULL, screen1.left + width1/4, screen1.top + height1/4,
+	SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + width1/4, m_screen1.top + height1/4,
 					width1/2 + dcx, height1/2 + dcy, SWP_NOZORDER);
-	SetWindowPos(id_to_hwnd(2), NULL, screen2.left + width2/4, screen2.top + height2/4,
+	SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + width2/4, m_screen2.top + height2/4,
 					width2/2 + dcx, height2/2 + dcy, SWP_NOZORDER);
 
 
 	// show it!
-	show_window(1, true);
 	show_window(2, m_output_mode == dual_window || m_output_mode == iz3d);
+	show_window(1, true);
+	SetWindowPos(id_to_hwnd(2), id_to_hwnd(1), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
 	// to init video zone
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);

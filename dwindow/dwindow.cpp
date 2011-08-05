@@ -329,6 +329,12 @@ HRESULT dwindow::set_fullscreen(int id, bool full, bool nosave)
 
 dwindow::dwindow(RECT screen1, RECT screen2)
 {
+	if (memcmp(&screen1, &screen2, sizeof(RECT)) == 0)
+	{
+		screen2.left += screen1.right - screen1.left;
+		screen2.right += screen1.right - screen1.left;
+	}
+
 	m_show_mouse = true;
 	m_screen1 = screen1;
 	m_screen2 = screen2;
