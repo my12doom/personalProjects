@@ -7,6 +7,8 @@
 #include "PixelShaders/anaglyph.h"
 #include "PixelShaders/stereo_test.h"
 #include "PixelShaders/vs_subtitle.h"
+#include "PixelShaders/iz3d_back.h"
+#include "PixelShaders/iz3d_front.h"
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
@@ -861,6 +863,8 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_ps_yuy2 = NULL;
 	m_ps_test = NULL;
 	m_ps_anaglyph = NULL;
+	m_ps_iz3d_back = NULL;
+	m_ps_iz3d_front = NULL;
 	m_vs_subtitle = NULL;
 
 	// textures
@@ -1022,6 +1026,8 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_Device->CreatePixelShader((DWORD*)yuy2, &m_ps_yuy2);
 	m_Device->CreatePixelShader((DWORD*)tester, &m_ps_test);
 	m_Device->CreatePixelShader((DWORD*)anaglyph, &m_ps_anaglyph);
+	m_Device->CreatePixelShader((DWORD*)g_code_iz3d_back, &m_ps_iz3d_back);
+	m_Device->CreatePixelShader((DWORD*)g_code_iz3d_front, &m_ps_iz3d_front);
 	m_Device->CreateVertexShader((DWORD*)g_code_vs_subtitle, &m_vs_subtitle);
 
 	free(yv12);
@@ -1337,6 +1343,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_Device->SetTexture( 0, m_mask_temp_left );
 		m_Device->SetTexture( 1, m_mask_temp_right );
 		m_Device->SetPixelShader(m_ps_anaglyph);
+		m_Device->SetPixelShader(m_ps_iz3d_front);
 
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
@@ -1591,6 +1598,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	HRESULT hr = E_FAIL;
 
 	m_Device->SetRenderTarget(0, surface);
+	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 	m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 	m_Device->SetTexture( 0, left_eye ? m_tex_rgb_left : m_tex_rgb_right );
 	hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );

@@ -176,7 +176,7 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 		CW_USEDEFAULT,       // default vertical position 
 		CW_USEDEFAULT,       // default width 
 		CW_USEDEFAULT,       // default height 
-		(HWND) NULL,         // no owner window 
+		(HWND) hwnd,         // no owner window 
 		(HMENU) NULL,        // use class menu 
 		hinstance,           // handle to application instance 
 		(LPVOID) NULL);      // no window-creation data 

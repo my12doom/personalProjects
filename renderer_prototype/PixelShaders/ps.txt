@@ -210,6 +210,9 @@ float4 UI(float2 tex : TEXCOORD0) : COLOR
 	return o;
 }
 
+
+// vs_subtitle
+
 #define sx2 (p0[0])
 #define sy2 (p0[1])
 #define cx2 (p0[2])
@@ -234,4 +237,28 @@ VS_OUTPUT vs_subtitle(VS_OUTPUT IN)
 	o.tex.y = IN.tex.y * tcy + tsy;
 	
 	return o;
+}
+
+
+// IZ3D
+float4 iz3d_front(float2 tex : TEXCOORD0) : COLOR
+{
+	float4 l = tex2D(s0, tex);
+	float4 r = tex2D(s1, tex);
+	
+	float ly = 0.299 * l.r + 0.587 * l.g + 0.114 * l.b;
+	float ry = 0.299 * r.r + 0.587 * r.g + 0.114 * r.b;
+
+	//if (ly + ry <= 0.01)
+	//	return 0;
+	//else		
+		return ry/(ly+ry);
+}
+
+float4 iz3d_back(float2 tex : TEXCOORD0) : COLOR
+{
+	float4 l = tex2D(s0, tex);
+	float4 r = tex2D(s1, tex);
+	
+	return (l+r)/2;
 }

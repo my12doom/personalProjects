@@ -349,6 +349,8 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_nv12;
 	CComPtr <IDirect3DPixelShader9> m_ps_yuy2;
 	CComPtr <IDirect3DPixelShader9> m_ps_anaglyph;
+	CComPtr <IDirect3DPixelShader9> m_ps_iz3d_back;
+	CComPtr <IDirect3DPixelShader9> m_ps_iz3d_front;
 	CComPtr <IDirect3DPixelShader9> m_ps_test;
 
 	CComPtr<IDirect3DTexture9> m1_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width

@@ -245,7 +245,10 @@ public:
 		PVideoFrame src = child->GetFrame(n, env);
 
 		const BYTE * psrc = src->GetReadPtr(PLANAR_Y);
+		const BYTE * psrc_uv = psrc + vi.width * vi.height;
 		BYTE * pdst = (BYTE*)dst->GetReadPtr(PLANAR_Y);
+		BYTE * pdst_uv = pdst + vi.width + vi.height;
+
 		memset(pdst, 0, vi.width*vi.height);
 		memset(pdst+vi.width*vi.height, 128, vi.width*vi.height/2);
 		for(int y=0; y<vi.height; y++)
@@ -257,13 +260,25 @@ public:
 				if(psrc[0] + psrc[vi.width/2] <= 32)
 					pdst[vi.width/2] = 16;
 				else
-					pdst[vi.width/2] = (psrc[0]-16) * 219 / (psrc[0] + psrc[vi.width/2] - 32) + 16;
+					pdst[vi.width/2] = (psrc[vi.width/2]-16) * 219 / (psrc[0] + psrc[vi.width/2] - 32) + 16;
 
 				pdst++;
 				psrc++;
 			}
 			psrc = src->GetReadPtr(PLANAR_Y) + y*vi.width;
 			pdst = (BYTE*)dst->GetReadPtr(PLANAR_Y) + y*vi.width;
+		}
+
+		for(int y=0; y<vi.height; y++)
+		{
+			for(int x=0; x<vi.width/4; x++)
+			{
+				pdst_uv[0] = (psrc_uv[0] + psrc_uv[vi.width/4])/2;
+				pdst_uv++;
+				psrc_uv++;
+			}
+			psrc_uv = src->GetReadPtr(PLANAR_Y) + vi.width * vi.height + y*vi.width/2;
+			pdst_uv = (BYTE*)dst->GetReadPtr(PLANAR_Y) + vi.width * vi.height + y*vi.width/2;
 		}
 
 		return dst;

@@ -182,6 +182,7 @@ m_bitstreaming(L"BitStreaming", false)
 
 	// show it!
 	show_window(1, true);
+	show_window(2, m_output_mode == dual_window);
 
 	// to init video zone
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);
@@ -899,11 +900,27 @@ LRESULT dx_player::on_timer(int id)
 
 LRESULT dx_player::on_move(int id, int x, int y)
 {
+	if (id == 1 && init_done_flag == 0x12345678)
+	{
+		RECT rect1;
+		GetWindowRect(id_to_hwnd(1), &rect1);
+		x = rect1.left - m_screen1.left;
+		y = rect1.top - m_screen1.top;
+		SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + x, m_screen2.top + y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+	}
+
 	return S_OK;
 }
 
 LRESULT dx_player::on_size(int id, int type, int x, int y)
 {
+	if (id == 1 && init_done_flag == 0x12345678)
+	{
+		RECT rect1;
+		GetWindowRect(id_to_hwnd(1), &rect1);
+		SetWindowPos(id_to_hwnd(2), NULL, 0, 0, rect1.right - rect1.left, rect1.bottom - rect1.top, SWP_NOZORDER | SWP_NOMOVE);
+	}
+
 	if (m_renderer1)
 		m_renderer1->pump();
 	return S_OK;
@@ -1303,7 +1320,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 	if (m_output_mode == dual_window)
 	{
-		show_window(2, m_full1);
+		show_window(2, true);
 		set_fullscreen(2, m_full1);
 	}
 	else
@@ -1347,8 +1364,15 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 
 
 	SetFocus(id_to_hwnd(id));
-	if (id == 1)m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
-	init_done_flag = 0x12345678;
+	if (id == 1)
+	{
+		m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
+		unsigned char passkey_big_decrypted[128];
+		RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
+		m_renderer1->m_AES.set_key((unsigned char*)passkey_big_decrypted+64, 256);
+		memset(passkey_big_decrypted, 0, 128);
+		init_done_flag = 0x12345678;
+	}
 	return S_OK;
 }
 
@@ -1688,12 +1712,6 @@ HRESULT dx_player::draw_ui()
 
 HRESULT dx_player::start_loading()
 {
-
-	unsigned char passkey_big_decrypted[128];
-	RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
-
-	m_renderer1->m_AES.set_key((unsigned char*)passkey_big_decrypted+64, 256);
-	memset(passkey_big_decrypted, 0, 128);
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
 
@@ -2389,10 +2407,11 @@ HRESULT dx_player::toggle_fullscreen()
 
 	else if (m_output_mode == dual_window)
 	{
-		show_window(2, !m_full2);		// show/hide it before set fullscreen, or you may got a strange window
+		//show_window(2, !m_full2);		// show/hide it before set fullscreen, or you may got a strange window
+		show_window(2, true);
 		set_fullscreen(2, !m_full2);	// yeah, this is not a bug
 		set_fullscreen(1, m_full2);
-		show_window(2, m_full2);		// show/hide it again
+		//show_window(2, m_full2);		// show/hide it again
 	}
 
 	else
