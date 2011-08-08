@@ -15,11 +15,11 @@
 #include <wininet.h>
 #pragma comment(lib,"wininet.lib")
 
-char *g_server_address = "http://59.51.45.21:80/";
 
-//char server_url[300] = "http://127.0.0.1:8080/w32.php?";
-//char url[512] = "http://127.0.0.1:8080/gen_key.php?";
+char *g_server_address = "http://59.51.45.21:80/";
 char url[512] = "http://59.51.45.21/gen_key.php?";
+//char *g_server_address = "http://127.0.0.1:8080/";
+//char url[512] = "http://127.0.0.1:8080/gen_key.php?";
 
 // public variables
 AutoSetting<localization_language> g_active_language(L"Language", CHINESE);

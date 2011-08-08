@@ -1,6 +1,7 @@
 <?php
 $form = false;
-$com = new COM("phpcrypt.crypt") or die("failed loading cryptLib");
+
+include "db_and_basic_func.php";
 
 while (list($name, $value) = each($_POST))
 {
@@ -22,7 +23,11 @@ if ($form)
 	if ($username == "")
 		die("empty username");
 	if ($admin != "tester88")
+	{
+		if ($admin != "")
+			db_log("AdminCrack", "Crack", "admin", str_replace("'", "''", $admin));
 		die("wrong admin password.");
+	}
 	
 	// test user
 	$userexist = false;
@@ -48,6 +53,7 @@ if ($form)
 		if ($result)
 		{
 			printf("adding user %s, password %s, OK!", $username, $password);
+			db_log("UserAdd", "OK", $username, $com->SHA1($password));
 		}
 		else
 		{
@@ -58,6 +64,13 @@ if ($form)
 	// deleting
 	if ($op == "del")
 	{
+		$string = mysql_query("INSERT INTO dropped_passkeys SELECT * FROM active_passkeys WHERE user='".$username."'");
+		if (!$result)
+		{
+			printf("delete user %s failed.");
+			goto theend;
+		}
+
 		$result = mysql_query("DELETE FROM active_passkeys where user='".$username."'");
 		if (!$result)
 		{
@@ -71,6 +84,7 @@ if ($form)
 			goto theend;
 		}
 		
+		db_log("UserDel", $userexist ? "OK" : "NO USER", $username);
 		printf("delete user %s, OK!", $username, $password);
 	}
 	

@@ -1439,13 +1439,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
 			hr = m_Device->SetRenderTarget(0, back_buffer2);
 
-			// back ground
-			#ifdef DEBUG
-			m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
-			#else
-			m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
-			#endif
-
 			clear(back_buffer2);
 			draw_movie(back_buffer2, false);
 			draw_bmp(back_buffer2, false);
@@ -1483,15 +1476,10 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		{
 			CComPtr<IDirect3DSurface9> back_buffer2;
 			m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
+
+			clear(back_buffer2);
+
 			hr = m_Device->SetRenderTarget(0, back_buffer2);
-
-			// back ground
-			#ifdef DEBUG
-			m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255,128,0), 1.0f, 0L );// debug: orange background
-			#else
-			m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 1.0f, 0L );  // black background
-			#endif
-
 			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 			m_Device->SetPixelShader(m_ps_iz3d_front);
 			hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );

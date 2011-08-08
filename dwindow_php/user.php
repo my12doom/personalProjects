@@ -1,6 +1,8 @@
 <?php
+
+include "db_and_basic_func.php";
+
 $form = false;
-$com = new COM("phpcrypt.crypt") or die("failed loading cryptLib");
 
 while (list($name, $value) = each($_POST))
 {
@@ -19,8 +21,15 @@ while (list($name, $value) = each($_POST))
 if ($form)
 {
 	// check parameter
-	if (strstr($username, "'"))
+	if (strstr($username, "'") or strstr($newpassword, "'") or strstr($password, "'"))
+	{
+		$username = str_replace("'", "''", $username);
+		$password = str_replace("'", "''", $password);
+		$newpassword = str_replace("'", "''", $newpassword);
+		
+		db_log("HACK:user.php", "BLOCKED", $username, $password, $newpassword);
 		die("''''''''''");
+	}
 	if ($username == "")
 		die("用户不能为空");
 	if ($newpassword != $repeat)
@@ -30,12 +39,13 @@ if ($form)
 	$newsha1 = $com->SHA1($newpassword);
 
 	$userexist = false;
-	$db = mysql_connect("localhost", "root", "tester88");
-	mysql_select_db("mydb", $db);
 	$sql = sprintf("SELECT * FROM users where name='%s' and pass_hash='%s'", $username, $oldsha1);
 	$result = mysql_query($sql);
 	if (mysql_num_rows($result) <= 0)
+	{
+		db_log("PasswordCrack", "BLOCKED", $username, $password, $newpassword);
 		die("用户/ 密码错误");
+	}
 
 	// deleting active passkey
 	$result = mysql_query("DELETE FROM active_passkeys where user='".$username."'");
@@ -48,6 +58,7 @@ if ($form)
 	if (!$result)
 		goto theend;
 
+	db_log("PasswordChange", "OK", $username, $oldsha1, $newsha1);
 	printf("成功, %s的密码已修改，请重新激活。", $username);
 
 	// die
@@ -55,6 +66,7 @@ if ($form)
 	die("<BR>");
 }
 ?>
+
 <html>
 	<form method="POST" name=form1>
 		用户名       <input type="text" name="username" /> <br />

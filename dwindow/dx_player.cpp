@@ -181,9 +181,8 @@ m_bitstreaming(L"BitStreaming", false)
 
 
 	// show it!
-	show_window(2, m_output_mode == dual_window || m_output_mode == iz3d);
 	show_window(1, true);
-	SetWindowPos(id_to_hwnd(2), id_to_hwnd(1), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+	show_window(2, m_output_mode == dual_window || m_output_mode == iz3d);
 
 	// to init video zone
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);
