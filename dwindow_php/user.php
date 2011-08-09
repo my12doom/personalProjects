@@ -65,6 +65,7 @@ if ($form)
 	theend:
 	die("<BR>");
 }
+db_log("WWW", "OK", 0, "user.php");
 ?>
 
 <html>
