@@ -1231,7 +1231,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_tex_bmp_mem->UnlockRect();
 
 		CComPtr<IDirect3DSurface9> dst;
-		RECT src = {0,0,m_bmp_width, m_bmp_height};
+		RECT src = {0,0,min(m_bmp_width+100, 2048), min(m_bmp_height+100, 1024)};
 
 		FAIL_RET(m_tex_bmp->GetSurfaceLevel(0, &dst));
 
@@ -1269,7 +1269,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	m_Device->SetTextureStageState( 2, D3DTSS_TEXCOORDINDEX, 0 );
 
 	// use mipmap only for full resolution videos or very small backbuffer
-	if ((m_source_aspect > 2.425 || m_source_aspect < 1.2125 ) || 
+	if ((m_source_aspect > 2.425 || m_source_aspect < 1.2125 ) && 
 		(m_active_pp.BackBufferWidth * 4 < m_lVidWidth && m_active_pp.BackBufferHeight < m_lVidHeight * 4) )
 	{
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
@@ -1290,7 +1290,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	hr = m_Device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
 	int l = timeGetTime();
-	if (m_output_mode == NV3D && m_nv3d_enabled && m_nv3d_actived && !m_active_pp.Windowed)
+	if (m_output_mode == NV3D && m_nv3d_enabled && m_nv3d_actived /*&& !m_active_pp.Windowed*/)
 	{
 		clear(back_buffer);
 		draw_movie(back_buffer, true);
@@ -2740,6 +2740,7 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 				dst += m_bmp_locked_rect.Pitch;
 				src += width*4;
 			}
+			memset(dst, 0, m_bmp_locked_rect.Pitch * (1024-min(1024,height)));
 			m_bmp_changed = true;
 		}
 

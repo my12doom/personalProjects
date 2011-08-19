@@ -46,7 +46,7 @@ Section "DWindow(required)"
   SetOutPath $INSTDIR
   
   ; Put file there
-  File "dwindow.exe"
+  File "StereoPlayer.exe"
   File "xvidcore.dll"
   File "dwindow.ini"
   File "detoured.dll"
@@ -72,7 +72,7 @@ SectionEnd
 Section "Start Menu Shortcuts"
 
   CreateDirectory "$SMPROGRAMS\DWindow"
-  CreateShortCut "$SMPROGRAMS\DWindow\DWindow.lnk" "$INSTDIR\dwindow.exe" "" "$INSTDIR\dwindow.exe" 0
+  CreateShortCut "$SMPROGRAMS\DWindow\DWindow.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer" 0
   CreateShortCut "$SMPROGRAMS\DWindow\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
   
 SectionEnd
@@ -80,7 +80,7 @@ SectionEnd
 ; Optional section (can be disabled by the user)
 Section "Desktop Shortcuts"
 
-  CreateShortCut "$DESKTOP\DWindow.lnk" "$INSTDIR\dwindow.exe" "" "$INSTDIR\dwindow.exe" 0
+  CreateShortCut "$DESKTOP\DWindow.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer.exe" 0
   
 SectionEnd
 
@@ -98,6 +98,7 @@ Section "Uninstall"
   Delete $INSTDIR\codec\*.dll
   Delete $INSTDIR\codec\*.ax
   Delete $INSTDIR\dwindow.exe
+  Delete $INSTDIR\StereoPlayer.exe
   Delete $INSTDIR\detoured.dll
   Delete $INSTDIR\kill_ssaver.dll
   Delete $INSTDIR\launcher.exe

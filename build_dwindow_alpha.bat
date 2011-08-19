@@ -21,7 +21,7 @@ cd E:\private_projects
 copy/y dwindow\dwindow.ini dwindow_NSIS
 copy/y dwindow\alpha.raw dwindow_NSIS
 copy/y dwindow\logo.raw dwindow_NSIS
-copy/y dwindow\release_mt\dwindow.exe dwindow_NSIS
+copy/y dwindow\release_mt\StereoPlayer.exe dwindow_NSIS
 copy/y dwindow\detours\detoured.dll dwindow_NSIS
 del/q dwindow_NSIS\codec\*.*
 copy/y dwindow\xvidcore.dll dwindow_NSIS

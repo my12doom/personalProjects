@@ -7,7 +7,7 @@ while (list($name, $value) = each($_POST))
 {
 	if ($name == "password")
 		$password = $value;
-		$form = true;
+	$form = true;
 }
 
 if ($form)

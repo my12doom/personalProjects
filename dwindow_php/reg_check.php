@@ -30,7 +30,7 @@ if (mysql_num_rows($result) <= 0)
 	if (mysql_num_rows($result) > 0)
 	{
 		$row = mysql_fetch_array($result);
-		$user = $row["user"];
+		$user = "(del)".$row["user"];
 		
 		$rtn = "E_FAIL";
 	}

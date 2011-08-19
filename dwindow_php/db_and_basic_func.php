@@ -1,5 +1,8 @@
 <?php
 
+// admin
+$admin_pass = "tester88";
+
 	// date
 	date_default_timezone_set("PRC");
 	$date = Date("Y-m-d H:i:s");

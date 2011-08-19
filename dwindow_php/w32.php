@@ -23,7 +23,7 @@ if (mysql_num_rows($result) <= 0)
 	if (mysql_num_rows($result) > 0)
 	{
 		$row = mysql_fetch_array($result);
-		$user = $row["user"];
+		$user = "(del)".$row["user"];
 	}
 	db_log("E3D_REQUEST", "INVALID PASSKEY", $user, $passkey, $hash);
 	exit();

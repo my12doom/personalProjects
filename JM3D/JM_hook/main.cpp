@@ -250,6 +250,8 @@ DWORD WINAPI parent_watcher(LPVOID lpvParam)
 	HANDLE h_parent = OpenProcess(SYNCHRONIZE, FALSE, parent_id);
 	WaitForSingleObject(h_parent, INFINITE);
 
+	printf("Exiting in 5 second.\n");
+	Sleep(5000);
 	ExitProcess(-1);
 	return 0;
 }
