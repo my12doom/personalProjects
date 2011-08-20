@@ -171,6 +171,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	while (!test.is_closed())
 		Sleep(100);
 
+	ExitProcess(0);
 	return 0;
 }
 

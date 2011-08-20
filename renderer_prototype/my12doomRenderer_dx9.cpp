@@ -1268,19 +1268,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	m_Device->SetTextureStageState( 2, D3DTSS_COLOROP,   D3DTOP_DISABLE);
 	m_Device->SetTextureStageState( 2, D3DTSS_TEXCOORDINDEX, 0 );
 
-	// use mipmap only for full resolution videos or very small backbuffer
-	if ((m_source_aspect > 2.425 || m_source_aspect < 1.2125 ) && 
-		(m_active_pp.BackBufferWidth * 4 < m_lVidWidth && m_active_pp.BackBufferHeight < m_lVidHeight * 4) )
-	{
-		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
-		hr = m_Device->SetSamplerState( 1, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
-	}
-	else
-	{
-		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-		hr = m_Device->SetSamplerState( 1, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-	}
-
 	hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetSamplerState( 2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
@@ -1561,7 +1548,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	if (timeGetTime() - l > 5)printf("EndScene = %dms\n", timeGetTime() - l);
 presant:
 	static int n = timeGetTime();
-	if (timeGetTime() - n > 9)
+	if (timeGetTime() - n > 43)
 		printf("(%d):presant delta: %dms\n", timeGetTime(), timeGetTime()-n);
 	n = timeGetTime();
 
@@ -1632,6 +1619,18 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 		main = true;
 
 	HRESULT hr = E_FAIL;
+	// use mipmap only for small backbuffer
+	int width = m_lVidWidth;
+	int height = m_lVidHeight;
+	if (get_active_input_layout() == side_by_side)
+		width /= 2;
+	else if (get_active_input_layout() == top_bottom)
+		height /= 2;
+
+	if (m_active_pp.BackBufferWidth * 3 < width | m_active_pp.BackBufferHeight * 3 < height)
+		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
+	else
+		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
 
 	m_Device->SetRenderTarget(0, surface);
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
@@ -1657,6 +1656,7 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetTexture( 0, m_tex_bmp );
 	hr = m_Device->SetStreamSource( 0, m_vertex_subtitle, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags_subtitle );

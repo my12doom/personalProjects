@@ -941,6 +941,7 @@ bool CMpegSplitterFilter::DemuxInit()
 
 void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 {
+	//printf("seeking to %02fs\n", (float)rt/10000000);
 	{
 		CAutoLock queuelock(&m_queuelock);
 		m_queue.RemoveAll();
@@ -977,14 +978,13 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 					DWORD TrackNum = m_pFile->m_streams[i].GetNext(pos);
 
 					CBaseSplitterOutputPin* pPin = GetOutputPin(TrackNum);
-					if(pPin && pPin->IsConnected()) {
+					if(pPin && pPin->IsConnected() /*&& i == CMpegSplitterFile::video*/) {
 						m_pFile->Seek(seekpos);
 						__int64 curpos = seekpos;
 						REFERENCE_TIME pdt = _I64_MIN;
 
-						for(int j = 0; j < 10; j++) {
+						for(int j = 0; j < 100; j++) {
 							REFERENCE_TIME rt = m_pFile->NextPTS(TrackNum);
-
 							if(rt < 0) {
 								break;
 							}
@@ -995,8 +995,18 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 							}
 
 
-							if(rtmin <= rt && rt <= rtmax || pdt > 0 && dt < 0) {
+							if(rtmin <= rt && rt <= rtmax || (pdt > 0 && dt < 0 && -dt < 30000000)) {
 								minseekpos = min(minseekpos, curpos);
+								/*
+								if (rtmin <= rt && rt <= rtmax)
+									printf("time match.\n");
+								else
+									printf("cross match.\n");
+								printf("rtmin=%.2f, rt=%.2f, rtmax=%.2f, pdt=%.2f, dt=%.2f", 
+									(float)rtmin/10000000, (float)rt/10000000, (float)rtmax/10000000,
+									(float)pdt/10000000, (float)dt/10000000);
+								printf("%dth try, seeked to %02fs\n", i, (float)rt/10000000);
+								*/
 								break;
 							}
 
@@ -1018,6 +1028,9 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 			m_pFile->Seek(seekpos);
 			m_rtStartOffset = m_pFile->m_rtMin + m_pFile->NextPTS(pMasterStream->GetHead()) - rt;
 		}
+
+		REFERENCE_TIME delta = rt - m_pFile->NextPTS(4113);
+		//printf("last try, seek delta :%02fs\n", (float)delta/10000000);
 
 		m_pFile->Seek(seekpos);
 	}
