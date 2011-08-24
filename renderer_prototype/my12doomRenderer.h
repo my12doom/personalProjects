@@ -282,6 +282,7 @@ protected:
 
 	HRESULT create_render_targets();
 	HRESULT delete_render_targets();
+	HRESULT fix_nv3d_bug();				// do this after every CreateRenderTarget
 	HRESULT handle_device_state();							//handle device create/recreate/lost/reset
 	HRESULT create_render_thread();
 	HRESULT terminate_render_thread();

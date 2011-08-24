@@ -405,11 +405,16 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
 
             ptr+=7;
 
-			char zero[255];
-			memset(zero, 0, 255);
-			fwrite(zero, 1, 192-(end_ptr-ptr), f);
-			fwrite(ptr, 1, end_ptr-ptr, f);
-			fflush(f);
+#ifdef DEBUG
+			if (f)
+			{
+				char zero[255];
+				memset(zero, 0, 255);
+				fwrite(zero, 1, 192-(end_ptr-ptr), f);
+				fwrite(ptr, 1, end_ptr-ptr, f);
+				fflush(f);
+			}
+#endif
 
             if(ptr>=end_ptr)
                 return -13;

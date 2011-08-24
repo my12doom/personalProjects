@@ -454,6 +454,13 @@ retry:
 	return S_OK;
 }
 
+HRESULT my12doomRenderer::fix_nv3d_bug()
+{
+	HRESULT hr = S_OK;
+	CComPtr<IDirect3DSurface9> m_nv3d_bugfix;
+	FAIL_RET( m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_nv3d_bugfix, NULL));
+	return hr;
+}
 HRESULT my12doomRenderer::delete_render_targets()
 {
 	m_swap1 = NULL;
@@ -532,6 +539,7 @@ HRESULT my12doomRenderer::create_render_targets()
 		mylog("NV3D Tag Added.\n");
 	}
 
+	fix_nv3d_bug();
 	return hr;
 }
 
@@ -768,37 +776,14 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		m_new_pp = m_active_pp;
 		m_device_state = need_reset_object;
 
+		hr = m_Device->Reset(&m_active_pp);
+		hr = m_Device->Reset(&m_active_pp);
+
+
 		{
 			CAutoLock lck(&m_pool_lock);
 			if (m_pool) delete m_pool;
 			m_pool = new CTextureAllocator(m_Device);
-		}
-
-		// NV3D acitivation check
-		if (m_nv3d_enabled)
-		{
-			StereoHandle h3d;
-			NvAPI_Status res;
-			res = NvAPI_Stereo_CreateHandleFromIUnknown(m_Device, &h3d);
-			res = NvAPI_Stereo_SetNotificationMessage(h3d, (NvU64)m_hWnd, WM_NV_NOTIFY);
-			res = NvAPI_Stereo_Activate(h3d);
-			NvU8 actived = 0;
-			res = NvAPI_Stereo_IsActivated(h3d, &actived);
-			if (actived)
-			{
-				printf("init: NV3D actived\n");
-				m_nv3d_actived = true;
-			}
-			else
-			{
-				printf("init: NV3D deactived\n");
-				m_nv3d_actived = false;
-			}
-
-			if (res == NVAPI_OK)
-				m_nv3d_actived = true;
-
-			res = NvAPI_Stereo_DestroyHandle(h3d);
 		}
 
 		FAIL_SLEEP_RET(restore_gpu_objects());
@@ -929,7 +914,9 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	}
 
 	HRESULT hr;
-	FAIL_RET(create_render_targets());
+	FAIL_RET( m_Device->CreateRenderTarget(64, 64, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_test_rt64, NULL));
+	fix_nv3d_bug();
+	if (m_mem == NULL) FAIL_RET( m_Device->CreateOffscreenPlainSurface(64, 64, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_mem, NULL));
 
 	DWORD use_mipmap = D3DUSAGE_AUTOGENMIPMAP;
 
@@ -944,9 +931,9 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 		m_tex_bmp_mem->LockRect(&m_bmp_locked_rect, NULL, NULL);
 		m_bmp_changed = false;
 	}
-	FAIL_RET( m_Device->CreateRenderTarget(64, 64, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_test_rt64, NULL));
-	if (m_mem == NULL) FAIL_RET( m_Device->CreateOffscreenPlainSurface(64, 64, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_mem, NULL));
-	
+
+	FAIL_RET(create_render_targets());
+
 	// source texture
 	if (m_dsr0->m_format == MEDIASUBTYPE_YUY2)
 	{
@@ -1077,6 +1064,7 @@ HRESULT my12doomRenderer::backup_rgb()
 	bool dual_stream = m_dsr0->is_connected() && m_dsr1->is_connected();
 	CComPtr<IDirect3DSurface9> full_surface;
 	m_Device->CreateRenderTarget(dual_stream ? m_lVidWidth*2 : m_lVidWidth, m_lVidHeight, desc.Format, D3DMULTISAMPLE_NONE, 0, FALSE, &full_surface, NULL);
+	fix_nv3d_bug();
 	clear(full_surface);
 
 	if (dual_stream)
@@ -1303,7 +1291,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		draw_ui(back_buffer);
 	}
 
-	else if (m_output_mode == mono || (m_output_mode == NV3D && !(m_nv3d_enabled && m_nv3d_actived && !m_active_pp.Windowed)))
+	else if (m_output_mode == mono || (m_output_mode == NV3D && !(m_nv3d_enabled && m_nv3d_actived)))
 	{
 		clear(back_buffer);
 		draw_movie(back_buffer, true);
@@ -2578,6 +2566,38 @@ HRESULT my12doomRenderer::set_output_mode(int mode)
 
 	m_pageflipping_start = -1;
 	set_device_state(need_resize_back_buffer);
+
+	// NV3D acitivation check
+	if (m_nv3d_enabled && m_Device)
+	{
+		StereoHandle h3d;
+		NvAPI_Status res;
+		res = NvAPI_Stereo_CreateHandleFromIUnknown(m_Device, &h3d);
+		res = NvAPI_Stereo_SetNotificationMessage(h3d, (NvU64)m_hWnd, WM_NV_NOTIFY);
+		if (m_output_mode == NV3D)
+			res = NvAPI_Stereo_Activate(h3d);
+		else
+			res = NvAPI_Stereo_Deactivate(h3d);
+		NvU8 actived = 0;
+		res = NvAPI_Stereo_IsActivated(h3d, &actived);
+		if (actived)
+		{
+			printf("init: NV3D actived\n");
+			m_nv3d_actived = true;
+		}
+		else
+		{
+			printf("init: NV3D deactived\n");
+			m_nv3d_actived = false;
+		}
+
+		if (res == NVAPI_OK)
+			m_nv3d_actived = m_output_mode == NV3D ? true : false;
+
+		res = NvAPI_Stereo_DestroyHandle(h3d);
+	}
+
+
 	return S_OK;
 }
 

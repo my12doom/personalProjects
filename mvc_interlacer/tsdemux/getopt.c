@@ -140,6 +140,7 @@ getopt(int argc, char* const *argv, const char *optstr)
 
 #ifdef TESTGETOPT
 int
+/*
  main (int argc, char **argv)
  {
       int c;
@@ -180,5 +181,5 @@ int
            (void)printf("%s\n", argv[optind]);
       return 0;
  }
-
+*/
 #endif /* TESTGETOPT */

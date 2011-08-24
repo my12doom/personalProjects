@@ -72,9 +72,11 @@ int read_a_nal(CFileBuffer *f)
 }
 
 int max_sei_size = 0;
+bool is_idr = false;
 int read_a_delimeter(CFileBuffer *f)
 {
 	max_sei_size = 0;
+	is_idr = false;
 
 	n_slice = 0;
 	int size = 0;
@@ -127,11 +129,15 @@ int read_a_delimeter(CFileBuffer *f)
 			continue;
 		}
 
+		// if is IDR?
+		if (_nal_type == 5)
+			is_idr = true;
+
 		// test remove SEI
 		if (_nal_type == 6)
 		{
-			f->remove_data(nal_size);
-			continue;
+			//f->remove_data(nal_size);
+			//continue;
 		}
 
 		/*
@@ -333,26 +339,37 @@ void main(int argc, char * argv[])
 	int first = 5;
 	while (true)
 	{
-		// right first
+		bool idr_found = false;
 
-		int delimeter_size_right = read_a_delimeter(&right);
-		//fwrite(delimeter_buffer, 1, delimeter_size_right, o);
-		memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_right);
-		out_data_count += delimeter_size_right;
 
-		//fwrite(delimeter_buffer, 1, delimeter_size_left, o);
 		int delimeter_size_left = 0;
+		delimeter_size_left = read_a_delimeter(&left);
 		if (first)
 		{
-			delimeter_size_left = read_a_delimeter(&left);
 			first --;
 		}
-		memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_left);
-		out_data_count += delimeter_size_left;
+		if (n>36000 && n<37000)
+		{
+			if (is_idr)
+				idr_found = true;
+
+			if (idr_found)
+			{
+				memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_left);
+				out_data_count += delimeter_size_left;
+			}
+		}
+
+		int delimeter_size_right = read_a_delimeter(&right);
+		if (n>36000 && n<37000 && idr_found)
+		{
+			memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_right);
+			out_data_count += delimeter_size_right;
+		}
 
 		//watermark
-		memcpy(out_buffer+out_data_count, watermark, watermark_size);
-		out_data_count += watermark_size;
+		//memcpy(out_buffer+out_data_count, watermark, watermark_size);
+		//out_data_count += watermark_size;
 
 
 		if (out_data_count >= max_nal_size*2)
