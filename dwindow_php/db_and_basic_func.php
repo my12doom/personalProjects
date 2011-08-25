@@ -58,4 +58,36 @@ function db_log($operation, $result, $user=0, $arg1=0, $arg2=0, $arg3=0, $arg4=0
 	$result = mysql_query($sql);
 }
 
+function ip2address($ip)
+{
+	$out = "δ֪";
+	$paras = explode(".", $ip);
+	$a1 = intval($paras[0]);
+	$a2 = intval($paras[1]);
+	$a3 = intval($paras[2]);
+	$a4 = intval($paras[3]);
+	
+	$strip = sprintf("0x%02x%02x%02x%02x", $a1, $a2, $a3, $a4);
+
+	$sql = sprintf("SELECT * FROM ip_caches where start<=%s and %s <=end", $strip, $strip);
+	$result = mysql_query($sql);
+	if (mysql_num_rows($result) > 0)
+	{
+		$row = mysql_fetch_array($result);
+		$out = $row["address"];
+		return $out;
+	}
+	
+	$sql = sprintf("INSERT INTO ip_caches SELECT * FROM IPS where start<=%s and %s <=end", $strip, $strip);
+	$result = mysql_query($sql);
+	$sql = sprintf("SELECT * FROM ip_caches where start<=%s and %s <=end", $strip, $strip);
+	$result = mysql_query($sql);
+	if (mysql_num_rows($result) > 0)
+	{
+		$row = mysql_fetch_array($result);
+		$out = $row["address"];
+	}
+	
+	return $out;	
+}
 ?>

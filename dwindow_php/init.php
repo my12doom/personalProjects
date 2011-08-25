@@ -36,6 +36,14 @@ $result = mysql_query("CREATE TABLE logs (id INT NOT NULL AUTO_INCREMENT PRIMARY
 if (!$result)
 	printf("CREATE TABLE logs FAILED<br>\n");
 
+$result = mysql_query("CREATE TABLE ips (
+											 id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+											 start BIGINT,
+											 end BIGINT,
+											 address varchar(80));", $db);											 
+if (!$result)
+	printf("CREATE TABLE ips FAILED<br>\n");
+
 $result = mysql_query("CREATE TABLE users 
 											(id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 											name varchar(32), 

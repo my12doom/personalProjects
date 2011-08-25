@@ -776,9 +776,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		m_new_pp = m_active_pp;
 		m_device_state = need_reset_object;
 
-		hr = m_Device->Reset(&m_active_pp);
-		hr = m_Device->Reset(&m_active_pp);
-
+		set_output_mode(m_output_mode);		// just to active nv3d
 
 		{
 			CAutoLock lck(&m_pool_lock);
