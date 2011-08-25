@@ -17,9 +17,7 @@
 
 
 char *g_server_address = "http://59.51.45.21:80/";
-char url[512] = "http://59.51.45.21/gen_key.php?";
 //char *g_server_address = "http://127.0.0.1:8080/";
-//char url[512] = "http://127.0.0.1:8080/gen_key.php?";
 
 // public variables
 AutoSetting<localization_language> g_active_language(L"Language", CHINESE);
