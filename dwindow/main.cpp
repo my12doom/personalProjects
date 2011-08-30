@@ -101,15 +101,22 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	RECT screen2;
 	if (FAILED(get_monitors_rect(&screen1, &screen2)))
 	{
-		MessageBoxW(0, L"System initialization failed, the program will exit now.", L"Error", MB_OK);
+		MessageBoxW(0, C(L"System initialization failed : monitor detection error, the program will exit now."), L"Error", MB_OK);
 		return -1;
 	}
 
 	load_passkey();
 	if (FAILED(check_passkey()))
 	{
-		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), NULL, register_proc );
-		return 0;
+		if (g_bar_server[0] == NULL)
+		{
+			int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), NULL, register_proc );
+			return 0;
+		}
+		else
+		{
+			MessageBoxW(0, C(L"System initialization failed : server not found, the program will exit now."), L"Error", MB_ICONERROR);
+		}
 	}
 	save_passkey();
 #include "bomb_function.h"

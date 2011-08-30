@@ -1,0 +1,54 @@
+#include "global_funcs_lite.h"
+
+#include <wininet.h>
+#pragma  comment(lib, "WININET.lib")
+
+char g_passkey_big[128];
+//char *g_server_address = "http://59.51.45.21:80/";
+char *g_server_address = "http://127.0.0.1:8080/";
+
+HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/)
+{
+	HINTERNET HI;
+	HI=InternetOpenA("dwindow",INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
+	if (HI==NULL)
+		return E_FAIL;
+
+	HINTERNET HURL;
+	HURL=InternetOpenUrlA(HI, url_to_download,NULL,0,INTERNET_FLAG_RELOAD | NULL,0);
+	if (HURL==NULL)
+		return E_FAIL;
+
+	DWORD byteread = 0;
+	BOOL internetreadfile = InternetReadFile(HURL,out, outlen, &byteread);
+
+	if (!internetreadfile)
+		return E_FAIL;
+
+	return S_OK;
+}
+
+
+HRESULT check_passkey()
+{
+	DWORD e[32];
+	dwindow_passkey_big m1;
+	BigNumberSetEqualdw(e, 65537, 32);
+	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+	for(int i=0; i<32; i++)
+		if (m1.passkey[i] != m1.passkey2[i])
+			return E_FAIL;
+
+	__time64_t t = _time64(NULL);
+
+	tm * t2 = _localtime64(&m1.time_end);
+
+	if (m1.time_start > _time64(NULL) || _time64(NULL) > m1.time_end)
+	{
+		memset(&m1, 0, 128);
+		return E_FAIL;
+	}
+
+	memset(&m1, 0, 128);
+	return S_OK;
+}

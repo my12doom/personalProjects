@@ -901,22 +901,22 @@ LRESULT dx_player::on_timer(int id)
 
 LRESULT dx_player::on_move(int id, int x, int y)
 {
-	if (id == 1 && init_done_flag == 0x12345678 && !m_full1)
+	if (id == 1 && is_visible(2) && init_done_flag == 0x12345678 && !m_full1)
 	{
 		RECT rect1;
 		GetWindowRect(id_to_hwnd(1), &rect1);
 		x = rect1.left - m_screen1.left;
 		y = rect1.top - m_screen1.top;
-		SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + x, m_screen2.top + y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+		SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + x, m_screen2.top + y, 0, 0, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOSIZE);
 	}
 
-	else if (id == 2 && init_done_flag == 0x12345678 && !m_full2)
+	else if (id == 2 && is_visible(1) && init_done_flag == 0x12345678 && !m_full2)
 	{
 		RECT rect2;
 		GetWindowRect(id_to_hwnd(2), &rect2);
 		x = rect2.left - m_screen2.left;
 		y = rect2.top - m_screen2.top;
-		SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + x, m_screen1.top + y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+		SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + x, m_screen1.top + y, 0, 0, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOSIZE);
 	}
 
 	return S_OK;
@@ -924,18 +924,18 @@ LRESULT dx_player::on_move(int id, int x, int y)
 
 LRESULT dx_player::on_size(int id, int type, int x, int y)
 {
-	if (id == 1 && init_done_flag == 0x12345678 && !m_full1)
+	if (id == 1 && is_visible(2) && init_done_flag == 0x12345678 && !m_full1)
 	{
 		RECT rect1;
 		GetWindowRect(id_to_hwnd(1), &rect1);
-		SetWindowPos(id_to_hwnd(2), NULL, 0, 0, rect1.right - rect1.left, rect1.bottom - rect1.top, SWP_NOZORDER | SWP_NOMOVE);
+		SetWindowPos(id_to_hwnd(2), NULL, 0, 0, rect1.right - rect1.left, rect1.bottom - rect1.top, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
 	}
 
-	else if (id == 2 && init_done_flag == 0x12345678 && !m_full2)
+	else if (id == 2 && is_visible(1) && init_done_flag == 0x12345678 && !m_full2)
 	{
 		RECT rect2;
 		GetWindowRect(id_to_hwnd(2), &rect2);
-		SetWindowPos(id_to_hwnd(1), NULL, 0, 0, rect2.right - rect2.left, rect2.bottom - rect2.top, SWP_NOZORDER | SWP_NOMOVE);
+		SetWindowPos(id_to_hwnd(1), NULL, 0, 0, rect2.right - rect2.left, rect2.bottom - rect2.top, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
 	}
 
 	if (m_renderer1)
@@ -1344,6 +1344,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	if (m_output_mode == dual_window || m_output_mode == iz3d)
 	{
 		show_window(2, true);
+		on_move(1, 0, 0);		// to correct second window position
 		set_fullscreen(2, m_full1);
 	}
 	else

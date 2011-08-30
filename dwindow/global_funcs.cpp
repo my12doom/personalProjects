@@ -21,6 +21,7 @@ char *g_server_address = "http://59.51.45.21:80/";
 
 // public variables
 AutoSetting<localization_language> g_active_language(L"Language", CHINESE);
+AutoSettingString g_bar_server(L"BarServer", L"");
 char g_passkey[32];
 char g_passkey_big[128];
 
@@ -659,15 +660,15 @@ HRESULT check_passkey()
 
 HRESULT load_passkey()
 {
-	int CPUInfo[4];
+	int tmp[4];
 	unsigned char CPUBrandString[48];
 	memset(CPUBrandString, 0, 48);
-	__cpuid(CPUInfo, 0x80000002);
-	memcpy(CPUBrandString, CPUInfo, 16);
-	__cpuid(CPUInfo, 0x80000003);
-	memcpy(CPUBrandString+16, CPUInfo, 16);
-	__cpuid(CPUInfo, 0x80000004);
-	memcpy(CPUBrandString+32, CPUInfo, 16);
+	__cpuid(tmp, 0x80000002);
+	memcpy(CPUBrandString, tmp, 16);
+	__cpuid(tmp, 0x80000003);
+	memcpy(CPUBrandString+16, tmp, 16);
+	__cpuid(tmp, 0x80000004);
+	memcpy(CPUBrandString+32, tmp, 16);
 	memset(CPUBrandString + strlen((char*)CPUBrandString), 0, 48-strlen((char*)CPUBrandString));
 	for(int i=0; i<16; i++)
 		CPUBrandString[i] ^= CPUBrandString[i+32];
@@ -677,27 +678,86 @@ HRESULT load_passkey()
 	GetVolumeInformationW(L"C:\\", volume_name, MAX_PATH, &volume_c_sn, NULL, NULL, NULL, NULL);
 	((DWORD*)CPUBrandString)[4] ^= volume_c_sn;
 
-	AESCryptor aes;
-	aes.set_key(CPUBrandString, 256);
 
-	memset(g_passkey_big, 0x38, 128);
-	load_setting(L"passkey", g_passkey_big, 128);
-	for(int i=0; i<128; i+=16)
-		aes.decrypt((unsigned char*)g_passkey_big+i, (unsigned char*)g_passkey_big+i);
+	if (g_bar_server[0])
+	{
+		USES_CONVERSION;
+
+		// bar mode init
+		DWORD tick = GetTickCount();
+		for(int i=0; i<8; i++)
+			((DWORD*)CPUBrandString)[i] ^= tick;
+
+		char url[1024] = "http://";
+		char tmp[10];
+		strcat_s(url, W2A(g_bar_server));
+		strcat_s(url, "/");
+		for(int i=0; i<32; i++)
+		{
+			sprintf(tmp, "%02X", CPUBrandString[i]);
+			strcat_s(url, tmp);
+		}
+	
+		char downloaded[1024];
+		memset(downloaded, 0, sizeof(downloaded));
+		download_url(url, downloaded, 1024);
+		unsigned char encoded_passkey_big[128+10];
+
+		HRESULT hr = E_FAIL;
+		if (strlen(downloaded) == 256)
+		{
+			// binary it
+			for(int i=0; i<128; i++)
+				sscanf(downloaded+i*2, "%02X", encoded_passkey_big+i);
+
+			// decrypt it
+			for(unsigned int i=0; i<256; i++)
+			{
+				unsigned char key[32];
+				memcpy(key, CPUBrandString, 32);
+				for(int j=0; j<32; j++)
+					key[j] ^= i&0xff;
+
+				AESCryptor aes;
+				aes.set_key(key, 256);
+				for(int j=0; j<128; j+=16)
+					aes.decrypt(encoded_passkey_big+j, (unsigned char*)g_passkey_big+j);
+
+				hr = check_passkey();
+				if (SUCCEEDED(hr))
+					return hr;
+			}
+		}
+
+		return hr;
+	}
+	else
+	{
+		// normal init
+
+		AESCryptor aes;
+		aes.set_key(CPUBrandString, 256);
+
+		memset(g_passkey_big, 0x38, 128);
+		load_setting(L"passkey", g_passkey_big, 128);
+		for(int i=0; i<128; i+=16)
+			aes.decrypt((unsigned char*)g_passkey_big+i, (unsigned char*)g_passkey_big+i);
+	}
+
 	return check_passkey();
 }
 
 HRESULT save_passkey()
 {
-	int CPUInfo[4];
+	int tmp[4];
 	unsigned char CPUBrandString[48];
 	memset(CPUBrandString, 0, 48);
-	__cpuid(CPUInfo, 0x80000002);
-	memcpy(CPUBrandString, CPUInfo, 16);
-	__cpuid(CPUInfo, 0x80000003);
-	memcpy(CPUBrandString+16, CPUInfo, 16);
-	__cpuid(CPUInfo, 0x80000004);
-	memcpy(CPUBrandString+32, CPUInfo, 16);
+	__cpuid(tmp, 0x80000002);
+	memcpy(CPUBrandString, tmp, 16);
+	__cpuid(tmp, 0x80000003);
+	memcpy(CPUBrandString+16, tmp, 16);
+	__cpuid(tmp, 0x80000004);
+	memcpy(CPUBrandString+32, tmp, 16);
 	memset(CPUBrandString + strlen((char*)CPUBrandString), 0, 48-strlen((char*)CPUBrandString));
 	for(int i=0; i<16; i++)
 		CPUBrandString[i] ^= CPUBrandString[i+32];
@@ -706,7 +766,7 @@ HRESULT save_passkey()
 	DWORD volume_c_sn = 0;
 	wchar_t volume_name[MAX_PATH];
 	GetVolumeInformationW(L"C:\\", volume_name, MAX_PATH, &volume_c_sn, NULL, NULL, NULL, NULL);
-	((DWORD*)CPUBrandString)[4] ^= volume_c_sn;
+	((DWORD*)CPUBrandString)[4] ^= volume_c_sn ^ g_bar_server[0];
 
 	AESCryptor aes;
 	aes.set_key(CPUBrandString, 256);

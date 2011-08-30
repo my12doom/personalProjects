@@ -337,10 +337,9 @@ void main(int argc, char * argv[])
 
 	create_watermark();
 	int first = 5;
+	bool idr_found = false;
 	while (true)
 	{
-		bool idr_found = false;
-
 
 		int delimeter_size_left = 0;
 		delimeter_size_left = read_a_delimeter(&left);
@@ -348,7 +347,7 @@ void main(int argc, char * argv[])
 		{
 			first --;
 		}
-		if (n>36000 && n<37000)
+		//if (n>36000 && n<37000)
 		{
 			if (is_idr)
 				idr_found = true;
@@ -361,7 +360,7 @@ void main(int argc, char * argv[])
 		}
 
 		int delimeter_size_right = read_a_delimeter(&right);
-		if (n>36000 && n<37000 && idr_found)
+		//if (n>36000 && n<37000 && idr_found)
 		{
 			memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_right);
 			out_data_count += delimeter_size_right;

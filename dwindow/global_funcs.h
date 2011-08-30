@@ -6,11 +6,15 @@
 #include "..\libchecksum\libchecksum.h"
 
 
+// setting class
+class AutoSettingString;
+
 // register window proc
 INT_PTR CALLBACK register_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
 
 
 // public variables
+extern AutoSettingString g_bar_server;
 extern char g_passkey_big[128];
 extern char g_passkey[32];
 extern char *g_server_address;
@@ -111,6 +115,7 @@ protected:
 	wchar_t m_key[256];
 	ValueType m_value;
 };
+
 
 class AutoSettingString
 {
