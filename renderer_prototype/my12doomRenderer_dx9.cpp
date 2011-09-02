@@ -1315,7 +1315,10 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_Device->SetRenderTarget(0, back_buffer);
 		m_Device->SetTexture( 0, m_mask_temp_left );
 		m_Device->SetTexture( 1, m_mask_temp_right );
-		m_Device->SetPixelShader(m_ps_anaglyph);
+		if(get_active_input_layout() != mono2d 
+			|| (m_dsr0->is_connected() && m_dsr1->is_connected())
+			|| (!m_dsr0->is_connected() && !m_dsr1->is_connected()))
+			m_Device->SetPixelShader(m_ps_anaglyph);
 
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );

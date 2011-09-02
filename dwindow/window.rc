@@ -223,18 +223,11 @@ BEGIN
                     MENUITEM "Horizontal Span Mode",        ID_OUTPUTMODE_DUALPROJECTOR_SBS
                     MENUITEM "Independent Mode",            ID_OUTPUTMODE_DUALPROJECTOR
                 END
-                POPUP "Anaglyph"
-                BEGIN
-                    MENUITEM "Red - Cyan (Red - Blue, Red- Green)", ID_ANAGLYPH_REDCYAN
-                    MENUITEM SEPARATOR
-                    MENUITEM "Custom Color",                ID_ANAGLYPH_CUSTOMCOLOR
-                    MENUITEM "Anaglyph Left Eye Color...",  ID_OUTPUTMODE_ANAGLYPHCOLOR
-                    MENUITEM "Anaglyph Right Eye Color...", ID_OUTPUTMODE_ANAGLYPHCOLORRIGHTEYE
-                END
                 MENUITEM "Nvidia 3D Vision",            ID_OUTPUTMODE_NVIDIA3DVISION
-                MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
                 MENUITEM "IZ3D Displayer",              ID_OUTPUTMODE_IZ3D
                 MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
+                MENUITEM "Anaglyph",                    ID_OUTPUTMODE_ANAGLYPH
+                MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
             END
             POPUP "Aspect Ratio"
             BEGIN

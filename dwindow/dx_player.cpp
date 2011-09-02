@@ -673,15 +673,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		CheckMenuItem(menu, ID_OUTPUTMODE_GERNERAL120HZGLASSES,	m_output_mode == pageflipping ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				m_output_mode == out_hsbs ? MF_CHECKED:MF_UNCHECKED);
 		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
-
-		if (m_output_mode == anaglyph)
-		{
-			if (m_anaglygh_left_color == RGB(255, 0, 0) && m_anaglygh_right_color == RGB(0, 255, 255))
-				CheckMenuItem(menu, ID_ANAGLYPH_REDCYAN, MF_CHECKED);
-			else
-				CheckMenuItem(menu, ID_ANAGLYPH_CUSTOMCOLOR, MF_CHECKED);
-
-		}
+		CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
 
 		// Aspect Ration
 		if (m_aspect == -1) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
@@ -1169,7 +1161,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	}
 
 	// anaglygh
-	else if (uid == ID_ANAGLYPH_REDCYAN)
+	else if (uid == ID_OUTPUTMODE_ANAGLYPH)
 	{
 		m_anaglygh_left_color = RGB(255,0,0);
 		m_anaglygh_right_color = RGB(0,255,255);
@@ -2073,15 +2065,19 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 							hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
 							set_lav_audio_bitstreaming(lav_audio, m_bitstreaming);
 							hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
-							log_line(L"renderering audio pin #%d", audio_num);
 							m_gb->Render(pin);
+							log_line(L"done renderering audio pin #%d", audio_num);
 						}
 						audio_num ++;
 					}
 
 					else if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Subtitle))
 					{
-						m_gb->Render(pin);
+						log_line(L"renderering subtitle pin %s", info.achName);
+						CComPtr<IPin> srenderer_pin;
+						GetUnconnectedPin(m_grenderer.m_filter, PINDIR_INPUT, &srenderer_pin);
+						if (srenderer_pin) m_gb->ConnectDirect(pin, srenderer_pin, NULL);
+						log_line(L"done renderering subtitle %s", info.achName);
 					}
 
 					else;	// other tracks, ignore them
@@ -2364,7 +2360,10 @@ HRESULT dx_player::log_line(wchar_t *format, ...)
 	wvsprintfW(tmp, format, valist);
 	va_end(valist);
 
-	wprintf(L"log: %s\n", tmp);
+	OutputDebugStringW(L"log:");
+	OutputDebugStringW(tmp);
+	OutputDebugStringW(L"\n");
+
 	wcscat(m_log, tmp);
 #endif
 	return S_OK;
@@ -2414,6 +2413,8 @@ HRESULT dx_player::select_font(bool show_dlg)
 		ChooseFontW(&cf);
 
 	lstrcpynW(m_FontName, lf.lfFaceName, sizeof(m_FontName)/sizeof(TCHAR));
+	m_FontStyle.save();
+	m_FontName.save();
 	m_lFontPointSize = cf.iPointSize / 10;  // Specified in 1/10 point units
 	//m_font_color = cf.rgbColors;
 	m_font = CreateFontIndirectW(cf.lpLogFont); 
@@ -2779,7 +2780,9 @@ HRESULT dx_player::enable_subtitle_track(int track)
 								m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
 
 								// render new subtitle pin
-								m_gb->Render(pin);
+								CComPtr<IPin> srenderer_pin;
+								GetUnconnectedPin(m_grenderer.m_filter, PINDIR_INPUT, &srenderer_pin);
+								if (srenderer_pin) m_gb->ConnectDirect(pin, srenderer_pin, NULL);
 							}
 
 							subtitle_track_found++;
@@ -2820,7 +2823,9 @@ HRESULT dx_player::enable_subtitle_track(int track)
 
 								// render new subtitle pin
 								stream_select->Enable(i, AMSTREAMSELECTENABLE_ENABLE);
-								m_gb->Render(pin);
+								CComPtr<IPin> srenderer_pin;
+								GetUnconnectedPin(m_grenderer.m_filter, PINDIR_INPUT, &srenderer_pin);
+								if (srenderer_pin) m_gb->ConnectDirect(pin, srenderer_pin, NULL);
 							}
 
 							subtitle_track_found++;

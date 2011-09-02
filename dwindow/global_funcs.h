@@ -17,7 +17,9 @@ INT_PTR CALLBACK register_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 extern AutoSettingString g_bar_server;
 extern char g_passkey_big[128];
 extern char g_passkey[32];
+extern DWORD g_last_bar_time;
 extern char *g_server_address;
+#define HEARTBEAT_TIMEOUT 8000
 #define g_server_E3D "w32.php"
 #define g_server_gen_key "gen_key.php"
 #define g_server_reg_check "reg_check.php"
@@ -66,7 +68,9 @@ HRESULT save_e3d_key(const unsigned char *file_hash, const unsigned char *file_k
 HRESULT load_e3d_key(const unsigned char *file_hash, unsigned char *file_key);
 HRESULT download_e3d_key(const wchar_t *filename);
 HRESULT make_xvid_support_mp4v();
-HRESULT download_url(char *url_to_download, char *out, int outlen = 64);
+HRESULT download_url(char *url_to_download, char *out, int outlen = 64, int timeout=INFINITE);
+DWORD WINAPI killer_thread(LPVOID time);
+DWORD WINAPI killer_thread2(LPVOID time);
 
 // CoreMVC
 HRESULT ActiveCoreMVC(IBaseFilter *decoder);
@@ -120,6 +124,10 @@ protected:
 class AutoSettingString
 {
 public:
+	void save()
+	{
+		save_setting(m_key, m_value, 1024, REG_SZ);
+	}
 	AutoSettingString(const wchar_t*key, const wchar_t *default_value)
 	{
 		wcscpy(m_key, key);
@@ -129,7 +137,7 @@ public:
 	}
 	~AutoSettingString()
 	{
-		save_setting(m_key, m_value, 1024, REG_SZ);
+		save();
 		delete m_value;
 	}
 	operator wchar_t*()

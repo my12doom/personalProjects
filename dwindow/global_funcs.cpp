@@ -24,6 +24,7 @@ AutoSetting<localization_language> g_active_language(L"Language", CHINESE);
 AutoSettingString g_bar_server(L"BarServer", L"");
 char g_passkey[32];
 char g_passkey_big[128];
+DWORD g_last_bar_time;
 
 int n_monitor_found = 0;
 RECT monitor_rect[MAX_MONITORS];
@@ -700,7 +701,7 @@ HRESULT load_passkey()
 	
 		char downloaded[1024];
 		memset(downloaded, 0, sizeof(downloaded));
-		download_url(url, downloaded, 1024);
+		download_url(url, downloaded, 1024, 2000);
 		unsigned char encoded_passkey_big[128+10];
 
 		HRESULT hr = E_FAIL;
@@ -725,7 +726,10 @@ HRESULT load_passkey()
 
 				hr = check_passkey();
 				if (SUCCEEDED(hr))
+				{
+					g_last_bar_time = GetTickCount();
 					return hr;
+				}
 			}
 		}
 
@@ -951,7 +955,7 @@ bool save_setting(const WCHAR *key, const void *data, int len, DWORD REG_TYPE)
 	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, soft_key, 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
 	if (ret != ERROR_SUCCESS)
 		return false;
-	ret = RegSetValueExW(hkey, key, 0, REG_TYPE, (const byte*)data, len );
+	ret = RegSetValueExW(hkey, key, 0, REG_TYPE, (const byte*)data, REG_TYPE!=REG_SZ?len:wcslen((wchar_t*)data)*2+2);
 	if (ret != ERROR_SUCCESS)
 		return false;
 
@@ -988,8 +992,26 @@ bool del_setting(const WCHAR *key)
 	return true;
 }
 
-HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/)
+typedef struct _download_para
 {
+	char *url_to_download;
+	char *out;
+	int outlen;
+	bool *cancel;
+	HRESULT *hr;
+} download_para;
+
+DWORD WINAPI download_thread(LPVOID para)
+{
+	download_para * p = (download_para*)para;
+
+	char url_to_download[1024];
+	strcpy_s(url_to_download, p->url_to_download);
+	void *out = malloc(p->outlen);
+	int outlen = p->outlen;
+	bool *cancel = p->cancel;
+	HRESULT *hr = p->hr;
+
 	HINTERNET HI;
 	HI=InternetOpenA("dwindow",INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
 	if (HI==NULL)
@@ -1003,10 +1025,34 @@ HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/)
 	DWORD byteread = 0;
 	BOOL internetreadfile = InternetReadFile(HURL,out, outlen, &byteread);
 
-	if (!internetreadfile)
-		return E_FAIL;
+	if (!internetreadfile && !*cancel)
+		*hr = S_FALSE;
 
-	return S_OK;
+	if (!*cancel)
+	{
+		*hr = S_OK;
+		memcpy(p->out, out, byteread);
+	}
+
+	free(out);
+	delete cancel;
+	return 0;
+}
+
+HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/, int timeout/*=INFINITE*/)
+{
+	download_para thread_para = {url_to_download, out, outlen, new bool(false), new HRESULT(E_FAIL)};
+
+	HANDLE thread = CreateThread(NULL, NULL, download_thread, &thread_para, NULL, NULL);
+
+	WaitForSingleObject(thread, timeout);
+
+	if (*thread_para.hr == E_FAIL)
+		*thread_para.cancel = true;
+
+	HRESULT hr = *thread_para.hr == S_OK ? S_OK: E_FAIL;
+	delete thread_para.hr;
+	return hr;
 }
 
 HRESULT download_e3d_key(const wchar_t *filename)
@@ -1072,4 +1118,19 @@ HRESULT download_e3d_key(const wchar_t *filename)
 err_ret:
 	CloseHandle(h_file);
 	return hr;
+}
+
+DWORD WINAPI killer_thread(LPVOID time)
+{
+	Sleep(*(DWORD*)time);
+	if (GetTickCount() - g_last_bar_time > HEARTBEAT_TIMEOUT)
+		ExitProcess(-1);
+	return 0;
+}
+
+DWORD WINAPI killer_thread2(LPVOID time)
+{
+	Sleep(*(DWORD*)time);
+	ExitProcess(0);
+	return 0;
 }

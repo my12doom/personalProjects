@@ -1,5 +1,34 @@
+
+
+DWORD WINAPI msg_thread(LPVOID msg)
+{
+	printf("服务器无响应");
+	MessageBoxW(0, L"服务器无响应", L"Error", MB_ICONERROR);
+	return 0;
+}
+
 DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 {
+	//TODO change to heartbeep if BarServer Valid
+	HANDLE msgthread = INVALID_HANDLE_VALUE;
+	if (g_bar_server[0])
+	{
+		while (true)
+		{
+			if (GetTickCount() - g_last_bar_time > HEARTBEAT_TIMEOUT)
+			{
+				if (msgthread == INVALID_HANDLE_VALUE) msgthread = CreateThread(NULL, NULL, msg_thread, NULL, NULL, NULL);
+				CreateThread(NULL, NULL, killer_thread, new DWORD(20000), NULL, NULL);
+			}
+			else
+			{
+				msgthread = INVALID_HANDLE_VALUE;
+				Sleep(3000);
+			}
+			load_passkey();
+		}
+	}
+
 	Sleep(60*1000);
 
 	HWND parent_window = (HWND)lpParame;

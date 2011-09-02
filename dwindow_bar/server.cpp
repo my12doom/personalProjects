@@ -1,25 +1,71 @@
+#ifndef DEBUG
+#define  printf
+#endif
+
 #include <winsock2.h>
 #include <Windows.h>
 #include <stdio.h>
 
 #include "..\AESFile\rijndael.h"
 #include "global_funcs_lite.h"
+#include "CCritSec.h"
 
 #pragma  comment(lib, "ws2_32.lib")
 
 #define SERVER_PORT 80
 #define BACKLOG 10
-#define MAX_TIMEOUT 5000
+#define NETWORK_TIMEOUT 5000
+#define HEARTBEEP_TIMEOUT 120000	// 2 minute
+#define MAX_USER_SLOT 2048
+int MAX_USER = 0;
 
-#ifndef DEBUG
-#define  printf
-#endif
+typedef struct _active_user_info
+{
+	DWORD tick;
+	DWORD ip;
+} active_user_info;
+active_user_info active_users[MAX_USER_SLOT];
+CCritSec cs;
 
+HRESULT reg_ip(DWORD ip);
+HRESULT init_key();
+int my_handle_req(char* request, DWORD ip, int client_sock);
+DWORD WINAPI ThreadServer(LPVOID param);
+int make_server_socket();
+int main(int argc, char * argv[]);
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+
+
+HRESULT reg_ip(DWORD ip)
+{
+	int tick = GetTickCount();
+	CAutoLock lck(&cs);
+	for(int i=0; i<MAX_USER; i++)
+	{
+		if (active_users[i].ip == ip)
+		{
+			active_users[i].tick = tick;
+			return S_OK;
+		}
+	}
+
+	for(int i=0; i<MAX_USER; i++)
+	{
+		if (tick - active_users[i].tick > HEARTBEEP_TIMEOUT)
+		{
+			active_users[i].tick = tick;
+			active_users[i].ip = ip;
+			return S_OK;
+		}
+	}
+
+	return E_FAIL;
+}
 HRESULT init_key()
 {
-	char username[512] = "my12doom";
+	char username[512] = "ztester";
 
-	char password[512] = "tester88";
+	char password[512] = "FWANRW";
 
 	// SHA1 it!
 	unsigned char sha1[20];
@@ -72,6 +118,13 @@ HRESULT init_key()
 		else
 			printf("Activation OK\n");
 
+		DWORD e[32];
+		dwindow_passkey_big p;
+		BigNumberSetEqualdw(e, 65537, 32);
+		RSA((DWORD*)&p, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+
+		MAX_USER = p.max_bar_user;
+		printf("max user: %d.\n", MAX_USER);
 
 		return hr;
 	}
@@ -83,11 +136,21 @@ HRESULT init_key()
 	}
 }
 
-int my_handle_req(char* request, int client_sock) 
+int my_handle_req(char* request, DWORD ip, int client_sock) 
 {
+	if (ip != inet_addr("127.0.0.1") &&
+		(ip & inet_addr("192.168.0.0")) != inet_addr("192.168.0.0") &&
+		(ip & inet_addr("172.16.0.0")) != inet_addr("172.16.0.0"))
+	{
+		closesocket(client_sock);
+		return -1;
+	}
+
+	//printf("IP: %s.\n", inet_ntoa(ip));
+
 	printf("%s\n", request);
-	char command[BUFSIZ];
-	char arguments[BUFSIZ];
+	char command[1024];
+	char arguments[1024];
 
 	if (sscanf(request, "%s%s", command, arguments) != 2) 
 		return -1;
@@ -102,34 +165,49 @@ int my_handle_req(char* request, int client_sock)
 
 	if (strlen(arguments) == 64)
 	{
-		srand(time(NULL));
-		unsigned char random = rand()&0xff;
-		unsigned char key_got[40];
-		for(int i=0; i<32; i++)
+		if (SUCCEEDED(reg_ip(ip)))
 		{
-			sscanf(arguments+i*2, "%02X", key_got+i);
-			key_got[i] ^= random;
+			srand(time(NULL));
+			unsigned char random = rand()&0xff;
+			unsigned char key_got[40];
+			for(int i=0; i<32; i++)
+			{
+				sscanf(arguments+i*2, "%02X", key_got+i);
+				key_got[i] ^= random;
+			}
+
+			AESCryptor aes;
+			aes.set_key(key_got, 256);
+
+			unsigned char crypted_passkey[128];
+			for(int i=0; i<128; i+=16)
+				aes.encrypt((unsigned char*)g_passkey_big+i, (unsigned char*)crypted_passkey+i);
+
+			reply[0] = NULL;
+			for(int i=0; i<128; i++)
+			{
+				sprintf(tmp, "%02X", crypted_passkey[i]);
+				strcat_s(reply, tmp);
+			}
 		}
-
-		AESCryptor aes;
-		aes.set_key(key_got, 256);
-
-		unsigned char crypted_passkey[128];
-		for(int i=0; i<128; i+=16)
-			aes.encrypt((unsigned char*)g_passkey_big+i, (unsigned char*)crypted_passkey+i);
-
-		reply[0] = NULL;
-		for(int i=0; i<128; i++)
+		else
 		{
-			sprintf(tmp, "%02X", crypted_passkey[i]);
-			strcat_s(reply, tmp);
+			strcpy_s(reply, "SERVER FULL");
 		}
-
 	}
-
-
-
-
+	else if (strlen(arguments) == 6 && strcmp(arguments, "LOGOUT") == 0)
+	{
+		CAutoLock lck(&cs);
+		for(int i=0; i< MAX_USER; i++)
+		{
+			if (active_users[i].ip == ip)
+			{
+				active_users[i].ip = 0;
+				active_users[i].tick = 0;
+			}
+		}
+		strcpy_s(reply, "OK");
+	}
 
 	// send reply info
 	int content_length = strlen(reply);
@@ -153,6 +231,7 @@ int my_handle_req(char* request, int client_sock)
 	//content
 	send(client_sock, reply, strlen(reply), 0);
 
+	printf("Reply: %s\n<END OF REPLAY>\n\n", reply);
 
 	return 0;
 }
@@ -160,7 +239,10 @@ int my_handle_req(char* request, int client_sock)
 
 DWORD WINAPI ThreadServer(LPVOID param)
 {
-	int acc_socket = (int) param;
+	int acc_socket = *(int*)param;
+	DWORD ip = ((DWORD*)param)[1];
+
+	delete param;
 
 	int numbytes;
 	char buf[1024];
@@ -171,10 +253,10 @@ DWORD WINAPI ThreadServer(LPVOID param)
 		return -1;
 	}
 
-	my_handle_req(buf, acc_socket);
+	my_handle_req(buf, ip, acc_socket);
 	shutdown(acc_socket, SD_SEND);
 	int timeout = GetTickCount();
-	while (recv(acc_socket, buf, 99, 0) > 0 && GetTickCount() - timeout < MAX_TIMEOUT)
+	while (recv(acc_socket, buf, 99, 0) > 0 && GetTickCount() - timeout < NETWORK_TIMEOUT)
 	{
 		printf("got %d byte:%s\n", numbytes, buf);
 		memset(buf, 0, sizeof(buf));
@@ -206,12 +288,20 @@ int make_server_socket()
 
 int main(int argc, char * argv[]) 
 {
-	init_key();
+	memset(active_users, 0, sizeof(active_users));
+
+	if (FAILED(init_key()))
+	{
+		printf("Init Failed, exiting in 5 seconds");
+		Sleep(5000);
+		return -1;
+	}
 
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(1, 1), &wsaData) != 0) 
 	{
-		fprintf(stderr, "WSAStartup failed.\n");
+		fprintf(stderr, "WSAStartup failed, exiting in 5 seconds.\n");
+		Sleep(5000);
 		return -1;
 	}
 	printf("server starting...");
@@ -228,22 +318,18 @@ int main(int argc, char * argv[])
 	printf("OK\n");
 
 
-	while(true) 
+	while(true)
 	{
 		acc_socket = accept(server_socket, (struct sockaddr *)&user_socket, &sock_size);
 
 		DWORD ip = user_socket.sin_addr.S_un.S_addr;
-		if (ip != inet_addr("127.0.0.1") &&
-			(ip & inet_addr("192.168.0.0")) != inet_addr("192.168.0.0") &&
-			(ip & inet_addr("172.16.0.0")) != inet_addr("172.16.0.0"))
-		{
-			closesocket(acc_socket);
-			continue;
-		}
-
-		printf("IP: %s.\n", inet_ntoa(user_socket.sin_addr));
-		CreateThread(NULL, NULL, ThreadServer, (LPVOID)acc_socket, NULL, NULL);
+		DWORD *para = new DWORD[2];
+		para[0] = acc_socket;
+		para[1] = ip;
+		CreateThread(NULL, NULL, ThreadServer, para, NULL, NULL);
 	}
+
+	closesocket(server_socket);
 
 	return 0;
 }

@@ -105,6 +105,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return -1;
 	}
 
+retry:
 	load_passkey();
 	if (FAILED(check_passkey()))
 	{
@@ -115,7 +116,8 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 		else
 		{
-			MessageBoxW(0, C(L"System initialization failed : server not found, the program will exit now."), L"Error", MB_ICONERROR);
+			if (MessageBoxW(0, C(L"System initialization failed : server not found, the program will exit now."), L"Error", MB_RETRYCANCEL) == IDRETRY)
+				goto retry;
 		}
 	}
 	save_passkey();
@@ -162,23 +164,24 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return 0;
 	}
 
-	dx_player test(info1.rcMonitor, info2.rcMonitor, hinstance);
-	BringWindowToTop(test.m_hwnd1);
+	dx_player *test = new dx_player(info1.rcMonitor, info2.rcMonitor, hinstance);
+	BringWindowToTop(test->m_hwnd1);
 
 
 	if (argc>1)
 	{
-		test.reset_and_loadfile(argv[1], false);
-		while(!test.m_reset_load_done)
+		test->reset_and_loadfile(argv[1], false);
+		while(!test->m_reset_load_done)
 			Sleep(50);
 
 		//test.toggle_fullscreen();
-		SetFocus(test.m_hwnd1);
+		SetFocus(test->m_hwnd1);
 	}
-	while (!test.is_closed())
+	while (!test->is_closed())
 		Sleep(100);
 
-	ExitProcess(0);
+	CreateThread(NULL, NULL, killer_thread2, new DWORD(3000), NULL, NULL);
+	delete test;
 	return 0;
 }
 
