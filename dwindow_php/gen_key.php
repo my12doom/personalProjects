@@ -26,12 +26,16 @@ if (strstr($user, "'"))
 // $user = "my12doom";
 // $password_hash = "0F4F2AA23F104C59F24BE531E3C1666B2169AA97";
 
+$max_bar_user = 0;
 $result = mysql_query("SELECT * FROM users where name = '".$user."' and pass_hash = '".$password_hash."'");		//warning: possible SQL injection
 if (mysql_num_rows($result) <= 0)
 {
 	db_log("ACTIVE", "INVALID PASSWORD", $user, $password_hash);
 	die("ERROR:INVALID USERNAME OR PASSWORD");
 }
+$row = mysql_fetch_array($result);
+$max_bar_user = $row["bar_max_users"];
+db_log("DEBUG", "OK", $max_bar_user);
 db_log("ACTIVE", "OK", $user, $password_hash);
 
 // generate a random passkey and test if in dropped_passkey table
@@ -53,7 +57,7 @@ $result = mysql_query("delete FROM active_passkeys WHERE user='".$user."'");
 $result = mysql_query("INSERT INTO active_passkeys (passkey, user) values('".$passkey."', '".$user."')");
 
 // encode them to RSA activation code
-$passkey = $com->genkeys($passkey, time() - (12*3600), time() + 24*7*3600);
+$passkey = $com->genkeys2($passkey, time() - (12*3600), time() + 24*7*3600, $max_bar_user);
 $passkey = $com->AES($passkey, $return_key);
 echo $passkey;
 ?>
