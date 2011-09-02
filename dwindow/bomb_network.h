@@ -9,10 +9,10 @@ DWORD WINAPI msg_thread(LPVOID msg)
 
 DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 {
-	//TODO change to heartbeep if BarServer Valid
-	HANDLE msgthread = INVALID_HANDLE_VALUE;
 	if (g_bar_server[0])
 	{
+		// hearbeat for bar mode
+		HANDLE msgthread = INVALID_HANDLE_VALUE;
 		while (true)
 		{
 			if (GetTickCount() - g_last_bar_time > HEARTBEAT_TIMEOUT)

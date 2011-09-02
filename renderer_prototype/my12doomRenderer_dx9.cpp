@@ -1650,12 +1650,52 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	hr = m_Device->SetStreamSource( 0, m_vertex_subtitle, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags_subtitle );
 
+
+	// movie picture position
+	float active_aspect = get_active_aspect();
+	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+	if (m_output_mode == out_sbs)
+		tar.right /= 2;
+	else if (m_output_mode == out_tb)
+		tar.bottom /= 2;
+
+	int delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
+	int delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
+	if (delta_w > 0)
+	{
+		tar.left += delta_w/2;
+		tar.right -= delta_w/2;
+	}
+	else if (delta_h > 0)
+	{
+		tar.top += delta_h/2;
+		tar.bottom -= delta_h/2;
+	}
+
+	int tar_width = tar.right-tar.left;
+	int tar_height = tar.bottom - tar.top;
+	tar.left += (LONG)(tar_width * m_bmp_offset_x);
+	tar.right += (LONG)(tar_width * m_bmp_offset_x);
+	tar.top += (LONG)(tar_height * m_bmp_offset_y);
+	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
+
 	// config position
-	float cfg[8] = {(m_bmp_fleft+m_bmp_offset_x)*2-1, (m_bmp_ftop+m_bmp_offset_y)*-2+1, m_bmp_fwidth*2, m_bmp_fheight*-2,
+	float pic_left = (float)tar.left / m_active_pp.BackBufferWidth;
+	float pic_width = (float)(tar.right - tar.left) / m_active_pp.BackBufferWidth;
+	float pic_top = (float)tar.top / m_active_pp.BackBufferHeight;
+	float pic_height = (float)(tar.bottom - tar.top) / m_active_pp.BackBufferHeight;
+
+	float left = pic_left + pic_width * m_bmp_fleft;
+	float width = pic_width * m_bmp_fwidth;
+	float top = pic_top + pic_height * m_bmp_ftop;
+	float height = pic_height * m_bmp_fheight;
+
+	//float cfg[8] = {(m_bmp_fleft+m_bmp_offset_x)*2-1, (m_bmp_ftop+m_bmp_offset_y)*-2+1, m_bmp_fwidth*2, m_bmp_fheight*-2,
+	float cfg[8] = {left*2-1, top*-2+1, width*2, height*-2,
 					0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1024};
 
 	if (!left_eye)
-		cfg[0] -= m_bmp_offset * 2;
+		cfg[0] -= m_bmp_offset*pic_width * 2;
 	hr = m_Device->SetVertexShader(m_vs_subtitle);
 	hr = m_Device->SetVertexShaderConstantF(0, cfg, 2);
 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
@@ -2315,6 +2355,7 @@ HRESULT my12doomRenderer::calculate_vertex()
 	//bmp[1] = bmp[0]; bmp[1].x += m_bmp_fwidth * tar_width;
 	//bmp[3] = bmp[1]; bmp[3].y += m_bmp_fheight* tar_height;
 	//bmp[2] = bmp[3]; bmp[2].x -= m_bmp_fwidth * tar_width;
+
 	bmp[0].x = 0; bmp[0].y = 0;
 	bmp[1].x = 1; bmp[1].y = 0;
 	bmp[2].x = 0; bmp[2].y = 1;

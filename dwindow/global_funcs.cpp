@@ -701,7 +701,7 @@ HRESULT load_passkey()
 	
 		char downloaded[1024];
 		memset(downloaded, 0, sizeof(downloaded));
-		download_url(url, downloaded, 1024, 2000);
+		download_url(url, downloaded, 1024, 3000);
 		unsigned char encoded_passkey_big[128+10];
 
 		HRESULT hr = E_FAIL;
@@ -1133,4 +1133,19 @@ DWORD WINAPI killer_thread2(LPVOID time)
 	Sleep(*(DWORD*)time);
 	ExitProcess(0);
 	return 0;
+}
+
+HRESULT bar_logout()
+{
+	if (!g_bar_server[0])
+		return S_OK;
+
+	USES_CONVERSION;
+	char url[1024] = "http://";
+	char tmp[10];
+	strcat_s(url, W2A(g_bar_server));
+	strcat_s(url, "/LOGOUT");
+
+	download_url(url, tmp, 1024, 3000);
+	return S_OK;
 }
