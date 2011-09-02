@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0500 */
-/* at Fri Jun 10 18:37:28 2011
+/* at Fri Sep 02 21:39:59 2011
  */
 /* Compiler settings for .\phpcrypt.idl:
     Oicf, W1, Zp8, env=Win32 (32b run)
@@ -50,7 +50,7 @@
 #include "phpcrypt_i.h"
 
 #define TYPE_FORMAT_STRING_SIZE   61                                
-#define PROC_FORMAT_STRING_SIZE   565                               
+#define PROC_FORMAT_STRING_SIZE   625                               
 #define EXPR_FORMAT_STRING_SIZE   1                                 
 #define TRANSMIT_AS_TABLE_SIZE    0            
 #define WIRE_MARSHAL_TABLE_SIZE   1            
@@ -601,6 +601,63 @@ static const phpcrypt_MIDL_PROC_FORMAT_STRING phpcrypt__MIDL_ProcFormatString =
 /* 562 */	0x8,		/* FC_LONG */
 			0x0,		/* 0 */
 
+	/* Procedure genkeys2 */
+
+/* 564 */	0x33,		/* FC_AUTO_HANDLE */
+			0x6c,		/* Old Flags:  object, Oi2 */
+/* 566 */	NdrFcLong( 0x0 ),	/* 0 */
+/* 570 */	NdrFcShort( 0x14 ),	/* 20 */
+/* 572 */	NdrFcShort( 0x1c ),	/* x86 Stack size/offset = 28 */
+/* 574 */	NdrFcShort( 0x18 ),	/* 24 */
+/* 576 */	NdrFcShort( 0x8 ),	/* 8 */
+/* 578 */	0x47,		/* Oi2 Flags:  srv must size, clt must size, has return, has ext, */
+			0x6,		/* 6 */
+/* 580 */	0x8,		/* 8 */
+			0x7,		/* Ext Flags:  new corr desc, clt corr check, srv corr check, */
+/* 582 */	NdrFcShort( 0x1 ),	/* 1 */
+/* 584 */	NdrFcShort( 0x1 ),	/* 1 */
+/* 586 */	NdrFcShort( 0x0 ),	/* 0 */
+
+	/* Parameter passkey */
+
+/* 588 */	NdrFcShort( 0x8b ),	/* Flags:  must size, must free, in, by val, */
+/* 590 */	NdrFcShort( 0x4 ),	/* x86 Stack size/offset = 4 */
+/* 592 */	NdrFcShort( 0x20 ),	/* Type Offset=32 */
+
+	/* Parameter time_start */
+
+/* 594 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
+/* 596 */	NdrFcShort( 0x8 ),	/* x86 Stack size/offset = 8 */
+/* 598 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
+	/* Parameter time_end */
+
+/* 600 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
+/* 602 */	NdrFcShort( 0xc ),	/* x86 Stack size/offset = 12 */
+/* 604 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
+	/* Parameter max_bar_user */
+
+/* 606 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
+/* 608 */	NdrFcShort( 0x10 ),	/* x86 Stack size/offset = 16 */
+/* 610 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
+	/* Parameter out */
+
+/* 612 */	NdrFcShort( 0x2113 ),	/* Flags:  must size, must free, out, simple ref, srv alloc size=8 */
+/* 614 */	NdrFcShort( 0x14 ),	/* x86 Stack size/offset = 20 */
+/* 616 */	NdrFcShort( 0x32 ),	/* Type Offset=50 */
+
+	/* Return value */
+
+/* 618 */	NdrFcShort( 0x70 ),	/* Flags:  out, return, base type, */
+/* 620 */	NdrFcShort( 0x18 ),	/* x86 Stack size/offset = 24 */
+/* 622 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
+
 			0x0
         }
     };
@@ -702,7 +759,8 @@ static const unsigned short Icrypt_FormatStringOffsetTable[] =
     372,
     426,
     480,
-    522
+    522,
+    564
     };
 
 static const MIDL_STUBLESS_PROXY_INFO Icrypt_ProxyInfo =
@@ -726,7 +784,7 @@ static const MIDL_SERVER_INFO Icrypt_ServerInfo =
     0,
     0,
     0};
-CINTERFACE_PROXY_VTABLE(20) _IcryptProxyVtbl = 
+CINTERFACE_PROXY_VTABLE(21) _IcryptProxyVtbl = 
 {
     &Icrypt_ProxyInfo,
     &IID_Icrypt,
@@ -749,7 +807,8 @@ CINTERFACE_PROXY_VTABLE(20) _IcryptProxyVtbl =
     (void *) (INT_PTR) -1 /* Icrypt::gen_keys_int */ ,
     (void *) (INT_PTR) -1 /* Icrypt::genkeys */ ,
     (void *) (INT_PTR) -1 /* Icrypt::decode_binarystring */ ,
-    (void *) (INT_PTR) -1 /* Icrypt::SHA1 */
+    (void *) (INT_PTR) -1 /* Icrypt::SHA1 */ ,
+    (void *) (INT_PTR) -1 /* Icrypt::genkeys2 */
 };
 
 
@@ -771,6 +830,7 @@ static const PRPC_STUB_FUNCTION Icrypt_table[] =
     NdrStubCall2,
     NdrStubCall2,
     NdrStubCall2,
+    NdrStubCall2,
     NdrStubCall2
 };
 
@@ -778,7 +838,7 @@ CInterfaceStubVtbl _IcryptStubVtbl =
 {
     &IID_Icrypt,
     &Icrypt_ServerInfo,
-    20,
+    21,
     &Icrypt_table[-3],
     CStdStubBuffer_DELEGATING_METHODS
 };

@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0500 */
-/* at Fri Jun 10 18:37:28 2011
+/* at Fri Sep 02 21:39:59 2011
  */
 /* Compiler settings for .\phpcrypt.idl:
     Oicf, W1, Zp8, env=Win32 (32b run)
@@ -142,6 +142,13 @@ EXTERN_C const IID IID_Icrypt;
             BSTR in,
             /* [retval][out] */ BSTR *out) = 0;
         
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE genkeys2( 
+            BSTR passkey,
+            LONG time_start,
+            LONG time_end,
+            LONG max_bar_user,
+            /* [retval][out] */ BSTR *out) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -259,6 +266,14 @@ EXTERN_C const IID IID_Icrypt;
             BSTR in,
             /* [retval][out] */ BSTR *out);
         
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *genkeys2 )( 
+            Icrypt * This,
+            BSTR passkey,
+            LONG time_start,
+            LONG time_end,
+            LONG max_bar_user,
+            /* [retval][out] */ BSTR *out);
+        
         END_INTERFACE
     } IcryptVtbl;
 
@@ -333,6 +348,9 @@ EXTERN_C const IID IID_Icrypt;
 
 #define Icrypt_SHA1(This,in,out)	\
     ( (This)->lpVtbl -> SHA1(This,in,out) ) 
+
+#define Icrypt_genkeys2(This,passkey,time_start,time_end,max_bar_user,out)	\
+    ( (This)->lpVtbl -> genkeys2(This,passkey,time_start,time_end,max_bar_user,out) ) 
 
 #endif /* COBJMACROS */
 

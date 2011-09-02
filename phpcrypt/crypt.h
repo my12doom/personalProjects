@@ -63,6 +63,7 @@ public:
 	STDMETHOD(genkeys)(BSTR passkey, LONG time_start, LONG time_end, BSTR* out);
 	STDMETHOD(decode_binarystring)(BSTR in, BSTR* out);
 	STDMETHOD(SHA1)(BSTR in, BSTR* out);
+	STDMETHOD(genkeys2)(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, BSTR* out);
 };
 
 OBJECT_ENTRY_AUTO(__uuidof(crypt), Ccrypt)

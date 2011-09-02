@@ -29,6 +29,7 @@ interface Icrypt : IDispatch{
 	[id(11), helpstring("方法genkeys")] HRESULT genkeys(BSTR passkey, LONG time_start, LONG time_end, [out,retval] BSTR* out);
 	[id(12), helpstring("方法decode_binarystring")] HRESULT decode_binarystring(BSTR in, [out,retval] BSTR* out);
 	[id(13), helpstring("方法SHA1")] HRESULT SHA1(BSTR in, [out,retval] BSTR* out);
+	[id(14), helpstring("genkeys2")] HRESULT genkeys2(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, [out,retval] BSTR* out);
 };
 [
 	uuid(D49AC205-730C-4F01-A52A-B49F9F4621B4),

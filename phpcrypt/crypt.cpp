@@ -97,13 +97,14 @@ HRESULT decode_client_request(BSTR input, dwindow_message_uncrypt *output)
 	return S_OK;
 }
 
-HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_start, __time64_t time_end, dwindow_passkey_big *out)
+HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_start, __time64_t time_end, int max_bar_user, dwindow_passkey_big *out)
 {
 	memcpy(out->passkey, passkey, 32);
 	memcpy(out->passkey2, passkey, 32);
 	memcpy(out->ps_aes_key, ps_aes_key, 32);
 	out->time_start = time_start;
 	out->time_end = time_end;
+	out->max_bar_user = max_bar_user;
 	memset(out->reserved, 0, sizeof(out->reserved));
 	out->zero = 0;
 
@@ -212,7 +213,7 @@ STDMETHODIMP Ccrypt::gen_keys(BSTR passkey, DATE time_start, DATE time_end, BSTR
 
 	dwindow_passkey_big passkey_big;
 
-	generate_passkey_big(pk, start, end, &passkey_big);
+	generate_passkey_big(pk, start, end, 1, &passkey_big);
 	return binary2bstr(&passkey_big, 128, out);
 }
 
@@ -229,7 +230,7 @@ STDMETHODIMP Ccrypt::gen_keys_int(BSTR passkey, ULONG time_start, ULONG time_end
 
 	dwindow_passkey_big passkey_big;
 
-	generate_passkey_big(pk, start, end, &passkey_big);
+	generate_passkey_big(pk, start, end, 1, &passkey_big);
 	return binary2bstr(&passkey_big, 128, out);
 
 	return S_OK;
@@ -248,7 +249,7 @@ STDMETHODIMP Ccrypt::genkeys(BSTR passkey, LONG time_start, LONG time_end, BSTR*
 
 	dwindow_passkey_big passkey_big;
 
-	generate_passkey_big(pk, start, end, &passkey_big);
+	generate_passkey_big(pk, start, end, 1, &passkey_big);
 	return binary2bstr(&passkey_big, 128, out);
 
 	return S_OK;
@@ -282,4 +283,23 @@ STDMETHODIMP Ccrypt::SHA1(BSTR in, BSTR* out)
 	unsigned char sha1_result[20];
 	SHA1Hash(sha1_result, (unsigned char*)W2A(in), wcslen(in));
 	return binary2bstr(sha1_result, 20, out);
+}
+
+STDMETHODIMP Ccrypt::genkeys2(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, BSTR* out)
+{
+	unsigned char pk[32];
+	if (FAILED(bstr2binary(passkey, pk, 32)))
+	{
+		*out = SysAllocString(L"");
+		return S_OK;
+	}
+	__time64_t start = time_start;
+	__time64_t end = time_end;
+
+	dwindow_passkey_big passkey_big;
+
+	generate_passkey_big(pk, start, end, max_bar_user, &passkey_big);
+	return binary2bstr(&passkey_big, 128, out);
+
+	return S_OK;
 }
