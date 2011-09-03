@@ -49,7 +49,7 @@ if ($form)
 			goto theend;
 		}
 		
-		$result = mysql_query("INSERT INTO users (name,pass_hash) values ('" . $username. "', '".$com->SHA1($password)."')");
+		$result = mysql_query("INSERT INTO users (name,pass_hash, usertype, bar_max_users) values ('" . $username. "', '".$com->SHA1($password)."', 0, 0)");
 		if ($result)
 		{
 			printf("adding user %s, password %s, OK!", $username, $password);
