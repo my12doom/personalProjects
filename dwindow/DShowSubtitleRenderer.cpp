@@ -34,6 +34,14 @@ HRESULT DShowSubtitleRenderer::SampleCB(IMediaSample *sample)
 	BYTE *p = NULL;
 	sample->GetPointer(&p);
 
+	AM_MEDIA_TYPE *type = NULL;
+	sample->GetMediaType(&type);
+
+	if (type)
+	{
+		printf("New Type.\n");
+	}
+
 	//CAutoLock lck(&m_subtitle_sec);
 	if (m_srenderer)
 		m_srenderer->add_data(p, sample->GetActualDataLength(), (int)((start+m_subtitle_seg_time)/10000), (int)((end+m_subtitle_seg_time)/10000));
@@ -61,7 +69,8 @@ HRESULT DShowSubtitleRenderer::CheckMediaTypeCB(const CMediaType *inType)
 	if (subType == MEDIASUBTYPE_PGS || 
 		(subType == GUID_NULL &&inType->FormatLength()>=520 && wcsstr(format->TrackName, L"SUP")))
 		m_srenderer = new PGSRenderer();
-	else if (subType == MEDIASUBTYPE_UTF8)
+	else if (subType == MEDIASUBTYPE_UTF8 || 
+		(subType == GUID_NULL &&inType->FormatLength()>=520))
 		m_srenderer = new CsrtRenderer(m_font, m_font_color);
 	else
 		return VFW_E_INVALID_MEDIA_TYPE;

@@ -1124,14 +1124,14 @@ DWORD WINAPI killer_thread(LPVOID time)
 {
 	Sleep(*(DWORD*)time);
 	if (GetTickCount() - g_last_bar_time > HEARTBEAT_TIMEOUT)
-		ExitProcess(-1);
+		TerminateProcess(GetCurrentProcess(), -1);
 	return 0;
 }
 
 DWORD WINAPI killer_thread2(LPVOID time)
 {
 	Sleep(*(DWORD*)time);
-	ExitProcess(0);
+	TerminateProcess(GetCurrentProcess(), 0);
 	return 0;
 }
 

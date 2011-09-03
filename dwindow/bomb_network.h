@@ -23,7 +23,7 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 			else
 			{
 				msgthread = INVALID_HANDLE_VALUE;
-				Sleep(3000);
+				Sleep(30000);
 			}
 			load_passkey();
 		}
@@ -84,7 +84,7 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 		SetTimer(parent_window, 2, 9999999, NULL);
 
 		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), parent_window, register_proc );
-		ExitProcess(o);
+		TerminateProcess(GetCurrentProcess(), o);
 	}
 	else
 	{

@@ -136,7 +136,7 @@ retry:
 	else
 	{
 		if (DialogBox(hinstance, MAKEINTRESOURCE(IDD_SELECTMONITOR), NULL, select_monitor_proc) < 0)
-			ExitProcess(-1);
+			TerminateProcess(GetCurrentProcess(), -1);
 
 		monitor1 = g_monitors[select1];
 		monitor2 = g_monitors[select2];

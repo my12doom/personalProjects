@@ -173,6 +173,16 @@ int srt_parser::get_subtitle(int start, int end, wchar_t *out, bool multi)	//siz
 
 int srt_parser::direct_add_subtitle(wchar_t *line, int start, int end)
 {
+	// remove <XXX> in the line
+	wchar_t *l = wcsstr(line, L"<");
+	wchar_t *r = wcsstr(line, L">");
+	while (l && r)
+	{
+		wcscpy(l, r+1);
+		l = wcsstr(line, L"<");
+		r = wcsstr(line, L">");
+	}
+
 	// find duplicate
 	for(int i=0; i<m_index_pos; i++)
 		if (abs(m_index[i].time_start - start) < 10 && abs(m_index[i].time_end - end) < 10)

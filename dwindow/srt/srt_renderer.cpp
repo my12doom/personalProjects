@@ -40,6 +40,23 @@ HRESULT CsrtRenderer::seek()
 
 HRESULT CsrtRenderer::add_data(BYTE *data, int size, int start, int end)
 {
+	bool again = false;
+	while (*data == NULL && size > 0)
+	{
+		again = true;
+		data ++;
+		size --;
+	}
+
+	if (again)
+	{
+		data ++;
+		size --;
+	}
+
+	if (size <= 0)
+		return S_OK;
+
 	char *p1 = (char*)malloc(size+1);
 	memcpy(p1, data, size);
 	p1[size] = NULL;
