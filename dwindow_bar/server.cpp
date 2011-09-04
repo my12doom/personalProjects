@@ -1,10 +1,6 @@
-#ifndef DEBUG
-#define  printf
-#endif
-
+#include <stdio.h>
 #include <winsock2.h>
 #include <Windows.h>
-#include <stdio.h>
 
 #include "..\AESFile\rijndael.h"
 #include "global_funcs_lite.h"
@@ -18,6 +14,12 @@
 #define HEARTBEEP_TIMEOUT 120000	// 2 minute
 #define MAX_USER_SLOT 2048
 int MAX_USER = 0;
+
+#ifndef DEBUG
+//#define  printf
+#endif
+
+int server_socket;
 
 typedef struct _active_user_info
 {
@@ -206,6 +208,20 @@ int my_handle_req(char* request, DWORD ip, int client_sock)
 				active_users[i].tick = 0;
 			}
 		}
+
+		int free_pos = 0;
+		for(int i=0; i< MAX_USER; i++)
+		{
+			if (active_users[i].ip == 0 || GetTickCount() - active_users[i].tick > HEARTBEEP_TIMEOUT)
+			{
+				active_users[i].ip = 0;
+				active_users[i].tick = 0;
+				free_pos ++;
+			}
+		}
+
+		printf("Free Slot Left: %d\n", free_pos);
+
 		strcpy_s(reply, "OK");
 	}
 
@@ -284,7 +300,7 @@ int make_server_socket()
 	if (listen(tempSockId, BACKLOG) == -1 ) 
 		return -1;
 	return tempSockId;
- }
+}
 
 int main(int argc, char * argv[]) 
 {
@@ -305,7 +321,6 @@ int main(int argc, char * argv[])
 		return -1;
 	}
 	printf("server starting...");
-	int server_socket;
 	int acc_socket;
 	int sock_size = sizeof(struct sockaddr_in);
 	struct sockaddr_in user_socket;
@@ -317,10 +332,18 @@ int main(int argc, char * argv[])
 	}
 	printf("OK\n");
 
-
 	while(true)
 	{
 		acc_socket = accept(server_socket, (struct sockaddr *)&user_socket, &sock_size);
+
+		if (acc_socket == -1)
+		{
+#ifdef DEBUG
+			Sleep(10);
+			printf("Invalid socket.\n");
+#endif
+			continue;
+		}
 
 		DWORD ip = user_socket.sin_addr.S_un.S_addr;
 		DWORD *para = new DWORD[2];

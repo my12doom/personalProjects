@@ -1666,63 +1666,8 @@ HRESULT dx_player::show_ui(bool show)
 
 HRESULT dx_player::draw_ui()
 {
-	CAutoLock lock(&m_draw_sec);
-
-	if (!m_show_ui)
-	{
-		if (m_renderer1)
-			m_renderer1->set_ui_visible(false);
-		return S_FALSE;
-	}
-
-	int _total = 0, current = 0;
-	double volume = 1.0;
-	bool paused = true;
-
-	tell(&current);
-	total(&_total);
-	get_volume(&volume);
-	if (m_mc)
-	{
-		static OAFilterState fs = State_Running;
-		HRESULT hr = m_mc->GetState(100, &fs);
-		if (fs == State_Running)
-			paused = false;
-	}
-
-	RECT client_rc;
-	GetClientRect(id_to_hwnd(1), &client_rc);
-	m_bar_drawer.total_width = client_rc.right - client_rc.left;
-	if (m_output_mode == out_sbs) m_bar_drawer.total_width /= 2;
-	m_bar_drawer.draw_total(paused, current, _total, volume);
-
-	//TODO: it seems that it is not a good idea to draw UI here..
-
 	if (m_renderer1)
-	{
-		m_renderer1->set_ui_visible(true);
-	}
-	else
-	{
-		/*
-		for(int id=1; id<=2; id++)
-		{
-			HDC hdc = GetDC(id_to_hwnd(id));
-			HDC hdcBmp = CreateCompatibleDC(hdc);
-			HBITMAP hbm = CreateCompatibleBitmap(hdc, 4096, 30);
-			HBITMAP hbmOld = (HBITMAP)SelectObject(hdcBmp, hbm);
-
-			SetBitmapBits(hbm, 4096*30*4, m_bar_drawer.result);
-			BitBlt(hdc, client_rc.left, client_rc.bottom-30, m_bar_drawer.total_width, 30, hdcBmp, 0, 0, SRCCOPY);
-
-			DeleteObject(SelectObject(hdcBmp, hbmOld));
-			DeleteObject(hbm);
-			DeleteDC(hdcBmp);
-			ReleaseDC(id_to_hwnd(id), hdc);
-		}
-		*/
-	}
-
+		m_renderer1->set_ui_visible(m_show_ui);
 	return S_OK;
 }
 
