@@ -40,19 +40,9 @@ HRESULT CsrtRenderer::seek()
 
 HRESULT CsrtRenderer::add_data(BYTE *data, int size, int start, int end)
 {
-	bool again = false;
-	while (*data == NULL && size > 0)
-	{
-		again = true;
-		data ++;
-		size --;
-	}
-
-	if (again)
-	{
-		data ++;
-		size --;
-	}
+	// remove some splitter's prefix 2byte datasize
+	if (size >=2 && (data[0] << 8) + data[1] == size-2)
+		size -= 2, data += 2;
 
 	if (size <= 0)
 		return S_OK;

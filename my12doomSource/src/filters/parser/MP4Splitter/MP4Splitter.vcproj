@@ -289,7 +289,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="BaseClasses.lib BaseSplitter.lib DSUtil.lib Winmm.lib zlib.lib"
+				AdditionalDependencies="BaseClasses.lib BaseSplitter.lib DSUtil.lib Winmm.lib zlib.lib system.lib Filters.lib Kasumi.lib"
 				OutputFile="$(OutDir)\$(ProjectName).ax"
 				AdditionalLibraryDirectories="$(SolutionDir)bin\lib\Debug_$(PlatformName)"
 				IgnoreDefaultLibraryNames="libc.lib"

@@ -397,6 +397,21 @@ HRESULT CMP4SplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 					const AP4_Byte* data = di->GetData();
 					AP4_Size size = di->GetDataSize();
 
+					bool need_free = false;
+					m_3dvfix = false;
+					if (data == NULL || size == 0)
+					{
+						const AP4_Byte fake[40] = {0x01,0x64,0x00,0x1F,0xFF,0xE1,0x00,0x18,0x67,0x64,0x00,0x1F,0xAC,0xD9,0x40,0x50,
+											   0x05,0xBB,0x01,0x10,0x00,0x00,0x3E,0x90,0x00,0x0B,0xB8,0x08,0xF1,0x83,0x19,0x60,
+											   0x01,0x00,0x05,0x68,0xEB,0xEC,0xB2,0x2C};
+
+						m_3dvfix = true;
+						need_free = true;
+						size = sizeof(fake);
+						data = (AP4_Byte*)malloc(size);
+						memcpy((void*)data, fake, size);
+					}
+
 					mt.majortype = MEDIATYPE_Video;
 					mt.subtype = FOURCCMap('1cva');
 					mt.formattype = FORMAT_MPEG2Video;
@@ -444,7 +459,11 @@ HRESULT CMP4SplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 
 					mt.subtype = FOURCCMap(vih->hdr.bmiHeader.biCompression = '1CVA');
 					mts.Add(mt);
+
+					if (need_free)
+						free((void*)data);
 				}
+				
 			} else if(AP4_StsdAtom* stsd = dynamic_cast<AP4_StsdAtom*>(
 											   track->GetTrakAtom()->FindChild("mdia/minf/stbl/stsd"))) {
 				const AP4_DataBuffer& db = stsd->GetDataBuffer();
@@ -1058,6 +1077,19 @@ static CStringW ConvertTX3GToSSA(
 	return hdr + str;
 }
 
+DWORD reverse_byte_order(DWORD input)
+{	
+	BYTE tmp[4];
+	memcpy(tmp, &input, 4);
+	BYTE t = tmp[0];
+	tmp[0] = tmp[3];
+	tmp[3] = t;
+	t = tmp[1];
+	tmp[1] = tmp[2];
+	tmp[2] = t;
+	return *(DWORD*)tmp;
+}
+
 bool CMP4SplitterFilter::DemuxLoop()
 {
 	HRESULT hr = S_OK;
@@ -1267,7 +1299,48 @@ bool CMP4SplitterFilter::DemuxLoop()
 					p2->SetData((LPCSTR)dlgln_plaintext, dlgln_plaintext.GetLength());
 					hr = DeliverPacket(p2);
 				}
-			} else {
+			} 
+
+			else if (track->GetType() == AP4_Track::TYPE_VIDEO && m_3dvfix)
+			{
+				int t = data.GetDataSize();
+				AP4_Byte *s = (AP4_Byte*)malloc(t+1024);
+				memcpy(s, data.GetData(), t);
+				AP4_Byte *e = s + t;
+				AP4_Byte *current = s;
+				AP4_Byte *next = current + 2;
+
+				while (next < e)
+				{
+					if (  ( (*(DWORD*)next) & 0xffffff) == 0x010000)
+					{
+						// convert to 00 00 00 01
+						memmove(next+1, next, e-next);
+						e++;
+						t++;
+					}
+
+					if (*(DWORD*)next == 0x01000000)
+					{
+						*(DWORD*)current = reverse_byte_order(next-current-4);
+						current = next;
+						next ++;
+					}
+					next++;
+				}
+
+				*(DWORD*)current = reverse_byte_order(next-current-4);
+
+
+
+				//if (*(DWORD*)s == 0x01000000)
+				//	*(DWORD*)s = reverse_byte_order(t-4);
+
+				p->SetData(s, t);
+
+			}
+
+			else {
 				p->SetData(data.GetData(), data.GetDataSize());
 			}
 

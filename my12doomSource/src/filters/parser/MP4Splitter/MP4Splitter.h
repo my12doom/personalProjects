@@ -37,6 +37,7 @@ class __declspec(uuid("61F47056-E400-43d3-AF1E-AB7DFFD4C4AD"))
 	CSize m_framesize;
 
 protected:
+	bool m_3dvfix;
 	CAutoPtr<CMP4SplitterFile> m_pFile;
 	HRESULT CreateOutputs(IAsyncReader* pAsyncReader);
 
