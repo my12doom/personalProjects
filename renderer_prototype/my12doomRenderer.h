@@ -5,6 +5,7 @@
 #include "..\AESFile\rijndael.h"
 #include "my12doomUI.h"
 #include "TextureAllocator.h"
+#include "..\dwindow\nvapi.h"
 
 struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
 #define WM_NV_NOTIFY (WM_USER+10086)
@@ -318,6 +319,8 @@ protected:
 	void init_variables();
 	bool m_nv3d_enabled;			// false if ATI card
 	bool m_nv3d_actived;
+	bool m_nv3d_windowed;			// false if driver does not support windowed 3d vision
+	NvDisplayHandle m_nv3d_display;
 
 	MyVertex m_vertices[vertex_total];
 	MyVertex_subtitle m_vertices_subtitle[vertex_total];

@@ -12,7 +12,6 @@
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
-#include "..\dwindow\nvapi.h"
 
 #define FAIL_RET(x) hr=x; if(FAILED(hr)){return hr;}
 #define FAIL_SLEEP_RET(x) hr=x; if(FAILED(hr)){Sleep(1); return hr;}
@@ -86,6 +85,7 @@ m_right_queue(_T("right queue"))
 	m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
 	m_nv3d_enabled = false;
 	m_nv3d_actived = false;
+	m_nv3d_display = NULL;
 	NvAPI_Status res = NvAPI_Initialize();
 	if (NVAPI_OK == res)
 	{
@@ -96,6 +96,17 @@ m_right_queue(_T("right queue"))
 			printf("NV3D enabled.\n");
 			m_nv3d_enabled = (bool)enabled3d;
 		}
+
+		res = NvAPI_EnumNvidiaDisplayHandle(0, &m_nv3d_display);
+
+		NV_DISPLAY_DRIVER_VERSION nv_version;
+		nv_version.version = NV_DISPLAY_DRIVER_VERSION_VER;
+		res = NvAPI_GetDisplayDriverVersion(m_nv3d_display, &nv_version);
+
+		if (res == NVAPI_OK && nv_version.drvVersion >= 27051)		// only 270.51+ supports windowed 3d vision
+			m_nv3d_windowed = true;
+		else
+			m_nv3d_windowed = false;
 	}
 
 	// UI
@@ -1263,6 +1274,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	hr = m_Device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
 	int l = timeGetTime();
+	static NvU32 l_counter = 0;
 	if (m_output_mode == NV3D && m_nv3d_enabled && m_nv3d_actived /*&& !m_active_pp.Windowed*/)
 	{
 		clear(back_buffer);
@@ -1395,10 +1407,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		left += frame_passed;
 		left %= 2;
 
+		if (m_nv3d_display)
+			left = l_counter % 2;
+
 		clear(back_buffer);
 		draw_movie(back_buffer, left);
 		draw_bmp(back_buffer, left);
 		draw_ui(back_buffer);
+
 	}
 
 	else if (m_output_mode == dual_window)
@@ -1546,6 +1562,18 @@ presant:
 	if (m_output_mode == pageflipping)
 		m_pageflipping_start = timeGetTime();
 
+	if (m_nv3d_display)
+	{
+		NvU32 counter = 0;
+		if (NVAPI_OK == NvAPI_GetVBlankCounter(m_nv3d_display, &counter))
+		{
+			//printf("V counter = %u.\n", counter);
+			if (counter - l_counter != 1)
+				printf("V desync, delta=%d.\n", counter - l_counter);
+			l_counter = counter;
+		}
+	}
+
 	if (m_output_mode == dual_window || m_output_mode == iz3d)
 	{
 		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
@@ -1566,6 +1594,9 @@ presant:
 		//if (timeGetTime()-n > 0)printf("delta = %d.\n", timeGetTime()-n);
 		n = timeGetTime();
 	}
+
+
+
 
 	if (timeGetTime()-l2 > 9) printf("Presant() cost %dms.\n", timeGetTime() - l2);
 
@@ -2633,7 +2664,7 @@ HRESULT my12doomRenderer::set_output_mode(int mode)
 			m_nv3d_actived = false;
 		}
 
-		if (res == NVAPI_OK)
+		if (res == NVAPI_OK && m_nv3d_windowed)
 			m_nv3d_actived = m_output_mode == NV3D ? true : false;
 
 		res = NvAPI_Stereo_DestroyHandle(h3d);
