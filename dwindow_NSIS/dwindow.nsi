@@ -72,7 +72,7 @@ SectionEnd
 Section "Start Menu Shortcuts"
 
   CreateDirectory "$SMPROGRAMS\DWindow"
-  CreateShortCut "$SMPROGRAMS\DWindow\DWindow.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer" 0
+  CreateShortCut "$SMPROGRAMS\DWindow\DWindow.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer.exe" 0
   CreateShortCut "$SMPROGRAMS\DWindow\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
   
 SectionEnd
