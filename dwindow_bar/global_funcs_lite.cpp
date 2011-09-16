@@ -28,7 +28,6 @@ HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/)
 	return S_OK;
 }
 
-
 HRESULT check_passkey()
 {
 	DWORD e[32];
@@ -51,4 +50,33 @@ HRESULT check_passkey()
 
 	memset(&m1, 0, 128);
 	return S_OK;
+}
+
+const WCHAR* soft_key= L"Software\\DWindow";
+bool save_setting(const WCHAR *key, const void *data, int len, DWORD REG_TYPE)
+{
+	HKEY hkey = NULL;
+	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, soft_key, 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS)
+		return false;
+	ret = RegSetValueExW(hkey, key, 0, REG_TYPE, (const byte*)data, REG_TYPE!=REG_SZ?len:wcslen((wchar_t*)data)*2+2);
+	if (ret != ERROR_SUCCESS)
+		return false;
+
+	RegCloseKey(hkey);
+	return true;
+}
+
+int load_setting(const WCHAR *key, void *data, int len)
+{
+	HKEY hkey = NULL;
+	int ret = RegOpenKeyExW(HKEY_CURRENT_USER, soft_key,0,STANDARD_RIGHTS_REQUIRED |KEY_READ  , &hkey);
+	if (ret != ERROR_SUCCESS || hkey == NULL)
+		return -1;
+	ret = RegQueryValueExW(hkey, key, 0, NULL, (LPBYTE)data, (LPDWORD)&len);
+	if (ret == ERROR_SUCCESS || ret == ERROR_MORE_DATA)
+		return len;
+
+	RegCloseKey(hkey);
+	return 0;
 }

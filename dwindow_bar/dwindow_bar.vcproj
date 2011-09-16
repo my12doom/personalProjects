@@ -130,6 +130,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -197,6 +198,10 @@
 				RelativePath=".\dwindow_bar.rc"
 				>
 			</File>
+			<File
+				RelativePath="..\dwindow\ico\ico.ico"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="crypt"
@@ -234,6 +239,10 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\dwindow_bar.manifest"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
