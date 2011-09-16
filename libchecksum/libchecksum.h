@@ -32,7 +32,9 @@ typedef struct _dwindow_message_uncrypt
 	unsigned char passkey[32];
 	unsigned char requested_hash[20];
 	unsigned char random_AES_key[32];
-	unsigned char reserved[43];
+	unsigned char password_uncrypted[20];
+	__time64_t client_time;
+	unsigned char reserved[15];
 	unsigned char zero;
 }dwindow_message_uncrypt;
 
