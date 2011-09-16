@@ -971,7 +971,7 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 		REFERENCE_TIME rtmax = rt - rtPreroll;
 		REFERENCE_TIME rtmin = rtmax - 5000000;
 
-		if(m_rtStartOffset == 0)
+		//if(m_rtStartOffset == 0)			// always try to seek Plan A
 			for(int i = 0; i < countof(m_pFile->m_streams)-1; i++) {
 				POSITION pos = m_pFile->m_streams[i].GetHeadPosition();
 				while(pos) {
@@ -1005,8 +1005,8 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 								printf("rtmin=%.2f, rt=%.2f, rtmax=%.2f, pdt=%.2f, dt=%.2f", 
 									(float)rtmin/10000000, (float)rt/10000000, (float)rtmax/10000000,
 									(float)pdt/10000000, (float)dt/10000000);
-								printf("%dth try, seeked to %02fs\n", i, (float)rt/10000000);
 								*/
+								printf("%dth try, seeked to %02fs\n", j, (float)rt/10000000);
 								break;
 							}
 
@@ -1021,6 +1021,7 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 
 		if(minseekpos != _I64_MAX) {
 			seekpos = minseekpos;
+			m_rtStartOffset = 0;
 		} else {
 			// this file is probably screwed up, try plan B, seek simply by bitrate
 			rt -= rtPreroll;
