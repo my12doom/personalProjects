@@ -16,9 +16,14 @@
 #define FAIL_RET(x) hr=x; if(FAILED(hr)){return hr;}
 #define FAIL_SLEEP_RET(x) hr=x; if(FAILED(hr)){Sleep(1); return hr;}
 #define safe_delete(x) if(x){delete x;x=NULL;}
+
 #ifndef DEBUG
 #define printf
 #endif
+
+int lockrect_surface = 0;
+int lockrect_texture = 0;
+__int64 lockrect_texture_cycle = 0;
 
 typedef struct tagTHREADNAME_INFO {
 	DWORD dwType; // must be 0x1000
@@ -73,6 +78,10 @@ HRESULT mylog(const char *format, ...)
 //#endif
 	return S_OK;
 }
+
+//#define printf
+//#define mylog
+
 
 my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/):
 m_left_queue(_T("left queue")),
@@ -784,6 +793,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 		if (FAILED(hr))
 			return hr;
+
 		m_new_pp = m_active_pp;
 		m_device_state = need_reset_object;
 
@@ -851,6 +861,10 @@ HRESULT my12doomRenderer::invalidate_cpu_objects()
 HRESULT my12doomRenderer::invalidate_gpu_objects()
 {
 	m_uidrawer->invalidate_gpu();
+
+	// query
+	m_d3d_query = NULL;
+
 	// pixel shader
 	m_ps_yv12 = NULL;
 	m_ps_nv12 = NULL;
@@ -910,6 +924,8 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 }
 HRESULT my12doomRenderer::restore_gpu_objects()
 {
+
+
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
 	m_pass1_height = m_lVidHeight;
@@ -929,6 +945,10 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 
 	DWORD use_mipmap = D3DUSAGE_AUTOGENMIPMAP;
 
+	// query
+	m_Device->CreateQuery(D3DQUERYTYPE_TIMESTAMP, &m_d3d_query);
+
+	// textures
 	FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_full, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_left, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
@@ -1197,6 +1217,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	if (FAILED(handle_device_state()))
 		return E_FAIL;
 
+	if (m_d3d_query) m_d3d_query->Issue(D3DISSUE_BEGIN);
+
 	// image loading and idle check
 	if (load_image() != S_OK && !forced)	// no more rendering except pageflipping mode
 		return S_FALSE;
@@ -1399,22 +1421,36 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	else if (m_output_mode == pageflipping)
 	{
-		static int left = 0;
 		double delta = (double)timeGetTime()-m_pageflipping_start;
 		int frame_passed = max(1, floor(delta/9));
+		m_pageflip_frames += frame_passed;
+		m_pageflip_frames %= 2;
+
 		if (frame_passed>1 || frame_passed <= 0)
+		{
+			if (m_nv3d_display && frame_passed > 2)
+			{
+				DWORD counter;
+				NvAPI_GetVBlankCounter(m_nv3d_display, &counter);
+				m_pageflip_frames = counter - m_nv_pageflip_counter;
+			}
 			mylog("delta=%d.\n", (int)delta);
-		left += frame_passed;
-		left %= 2;
+		}
 
-		if (m_nv3d_display)
-			left = l_counter % 2;
-
+		LARGE_INTEGER l1, l2, l3, l4, l5;
+		QueryPerformanceCounter(&l1);
 		clear(back_buffer);
-		draw_movie(back_buffer, left);
-		draw_bmp(back_buffer, left);
+		QueryPerformanceCounter(&l2);
+		draw_movie(back_buffer, m_pageflip_frames);
+		QueryPerformanceCounter(&l3);
+		draw_bmp(back_buffer, m_pageflip_frames);
+		QueryPerformanceCounter(&l4);
 		draw_ui(back_buffer);
+		QueryPerformanceCounter(&l5);
 
+
+		//mylog("clear, draw_movie, draw_bmp, draw_ui = %d, %d, %d, %d.\n", (int)(l2.QuadPart-l1.QuadPart), 
+		//	(int)(l3.QuadPart-l2.QuadPart), (int)(l4.QuadPart-l3.QuadPart), (int)(l5.QuadPart-l4.QuadPart) );
 	}
 
 	else if (m_output_mode == dual_window)
@@ -1550,29 +1586,45 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	}
 
 	m_Device->EndScene();
-	if (timeGetTime() - l > 5)printf("EndScene = %dms\n", timeGetTime() - l);
+	if (timeGetTime() - l > 5)printf("All Draw Calls = %dms\n", timeGetTime() - l);
 presant:
 	static int n = timeGetTime();
 	if (timeGetTime() - n > 43)
 		printf("(%d):presant delta: %dms\n", timeGetTime(), timeGetTime()-n);
 	n = timeGetTime();
 
-	int l2 = timeGetTime();
 
 	if (m_output_mode == pageflipping)
-		m_pageflipping_start = timeGetTime();
-
-	if (m_nv3d_display)
 	{
-		NvU32 counter = 0;
-		if (NVAPI_OK == NvAPI_GetVBlankCounter(m_nv3d_display, &counter))
-		{
-			//printf("V counter = %u.\n", counter);
-			if (counter - l_counter != 1)
-				printf("V desync, delta=%d.\n", counter - l_counter);
-			l_counter = counter;
-		}
+		if (m_pageflipping_start == -1 && m_nv3d_display)
+			NvAPI_GetVBlankCounter(m_nv3d_display, &m_nv_pageflip_counter);
+		m_pageflipping_start = timeGetTime();
 	}
+
+
+	UINT64 timing=0;
+	if (m_d3d_query)
+	{
+		m_d3d_query->Issue(D3DISSUE_END);
+		// Force the driver to execute the commands from the command buffer.
+		// Empty the command buffer and wait until the GPU is idle.
+		//while( == S_FALSE);
+		LARGE_INTEGER l1, l2;
+		QueryPerformanceCounter(&l1);
+		hr = m_d3d_query->GetData( &timing, 
+			sizeof(timing), D3DGETDATA_FLUSH );
+		if (timing)
+			printf("GPUIdle:%d.\n", (int)timing);
+
+		QueryPerformanceCounter(&l2);
+
+		//printf("Query time: %d cycle.\n", l2.QuadPart - l1.QuadPart);
+
+	}
+
+
+
+
 
 	if (m_output_mode == dual_window || m_output_mode == iz3d)
 	{
@@ -1586,7 +1638,9 @@ presant:
 
 	else
 	{
+		int l2 = timeGetTime();
 		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, NULL);
+		if (timeGetTime()-l2 > 9) printf("Presant() cost %dms.\n", timeGetTime() - l2);
 		if (FAILED(hr))
 			set_device_state(device_lost);
 
@@ -1595,10 +1649,14 @@ presant:
 		n = timeGetTime();
 	}
 
+	// debug LockRect times
+	//if (lockrect_surface + lockrect_texture)
+	//	printf("LockRect: surface, texture, total, cycle = %d, %d, %d, %d.\n", lockrect_surface, lockrect_texture, lockrect_surface+lockrect_texture, (int)lockrect_texture_cycle);
+	lockrect_texture_cycle = lockrect_surface = lockrect_texture = 0;
 
 
 
-	if (timeGetTime()-l2 > 9) printf("Presant() cost %dms.\n", timeGetTime() - l2);
+
 
 	FAIL_RET(calculate_vertex());
 	if (bmp_lock != NULL)
@@ -1606,6 +1664,8 @@ presant:
 		int l = timeGetTime();
 		m_tex_bmp_mem->LockRect(&m_bmp_locked_rect, NULL, NULL);
 		mylog("LockRect for subtitle cost %dms \n", timeGetTime()-l);
+
+		lockrect_surface ++;
 
 		m_bmp_changed = false;
 	}
@@ -1677,6 +1737,8 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetTexture( 0, m_tex_bmp );
 	hr = m_Device->SetStreamSource( 0, m_vertex_subtitle, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags_subtitle );
@@ -1817,7 +1879,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 		Sleep(1);
 
 	//SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
-	//SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 	while(!_this->m_render_thread_exit)
 	{
 		if (_this->m_output_mode != pageflipping)
@@ -1962,8 +2024,13 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	CAutoLock lck(&m_frame_lock);
 
 	int l1 = timeGetTime();
+	LARGE_INTEGER li, l2;
+	QueryPerformanceCounter(&li);
 	if (m_last_rendered_sample1) m_last_rendered_sample1->prepare_rendering();
 	if (m_last_rendered_sample2) m_last_rendered_sample2->prepare_rendering();
+	QueryPerformanceCounter(&l2);
+
+	//printf("prepare_rendering() = %d cycles.\n", (int)(l2.QuadPart - li.QuadPart));
 
 	IDirect3DTexture9* sample1_tex_RGB32_gpu = sample1_tex_RGB32;
 	IDirect3DTexture9* sample1_tex_YUY2_gpu = sample1_tex_YUY2;
@@ -2006,6 +2073,9 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 		sample2_tex_NV12_gpu = m2_tex_NV12_UV;
 	}
 	//mylog("prepare_rendering = %dms\n", timeGetTime()-l1);
+	QueryPerformanceCounter(&l2);
+
+	//printf("prepare_rendering() + UpdateTexture()  = %d cycles.\n", (int)(l2.QuadPart - li.QuadPart));
 
 	// pass 1: render full resolution to two seperate texture
 	HRESULT hr = m_Device->BeginScene();
@@ -2151,6 +2221,8 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 
 		D3DLOCKED_RECT locked;
 		m_mem->LockRect(&locked, NULL, NULL);
+
+		lockrect_surface ++;
 
 		BYTE* src = (BYTE*)locked.pBits;
 		double average1 = 0;

@@ -321,6 +321,8 @@ protected:
 	bool m_nv3d_actived;
 	bool m_nv3d_windowed;			// false if driver does not support windowed 3d vision
 	NvDisplayHandle m_nv3d_display;
+	DWORD m_nv_pageflip_counter;
+	int m_pageflip_frames;
 
 	MyVertex m_vertices[vertex_total];
 	MyVertex_subtitle m_vertices_subtitle[vertex_total];
@@ -335,6 +337,7 @@ protected:
 	CComPtr<IDirect3DDevice9> m_Device;
 	CComPtr<IDirect3DSwapChain9> m_swap1;
 	CComPtr<IDirect3DSwapChain9> m_swap2;
+	CComPtr<IDirect3DQuery9> m_d3d_query;
 	D3DPRESENT_PARAMETERS   m_new_pp;
 	D3DPRESENT_PARAMETERS   m_active_pp;
 	D3DPRESENT_PARAMETERS   m_active_pp2;
