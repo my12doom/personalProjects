@@ -677,6 +677,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 		// Aspect Ration
 		if (m_aspect == -1) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
+		if (m_aspect == 2.35) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
 		if (m_aspect == (double)16/9) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
 		if (m_aspect == (double)4/3) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
 
@@ -1154,6 +1155,13 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			m_renderer1->set_aspect(m_aspect);
 	}
 
+	else if (uid == ID_ASPECTRATIO_235)
+	{
+		m_aspect = 2.35;
+		if (m_renderer1)
+			m_renderer1->set_aspect(m_aspect);
+	}
+
 	// swap eyes
 	else if (uid == ID_SWAPEYES)
 	{
@@ -1464,8 +1472,8 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	}
 	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
 
-	int ms_start = (int)(TimeStart / 10000);
-	int ms_end = (int)(TimeEnd / 10000);
+	int ms_start = (int)(TimeStart / 10000.0 + 0.5);
+	int ms_end = (int)(TimeEnd / 10000.0 + 0.5);
 
 	// CSubtitleRenderer test
 	rendered_subtitle sub;
@@ -1474,6 +1482,8 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		CAutoLock lck(&m_subtitle_sec);
 		if (m_srenderer)
 		{
+			if (S_OK == m_srenderer->set_output_aspect(m_renderer1->get_aspect()))
+				m_lastCBtime = -1;		// aspect changed
 			hr = m_srenderer->get_subtitle(ms_start, &sub, m_lastCBtime);
 		}
 	}
@@ -1502,15 +1512,13 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 			{
 				// FIXME: assume aspect_screen is always less than aspect_subtitle
 				double aspect_screen1 = (double)(m_screen1.right - m_screen1.left)/(m_screen1.bottom - m_screen1.top);
-				double aspect_screen2 = (double)(m_screen2.right - m_screen2.left)/(m_screen2.bottom - m_screen2.top);
 
 				double delta1 = (1-aspect_screen1/sub.aspect);
-				double delta2 = (1-aspect_screen1/sub.aspect);
 
 				hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
-					sub.height * (1-delta1),
+					sub.height,
 					sub.left + (m_subtitle_center_x-0.5),
-					sub.top *(1-delta1) + delta1/2 + (m_subtitle_bottom_y-0.95));
+					sub.top + (m_subtitle_bottom_y-0.95));
 
 				free(sub.data);
 				if (FAILED(hr))
@@ -2275,7 +2283,7 @@ HRESULT dx_player::draw_subtitle()
 	REFERENCE_TIME t = (REFERENCE_TIME)m_lastCBtime * 10000;
 	m_lastCBtime = -1;
 
-	return SampleCB(t+1, t+2, NULL);
+	return SampleCB(t, t, NULL);
 }
 
 HRESULT dx_player::set_subtitle_offset(int offset)

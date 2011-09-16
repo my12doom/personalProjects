@@ -84,10 +84,15 @@ public:
 	~coremvc_hooker();
 };
 
+// Time
+__int64 mytime(bool reset = false);
+
 
 // Settings loader & saver
 bool save_setting(const WCHAR *key, const void *data, int len, DWORD REG_TYPE=REG_BINARY);
+bool save_D3D_setting(const WCHAR *key, const void *data, int len, DWORD REG_TYPE=REG_BINARY);
 int load_setting(const WCHAR *key, void *data, int len);
+int load_D3D_setting(const WCHAR *key, void *data, int len);
 bool del_setting(const WCHAR *key);
 template<class ValueType>
 class AutoSetting

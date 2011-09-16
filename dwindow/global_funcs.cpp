@@ -16,7 +16,7 @@
 #pragma comment(lib,"wininet.lib")
 
 
-char *g_server_address = "http://59.51.45.21:80/";
+char *g_server_address = "http://bo3d.net:80/";
 //char *g_server_address = "http://127.0.0.1:8080/";
 
 // public variables
@@ -501,7 +501,7 @@ coremvc_hooker::~coremvc_hooker()
 	afterCreateCoreMVC();
 }
 
-AutoSetting<bool> g_CUDA(L"CUDA", true);
+AutoSetting<bool> g_CUDA(L"CUDA", false);
 HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 {
 
@@ -644,11 +644,11 @@ HRESULT check_passkey()
 		if (m1.passkey[i] != m1.passkey2[i])
 			return E_FAIL;
 
-	__time64_t t = _time64(NULL);
+	__time64_t t = mytime();
 
 	tm * t2 = _localtime64(&m1.time_end);
 
-	if (m1.time_start > _time64(NULL) || _time64(NULL) > m1.time_end)
+	if (m1.time_start > mytime() || mytime() > m1.time_end)
 	{
 		memset(&m1, 0, 128);
 		return E_FAIL;
@@ -657,6 +657,33 @@ HRESULT check_passkey()
 	memcpy(g_passkey, &m1, 32);
 	memset(&m1, 0, 128);
 	return S_OK;
+}
+
+__time64_t mytime(bool reset)
+{
+	const char* key = "DWindow's Kernel Corrupted.";
+	AESCryptor codec;
+	codec.set_key((const unsigned char*)key, 256);
+	DWORD e[32];
+	int got = load_D3D_setting(L"Flags", e, 128);
+	for(int i=0; i<128; i+=16)
+		codec.decrypt(((unsigned char*)e) + i, ((unsigned char*)e) + i);
+	__time64_t current_time =  _time64(NULL);
+	if (got == 128 && *(__time64_t*)e > current_time)
+		current_time = 0xffffffff;
+
+	if (reset)
+		current_time = _time64(NULL);
+
+	srand(time(NULL));
+	for(int i=0; i<128; i++)
+		((BYTE*)e)[i] = rand() & 0xff;
+	memcpy(e, &current_time, 8);
+	for(int i=0; i<128; i+=16)
+		codec.encrypt( ((unsigned char*)e) + i, ((unsigned char*)e) + i);
+	save_D3D_setting(L"Flags", e, 128);
+
+	return current_time;
 }
 
 HRESULT load_passkey()
@@ -807,7 +834,7 @@ HRESULT load_e3d_key(const unsigned char *file_hash, unsigned char *file_key)
 	codec.decrypt((unsigned char*)key_tmp+32, (unsigned char*)key_tmp+32);
 
 	// time
-	__time64_t time = _time64(NULL);
+	__time64_t time = mytime();
 	__time64_t key_start_time;
 	__time64_t key_end_time;
 	memcpy(&key_start_time, key_tmp+32, 8);
@@ -835,7 +862,7 @@ HRESULT save_e3d_key(const unsigned char *file_hash, const unsigned char *file_k
 
 	unsigned char encrypted_key[32+16];
 	// time
-	__time64_t time = _time64(NULL);
+	__time64_t time = mytime();
 	memcpy(encrypted_key+32, &time, 8);
 	time += 7*24*3600;		// 7 days
 	memcpy(encrypted_key+40, &time, 8);
@@ -968,7 +995,7 @@ int load_setting(const WCHAR *key, void *data, int len)
 	HKEY hkey = NULL;
 	int ret = RegOpenKeyExW(HKEY_CURRENT_USER, soft_key,0,STANDARD_RIGHTS_REQUIRED |KEY_READ  , &hkey);
 	if (ret != ERROR_SUCCESS || hkey == NULL)
-		return false;
+		return -1;
 	ret = RegQueryValueExW(hkey, key, 0, NULL, (LPBYTE)data, (LPDWORD)&len);
 	if (ret == ERROR_SUCCESS || ret == ERROR_MORE_DATA)
 		return len;
@@ -990,6 +1017,34 @@ bool del_setting(const WCHAR *key)
 
 	RegCloseKey(hkey);
 	return true;
+}
+
+const WCHAR* soft_key_private= L"Software\\Microsoft\\Direct3D\\MostRecentApplication";
+bool save_D3D_setting(const WCHAR *key, const void *data, int len, DWORD REG_TYPE/*=REG_BINARY*/)
+{
+	HKEY hkey = NULL;
+	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, soft_key_private, 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS)
+		return false;
+	ret = RegSetValueExW(hkey, key, 0, REG_TYPE, (const byte*)data, REG_TYPE!=REG_SZ?len:wcslen((wchar_t*)data)*2+2);
+	if (ret != ERROR_SUCCESS)
+		return false;
+
+	RegCloseKey(hkey);
+	return true;
+}
+int load_D3D_setting(const WCHAR *key, void *data, int len)
+{
+	HKEY hkey = NULL;
+	int ret = RegOpenKeyExW(HKEY_CURRENT_USER, soft_key_private,0,STANDARD_RIGHTS_REQUIRED |KEY_READ  , &hkey);
+	if (ret != ERROR_SUCCESS || hkey == NULL)
+		return -1;
+	ret = RegQueryValueExW(hkey, key, 0, NULL, (LPBYTE)data, (LPDWORD)&len);
+	if (ret == ERROR_SUCCESS || ret == ERROR_MORE_DATA)
+		return len;
+
+	RegCloseKey(hkey);
+	return 0;
 }
 
 typedef struct _download_para

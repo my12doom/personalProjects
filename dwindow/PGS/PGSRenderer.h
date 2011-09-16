@@ -14,7 +14,7 @@ public:
 	virtual HRESULT reset();
 	virtual HRESULT seek();	// to provide dshow support
 	virtual HRESULT set_font_color(DWORD newcolor){return E_NOTIMPL;};
-	virtual HRESULT set_font(HFONT newfont){return E_NOTIMPL;};											// for text based subtitles, the main program will try show_dlg=false first, if the SubtitleRenderer is not text based, it should return E_NOT_IMPL.
+	virtual HRESULT set_font(HFONT newfont){return E_NOTIMPL;};									// for text based subtitles, the main program will try show_dlg=false first, if the SubtitleRenderer is not text based, it should return E_NOT_IMPL.
 protected:
 	int m_last_found;
 	PGSParser m_parser;

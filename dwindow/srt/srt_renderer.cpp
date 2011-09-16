@@ -4,6 +4,7 @@ CsrtRenderer::CsrtRenderer(HFONT font, DWORD fontcolor)
 {
 	m_font = font;
 	m_font_color = fontcolor;
+	m_aspect = 16.0/9.0;
 	reset();
 }
 
@@ -90,14 +91,14 @@ HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_ti
 
 		HFONT hOldFont = (HFONT) SelectObject(hdcBmp, m_font);
 
-		RECT rect = {0,0,1920,1080};
+		RECT rect = {0,0,1920,1920/m_aspect};
 		DrawTextW(hdcBmp, found, (int)wcslen(found), &rect, DT_CENTER | DT_CALCRECT | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL);
 		out->pixel_type = out->pixel_type_RGB;
 		out->height_pixel = rect.bottom - rect.top;
 		out->width_pixel  = rect.right - rect.left;
 		out->width = (double)out->width_pixel/1920;
-		out->height = (double)out->height_pixel/1080;
-		out->aspect = (double)16/9;
+		out->height = (double)out->height_pixel/(1920/m_aspect);
+		out->aspect = m_aspect;
 		out->delta = 0;
 
 		out->left = 0.5 - out->width/2;
@@ -140,4 +141,13 @@ HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_ti
 
 		return S_OK;
 	}
+}
+
+HRESULT CsrtRenderer::set_output_aspect(double aspect)
+{
+	if (m_aspect == aspect)
+		return S_FALSE;
+
+	m_aspect = aspect;
+	return S_OK;
 }

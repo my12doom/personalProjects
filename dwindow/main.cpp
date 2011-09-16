@@ -241,11 +241,14 @@ int on_command(HWND hWnd, int uid)
 
 		// generate message
 		dwindow_message_uncrypt message;
+		message.zero = 0;
 		memcpy(message.passkey, username, 32);
 		memcpy(message.requested_hash, sha1, 20);
+		memcpy(message.password_uncrypted, password, min(19, strlen(password)));
+		message.password_uncrypted[min(19, strlen(password))] = NULL;
+		message.client_time = _time64(NULL);
 		for(int i=0; i<32; i++)
 			message.random_AES_key[i] = rand() &0xff;
-		message.zero = 0;
 		unsigned char encrypted_message[128];
 		RSA_dwindow_network_public(&message, encrypted_message);
 
@@ -281,6 +284,7 @@ int on_command(HWND hWnd, int uid)
 			memcpy(&g_passkey_big, new_key, 128);
 
 			save_passkey();
+			mytime(true);
 
 			MessageBoxW(hWnd, C(L"This program will exit now, Restart it to use new user id."), C(L"Exiting"), MB_ICONINFORMATION);
 

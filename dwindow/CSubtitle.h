@@ -39,4 +39,6 @@ public:
 	virtual HRESULT seek()=0;															// just clear current incompleted data, to support dshow seeking.
 	virtual HRESULT set_font_color(DWORD newcolor)=0;									// color format is 8bit BGRA, use RGB() macro, for text based subtitle only
 	virtual HRESULT set_font(HFONT newfont)=0;											// for text based subtitles, the main program will try show_dlg=false first, if the SubtitleRenderer is not text based, it should return E_NOT_IMPL.
+	virtual HRESULT set_output_aspect(double aspect){return E_NOTIMPL;}					// set the rendered output aspect, to suit movies's aspect, S_FALSE = not changed, S_OK = changed
+
 };

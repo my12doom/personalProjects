@@ -234,6 +234,7 @@ BEGIN
                 MENUITEM "Default",                     ID_ASPECTRATIO_DEFAULT
                 MENUITEM "16:9",                        ID_ASPECTRATIO_169
                 MENUITEM "4:3",                         ID_ASPECTRATIO_43
+                MENUITEM "2.35:1",                      ID_ASPECTRATIO_235
             END
             MENUITEM "CUDA Accelaration",           ID_CUDA
         END

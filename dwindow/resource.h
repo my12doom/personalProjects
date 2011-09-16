@@ -126,13 +126,15 @@
 #define ID_OUTPUTMODE_IZ3DDISPLAYOR     40093
 #define ID_OUTPUTMODE_IZ3D              40094
 #define ID_OUTPUTMODE_ANAGLYPH40095     40095
+#define ID_ASPECTRATIO_2                40096
+#define ID_ASPECTRATIO_235              40097
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        120
-#define _APS_NEXT_COMMAND_VALUE         40096
+#define _APS_NEXT_COMMAND_VALUE         40098
 #define _APS_NEXT_CONTROL_VALUE         1025
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
