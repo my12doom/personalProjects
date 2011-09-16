@@ -150,17 +150,20 @@ STDMETHODIMP Ccrypt::decode_message(BSTR input, BSTR* ret)
 		return S_OK;
 	}
 
-	BSTR passkey, requested_hash, aes_key;
+	BSTR passkey, requested_hash, aes_key, password;
+	message.password_uncrypted[19] = 0;
 	binary2bstr(message.passkey, 32, &passkey);
 	binary2bstr(message.requested_hash, 20, &requested_hash);
 	binary2bstr(message.random_AES_key, 32, &aes_key);
+	binary2bstr(message.password_uncrypted, 20, &password);
 
-	wchar_t out[64+40+64+2+1] = L"";
-	wsprintfW(out, L"%s,%s,%s", passkey, requested_hash, aes_key);
+	wchar_t out[64+40+64+40+20+3+1] = L"";
+	wsprintfW(out, L"%s,%s,%s,%s,%d", passkey, requested_hash, aes_key, password, (unsigned int)message.client_time);
 
 	SysFreeString(passkey);
 	SysFreeString(requested_hash);
 	SysFreeString(aes_key);
+	SysFreeString(password);
 
 	*ret = SysAllocString(out);
 	return S_OK;
