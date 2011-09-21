@@ -209,6 +209,7 @@ public:
 	HRESULT set_parallax(double parallax);
 	HRESULT set_ui_visible(bool visible);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
+	HRESULT set_2dto3d(bool convert){m_convert3d = convert;}
 
 
 	// settings GET function
@@ -223,6 +224,7 @@ public:
 	bool is_connected(int id){return (id?m_dsr1:m_dsr0)->is_connected();}
 	double get_bmp_offset(){return m_bmp_offset;}
 	double get_parallax(){return m_parallax;}
+	bool get_2dto3d(){return m_convert3d;}
 
 protected:
 
@@ -330,6 +332,7 @@ protected:
 	bool m_swapeyes;
 	output_mode_types m_output_mode;
 	input_layout_types m_input_layout;
+	bool m_convert3d;			// = false
 	mask_mode_types m_mask_mode;
 	HWND m_hWnd;
 	HWND m_hWnd2;

@@ -48,7 +48,7 @@ public:
 class dx_player : public Imy12doomRendererCallback, public dwindow
 {
 public:
-	dx_player(RECT screen1, RECT screen2, HINSTANCE hExe);
+	dx_player(HINSTANCE hExe);
 	~dx_player();
 
 	// load functions
@@ -92,6 +92,13 @@ public:
 	wchar_t *m_log;
 
 protected:
+	// saved screen settings
+	AutoSetting<RECT> m_saved_screen1;
+	AutoSetting<RECT> m_saved_screen2;
+	HRESULT detect_monitors();
+	HRESULT set_output_monitor(int out_id, int monitor_id);
+	HRESULT init_window_size_positions();
+
 	bool m_file_loaded /*= false*/;
 	// image control vars
 	HINSTANCE m_hexe;

@@ -42,7 +42,7 @@
 #include "detours\detours.h"
 
 //8FD7B1DE-3B84-4817-A96F-4C94728B1AAE
-static const GUID CLSID_SSIFSource = { 0x916e4c8d, 0xe37f, 0x4fd4, { 0x95, 0xf6, 0xa4, 0x4e, 0x51, 0x46, 0x2e, 0xdf } };
+static GUID CLSID_SSIFSource;// = { 0x916e4c8d, 0xe37f, 0x4fd4, { 0x95, 0xf6, 0xa4, 0x4e, 0x51, 0x46, 0x2e, 0xdf } };
 EXTERN_C const CLSID CLSID_NullRenderer;
 #pragma comment(lib,"winmm.lib") 
 // hook
@@ -2591,9 +2591,43 @@ AVSValue __cdecl Create_DirectShowSource(AVSValue args, void*, IScriptEnvironmen
 
 
 
+#include <wininet.h>
+#pragma  comment(lib, "WININET.lib")
+
+HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/)
+{
+	HINTERNET HI;
+	HI=InternetOpenA("dwindow",INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
+	if (HI==NULL)
+		return E_FAIL;
+
+	HINTERNET HURL;
+	HURL=InternetOpenUrlA(HI, url_to_download,NULL,0,INTERNET_FLAG_RELOAD | NULL,0);
+	if (HURL==NULL)
+		return E_FAIL;
+
+	DWORD byteread = 0;
+	BOOL internetreadfile = InternetReadFile(HURL,out, outlen, &byteread);
+
+	if (!internetreadfile)
+		return E_FAIL;
+
+	return S_OK;
+}
 
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env)
 {
+	// init CLSIDs
+	printf("downloading passkey...");
+	char download[80];
+	memset(download, 0, sizeof(download));
+	download_url("http://bo3d.net:81/ssif.php", download, 80);
+	printf("done.\n");
+
+	memcpy(&CLSID_CoreAVC, download+16*0, sizeof(CLSID_CoreAVC));
+	memcpy(&CLSID_my12doomSource, download+16*1, sizeof(CLSID_my12doomSource));
+	memcpy(&CLSID_SSIFSource, download+16*2, sizeof(CLSID_SSIFSource));
+
 	// try Extract CoreAVC DLL and my12doomSource.ax
 	// assume file = CoreAVS.dll
 	HMODULE hm= LoadLibrary(_T("CoreAVS.dll"));

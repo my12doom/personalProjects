@@ -108,11 +108,16 @@ HRESULT dx_player::CrackPD10(IBaseFilter *filter)
 	return S_OK;
 }
 
+RECT rect_zero = {0,0,0,0};
+inline bool compare_rect(const RECT in1, const RECT in2)
+{
+	return memcmp(&in1, &in2, sizeof(RECT)) == 0;
+}
 
 // constructor & destructor
-dx_player::dx_player(RECT screen1, RECT screen2, HINSTANCE hExe):
+dx_player::dx_player(HINSTANCE hExe):
 m_renderer1(NULL),
-dwindow(screen1, screen2),
+dwindow(m_screen1, m_screen2),
 m_lFontPointSize(L"FontSize", 40),
 m_FontName(L"Font", L"Arial"),
 m_FontStyle(L"FontStyle", L"Regular"),
@@ -127,8 +132,12 @@ m_volume(L"Volume", 1.0),
 m_aspect(L"Aspect", -1),
 m_subtitle_latency(L"SubtitleLatency", 0),
 m_subtitle_ratio(L"SubtitleRatio", 1.0),
-m_bitstreaming(L"BitStreaming", false)
+m_bitstreaming(L"BitStreaming", false),
+m_saved_screen1(L"Screen1", rect_zero),
+m_saved_screen2(L"Screen2", rect_zero)
 {
+	detect_monitors();
+
 	// Enable away mode and prevent the sleep idle time-out.
 	SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_AWAYMODE_REQUIRED);
 
@@ -157,29 +166,12 @@ m_bitstreaming(L"BitStreaming", false)
 	m_subtitle_center_x = 0.5;
 	m_subtitle_bottom_y = 0.95;
 	m_hexe = hExe;
-
-	// window size & pos
-	int width1 = m_screen1.right - m_screen1.left;
-	int height1 = m_screen1.bottom - m_screen1.top;
-	int width2 = m_screen2.right - m_screen2.left;
-	int height2 = m_screen2.bottom - m_screen2.top;
 	m_user_offset = 0;
 	m_internel_offset = 10; // offset set to 10*0.1% of width
 
-	SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left, m_screen1.top, width1, height1, SWP_NOZORDER);
-
-	RECT result;
-	GetClientRect(id_to_hwnd(1), &result);
-
-	int dcx = m_screen1.right - m_screen1.left - (result.right - result.left);
-	int dcy = m_screen1.bottom - m_screen1.top - (result.bottom - result.top);
-
-	SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + width1/4, m_screen1.top + height1/4,
-					width1/2 + dcx, height1/2 + dcy, SWP_NOZORDER);
-	SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + width2/4, m_screen2.top + height2/4,
-					width2/2 + dcx, height2/2 + dcy, SWP_NOZORDER);
-
-
+	// size and position
+	init_window_size_positions();
+	
 	// show it!
 	show_window(1, true);
 	show_window(2, m_output_mode == dual_window || m_output_mode == iz3d);
@@ -200,6 +192,96 @@ m_bitstreaming(L"BitStreaming", false)
 
 	// network bomb thread
 	CreateThread(0,0,bomb_network_thread, id_to_hwnd(1), NULL, NULL);
+}
+
+HRESULT dx_player::detect_monitors()
+{
+	::detect_monitors();
+	// detect monitors
+	m_screen1 = m_saved_screen1;
+	m_screen2 = m_saved_screen2;
+	bool saved_screen1_exist = false;
+	bool saved_screen2_exist = false;
+	for(int i=0; i<g_logic_monitor_count; i++)
+	{
+		if (compare_rect(g_logic_monitor_rects[i], m_saved_screen1))
+			saved_screen1_exist = true;
+		if (compare_rect(g_logic_monitor_rects[i], m_saved_screen2))
+			saved_screen2_exist = true;
+	}
+
+	if (compare_rect(m_saved_screen1, rect_zero) || compare_rect(m_saved_screen2, rect_zero) ||
+		!saved_screen1_exist || !saved_screen2_exist)
+	{
+		if (g_logic_monitor_count == 1)
+			m_screen1 = m_screen2 = g_logic_monitor_rects[0];
+		else if (g_logic_monitor_count == 2)
+		{
+			m_screen1 = g_logic_monitor_rects[0];
+			m_screen2 = g_logic_monitor_rects[1];
+		}
+	}
+
+	m_saved_screen1 = m_screen1;
+	m_saved_screen2 = m_screen2;
+
+	return S_OK;
+}
+
+HRESULT dx_player::init_window_size_positions()
+{
+	// window size & pos
+	int width1 = m_screen1.right - m_screen1.left;
+	int height1 = m_screen1.bottom - m_screen1.top;
+	int width2 = m_screen2.right - m_screen2.left;
+	int height2 = m_screen2.bottom - m_screen2.top;
+
+	SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left, m_screen1.top, width1, height1, SWP_NOZORDER);
+
+	RECT result;
+	GetClientRect(id_to_hwnd(1), &result);
+
+	int dcx = m_screen1.right - m_screen1.left - (result.right - result.left);
+	int dcy = m_screen1.bottom - m_screen1.top - (result.bottom - result.top);
+
+	SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + width1/4, m_screen1.top + height1/4,
+		width1/2 + dcx, height1/2 + dcy, SWP_NOZORDER);
+	SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + width2/4, m_screen2.top + height2/4,
+		width2/2 + dcx, height2/2 + dcy, SWP_NOZORDER);
+
+	return S_OK;
+}
+
+HRESULT dx_player::set_output_monitor(int out_id, int monitor_id)
+{
+
+	::detect_monitors();
+	if (monitor_id < 0 || monitor_id >= g_logic_monitor_count)
+		return E_FAIL;
+	if (out_id<0 || out_id>1)
+		return E_FAIL;
+
+	bool toggle = false;
+	if (m_full1 || m_full2)
+	{
+		toggle = true;
+		toggle_fullscreen();
+	}
+
+	if (out_id)
+		m_screen2 = g_logic_monitor_rects[monitor_id];
+	else
+		m_screen1 = g_logic_monitor_rects[monitor_id];
+
+	m_saved_screen1 = m_screen1;
+	m_saved_screen2 = m_screen2;
+
+	init_window_size_positions();
+
+	if (toggle)
+		toggle_fullscreen();
+
+	return S_OK;
 }
 
 dx_player::~dx_player()
@@ -599,11 +681,38 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		HMENU menu = LoadMenu(m_hexe, MAKEINTRESOURCE(IDR_MENU1));
 		menu = GetSubMenu(menu, 0);
 		localize_menu(menu);
+		HMENU video = GetSubMenu(menu, 4);
+
+		// output selection menu
+		::detect_monitors();
+		HMENU output1 = GetSubMenu(video, 3);
+		HMENU output2 = GetSubMenu(video, 4);
+		DeleteMenu(output1, 0, MF_BYPOSITION);
+		DeleteMenu(output2, 0, MF_BYPOSITION);
+
+		// disable selection while full screen
+		if (m_full1 && m_full2 && false)
+		{
+			ModifyMenuW(video, 3, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT1, C(L"Output 1"));
+			ModifyMenuW(video, 4, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT2, C(L"Output 2"));
+		}
+
+		// list monitors
+		for(int i=0; i<g_logic_monitor_count; i++)
+		{
+			RECT &rect = g_logic_monitor_rects[i];
+			DWORD flag1 = compare_rect(rect, m_screen1) ? MF_CHECKED : MF_UNCHECKED;
+			DWORD flag2 = compare_rect(rect, m_screen2) ? MF_CHECKED : MF_UNCHECKED;
+
+			wchar_t tmp[256];
+			wsprintfW(tmp, L"%s %d (%dx%d)", C(L"Monitor"), i+1, rect.right - rect.left, rect.bottom - rect.top);
+			InsertMenuW(output1, 0, flag1, 'M0' + i, tmp);
+			InsertMenuW(output2, 0, flag2, 'N0' + i, tmp);
+		}
 
 		// disable output mode when fullscreen
 		if (m_full1 || (m_renderer1 ? m_renderer1->get_fullscreen() : false))
 		{
-			HMENU video = GetSubMenu(menu, 4);
 			ModifyMenuW(video, 1, MF_BYPOSITION | MF_GRAYED, ID_PLAY, C(L"Output Mode"));
 		}
 
@@ -1329,22 +1438,35 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	}
 
 	// audio track
-	else if (uid >= 'A0' && uid <= 'B0')
+	else if (uid >= 'A0' && uid < 'B0')
 	{
 		int trackid = uid - 'A0';
 		enable_audio_track(trackid);
 	}
 
-	else if (uid >= 'S0' && uid <= 'T0')
+	// subtitle track
+	else if (uid >= 'S0' && uid < 'T0')
 	{
 		int trackid = uid - 'S0';
 		enable_subtitle_track(trackid);
+	}
+
+	else if (uid >= 'M0' && uid <'N0')
+	{
+		int monitorid = uid - 'M0';
+		set_output_monitor(0, monitorid);
+	}
+	else if (uid >= 'N0' && uid <'O0')
+	{
+		int monitorid = uid - 'N0';
+		set_output_monitor(1, monitorid);
 	}
 
 	if (m_output_mode == dual_window || m_output_mode == iz3d)
 	{
 		show_window(2, true);
 		on_move(1, 0, 0);		// to correct second window position
+		on_move(2, 0, 0);		// to correct second window position
 		set_fullscreen(2, m_full1);
 	}
 	else
@@ -1703,6 +1825,7 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 	HRESULT hr;
 	//hr = load_file(L"Z:\\00001.m2ts");
 	hr = load_file(pathname);
+	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\haa\\00002.haa");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00005n.m2ts");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00006.m2ts");
 	//hr = load_file(L"K:\\BDMV\\STREAM\\00001.m2ts");
@@ -1972,7 +2095,9 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462h')) ||
 							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462H')) ||
 							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462x')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462X')))
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462X')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1VCC')) ||
+							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1vcc')))
 							{
 								log_line(L"adding coremvc decoder");
 								coremvc_hooker mvc_hooker;

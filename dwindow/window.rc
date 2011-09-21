@@ -236,13 +236,22 @@ BEGIN
                 MENUITEM "4:3",                         ID_ASPECTRATIO_43
                 MENUITEM "2.35:1",                      ID_ASPECTRATIO_235
             END
-            MENUITEM "CUDA Accelaration",           ID_CUDA
+            POPUP "Output 1"
+            BEGIN
+                MENUITEM "1",                           ID_OUTPUT1
+            END
+            POPUP "Output 2"
+            BEGIN
+                MENUITEM "2",                           ID_OUTPUT2
+            END
+            MENUITEM "Use CUDA Accelaration",       ID_CUDA
         END
         POPUP "Audio"
         BEGIN
             MENUITEM "None",                        ID_AUDIO_NONE
             MENUITEM SEPARATOR
-            MENUITEM "Bitstreaming",                ID_AUDIO_BITSTREAM
+            MENUITEM "Use LAV Audio Decoder",       ID_AUDIO_USELAVDECODER
+            MENUITEM "Use Bitstreaming",            ID_AUDIO_BITSTREAM
             MENUITEM "Load Audio Track...",         ID_LOADAUDIOTRACK
         END
         POPUP "Subtitle"

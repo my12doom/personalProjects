@@ -26,6 +26,9 @@ char g_passkey[32];
 char g_passkey_big[128];
 DWORD g_last_bar_time;
 
+
+int g_logic_monitor_count;
+RECT g_logic_monitor_rects[16];
 int n_monitor_found = 0;
 RECT monitor_rect[MAX_MONITORS];
 BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
@@ -71,7 +74,7 @@ HRESULT split_span_rect(const RECT in, RECT *out1, RECT *out2)
 	}
 }
 
-int find_monitors()
+int find_phy_monitors()
 {
 	CoInitialize(NULL);
 	CComPtr<IDirect3D9> d3d;
@@ -82,17 +85,19 @@ int find_monitors()
 	int i = 0;
 	for(i=0; i<min(16, d3d->GetAdapterCount()); i++)
 	{
-		d3d->GetAdapterIdentifier(i, NULL, g_ids+i);
-		g_monitors[i] = d3d->GetAdapterMonitor(i);
+		d3d->GetAdapterIdentifier(i, NULL, g_phy_ids+i);
+		g_phy_monitors[i] = d3d->GetAdapterMonitor(i);
 	}
 	d3d = NULL;
 	CoUninitialize();
 	return i;
 }
 
-int g_monitor_count = find_monitors();
-HMONITOR g_monitors[16];
-D3DADAPTER_IDENTIFIER9 g_ids[16];
+int g_phy_monitor_count = find_phy_monitors();
+HMONITOR g_phy_monitors[16];
+HMONITOR g_logic_monitors[16];
+D3DADAPTER_IDENTIFIER9 g_phy_ids[16];
+D3DADAPTER_IDENTIFIER9 g_logic_ids[16];
 
 
 HRESULT get_monitors_rect(RECT *screen1, RECT *screen2)
@@ -106,6 +111,40 @@ HRESULT get_monitors_rect(RECT *screen1, RECT *screen2)
 
 	*screen1 = monitor_rect[0];
 	*screen2 = monitor_rect[n_monitor_found-1];
+
+	return S_OK;
+}
+
+HRESULT detect_monitors()
+{
+	g_phy_monitor_count = find_phy_monitors();
+	g_logic_monitor_count = 0;
+
+	for(int i=0; i<g_phy_monitor_count; i++)
+	{
+		MONITORINFOEX info;
+		info.cbSize = sizeof(MONITORINFOEX);
+		GetMonitorInfo(g_phy_monitors[i], &info);
+
+		RECT &rect = info.rcMonitor;
+		RECT rect1, rect2;
+		if (FAILED(split_span_rect(rect, &rect1, &rect2)))
+		{
+			g_logic_monitor_rects[g_logic_monitor_count] = rect;
+			g_logic_monitors[g_logic_monitor_count] = g_phy_monitors[i];
+			g_logic_ids[g_logic_monitor_count++] = g_phy_ids[i];
+		}
+		else
+		{
+			g_logic_monitor_rects[g_logic_monitor_count] = rect1;
+			g_logic_monitors[g_logic_monitor_count] = g_phy_monitors[i];
+			g_logic_ids[g_logic_monitor_count++] = g_phy_ids[i];
+
+			g_logic_monitor_rects[g_logic_monitor_count] = rect2;
+			g_logic_monitors[g_logic_monitor_count] = g_phy_monitors[i];
+			g_logic_ids[g_logic_monitor_count++] = g_phy_ids[i];
+		}
+	}
 
 	return S_OK;
 }

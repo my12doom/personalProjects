@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <WinSock.h>
 #include <time.h>
+#include <InitGuid.h>
 
 #include "rijndael.h"
 #include "E3DReader.h"
@@ -12,8 +13,32 @@
 
 #pragma  comment(lib, "libmySQL.lib")
 
+
+// {09571A4B-F1FE-4C60-9760-DE6D310C7C31}
+DEFINE_GUID(CLSID_CoreAVC, 
+			0x09571A4B, 0xF1FE, 0x4C60, 0x97, 0x60, 0xDE, 0x6D, 0x31, 0x0C, 0x7C, 0x31);
+
+// {D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}
+DEFINE_GUID(CLSID_PD10_DECODER, 
+			0xD00E73D7, 0x06f5, 0x44F9, 0x8B, 0xE4, 0xB7, 0xDB, 0x19, 0x1E, 0x9E, 0x7E);
+
+// {F07E981B-0EC4-4665-A671-C24955D11A38}
+DEFINE_GUID(CLSID_PD10_DEMUXER, 
+			0xF07E981B, 0x0EC4, 0x4665, 0xA6, 0x71, 0xC2, 0x49, 0x55, 0xD1, 0x1A, 0x38);
+
+static const GUID CLSID_my12doomSource = { 0x8FD7B1DE, 0x3B84, 0x4817, { 0xA9, 0x6F, 0x4C, 0x94, 0x72, 0x8B, 0x1A, 0xAE } };
+static const GUID CLSID_SSIFSource = { 0x916e4c8d, 0xe37f, 0x4fd4, { 0x95, 0xf6, 0xa4, 0x4e, 0x51, 0x46, 0x2e, 0xdf } };
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+	FILE * f = fopen("F:\\core.dat", "wb");
+	fwrite(&CLSID_CoreAVC, 1, sizeof(CLSID_CoreAVC), f);
+	fwrite(&CLSID_my12doomSource, 1, sizeof(CLSID_CoreAVC), f);
+	fwrite(&CLSID_SSIFSource, 1, sizeof(CLSID_CoreAVC), f);
+	fwrite(&CLSID_PD10_DECODER, 1, sizeof(CLSID_CoreAVC), f);
+	fwrite(&CLSID_PD10_DEMUXER, 1, sizeof(CLSID_CoreAVC), f);
+	fclose(f);
+
 	if (argc<2)
 		return 0;
 

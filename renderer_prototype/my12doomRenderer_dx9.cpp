@@ -147,6 +147,9 @@ m_right_queue(_T("right queue"))
 
 void my12doomRenderer::init_variables()
 {
+	// 2D - 3D Convertion
+	m_convert3d = false;
+
 	// parallax
 	m_parallax = 0;
 
@@ -699,6 +702,13 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			
 			m_device_state = fine;
 			return hr;
+		}
+
+		else if (hr == D3DERR_DEVICELOST)
+		{
+			terminate_render_thread();
+			CAutoLock lck(&m_frame_lock);
+			FAIL_SLEEP_RET(invalidate_gpu_objects());
 		}
 
 		else if (hr == S_OK)
@@ -1350,6 +1360,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_Device->SetTexture( 0, m_mask_temp_left );
 		m_Device->SetTexture( 1, m_mask_temp_right );
 		if(get_active_input_layout() != mono2d 
+			|| m_convert3d
 			|| (m_dsr0->is_connected() && m_dsr1->is_connected())
 			|| (!m_dsr0->is_connected() && !m_dsr1->is_connected()))
 			m_Device->SetPixelShader(m_ps_anaglyph);
@@ -2150,29 +2161,30 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample1_tex_NV12_gpu : sample1_tex_YV12_gpu);
 		}
 
-		if (!m_swapeyes)
-			hr = m_Device->SetRenderTarget(0, left_surface);
-		else
-			hr = m_Device->SetRenderTarget(0, right_surface);
+		hr = m_Device->SetRenderTarget(0, m_swapeyes ? right_surface : left_surface);
 
 		if (input == side_by_side)
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_left, 2 );
 		else if (input == top_bottom)
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_top, 2 );
 		else if (input == mono2d)
+		{
+			if (m_convert3d)
+				hr = m_Device->StretchRect(m_swapeyes ? right_surface : left_surface, NULL, m_swapeyes ? left_surface : right_surface, NULL, D3DTEXF_NONE);
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
+		}
 
-		if (!m_swapeyes)
-			hr = m_Device->SetRenderTarget(0, right_surface);
-		else
-			hr = m_Device->SetRenderTarget(0, left_surface);
+		hr = m_Device->SetRenderTarget(0, m_swapeyes ? left_surface : right_surface);
 
 		if (input == side_by_side)
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_right, 2 );
 		else if (input == top_bottom)
 			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_bottom, 2 );
 		else if (input == mono2d)
-			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
+		{
+			if (!m_convert3d)
+				hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
+		}
 	}
 
 	m_backuped = false;

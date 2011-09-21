@@ -23,9 +23,13 @@ extern char *g_server_address;
 #define g_server_E3D "w32.php"
 #define g_server_gen_key "gen_key.php"
 #define g_server_reg_check "reg_check.php"
-extern int g_monitor_count;
-extern HMONITOR g_monitors[16];
-extern D3DADAPTER_IDENTIFIER9 g_ids[16];
+extern int g_logic_monitor_count;
+extern RECT g_logic_monitor_rects[16];
+extern int g_phy_monitor_count;
+extern HMONITOR g_phy_monitors[16];
+extern D3DADAPTER_IDENTIFIER9 g_phy_ids[16];
+extern D3DADAPTER_IDENTIFIER9 g_logic_ids[16];
+extern HMONITOR g_logic_monitors[16];
 
 //definitions
 #define AmHresultFromWin32(x) (MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, x))
@@ -72,6 +76,7 @@ HRESULT download_url(char *url_to_download, char *out, int outlen = 64, int time
 HRESULT bar_logout();
 DWORD WINAPI killer_thread(LPVOID time);
 DWORD WINAPI killer_thread2(LPVOID time);
+HRESULT detect_monitors();
 
 // CoreMVC
 HRESULT ActiveCoreMVC(IBaseFilter *decoder);
@@ -112,6 +117,10 @@ public:
 	operator ValueType()
 	{
 		return m_value;
+	}
+	ValueType* operator& ()
+	{
+		return &m_value;
 	}
 	ValueType& operator= (ValueType in)
 	{

@@ -2,6 +2,9 @@
 #include <DShow.h>
 #include "CoreMVC.h"
 
+CLSID CLSID_CoreAVC;
+CLSID CLSID_my12doomSource;
+
 HRESULT write_property(IPropertyBag *bag, const wchar_t *property_to_write)
 {
 	VARIANT var;

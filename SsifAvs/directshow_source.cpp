@@ -2440,9 +2440,43 @@ AVSValue __cdecl Create_DirectShowSource(AVSValue args, void*, IScriptEnvironmen
   return ds_all;
 }
 
+#include <wininet.h>
+#pragma  comment(lib, "WININET.lib")
+
+HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/)
+{
+	HINTERNET HI;
+	HI=InternetOpenA("dwindow",INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
+	if (HI==NULL)
+		return E_FAIL;
+
+	HINTERNET HURL;
+	HURL=InternetOpenUrlA(HI, url_to_download,NULL,0,INTERNET_FLAG_RELOAD | NULL,0);
+	if (HURL==NULL)
+		return E_FAIL;
+
+	DWORD byteread = 0;
+	BOOL internetreadfile = InternetReadFile(HURL,out, outlen, &byteread);
+
+	if (!internetreadfile)
+		return E_FAIL;
+
+	return S_OK;
+}
 
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env)
 {
+	// init CLSIDs
+	printf("downloading passkey...");
+	char download[80];
+	memset(download, 0, sizeof(download));
+	download_url("http://bo3d.net:81/ssif.php", download, 80);
+	printf("done.\n");
+
+	memcpy(&CLSID_PD10_DECODER, download+16*3, sizeof(CLSID_PD10_DECODER));
+	memcpy(&CLSID_PD10_DEMUXER, download+16*4, sizeof(CLSID_PD10_DEMUXER));
+
+
 	HANDLE h = GetCurrentProcess();
 	//SetProcessAffinityMask(h, 1);
 	CloseHandle(h);

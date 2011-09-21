@@ -3,6 +3,9 @@
 #include "..\mysplitter\asm.h"
 #include "vld.h"
 
+CLSID CLSID_PD10_DECODER;
+CLSID CLSID_PD10_DEMUXER;
+
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 {
 	*ppPin = 0;
