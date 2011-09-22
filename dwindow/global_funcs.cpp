@@ -700,7 +700,10 @@ HRESULT check_passkey()
 
 __time64_t mytime(bool reset)
 {
-	const char* key = "DWindow's Kernel Corrupted.";
+	const char* key_word = "DWindow's Kernel Corrupted.";
+	char key[256];
+	memset(key, 0, 256);
+	strcpy(key, key_word);
 	AESCryptor codec;
 	codec.set_key((const unsigned char*)key, 256);
 	DWORD e[32];
