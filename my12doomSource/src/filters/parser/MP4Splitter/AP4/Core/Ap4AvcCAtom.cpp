@@ -36,9 +36,10 @@
 |       AP4_AvcCAtom::AP4_AvcCAtom
 +---------------------------------------------------------------------*/
 
-AP4_AvcCAtom::AP4_AvcCAtom(AP4_Size         size,
+AP4_AvcCAtom::AP4_AvcCAtom(Type             type,
+                           AP4_Size         size,
                            AP4_ByteStream&  stream)
-	: AP4_Atom(AP4_ATOM_TYPE_AVCC)
+	: AP4_Atom(type)
 {
 	size -= AP4_ATOM_HEADER_SIZE;
 	m_DecoderInfo.SetDataSize(size);

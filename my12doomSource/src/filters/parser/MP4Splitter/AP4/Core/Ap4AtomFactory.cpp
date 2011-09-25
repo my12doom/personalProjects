@@ -70,6 +70,7 @@
 #include "Ap4DcomAtom.h"
 #include "Ap4CmvdAtom.h"
 #include "Ap4EndaAtom.h"
+#include "Ap4PaspAtom.h"
 /*----------------------------------------------------------------------
 |       class variables
 +---------------------------------------------------------------------*/
@@ -374,7 +375,8 @@ AP4_AtomFactory::CreateAtomFromStream(AP4_ByteStream& stream,
       // other
 
       case AP4_ATOM_TYPE_AVCC:
-        atom = DNew AP4_AvcCAtom(size, stream);
+	  case AP4_ATOM_TYPE_MVCC:
+        atom = DNew AP4_AvcCAtom(type, size, stream);
         break;
 
       case AP4_ATOM_TYPE_TEXT:
@@ -438,6 +440,9 @@ AP4_AtomFactory::CreateAtomFromStream(AP4_ByteStream& stream,
 	  case AP4_ATOM_TYPE_SAC3: // AC3-in-MP4 from Nero Stuff >.<
         atom = DNew AP4_AC3SampleEntry(size, stream, *this);
         break;
+	  case AP4_ATOM_TYPE_EAC3:
+		atom = DNew AP4_EAC3SampleEntry(size, stream, *this);
+		break;
 
       case AP4_ATOM_TYPE_CHPL:
         atom = DNew AP4_ChplAtom(size, stream);
@@ -458,6 +463,10 @@ AP4_AtomFactory::CreateAtomFromStream(AP4_ByteStream& stream,
 	  case AP4_ATOM_TYPE_ENDA:
         atom = DNew AP4_EndaAtom(size, stream);
 	    break;
+
+	  case AP4_ATOM_TYPE_PASP:
+		  atom = DNew AP4_PaspAtom(size, stream);
+		  break;
 
       default:
 

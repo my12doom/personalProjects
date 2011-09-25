@@ -36,6 +36,7 @@
 #include "Ap4ChplAtom.h"
 #include "Ap4FtabAtom.h"
 #include "Ap4DataAtom.h"
+#include "Ap4PaspAtom.h"
 
 #ifdef REGISTER_FILTER
 
@@ -388,11 +389,73 @@ HRESULT CMP4SplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 				}
 			} else if(AP4_Avc1SampleEntry* avc1 = dynamic_cast<AP4_Avc1SampleEntry*>(
 					track->GetTrakAtom()->FindChild("mdia/minf/stbl/stsd/avc1"))) {
+				if(AP4_AvcCAtom* avcC = dynamic_cast<AP4_AvcCAtom*>(avc1->GetChild(AP4_ATOM_TYPE_MVCC))) {
+					const AP4_DataBuffer* di = avcC->GetDecoderInfo();
+					if(!di) {
+						di = &empty;
+					}
+
+					const AP4_Byte* data = di->GetData();
+					AP4_Size size = di->GetDataSize();
+
+					mt.majortype = MEDIATYPE_Video;
+					mt.subtype = FOURCCMap('CVMA');
+					mt.formattype = FORMAT_MPEG2Video;
+
+					MPEG2VIDEOINFO* vih = (MPEG2VIDEOINFO*)mt.AllocFormatBuffer(FIELD_OFFSET(MPEG2VIDEOINFO, dwSequenceHeader) + size - 7);
+					memset(vih, 0, mt.FormatLength());
+					vih->hdr.bmiHeader.biSize = sizeof(vih->hdr.bmiHeader);
+					vih->hdr.bmiHeader.biWidth = (LONG)avc1->GetWidth();
+					vih->hdr.bmiHeader.biHeight = (LONG)avc1->GetHeight();
+					vih->hdr.bmiHeader.biCompression = 'CVMA';
+					vih->hdr.bmiHeader.biPlanes = 1;
+					vih->hdr.bmiHeader.biBitCount = 24;
+					vih->hdr.dwPictAspectRatioX = vih->hdr.bmiHeader.biWidth;
+					vih->hdr.dwPictAspectRatioY = vih->hdr.bmiHeader.biHeight;
+					if (item->GetData()->GetSampleCount() > 1) {
+						vih->hdr.AvgTimePerFrame = item->GetData()->GetDurationMs()*10000 / (item->GetData()->GetSampleCount()-1);
+					}
+					vih->dwProfile = data[1];
+					vih->dwLevel = data[3];
+					vih->dwFlags = (data[4] & 3) + 1;
+
+					vih->cbSequenceHeader = 0;
+
+					BYTE* src = (BYTE*)data + 5;
+					BYTE* dst = (BYTE*)vih->dwSequenceHeader;
+
+					BYTE* src_end = (BYTE*)data + size;
+					BYTE* dst_end = (BYTE*)vih->dwSequenceHeader + size;
+
+					for(int i = 0; i < 2; i++) {
+						for(int n = *src++ & 0x1f; n > 0; n--) {
+							int len = ((src[0] << 8) | src[1]) + 2;
+							if(src + len > src_end || dst + len > dst_end) {
+								ASSERT(0);
+								break;
+							}
+							memcpy(dst, src, len);
+							src += len;
+							dst += len;
+							vih->cbSequenceHeader += len;
+						}
+					}
+
+					mts.Add(mt);
+				}
 				if(AP4_AvcCAtom* avcC = dynamic_cast<AP4_AvcCAtom*>(avc1->GetChild(AP4_ATOM_TYPE_AVCC))) {
 					const AP4_DataBuffer* di = avcC->GetDecoderInfo();
 					if(!di) {
 						di = &empty;
 					}
+					int num = 1;
+					int den = 1;
+					if(AP4_PaspAtom* pasp = dynamic_cast<AP4_PaspAtom*>(avc1->GetChild(AP4_ATOM_TYPE_PASP))) {
+						num = pasp->GetNum();
+						den = pasp->GetDen();
+					}
+					if(!num) num = 1;
+					if(!den) den = 1;
 
 					const AP4_Byte* data = di->GetData();
 					AP4_Size size = di->GetDataSize();
@@ -402,8 +465,8 @@ HRESULT CMP4SplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 					if (data == NULL || size == 0)
 					{
 						const AP4_Byte fake[40] = {0x01,0x64,0x00,0x1F,0xFF,0xE1,0x00,0x18,0x67,0x64,0x00,0x1F,0xAC,0xD9,0x40,0x50,
-											   0x05,0xBB,0x01,0x10,0x00,0x00,0x3E,0x90,0x00,0x0B,0xB8,0x08,0xF1,0x83,0x19,0x60,
-											   0x01,0x00,0x05,0x68,0xEB,0xEC,0xB2,0x2C};
+							0x05,0xBB,0x01,0x10,0x00,0x00,0x3E,0x90,0x00,0x0B,0xB8,0x08,0xF1,0x83,0x19,0x60,
+							0x01,0x00,0x05,0x68,0xEB,0xEC,0xB2,0x2C};
 
 						m_3dvfix = true;
 						need_free = true;
@@ -424,8 +487,14 @@ HRESULT CMP4SplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 					vih->hdr.bmiHeader.biCompression = '1cva';
 					vih->hdr.bmiHeader.biPlanes = 1;
 					vih->hdr.bmiHeader.biBitCount = 24;
-					vih->hdr.dwPictAspectRatioX = vih->hdr.bmiHeader.biWidth;
-					vih->hdr.dwPictAspectRatioY = vih->hdr.bmiHeader.biHeight;
+
+					CSize aspect(vih->hdr.bmiHeader.biWidth * num, vih->hdr.bmiHeader.biHeight * den);
+					int lnko = LNKO(aspect.cx, aspect.cy);
+					if(lnko > 1) {
+						aspect.cx /= lnko, aspect.cy /= lnko;
+					}
+					vih->hdr.dwPictAspectRatioX = aspect.cx;
+					vih->hdr.dwPictAspectRatioY = aspect.cy;
 					if (item->GetData()->GetSampleCount() > 1) {
 						vih->hdr.AvgTimePerFrame = item->GetData()->GetDurationMs()*10000 / (item->GetData()->GetSampleCount()-1);
 					}
@@ -463,7 +532,6 @@ HRESULT CMP4SplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 					if (need_free)
 						free((void*)data);
 				}
-				
 			} else if(AP4_StsdAtom* stsd = dynamic_cast<AP4_StsdAtom*>(
 											   track->GetTrakAtom()->FindChild("mdia/minf/stbl/stsd"))) {
 				const AP4_DataBuffer& db = stsd->GetDataBuffer();
@@ -480,7 +548,7 @@ HRESULT CMP4SplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 						fourcc = type & 0xffff;
 					} else if(type == AP4_ATOM_TYPE__MP3) {
 						fourcc = 0x0055;
-					} else if((type == AP4_ATOM_TYPE__AC3) || (type == AP4_ATOM_TYPE_SAC3)) {
+					} else if((type == AP4_ATOM_TYPE__AC3) || (type == AP4_ATOM_TYPE_SAC3) || (type == AP4_ATOM_TYPE_EAC3)) {
 						fourcc = 0x2000;
 					} else {
 						fourcc =
@@ -1107,7 +1175,9 @@ bool CMP4SplitterFilter::DemuxLoop()
 			AP4_Track* track = movie->GetTrack(pPair->m_key);
 
 			CBaseSplitterOutputPin* pPin = GetOutputPin((DWORD)track->GetId());
-			if(!pPin->IsConnected()) {
+			if(!pPin || !pPin->IsConnected())
+				pPin = GetOutputPin((DWORD)track->GetId() ^ 0x80402010);
+			if(!pPin || !pPin->IsConnected()) {
 				continue;
 			}
 
@@ -1126,6 +1196,8 @@ bool CMP4SplitterFilter::DemuxLoop()
 		AP4_Track* track = movie->GetTrack(pPairNext->m_key);
 
 		CBaseSplitterOutputPin* pPin = GetOutputPin((DWORD)track->GetId());
+		if(!pPin || !pPin->IsConnected())
+			pPin = GetOutputPin((DWORD)track->GetId() ^ 0x80402010);
 
 		AP4_Sample sample;
 		AP4_DataBuffer data;
@@ -1299,8 +1371,7 @@ bool CMP4SplitterFilter::DemuxLoop()
 					p2->SetData((LPCSTR)dlgln_plaintext, dlgln_plaintext.GetLength());
 					hr = DeliverPacket(p2);
 				}
-			} 
-
+			}
 			else if (track->GetType() == AP4_Track::TYPE_VIDEO && m_3dvfix)
 			{
 				int t = data.GetDataSize();
@@ -1338,9 +1409,7 @@ bool CMP4SplitterFilter::DemuxLoop()
 
 				p->SetData(s, t);
 
-			}
-
-			else {
+			} else {
 				p->SetData(data.GetData(), data.GetDataSize());
 			}
 
