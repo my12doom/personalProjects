@@ -687,7 +687,7 @@ HRESULT CMP4SplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 					pPinOut->SetProperty(L"LANG", CStringW(TrackLanguage));
 				}
 
-				EXECUTE_ASSERT(SUCCEEDED(AddOutputPin(id, pPinOut)));
+				//EXECUTE_ASSERT(SUCCEEDED(AddOutputPin(id, pPinOut)));
 			}
 		}
 
@@ -1352,19 +1352,19 @@ bool CMP4SplitterFilter::DemuxLoop()
 					}
 				}
 
-				if(!dlgln_bkg.IsEmpty()) {
+				if(!dlgln_bkg.IsEmpty()) {		// my12doom: deliver plain text for ASS2
 					CAutoPtr<Packet> p2(DNew Packet());
 					p2->TrackNumber = p->TrackNumber;
 					p2->rtStart = p->rtStart;
 					p2->rtStop = p->rtStop;
 					p2->bSyncPoint = p->bSyncPoint;
 					p2->SetData((LPCSTR)dlgln_bkg, dlgln_bkg.GetLength());
-					hr = DeliverPacket(p2);
+					//hr = DeliverPacket(p2);
 				}
 
 				if(!dlgln_plaintext.IsEmpty()) {
 					CAutoPtr<Packet> p2(DNew Packet());
-					p2->TrackNumber = p->TrackNumber ^ 0x80402010;
+					p2->TrackNumber = p->TrackNumber;// ^ 0x80402010;	// my12doom: deliver plain text for ASS2
 					p2->rtStart = p->rtStart;
 					p2->rtStop = p->rtStop;
 					p2->bSyncPoint = p->bSyncPoint;
