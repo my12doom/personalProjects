@@ -136,13 +136,15 @@
 #define ID_AUDIO_USELAVDECODER          40103
 #define ID_OUTPUT1                      40104
 #define ID_OUTPUT2                      40105
+#define ID_AUDIO_USELAVDECO             40106
+#define ID_AUDIO_USELAV                 40107
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        120
-#define _APS_NEXT_COMMAND_VALUE         40106
+#define _APS_NEXT_COMMAND_VALUE         40108
 #define _APS_NEXT_CONTROL_VALUE         1025
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

@@ -250,7 +250,7 @@ BEGIN
         BEGIN
             MENUITEM "None",                        ID_AUDIO_NONE
             MENUITEM SEPARATOR
-            MENUITEM "Use LAV Audio Decoder",       ID_AUDIO_USELAVDECODER
+            MENUITEM "Use LAV Audio Decoder",       ID_AUDIO_USELAV
             MENUITEM "Use Bitstreaming",            ID_AUDIO_BITSTREAM
             MENUITEM "Load Audio Track...",         ID_LOADAUDIOTRACK
         END

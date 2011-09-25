@@ -91,10 +91,31 @@ void srt_parser::init(int num, int text_size)
 	m_text_pos = 0;
 	m_text_data[0] = NULL;
 }
+
+wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for)
+{
+	wchar_t *tmp = new wchar_t[wcslen(search_in)+1];
+	wchar_t *tmp2 = new wchar_t[wcslen(search_for)+1];
+	wcscpy(tmp, search_in);
+	wcscpy(tmp2, search_for);
+	_wcslwr(tmp);
+	_wcslwr(tmp2);
+
+
+	wchar_t *out = wcsstr(tmp, tmp2);
+
+	delete [] tmp;
+	delete [] tmp2;
+	return out ? out - tmp + (wchar_t*)search_in : NULL;
+}
+
 int srt_parser::load(wchar_t *pathname)
 {
 	if (!m_index)
 		return -1;
+
+	m_ass = wcsstr_nocase(pathname, L"ssa") || wcsstr_nocase(pathname, L"ass");
+	m_ass_events_start = false;
 
 	FILE * f = _wfopen(pathname, L"rb");
 	if (NULL == f) return -1;
@@ -285,8 +306,95 @@ int srt_parser::handle_data_8(unsigned char *data, int code_page, int size)
 
 	return 0;
 }
+
+bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *replacer);
+
 int srt_parser::handle_line(wchar_t *line)
 {
+	if (m_ass)
+	{
+		if (!m_ass_events_start)
+		{
+			if (wcscmp(line, L"[Events]"))
+				m_ass_events_start = true;
+			else
+				return 0;
+		}
+		else
+		{
+			// dialogs
+
+			// find start time and end time
+			wchar_t str_start[1024];
+			wchar_t str_end[1024];
+			wchar_t *tmp = wcsstr(line, L",");
+			if (!tmp)
+				return 0;
+
+			wcscpy(str_start, tmp+1);
+			tmp = wcsstr(str_start, L",");
+			if (!tmp)
+				return 0;
+			tmp[0] = NULL;
+
+			wcscpy(str_end, tmp+1);
+			tmp = wcsstr(str_end, L",");
+			if (!tmp)
+				return 0;
+			tmp[0] = NULL;
+
+			wstrtrim(str_start);
+			wstrtrim(str_end);
+
+			// add leading and tailing 0
+			if (str_start[1] == L':')
+			{
+				str_start[wcslen(str_start)+1] = NULL;
+				memmove(str_start+1, str_start, wcslen(str_start)*2);
+				str_start[0] = L'0';
+			}
+			if (str_end[1] == L':')
+			{
+				str_end[wcslen(str_end)+1] = NULL;
+				memmove(str_end+1, str_end, wcslen(str_end)*2);
+				str_end[0] = L'0';
+			}
+			wcscat(str_start, L"0");
+			wcscat(str_end, L"0");
+
+			int start = time_to_decimal(str_start);
+			int end = time_to_decimal(str_end);
+
+
+
+			// remove 9 commas to get text line
+			int commas_left = 9;
+			while (wchar_t *comma = wcsstr(line, L","))
+			{
+				if (!commas_left)
+					break;
+
+				commas_left--;
+				wcscpy(line, comma+1);
+			}
+
+			// remove {XXX} in the line
+			wchar_t *l = wcsstr(line, L"{");
+			wchar_t *r = wcsstr(line, L"}");
+			while (l && r)
+			{
+				wcscpy(l, r+1);
+				l = wcsstr(line, L"{");
+				r = wcsstr(line, L"}");
+			}
+
+			wcs_replace(line, L"\\N", L"\n");
+
+			direct_add_subtitle(line, start, end);
+
+		}
+	}
+
 	// number
 	if (wisgidit(line) && m_last_type == 0)
 	{

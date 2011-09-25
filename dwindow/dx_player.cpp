@@ -134,7 +134,8 @@ m_subtitle_latency(L"SubtitleLatency", 0),
 m_subtitle_ratio(L"SubtitleRatio", 1.0),
 m_bitstreaming(L"BitStreaming", false),
 m_saved_screen1(L"Screen1", rect_zero),
-m_saved_screen2(L"Screen2", rect_zero)
+m_saved_screen2(L"Screen2", rect_zero),
+m_useLAV(L"LAV", true)
 {
 	detect_monitors();
 
@@ -807,9 +808,11 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 			}
 		}
 
+		// LAV Audio Decoder and 
+		CheckMenuItem(menu, ID_AUDIO_USELAV, MF_BYCOMMAND | (m_useLAV ? MF_CHECKED : MF_UNCHECKED));
+		CheckMenuItem(menu, ID_AUDIO_BITSTREAM, MF_BYCOMMAND | (m_useLAV && m_bitstreaming ? MF_CHECKED : MF_UNCHECKED));
 
 		// audio tracks
-		CheckMenuItem(menu, ID_AUDIO_BITSTREAM, MF_BYCOMMAND | (m_bitstreaming?MF_CHECKED : MF_UNCHECKED));
 		HMENU sub_audio = GetSubMenu(menu, 5);
 		list_audio_track(sub_audio);
 
@@ -1103,6 +1106,13 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		}
 	}
 
+	// LAV Audio Decoder
+	else if (uid == ID_AUDIO_USELAV)
+	{
+		m_useLAV = !m_useLAV;
+		if (m_file_loaded) MessageBoxW(id_to_hwnd(1), C(L"Audio Decoder setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
+	}
+
 	// Bitstreaming
 	else if (uid == ID_AUDIO_BITSTREAM)
 	{
@@ -1348,7 +1358,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_SUBTITLE_LOADFILE)
 	{
 		wchar_t file[MAX_PATH] = L"";
-		if (open_file_dlg(file, id_to_hwnd(1), L"Subtitles\0*.srt;*.sup\0All Files\0*.*\0\0"))
+		if (open_file_dlg(file, id_to_hwnd(1), L"Subtitles\0*.srt;*.sup;*.ssa;*.ass\0All Files\0*.*\0\0"))
 		{
 			load_subtitle(file, false);
 		}
@@ -3144,6 +3154,7 @@ HRESULT dx_player::list_subtitle_track(HMENU submenu)
 	return S_OK;
 }
 
+wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for);
 
 subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 {
@@ -3157,9 +3168,7 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	fclose(f);
 
 	const wchar_t *p_3 = pathname + wcslen(pathname) -3;
-	if ( (p_3[0] == L's' || p_3[0] == L'S') &&
-		(p_3[1] == L'r' || p_3[1] == L'R') &&
-		(p_3[2] == L't' || p_3[2] == L'T'))
+	if ( wcsstr_nocase(pathname, L"srt") || wcsstr_nocase(pathname, L"ssa") || wcsstr_nocase(pathname, L"ass"))
 	{
 		m_renderer = new CsrtRenderer(NULL, 0xffffff);
 	}

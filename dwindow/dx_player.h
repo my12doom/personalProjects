@@ -165,6 +165,7 @@ protected:
 	bool m_show_ui;
 	AutoSetting<double> m_volume;	// = 1.0
 	AutoSetting<bool> m_bitstreaming;	// = 1.0
+	AutoSetting<bool> m_useLAV;		// = true
 	HRESULT show_ui(bool show);
 	HRESULT draw_ui();
 

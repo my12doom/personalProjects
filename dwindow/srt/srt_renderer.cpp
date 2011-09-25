@@ -1,5 +1,27 @@
 #include "srt_renderer.h"
 
+bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *replacer)
+{
+	const int tmp_size = 2048;
+pass:
+	wchar_t tmp[tmp_size];
+	if (wcslen(to_replace) > tmp_size-1)
+		return false;
+
+	wchar_t *left_part = to_replace;
+	wchar_t *right_part = wcsstr(to_replace, searchfor);
+	if (!right_part)
+		return true;
+
+	right_part[0] = NULL;
+	wsprintfW(tmp, L"%s%s%s", left_part, replacer, right_part + wcslen(searchfor));
+	wcscpy(to_replace, tmp);
+	goto pass;
+
+
+	return false;	// ...
+}
+
 CsrtRenderer::CsrtRenderer(HFONT font, DWORD fontcolor)
 {
 	m_font = font;
@@ -76,7 +98,7 @@ HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_ti
 
 	else
 	{
-		wcscpy(m_last_found, found);
+		wcscpy_s(m_last_found, found);
 		// rendering
 		if (found[0] == NULL)
 		{
@@ -150,4 +172,99 @@ HRESULT CsrtRenderer::set_output_aspect(double aspect)
 
 	m_aspect = aspect;
 	return S_OK;
+}
+
+// ASS Subtitle
+
+HRESULT CAssRenderer::add_data(BYTE *data, int size, int start, int end)
+{
+	// remove some splitter's prefix 2byte datasize
+	if (size >=2 && (data[0] << 8) + data[1] == size-2)
+		size -= 2, data += 2;
+
+	if (size <= 0)
+		return S_OK;
+
+	char *p1 = (char*)malloc(size+1);
+	memcpy(p1, data, size);
+	p1[size] = NULL;
+	wchar_t *p2 = (wchar_t*)malloc(size*2+2);
+	MultiByteToWideChar(CP_UTF8, 0, (char*)p1, size+1, p2, size+1);
+
+	// remove 8 commas
+	int commas_left = 8;
+	while (wchar_t *comma = wcsstr(p2, L","))
+	{
+		if (!commas_left)
+			break;
+
+		commas_left--;
+		wcscpy(p2, comma+1);
+	}
+
+	// remove {XXX} in the line
+	wchar_t *l = wcsstr(p2, L"{");
+	wchar_t *r = wcsstr(p2, L"}");
+	while (l && r)
+	{
+		wcscpy(l, r+1);
+		l = wcsstr(p2, L"{");
+		r = wcsstr(p2, L"}");
+	}
+
+	wcs_replace(p2, L"\\N", L"\n");
+
+	HRESULT hr = m_srt.direct_add_subtitle(p2, start, end);
+
+	free(p1);
+	free(p2);
+
+	return hr;
+}
+
+HRESULT CAss2Renderer::add_data(BYTE *data, int size, int start, int end)
+{
+	// remove some splitter's prefix 2byte datasize
+	if (size >=2 && (data[0] << 8) + data[1] == size-2)
+		size -= 2, data += 2;
+
+	if (size <= 0)
+		return S_OK;
+
+	char *p1 = (char*)malloc(size+1);
+	memcpy(p1, data, size);
+	p1[size] = NULL;
+	wchar_t *p2 = (wchar_t*)malloc(size*2+2);
+	MultiByteToWideChar(CP_UTF8, 0, (char*)p1, size+1, p2, size+1);
+
+	// remove 9 commas
+	int commas_left = 9;
+	while (wchar_t *comma = wcsstr(p2, L","))
+	{
+		if (!commas_left)
+			break;
+
+		commas_left--;
+		wcscpy(p2, comma+1);
+	}
+
+	// remove {XXX} in the line
+	wchar_t *l = wcsstr(p2, L"{");
+	wchar_t *r = wcsstr(p2, L"}");
+	while (l && r)
+	{
+		wcscpy(l, r+1);
+		l = wcsstr(p2, L"{");
+		r = wcsstr(p2, L"}");
+	}
+
+
+	wcs_replace(p2, L"\\N", L"\n");
+
+	HRESULT hr = m_srt.direct_add_subtitle(p2, start, end);
+
+	free(p1);
+	free(p2);
+
+	return hr;
 }

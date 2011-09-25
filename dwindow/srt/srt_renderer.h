@@ -26,3 +26,19 @@ protected:
 	HFONT m_font;
 	DWORD m_font_color;
 };
+
+class CAssRenderer : public CsrtRenderer
+{
+public:
+	CAssRenderer(HFONT font, DWORD fontcolor): CsrtRenderer(font, fontcolor){}
+	virtual HRESULT load_file(wchar_t *filename){return E_NOTIMPL;}						// no support for plain text .ass and .ass2 file for now
+	virtual HRESULT add_data(BYTE *data, int size, int start, int end);					// override this function to provide dshow support, which remove leading tags
+};
+
+class CAss2Renderer : public CsrtRenderer
+{
+public:
+	CAss2Renderer(HFONT font, DWORD fontcolor): CsrtRenderer(font, fontcolor){}
+	virtual HRESULT load_file(wchar_t *filename){return E_NOTIMPL;}						// no support for plain text .ass and .ass2 file for now
+	virtual HRESULT add_data(BYTE *data, int size, int start, int end);					// override this function to provide dshow support, which remove leading tags
+};

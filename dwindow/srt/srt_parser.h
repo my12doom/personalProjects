@@ -25,6 +25,8 @@ protected:
 	int m_last_type;
 	int m_index_pos;
 	int m_text_pos;
+	bool m_ass;
+	bool m_ass_events_start;
 
 private:
 	int handle_data_16(unsigned short *data, bool big, int size);

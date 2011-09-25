@@ -69,9 +69,13 @@ HRESULT DShowSubtitleRenderer::CheckMediaTypeCB(const CMediaType *inType)
 	if (subType == MEDIASUBTYPE_PGS || 
 		(subType == GUID_NULL &&inType->FormatLength()>=520 && wcsstr(format->TrackName, L"SUP")))
 		m_srenderer = new PGSRenderer();
-	else if (subType == MEDIASUBTYPE_UTF8 || 
+	else if (subType == MEDIASUBTYPE_UTF8 ||
 		(subType == GUID_NULL &&inType->FormatLength()>=520))
 		m_srenderer = new CsrtRenderer(m_font, m_font_color);
+	else if (subType == MEDIASUBTYPE_ASS)
+		m_srenderer = new CAssRenderer(m_font, m_font_color);
+	else if (subType == MEDIASUBTYPE_ASS2)
+		m_srenderer = new CAss2Renderer(m_font, m_font_color);
 	else
 		return VFW_E_INVALID_MEDIA_TYPE;
 
