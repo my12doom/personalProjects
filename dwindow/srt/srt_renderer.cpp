@@ -30,6 +30,10 @@ CsrtRenderer::CsrtRenderer(HFONT font, DWORD fontcolor)
 	reset();
 }
 
+CsrtRenderer::~CsrtRenderer()
+{
+
+}
 HRESULT CsrtRenderer::set_font_color(DWORD newcolor)
 {
 	m_font_color = newcolor;

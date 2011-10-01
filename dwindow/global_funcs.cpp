@@ -547,9 +547,10 @@ HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 	CComQIPtr<IPropertyBag, &IID_IPropertyBag> pbag(decoder);
 	if (pbag)
 	{
-		write_property(pbag, L"use_tray=0");
-		write_property(pbag, L"low_latency=0");
-		write_property(pbag, g_CUDA ? L"use_cuda=1" : L"use_cuda=0");
+		HRESULT hr = write_property(pbag, L"use_tray=0");
+		hr = write_property(pbag, L"low_latency=0");
+		hr = write_property(pbag, L"di=6");
+		hr = write_property(pbag, g_CUDA ? L"use_cuda=1" : L"use_cuda=0");
 		return write_property(pbag, L"app_mode=1");
 	}
 	else
@@ -1166,6 +1167,7 @@ HRESULT download_e3d_key(const wchar_t *filename)
 
 	load_passkey();
 	dwindow_message_uncrypt message;
+	memset(&message, 0, sizeof(message));
 	message.zero = 0;
 	memcpy(message.passkey, g_passkey, 32);
 	memcpy(message.requested_hash, reader.m_hash, 20);

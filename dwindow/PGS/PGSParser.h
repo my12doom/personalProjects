@@ -1,7 +1,7 @@
 #pragma once
 #include <windows.h>
 
-typedef struct subtitle_struct
+typedef struct pgs_subtitle_struct
 {
 	// time
 	int start;

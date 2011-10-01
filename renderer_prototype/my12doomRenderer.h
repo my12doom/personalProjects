@@ -103,6 +103,7 @@ public:
 	int m_height;
 	bool m_topdown;
 	D3DPOOL m_pool;
+	DWORD m_interlace_flags;
 };
 class my12doomRendererDShow : public DBaseVideoRenderer
 {
@@ -131,6 +132,7 @@ protected:
 	// dshow variables
 	REFERENCE_TIME m_time;
 	GUID m_format;
+	GUID m_formattype;
 
 	// queue
 	static DWORD WINAPI queue_thread(LPVOID param);
@@ -185,6 +187,12 @@ public:
 	CComPtr<IBaseFilter> m_dshow_renderer2;
 	AESCryptor m_AES;
 	REFERENCE_TIME m_frame_length;
+	bool m_deinterlace;
+	bool m_forced_deinterlace;
+	double m_saturation;
+	double m_luminance;
+	double m_hue;
+	double m_contrast;
 
 	// public functions
 	HRESULT pump();
@@ -254,6 +262,7 @@ protected:
 	my12doomRendererDShow * m_dsr0;
 	my12doomRendererDShow * m_dsr1;
 	HRESULT CheckMediaType(const CMediaType *pmt, int id);
+	HRESULT SetMediaType(const CMediaType *pmt, int id);
 	HRESULT	BreakConnect(int id);
 	HRESULT CompleteConnect(IPin *pRecievePin, int id);
 	HRESULT DataPreroll(int id, IMediaSample *media_sample);
@@ -297,6 +306,7 @@ protected:
 	HRESULT draw_movie(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_bmp(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_ui(IDirect3DSurface9 *surface);
+	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust);		// assume the surface is the same size of back buffer
 #ifdef DEBUG
 	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_XRGB(255,128,0));
 #else
@@ -362,6 +372,7 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_iz3d_back;
 	CComPtr <IDirect3DPixelShader9> m_ps_iz3d_front;
 	CComPtr <IDirect3DPixelShader9> m_ps_test;
+	CComPtr <IDirect3DPixelShader9> m_ps_color_adjust;
 
 	CComPtr<IDirect3DTexture9> m1_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
 	CComPtr<IDirect3DTexture9> m1_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
@@ -377,7 +388,8 @@ protected:
 
 	CComPtr<IDirect3DTexture9> m_tex_rgb_left;				// source texture, converted to RGB32
 	CComPtr<IDirect3DTexture9> m_tex_rgb_right;
-	CComPtr<IDirect3DSurface9> m_surface_rgb_backup_full;		// back up converted RGB32 texture when stop, to restore after device lost or reset
+	CComPtr<IDirect3DSurface9> m_deinterlace_surface;		// surface for deinterlace
+	CComPtr<IDirect3DSurface9> m_surface_rgb_backup_full;	// back up converted RGB32 texture when stop, to restore after device lost or reset
 	CComPtr<IDirect3DTexture9> m_tex_rgb_full;
 	RECT m_window_rect;
 	CComPtr<IDirect3DTexture9> m_tex_mask;					// mask txture

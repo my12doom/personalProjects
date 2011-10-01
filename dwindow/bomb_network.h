@@ -34,6 +34,7 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 	HWND parent_window = (HWND)lpParame;
 
 	dwindow_message_uncrypt message;
+	memset(&message, 0, sizeof(message));
 	message.zero = 0;
 	memcpy(message.passkey, g_passkey, 32);
 	memset(message.requested_hash, 0, 20);

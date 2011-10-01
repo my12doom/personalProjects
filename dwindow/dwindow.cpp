@@ -169,7 +169,7 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 
 	hwnd = CreateWindowExA(
 		WS_EX_ACCEPTFILES,
-		"DWindowClass",        // name of window class 
+		"DWindow2Class",        // name of window class 
 		"",					 // title-bar string 
 		WS_OVERLAPPEDWINDOW, // top-level window 
 		CW_USEDEFAULT,       // default horizontal position 
@@ -364,6 +364,11 @@ dwindow::dwindow(RECT screen1, RECT screen2)
 		LR_DEFAULTCOLOR); 
 
 	// Register the window class. 
+	if (!RegisterClassEx(&wcx))
+		return;
+
+	wcx.lpszClassName = _T("DWindow2Class");
+
 	if (!RegisterClassEx(&wcx))
 		return;
 

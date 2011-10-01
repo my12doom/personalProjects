@@ -9,6 +9,7 @@
 #include "PixelShaders/vs_subtitle.h"
 #include "PixelShaders/iz3d_back.h"
 #include "PixelShaders/iz3d_front.h"
+#include "PixelShaders/color_adjust.h"
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
@@ -65,7 +66,7 @@ HRESULT mylog(wchar_t *format, ...)
 
 HRESULT mylog(const char *format, ...)
 {
-//#ifdef DEBUG
+#ifdef DEBUG
 	char tmp[10240];
 	char tmp2[10240];
 	va_list valist;
@@ -75,7 +76,7 @@ HRESULT mylog(const char *format, ...)
 
 	wsprintfA(tmp2, "(tid=%d)%s", GetCurrentThreadId(), tmp);
 	OutputDebugStringA(tmp2);
-//#endif
+#endif
 	return S_OK;
 }
 
@@ -185,6 +186,15 @@ void my12doomRenderer::init_variables()
 	m_mask_mode = row_interlace;
 	m_color1 = D3DCOLOR_XRGB(255, 0, 0);
 	m_color2 = D3DCOLOR_XRGB(0, 255, 255);
+	m_normal = m_sbs = m_tb = 0;
+	m_forced_deinterlace = false;
+
+	// color adjust
+	m_saturation =
+	m_luminance =
+	m_hue =
+	m_contrast = 0.5;
+
 
 	// clear rgb backup
 	m_surface_rgb_backup_full = NULL;
@@ -207,24 +217,75 @@ my12doomRenderer::~my12doomRenderer()
 	m_D3D = NULL;
 }
 
+HRESULT my12doomRenderer::SetMediaType(const CMediaType *pmt, int id)
+{
+	if (id == 1)
+		return S_OK;
+
+
+	if (*pmt->FormatType() == FORMAT_VideoInfo)
+	{
+		printf("SetMediaType() VideoInfo1,  %s deinterlace\n", m_deinterlace ? "DO" : "NO");
+		m_deinterlace = false;
+	}
+	else if (*pmt->FormatType() == FORMAT_VideoInfo2)
+	{
+		VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)pmt->Format();
+		if (vihIn->dwInterlaceFlags & AMINTERLACE_IsInterlaced)
+		{
+			m_deinterlace = true;
+		}
+		printf("SetMediaType() VideoInfo2,  %s deinterlace\n", m_deinterlace ? "DO" : "NO");
+	}
+
+	printf("SetMediaType() %s deinterlace\n", m_deinterlace ? "DO" : "NO");
+
+	return S_OK;
+}
+
 HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 {
+	if (m_sbs + m_tb + m_normal > 5 || (m_dsr0->is_connected() && m_dsr1->is_connected()))
+		return E_FAIL;
+
+	HRESULT hr = S_OK;
+	bool deinterlace = false;
 	int width, height, aspect_x, aspect_y;
 	if (*pmt->FormatType() == FORMAT_VideoInfo)
 	{
+		printf("CheckMediaType(%d) VideoInfo1\n", id);
 		VIDEOINFOHEADER *vihIn = (VIDEOINFOHEADER*)pmt->Format();
 		width = vihIn->bmiHeader.biWidth;
 		height = vihIn->bmiHeader.biHeight;
 		aspect_x = width;
 		aspect_y = abs(height);
 		m_frame_length = vihIn->AvgTimePerFrame;
+		deinterlace = false;
+
+
+		//if (m_dsr0->m_formattype == FORMAT_VideoInfo2)
+		//	hr = E_FAIL;
+
 	}
 
 	else if (*pmt->FormatType() == FORMAT_VideoInfo2)
 	{
 		VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)pmt->Format();
+		printf("CheckMediaType(%d) VideoInfo2, flag: %d(%02x), %s deinterlace\n", id, vihIn->dwInterlaceFlags, vihIn->dwInterlaceFlags, deinterlace ? "DO" : "NO");
 		if (vihIn->dwInterlaceFlags & AMINTERLACE_IsInterlaced)
-			return E_FAIL;
+		{
+			deinterlace = true;
+			if ((vihIn->dwInterlaceFlags & AMINTERLACE_FieldPatBothRegular))
+			{
+				//printf("AMINTERLACE_FieldPatBothRegular not supported, E_FAIL\n");
+				//hr = E_FAIL;
+			}
+			//return E_FAIL;
+		}
+		else
+		{
+			deinterlace = false;
+		}
 		width = vihIn->bmiHeader.biWidth;
 		height = vihIn->bmiHeader.biHeight;
 		aspect_x = vihIn->dwPictAspectRatioX;
@@ -233,9 +294,14 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 
 		//AMINTERLACE_IsInterlaced
 		// 0x21
+
 	}
 	else
-		return E_FAIL;
+	{
+		printf("Not Video.\n");
+		hr = E_FAIL;
+	}
+
 
 	if (height > 0)
 		m_revert_RGB32 = true;
@@ -252,25 +318,40 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 
 	m_last_frame_time = 0;
 
-	if (id == 0)
+	if (id == 0 && SUCCEEDED(hr))
 	{
 		m_lVidWidth = width;
 		m_lVidHeight = height;
 		m_source_aspect = (double)aspect_x / aspect_y;
 
-		return S_OK;
+		hr = S_OK;
 	}
-
-	if (!m_dsr0->is_connected())
-		return E_FAIL;
-
-	if (width == m_lVidWidth && height == m_lVidHeight)			// format is not important, but resolution is
+	else if (SUCCEEDED(hr))
 	{
-		m_source_aspect = (double)aspect_x / aspect_y;
-		return S_OK;
+		if (!m_dsr0->is_connected())
+		{
+			printf("don't connect 2nd renderer before 1st, E_FAIL.\n");
+			hr = E_FAIL;
+		}
+
+		if (width == m_lVidWidth && height == m_lVidHeight  && SUCCEEDED(hr))			// format is not important, but resolution and formattype is
+		{
+			m_source_aspect = (double)aspect_x / aspect_y;
+			hr = S_OK;
+		}
+		else if (SUCCEEDED(hr))
+		{
+			printf("resolution mismatch, E_FAIL.\n");
+			hr = E_FAIL;
+		}
 	}
-	else
-		return E_FAIL;
+
+	if (hr == S_OK)
+		m_deinterlace = deinterlace;
+
+	printf("return %s.\n", hr == S_OK ? "S_OK" : "E_FAIL");
+
+	return hr;
 }
 HRESULT	my12doomRenderer::BreakConnect(int id)
 {
@@ -278,6 +359,16 @@ HRESULT	my12doomRenderer::BreakConnect(int id)
 }
 HRESULT my12doomRenderer::CompleteConnect(IPin *pRecievePin, int id)
 {
+	AM_MEDIA_TYPE mt;
+	pRecievePin->ConnectionMediaType(&mt);
+	if (mt.formattype == FORMAT_VideoInfo2)
+	{
+		VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)mt.pbFormat;
+
+		vihIn = vihIn;
+
+	}
+
 	m_normal = m_sbs = m_tb = 0;
 	m_layout_detected = mono2d;
 	m_no_more_detect = false;
@@ -368,7 +459,7 @@ find_match:
 				while(true)
 				{
 					sample_left = m_left_queue.RemoveHead();
-					if(sample_left->m_start != matched_time)
+					if(abs((int)(sample_left->m_start - matched_time)) > m_frame_length/2)
 					{
 						printf("drop left\n");
 						delete sample_left;
@@ -380,7 +471,7 @@ find_match:
 				while(true)
 				{
 					sample_right = m_right_queue.RemoveHead();
-					if(sample_right->m_start != matched_time)
+					if(abs((int)(sample_right->m_start - matched_time)) > m_frame_length/2)
 					{
 						printf("drop right\n");
 						delete sample_right;
@@ -450,6 +541,27 @@ retry:
 			goto retry;
 		}
 	}
+
+	AM_MEDIA_TYPE *pmt = NULL;
+	media_sample->GetMediaType(&pmt);
+	if (pmt)
+	{
+		if (pmt->formattype == FORMAT_VideoInfo2)
+		{
+			VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)pmt->pbFormat;
+			printf("sample video header 2.\n");
+
+		}
+
+		else if (pmt->formattype == FORMAT_VideoInfo)
+		{
+			VIDEOINFOHEADER *vihIn = (VIDEOINFOHEADER*)pmt->pbFormat;
+			printf("sample video header.\n");
+
+		}
+
+	}
+
 	int l2 = timeGetTime();
 	if (!m_dsr1->is_connected())
 	{
@@ -884,6 +996,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_ps_iz3d_back = NULL;
 	m_ps_iz3d_front = NULL;
 	m_vs_subtitle = NULL;
+	m_ps_color_adjust = NULL;
 
 	// textures
 	m_tex_rgb_left = NULL;
@@ -921,6 +1034,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	if (m_pool) m_pool->DestroyPool(D3DPOOL_DEFAULT);
 
 	// surfaces
+	m_deinterlace_surface = NULL;
 	m_test_rt64 = NULL;
 
 	// vertex buffers
@@ -962,6 +1076,8 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_full, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_left, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
+	fix_nv3d_bug();
+	if (m_deinterlace) FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
 	FAIL_RET( m_Device->CreateTexture(2048, 1024, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
 	if(m_tex_bmp_mem == NULL)
 	{
@@ -1054,6 +1170,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_Device->CreatePixelShader((DWORD*)anaglyph, &m_ps_anaglyph);
 	m_Device->CreatePixelShader((DWORD*)g_code_iz3d_back, &m_ps_iz3d_back);
 	m_Device->CreatePixelShader((DWORD*)g_code_iz3d_front, &m_ps_iz3d_front);
+	m_Device->CreatePixelShader((DWORD*)g_code_color_adjust, &m_ps_color_adjust);
 	m_Device->CreateVertexShader((DWORD*)g_code_vs_subtitle, &m_vs_subtitle);
 
 	free(yv12);
@@ -1312,6 +1429,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(back_buffer);
 		draw_movie(back_buffer, true);
 		draw_bmp(back_buffer, true);
+		adjust_temp_color(back_buffer);
 
 		// copy left to nv3d surface
 		RECT dst = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
@@ -1320,6 +1438,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(back_buffer);
 		draw_movie(back_buffer, false);
 		draw_bmp(back_buffer, false);
+		adjust_temp_color(back_buffer);
 
 		// copy right to nv3d surface
 		dst.left += m_active_pp.BackBufferWidth;
@@ -1338,6 +1457,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(back_buffer);
 		draw_movie(back_buffer, true);
 		draw_bmp(back_buffer, true);
+		adjust_temp_color(back_buffer);
 		draw_ui(back_buffer);
 	}
 
@@ -1348,11 +1468,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(temp_surface);
 		draw_movie(temp_surface, true);
 		draw_bmp(temp_surface, true);
+		adjust_temp_color(temp_surface);
+
 		temp_surface = NULL;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
 		draw_movie(temp_surface, false);
 		draw_bmp(temp_surface, false);
+		adjust_temp_color(temp_surface);
 
 		// pass3: analyph
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
@@ -1381,11 +1504,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(temp_surface);
 		draw_movie(temp_surface, true);
 		draw_bmp(temp_surface, true);
+		adjust_temp_color(temp_surface);
+
 		temp_surface = NULL;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
 		draw_movie(temp_surface, false);
 		draw_bmp(temp_surface, false);
+		adjust_temp_color(temp_surface);
 
 
 		// pass 3: render to backbuffer with masking
@@ -1455,6 +1581,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		draw_movie(back_buffer, m_pageflip_frames);
 		QueryPerformanceCounter(&l3);
 		draw_bmp(back_buffer, m_pageflip_frames);
+		adjust_temp_color(back_buffer);
 		QueryPerformanceCounter(&l4);
 		draw_ui(back_buffer);
 		QueryPerformanceCounter(&l5);
@@ -1469,6 +1596,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(back_buffer);
 		draw_movie(back_buffer, true);
 		draw_bmp(back_buffer, true);
+		adjust_temp_color(back_buffer);
 		draw_ui(back_buffer);
 
 		// set render target to swap chain2
@@ -1481,6 +1609,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			clear(back_buffer2);
 			draw_movie(back_buffer2, false);
 			draw_bmp(back_buffer2, false);
+			adjust_temp_color(back_buffer2);
 			draw_ui(back_buffer2);
 		}
 
@@ -1493,13 +1622,16 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(temp_surface);
 		draw_movie(temp_surface, true);
 		draw_bmp(temp_surface, true);
+		adjust_temp_color(temp_surface);
+
 		temp_surface = NULL;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
 		draw_movie(temp_surface, false);
 		draw_bmp(temp_surface, false);
+		adjust_temp_color(temp_surface);
 
-		// pass3: analyph
+		// pass3: IZ3D
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		m_Device->SetRenderTarget(0, back_buffer);
 		m_Device->SetTexture( 0, m_mask_temp_left );
@@ -1542,6 +1674,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		draw_movie(temp_surface2, false);
 		draw_bmp(temp_surface, true);
 		draw_bmp(temp_surface2, false);
+		adjust_temp_color(temp_surface);
+		adjust_temp_color(temp_surface2);
 		draw_ui(temp_surface);
 		draw_ui(temp_surface2);
 
@@ -1832,6 +1966,64 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 			ms->GetDuration(&m_total_time);			
 	}
 	return m_uidrawer->draw_ui(surface, m_dsr0->m_thisstream + m_dsr0->m_time, m_total_time, m_volume, m_dsr0->m_State == State_Running, alpha);
+}
+
+HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust)
+{
+	if (!surface_to_adjust)
+		return E_FAIL;
+
+	// check for size
+	D3DSURFACE_DESC desc;
+	memset(&desc, 0, sizeof(desc));
+	surface_to_adjust->GetDesc(&desc);
+
+	// create a temp texture, copy the surface to it, render to m_nv3d_surface(which is just a double size temp RT surface with LOCKABLE on) , and then copy back again
+	HRESULT hr = S_OK;
+	{
+		// creating
+		CAutoLock lck(&m_pool_lock);
+		CPooledTexture *tex_src;
+		CPooledTexture *tex_rt;
+		hr = m_pool->CreateTexture(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tex_src);
+		if (FAILED(hr))
+			return hr;
+		hr = m_pool->CreateTexture(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tex_rt);
+		if (FAILED(hr))
+			return hr;
+		CComPtr<IDirect3DSurface9> surface_of_tex_src;
+		tex_src->texture->GetSurfaceLevel(0, &surface_of_tex_src);
+		CComPtr<IDirect3DSurface9> surface_of_tex_rt;
+		tex_rt->texture->GetSurfaceLevel(0, &surface_of_tex_rt);
+
+		// copying
+		hr = m_Device->StretchRect(surface_to_adjust, NULL, surface_of_tex_src, NULL, D3DTEXF_LINEAR);		//we are using linear filter here, to cover possible coordinate error		
+
+		// rendering
+		CComPtr<IDirect3DPixelShader9> ps;
+		hr = m_Device->GetPixelShader(&ps);
+		hr = m_Device->SetRenderTarget(0, surface_of_tex_rt);
+		hr = m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+		hr = m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		hr = m_Device->SetTexture( 0, tex_src->texture );
+		hr = m_Device->SetPixelShader(m_ps_color_adjust);
+		//float ps_parameter[4] = {0.5, 0.5, 0.5, 0.6};
+		float ps_parameter[4] = {m_saturation, m_luminance, m_hue, m_contrast};
+		hr = m_Device->SetPixelShaderConstantF(0, ps_parameter, 1);
+
+		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = m_Device->SetFVF( FVF_Flags );
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+		hr = m_Device->SetPixelShader(ps);
+
+		// copying back
+		hr = m_Device->StretchRect(surface_of_tex_rt, NULL, surface_to_adjust, NULL, D3DTEXF_LINEAR);
+
+		m_pool->DeleteTexture(tex_src);
+		m_pool->DeleteTexture(tex_rt);
+	}
+
+	return hr;
 }
 
 HRESULT my12doomRenderer::render(bool forced)
@@ -2188,6 +2380,16 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	}
 
 	m_backuped = false;
+
+	// deinterlace on needed
+	// we are using Blending method for now, it's very simple ,just StretchRect to a half height surface and StretchRect back, with BiLinear resizing
+	if (m_forced_deinterlace)
+	{
+		m_Device->StretchRect(left_surface, NULL, m_deinterlace_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(m_deinterlace_surface, NULL, left_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(right_surface, NULL, m_deinterlace_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(m_deinterlace_surface, NULL, right_surface, NULL, D3DTEXF_LINEAR);
+	}
 
 	// repack it up...
 	// no need to handle swap eyes
@@ -2988,6 +3190,7 @@ HRESULT gpu_sample::prepare_rendering()
 gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, D3DPOOL pool)
 {
 	CAutoLock lck(&g_gpu_lock);
+	m_interlace_flags = 0;
 	m_tex_RGB32 = m_tex_YUY2 = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
 	m_width = width;
 	m_height = height;
@@ -2995,10 +3198,24 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	m_format = format;
 	m_topdown = topdown_RGB32;
 	HRESULT hr;
+	CComQIPtr<IMediaSample2, &IID_IMediaSample2> I2(memory_sample);
 	if (!allocator || !memory_sample)
 		goto clearup;
 
+	// time stamp
 	memory_sample->GetTime(&m_start, &m_end);
+
+	// interlace flags
+	if (I2)
+	{
+		AM_SAMPLE2_PROPERTIES prop;
+		if (SUCCEEDED(I2->GetProperties(sizeof(prop), (BYTE*) &prop)))
+		{
+			m_interlace_flags = prop.dwTypeSpecificFlags;
+		}
+
+		//printf("sample interlace_flag: %02x.\n", m_interlace_flags);
+	}
 
 	m_ready = true;
 

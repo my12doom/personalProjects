@@ -135,7 +135,12 @@ m_subtitle_ratio(L"SubtitleRatio", 1.0),
 m_bitstreaming(L"BitStreaming", false),
 m_saved_screen1(L"Screen1", rect_zero),
 m_saved_screen2(L"Screen2", rect_zero),
-m_useLAV(L"LAV", true)
+m_useLAV(L"LAV", true),
+m_forced_deinterlace(L"ForcedDeinterlace", false),
+m_saturation(L"Saturation", 0.5),
+m_luminance(L"Luminance", 0.5),
+m_hue(L"Hue", 0.5),
+m_contrast(L"Contrast", 0.5)
 {
 	detect_monitors();
 
@@ -485,13 +490,20 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 
 	else if (message == WM_COPYDATA)
 	{
-		COPYDATASTRUCT *copy = (COPYDATASTRUCT*) lParam;
-		wchar_t next_to_load[MAX_PATH];
-		memcpy(next_to_load, copy->lpData, min(MAX_PATH*2, copy->cbData));
-		next_to_load[MAX_PATH-1] = NULL;
+		if (lParam)
+		{
+			COPYDATASTRUCT *copy = (COPYDATASTRUCT*) lParam;
+			wchar_t next_to_load[MAX_PATH];
+			memcpy(next_to_load, copy->lpData, min(MAX_PATH*2, copy->cbData));
+			next_to_load[MAX_PATH-1] = NULL;
 
-		if (copy->dwData == WM_LOADFILE)
-			reset_and_loadfile_internal(next_to_load);
+			if (copy->dwData == WM_LOADFILE)
+				reset_and_loadfile_internal(next_to_load);
+		}
+		else
+		{
+			SendMessageW(id_to_hwnd(1), WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
+		}
 	}
 
 
@@ -830,6 +842,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 		// CUDA
 		CheckMenuItem(menu, ID_CUDA, g_CUDA ? MF_CHECKED:MF_UNCHECKED);
+		CheckMenuItem(menu, ID_VIDEO_DEINTERLACE, m_forced_deinterlace ? MF_CHECKED:MF_UNCHECKED);
 
 
 		// show it
@@ -1135,6 +1148,23 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		g_CUDA = !g_CUDA;
 		if (m_file_loaded) MessageBoxW(id_to_hwnd(1), C(L"CUDA setting will apply on next file play."), L"...", MB_OK);
 	}
+
+	// deinterlacing
+	else if (uid == ID_VIDEO_DEINTERLACE)
+	{
+		m_forced_deinterlace = !m_forced_deinterlace;
+		m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
+
+		if (m_forced_deinterlace)
+			MessageBoxW(id_to_hwnd(1), C(L"Deinterlacing is not recommended unless you see combing artifacts on moving objects."), L"...", MB_ICONINFORMATION);
+	}
+
+	// color adjusting
+	else if (uid == ID_VIDEO_ADJUSTCOLOR)
+	{
+		show_color_adjust(m_hexe, id_to_hwnd(id), this);
+	}
+
 
 	// input layouts
 	else if (uid == ID_INPUTLAYOUT_AUTO)
@@ -1573,6 +1603,11 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
 	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
 	m_renderer1->set_aspect(m_aspect);
+	m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
+	m_renderer1->m_saturation = m_saturation;;
+	m_renderer1->m_luminance = m_luminance;
+	m_renderer1->m_hue = m_hue;
+	m_renderer1->m_contrast = m_contrast;
 
 	m_file_loaded = false;
 	
@@ -1770,6 +1805,11 @@ HRESULT dx_player::on_dshow_event()
 	{
 		stop();
 		seek(0);
+	}
+
+	else if (event_code == EC_VIDEO_SIZE_CHANGED)
+	{
+		printf("EC_VIDEO_SIZE_CHANGED\n");
 	}
 
 
@@ -3172,9 +3212,7 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	{
 		m_renderer = new CsrtRenderer(NULL, 0xffffff);
 	}
-	else if ( (p_3[0] == L's' || p_3[0] == L'S') &&
-		(p_3[1] == L'u' || p_3[1] == L'U') &&
-		(p_3[2] == L'p' || p_3[2] == L'P'))
+	else if (wcsstr_nocase(pathname, L"sup"))
 	{
 		m_renderer = new PGSRenderer();
 	}
@@ -3191,4 +3229,48 @@ subtitle_file_handler::~subtitle_file_handler()
 	if (m_renderer)
 		delete m_renderer;
 	m_renderer = NULL;
+}
+
+HRESULT dx_player::get_parameter(int parameter, double *value)
+{
+	switch(parameter)
+	{
+	case saturation:
+		*value = m_saturation;
+		break;
+	case luminance:
+		*value = m_luminance;
+		break;
+	case hue:
+		*value = m_hue;
+		break;
+	case contrast:
+		*value = m_contrast;
+		break;
+	default:
+		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT dx_player::set_parameter(int parameter, double value)
+{
+	switch(parameter)
+	{
+	case saturation:
+		m_renderer1->m_saturation = m_saturation = value;
+		break;
+	case luminance:
+		m_renderer1->m_luminance = m_luminance = value;
+		break;
+	case hue:
+		m_renderer1->m_hue = m_hue = value;
+		break;
+	case contrast:
+		m_renderer1->m_contrast = m_contrast = value;
+		break;
+	default:
+		return E_FAIL;
+	}
+	return S_OK;
 }

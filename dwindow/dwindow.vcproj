@@ -353,6 +353,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\color_adjust.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\dwindow.cpp"
 				>
 			</File>
@@ -421,6 +425,14 @@
 				</File>
 				<File
 					RelativePath=".\srt\srt_renderer.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\vobsub_parser.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\vobsub_renderer.cpp"
 					>
 				</File>
 			</Filter>
@@ -503,6 +515,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\color_adjust.h"
+				>
+			</File>
+			<File
 				RelativePath=".\detours\detours.h"
 				>
 			</File>
@@ -559,6 +575,14 @@
 				</File>
 				<File
 					RelativePath=".\srt\srt_renderer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\vobsub_parser.h"
+					>
+				</File>
+				<File
+					RelativePath=".\vobsub_renderer.h"
 					>
 				</File>
 			</Filter>

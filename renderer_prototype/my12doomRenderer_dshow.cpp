@@ -128,8 +128,9 @@ HRESULT my12doomRendererDShow::SetMediaType(const CMediaType *pmt)
 	int height= m_owner->m_lVidHeight;
 
 	m_format = *pmt->Subtype();
+	m_formattype = *pmt->FormatType();
 
-    return S_OK;
+    return m_owner->SetMediaType(pmt, m_id);
 }
 
 HRESULT	my12doomRendererDShow::BreakConnect()

@@ -118,6 +118,25 @@ BEGIN
     LTEXT           "注意，提前/缩短功能对内置字幕支持较差，调整时尽量不要超过10秒，否则可能出现字幕丢失，延迟/拉伸功能不受限制，独立字幕亦不受限制。",IDC_STATIC,15,75,191,27
 END
 
+IDD_COLOR DIALOGEX 0, 0, 316, 183
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "色彩调节"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,205,162,50,14
+    PUSHBUTTON      "取消",IDCANCEL,259,162,50,14
+    PUSHBUTTON      "重置",IDC_RESET,149,162,51,14
+    CONTROL         "",IDC_LUM,"msctls_trackbar32",WS_TABSTOP,54,18,235,17
+    LTEXT           "亮度",IDC_STATIC,20,22,30,10
+    CONTROL         "预览",IDC_PREVIEW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,100,163,43,12
+    CONTROL         "",IDC_CON,"msctls_trackbar32",WS_TABSTOP,54,40,235,17
+    LTEXT           "对比度",IDC_STATIC,20,44,30,10
+    CONTROL         "",IDC_SAT,"msctls_trackbar32",WS_TABSTOP,54,62,235,17
+    LTEXT           "饱和度",IDC_STATIC,20,66,30,10
+    CONTROL         "",IDC_HUE,"msctls_trackbar32",WS_TABSTOP,54,84,235,17
+    LTEXT           "色调",IDC_STATIC,20,88,30,10
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -244,7 +263,9 @@ BEGIN
             BEGIN
                 MENUITEM "2",                           ID_OUTPUT2
             END
+            MENUITEM "Adjust Color...",             ID_VIDEO_ADJUSTCOLOR
             MENUITEM "Use CUDA Accelaration",       ID_CUDA
+            MENUITEM "Forced Deinterlace",          ID_VIDEO_DEINTERLACE
         END
         POPUP "Audio"
         BEGIN
@@ -307,6 +328,14 @@ BEGIN
         RIGHTMARGIN, 215
         TOPMARGIN, 7
         BOTTOMMARGIN, 119
+    END
+
+    IDD_COLOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 176
     END
 END
 #endif    // APSTUDIO_INVOKED

@@ -18,6 +18,7 @@
 #include "PGS\PGSParser.h"
 #include "DShowSubtitleRenderer.h"
 #include "..\my12doomSource\src\filters\parser\MpegSplitter\IOffsetMetadata.h"
+#include "color_adjust.h"
 
 #define _AFX
 #define __AFX_H__
@@ -45,7 +46,7 @@ public:
 	~subtitle_file_handler();
 };
 
-class dx_player : public Imy12doomRendererCallback, public dwindow
+class dx_player : protected Imy12doomRendererCallback, public dwindow, protected IColorAdjustCB
 {
 public:
 	dx_player(HINSTANCE hExe);
@@ -180,13 +181,14 @@ protected:
 	CComPtr<IMediaControl>		m_mc;
 	CComPtr<IBasicAudio>		m_ba;
 
-	// renderer and input layout and output mode
+	// renderer and input layout and output mode and deinterlacing
 	my12doomRenderer *m_renderer1;
 	AutoSetting<DWORD> m_input_layout; /* = input_layout_auto*/
 	AutoSetting<DWORD> m_output_mode;  /* = anaglyph*/
 	AutoSetting<DWORD> m_mask_mode;	   /* = row_interlace */
-	AutoSetting<DWORD> m_anaglygh_left_color;	   /* = row_interlace */
-	AutoSetting<DWORD> m_anaglygh_right_color;	   /* = row_interlace */
+	AutoSetting<DWORD> m_anaglygh_left_color;	   /* = RED */
+	AutoSetting<DWORD> m_anaglygh_right_color;	   /* = CYAN */
+	AutoSetting<bool> m_forced_deinterlace;
 
 	// subtitle control
 	CComPtr<IOffsetMetadata> m_offset_metadata;
@@ -212,5 +214,13 @@ protected:
 	AutoSettingString m_FontStyle/*(L"FontStyle", L"Regular")*/;
 	HRESULT select_font(bool show_dlg);
 	// end font
+
+	// color adjust 
+	AutoSetting<double> m_saturation;
+	AutoSetting<double> m_luminance;
+	AutoSetting<double> m_hue;
+	AutoSetting<double> m_contrast;
+	HRESULT set_parameter(int parameter, double value);
+	HRESULT get_parameter(int parameter, double *value);
 
 };

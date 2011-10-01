@@ -215,6 +215,7 @@ int on_command(HWND hWnd, int uid)
 
 		// generate message
 		dwindow_message_uncrypt message;
+		memset(&message, 0, sizeof(message));
 		message.zero = 0;
 		memcpy(message.passkey, username, 32);
 		memcpy(message.requested_hash, sha1, 20);

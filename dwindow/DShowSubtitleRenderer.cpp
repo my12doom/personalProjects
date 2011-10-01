@@ -62,6 +62,13 @@ HRESULT DShowSubtitleRenderer::CheckMediaTypeCB(const CMediaType *inType)
 		WCHAR TrackName[256]; // 256 bytes ought to be enough for everyone
 	} haali_format;
 	haali_format *format = (haali_format*)inType->pbFormat;
+	/*
+	BYTE * additional_format_data = inType->pbFormat + format->dwOffset;
+	int additional_format_size = inType->cbFormat - format->dwOffset;
+	FILE * f = fopen("Z:\\sub.idx", "wb");
+	fwrite(additional_format_data, 1, additional_format_size, f);
+	fclose(f);
+	*/
 	CAutoLock lck(&m_subtitle_sec);
 	if (m_srenderer)
 		delete m_srenderer;

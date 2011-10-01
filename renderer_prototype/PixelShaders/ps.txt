@@ -265,3 +265,76 @@ float4 iz3d_back(float2 tex : TEXCOORD0) : COLOR
 	
 	return (l+r)/2;
 }
+
+
+// simple yuv-rgb convertion
+float4 rgb2yuv2(float4 rgb)
+{
+	float4x4 coeffs=
+		{
+			 0.299, 0.587, 0.114, 0.000,
+			-0.147,-0.289, 0.436, 0.000,
+			 0.615,-0.515,-0.100, 0.000,
+			 0.000, 0.000, 0.000, 0.000
+		};
+		
+	return mul(coeffs,rgb);
+}
+
+float4 yuv2rgb2(float4 yuv)
+{
+	float4x4 coeffs=
+		{
+			 1.000, 0.000, 1.140, 0.000,
+			 1.000,-0.395,-0.581, 0.000,
+			 1.000, 2.032, 0.000, 0.000,
+			 0.000, 0.000, 0.000, 0.000
+		};
+	
+	return mul(coeffs,yuv);
+}
+
+
+#define saturation (p0[0])
+#define luminance (p0[1])
+#define hue01 (p0[2])
+#define contrast (p0[3])
+
+float4 color_adjust(float2 tex : TEXCOORD0) : COLOR
+{
+	float4 rgb = tex2D(s0, tex);
+	float4 yuv = rgb2yuv2(rgb);
+	
+	float sat = exp((saturation - 0.5)*(saturation>0.5?3:3));	// 
+	float lum = luminance - 0.5;	// 
+	float hue = (hue01 - 0.5) * 2 * PI;	// 
+	float con = exp((contrast - 0.5)*(contrast>0.5?1:1));	// 
+	
+	// do hue and sat in yuv color space	
+	
+	// hue
+	float gg = (yuv.g) * cos(hue) - (yuv.b) * sin(hue);
+	float bb = (yuv.b) * cos(hue) + (yuv.g) * sin(hue);
+	yuv.g = gg;
+	yuv.b = bb;
+	
+	// saturation
+	yuv.g *= sat;
+	yuv.b *= sat;
+
+	// do lum and con in rgb color space
+	rgb = yuv2rgb2(yuv);
+	
+	// luminance
+	rgb += lum;
+	
+	// contrast
+	rgb.r = 0.5 + (rgb.r-0.5) * con;
+	rgb.g = 0.5 + (rgb.g-0.5) * con;
+	rgb.b = 0.5 + (rgb.b-0.5) * con;
+	
+	// set Alpha to 1.0
+	rgb[3] = 1.0;
+	
+	return rgb;
+}
