@@ -4,6 +4,7 @@
 #include "..\AESFile\E3DReader.h"
 #include "..\AESFile\rijndael.h"
 #include "resource.h"
+#include "vobsub_parser.h"
 
 // main window
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
@@ -162,6 +163,26 @@ retry:
 
 
 typedef DWORD ADDR;
+
+int test()
+{
+	VobSubParser p;
+	int max_lang_id = p.max_lang_id(L"D:\\Users\\my12doom\\Documents\\DVDFab\\mkv\\RED_BIRD_3D_F2\\RED_BIRD_3D_F2.Title852.idx");
+
+	printf("max langid: %d.\n", max_lang_id);
+
+	p.load_file(L"D:\\Users\\my12doom\\Documents\\DVDFab\\mkv\\RED_BIRD_3D_F2\\RED_BIRD_3D_F2.Title852.idx", 0, 
+		L"D:\\Users\\my12doom\\Documents\\DVDFab\\mkv\\RED_BIRD_3D_F2\\RED_BIRD_3D_F2.Title852.sub");
+
+	
+	vobsub_subtitle *sub = p.m_subtitles+4;
+	p.decode(sub);
+	FILE *f = fopen("Z:\\sub.raw", "wb");
+	fwrite(sub->rgb, 1, 4*sub->width*sub->height, f);
+	fclose(f);
+
+	return 0;
+}
 
 int main()
 {

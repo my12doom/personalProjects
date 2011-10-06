@@ -416,8 +416,12 @@ PGSParser::~PGSParser()
 	if (m_subtitles)
 	{
 		for(int i=0; i<4096; i++)
+		{
 			if (m_subtitles[i].rgb)
 				free(m_subtitles[i].rgb);
+			if (m_subtitles[i].rle)
+				free(m_subtitles[i].rle);
+		}
 		free(m_subtitles);
 	}
 }
@@ -433,6 +437,22 @@ HRESULT PGSParser::seek()	// just clear current incompleted data, to support dsh
 
 HRESULT PGSParser::reset()
 {
+	// free first
+	if (m_data)
+	{
+		free(m_data);
+		m_data = NULL;
+	}
+
+	if (m_subtitles)
+	{
+		for(int i=0; i<4096; i++)
+			if (m_subtitles[i].rgb)
+				free(m_subtitles[i].rgb);
+		free(m_subtitles);
+		m_subtitles = NULL;
+	}
+
 	if (NULL == m_data)
 		m_data = (BYTE*) malloc(2048000);
 	if (NULL == m_subtitles)

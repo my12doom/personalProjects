@@ -140,7 +140,11 @@ m_forced_deinterlace(L"ForcedDeinterlace", false),
 m_saturation(L"Saturation", 0.5),
 m_luminance(L"Luminance", 0.5),
 m_hue(L"Hue", 0.5),
-m_contrast(L"Contrast", 0.5)
+m_contrast(L"Contrast", 0.5),
+m_saturation2(L"Saturation2", 0.5),
+m_luminance2(L"Luminance2", 0.5),
+m_hue2(L"Hue2", 0.5),
+m_contrast2(L"Contrast2", 0.5)
 {
 	detect_monitors();
 
@@ -1604,10 +1608,14 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
 	m_renderer1->set_aspect(m_aspect);
 	m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
-	m_renderer1->m_saturation = m_saturation;;
-	m_renderer1->m_luminance = m_luminance;
-	m_renderer1->m_hue = m_hue;
-	m_renderer1->m_contrast = m_contrast;
+	m_renderer1->m_saturation1 = m_saturation;;
+	m_renderer1->m_luminance1 = m_luminance;
+	m_renderer1->m_hue1 = m_hue;
+	m_renderer1->m_contrast1 = m_contrast;
+	m_renderer1->m_saturation2 = m_saturation2;
+	m_renderer1->m_luminance2 = m_luminance2;
+	m_renderer1->m_hue2 = m_hue2;
+	m_renderer1->m_contrast2 = m_contrast2;
 
 	m_file_loaded = false;
 	
@@ -3216,6 +3224,10 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	{
 		m_renderer = new PGSRenderer();
 	}
+	else if (wcsstr_nocase(pathname, L"sub") || wcsstr_nocase(pathname, L"idx"))
+	{
+		m_renderer = new VobSubRenderer();
+	}
 	else
 	{
 		return;
@@ -3247,6 +3259,19 @@ HRESULT dx_player::get_parameter(int parameter, double *value)
 	case contrast:
 		*value = m_contrast;
 		break;
+
+	case saturation2:
+		*value = m_saturation2;
+		break;
+	case luminance2:
+		*value = m_luminance2;
+		break;
+	case hue2:
+		*value = m_hue2;
+		break;
+	case contrast2:
+		*value = m_contrast2;
+		break;
 	default:
 		return E_FAIL;
 	}
@@ -3258,16 +3283,29 @@ HRESULT dx_player::set_parameter(int parameter, double value)
 	switch(parameter)
 	{
 	case saturation:
-		m_renderer1->m_saturation = m_saturation = value;
+		m_renderer1->m_saturation1 = m_saturation = value;
 		break;
 	case luminance:
-		m_renderer1->m_luminance = m_luminance = value;
+		m_renderer1->m_luminance1 = m_luminance = value;
 		break;
 	case hue:
-		m_renderer1->m_hue = m_hue = value;
+		m_renderer1->m_hue1 = m_hue = value;
 		break;
 	case contrast:
-		m_renderer1->m_contrast = m_contrast = value;
+		m_renderer1->m_contrast1 = m_contrast = value;
+		break;
+
+	case saturation2:
+		m_renderer1->m_saturation2 = m_saturation2 = value;
+		break;
+	case luminance2:
+		m_renderer1->m_luminance2 = m_luminance2 = value;
+		break;
+	case hue2:
+		m_renderer1->m_hue2 = m_hue2 = value;
+		break;
+	case contrast2:
+		m_renderer1->m_contrast2 = m_contrast2 = value;
 		break;
 	default:
 		return E_FAIL;

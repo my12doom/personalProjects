@@ -1,0 +1,1 @@
+#define my12doom_rev $Rev$

@@ -101,7 +101,6 @@ wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for)
 	_wcslwr(tmp);
 	_wcslwr(tmp2);
 
-
 	wchar_t *out = wcsstr(tmp, tmp2);
 
 	delete [] tmp;

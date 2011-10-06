@@ -4,6 +4,7 @@
 #include "..\lrtb\mySink.h"
 #include "PGS\PGSRenderer.h"
 #include "srt\srt_renderer.h"
+#include "vobsub_renderer.h"
 
 class DShowSubtitleRenderer : protected ImySinkCB
 {

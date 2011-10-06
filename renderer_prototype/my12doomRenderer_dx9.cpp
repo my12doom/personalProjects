@@ -190,10 +190,10 @@ void my12doomRenderer::init_variables()
 	m_forced_deinterlace = false;
 
 	// color adjust
-	m_saturation =
-	m_luminance =
-	m_hue =
-	m_contrast = 0.5;
+	m_saturation1 =
+	m_luminance1 =
+	m_hue1 =
+	m_contrast1 = 0.5;
 
 
 	// clear rgb backup
@@ -1429,7 +1429,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(back_buffer);
 		draw_movie(back_buffer, true);
 		draw_bmp(back_buffer, true);
-		adjust_temp_color(back_buffer);
+		adjust_temp_color(back_buffer, true);
 
 		// copy left to nv3d surface
 		RECT dst = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
@@ -1438,7 +1438,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(back_buffer);
 		draw_movie(back_buffer, false);
 		draw_bmp(back_buffer, false);
-		adjust_temp_color(back_buffer);
+		adjust_temp_color(back_buffer, false);
 
 		// copy right to nv3d surface
 		dst.left += m_active_pp.BackBufferWidth;
@@ -1457,7 +1457,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(back_buffer);
 		draw_movie(back_buffer, true);
 		draw_bmp(back_buffer, true);
-		adjust_temp_color(back_buffer);
+		adjust_temp_color(back_buffer, true);
 		draw_ui(back_buffer);
 	}
 
@@ -1468,14 +1468,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(temp_surface);
 		draw_movie(temp_surface, true);
 		draw_bmp(temp_surface, true);
-		adjust_temp_color(temp_surface);
+		adjust_temp_color(temp_surface, true);
 
 		temp_surface = NULL;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
 		draw_movie(temp_surface, false);
 		draw_bmp(temp_surface, false);
-		adjust_temp_color(temp_surface);
+		adjust_temp_color(temp_surface, false);
 
 		// pass3: analyph
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
@@ -1504,14 +1504,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(temp_surface);
 		draw_movie(temp_surface, true);
 		draw_bmp(temp_surface, true);
-		adjust_temp_color(temp_surface);
+		adjust_temp_color(temp_surface, true);
 
 		temp_surface = NULL;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
 		draw_movie(temp_surface, false);
 		draw_bmp(temp_surface, false);
-		adjust_temp_color(temp_surface);
+		adjust_temp_color(temp_surface, false);
 
 
 		// pass 3: render to backbuffer with masking
@@ -1581,7 +1581,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		draw_movie(back_buffer, m_pageflip_frames);
 		QueryPerformanceCounter(&l3);
 		draw_bmp(back_buffer, m_pageflip_frames);
-		adjust_temp_color(back_buffer);
+		adjust_temp_color(back_buffer, m_pageflip_frames);
 		QueryPerformanceCounter(&l4);
 		draw_ui(back_buffer);
 		QueryPerformanceCounter(&l5);
@@ -1596,7 +1596,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(back_buffer);
 		draw_movie(back_buffer, true);
 		draw_bmp(back_buffer, true);
-		adjust_temp_color(back_buffer);
+		adjust_temp_color(back_buffer, true);
 		draw_ui(back_buffer);
 
 		// set render target to swap chain2
@@ -1609,7 +1609,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			clear(back_buffer2);
 			draw_movie(back_buffer2, false);
 			draw_bmp(back_buffer2, false);
-			adjust_temp_color(back_buffer2);
+			adjust_temp_color(back_buffer2, false);
 			draw_ui(back_buffer2);
 		}
 
@@ -1622,14 +1622,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		clear(temp_surface);
 		draw_movie(temp_surface, true);
 		draw_bmp(temp_surface, true);
-		adjust_temp_color(temp_surface);
+		adjust_temp_color(temp_surface, true);
 
 		temp_surface = NULL;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
 		draw_movie(temp_surface, false);
 		draw_bmp(temp_surface, false);
-		adjust_temp_color(temp_surface);
+		adjust_temp_color(temp_surface, false);
 
 		// pass3: IZ3D
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
@@ -1674,8 +1674,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		draw_movie(temp_surface2, false);
 		draw_bmp(temp_surface, true);
 		draw_bmp(temp_surface2, false);
-		adjust_temp_color(temp_surface);
-		adjust_temp_color(temp_surface2);
+		adjust_temp_color(temp_surface, true);
+		adjust_temp_color(temp_surface2, false);
 		draw_ui(temp_surface);
 		draw_ui(temp_surface2);
 
@@ -1861,6 +1861,9 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 	m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 	m_Device->SetTexture( 0, left_eye ? m_tex_rgb_left : m_tex_rgb_right );
+	m_Device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+	m_Device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+	m_Device->SetSamplerState(0, D3DSAMP_BORDERCOLOR, 0);					// set to border mode, to remove a single half-line
 	hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags );
 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, left_eye ? vertex_pass2_main : vertex_pass2_main_r, 2 );
@@ -1968,7 +1971,7 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 	return m_uidrawer->draw_ui(surface, m_dsr0->m_thisstream + m_dsr0->m_time, m_total_time, m_volume, m_dsr0->m_State == State_Running, alpha);
 }
 
-HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust)
+HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left)
 {
 	if (!surface_to_adjust)
 		return E_FAIL;
@@ -2008,8 +2011,9 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 		hr = m_Device->SetTexture( 0, tex_src->texture );
 		hr = m_Device->SetPixelShader(m_ps_color_adjust);
 		//float ps_parameter[4] = {0.5, 0.5, 0.5, 0.6};
-		float ps_parameter[4] = {m_saturation, m_luminance, m_hue, m_contrast};
-		hr = m_Device->SetPixelShaderConstantF(0, ps_parameter, 1);
+		float ps_parameter[4] = {m_saturation1, m_luminance1, m_hue1, m_contrast1};
+		float ps_parameter2[4] = {m_saturation2, m_luminance2, m_hue2, m_contrast2};
+		hr = m_Device->SetPixelShaderConstantF(0, left?ps_parameter:ps_parameter2, 1);
 
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
@@ -2090,8 +2094,14 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 			if (_this->m_dsr0->m_State == State_Running && timeGetTime() - _this->m_last_frame_time < 333)
 			{
 				if (WaitForSingleObject(_this->m_render_event, 1) != WAIT_TIMEOUT)
+				{
+
+					//_this->m_Device->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID);
+					//_this->render_nolock(true);
+					//_this->m_Device->SetRenderState( D3DRS_FILLMODE, D3DFILL_WIREFRAME);
 					_this->render_nolock(true);
 
+				}
 				continue;
 			}
 			else
@@ -2107,7 +2117,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 			_this->render_nolock(true);
 			Sleep(1);
 		}
-	}	
+	}
 	
 	return S_OK;
 }

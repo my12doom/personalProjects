@@ -1248,3 +1248,78 @@ HRESULT bar_logout()
 	download_url(url, tmp, 1024, 3000);
 	return S_OK;
 }
+
+int wcsexplode(const wchar_t *string_to_explode, const wchar_t *delimeter, wchar_t **out, int max_part /* = 0xfffffff */)
+{
+	int strleng = wcslen(string_to_explode);
+	int delleng = wcslen(delimeter);
+
+	if (delleng == 0 || delleng >= strleng)
+	{
+		wcscpy(out[0], string_to_explode);
+		return 0;
+	}
+
+	wchar_t *str = (wchar_t*)malloc(sizeof(wchar_t)*(wcslen(string_to_explode)+1));
+	wchar_t *tmp = str;
+	wcscpy(str, string_to_explode);
+
+	int n_found = 0;
+	bool del_tail = false;
+	while ((n_found < max_part-1) &&(tmp = wcsstr(str, delimeter)))
+	{
+		out[n_found] = (wchar_t *) malloc(sizeof(wchar_t) * (wcslen(str)+1));
+		wcscpy(out[n_found], str);
+		out[n_found++][tmp-str] = NULL;
+
+		if (tmp+delleng >= str + wcslen(str))
+		{
+			del_tail = true;
+			break;
+		}
+		else if (!wcsstr(tmp+delleng, delimeter))
+		{
+			memmove(str, tmp+delleng, (1+wcslen(tmp+delleng)) * sizeof(wchar_t));
+			break;
+		}
+		else
+			memmove(str, tmp+delleng, (1+wcslen(tmp+delleng)) * sizeof(wchar_t));
+	}
+
+	if (!del_tail)
+	{
+		out[n_found] = (wchar_t *) malloc(sizeof(wchar_t) * (wcslen(str)+1));
+		wcscpy(out[n_found++], str);
+	}
+
+	free(str);
+
+	return n_found;
+}
+
+int wcstrim(wchar_t *str, wchar_t char_ )
+{
+	int len = (int)wcslen(str);
+	//LEADING:
+	int lead = 0;
+	for(int i=0; i<len; i++)
+		if (str[i] != char_)
+		{
+			lead = i;
+			break;
+		}
+
+		//ENDING:
+		int end = 0;
+		for (int i=len-1; i>=0; i--)
+			if (str[i] != char_)
+			{
+				end = len - 1 - i;
+				break;
+			}
+			//TRIMMING:
+			memmove(str, str+lead, (len-lead-end)*sizeof(wchar_t));
+			str[len-lead-end] = NULL;
+
+			return len - lead - end;
+}

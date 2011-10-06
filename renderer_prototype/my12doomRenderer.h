@@ -189,10 +189,16 @@ public:
 	REFERENCE_TIME m_frame_length;
 	bool m_deinterlace;
 	bool m_forced_deinterlace;
-	double m_saturation;
-	double m_luminance;
-	double m_hue;
-	double m_contrast;
+
+	// color adjust controll
+	double m_saturation1;
+	double m_luminance1;
+	double m_hue1;
+	double m_contrast1;
+	double m_saturation2;
+	double m_luminance2;
+	double m_hue2;
+	double m_contrast2;
 
 	// public functions
 	HRESULT pump();
@@ -306,7 +312,7 @@ protected:
 	HRESULT draw_movie(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_bmp(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_ui(IDirect3DSurface9 *surface);
-	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust);		// assume the surface is the same size of back buffer
+	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left);
 #ifdef DEBUG
 	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_XRGB(255,128,0));
 #else

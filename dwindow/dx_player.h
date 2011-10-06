@@ -16,6 +16,7 @@
 #include "srt\srt_parser.h"
 #include "..\lrtb\mySink.h"
 #include "PGS\PGSParser.h"
+#include "vobsub_renderer.h"
 #include "DShowSubtitleRenderer.h"
 #include "..\my12doomSource\src\filters\parser\MpegSplitter\IOffsetMetadata.h"
 #include "color_adjust.h"
@@ -220,6 +221,12 @@ protected:
 	AutoSetting<double> m_luminance;
 	AutoSetting<double> m_hue;
 	AutoSetting<double> m_contrast;
+
+	AutoSetting<double> m_saturation2;
+	AutoSetting<double> m_luminance2;
+	AutoSetting<double> m_hue2;
+	AutoSetting<double> m_contrast2;
+
 	HRESULT set_parameter(int parameter, double value);
 	HRESULT get_parameter(int parameter, double *value);
 

@@ -52,6 +52,7 @@ DEFINE_GUID(MEDIASUBTYPE_UTF8, 0x87c0b230, 0x3a8, 0x4fdf, 0x80, 0x10, 0xb2, 0x7a
 DEFINE_GUID(MEDIASUBTYPE_PGS, 0x4eba53e, 0x9330, 0x436c, 0x91, 0x33, 0x55, 0x3e, 0xc8, 0x70, 0x31, 0xdc);
 DEFINE_GUID(MEDIASUBTYPE_ASS, 0x326444f7, 0x686f, 0x47ff, 0xa4, 0xb2, 0xc8, 0xc9, 0x63, 0x7, 0xb4, 0xc2);
 DEFINE_GUID(MEDIASUBTYPE_ASS2, 0x370689e7, 0xb226, 0x4f67, 0x97, 0x8d, 0xf1, 0xb, 0xc1, 0xa9, 0xc6, 0xae);
+DEFINE_GUID(MEDIASUBTYPE_VOBSUB, 0xf7239e31, 0x9599, 0x4e43, 0x8d, 0xd5, 0xfb, 0xaf, 0x75, 0xcf, 0x37, 0xf1);
 
 // funcs
 extern wchar_t g_apppath[MAX_PATH];
@@ -79,6 +80,9 @@ HRESULT bar_logout();
 DWORD WINAPI killer_thread(LPVOID time);
 DWORD WINAPI killer_thread2(LPVOID time);
 HRESULT detect_monitors();
+int wcsexplode(const wchar_t *string_to_explode, const wchar_t *delimeter, wchar_t **out, int max_part = 0xfffffff);			// caller should alloc a wchar_t *out[max_part] and free every element of out;
+int wcstrim(wchar_t *str, wchar_t char_ = L' ' );
+
 
 // CoreMVC
 HRESULT ActiveCoreMVC(IBaseFilter *decoder);

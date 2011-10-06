@@ -118,23 +118,34 @@ BEGIN
     LTEXT           "注意，提前/缩短功能对内置字幕支持较差，调整时尽量不要超过10秒，否则可能出现字幕丢失，延迟/拉伸功能不受限制，独立字幕亦不受限制。",IDC_STATIC,15,75,191,27
 END
 
-IDD_COLOR DIALOGEX 0, 0, 316, 183
+IDD_COLOR DIALOGEX 0, 0, 316, 241
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "色彩调节"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "确定",IDOK,205,162,50,14
-    PUSHBUTTON      "取消",IDCANCEL,259,162,50,14
-    PUSHBUTTON      "重置",IDC_RESET,149,162,51,14
-    CONTROL         "",IDC_LUM,"msctls_trackbar32",WS_TABSTOP,54,18,235,17
-    LTEXT           "亮度",IDC_STATIC,20,22,30,10
-    CONTROL         "预览",IDC_PREVIEW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,100,163,43,12
-    CONTROL         "",IDC_CON,"msctls_trackbar32",WS_TABSTOP,54,40,235,17
-    LTEXT           "对比度",IDC_STATIC,20,44,30,10
-    CONTROL         "",IDC_SAT,"msctls_trackbar32",WS_TABSTOP,54,62,235,17
-    LTEXT           "饱和度",IDC_STATIC,20,66,30,10
-    CONTROL         "",IDC_HUE,"msctls_trackbar32",WS_TABSTOP,54,84,235,17
-    LTEXT           "色调",IDC_STATIC,20,88,30,10
+    DEFPUSHBUTTON   "确定",IDOK,205,220,50,14
+    PUSHBUTTON      "取消",IDCANCEL,259,220,50,14
+    PUSHBUTTON      "重置",IDC_RESET,149,220,51,14
+    CONTROL         "",IDC_LUM,"msctls_trackbar32",WS_TABSTOP,60,23,235,17
+    LTEXT           "亮度",IDC_STATIC,26,27,30,10
+    CONTROL         "预览",IDC_PREVIEW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,108,222,33,12
+    CONTROL         "",IDC_CON,"msctls_trackbar32",WS_TABSTOP,60,45,235,17
+    LTEXT           "对比度",IDC_STATIC,26,49,30,10
+    CONTROL         "",IDC_SAT,"msctls_trackbar32",WS_TABSTOP,60,67,235,17
+    LTEXT           "饱和度",IDC_STATIC,26,71,30,10
+    CONTROL         "",IDC_HUE,"msctls_trackbar32",WS_TABSTOP,61,86,235,17
+    LTEXT           "色调",IDC_STATIC,27,90,30,10
+    CONTROL         "",IDC_LUM2,"msctls_trackbar32",WS_TABSTOP,60,124,235,17
+    LTEXT           "亮度",IDC_STATIC,26,129,30,10
+    CONTROL         "",IDC_CON2,"msctls_trackbar32",WS_TABSTOP,60,146,235,17
+    LTEXT           "对比度",IDC_STATIC,26,151,30,10
+    CONTROL         "",IDC_SAT2,"msctls_trackbar32",WS_TABSTOP,60,169,235,17
+    LTEXT           "饱和度",IDC_STATIC,26,172,30,10
+    CONTROL         "",IDC_HUE2,"msctls_trackbar32",WS_TABSTOP,60,191,235,17
+    LTEXT           "色调",IDC_STATIC,26,194,30,10
+    GROUPBOX        "右眼",IDC_STATIC,17,116,284,96
+    GROUPBOX        "左眼",IDC_STATIC,18,14,284,94
+    CONTROL         "双眼同时调节",IDC_SYNC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,46,220,59,14
 END
 
 
@@ -335,7 +346,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 309
         TOPMARGIN, 7
-        BOTTOMMARGIN, 176
+        BOTTOMMARGIN, 234
     END
 END
 #endif    // APSTUDIO_INVOKED
