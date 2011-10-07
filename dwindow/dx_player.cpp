@@ -414,10 +414,7 @@ HRESULT dx_player::seek(int time)
 	OAFilterState state = State_Running;
 	m_mc->GetState(500, &state);
 	if (state != State_Running)
-	{
-		m_mc->Run();
 		m_mc->StopWhenReady();
-	}
 
 	return hr;
 }

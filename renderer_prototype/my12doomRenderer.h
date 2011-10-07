@@ -86,7 +86,7 @@ class gpu_sample
 {
 public:
 	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, D3DPOOL pool = D3DPOOL_SYSTEMMEM);
-	HRESULT prepare_rendering();		// it's just lock textures
+	HRESULT prepare_rendering();		// it's just unlock textures
 	~gpu_sample();
 
 	bool m_ready;
@@ -119,6 +119,7 @@ protected:
 	HRESULT CheckMediaType(const CMediaType *pmt );
 	HRESULT SetMediaType(const CMediaType *pmt );
 	HRESULT DoRenderSample(IMediaSample *pMediaSample);
+	void OnReceiveFirstSample(IMediaSample *pMediaSample);
 	HRESULT	BreakConnect();
 	HRESULT CompleteConnect(IPin *pRecievePin);
 	HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);

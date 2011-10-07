@@ -239,6 +239,12 @@ HRESULT my12doomRendererDShow::DoRenderSample( IMediaSample * pSample )
 	return S_OK;
 }
 
+void my12doomRendererDShow::OnReceiveFirstSample(IMediaSample *pSample)
+{
+	m_owner->DoRender(m_id, pSample);
+	return __super::OnReceiveFirstSample(pSample);
+}
+
 DWORD WINAPI my12doomRendererDShow::queue_thread(LPVOID param)
 {
 	my12doomRendererDShow * _this = (my12doomRendererDShow*)param;
