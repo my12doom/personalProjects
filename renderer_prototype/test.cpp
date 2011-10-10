@@ -259,20 +259,20 @@ LRESULT CALLBACK WindowProc( HWND   hWnd,
 				break;
 
 			case VK_NUMPAD8:
-				renderer->set_offset(2, renderer->get_offset(2)-0.05);
+				renderer->set_movie_pos(2, renderer->get_offset(2)-0.05);
 				break;
 			case VK_NUMPAD2:
-				renderer->set_offset(2, renderer->get_offset(2)+0.05);
+				renderer->set_movie_pos(2, renderer->get_offset(2)+0.05);
 				break;
 			case VK_NUMPAD4:
-				renderer->set_offset(1, renderer->get_offset(1)-0.05);
+				renderer->set_movie_pos(1, renderer->get_offset(1)-0.05);
 				break;
 			case VK_NUMPAD6:
-				renderer->set_offset(1, renderer->get_offset(1)+0.05);
+				renderer->set_movie_pos(1, renderer->get_offset(1)+0.05);
 				break;
 			case VK_NUMPAD5:
-				renderer->set_offset(1, 0.0);
-				renderer->set_offset(2, 0.0);
+				renderer->set_movie_pos(1, 0.0);
+				renderer->set_movie_pos(2, 0.0);
 				break;
 			}
 		}

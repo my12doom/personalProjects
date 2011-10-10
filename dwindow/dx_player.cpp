@@ -161,6 +161,7 @@ m_contrast2(L"Contrast2", 0.5)
 	m_srenderer = NULL;
 
 	// vars
+	m_dragging = -1;
 	m_reset_and_load = false;
 	m_file_loaded = false;
 	m_select_font_active = false;
@@ -667,17 +668,24 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 
 	int type = -1;
 	if (m_renderer1) type = m_renderer1->hittest(hit_x, hit_y, &v);
-	if (type == hit_volume && GetAsyncKeyState(VK_LBUTTON) < 0)
+	if (type == hit_volume && GetAsyncKeyState(VK_LBUTTON) < 0 && m_dragging == hit_volume)
 	{
 		set_volume(v);
 	}
+	else if (type == hit_progress && GetAsyncKeyState(VK_LBUTTON) < 0 && m_dragging == hit_progress)
+	{
+		int total_time = 0;
+		total(&total_time);
+		seek((int)(total_time * v));
+	}
+
 	return S_OK;
 }
 
 
 LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 {
-
+	m_dragging = -1;
 	return S_OK;
 }
 
@@ -901,12 +909,14 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		else if (type == hit_volume)
 		{
 			set_volume(v);
+			m_dragging = hit_volume;
 		}
 		else if (type == hit_progress)
 		{
 			int total_time = 0;
 			total(&total_time);
 			seek((int)(total_time * v));
+			m_dragging = hit_progress;
 		}
 		else if (type < 0 && !m_full1)
 		{
@@ -3213,15 +3223,15 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	fclose(f);
 
 	const wchar_t *p_3 = pathname + wcslen(pathname) -3;
-	if ( wcsstr_nocase(pathname, L"srt") || wcsstr_nocase(pathname, L"ssa") || wcsstr_nocase(pathname, L"ass"))
+	if ( wcsstr_nocase(pathname, L".srt") || wcsstr_nocase(pathname, L".ssa") || wcsstr_nocase(pathname, L".ass"))
 	{
 		m_renderer = new CsrtRenderer(NULL, 0xffffff);
 	}
-	else if (wcsstr_nocase(pathname, L"sup"))
+	else if (wcsstr_nocase(pathname, L".sup"))
 	{
 		m_renderer = new PGSRenderer();
 	}
-	else if (wcsstr_nocase(pathname, L"sub") || wcsstr_nocase(pathname, L"idx"))
+	else if (wcsstr_nocase(pathname, L".sub") || wcsstr_nocase(pathname, L".idx"))
 	{
 		m_renderer = new VobSubRenderer();
 	}

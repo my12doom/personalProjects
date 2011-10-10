@@ -25,9 +25,15 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	HRESULT hr ;
 	if (argc>=6)
+	{
+		printf("(%s)", T2A(argv[5]));
 		hr = D3DXCompileShaderFromFile(argv[1], NULL, NULL, T2A(argv[3]), T2A(argv[5]), D3DXSHADER_OPTIMIZATION_LEVEL3, &pCode, &pErrorMsgs, NULL);
+	}
 	else
+	{
+		printf("ps_3_0");
 		hr = D3DXCompileShaderFromFile(argv[1], NULL, NULL, T2A(argv[3]), "ps_3_0", D3DXSHADER_OPTIMIZATION_LEVEL3, &pCode, &pErrorMsgs, NULL);
+	}
 	if (pErrorMsgs != NULL)
 	{
 		unsigned char* message = (unsigned char*)pErrorMsgs->GetBufferPointer();

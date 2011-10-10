@@ -1791,6 +1791,17 @@ _continue:
 			hr = gb->AddFilter(decoder, L"CoreMVC Decoder");
 			CheckHresult(env, hr, "couldn't add CoreMVC to graph.");
 
+			apihook_count --;
+			if (!apihook_count)
+			{
+				// apihook
+				DetourRestoreAfterWith();
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+				DetourDetach(&(PVOID&)TrueGetModuleFileNameA, MineGetModuleFileNameA);
+				LONG error = DetourTransactionCommit();
+			}
+
 			// test if really joined to graph
 			FILTER_INFO fi;
 			decoder->QueryFilterInfo(&fi);
@@ -2641,9 +2652,14 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScri
 		env->ThrowError("CoreAVS.dll corrupted.");
 	FILE * f = fopen("CoreAVCDecoder.dll", "wb");
 	if (!f)
-		env->ThrowError("failed writing CoreAVCDecoder.dll");
-	fwrite(dll_data, 1, res_size, f);
-	fclose(f);
+	{
+		//env->ThrowError("failed writing CoreAVCDecoder.dll");
+	}
+	else
+	{
+		fwrite(dll_data, 1, res_size, f);
+		fclose(f);
+	}
 
 	// my12doomSource.ax
 	hResInfo = FindResource(hm, MAKEINTRESOURCE(IDR_RCDATA_AX), RT_RCDATA);
@@ -2654,9 +2670,14 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScri
 		env->ThrowError("CoreAVS.dll corrupted.");
 	f = fopen("my12doomSource.ax", "wb");
 	if (!f)
-		env->ThrowError("failed writing my12doomSource.ax");
-	fwrite(dll_data, 1, res_size, f);
-	fclose(f);
+	{
+		//env->ThrowError("failed writing my12doomSource.ax");
+	}
+	else
+	{
+		fwrite(dll_data, 1, res_size, f);
+		fclose(f);
+	}
 	FreeLibrary(hm);
 
 	// CPU

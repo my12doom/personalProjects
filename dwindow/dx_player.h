@@ -165,6 +165,7 @@ protected:
 	CCritSec m_draw_sec;
 	CCritSec m_seek_sec;
 	bool m_show_ui;
+	int m_dragging;	// = 0
 	AutoSetting<double> m_volume;	// = 1.0
 	AutoSetting<bool> m_bitstreaming;	// = 1.0
 	AutoSetting<bool> m_useLAV;		// = true

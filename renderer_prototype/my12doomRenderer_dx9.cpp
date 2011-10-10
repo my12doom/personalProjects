@@ -5,7 +5,11 @@
 #include "PixelShaders/NV12.h"
 #include "PixelShaders/YUY2.h"
 #include "PixelShaders/anaglyph.h"
-#include "PixelShaders/stereo_test.h"
+//#include "PixelShaders/stereo_test.h"
+#include "PixelShaders/stereo_test_sbs.h"
+#include "PixelShaders/stereo_test_sbs2.h"
+#include "PixelShaders/stereo_test_tb.h"
+#include "PixelShaders/stereo_test_tb2.h"
 #include "PixelShaders/vs_subtitle.h"
 #include "PixelShaders/iz3d_back.h"
 #include "PixelShaders/iz3d_front.h"
@@ -992,6 +996,10 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_ps_nv12 = NULL;
 	m_ps_yuy2 = NULL;
 	m_ps_test = NULL;
+	m_ps_test_sbs = NULL;
+	m_ps_test_sbs2 = NULL;
+	m_ps_test_tb = NULL;
+	m_ps_test_tb2 = NULL;
 	m_ps_anaglyph = NULL;
 	m_ps_iz3d_back = NULL;
 	m_ps_iz3d_front = NULL;
@@ -1035,7 +1043,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 
 	// surfaces
 	m_deinterlace_surface = NULL;
-	m_test_rt64 = NULL;
+	m_stereo_test_gpu = NULL;
 
 	// vertex buffers
 	g_VertexBuffer = NULL;
@@ -1063,9 +1071,9 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	}
 
 	HRESULT hr;
-	FAIL_RET( m_Device->CreateRenderTarget(64, 64, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_test_rt64, NULL));
+	FAIL_RET( m_Device->CreateRenderTarget(stereo_test_texture_size, stereo_test_texture_size, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_stereo_test_gpu, NULL));
 	fix_nv3d_bug();
-	if (m_mem == NULL) FAIL_RET( m_Device->CreateOffscreenPlainSurface(64, 64, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_mem, NULL));
+	if (m_stereo_test_cpu == NULL) FAIL_RET( m_Device->CreateOffscreenPlainSurface(stereo_test_texture_size, stereo_test_texture_size, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_stereo_test_cpu, NULL));
 
 	DWORD use_mipmap = D3DUSAGE_AUTOGENMIPMAP;
 
@@ -1077,7 +1085,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_left, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
 	fix_nv3d_bug();
-	if (m_deinterlace) FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
+	FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
 	FAIL_RET( m_Device->CreateTexture(2048, 1024, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
 	if(m_tex_bmp_mem == NULL)
 	{
@@ -1136,16 +1144,16 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	unsigned char *yv12 = (unsigned char *)malloc(sizeof(g_code_YV12toRGB));
 	unsigned char *nv12 = (unsigned char *)malloc(sizeof(g_code_NV12toRGB));
 	unsigned char *yuy2 = (unsigned char *)malloc(sizeof(g_code_YUY2toRGB));
-	unsigned char *tester = (unsigned char *)malloc(sizeof(g_code_main));
+	//unsigned char *tester = (unsigned char *)malloc(sizeof(g_code_main));
 	unsigned char *anaglyph = (unsigned char *)malloc(sizeof(g_code_anaglyph));
 
 	memcpy(yv12, g_code_YV12toRGB, sizeof(g_code_YV12toRGB));
 	memcpy(nv12, g_code_NV12toRGB, sizeof(g_code_NV12toRGB));
 	memcpy(yuy2, g_code_YUY2toRGB, sizeof(g_code_YUY2toRGB));
-	memcpy(tester, g_code_main, sizeof(g_code_main));
+	//memcpy(tester, g_code_main, sizeof(g_code_main));
 	memcpy(anaglyph, g_code_anaglyph, sizeof(g_code_anaglyph));
 
-	int size = sizeof(g_code_main);
+	//int size = sizeof(g_code_main);
 	for(int i=0; i<16384; i+=16)
 	{
 		if (i<sizeof(g_code_YV12toRGB)/16*16)
@@ -1154,8 +1162,8 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 			m_AES.decrypt(nv12+i, nv12+i);
 		if (i<sizeof(g_code_YUY2toRGB)/16*16)
 			m_AES.decrypt(yuy2+i, yuy2+i);
-		if (i<sizeof(g_code_main)/16*16)
-			m_AES.decrypt(tester+i, tester+i);
+		//if (i<sizeof(g_code_main)/16*16)
+		//	m_AES.decrypt(tester+i, tester+i);
 		if (i<sizeof(g_code_anaglyph)/16*16)
 			m_AES.decrypt(anaglyph+i, anaglyph+i);
 	}
@@ -1166,17 +1174,28 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_Device->CreatePixelShader((DWORD*)yv12, &m_ps_yv12);
 	m_Device->CreatePixelShader((DWORD*)nv12, &m_ps_nv12);
 	m_Device->CreatePixelShader((DWORD*)yuy2, &m_ps_yuy2);
-	m_Device->CreatePixelShader((DWORD*)tester, &m_ps_test);
+	//m_Device->CreatePixelShader((DWORD*)tester, &m_ps_test);
+	m_Device->CreatePixelShader((DWORD*)g_code_sbs, &m_ps_test_sbs);
+	m_Device->CreatePixelShader((DWORD*)g_code_sbs2, &m_ps_test_sbs2);
+	m_Device->CreatePixelShader((DWORD*)g_code_tb, &m_ps_test_tb);
+	m_Device->CreatePixelShader((DWORD*)g_code_tb2, &m_ps_test_tb2);
 	m_Device->CreatePixelShader((DWORD*)anaglyph, &m_ps_anaglyph);
 	m_Device->CreatePixelShader((DWORD*)g_code_iz3d_back, &m_ps_iz3d_back);
 	m_Device->CreatePixelShader((DWORD*)g_code_iz3d_front, &m_ps_iz3d_front);
 	m_Device->CreatePixelShader((DWORD*)g_code_color_adjust, &m_ps_color_adjust);
 	m_Device->CreateVertexShader((DWORD*)g_code_vs_subtitle, &m_vs_subtitle);
 
+	// for pixel shader 2.0 cards
+	if (m_ps_test_tb2 != NULL && m_ps_test_tb == NULL)
+		m_ps_test_tb = m_ps_test_tb2;
+	if (m_ps_test_sbs2 != NULL && m_ps_test_sbs == NULL)
+		m_ps_test_sbs = m_ps_test_sbs2;
+
+
 	free(yv12);
 	free(nv12);
 	free(yuy2);
-	free(tester);
+	//free(tester);
 	free(anaglyph);
 
 	// load and start thread
@@ -2430,21 +2449,23 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 			}
 		}
 
-		hr = m_Device->SetRenderTarget(0, m_test_rt64);
+		hr = m_Device->SetRenderTarget(0, m_stereo_test_gpu);
 		hr = m_Device->Clear(0, NULL, D3DCLEAR_TARGET,  D3DCOLOR_XRGB(0,0,0), 1.0f, 0L);
 		hr = m_Device->SetTexture(0, m_tex_rgb_full);
 
-		hr = m_Device->SetPixelShader(m_ps_test);
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test, 2 );
+		hr = m_Device->SetPixelShader(m_ps_test_sbs);
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_sbs, 2 );
+		hr = m_Device->SetPixelShader(m_ps_test_tb);
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_tb, 2 );
 
 
 		hr = m_Device->EndScene();
 
-		hr = m_Device->GetRenderTargetData(m_test_rt64, m_mem);
-		//hr = m_Device->StretchRect(m_test_rt64, NULL, left_surface, NULL, D3DTEXF_LINEAR);		//if you want to see debug image, decomment this line
+		hr = m_Device->GetRenderTargetData(m_stereo_test_gpu, m_stereo_test_cpu);
+		//hr = m_Device->StretchRect(m_stereo_test_gpu, NULL, left_surface, NULL, D3DTEXF_LINEAR);		//if you want to see debug image, decomment this line
 
 		D3DLOCKED_RECT locked;
-		m_mem->LockRect(&locked, NULL, NULL);
+		m_stereo_test_cpu->LockRect(&locked, NULL, NULL);
 
 		lockrect_surface ++;
 
@@ -2453,30 +2474,30 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 		double average2 = 0;
 		double delta1 = 0;
 		double delta2 = 0;
-		for(int y=0; y<64; y++)
-			for(int x=0; x<64; x++)
+		for(int y=0; y<stereo_test_texture_size; y++)
+			for(int x=0; x<stereo_test_texture_size; x++)
 			{
-				double &average = x<32 ?average1:average2;
+				double &average = x<stereo_test_texture_size/2 ?average1:average2;
 				average += src[2];
 				src += 4;
 			}
 
-		average1 /= 32*64;
-		average2 /= 32*64;
+		average1 /= stereo_test_texture_size/2*stereo_test_texture_size;
+		average2 /= stereo_test_texture_size/2*stereo_test_texture_size;
 
 		src = (BYTE*)locked.pBits;
-		for(int y=0; y<64; y++)
-			for(int x=0; x<64; x++)
+		for(int y=0; y<stereo_test_texture_size; y++)
+			for(int x=0; x<stereo_test_texture_size; x++)
 			{
-				double &average = x<32 ?average1:average2;
-				double &tdelta = x<32 ? delta1 : delta2;
+				double &average = x<stereo_test_texture_size/2 ?average1:average2;
+				double &tdelta = x<stereo_test_texture_size/2 ? delta1 : delta2;
 
 				int delta = abs(src[2] - average);
 				tdelta += delta * delta;
 				src += 4;
 			}
-		delta1 = sqrt((double)delta1)/(32*64-1);
-		delta2 = sqrt((double)delta2)/(32*64-1);
+		delta1 = sqrt((double)delta1)/(stereo_test_texture_size/2*stereo_test_texture_size-1);
+		delta2 = sqrt((double)delta2)/(stereo_test_texture_size/2*stereo_test_texture_size-1);
                       
 		double times = 0;
 		double var1 = average1 * delta1;
@@ -2500,7 +2521,7 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 		{
 			mylog("unkown.\r\n");
 		}
-		m_mem->UnlockRect();
+		m_stereo_test_cpu->UnlockRect();
 
 		input_layout_types next_layout = m_layout_detected;
 		if (m_normal - m_sbs > 5)
@@ -2739,15 +2760,22 @@ HRESULT my12doomRenderer::calculate_vertex()
 	tmp[2].x = tar.left-0.5f; tmp[2].y = tar.bottom-0.5f;
 	tmp[3].x = tar.right-0.5f; tmp[3].y = tar.bottom-0.5f;
 
-	MyVertex *test = m_vertices + vertex_test;
-	test[0].x = -0.5f; test[0].y = -0.5f;
-	test[1].x = 64-0.5f; test[1].y = -0.5f;
-	test[2].x = -0.5f; test[2].y = test[0].y + 64;
-	test[3].x = 64-0.5f; test[3].y = test[1].y + 64;
-	test[0].tu = 0; test[0].tv = 0;
-	test[1].tu = 1.0f; test[1].tv = 0;
-	test[2].tu = 0; test[2].tv = 1.0f;
-	test[3].tu = 1.0f; test[3].tv = 1.0f;
+	MyVertex *test_sbs = m_vertices + vertex_test_sbs;
+	test_sbs[0].x = -0.5f; test_sbs[0].y = -0.5f;
+	test_sbs[1].x = stereo_test_texture_size/2-0.5f; test_sbs[1].y = -0.5f;
+	test_sbs[2].x = -0.5f; test_sbs[2].y = test_sbs[0].y + stereo_test_texture_size;
+	test_sbs[3].x = stereo_test_texture_size/2-0.5f; test_sbs[3].y = test_sbs[1].y + stereo_test_texture_size;
+	test_sbs[0].tu = 0; test_sbs[0].tv = 0;
+	test_sbs[1].tu = 1.0f; test_sbs[1].tv = 0;
+	test_sbs[2].tu = 0; test_sbs[2].tv = 1.0f;
+	test_sbs[3].tu = 1.0f; test_sbs[3].tv = 1.0f;
+
+	MyVertex *test_tb = m_vertices + vertex_test_tb;
+	for(int i=0; i<4; i++)
+	{
+		test_tb[i] = test_sbs[i];
+		test_tb[i].x += stereo_test_texture_size/2;
+	}
 
 	if (!g_VertexBuffer)
 		return S_FALSE;

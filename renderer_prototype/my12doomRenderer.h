@@ -172,12 +172,15 @@ enum vertex_types
 
 	vertex_ui = 40,
 
-	vertex_test = 44,
-	vertex_pass2_main_r = 48,
+	vertex_test_sbs = 44,
+	vertex_test_tb = 48,
+	vertex_pass2_main_r = 52,
 
 
-	vertex_total = 52,
+	vertex_total = 56,
 };
+
+#define stereo_test_texture_size 64
 
 class my12doomRenderer
 {
@@ -379,6 +382,10 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_iz3d_back;
 	CComPtr <IDirect3DPixelShader9> m_ps_iz3d_front;
 	CComPtr <IDirect3DPixelShader9> m_ps_test;
+	CComPtr <IDirect3DPixelShader9> m_ps_test_tb;
+	CComPtr <IDirect3DPixelShader9> m_ps_test_tb2;
+	CComPtr <IDirect3DPixelShader9> m_ps_test_sbs;
+	CComPtr <IDirect3DPixelShader9> m_ps_test_sbs2;
 	CComPtr <IDirect3DPixelShader9> m_ps_color_adjust;
 
 	CComPtr<IDirect3DTexture9> m1_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
@@ -417,8 +424,8 @@ protected:
 	// input layout detector
 	input_layout_types get_active_input_layout();
 	double get_active_aspect();
-	CComPtr<IDirect3DSurface9> m_test_rt64;
-	CComPtr<IDirect3DSurface9> m_mem;
+	CComPtr<IDirect3DSurface9> m_stereo_test_gpu;
+	CComPtr<IDirect3DSurface9> m_stereo_test_cpu;
 	int m_sbs;
 	int m_normal;
 	int m_tb;
