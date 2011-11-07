@@ -181,6 +181,9 @@ void Cremux_publishDlg::OnBnClickedButton2()
 	// write signature
 	int pos = find_startcode(pathname);
 	FILE *f = _wfopen(pathname, L"r+b");
+	if (!f)
+		return;
+
 	fseek(f, pos, SEEK_SET);
 	fwrite(signature, 1, 128, f);
 	fflush(f);
