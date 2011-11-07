@@ -32,19 +32,21 @@ if ($form)
 	echo("<table border=3>\n");
 	while ($row = mysql_fetch_array($result))
 	{
-		echo("<tr>\n");
 		if ($first)
 		{
-			while (list($name, $value) = each($row))
+			echo("<tr>\n");
+			$firstrow = $row;
+			while (list($name, $value) = each($firstrow))
 			{
 				if (!Is_Numeric($name))
 					printf("<th>%s</th>", $name);
 			}
 			$first = false;
+			echo("</tr>\n");
 		}
 			
-		else
 		{
+			echo("<tr>\n");
 			while (list($name, $value) = each($row))
 			{
 				if (!Is_Numeric($name))
@@ -55,9 +57,9 @@ if ($form)
 						printf("<td>%s</td>", $value);
 				}
 			}
+			echo("</tr>\n");
 		}
 		
-		echo("</tr>\n");
 	}
 	echo("</table>");
 	die("");

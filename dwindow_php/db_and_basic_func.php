@@ -1,7 +1,10 @@
 <?php
+$com = new COM("phpcrypt.crypt") or die("failed loading cryptLib");
+if (!$com) die("500");
 
-// admin
-$admin_pass = "tester88";
+	// admin
+	$admin_pass = "tester88";
+	$admin_pass_sha1 = $com->SHA1($admin_pass);
 
 	// date
 	date_default_timezone_set("PRC");
@@ -17,8 +20,6 @@ $admin_pass = "tester88";
 	     $ip=getenv('REMOTE_ADDR');
 
 // decode RSA encrypted parameters
-$com = new COM("phpcrypt.crypt") or die("failed loading cryptLib");
-if (!$com) die("500");
 $RSA = false;
 $RSA_decoded = "ERROR:NO ARGUMENT";
 while (list($name, $value) = each($_GET))
