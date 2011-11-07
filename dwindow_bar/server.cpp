@@ -35,8 +35,8 @@ typedef struct _active_user_info
 user_info active_users[MAX_USER_SLOT];
 DWORD banned_users[MAX_USER_SLOT];
 CCritSec cs;
-AutoSettingString username(L"UserName", L"ztester");
-AutoSettingString saved_password(L"Password", L"FWANRW");
+AutoSettingString username(L"UserName", L"");
+AutoSettingString saved_password(L"Password", L"");
 AutoSetting<int> server_port(L"ServerPort", 80);
 char password[512] = "";
 AutoSetting<bool> remember_password(L"RememberPassword", false);
@@ -46,6 +46,7 @@ int max_user = 0;
 int server_socket = -1;
 bool login_reopen = false;		// true -> no auto login
 HANDLE server_thread_handle = INVALID_HANDLE_VALUE;
+HANDLE heart_beat_thread_handle = INVALID_HANDLE_VALUE;
 HWND g_hwnd_login = NULL;
 HWND g_hwnd_main = NULL;
 
@@ -474,6 +475,93 @@ HRESULT init_winsock()
 	return S_OK;
 }
 
+DWORD WINAPI heart_beat_thread(LPVOID param)
+{
+	while(!server_stopping)
+	{
+		int l = GetTickCount();
+		while (GetTickCount()-l < 300 *1000 && !server_stopping)
+			Sleep(1);
+
+		//HWND parent_window = (HWND)lpParame;
+
+		DWORD e[32];
+		dwindow_passkey_big m1;
+		BigNumberSetEqualdw(e, 65537, 32);
+		RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+
+
+		dwindow_message_uncrypt message;
+		memset(&message, 0, sizeof(message));
+		message.zero = 0;
+		memcpy(message.passkey, m1.passkey, 32);
+		memset(message.requested_hash, 0, 20);
+		srand(time(NULL));
+		for(int i=0; i<32; i++)
+			message.random_AES_key[i] = rand() & 0xff;
+
+		unsigned char encrypted_message[128];
+		RSA_dwindow_network_public(&message, encrypted_message);
+
+		char url[512];
+		char tmp[3];
+		strcpy(url, g_server_address);
+		strcat(url, g_server_reg_check);
+		strcat(url, "?");
+		for(int i=0; i<128; i++)
+		{
+			sprintf(tmp, "%02X", encrypted_message[i]);
+			strcat(url, tmp);
+		}
+
+		char result[512];
+		memset(result, 0, 512);
+		while (FAILED(download_url(url, result, 512)))
+		{
+			int l = GetTickCount();
+			while (GetTickCount()-l < 300 *1000 && !server_stopping)
+				Sleep(1);
+		}
+
+		HRESULT hr = S_OK;
+		if (strstr(result, "S_FALSE"))
+			hr = S_FALSE;
+		if (strstr(result, "S_OK"))
+			hr = S_OK;
+		if (strstr(result, "E_FAIL"))
+			hr = E_FAIL;
+
+		if (hr != S_OK)
+		{
+			memset(g_passkey_big, 0, 12);
+			return -1;
+		}
+		else
+		{
+
+			char *downloaded = result + 5;
+			OutputDebugStringA(url);
+			OutputDebugStringA("\n");
+			OutputDebugStringA(downloaded);
+
+			if (strlen(downloaded) == 256)
+			{
+				unsigned char new_key[256];
+				for(int i=0; i<128; i++)
+					sscanf(downloaded+i*2, "%02X", new_key+i);
+				AESCryptor aes;
+				aes.set_key(message.random_AES_key, 256);
+				for(int i=0; i<128; i+=16)
+					aes.decrypt(new_key+i, new_key+i);
+
+				memcpy(&g_passkey_big, new_key, 128);
+			}
+		}
+
+	}
+	return 0;
+}
+
 DWORD WINAPI server_thread(LPVOID param)
 {
 	// init and listen
@@ -541,6 +629,7 @@ HRESULT start_server()
 	server_socket = 0;
 	server_stopping = false;
 	server_thread_handle = CreateThread(NULL, NULL, server_thread, NULL, NULL, NULL);
+	heart_beat_thread_handle = CreateThread(NULL, NULL, heart_beat_thread, NULL, NULL, NULL);
 	while (!server_socket)
 		Sleep(1);
 
@@ -557,9 +646,13 @@ HRESULT stop_server()
 	server_stopping = true;
 	closesocket(server_socket);
 	WaitForSingleObject(server_thread_handle, INFINITE);
+	if (WaitForSingleObject(heart_beat_thread_handle, 3000) == WAIT_TIMEOUT)
+		TerminateThread(heart_beat_thread_handle, 0);
 
 	CloseHandle(server_thread_handle);
+	CloseHandle(heart_beat_thread_handle);
 	server_thread_handle = INVALID_HANDLE_VALUE;
+	heart_beat_thread_handle = INVALID_HANDLE_VALUE;
 	memset(active_users, 0, sizeof(active_users));
 	return S_OK;
 }
