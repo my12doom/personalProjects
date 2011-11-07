@@ -14,6 +14,7 @@
 #include "PixelShaders/iz3d_back.h"
 #include "PixelShaders/iz3d_front.h"
 #include "PixelShaders/color_adjust.h"
+#include "PixelShaders/lanczos.h"
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
@@ -314,6 +315,16 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 
 	height = abs(height);
 
+	if (m_remux_mode && height == 1088)
+	{
+		height = 1080;
+		aspect_x = 16;
+		aspect_y = 9;
+	}
+
+	if (*pmt->Subtype() != MEDIASUBTYPE_YUY2 && m_remux_mode)
+		hr = E_FAIL;
+
 	if (aspect_x == 1920 && aspect_y == 1088)
 	{
 		aspect_x = 16;
@@ -403,7 +414,7 @@ HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 		m_cb->SampleCB(start + m_dsr0->m_thisstream, end + m_dsr0->m_thisstream, media_sample);
 
 	int l2 = timeGetTime();
-	if (!m_dsr1->is_connected())
+	if (!m_dsr1->is_connected() &&!m_remux_mode)
 	{
 		// single stream
 		CAutoLock lck(&m_queue_lock);
@@ -430,6 +441,25 @@ HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 	}
 	else
 	{
+		// pd10
+		if (m_remux_mode)
+		{
+			int fn;
+			if (m_lVidHeight == 1280)
+			{
+				fn = (int)((double)(start+m_dsr0->m_thisstream)/10000*120/1001 + 0.5);
+				start = (fn - fn&1) *1001*10000/120;
+			}
+			else
+			{
+				fn = (int)((double)(start+m_dsr0->m_thisstream)/10000*48/1001 + 0.5);
+				start = (fn - fn&1) *1001*10000/48;
+			}
+
+			if (1 == (fn & 1))
+				return S_FALSE;
+		}
+
 find_match:
 		bool matched = false;
 		REFERENCE_TIME matched_time = -1;
@@ -463,7 +493,7 @@ find_match:
 				while(true)
 				{
 					sample_left = m_left_queue.RemoveHead();
-					if(abs((int)(sample_left->m_start - matched_time)) > m_frame_length/2)
+					if(abs((int)(sample_left->m_start - matched_time)) > m_frame_length/4)
 					{
 						printf("drop left\n");
 						delete sample_left;
@@ -475,7 +505,7 @@ find_match:
 				while(true)
 				{
 					sample_right = m_right_queue.RemoveHead();
-					if(abs((int)(sample_right->m_start - matched_time)) > m_frame_length/2)
+					if(abs((int)(sample_right->m_start - matched_time)) > m_frame_length/4)
 					{
 						printf("drop right\n");
 						delete sample_right;
@@ -536,7 +566,7 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 	{
 retry:
 		CAutoLock lck(&m_pool_lock);
-		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32);
+		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, m_remux_mode);
 
 		if ( (m_dsr0->m_format == MEDIASUBTYPE_RGB32 && (!loaded_sample->m_tex_RGB32 || loaded_sample->m_tex_RGB32->creator != m_Device)) ||
 			 (m_dsr0->m_format == MEDIASUBTYPE_YUY2 && (!loaded_sample->m_tex_YUY2 || loaded_sample->m_tex_YUY2->creator != m_Device)) ||
@@ -567,11 +597,45 @@ retry:
 	}
 
 	int l2 = timeGetTime();
-	if (!m_dsr1->is_connected())
+	if (!m_dsr1->is_connected() && !m_remux_mode)
 	{
 		// single stream
 		CAutoLock lck(&m_queue_lock);
 		m_left_queue.AddTail(loaded_sample);
+	}
+
+	else if (m_remux_mode)
+	{
+		// PD10 remux
+		// time and frame number
+		REFERENCE_TIME TimeStart, TimeEnd;
+		media_sample->GetTime(&TimeStart, &TimeEnd);
+		int fn;
+		if (m_lVidHeight == 1280)
+		{
+			fn = (int)((double)(TimeStart+m_dsr0->m_thisstream)/10000*120/1001 + 0.5);
+			loaded_sample->m_start = (REFERENCE_TIME)(fn - (fn&1)) *1001*10000/120;
+		}
+		else
+		{
+			fn = (int)((double)(TimeStart+m_dsr0->m_thisstream)/10000*48/1001 + 0.5);
+			loaded_sample->m_start = (REFERENCE_TIME)(fn - (fn&1)) *1001*10000/48;
+		}
+
+		float frn = (float)(TimeStart+m_dsr0->m_thisstream)/10000*48/1001 + 0.5;
+		loaded_sample->m_end = loaded_sample->m_start + 1;
+		loaded_sample->m_fn = fn;
+
+		if ( 1- (fn & 0x1))
+		{
+			printf("left(%f)", frn);
+			m_left_queue.AddTail(loaded_sample);
+		}
+		else
+		{
+			printf("right(%f)", frn);
+			m_right_queue.AddTail(loaded_sample);
+		}
 	}
 
 	else
@@ -689,7 +753,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		D3DSURFACE_DESC desc;
 		memset(&desc, 0, sizeof(desc));
 		if (m_tex_rgb_left) m_tex_rgb_left->GetLevelDesc(0, &desc);
-		bool dual_stream = m_dsr0->is_connected() && m_dsr1->is_connected();
+		bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
 		input_layout_types input = get_active_input_layout();
 		if (dual_stream && (m_lVidWidth != desc.Width || m_lVidHeight != desc.Height))
 			set_device_state(need_reset_object);
@@ -845,6 +909,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			m_active_pp.BackBufferCount = 1;
 			m_active_pp.Flags = D3DPRESENTFLAG_VIDEO;
 			m_active_pp.BackBufferFormat = D3DFMT_A8R8G8B8;
+			m_active_pp.MultiSampleType = D3DMULTISAMPLE_NONE;
 
 			m_style = GetWindowLongPtr(m_hWnd, GWL_STYLE);
 			m_exstyle = GetWindowLongPtr(m_hWnd, GWL_EXSTYLE);
@@ -1005,6 +1070,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_ps_iz3d_front = NULL;
 	m_vs_subtitle = NULL;
 	m_ps_color_adjust = NULL;
+	m_ps_bmp_lanczos = NULL;
 
 	// textures
 	m_tex_rgb_left = NULL;
@@ -1061,7 +1127,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
 	m_pass1_height = m_lVidHeight;
-	if (!(m_dsr0->is_connected() && m_dsr1->is_connected()))
+	if (!(m_dsr0->is_connected() && m_dsr1->is_connected()) && !m_remux_mode)
 	{
 		input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
 		if (input == side_by_side)
@@ -1183,6 +1249,8 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_Device->CreatePixelShader((DWORD*)g_code_iz3d_back, &m_ps_iz3d_back);
 	m_Device->CreatePixelShader((DWORD*)g_code_iz3d_front, &m_ps_iz3d_front);
 	m_Device->CreatePixelShader((DWORD*)g_code_color_adjust, &m_ps_color_adjust);
+	m_Device->CreatePixelShader((DWORD*)g_code_lanczos, &m_ps_bmp_lanczos);
+
 	m_Device->CreateVertexShader((DWORD*)g_code_vs_subtitle, &m_vs_subtitle);
 
 	// for pixel shader 2.0 cards
@@ -1236,7 +1304,7 @@ HRESULT my12doomRenderer::backup_rgb()
 	}
 
 	input_layout_types input = get_active_input_layout();
-	bool dual_stream = m_dsr0->is_connected() && m_dsr1->is_connected();
+	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
 	CComPtr<IDirect3DSurface9> full_surface;
 	m_Device->CreateRenderTarget(dual_stream ? m_lVidWidth*2 : m_lVidWidth, m_lVidHeight, desc.Format, D3DMULTISAMPLE_NONE, 0, FALSE, &full_surface, NULL);
 	fix_nv3d_bug();
@@ -1318,7 +1386,7 @@ HRESULT my12doomRenderer::restore_rgb()
 	}
 
 	input_layout_types input = get_active_input_layout();
-	bool dual_stream = m_dsr0->is_connected() && m_dsr1->is_connected();
+	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
 
 	if (dual_stream)
 	{
@@ -1504,7 +1572,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		if(get_active_input_layout() != mono2d 
 			|| m_convert3d
 			|| (m_dsr0->is_connected() && m_dsr1->is_connected())
-			|| (!m_dsr0->is_connected() && !m_dsr1->is_connected()))
+			|| (!m_dsr0->is_connected() && !m_dsr1->is_connected())
+			|| m_remux_mode)
 			m_Device->SetPixelShader(m_ps_anaglyph);
 
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
@@ -1876,6 +1945,13 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	else
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
 
+	float mip_lod = -1.0f;
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
+
+
 	m_Device->SetRenderTarget(0, surface);
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 	m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
@@ -1903,9 +1979,11 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
+	float mip_lod = -1.0f;
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
 	hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetTexture( 0, m_tex_bmp );
 	hr = m_Device->SetStreamSource( 0, m_vertex_subtitle, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags_subtitle );
@@ -1957,9 +2035,20 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	if (!left_eye)
 		cfg[0] -= m_bmp_offset*pic_width * 2;
 	hr = m_Device->SetVertexShader(m_vs_subtitle);
+	static bool lanc = false;
+	lanc = !lanc;
+	lanc = true;
+	//hr = m_Device->SetPixelShader(lanc?m_ps_bmp_lanczos:NULL);
 	hr = m_Device->SetVertexShaderConstantF(0, cfg, 2);
+
+	//hr = m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+	//hr = m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+	//hr = m_Device->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+
 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
 	hr = m_Device->SetVertexShader(NULL);
+	hr = m_Device->SetPixelShader(NULL);
+
 	return S_OK;
 }
 HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
@@ -2175,7 +2264,7 @@ double my12doomRenderer::get_active_aspect()
 	if (m_forced_aspect > 0)
 		return m_forced_aspect;
 
-	bool dual_stream = m_dsr0->is_connected() && m_dsr1->is_connected();
+	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
 	if (dual_stream || get_active_input_layout() == mono2d)
 		return m_source_aspect;
 	else if (get_active_input_layout() == side_by_side)
@@ -3225,7 +3314,15 @@ HRESULT gpu_sample::prepare_rendering()
 
 	return S_OK;
 }
-gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, D3DPOOL pool)
+
+bool gpu_sample::is_ignored_line(int line)
+{
+	if (line == 1 || line == 136 || line == 272 || line == 408 || line == 544 || line == 680 || line == 816 || line == 952)
+		return true;
+	return false;
+}
+
+gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool remux_mode, D3DPOOL pool)
 {
 	CAutoLock lck(&g_gpu_lock);
 	m_interlace_flags = 0;
@@ -3238,6 +3335,9 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	HRESULT hr;
 	CComQIPtr<IMediaSample2, &IID_IMediaSample2> I2(memory_sample);
 	if (!allocator || !memory_sample)
+		goto clearup;
+
+	if (remux_mode && format != MEDIASUBTYPE_YUY2)
 		goto clearup;
 
 	// time stamp
@@ -3308,11 +3408,20 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 		// loading YUY2 image as one ARGB half width texture
 		D3DLOCKED_RECT &d3dlr = m_tex_YUY2->locked_rect;
 		dst = (BYTE*)d3dlr.pBits;
+		int j = 0;
 		for(int i=0; i<m_height; i++)
 		{
 			memcpy(dst, src, m_width*2);
 			src += m_width*2;
 			dst += d3dlr.Pitch;
+
+			j++;
+			if (is_ignored_line(j) && height == 1080)
+			{
+				j++;
+				src += m_width*2;
+			}
+
 		}
 	}
 

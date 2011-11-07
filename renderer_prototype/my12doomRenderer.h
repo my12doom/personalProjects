@@ -85,9 +85,10 @@ protected:
 class gpu_sample
 {
 public:
-	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, D3DPOOL pool = D3DPOOL_SYSTEMMEM);
-	HRESULT prepare_rendering();		// it's just unlock textures
+	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM);
 	~gpu_sample();
+	bool is_ignored_line(int line);
+	HRESULT prepare_rendering();		// it's just unlock textures
 
 	bool m_ready;
 	CLSID m_format;
@@ -104,6 +105,7 @@ public:
 	bool m_topdown;
 	D3DPOOL m_pool;
 	DWORD m_interlace_flags;
+	int m_fn;
 };
 class my12doomRendererDShow : public DBaseVideoRenderer
 {
@@ -193,6 +195,7 @@ public:
 	REFERENCE_TIME m_frame_length;
 	bool m_deinterlace;
 	bool m_forced_deinterlace;
+	bool m_remux_mode;
 
 	// color adjust controll
 	double m_saturation1;
@@ -387,6 +390,7 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_test_sbs;
 	CComPtr <IDirect3DPixelShader9> m_ps_test_sbs2;
 	CComPtr <IDirect3DPixelShader9> m_ps_color_adjust;
+	CComPtr <IDirect3DPixelShader9> m_ps_bmp_lanczos;
 
 	CComPtr<IDirect3DTexture9> m1_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
 	CComPtr<IDirect3DTexture9> m1_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width

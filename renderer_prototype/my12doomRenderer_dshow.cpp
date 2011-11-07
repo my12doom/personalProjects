@@ -175,6 +175,9 @@ HRESULT my12doomRendererDShow::Receive(IMediaSample *sample)
 {
 	if (!my12doom_queue_enable)
 		return SuperReceive(sample);
+
+	m_owner->DataPreroll(m_id, sample);
+
 retry:
 	m_queue_lock.Lock();
 
@@ -190,7 +193,6 @@ retry:
 	m_queue[m_queue_count].start = start;
 	m_queue[m_queue_count++].end = end;
 
-	m_owner->DataPreroll(m_id, sample);
 
 	m_queue_lock.Unlock();
 	return S_OK;

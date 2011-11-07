@@ -290,7 +290,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling main of ps2.txt"
-						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_sbs.h sbs no ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_tb.h tb no ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_sbs2.h sbs2 no ps_2_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_tb2.h tb2 no ps_2_0&#x0D;&#x0A;"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_sbs.h sbs no ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_tb.h tb no ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_sbs2.h sbs2 no ps_2_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_tb2.h tb2 no ps_2_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\lanczos.h lanczos no ps_2_a"
 						Outputs=".\PixelShaders\stereo_test.h"
 					/>
 				</FileConfiguration>
