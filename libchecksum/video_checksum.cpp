@@ -115,7 +115,7 @@ int find_startcode(wchar_t *file)
 	int rtn = -1;
 	for(int i=0; i<check_size-8; i++)
 		if (buf[i+0] == 'm' && buf[i+1] == 'y' && buf[i+2] == '1' && buf[i+3] =='2' &&
-			buf[i+4] == 'd' && buf[i+5] == 'o' && buf[i+6] == 'o' && buf[i+7] =='m')
+			buf[i+4] == 'd' && buf[i+5] == 'o' && buf[i+6] == 'o' && buf[i+7] =='m' && buf[i+8] == 0x27)
 		{
 			rtn = i+26;
 			break;
