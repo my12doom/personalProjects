@@ -151,7 +151,7 @@ STDMETHODIMP Ccrypt::decode_message(BSTR input, BSTR* ret)
 	}
 
 	BSTR passkey, requested_hash, aes_key, password;
-	message.password_uncrypted[19] = 0;
+	//message.password_uncrypted[19] = 0;
 	binary2bstr(message.passkey, 32, &passkey);
 	binary2bstr(message.requested_hash, 20, &requested_hash);
 	binary2bstr(message.random_AES_key, 32, &aes_key);
@@ -265,7 +265,6 @@ STDMETHODIMP Ccrypt::decode_binarystring(BSTR in, BSTR* out)
 		return E_FAIL;
 
 	char *tmp = new char[len/2+1];
-	tmp[len/2] = NULL;
 	if (FAILED(bstr2binary(in, tmp, len/2)))
 	{
 		delete [] tmp;
@@ -273,6 +272,7 @@ STDMETHODIMP Ccrypt::decode_binarystring(BSTR in, BSTR* out)
 		return S_OK;
 	}
 
+	tmp[len/2] = NULL;
 	USES_CONVERSION;
 	*out = SysAllocString(A2W(tmp));
 	delete [] tmp;
