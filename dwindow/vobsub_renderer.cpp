@@ -67,6 +67,7 @@ HRESULT VobSubRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 		{
 			out->aspect = (double)m_parser.m_total_width / m_parser.m_total_height;
 			out->delta = 0;
+			out->delta_valid = false;
 			out->data = (BYTE*)tmp.rgb;
 			out->pixel_type = out->pixel_type_RGB;
 			out->width_pixel = tmp.width;

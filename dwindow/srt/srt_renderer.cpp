@@ -93,7 +93,9 @@ HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_ti
 		return E_POINTER;
 
 	wchar_t found[1024];
-	m_srt.get_subtitle(time, time, found);
+	bool has_offset = false;
+	int offset = 0;
+	m_srt.get_subtitle(time, time, found, &has_offset, &offset);
 	if ((wcscmp(found, m_last_found) == 0) && (last_time != -1))
 	{
 		out->data = NULL;
@@ -125,7 +127,8 @@ HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_ti
 		out->width = (double)out->width_pixel/1920;
 		out->height = (double)out->height_pixel/(1920/m_aspect);
 		out->aspect = m_aspect;
-		out->delta = 0;
+		out->delta = 0.001 * offset;
+		out->delta_valid = has_offset;
 
 		out->left = 0.5 - out->width/2;
 		out->top = 0.95 - out->height;

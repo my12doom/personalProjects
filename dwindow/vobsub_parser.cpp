@@ -379,7 +379,7 @@ HRESULT VobSubParser::reset()
 {
 	if (m_subtitles)
 	{
-		for(int i=0; i<4096; i++)
+		for(int i=0; i<40960; i++)
 		{
 			if (m_subtitles[i].rgb)
 				free(m_subtitles[i].rgb);
@@ -396,11 +396,11 @@ HRESULT VobSubParser::reset()
 	memset(&m_current_subtitle, 0, sizeof(m_current_subtitle));
 
 	if (NULL == m_subtitles)
-		m_subtitles = (vobsub_subtitle*) malloc(4096*sizeof(vobsub_subtitle));
+		m_subtitles = (vobsub_subtitle*) malloc(40960*sizeof(vobsub_subtitle));
 
 	m_subtitle_count = 0;
 	memset(&m_current_subtitle, 0, sizeof(vobsub_subtitle));
-	memset(m_subtitles, 0, 4096*sizeof(vobsub_subtitle));
+	memset(m_subtitles, 0, 40960*sizeof(vobsub_subtitle));
 	m_current_subtitle.start = -1;
 
 	return S_OK;
@@ -416,7 +416,7 @@ VobSubParser::~VobSubParser()
 {
 	if (m_subtitles)
 	{
-		for(int i=0; i<4096; i++)
+		for(int i=0; i<40960; i++)
 		{
 			if (m_subtitles[i].rgb)
 				free(m_subtitles[i].rgb);

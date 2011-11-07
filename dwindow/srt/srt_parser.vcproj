@@ -115,7 +115,8 @@
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
-				Name="VCLinkerTool"/>
+				Name="VCLinkerTool"
+				OutputFile="$(OutDir)/srt_offset.exe"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool

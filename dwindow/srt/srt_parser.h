@@ -9,7 +9,9 @@ public:
 	~srt_parser();
 	void init(int num, int text_size);			//init or reset
 	int load(wchar_t *pathname);
-	int get_subtitle(int start, int end, wchar_t *out, bool multi = false);//size in wchar_t
+	int load_offset_metadata(const wchar_t *pathname, int fps = 24);		// sorry, no Unicode support, 1.001 divided
+	int save(const wchar_t *pathname);
+	int get_subtitle(int start, int end, wchar_t *out, bool *has_offset = NULL, int *offset = NULL, bool multi = false);//size in wchar_t
 	int direct_add_subtitle(wchar_t *line, int start, int end);
 
 protected:
@@ -18,6 +20,8 @@ protected:
 		int time_start;
 		int time_end;
 		int pos;
+		int offset;
+		bool has_offset;
 	} subtitle_index;
 
 	subtitle_index *m_index;
@@ -32,11 +36,15 @@ private:
 	int handle_data_16(unsigned short *data, bool big, int size);
 	int handle_data_8(unsigned char *data, int code_page, int size);
 	int handle_line(wchar_t *line);
+	wchar_t tmp[1024];
+	subtitle_index tmp_index;
+	
 
 	//helper functions
 	wchar_t swap_big_little(wchar_t x);
 	bool wisgidit(wchar_t *str);
 	int wstrtrim(wchar_t *str, wchar_t char_ = L' ');
 	int time_to_decimal(wchar_t *str);
+	wchar_t *decimal_to_time(int decimal);		// warning: no MT support for this function, it returns a point to its internal static wchar_t[];
 };
 #endif

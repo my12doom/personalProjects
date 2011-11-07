@@ -16,6 +16,7 @@ typedef struct _rendered_subtitle
 	int height_pixel;
 
 	// stereo info...
+	bool delta_valid;
 	double delta;
 
 	// pixel type and data

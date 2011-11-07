@@ -7,7 +7,7 @@
 
 DWORD WINAPI feeder_thread(LPVOID lpParameter);
 void main2();
-void main3(int argc, char * argv[]);
+int main3(int argc, char * argv[]);
 
 typedef struct feeder_thread_parameter_tags
 {
@@ -18,7 +18,7 @@ typedef struct feeder_thread_parameter_tags
 	CFileBuffer *out_right; // for demux
 }feeder_thread_parameter;
 
-const unsigned int max_nal_size = 1024000;
+const unsigned int max_nal_size = 1024000*5;
 unsigned char *delimeter_buffer = (unsigned char*)malloc(max_nal_size);
 int n_slice = 0;
 unsigned char watermark[1024];
@@ -73,6 +73,9 @@ int read_a_nal(CFileBuffer *f)
 
 int max_sei_size = 0;
 bool is_idr = false;
+#define max_offset_frame_count 128
+int offset_metadata[max_offset_frame_count];
+int offset_metadata_count = 0;
 int read_a_delimeter(CFileBuffer *f)
 {
 	max_sei_size = 0;
@@ -96,29 +99,72 @@ int read_a_delimeter(CFileBuffer *f)
 		printf("%x ", _nal_type);
 		*/
 
-		if (_nal_type == 6)
+		// sei parse
+		// check for offset sequence here
+		BYTE * data = read_buffer;
+		if ((data[4]&0x1f) == 6)
 		{
-			unsigned char* psei = read_buffer+5;
-			int sei_payload_type = 0;
-			while (true)
+			int pos = 5;
+			int sei_type = 0;
+			int sei_size = 0;
+			while(data[pos] == 0xff) 
+				sei_type += data[pos++];
+			sei_type += data[pos++];
+			while(data[pos] == 0xff)
+				sei_size += data[pos++];
+			sei_size += data[pos++];
+
+			typedef struct _offset_meta_header
 			{
-				sei_payload_type += *psei;
-				psei ++;
-				if (*psei < 0xFF)
-					break;
-			}
-			int sei_payload_size = 0;
-			while (true)
+				unsigned char unkown1[27];
+				unsigned char point_count;
+				unsigned char unkown2[2];
+			} offset_meta_header;
+
+			if (sei_type != 37 || sei_size <= 3+sizeof(offset_meta_header))
+				goto non_offset;
+			if (data[pos] >> 7 )
+				goto non_offset;
+
+			data += pos;
+			pos = 2;
+			int nest_size = 0;
+			while(data[pos] == 0xff) 
+				nest_size += data[pos++];
+			nest_size += data[pos++];
+
+
+			if (nest_size <= sizeof(offset_meta_header))
+				goto non_offset;	// empty or incomplete packet
+			if (data+nest_size-read_buffer > nal_size)
+				goto non_offset;	// incomplete packet
+
+			data += pos;
+			offset_meta_header header;
+			memcpy(&header, data, sizeof(header));
+			data += sizeof(header);
+
+
 			{
-				sei_payload_size += *psei;
-				psei++;
-				if (*psei < 0xFF)
-					break;
+				offset_metadata_count = 0;
+
+				for(int i=0; i<header.point_count && i<max_offset_frame_count; i++)
+				{
+					if (data+i-read_buffer > nal_size)
+						goto non_offset;	// incomplete packet
+
+					int point = ((unsigned char*)data)[i];
+					point = point & 0x80 ? -(point&0x7f) : (point&0x7f);
+
+					offset_metadata[offset_metadata_count++] = point;
+
+				}
 			}
 
-			if (sei_payload_size > 50)
-				max_sei_size += sei_payload_size;
+			// TODO: check some header
 		}
+
+non_offset:
 
 		if ( (1 <= _nal_type && _nal_type <= 5) || _nal_type == 20)
 			n_slice ++;
@@ -242,7 +288,6 @@ DWORD WINAPI feeder_thread(LPVOID lpParameter)
 
 LONGLONG FileSize(const char*filename)
 {
-	DWORD read;
 	HANDLE f = CreateFile(filename, FILE_READ_ACCESS, 7, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	if(INVALID_HANDLE_VALUE == f)
@@ -256,11 +301,10 @@ LONGLONG FileSize(const char*filename)
 	return filesize.QuadPart;
 }
 
-void main(int argc, char * argv[])
+int main(int argc, char * argv[])
 {
 	//main2();
 	//return;
-	//return main3(argc, argv);
 	printf("my12doom's mvc interlacer\n");
 	printf("my12doom.googlecode.com\n");
 	printf("mailto:my12doom@gmail.com\n");
@@ -290,8 +334,11 @@ void main(int argc, char * argv[])
 
 		printf("\npress any key to exit");
 		getch();
-		return;
+		return -1;
 	}
+
+	if (strstr(argv[1], ".txt"))
+		return main3(argc, argv);
 
 	char out_mvc_name[MAX_PATH];
 	char out_avs_name[MAX_PATH];
@@ -454,53 +501,74 @@ void main2()
 
 }
 
-
-void main3(int argc, char * argv[])
+// just test function
+int main3(int argc, char * argv[])
 {
 	memset(nal_type_found, 0, sizeof(nal_type_found));
 	feeder_thread_parameter * para = new feeder_thread_parameter;
-	//strcpy(para->filename, argv[1]);
-	para->demux = false;
+	strcpy(para->filename, argv[2]);
+	para->demux = (strstr(argv[2], "264") == NULL);
 	para->out = &left;
+	para->out_right = strstr(argv[2], "264") == NULL ? &left : NULL;
+	para->out_left = NULL;
 
+
+	/*
 	strcpy(para->filename, "K:\\BDMV\\STREAM\\00002.M2TS");
 	para->demux = true;
 	para->out_left = NULL;
 	para->out_right = &left;//&right;
+	*/
 
 	CreateThread(NULL, NULL, feeder_thread, para, NULL, NULL);
 
-	FILE *log = fopen("log.log", "wb");
+	//FILE *log = fopen("Z:\\log.log", "wb");
+	FILE *offset = fopen(argv[1], "wb");
+	if (!offset)
+	{
+		printf("failed opening file %s .\n", argv[1]);
+		return -1;
+	}
 
 	int n = 0;
 	int id = 0;
 	int i = 0;
+	int byte_total = 0;
 	while (true)
 	{
-		/*
-		int delimeter_size = read_a_delimeter(&left);
-		delimeter_size = read_a_delimeter(&right);
-
-		if (delimeter_size == 0)
-			break;
-
-		printf("%d :%d bytes, %d slices.\n", n++, delimeter_size, n_slice);
-		fprintf(log, "%d : %d bytes, %d slices.\r\n", n-1, delimeter_size, n_slice);
-		*/
-
 		int delimeter_size = read_a_delimeter(&left);
 		if (delimeter_size == 0)
 			break;
-		fprintf(log, "%d\r\n", i++);
-		if (max_sei_size > 50)
+
+		byte_total += delimeter_size;
+
+		//fprintf(log, "%d, %d/%d byte\r\n", i++, delimeter_size, byte_total);
+		if (max_sei_size > 5)
 		{
-			fprintf(log, "SEI:%d byte.\r\n", max_sei_size);
+			//fprintf(log, "SEI:%d byte.\r\n", max_sei_size);
 			i = 0;
 		}
-		fflush(log);
-		left.remove_data(delimeter_size);
+
+		if (offset_metadata_count)
+		{
+			fprintf(offset, "%d\r\n", offset_metadata[0]);
+			offset_metadata_count -- ;
+			memmove(offset_metadata, offset_metadata+1, sizeof(int) * offset_metadata_count);
+		}
+		else
+		{
+			fprintf(offset, "00\r\n");
+		}
+
+		fflush(offset);
+		//fflush(log);
+		printf("\r%d frames checked.", ++n);
 	}
 
-	fclose(log);
+	fclose(offset);
+	//fclose(log);
 
+	printf("\ndone, press any key to exit...", n);
+	getch();
+	return 0;
 }

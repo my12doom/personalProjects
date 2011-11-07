@@ -211,8 +211,20 @@ HRESULT PGSParser::parsePresentaionSegment(BYTE *data, int size, int time)
 				return S_FALSE;
 			}
 
+		if (m_current_subtitle.rle_size == 0)
+		{
+			printf("rle_size = 0\n");
+		}
+
 		// add to tail
 		m_subtitles[m_subtitle_count++] = m_current_subtitle;
+
+		/*
+		static FILE * f = fopen("Z:\\sup.log", "wb");
+		fprintf(f, "sup %d, rle size = %d, %dx%d, %d - %d\r\n", m_subtitle_count, m_current_subtitle.rle_size, m_current_subtitle.width, m_current_subtitle.height,
+			m_current_subtitle.start, m_current_subtitle.end);
+		fflush(f);
+		*/
 	}
 	else
 	{
@@ -415,7 +427,7 @@ PGSParser::~PGSParser()
 		free(m_data);
 	if (m_subtitles)
 	{
-		for(int i=0; i<4096; i++)
+		for(int i=0; i<40960; i++)
 		{
 			if (m_subtitles[i].rgb)
 				free(m_subtitles[i].rgb);
@@ -446,7 +458,7 @@ HRESULT PGSParser::reset()
 
 	if (m_subtitles)
 	{
-		for(int i=0; i<4096; i++)
+		for(int i=0; i<40960; i++)
 			if (m_subtitles[i].rgb)
 				free(m_subtitles[i].rgb);
 		free(m_subtitles);
@@ -456,12 +468,12 @@ HRESULT PGSParser::reset()
 	if (NULL == m_data)
 		m_data = (BYTE*) malloc(2048000);
 	if (NULL == m_subtitles)
-		m_subtitles = (pgs_subtitle*) malloc(4096*sizeof(pgs_subtitle));
+		m_subtitles = (pgs_subtitle*) malloc(40960*sizeof(pgs_subtitle));
 	m_data_pos = 0;
 	m_subtitle_count = 0;
 	m_has_seg = false;
 	memset(&m_current_subtitle, 0, sizeof(pgs_subtitle));
-	memset(m_subtitles, 0, 4096*sizeof(pgs_subtitle));
+	memset(m_subtitles, 0, 40960*sizeof(pgs_subtitle));
 	m_current_subtitle.start = -1;
 
 	return S_OK;

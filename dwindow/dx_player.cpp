@@ -1646,13 +1646,17 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	TimeStart /= m_subtitle_ratio;
 
 	m_internel_offset = 10;
+	bool movie_has_offset_metadata = false;
 	if (m_offset_metadata)
 	{
 		REFERENCE_TIME frame_time = m_renderer1->m_frame_length;
 		HRESULT hr = m_offset_metadata->GetOffset(TimeStart+frame_time*2, frame_time, &m_internel_offset);	//preroll 2 frames
 		//log_line(L"offset = %d(%s)", m_internel_offset, hr == S_OK ? L"S_OK" : L"S_FALSE");
+
+		if (SUCCEEDED(hr))
+			movie_has_offset_metadata = true;
 	}
-	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
+	if (!m_subtitle_has_offset) m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
 
 	int ms_start = (int)(TimeStart / 10000.0 + 0.5);
 	int ms_end = (int)(TimeEnd / 10000.0 + 0.5);
@@ -1692,10 +1696,9 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 			// draw it
 			else
 			{
-				// FIXME: assume aspect_screen is always less than aspect_subtitle
-				double aspect_screen1 = (double)(m_screen1.right - m_screen1.left)/(m_screen1.bottom - m_screen1.top);
-
-				double delta1 = (1-aspect_screen1/sub.aspect);
+				m_subtitle_has_offset = sub.delta_valid;
+				if (sub.delta_valid)
+					hr = m_renderer1->set_bmp_offset(sub.delta + (double)m_user_offset/1920);
 
 				hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
 					sub.height,
@@ -1985,6 +1988,7 @@ LRESULT dx_player::on_idle_time()
 	}
 	return S_FALSE;
 }
+
 HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = false */, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
 {
 	wchar_t file_to_play[MAX_PATH];
@@ -2019,16 +2023,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	// subtitle renderer
 	m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
 
-	/*
 	// Legacy Remux file
-	if (verify_file(file_to_play) == 2)
-	{
-		log_line(L"remux file no longer supported! %s...", file_to_play);
-		return E_FAIL;
-	}
-	*/
-
-
+	m_renderer1->m_remux_mode = m_is_remux_file = verify_file(file_to_play) == 2;
 
 	// check private source and whether is MVC content
 	CLSID source_clsid;
@@ -2071,6 +2067,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 			e3d_set_process_key(key);
 		}
 	}
+
 	if (SUCCEEDED(hr))
 	{
 		log_line(L"loading with private filter");
@@ -2135,7 +2132,18 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 							|| video_track == LOADFILE_ALL_TRACK)
 						{
 							CLSID CLSID_mp4v = FOURCCMap('v4pm');
-							if(S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('v4pm')) ||
+							if (m_is_remux_file)
+							{
+								log_line(L"adding pd10 decoder");
+								CComPtr<IBaseFilter> pd10;
+								hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10);
+								hr = m_gb->AddFilter(pd10, L"PD10 Decoder");
+
+								if (FAILED(hr = CrackPD10(pd10)))
+									return hr;
+							}
+
+							else if(S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('v4pm')) ||
 							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('V4PM')) ||
 							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('XVID')) ||
 							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('xvid')) ||
@@ -2154,7 +2162,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 								hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
 							}
 
-							if(S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1cva')) || 
+							else if(S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1cva')) || 
 							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1CVA')) ||
 							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('CVMA')) ||
 							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462h')) ||
@@ -2182,7 +2190,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 								log_line(L"CoreMVC hr = 0x%08x", hr);
 							}
 
-							if (S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG2_VIDEO) ||
+							else if (S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG2_VIDEO) ||
 								S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG1Payload)  )
 							{
 								log_line(L"adding pd10 decoder");
@@ -2232,6 +2240,11 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		// if it doesn't work....
 		if (video_num == 0 && audio_num == 0)
 		{
+			log_line(L"failed rendering \"%s\" (error = 0x%08x).", file_to_play, hr);
+			if (m_is_remux_file)
+				return E_FAIL;
+
+
 			log_line(L"private filters failed, trying system filters. (%s)", file_to_play);
 
 			CComPtr<IBaseFilter> pd10;
@@ -2276,6 +2289,12 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	// normal file, just render it.
 	else
 	{
+		if (m_is_remux_file)
+		{
+			log_line(L"Remux file should always use private filters (%s)", file_to_play);
+			return hr;
+		}
+
 		log_line(L"private filters failed, trying system filters. (%s)", file_to_play);
 
 		CComPtr<IBaseFilter> pd10;

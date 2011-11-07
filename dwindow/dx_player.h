@@ -112,6 +112,7 @@ protected:
 	bool m_revert;
 	double m_letterbox_delta;
 	double m_parallax;
+	bool m_is_remux_file;
 
 	int init_done_flag;
 
@@ -204,6 +205,7 @@ protected:
 	double m_subtitle_bottom_y;
 	int m_user_offset;
 	int m_internel_offset;
+	bool m_subtitle_has_offset;
 	AutoSetting<int> m_subtitle_latency;
 	AutoSetting<double> m_subtitle_ratio;
 

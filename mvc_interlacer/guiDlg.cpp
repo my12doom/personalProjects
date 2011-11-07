@@ -150,7 +150,7 @@ void Cinterlacer_guiDlg::OnBnClickedButton4()
     TCHAR strPath[MAX_PATH] = TEXT("");
 
     OPENFILENAME ofn = { sizeof(OPENFILENAME), this->GetSafeHwnd() , NULL,
-                         TEXT(".mvc\0*.mvc\0\0"), NULL,
+                         TEXT("MVC Stream (*.mvc)\0*.mvc\0Offset Metadata (*.txt)\0*.txt\0\0"), NULL,
                          0, 1, strFileName, MAX_PATH, NULL, 0, strPath,
                          TEXT("Open Input 1"),
                          OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY, 0, 0,
