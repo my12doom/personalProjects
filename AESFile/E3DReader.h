@@ -22,6 +22,7 @@ public:
 	BOOL SetFilePointerEx(__in LARGE_INTEGER liDistanceToMove, __out_opt PLARGE_INTEGER lpNewFilePointer, __in DWORD dwMoveMethod);
 
 //protected:
+	char m_remux_sig[128];
 	int m_block_size;
 	unsigned char *m_block_cache;
 	unsigned char m_keyhint[32];

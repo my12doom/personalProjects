@@ -5,6 +5,43 @@
 
 const int E3D_BLOCK_SIZE = 16;
 
+class my12doom_leaf
+{
+public:
+	__int64 m_leaf8cc;
+	__int64 m_child_size;
+
+	enum
+	{
+		leaf_is_not_set,
+		leaf_is_memory,
+		leaf_is_file_pos,
+		leaf_is_childs,
+	} m_leaf_type;
+
+	struct  
+	{
+		void * data;
+		__int64 size;
+	} m_memory_data;
+
+	struct
+	{
+		HANDLE file;
+		LONGLONG pos;
+		LONGLONG size;
+	} m_file_data;
+
+	int m_leaves_count;
+	my12doom_leaf **m_leaves;
+	my12doom_leaf();
+	~my12doom_leaf();
+	void AddLeaf(my12doom_leaf* leaf);
+	void SetData(HANDLE file, LONGLONG pos, LONGLONG size);
+	void SetData(void *data, LONGLONG size);
+	void WriteTo(HANDLE file);
+	void WriteTo(FILE *file);
+};
 
 my12doom_leaf::my12doom_leaf()
 {
@@ -122,7 +159,7 @@ void my12doom_leaf::WriteTo(FILE *file)
 }
 
 
-int encode_file(wchar_t *in, wchar_t *out, unsigned char *key, unsigned char *source_hash, FILE *progress_out)
+int encode_file(wchar_t *in, wchar_t *out, unsigned char *key, unsigned char *source_hash, E3D_Writer_Progress *cb)
 {
 	HANDLE hin = CreateFileW (in, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	HANDLE hout = CreateFileW (out, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, 0, NULL);
@@ -174,12 +211,26 @@ int encode_file(wchar_t *in, wchar_t *out, unsigned char *key, unsigned char *so
 	leaf_key_hint.SetData(s_key_hint, 32);
 	root.AddLeaf(&leaf_key_hint);
 
+	// source hash
+	my12doom_leaf leaf_remux;
+	char remux_sig[192];
+	memset(remux_sig, 0, 192);
+	strcpy(remux_sig, "my12doom's mvc interlacer");
+	leaf_remux.m_leaf8cc = str2int64("remux");
+	leaf_remux.SetData(remux_sig, 192);
+	root.AddLeaf(&leaf_remux);
+
 	// write header
 	root.WriteTo(hout);
 
 	// copy file with encrypt
 	const int E3D_ENCODING_BLOCK_SIZE = 655360;
 	unsigned char *tmp = new unsigned char [E3D_ENCODING_BLOCK_SIZE];
+
+	if (cb)
+		if (S_OK != cb->CB(0, 0, 0))
+			goto clearup;
+
 	for(__int64 byte_left= file_size; byte_left>0; byte_left-= E3D_ENCODING_BLOCK_SIZE)
 	{
 		DWORD byte_written = 0;
@@ -193,17 +244,17 @@ int encode_file(wchar_t *in, wchar_t *out, unsigned char *key, unsigned char *so
 		if (byte_read < E3D_ENCODING_BLOCK_SIZE)
 			break;
 
-		if (progress_out)
-			fprintf(progress_out, "\r%lld / %lld, %.1f%%", file_size-byte_left, file_size, (double)(file_size-byte_left) * 100 / file_size);
+		if (cb)
+			if (S_OK != cb->CB(1, file_size-byte_left, file_size))
+				goto clearup;
 
 	}
 
-	if (progress_out)
-	{
-		fprintf(progress_out, "\r%lld/ %lld\n", file_size, file_size);
-		fprintf(progress_out, "OK.\n");
-	}
+	if (cb)
+		if (S_OK != cb->CB(2, file_size, 0))
+			goto clearup;
 
+clearup:
 	delete [] tmp;
 	CloseHandle(hin);
 	CloseHandle(hout);

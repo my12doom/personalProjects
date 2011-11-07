@@ -71,6 +71,7 @@ void file_reader::set_key(unsigned char*key)
 void file_reader::SetFile(HANDLE file)
 {
 	// init
+	memset(m_remux_sig, 0, 128);
 	LARGE_INTEGER li;
 	li.QuadPart = 0;
 	::SetFilePointerEx(file, li, &li, SEEK_CUR);
@@ -127,6 +128,11 @@ void file_reader::SetFile(HANDLE file)
 		else if (eightcc == str2int64("srchash"))
 		{
 			if (!::ReadFile(m_file, m_hash, 20, &byte_read, NULL) || byte_read != 20)
+				goto rewind;
+		}
+		else if (eightcc == str2int64("remux"))
+		{
+			if (!::ReadFile(m_file, m_remux_sig, 128, &byte_read, NULL) || byte_read != 128)
 				goto rewind;
 		}
 
