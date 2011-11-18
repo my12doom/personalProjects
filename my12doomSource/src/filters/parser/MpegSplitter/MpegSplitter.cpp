@@ -1949,7 +1949,14 @@ HRESULT CMpegSplitterOutputPin::DeliverPacket(CAutoPtr<Packet> p)
 
 					// check for offset sequence here
 					BYTE * data = p2->GetData();
-					if (p->TrackNumber == 0x1012 && ((data[4]&0x1f) == 6) )
+
+					if (p->TrackNumber != 0x1012)
+						goto non_offset;
+
+					while (data < p2->GetData() + p2->GetDataSize() - 4)
+					if ((data[4]&0x1f)!=6)
+						data+= (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3] + 4;
+					else
 					{
 						int pos = 5;
 						int sei_type = 0;
