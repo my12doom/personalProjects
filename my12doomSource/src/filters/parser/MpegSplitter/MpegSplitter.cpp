@@ -1951,79 +1951,84 @@ HRESULT CMpegSplitterOutputPin::DeliverPacket(CAutoPtr<Packet> p)
 					BYTE * data = p2->GetData();
 
 					if (p->TrackNumber != 0x1012)
-						goto non_offset;
+						goto non_1012;
 
 					while (data < p2->GetData() + p2->GetDataSize() - 4)
-					if ((data[4]&0x1f)!=6)
-						data+= (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3] + 4;
-					else
 					{
-						int pos = 5;
-						int sei_type = 0;
-						int sei_size = 0;
-						while(data[pos] == 0xff) 
+						BYTE *nextdata = data + (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3] + 4;
+						if ((data[4]&0x1f)==6)						
+						{
+							int pos = 5;
+							int sei_type = 0;
+							int sei_size = 0;
+							while(data[pos] == 0xff) 
+								sei_type += data[pos++];
 							sei_type += data[pos++];
-						sei_type += data[pos++];
-						while(data[pos] == 0xff)
+							while(data[pos] == 0xff)
+								sei_size += data[pos++];
 							sei_size += data[pos++];
-						sei_size += data[pos++];
 
-						typedef struct _offset_meta_header
-						{
-							unsigned char unkown1[27];
-							unsigned char point_count;
-							unsigned char unkown2[2];
-						} offset_meta_header;
-
-						if (sei_type != 37 || sei_size <= 3+sizeof(offset_meta_header))
-							goto non_offset;
-						if (data[pos] >> 7 )
-							goto non_offset;
-
-						data += pos;
-						pos = 2;
-						int nest_size = 0;
-						while(data[pos] == 0xff) 
-							nest_size += data[pos++];
-						nest_size += data[pos++];
-
-
-						if (nest_size <= sizeof(offset_meta_header))
-							goto non_offset;	// empty or incomplete packet
-						if (data+nest_size-p2->GetData() > p2->GetDataSize())
-							goto non_offset;	// incomplete packet
-
-						data += pos;
-						offset_meta_header header;
-						memcpy(&header, data, sizeof(header));
-						data += sizeof(header);
-
-
-						CMpegSplitterFilter * filter = (CMpegSplitterFilter*) m_pFilter;
-						{
-							CAutoLock lck(&filter->m_offset_item_lock);
-							offset_item *item = filter->m_offset_items+(filter->m_offset_index % max_offset_items);
-							item->frame_count = 0;
-							item->time_start = m_rtStart + p->rtStart;
-
-							for(int i=0; i<header.point_count && i<max_offset_frame_count; i++)
+							typedef struct _offset_meta_header
 							{
-								if (data+i-p2->GetData() > p2->GetDataSize())
-									goto non_offset;	// incomplete packet
+								unsigned char unkown1[27];
+								unsigned char point_count;
+								unsigned char unkown2[2];
+							} offset_meta_header;
 
-								int point = ((unsigned char*)data)[i];
-								point = point & 0x80 ? -(point&0x7f) : (point&0x7f);
-								item->offsets[item->frame_count++] = point;
+							if (sei_type != 37 || sei_size <= 3+sizeof(offset_meta_header))
+								goto non_offset;
+							if (data[pos] >> 7 )
+								goto non_offset;
 
+							data += pos;
+							pos = 2;
+							int nest_size = 0;
+							while(data[pos] == 0xff) 
+								nest_size += data[pos++];
+							nest_size += data[pos++];
+
+
+							if (nest_size <= sizeof(offset_meta_header))
+								goto non_offset;	// empty or incomplete packet
+							if (data+nest_size-p2->GetData() > p2->GetDataSize())
+								goto non_offset;	// incomplete packet
+
+							data += pos;
+							offset_meta_header header;
+							memcpy(&header, data, sizeof(header));
+							data += sizeof(header);
+
+
+							CMpegSplitterFilter * filter = (CMpegSplitterFilter*) m_pFilter;
+							{
+								CAutoLock lck(&filter->m_offset_item_lock);
+								offset_item *item = filter->m_offset_items+(filter->m_offset_index % max_offset_items);
+								item->frame_count = 0;
+								item->time_start = m_rtStart + p->rtStart;
+
+								for(int i=0; i<header.point_count && i<max_offset_frame_count; i++)
+								{
+									if (data+i-p2->GetData() > p2->GetDataSize())
+										goto non_offset;	// incomplete packet
+
+									int point = ((unsigned char*)data)[i];
+									point = point & 0x80 ? -(point&0x7f) : (point&0x7f);
+									item->offsets[item->frame_count++] = point;
+
+								}
+
+								filter->m_offset_index ++;
 							}
 
-							filter->m_offset_index ++;
+							// TODO: check some header
 						}
 
-						// TODO: check some header
-					}
 
 non_offset:
+						data = nextdata;
+					}
+
+non_1012:
 
 					p->Append(*p2);
 				}
