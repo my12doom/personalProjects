@@ -41,13 +41,21 @@ void create_watermark()
 	watermark_size = 5 + strlen(str);
 }
 
-int nal_type(unsigned char *data)
+int nal_type(unsigned char *data, int *start_code_len = NULL)
 {
 	int o = -1;
 	if (data[2] == 0x0 && data[3] == 0x1)
+	{
+		if (start_code_len)
+			*start_code_len = 4;
 		o = data[4] & 0x1f;
+	}
 	else if (data[1] == 0x0 && data[2] == 0x1)
+	{
+		if (start_code_len)
+			*start_code_len = 3;
 		o = data[3] & 0x1f;
+	}
 
 	return o;
 }
@@ -88,8 +96,9 @@ int read_a_delimeter(CFileBuffer *f)
 	while(true)
 	{
 		int nal_size = read_a_nal(f);
+		int start_code_len = 4;
 		unsigned char *read_buffer = f->m_the_buffer + f->m_data_start;
-		int _nal_type = nal_type(read_buffer);
+		int _nal_type = nal_type(read_buffer, &start_code_len);
 
 		/*
 		if (f == &left)
@@ -102,9 +111,9 @@ int read_a_delimeter(CFileBuffer *f)
 		// sei parse
 		// check for offset sequence here
 		BYTE * data = read_buffer;
-		if ((data[4]&0x1f) == 6)
+		if (_nal_type == 6)
 		{
-			int pos = 5;
+			int pos = start_code_len+1;
 			int sei_type = 0;
 			int sei_size = 0;
 			while(data[pos] == 0xff) 
