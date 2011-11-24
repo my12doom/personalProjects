@@ -84,6 +84,7 @@ m_id(id)
 
 	m_time = m_thisstream = 0;
 	m_queue_count = 0;
+	m_queue_size = my12doom_queue_size;
 	m_queue_exit = false;
 	if (my12doom_queue_enable) m_queue_thread = CreateThread(NULL, NULL, queue_thread, this, NULL, NULL);
 
@@ -95,6 +96,7 @@ my12doomRendererDShow::~my12doomRendererDShow()
 	timeEndPeriod(1);
 
 	m_queue_exit = true;
+	m_queue_size = my12doom_queue_size;
 	WaitForSingleObject(m_queue_thread, INFINITE);
 
 	m_allocator->Decommit();
@@ -144,6 +146,27 @@ HRESULT my12doomRendererDShow::CompleteConnect(IPin *pRecievePin)
 	m_owner->CompleteConnect(pRecievePin, m_id);
 	return __super::CompleteConnect(pRecievePin);
 }
+
+HRESULT my12doomRendererDShow::drop_packets(int num /* = -1 */)
+{
+	CAutoLock lck(&m_queue_lock);
+	
+	if (num == -1)
+		m_queue_count = 0;
+	else
+	{
+		num = min(num, m_queue_count);
+		if (num <= 0)
+			return S_OK;
+
+		m_queue_count -= num;
+		//for(int i=0; i<m_queue_count; i++)
+		//	m_queue[i] = m_queue[i+num];
+		memmove(m_queue, m_queue+num, sizeof(dummy_packet)*(my12doom_queue_size-num));
+
+	}
+	return S_OK;
+}
 HRESULT my12doomRendererDShow::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {
 	m_time = 0;
@@ -176,12 +199,14 @@ HRESULT my12doomRendererDShow::Receive(IMediaSample *sample)
 	if (!my12doom_queue_enable)
 		return SuperReceive(sample);
 
-	m_owner->DataPreroll(m_id, sample);
+	HRESULT hr = m_owner->DataPreroll(m_id, sample);
+	if (S_FALSE == hr)
+		return S_OK;
 
 retry:
 	m_queue_lock.Lock();
 
-	if (m_queue_count >= my12doom_queue_size)
+	if (m_queue_count >= m_queue_size)
 	{
 		m_queue_lock.Unlock();
 		Sleep(1);
@@ -243,6 +268,10 @@ HRESULT my12doomRendererDShow::DoRenderSample( IMediaSample * pSample )
 
 void my12doomRendererDShow::OnReceiveFirstSample(IMediaSample *pSample)
 {
+	int l = timeGetTime();
+	while(m_queue_count < m_queue_size / 2 && timeGetTime()-l < 1000)			// wait 1000ms for data incoming
+		Sleep(1);
+
 	m_owner->DoRender(m_id, pSample);
 	return __super::OnReceiveFirstSample(pSample);
 }
@@ -263,7 +292,7 @@ DWORD WINAPI my12doomRendererDShow::queue_thread(LPVOID param)
 			{
 				_this->m_allocator->GetBuffer(&dummy_sample, &_this->m_queue->start, &_this->m_queue->end, NULL);
 				dummy_sample->SetTime(&_this->m_queue->start, &_this->m_queue->end);
-				memmove(_this->m_queue, _this->m_queue+1, sizeof(dummy_packet)*4);
+				memmove(_this->m_queue, _this->m_queue+1, sizeof(dummy_packet)*(my12doom_queue_size-1));
 				_this->m_queue_count--;
 			}
 		}

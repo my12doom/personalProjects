@@ -21,10 +21,13 @@ enum output_mode_types
 	NV3D, masking, anaglyph, mono, pageflipping, dual_window, iz3d, out_sbs, out_tb, out_hsbs, out_htb, output_mode_types_max
 };
 
+#ifndef def_input_layout_types
+#define def_input_layout_types
 enum input_layout_types
 {
 	side_by_side, top_bottom, mono2d, input_layout_types_max, input_layout_auto
 };
+#endif
 
 enum mask_mode_types
 {
@@ -67,7 +70,7 @@ typedef struct _dummy_packet
 	REFERENCE_TIME start;
 	REFERENCE_TIME end;
 } dummy_packet;
-#define my12doom_queue_size 5
+#define my12doom_queue_size 16
 
 class DBaseVideoRenderer: public CBaseVideoRenderer
 {
@@ -85,20 +88,38 @@ protected:
 class gpu_sample
 {
 public:
-	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM);
+	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test = false, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM);
 	~gpu_sample();
 	bool is_ignored_line(int line);
 	HRESULT prepare_rendering();		// it's just unlock textures
+	HRESULT convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2, IDirect3DVertexBuffer9 *vb);
+	HRESULT do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShader9 *shader_sbs, IDirect3DPixelShader9 *shader_tb, IDirect3DVertexBuffer9 *vb);
+	HRESULT get_strereo_test_result(IDirect3DDevice9 *device, int *out);		// S_FALSE: unkown, S_OK: out = (input_layout_types)
 
+	CTextureAllocator *m_allocator;
 	bool m_ready;
+	bool m_prepared_for_rendering;
+	bool m_converted;
 	CLSID m_format;
 	REFERENCE_TIME m_start;
 	REFERENCE_TIME m_end;
-	CPooledTexture *m_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
+	bool m_cpu_stereo_tested;
+	input_layout_types m_cpu_tested_result;
+
+	CPooledTexture *m_tex_RGB32;					// RGB32 planes, in A8R8G8B8, full width
 	CPooledTexture *m_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
-	CPooledTexture *m_tex_Y;							// Y plane of YV12/NV12, in L8
+	CPooledTexture *m_tex_Y;						// Y plane of YV12/NV12, in L8
 	CPooledTexture *m_tex_YV12_UV;					// UV plane of YV12, in L8, double height
 	CPooledTexture *m_tex_NV12_UV;					// UV plane of NV12, in A8L8
+
+	CPooledTexture *m_tex_gpu_RGB32;				// GPU RGB32 planes, in A8R8G8B8, full width
+	CPooledTexture *m_tex_gpu_YUY2;					// GPU YUY2 planes, in A8R8G8B8, half width
+	CPooledTexture *m_tex_gpu_Y;					// GPU Y plane of YV12/NV12, in L8
+	CPooledTexture *m_tex_gpu_YV12_UV;				// GPU UV plane of YV12, in L8, double height
+	CPooledTexture *m_tex_gpu_NV12_UV;				// GPU UV plane of NV12, in A8L8
+
+	CPooledTexture *m_tex_stereo_test;
+	CPooledTexture *m_tex_stereo_test_cpu;
 
 	int m_width;
 	int m_height;
@@ -117,6 +138,9 @@ public:
 
 protected:
 	friend class my12doomRenderer;
+	HRESULT drop_packets(int num = -1);		//...just for invalidGPUObjects lost...
+	HRESULT set_queue_size(int num){m_queue_size = min(num, my12doom_queue_size); return S_OK; }
+
 	// dshow functions
 	HRESULT CheckMediaType(const CMediaType *pmt );
 	HRESULT SetMediaType(const CMediaType *pmt );
@@ -141,6 +165,7 @@ protected:
 	static DWORD WINAPI queue_thread(LPVOID param);
 	CCritSec m_queue_lock;
 	dummy_packet m_queue[my12doom_queue_size];
+	int m_queue_size;
 	int m_queue_count;
 	bool m_queue_exit;
 	CComPtr<IMemAllocator> m_allocator;
@@ -290,6 +315,7 @@ protected:
 	gpu_sample * m_last_rendered_sample1;
 	gpu_sample * m_last_rendered_sample2;
 	CCritSec m_packet_lock;
+	CCritSec m_rendered_packet_lock;
 	CCritSec m_pool_lock;
 
 	// dx9 functions and variables
@@ -363,10 +389,11 @@ protected:
 	CComPtr<IDirect3DDevice9> m_Device;
 	CComPtr<IDirect3DSwapChain9> m_swap1;
 	CComPtr<IDirect3DSwapChain9> m_swap2;
-	CComPtr<IDirect3DQuery9> m_d3d_query;
+	//CComPtr<IDirect3DQuery9> m_d3d_query;
 	D3DPRESENT_PARAMETERS   m_new_pp;
 	D3DPRESENT_PARAMETERS   m_active_pp;
 	D3DPRESENT_PARAMETERS   m_active_pp2;
+	D3DDISPLAYMODE m_d3ddm;
 	HANDLE m_device_not_reseting;
 	CCritSec m_frame_lock;
 	CCritSec m_device_lock;
@@ -391,7 +418,9 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_test_sbs2;
 	CComPtr <IDirect3DPixelShader9> m_ps_color_adjust;
 	CComPtr <IDirect3DPixelShader9> m_ps_bmp_lanczos;
+	CComPtr <IDirect3DPixelShader9> m_ps_bmp_blur;
 
+	/*
 	CComPtr<IDirect3DTexture9> m1_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
 	CComPtr<IDirect3DTexture9> m1_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
 	CComPtr<IDirect3DTexture9> m1_tex_Y;							// Y plane of YV12/NV12, in L8
@@ -403,6 +432,7 @@ protected:
 	CComPtr<IDirect3DTexture9> m2_tex_Y;							// Y plane of YV12/NV12, in L8
 	CComPtr<IDirect3DTexture9> m2_tex_YV12_UV;					// UV plane of YV12, in L8, double height
 	CComPtr<IDirect3DTexture9> m2_tex_NV12_UV;					// UV plane of NV12, in A8L8
+	*/
 
 	CComPtr<IDirect3DTexture9> m_tex_rgb_left;				// source texture, converted to RGB32
 	CComPtr<IDirect3DTexture9> m_tex_rgb_right;
@@ -437,6 +467,7 @@ protected:
 	bool m_no_more_detect;
 
 	// render thread variables
+	CCritSec m_thread_lock;
 	HANDLE m_render_thread;
 	bool m_render_thread_exit;
 	DWORD m_color1;

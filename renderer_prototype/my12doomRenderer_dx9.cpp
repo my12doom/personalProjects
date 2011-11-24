@@ -5,7 +5,6 @@
 #include "PixelShaders/NV12.h"
 #include "PixelShaders/YUY2.h"
 #include "PixelShaders/anaglyph.h"
-//#include "PixelShaders/stereo_test.h"
 #include "PixelShaders/stereo_test_sbs.h"
 #include "PixelShaders/stereo_test_sbs2.h"
 #include "PixelShaders/stereo_test_tb.h"
@@ -15,9 +14,12 @@
 #include "PixelShaders/iz3d_front.h"
 #include "PixelShaders/color_adjust.h"
 #include "PixelShaders/lanczos.h"
+#include "PixelShaders/blur.h"
+#include "PixelShaders/blur2.h"
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
+#include "..\ZBuffer\stereo_test.h"
 
 #define FAIL_RET(x) hr=x; if(FAILED(hr)){return hr;}
 #define FAIL_SLEEP_RET(x) hr=x; if(FAILED(hr)){Sleep(1); return hr;}
@@ -332,6 +334,8 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 	}
 
 	m_last_frame_time = 0;
+	m_dsr0->set_queue_size(m_remux_mode ? my12doom_queue_size : my12doom_queue_size/2-1);
+	m_dsr0->set_queue_size(my12doom_queue_size/2-1);
 
 	if (id == 0 && SUCCEEDED(hr))
 	{
@@ -424,6 +428,7 @@ HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 			if (sample) 
 			{
 				printf("drop left\n");
+				m_dsr0->drop_packets(1);
 				delete sample;
 				sample = NULL;
 			}
@@ -448,16 +453,13 @@ HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 			if (m_lVidHeight == 1280)
 			{
 				fn = (int)((double)(start+m_dsr0->m_thisstream)/10000*120/1001 + 0.5);
-				start = (fn - fn&1) *1001*10000/120;
+				start = (REFERENCE_TIME)(fn - (fn&1) +2) *1001*10000/120;
 			}
 			else
 			{
 				fn = (int)((double)(start+m_dsr0->m_thisstream)/10000*48/1001 + 0.5);
-				start = (fn - fn&1) *1001*10000/48;
+				start = (REFERENCE_TIME)(fn - (fn&1) +2) *1001*10000/48;
 			}
-
-			if (1 == (fn & 1))
-				return S_FALSE;
 		}
 
 find_match:
@@ -480,11 +482,14 @@ find_match:
 					{
 						matched_time = left_sample->m_start;
 						matched = true;
-						break;
+						goto match_end;
 					}
 				}
 			}
 
+match_end:
+			if (!matched || matched_time > start)
+				return S_FALSE;
 
 			if(matched)
 			{
@@ -496,6 +501,7 @@ find_match:
 					if(abs((int)(sample_left->m_start - matched_time)) > m_frame_length/4)
 					{
 						printf("drop left\n");
+						m_dsr0->drop_packets(1);
 						delete sample_left;
 					}
 					else
@@ -508,6 +514,7 @@ find_match:
 					if(abs((int)(sample_right->m_start - matched_time)) > m_frame_length/4)
 					{
 						printf("drop right\n");
+						(m_remux_mode?m_dsr0:m_dsr1)->drop_packets(1);
 						delete sample_right;
 					}
 					else
@@ -521,6 +528,8 @@ find_match:
 			if (matched_time < start && false)
 			{
 				printf("drop a matched pair\n");
+				m_dsr0->drop_packets(1);
+				(m_remux_mode?m_dsr0:m_dsr1)->drop_packets(1);
 				delete sample_left;
 				delete sample_right;
 				sample_left = NULL;
@@ -539,7 +548,7 @@ find_match:
 		}
 	}
 	int l3 = timeGetTime();
-	if (id == 0 && m_output_mode != pageflipping && should_render)
+	if (m_output_mode != pageflipping && should_render)
 	{
 		render(true);
 	}
@@ -562,18 +571,37 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 
 	bool should_render = false;
 
+	bool dual_stream = m_remux_mode || (m_dsr0->is_connected() && m_dsr1->is_connected() );
+	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
+	bool need_detect = !dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect;
 	gpu_sample * loaded_sample = NULL;
+	int max_retry = 5;
 	{
 retry:
 		CAutoLock lck(&m_pool_lock);
-		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, m_remux_mode);
+		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, need_detect, m_remux_mode);
 
 		if ( (m_dsr0->m_format == MEDIASUBTYPE_RGB32 && (!loaded_sample->m_tex_RGB32 || loaded_sample->m_tex_RGB32->creator != m_Device)) ||
 			 (m_dsr0->m_format == MEDIASUBTYPE_YUY2 && (!loaded_sample->m_tex_YUY2 || loaded_sample->m_tex_YUY2->creator != m_Device)) ||
 			 ((!loaded_sample->m_tex_Y || loaded_sample->m_tex_Y->creator != m_Device) && (m_dsr0->m_format == MEDIASUBTYPE_YV12 || m_dsr1->m_format == MEDIASUBTYPE_NV12))  )
 		{
-			goto retry;
+			delete loaded_sample;
+			if (max_retry--)
+				goto retry;
+			else
+				return S_FALSE;
 		}
+	}
+
+	if (false)
+	{
+		CAutoLock frame_lock(&m_frame_lock);
+		loaded_sample->prepare_rendering();
+		int l = timeGetTime();
+		loaded_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
+		int l2 = timeGetTime();
+		if (need_detect) loaded_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
+		mylog("queue size:%d, convert_to_RGB32(): %dms, stereo_test:%dms\n", m_left_queue.GetCount(), l2-l, timeGetTime()-l2);
 	}
 
 	AM_MEDIA_TYPE *pmt = NULL;
@@ -814,7 +842,15 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		FAIL_RET(delete_render_targets());
 		FAIL_RET(create_render_targets());
 		m_vertex_changed = true;
-		m_device_state = fine;		
+		m_device_state = fine;
+
+		// clear DEFAULT pool
+		{
+			CAutoLock lck(&m_pool_lock);
+			if (m_pool)
+				m_pool->DestroyPool(D3DPOOL_DEFAULT);
+		}
+
 		/*
 		terminate_render_thread();
 		m_swap1 = NULL;
@@ -1023,6 +1059,7 @@ HRESULT my12doomRenderer::reset()
 }
 HRESULT my12doomRenderer::create_render_thread()
 {
+	CAutoLock lck(&m_thread_lock);
 	if (INVALID_HANDLE_VALUE != m_render_thread)
 		terminate_render_thread();
 	m_render_thread_exit = false;
@@ -1031,6 +1068,7 @@ HRESULT my12doomRenderer::create_render_thread()
 }
 HRESULT my12doomRenderer::terminate_render_thread()
 {
+	CAutoLock lck(&m_thread_lock);
 	if (INVALID_HANDLE_VALUE == m_render_thread)
 		return S_FALSE;
 	m_render_thread_exit = true;
@@ -1054,7 +1092,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_uidrawer->invalidate_gpu();
 
 	// query
-	m_d3d_query = NULL;
+	//m_d3d_query = NULL;
 
 	// pixel shader
 	m_ps_yv12 = NULL;
@@ -1071,6 +1109,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_vs_subtitle = NULL;
 	m_ps_color_adjust = NULL;
 	m_ps_bmp_lanczos = NULL;
+	m_ps_bmp_blur = NULL;
 
 	// textures
 	m_tex_rgb_left = NULL;
@@ -1079,6 +1118,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_tex_bmp = NULL;
 
 	// source textures
+	/*
 	m1_tex_RGB32 = NULL;						// RGB32 planes, in A8R8G8B8, full width
 	m1_tex_YUY2 = NULL;						// YUY2 planes, in A8R8G8B8, half width
 	m1_tex_Y = NULL;							// Y plane of YV12/NV12, in L8
@@ -1089,6 +1129,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m2_tex_Y = NULL;							// Y plane of YV12/NV12, in L8
 	m2_tex_YV12_UV = NULL;					// UV plane of YV12, in L8, double height
 	m2_tex_NV12_UV = NULL;					// UV plane of NV12, in A8L8
+	*/
 
 	// pending samples
 	{
@@ -1105,7 +1146,18 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 		safe_delete(m_sample2render_2);
 	}
 
-	if (m_pool) m_pool->DestroyPool(D3DPOOL_DEFAULT);
+	{
+		CAutoLock rendered_lock(&m_rendered_packet_lock);
+		safe_delete(m_last_rendered_sample1);
+		safe_delete(m_last_rendered_sample2);
+	}
+
+	{
+		CAutoLock lck(&m_pool_lock);
+		if (m_pool) m_pool->DestroyPool(D3DPOOL_DEFAULT);
+	}
+	m_dsr0->drop_packets();
+	m_dsr1->drop_packets();
 
 	// surfaces
 	m_deinterlace_surface = NULL;
@@ -1144,7 +1196,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	DWORD use_mipmap = D3DUSAGE_AUTOGENMIPMAP;
 
 	// query
-	m_Device->CreateQuery(D3DQUERYTYPE_TIMESTAMP, &m_d3d_query);
+	//m_Device->CreateQuery(D3DQUERYTYPE_TIMESTAMP, &m_d3d_query);
 
 	// textures
 	FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_full, NULL));
@@ -1164,6 +1216,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	FAIL_RET(create_render_targets());
 
 	// source texture
+	/*
 	if (m_dsr0->m_format == MEDIASUBTYPE_YUY2)
 	{
 		if(!m1_tex_YUY2) FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m1_tex_YUY2, NULL));
@@ -1191,6 +1244,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 		if(!m2_tex_Y) FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m2_tex_Y, NULL));
 		if(!m2_tex_YV12_UV) FAIL_RET( m_Device->CreateTexture(m_lVidWidth/2, m_lVidHeight, 1, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m2_tex_YV12_UV, NULL));
 	}
+	*/
 
 
 	// clear m_tex_rgb_left & right
@@ -1250,6 +1304,9 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_Device->CreatePixelShader((DWORD*)g_code_iz3d_front, &m_ps_iz3d_front);
 	m_Device->CreatePixelShader((DWORD*)g_code_color_adjust, &m_ps_color_adjust);
 	m_Device->CreatePixelShader((DWORD*)g_code_lanczos, &m_ps_bmp_lanczos);
+	m_Device->CreatePixelShader((DWORD*)g_code_bmp_blur, &m_ps_bmp_blur);
+	if (m_ps_bmp_blur == NULL)
+		m_Device->CreatePixelShader((DWORD*)g_code_bmp_blur2, &m_ps_bmp_blur);
 
 	m_Device->CreateVertexShader((DWORD*)g_code_vs_subtitle, &m_vs_subtitle);
 
@@ -1431,7 +1488,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	if (FAILED(handle_device_state()))
 		return E_FAIL;
 
-	if (m_d3d_query) m_d3d_query->Issue(D3DISSUE_BEGIN);
+	//if (m_d3d_query) m_d3d_query->Issue(D3DISSUE_BEGIN);
 
 	// image loading and idle check
 	if (load_image() != S_OK && !forced)	// no more rendering except pageflipping mode
@@ -1452,10 +1509,34 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	// pass 2: drawing to back buffer!
 	hr = m_Device->BeginScene();
 
+	// prepare all samples in queue for rendering
+	//if(false)
+	{
+		bool dual_stream = m_dsr0->is_connected() && m_dsr1->is_connected();
+		input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
+		bool need_detect = !dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect;
+
+		CAutoLock lck(&m_queue_lock);
+		for(POSITION pos_left = m_left_queue.GetHeadPosition(); pos_left; pos_left = m_left_queue.Next(pos_left))
+		{
+			gpu_sample *left_sample = m_left_queue.Get(pos_left);
+			left_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
+			if (need_detect) left_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
+		}
+		for(POSITION pos_right = m_right_queue.GetHeadPosition(); pos_right; pos_right = m_right_queue.Next(pos_right))
+		{
+			gpu_sample *right_sample = m_right_queue.Get(pos_right);
+			right_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
+			if (need_detect) right_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
+		}
+	}
+
+	int l = timeGetTime();
+
 	// load subtitle
 	CAutoPtr<CAutoLock> bmp_lock;
 	bmp_lock.Attach(new CAutoLock(&m_bmp_lock));
-	if (m_bmp_changed)
+	if (m_bmp_changed )
 	{
 		int l = timeGetTime();
 		if (!m_tex_bmp || !m_tex_bmp_mem)
@@ -1509,7 +1590,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	hr = m_Device->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
-	int l = timeGetTime();
 	static NvU32 l_counter = 0;
 	if (m_output_mode == NV3D && m_nv3d_enabled && m_nv3d_actived /*&& !m_active_pp.Windowed*/)
 	{
@@ -1647,7 +1727,9 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	else if (m_output_mode == pageflipping)
 	{
 		double delta = (double)timeGetTime()-m_pageflipping_start;
-		int frame_passed = max(1, floor(delta/9));
+		int frame_passed = 1;
+		if (delta/(1500/m_d3ddm.RefreshRate) > 1)
+			frame_passed = max(1, floor(delta/(1000/m_d3ddm.RefreshRate)));
 		m_pageflip_frames += frame_passed;
 		m_pageflip_frames %= 2;
 
@@ -1819,7 +1901,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	}
 
 	m_Device->EndScene();
-	if (timeGetTime() - l > 5)printf("All Draw Calls = %dms\n", timeGetTime() - l);
+	//if (timeGetTime() - l > 5)
+		printf("All Draw Calls = %dms\n", timeGetTime() - l);
 presant:
 	static int n = timeGetTime();
 	if (timeGetTime() - n > 43)
@@ -1835,25 +1918,25 @@ presant:
 	}
 
 
-	UINT64 timing=0;
-	if (m_d3d_query)
-	{
-		m_d3d_query->Issue(D3DISSUE_END);
-		// Force the driver to execute the commands from the command buffer.
-		// Empty the command buffer and wait until the GPU is idle.
-		//while( == S_FALSE);
-		LARGE_INTEGER l1, l2;
-		QueryPerformanceCounter(&l1);
-		hr = m_d3d_query->GetData( &timing, 
-			sizeof(timing), D3DGETDATA_FLUSH );
-		if (timing)
-			printf("GPUIdle:%d.\n", (int)timing);
-
-		QueryPerformanceCounter(&l2);
-
-		//printf("Query time: %d cycle.\n", l2.QuadPart - l1.QuadPart);
-
-	}
+// 	UINT64 timing=0;
+// 	if (m_d3d_query)
+// 	{
+// 		m_d3d_query->Issue(D3DISSUE_END);
+// 		// Force the driver to execute the commands from the command buffer.
+// 		// Empty the command buffer and wait until the GPU is idle.
+// 		//while( == S_FALSE);
+// 		LARGE_INTEGER l1, l2;
+// 		QueryPerformanceCounter(&l1);
+// 		hr = m_d3d_query->GetData( &timing, 
+// 			sizeof(timing), D3DGETDATA_FLUSH );
+// 		if (timing)
+// 			printf("GPUIdle:%d.\n", (int)timing);
+// 
+// 		QueryPerformanceCounter(&l2);
+// 
+// 		//printf("Query time: %d cycle.\n", l2.QuadPart - l1.QuadPart);
+// 
+// 	}
 
 
 
@@ -2017,35 +2100,39 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	tar.top += (LONG)(tar_height * m_bmp_offset_y);
 	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
 
-	// config position
 	float pic_left = (float)tar.left / m_active_pp.BackBufferWidth;
 	float pic_width = (float)(tar.right - tar.left) / m_active_pp.BackBufferWidth;
 	float pic_top = (float)tar.top / m_active_pp.BackBufferHeight;
 	float pic_height = (float)(tar.bottom - tar.top) / m_active_pp.BackBufferHeight;
 
+	// config position
 	float left = pic_left + pic_width * m_bmp_fleft;
 	float width = pic_width * m_bmp_fwidth;
 	float top = pic_top + pic_height * m_bmp_ftop;
 	float height = pic_height * m_bmp_fheight;
-
-	//float cfg[8] = {(m_bmp_fleft+m_bmp_offset_x)*2-1, (m_bmp_ftop+m_bmp_offset_y)*-2+1, m_bmp_fwidth*2, m_bmp_fheight*-2,
-	float cfg[8] = {left*2-1, top*-2+1, width*2, height*-2,
+	float cfg_main[8] = {left*2-1, top*-2+1, width*2, height*-2,
 					0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1024};
+	float cfg_shadow[8] = {(left+0.001)*2-1, (top+0.001)*-2+1, width*2, height*-2,
+		0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1024};
 
 	if (!left_eye)
-		cfg[0] -= m_bmp_offset*pic_width * 2;
+	{
+		cfg_main[0] -= m_bmp_offset*pic_width * 2;
+		cfg_shadow[0] -= m_bmp_offset*pic_width * 2;
+	}
 	hr = m_Device->SetVertexShader(m_vs_subtitle);
-	static bool lanc = false;
-	lanc = !lanc;
-	lanc = true;
-	//hr = m_Device->SetPixelShader(lanc?m_ps_bmp_lanczos:NULL);
-	hr = m_Device->SetVertexShaderConstantF(0, cfg, 2);
 
-	//hr = m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-	//hr = m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-	//hr = m_Device->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-
+	// draw shadow
+	hr = m_Device->SetPixelShader(m_ps_bmp_blur);
+	hr = m_Device->SetVertexShaderConstantF(0, cfg_shadow, 2);
 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+
+	// draw main
+	hr = m_Device->SetPixelShader(NULL);
+	hr = m_Device->SetVertexShaderConstantF(0, cfg_main, 2);
+	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+
+	// reset shader
 	hr = m_Device->SetVertexShader(NULL);
 	hr = m_Device->SetPixelShader(NULL);
 
@@ -2305,6 +2392,12 @@ IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format f
 	if (format == helper_sample_format_yv12) texture = sample->m_tex_YV12_UV;
 	if (format == helper_sample_format_nv12) texture = sample->m_tex_NV12_UV;
 
+	if (format == helper_sample_format_rgb32) texture = sample->m_tex_gpu_RGB32;
+	if (format == helper_sample_format_yuy2) texture = sample->m_tex_gpu_YUY2;
+	if (format == helper_sample_format_y) texture = sample->m_tex_gpu_Y;
+	if (format == helper_sample_format_yv12) texture = sample->m_tex_gpu_YV12_UV;
+	if (format == helper_sample_format_nv12) texture = sample->m_tex_gpu_NV12_UV;
+
 	if (!texture)
 		return NULL;
 
@@ -2317,9 +2410,125 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 		return E_POINTER;
 
 	bool dual_stream = sample1 && sample2;
+	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
+	bool need_detect = !dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect;
 	CLSID format = sample1->m_format;
 	bool topdown = sample1->m_topdown;
 
+	CAutoLock rendered_lock(&m_rendered_packet_lock);
+	safe_delete(m_last_rendered_sample1);
+	safe_delete(m_last_rendered_sample2);
+	m_last_rendered_sample1 = m_sample2render_1;
+	m_last_rendered_sample2 = m_sample2render_2;
+	m_sample2render_1 = NULL;
+	m_sample2render_2 = NULL;
+	m_packet_lock.Unlock();	//release queue lock!
+
+
+	CComPtr<IDirect3DSurface9> s1;
+	CComPtr<IDirect3DSurface9> s2;
+	CComPtr<IDirect3DSurface9> s3;
+	if (m_last_rendered_sample1)
+	{
+		m_last_rendered_sample1->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
+		if (need_detect) m_last_rendered_sample1->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
+		m_last_rendered_sample1->m_tex_gpu_RGB32->get_first_level(&s1);
+		if (m_last_rendered_sample1->m_tex_stereo_test)
+			m_last_rendered_sample1->m_tex_stereo_test->get_first_level(&s3);
+	}
+	if (m_last_rendered_sample2)
+	{
+		m_last_rendered_sample2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
+		m_last_rendered_sample2->m_tex_gpu_RGB32->get_first_level(&s2);
+	}
+
+
+
+	CComPtr<IDirect3DSurface9> left_surface;
+	CComPtr<IDirect3DSurface9> right_surface;
+	HRESULT hr = m_tex_rgb_left->GetSurfaceLevel(0, &left_surface);
+	hr = m_tex_rgb_right->GetSurfaceLevel(0, &right_surface);
+	if (dual_stream)
+	{
+		m_Device->StretchRect(s1, NULL, left_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(s2, NULL, right_surface, NULL, D3DTEXF_LINEAR);
+	}
+	else
+	{
+		IDirect3DSurface9 *t1 = !m_swapeyes ? left_surface : right_surface;
+		IDirect3DSurface9 *t2 = m_swapeyes ? left_surface : right_surface;
+
+		RECT rect_left = {0,0,m_lVidWidth/2, m_lVidHeight};
+		RECT rect_right = {m_lVidWidth/2,0,m_lVidWidth, m_lVidHeight};
+		RECT rect_top = {0,0,m_lVidWidth, m_lVidHeight/2};
+		RECT rect_bottom = {0,m_lVidHeight/2,m_lVidWidth, m_lVidHeight};
+
+		if (input == side_by_side)
+		{
+			hr = m_Device->StretchRect(s1, &rect_left, t1, NULL, D3DTEXF_LINEAR);
+			hr = m_Device->StretchRect(s1, &rect_right, t2, NULL, D3DTEXF_LINEAR);
+		}
+		else if (input == top_bottom)
+		{
+			hr = m_Device->StretchRect(s1, &rect_top, t1, NULL, D3DTEXF_LINEAR);
+			hr = m_Device->StretchRect(s1, &rect_bottom, t2, NULL, D3DTEXF_LINEAR);
+		}
+		else if (input == mono2d)
+		{
+			hr = m_Device->StretchRect(s1, NULL, t1, NULL, D3DTEXF_LINEAR);
+			hr = m_Device->StretchRect(s1, NULL, t2, NULL, D3DTEXF_LINEAR);
+		}
+	}
+
+	// decomment this line to see stereo test image
+	//hr = m_Device->StretchRect(s3, NULL, left_surface, NULL, D3DTEXF_LINEAR);
+
+	m_backuped = false;
+
+	// deinterlace on needed
+	// we are using Blending method for now, it's very simple ,just StretchRect to a half height surface and StretchRect back, with BiLinear resizing
+	if (m_forced_deinterlace)
+	{
+		m_Device->StretchRect(left_surface, NULL, m_deinterlace_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(m_deinterlace_surface, NULL, left_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(right_surface, NULL, m_deinterlace_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(m_deinterlace_surface, NULL, right_surface, NULL, D3DTEXF_LINEAR);
+	}
+
+	// stereo test
+
+	if (need_detect)
+	{
+		int this_frame_type = 0;
+		if (S_OK == m_last_rendered_sample1->get_strereo_test_result(m_Device, &this_frame_type))
+		{
+			if (this_frame_type == side_by_side)
+				m_sbs ++;
+			else if (this_frame_type == top_bottom)
+				m_tb ++;
+			else if (this_frame_type == mono2d)
+				m_normal ++;
+		}
+
+		input_layout_types next_layout = m_layout_detected;
+		if (m_normal - m_sbs > 5)
+			next_layout = mono2d;
+		if (m_sbs - m_normal > 5)
+			next_layout = side_by_side;
+		if (m_tb - max(m_sbs,m_normal) > 5)
+			next_layout = top_bottom;
+
+		if (m_normal - m_sbs > 500 || m_sbs - m_normal > 500 || m_tb - max(m_sbs,m_normal) > 500)
+			m_no_more_detect = true;
+
+		if (next_layout != m_layout_detected)
+		{
+			m_layout_detected = next_layout;
+			set_device_state(need_reset_object);
+		}
+	}
+
+	/*
 	IDirect3DTexture9* sample1_tex_RGB32 = helper_get_texture(sample1, helper_sample_format_rgb32);						// RGB32 planes, in A8R8G8B8, full width
 	IDirect3DTexture9* sample1_tex_YUY2 = helper_get_texture(sample1, helper_sample_format_yuy2);						// YUY2 planes, in A8R8G8B8, half width
 	IDirect3DTexture9* sample1_tex_Y = helper_get_texture(sample1, helper_sample_format_y);								// Y plane of YV12/NV12, in L8
@@ -2333,10 +2542,6 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	IDirect3DTexture9* sample2_tex_NV12_UV = helper_get_texture(sample2, helper_sample_format_nv12);					// UV plane of NV12, in A8L8
 
 
-	safe_delete(m_last_rendered_sample1);
-	safe_delete(m_last_rendered_sample2);
-	m_last_rendered_sample1 = m_sample2render_1;
-	m_last_rendered_sample2 = m_sample2render_2;
 
 	m_sample2render_1 = NULL;
 	m_sample2render_2 = NULL;
@@ -2365,34 +2570,6 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	IDirect3DTexture9* sample2_tex_YV12_gpu = sample2_tex_YV12_UV;
 	IDirect3DTexture9* sample2_tex_NV12_gpu = sample2_tex_NV12_UV;
 
-	if (m_last_rendered_sample1->m_pool == D3DPOOL_SYSTEMMEM)
-	{
-		int l = timeGetTime();
-
-		if (sample1_tex_RGB32) m_Device->UpdateTexture(sample1_tex_RGB32, m1_tex_RGB32);
-		if (sample1_tex_YUY2) m_Device->UpdateTexture(sample1_tex_YUY2, m1_tex_YUY2);
-		if (sample1_tex_Y) m_Device->UpdateTexture(sample1_tex_Y, m1_tex_Y);
-		if (sample1_tex_YV12_UV) m_Device->UpdateTexture(sample1_tex_YV12_UV, m1_tex_YV12_UV);
-		if (sample1_tex_NV12_UV) m_Device->UpdateTexture(sample1_tex_NV12_UV, m1_tex_NV12_UV);
-
-		if (sample2_tex_RGB32) m_Device->UpdateTexture(sample2_tex_RGB32, m2_tex_RGB32);
-		if (sample2_tex_YUY2) m_Device->UpdateTexture(sample2_tex_YUY2, m2_tex_YUY2);
-		if (sample2_tex_Y) m_Device->UpdateTexture(sample2_tex_Y, m2_tex_Y);
-		if (sample2_tex_YV12_UV) m_Device->UpdateTexture(sample2_tex_YV12_UV, m2_tex_YV12_UV);
-		if (sample2_tex_NV12_UV) m_Device->UpdateTexture(sample2_tex_NV12_UV, m2_tex_NV12_UV);
-
-		sample1_tex_RGB32_gpu = m1_tex_RGB32;
-		sample1_tex_YUY2_gpu = m1_tex_YUY2;
-		sample1_tex_Y_gpu = m1_tex_Y;
-		sample1_tex_YV12_gpu = m1_tex_YV12_UV;
-		sample1_tex_NV12_gpu = m1_tex_NV12_UV;
-
-		sample2_tex_RGB32_gpu = m2_tex_RGB32;
-		sample2_tex_YUY2_gpu = m2_tex_YUY2;
-		sample2_tex_Y_gpu = m2_tex_Y;
-		sample2_tex_YV12_gpu = m2_tex_YV12_UV;
-		sample2_tex_NV12_gpu = m2_tex_NV12_UV;
-	}
 	//mylog("prepare_rendering = %dms\n", timeGetTime()-l1);
 	QueryPerformanceCounter(&l2);
 
@@ -2601,7 +2778,9 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 			mylog("stereo(%s).\r\n", var1 > var2 ? "tb" : "sbs");
 			(var1 > var2 ? m_tb : m_sbs) ++ ;
 		}
-		else if ( 1.0 < times && times < 4.68 /*&& 1.0 < times2 && times2 < 1.8*/)
+		else if ( 1.0 < times && times < 4.68 
+		//&& 1.0 < times2 && times2 < 1.8
+			)
 		{
 			m_normal ++;
 			mylog("normal.\r\n");
@@ -2630,6 +2809,7 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 		}
 
 	}
+	*/
 
 	//safe_delete(m_last_rendered_sample1);
 	//safe_delete(m_last_rendered_sample2);
@@ -2709,9 +2889,9 @@ HRESULT my12doomRenderer::calculate_vertex()
 	{
 		MyVertex * tmp = m_vertices + vertex_pass1_whole + vertex_point_per_type * i ;
 		tmp[0].x = -0.5f; tmp[0].y = -0.5f;
-		tmp[1].x = m_pass1_width-0.5f; tmp[1].y = -0.5f;
-		tmp[2].x = -0.5f; tmp[2].y = m_pass1_height-0.5f;
-		tmp[3].x =  m_pass1_width-0.5f; tmp[3].y =m_pass1_height-0.5f;
+		tmp[1].x = m_lVidWidth-0.5f; tmp[1].y = -0.5f;
+		tmp[2].x = -0.5f; tmp[2].y = m_lVidHeight-0.5f;
+		tmp[3].x =  m_lVidWidth-0.5f; tmp[3].y =m_lVidHeight-0.5f;
 	}
 
 	// pass2-3 coordinate
@@ -2938,11 +3118,10 @@ HRESULT my12doomRenderer::generate_mask()
 }
 HRESULT my12doomRenderer::set_fullscreen(bool full)
 {
-	D3DDISPLAYMODE d3ddm;
-	m_D3D->GetAdapterDisplayMode( D3DADAPTER_DEFAULT, &d3ddm );
-	m_new_pp.BackBufferFormat       = d3ddm.Format;
+	m_D3D->GetAdapterDisplayMode( D3DADAPTER_DEFAULT, &m_d3ddm );
+	m_new_pp.BackBufferFormat       = m_d3ddm.Format;
 
-	mylog("mode:%dx%d@%dHz, format:%d.\n", d3ddm.Width, d3ddm.Height, d3ddm.RefreshRate, d3ddm.Format);
+	mylog("mode:%dx%d@%dHz, format:%d.\n", m_d3ddm.Width, m_d3ddm.Height, m_d3ddm.RefreshRate, m_d3ddm.Format);
 
 	if(full && m_active_pp.Windowed)
 	{
@@ -2959,9 +3138,9 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 			SendMessage(m_hWnd, WM_SYSCOMMAND, SC_RESTORE, 0);
 
 		m_new_pp.Windowed = FALSE;
-		m_new_pp.BackBufferWidth = d3ddm.Width;
-		m_new_pp.BackBufferHeight = d3ddm.Height;
-		m_new_pp.FullScreen_RefreshRateInHz = d3ddm.RefreshRate;
+		m_new_pp.BackBufferWidth = m_d3ddm.Width;
+		m_new_pp.BackBufferHeight = m_d3ddm.Height;
+		m_new_pp.FullScreen_RefreshRateInHz = m_d3ddm.RefreshRate;
 
 		set_device_state(need_reset);
 		if (m_device_state < need_create)
@@ -3301,18 +3480,263 @@ gpu_sample::~gpu_sample()
 	safe_delete(m_tex_Y);
 	safe_delete(m_tex_YV12_UV);
 	safe_delete(m_tex_NV12_UV);
+
+	safe_delete(m_tex_gpu_RGB32);
+	safe_delete(m_tex_gpu_YUY2);
+	safe_delete(m_tex_gpu_Y);
+	safe_delete(m_tex_gpu_YV12_UV);
+	safe_delete(m_tex_gpu_NV12_UV);
+
+	safe_delete(m_tex_stereo_test);
+	safe_delete(m_tex_stereo_test_cpu);
 }
 
 CCritSec g_gpu_lock;
 HRESULT gpu_sample::prepare_rendering()
 {
-	if (m_tex_RGB32) m_tex_RGB32->Unlock();
-	if (m_tex_YUY2) m_tex_YUY2->Unlock();
-	if (m_tex_Y) m_tex_Y->Unlock();
-	if (m_tex_YV12_UV) m_tex_YV12_UV->Unlock();
-	if (m_tex_NV12_UV) m_tex_NV12_UV->Unlock();
+	if (m_prepared_for_rendering)
+		return S_FALSE;
+
+	if (m_tex_RGB32) 
+		m_tex_RGB32->Unlock();
+
+	if (m_tex_YUY2) 
+		m_tex_YUY2->Unlock();
+
+	if (m_tex_Y)
+		m_tex_Y->Unlock();
+
+	if (m_tex_YV12_UV)
+		m_tex_YV12_UV->Unlock();
+
+	if (m_tex_NV12_UV) 
+		m_tex_NV12_UV->Unlock();
+
+	m_allocator->UpdateTexture(m_tex_RGB32, m_tex_gpu_RGB32);
+	m_allocator->UpdateTexture(m_tex_YUY2, m_tex_gpu_YUY2);
+	m_allocator->UpdateTexture(m_tex_Y, m_tex_gpu_Y);
+	m_allocator->UpdateTexture(m_tex_YV12_UV, m_tex_gpu_YV12_UV);
+	m_allocator->UpdateTexture(m_tex_NV12_UV, m_tex_gpu_NV12_UV);
+
+	m_prepared_for_rendering = true;
 
 	return S_OK;
+}
+
+HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2, IDirect3DVertexBuffer9 *vb)
+{
+	if (!m_ready)
+		return VFW_E_WRONG_STATE;
+
+	if (m_converted)
+		return S_FALSE;
+
+	HRESULT hr = prepare_rendering();
+	if (FAILED(hr))
+		return hr;
+
+	if (m_format == MEDIASUBTYPE_RGB32)
+		return S_FALSE;
+
+	CComPtr<IDirect3DSurface9> rt;
+	m_tex_gpu_RGB32->get_first_level(&rt);
+	device->SetRenderTarget(0, rt);
+
+	hr = device->BeginScene();
+	device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+	device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+	device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+	hr = device->SetPixelShader(NULL);
+	if (m_format == MEDIASUBTYPE_YV12) hr = device->SetPixelShader(ps_yv12);
+	if (m_format == MEDIASUBTYPE_NV12) hr = device->SetPixelShader(ps_nv12);
+	if (m_format == MEDIASUBTYPE_YUY2) hr = device->SetPixelShader(ps_yuy2);
+	float rect_data[4] = {m_width, m_height, m_width/2, m_height};
+	hr = device->SetPixelShaderConstantF(0, rect_data, 1);
+	hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
+	hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	CComPtr<IDirect3DSurface9> left_surface;
+	CComPtr<IDirect3DSurface9> right_surface;
+
+	// drawing
+	hr = device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+	hr = device->SetSamplerState( 1, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+	hr = device->SetSamplerState( 2, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+
+	hr = device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+	hr = device->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+	hr = device->SetSamplerState( 2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+
+	hr = device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+	hr = device->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+	hr = device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+	hr = device->SetStreamSource( 0, vb, 0, sizeof(MyVertex) );
+	hr = device->SetFVF( FVF_Flags );
+
+	hr = device->SetTexture( 0, m_format == MEDIASUBTYPE_YUY2 ? m_tex_gpu_YUY2->texture : m_tex_gpu_Y->texture );
+	if (m_format == MEDIASUBTYPE_YV12 || m_format == MEDIASUBTYPE_NV12)
+		hr = device->SetTexture( 1, m_format == MEDIASUBTYPE_NV12 ? m_tex_gpu_NV12_UV->texture : m_tex_gpu_YV12_UV->texture);
+	hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
+
+	hr = device->EndScene();
+
+
+	m_converted = true;
+	return S_OK;
+}
+
+HRESULT gpu_sample::do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShader9 *shader_sbs, IDirect3DPixelShader9 *shader_tb, IDirect3DVertexBuffer9 *vb)
+{
+	if (m_cpu_stereo_tested)
+		return S_FALSE;
+
+	if (!device || !shader_sbs || !shader_tb ||!vb)
+		return E_POINTER;
+
+	if (m_tex_stereo_test)
+		return S_FALSE;
+
+	HRESULT hr;
+	if (FAILED( hr = m_allocator->CreateTexture(stereo_test_texture_size, stereo_test_texture_size, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_stereo_test)))
+		return hr;
+
+	CComPtr<IDirect3DSurface9> rt;
+	m_tex_stereo_test->get_first_level(&rt);
+	device->SetRenderTarget(0, rt);
+
+	hr = device->BeginScene();
+	device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+	device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+	device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+	hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
+	hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	CComPtr<IDirect3DSurface9> left_surface;
+	CComPtr<IDirect3DSurface9> right_surface;
+
+	// drawing
+	hr = device->SetStreamSource( 0, vb, 0, sizeof(MyVertex) );
+	hr = device->SetFVF( FVF_Flags );
+
+
+	hr = device->SetTexture( 0, m_tex_gpu_RGB32->texture );
+	hr = device->SetPixelShader(shader_sbs);
+	hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_sbs, 2 );
+	hr = device->SetPixelShader(shader_tb);
+	hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_tb, 2 );
+
+
+	hr = device->EndScene();
+
+	mylog("test:%x:%d\n", this, timeGetTime());
+
+	return S_OK;
+}
+
+HRESULT gpu_sample::get_strereo_test_result(IDirect3DDevice9 *device, int *out)
+{
+	if (m_cpu_stereo_tested)
+	{
+		*out = m_cpu_tested_result;
+		return m_cpu_tested_result == input_layout_auto ? S_FALSE : S_OK;
+	}
+
+	if (!m_tex_stereo_test)
+		return E_FAIL;	//call do_stereo_test() first
+
+	HRESULT hr;
+	HRESULT rtn = S_FALSE;
+	bool do_transition = false;
+	if (!m_tex_stereo_test_cpu)
+	{
+		if (FAILED( hr = m_allocator->CreateTexture(stereo_test_texture_size, stereo_test_texture_size, NULL, D3DFMT_A8R8G8B8,D3DPOOL_SYSTEMMEM,	&m_tex_stereo_test_cpu)))
+			return hr;
+
+		do_transition = true;
+	}
+
+	m_tex_stereo_test_cpu->Unlock();
+
+	mylog("get:%x:%d\n", this, timeGetTime());
+
+	CComPtr<IDirect3DSurface9> gpu;
+	CComPtr<IDirect3DSurface9> cpu;
+	m_tex_stereo_test->get_first_level(&gpu);
+	m_tex_stereo_test_cpu->get_first_level(&cpu);
+
+	if (do_transition)
+	{
+		int l = timeGetTime();
+		hr = device->GetRenderTargetData(gpu, cpu);
+		if (timeGetTime()-l>3) mylog("GetRenderTargetData() cost %dms.\n", timeGetTime()-l);
+	}
+
+	D3DLOCKED_RECT locked;
+	hr = m_tex_stereo_test_cpu->texture->LockRect(0, &locked, NULL, D3DLOCK_READONLY);
+	if (FAILED(hr))
+		return hr;
+
+	lockrect_surface ++;
+
+	BYTE* src = (BYTE*)locked.pBits;
+	double average1 = 0;
+	double average2 = 0;
+	double delta1 = 0;
+	double delta2 = 0;
+	for(int y=0; y<stereo_test_texture_size; y++)
+		for(int x=0; x<stereo_test_texture_size; x++)
+		{
+			double &average = x<stereo_test_texture_size/2 ?average1:average2;
+			average += src[2];
+			src += 4;
+		}
+
+	average1 /= stereo_test_texture_size/2*stereo_test_texture_size;
+	average2 /= stereo_test_texture_size/2*stereo_test_texture_size;
+
+	src = (BYTE*)locked.pBits;
+	for(int y=0; y<stereo_test_texture_size; y++)
+		for(int x=0; x<stereo_test_texture_size; x++)
+		{
+			double &average = x<stereo_test_texture_size/2 ?average1:average2;
+			double &tdelta = x<stereo_test_texture_size/2 ? delta1 : delta2;
+
+			int delta = abs(src[2] - average);
+			tdelta += delta * delta;
+			src += 4;
+		}
+
+
+	delta1 = sqrt((double)delta1)/(stereo_test_texture_size/2*stereo_test_texture_size-1);
+	delta2 = sqrt((double)delta2)/(stereo_test_texture_size/2*stereo_test_texture_size-1);
+
+	double times = 0;
+	double var1 = average1 * delta1;
+	double var2 = average2 * delta2;
+	if ( (var1 > 0.001 && var2 > 0.001) || (var1>var2*10000) || (var2>var1*10000))
+		times = var1 > var2 ? var1 / var2 : var2 / var1;
+
+	printf("%f - %f, %f - %f, %f - %f, %f\r\n", average1, average2, delta1, delta2, var1, var2, times);
+
+	if (times > 31.62/2)		// 10^1.5
+	{
+		mylog("stereo(%s).\r\n", var1 > var2 ? "tb" : "sbs");
+		rtn = S_OK;
+		*out = var1>var2 ? top_bottom : side_by_side;
+	}
+	else if ( 1.0 < times && times < 4.68 )
+	{
+		//m_normal ++;
+		mylog("normal.\r\n");
+		rtn = S_OK;
+		*out = mono2d;
+	}
+	else
+	{
+		rtn = S_FALSE;
+		mylog("unkown.\r\n");
+	}
+	m_tex_stereo_test_cpu->texture->UnlockRect(0);
+
+	return rtn;
 }
 
 bool gpu_sample::is_ignored_line(int line)
@@ -3322,16 +3746,23 @@ bool gpu_sample::is_ignored_line(int line)
 	return false;
 }
 
-gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool remux_mode, D3DPOOL pool)
+gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test, bool remux_mode, D3DPOOL pool)
 {
 	CAutoLock lck(&g_gpu_lock);
+	m_allocator = allocator;
 	m_interlace_flags = 0;
 	m_tex_RGB32 = m_tex_YUY2 = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
+	m_tex_gpu_RGB32 = m_tex_gpu_YUY2 = m_tex_gpu_Y = m_tex_gpu_YV12_UV = m_tex_gpu_NV12_UV = NULL;
+	m_tex_stereo_test = m_tex_stereo_test_cpu = NULL;
 	m_width = width;
 	m_height = height;
 	m_ready = false;
 	m_format = format;
 	m_topdown = topdown_RGB32;
+	m_prepared_for_rendering = false;
+	m_converted = false;
+	m_cpu_stereo_tested = false;
+	m_cpu_tested_result = input_layout_auto;		// means unknown
 	HRESULT hr;
 	CComQIPtr<IMediaSample2, &IID_IMediaSample2> I2(memory_sample);
 	if (!allocator || !memory_sample)
@@ -3359,9 +3790,12 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 	int l = timeGetTime();
 	// texture creation
+	JIF( allocator->CreateTexture(m_width, m_height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_gpu_RGB32));
+
 	if (m_format == MEDIASUBTYPE_YUY2)
 	{
 		JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8,pool,	&m_tex_YUY2));
+		JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_gpu_YUY2));
 	}
 
 	else if (m_format == MEDIASUBTYPE_RGB32)
@@ -3373,12 +3807,16 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	{
 		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,pool,	&m_tex_Y));
 		JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,pool,	&m_tex_NV12_UV));
+		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
+		JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_gpu_NV12_UV));
 	}
 
 	else if (m_format == MEDIASUBTYPE_YV12)
 	{
 		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,pool,	&m_tex_Y));
 		JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,pool,	&m_tex_YV12_UV));
+		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
+		JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_YV12_UV));
 	}
 
 	m_pool = pool;
@@ -3401,6 +3839,8 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 			memcpy(dst, src, m_width*4);
 		}
+		memory_sample->GetPointer(&src);
+		if (do_cpu_test) get_layout<DWORD>(src, width, height, (int*)&m_cpu_tested_result);
 	}
 
 	else if (m_format == MEDIASUBTYPE_YUY2)
@@ -3416,13 +3856,17 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 			dst += d3dlr.Pitch;
 
 			j++;
-			if (is_ignored_line(j) && height == 1080)
+			if (is_ignored_line(j) && height == 1080 && remux_mode)
 			{
 				j++;
 				src += m_width*2;
 			}
 
 		}
+
+		memory_sample->GetPointer(&src);
+		if (do_cpu_test) get_layout<WORD>(src, width, height, (int*)&m_cpu_tested_result);
+
 	}
 
 	else if (m_format == MEDIASUBTYPE_NV12)
@@ -3448,6 +3892,9 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 			src += m_width;
 			dst += d3dlr2.Pitch;
 		}
+
+		memory_sample->GetPointer(&src);
+		if (do_cpu_test) get_layout<BYTE>(src, width, height, (int*)&m_cpu_tested_result);
 	}
 
 	else if (m_format == MEDIASUBTYPE_YV12)
@@ -3472,7 +3919,14 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 			src += m_width/2;
 			dst += d3dlr2.Pitch;
 		}
+
+		memory_sample->GetPointer(&src);
+		if (do_cpu_test) get_layout<BYTE>(src, width, height, (int*)&m_cpu_tested_result);
 	}
+
+	m_cpu_stereo_tested = do_cpu_test;
+
+
 	//prepare_rendering();
 	//if (timeGetTime() - l > 5)
 		//mylog("load():createTexture time:%d ms, load data to GPU cost %d ms.\n", l2- l, timeGetTime()-l2);

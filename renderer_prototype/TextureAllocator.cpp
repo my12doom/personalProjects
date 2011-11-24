@@ -16,8 +16,17 @@ CPooledTexture::CPooledTexture(CTextureAllocator *pool)
 
 HRESULT CPooledTexture::Unlock()
 {
-	locked_rect.pBits = NULL;
+	//locked_rect.pBits = NULL;
+	texture->AddDirtyRect(NULL);
 	return texture->UnlockRect(0);
+}
+
+HRESULT CPooledTexture::get_first_level(IDirect3DSurface9 **out)
+{
+	if (!out)
+		return E_POINTER;
+
+	return texture->GetSurfaceLevel(0, out);
 }
 
 // texture pool
@@ -133,4 +142,15 @@ HRESULT CTextureAllocator::DestroyPool(D3DPOOL pool2destroy)
 	*/
 
 	return S_OK;
+}
+
+HRESULT CTextureAllocator::UpdateTexture(CPooledTexture *src, CPooledTexture *dst)
+{
+	if (!src || !dst)
+		return E_POINTER;
+
+	if (src->pool != D3DPOOL_SYSTEMMEM || dst->pool != D3DPOOL_DEFAULT)
+		return E_INVALIDARG;
+
+	return m_device->UpdateTexture(src->texture, dst->texture);
 }

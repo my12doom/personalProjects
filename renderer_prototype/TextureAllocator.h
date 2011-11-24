@@ -25,6 +25,7 @@ public:
 	CPooledTexture(CTextureAllocator *pool);
 	~CPooledTexture();
 
+	HRESULT get_first_level(IDirect3DSurface9 **out);
 	HRESULT Unlock();
 
 protected:
@@ -39,6 +40,7 @@ public:
 	HRESULT CreateTexture(int width, int height, DWORD flag, D3DFORMAT format, D3DPOOL pool, CPooledTexture **out);
 	HRESULT DeleteTexture(CPooledTexture *texture);
 	HRESULT DestroyPool(D3DPOOL pool2destroy);
+	HRESULT UpdateTexture(CPooledTexture *src, CPooledTexture *dst);
 protected:
 	IDirect3DDevice9 *m_device;
 	PooledTexture m_pool[1024];

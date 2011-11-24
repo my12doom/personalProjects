@@ -216,6 +216,19 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
+				RelativePath=".\PixelShaders\blur.txt"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\blur.txt .\PixelShaders\blur.h bmp_blur no ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\blur.txt .\PixelShaders\blur2.h bmp_blur2 no ps_2_0&#x0D;&#x0A;"
+						Outputs=".\PixelShaders\blur.h"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath=".\dx9_resize_window.cpp"
 				>
 				<FileConfiguration
@@ -290,7 +303,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling main of ps2.txt"
-						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_sbs.h sbs no ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_tb.h tb no ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_sbs2.h sbs2 no ps_2_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_tb2.h tb2 no ps_2_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\lanczos.h lanczos no ps_2_a"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_sbs.h sbs no ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_tb.h tb no ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_sbs2.h sbs2 no ps_2_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\stereo_test_tb2.h tb2 no ps_2_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\ps2.txt .\PixelShaders\lanczos.h lanczos no ps_2_a&#x0D;&#x0A;"
 						Outputs=".\PixelShaders\stereo_test.h"
 					/>
 				</FileConfiguration>
