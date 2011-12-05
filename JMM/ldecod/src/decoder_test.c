@@ -206,6 +206,9 @@ static int WriteOneFrame(DecodedPicList *pDecPic, int hFileOutput0, int hFileOut
   return iOutputFrame;
 }
 
+#include <Windows.h>
+#pragma comment(lib, "winmm.lib")
+
 /*!
  ***********************************************************************
  * \brief
@@ -219,6 +222,19 @@ int main(int argc, char **argv)
   int hFileDecOutput0=-1, hFileDecOutput1=-1;
   int iFramesOutput=0, iFramesDecoded=0;
   InputParameters InputParams;
+
+  HANDLE hp = GetCurrentProcess();
+  DWORD process_mask, sys_mask;
+  GetProcessAffinityMask(hp, &process_mask, &sys_mask);
+  printf("ProcessAffinityMask = 0x%02x\n", sys_mask);
+  if (sys_mask == 0xff) // 4core HT
+  {
+	  printf("Setting ProcessAffinityMask to 0xf5.\n");
+	  SetProcessAffinityMask(hp, 0xf5);
+  }
+
+  timeBeginPeriod(1);
+
 
 #if DECOUTPUT_TEST
   hFileDecOutput0 = open(DECOUTPUT_VIEW0_FILENAME, OPENFLAGS_WRITE, OPEN_PERMISSIONS);

@@ -930,22 +930,32 @@ int decode_one_frame(DecoderParams *pDecoder)
   init_picture_decoding(p_Vid);
 
   {
-    for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
-    {
-      currSlice = ppSliceList[iSliceNo];
-      current_header = currSlice->current_header;
-      //p_Vid->currentSlice = currSlice;
+	  for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
+	  {
+		  Slice * currSlice = ppSliceList[iSliceNo];
+		  int current_header = currSlice->current_header;
+		  init_slice(p_Vid, currSlice);
+	  }
 
-      assert(current_header != EOS);
-      assert(currSlice->current_slice_nr == iSliceNo);
+	  //my12doom : multi threading!
+#pragma omp parallel for num_threads(6)
+	  for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
+	  {
+		  Slice * currSlice = ppSliceList[iSliceNo];
+		  int current_header = currSlice->current_header;
 
-      init_slice(p_Vid, currSlice);
-      decode_slice(currSlice, current_header);
+		  assert(current_header != EOS);
+		  assert(currSlice->current_slice_nr == iSliceNo);
 
-      p_Vid->iNumOfSlicesDecoded++;
-      p_Vid->num_dec_mb += currSlice->num_dec_mb;
-      p_Vid->erc_mvperMB += currSlice->erc_mvperMB;
-    }
+		  decode_slice(currSlice, current_header);
+
+#pragma omp critical
+		  {
+			  p_Vid->iNumOfSlicesDecoded++;
+			  p_Vid->num_dec_mb += currSlice->num_dec_mb;
+			  p_Vid->erc_mvperMB += currSlice->erc_mvperMB;
+		  }
+	  }
   }
 #if MVC_EXTENSION_ENABLE
   p_Vid->last_dec_view_id = p_Vid->dec_picture->view_id;
@@ -1771,7 +1781,7 @@ process_nalu:
 #endif
     default:
       {
-        if (p_Inp->silent == FALSE)
+        if (p_Inp->silent == FALSE && nalu->nal_unit_type != 31)
           printf ("Found NALU type %d, len %d undefined, ignore NALU, moving on\n", (int) nalu->nal_unit_type, (int) nalu->len);
       }
       break;
