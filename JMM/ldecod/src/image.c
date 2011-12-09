@@ -753,7 +753,6 @@ void decode_slice(Slice *currSlice, int current_header)
 
 }
 
-
 /*!
  ************************************************************************
  * \brief
@@ -861,6 +860,8 @@ int decode_one_frame(DecoderParams *pDecoder)
     currSlice->p_Dpb = p_Vid->p_Dpb_layer[0]; //set default value;
     currSlice->next_header = -8888;
     currSlice->num_dec_mb = 0;
+	currSlice->decoding_done = 0;				//my12doom
+	currSlice->decoding = 0;				    //my12doom
     currSlice->coeff_ctr = -1;
     currSlice->pos       =  0;
     currSlice->is_reset_coeff = FALSE;
@@ -938,23 +939,52 @@ int decode_one_frame(DecoderParams *pDecoder)
 	  }
 
 	  //my12doom : multi threading!
-#pragma omp parallel for num_threads(6)
-	  for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
+#pragma omp parallel// num_threads(6)
+	  //for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
 	  {
-		  Slice * currSlice = ppSliceList[iSliceNo];
-		  int current_header = currSlice->current_header;
+		  Slice * to_dec = NULL;
+		  //decode_slice(currSlice, current_header);
 
-		  assert(current_header != EOS);
-		  assert(currSlice->current_slice_nr == iSliceNo);
+		  //while (!currSlice->decoding_done)
+		  //  decode_slice_step(currSlice, current_header);
 
-		  decode_slice(currSlice, current_header);
+again:
 
 #pragma omp critical
 		  {
-			  p_Vid->iNumOfSlicesDecoded++;
-			  p_Vid->num_dec_mb += currSlice->num_dec_mb;
-			  p_Vid->erc_mvperMB += currSlice->erc_mvperMB;
+			  int i;
+			  unsigned int min_mb = 0xffffff;
+
+			  to_dec = NULL;
+			  for(i=0; i<p_Vid->iSliceNumOfCurrPic; i++)
+			  {
+				  if (ppSliceList[i]->num_dec_mb + ppSliceList[i]->erc_mvperMB < min_mb && !ppSliceList[i]->decoding_done && !ppSliceList[i]->decoding)
+				  {
+					  to_dec = ppSliceList[i];
+					  current_header = to_dec->current_header;
+					  min_mb = ppSliceList[i]->num_dec_mb + ppSliceList[i]->erc_mvperMB;
+				  }
+			  }
+
+			  if (to_dec)
+				  to_dec->decoding = TRUE;
 		  }
+
+		  if (to_dec)
+		  {
+			  decode_slice_step(to_dec, current_header);
+			  to_dec->decoding = FALSE;
+			  goto again;
+		  }
+
+	  }
+
+	  for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
+	  {
+		  Slice * currSlice = ppSliceList[iSliceNo];
+		  p_Vid->iNumOfSlicesDecoded++;
+		  p_Vid->num_dec_mb += currSlice->num_dec_mb;
+		  p_Vid->erc_mvperMB += currSlice->erc_mvperMB;
 	  }
   }
 #if MVC_EXTENSION_ENABLE
@@ -2536,6 +2566,93 @@ void decode_one_slice(Slice *currSlice)
   }
   //reset_ec_flags(p_Vid);
 }
+
+void decode_slice_step(Slice *currSlice, int current_header)
+{
+	if (currSlice->decoding_done)
+		return;
+
+	// init
+	if (!currSlice->decoding_done && (currSlice->num_dec_mb + currSlice->erc_mvperMB == 0))
+	{
+		// these two init were copied from decode_slice()
+		if (currSlice->active_pps->entropy_coding_mode_flag)
+		{
+			init_contexts  (currSlice);
+			cabac_new_slice(currSlice);
+		}
+
+		if ( (currSlice->active_pps->weighted_bipred_idc > 0  && (currSlice->slice_type == B_SLICE)) || (currSlice->active_pps->weighted_pred_flag && currSlice->slice_type !=I_SLICE))
+			fill_wp_params(currSlice);
+
+		// these were copied from decode_one_slice()
+		{
+			VideoParameters *p_Vid = currSlice->p_Vid;
+
+			currSlice->cod_counter=-1;
+
+			if( (p_Vid->separate_colour_plane_flag != 0) )
+			{
+				change_plane_JV( p_Vid, currSlice->colour_plane_id, currSlice );
+			}
+			else
+			{
+				currSlice->mb_data = p_Vid->mb_data;
+				currSlice->dec_picture = p_Vid->dec_picture;
+				currSlice->siblock = p_Vid->siblock;
+				currSlice->ipredmode = p_Vid->ipredmode;
+				currSlice->intra_block = p_Vid->intra_block;
+			}
+
+			if (currSlice->slice_type == B_SLICE)
+			{
+				compute_colocated(currSlice, currSlice->listX);
+			}
+
+			if (currSlice->slice_type != I_SLICE && currSlice->slice_type != SI_SLICE)
+				init_cur_imgy(currSlice,p_Vid);
+		}
+
+	}
+
+	// decode main slice information
+	if ((current_header == SOP || current_header == SOS) && currSlice->ei_flag == 0)
+	{
+		InputParameters *p_Inp = currSlice->p_Inp;
+		Macroblock *currMB = NULL;
+		int counter = 0;
+
+		while (currSlice->decoding_done == FALSE && (counter++ < p_Inp->dec_step)) // loop over macroblocks
+		{
+
+#if TRACE
+			fprintf(p_Dec->p_trace,"\n*********** POC: %i (I/P) MB: %i Slice: %i Type %d **********\n", currSlice->ThisPOC, currSlice->current_mb_nr, currSlice->current_slice_nr, currSlice->slice_type);
+#endif
+
+			// Initializes the current macroblock
+			start_macroblock(currSlice, &currMB);
+			// Get the syntax elements from the NAL
+			currSlice->read_one_macroblock(currMB);
+			decode_one_macroblock(currMB, currSlice->dec_picture);
+
+			if(currSlice->mb_aff_frame_flag && currMB->mb_field)
+			{
+				currSlice->num_ref_idx_active[LIST_0] >>= 1;
+				currSlice->num_ref_idx_active[LIST_1] >>= 1;
+			}
+
+#if (DISABLE_ERC == 0)
+			ercWriteMBMODEandMV(currMB);
+#endif
+
+			currSlice->decoding_done = exit_macroblock(currSlice, (!currSlice->mb_aff_frame_flag|| currSlice->current_mb_nr%2));
+		}
+	}
+
+}
+
+
+
 
 #if (MVC_EXTENSION_ENABLE)
 int GetVOIdx(VideoParameters *p_Vid, int iViewId)

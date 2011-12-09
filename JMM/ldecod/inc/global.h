@@ -404,6 +404,11 @@ typedef struct slice
   unsigned int current_mb_nr; // bitstream order
   unsigned int num_dec_mb;
   short        current_slice_nr;
+
+  // my12doom
+  int decoding_done;
+  int decoding;
+
   //int mb_x;
   //int mb_y;
   //int block_x;
@@ -1002,6 +1007,9 @@ typedef struct inp_par
   int conceal_mode;
   int ref_poc_gap;
   int poc_gap;
+
+  // my12doom
+  int dec_step;
 
 
   // dummy for encoder

@@ -39,6 +39,7 @@ extern int get_maxViewIdx(VideoParameters *p_Vid, int view_id, int anchor_pic_fl
 
 extern void init_slice(VideoParameters *p_Vid, Slice *currSlice);
 extern void decode_slice(Slice *currSlice, int current_header);
+extern void decode_slice_step(Slice *currSlice, int current_header);
 
 #endif
 
