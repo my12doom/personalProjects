@@ -27,6 +27,10 @@ InputParameters cfgparams;
 // LimitType: {0:none, 1:both, 2:minimum, 3: QP based}
 // We could separate this based on types to make it more flexible and allow also defaults for text types.
 Mapping Map[] = {
+	{"DecodeStep",               &cfgparams.dec_step,                     0,   40.0,                    1,  1.0,              10000.0,                          },
+	{"ThreadCount",              &cfgparams.thread_count,                 0,   0.0,                     1,  0.0,              16.0,                          },
+	{"CPUMask",                  &cfgparams.cpu_mask,                     0,   0.0,                     1,  0.0,              4096.0,                          },
+
     {"InputFile",                &cfgparams.infile,                       1,   0.0,                       0,  0.0,              0.0,             FILE_NAME_SIZE, },
     {"OutputFile",               &cfgparams.outfile,                      1,   0.0,                       0,  0.0,              0.0,             FILE_NAME_SIZE, },
     {"RefFile",                  &cfgparams.reffile,                      1,   0.0,                       0,  0.0,              0.0,             FILE_NAME_SIZE, },
@@ -34,7 +38,6 @@ Mapping Map[] = {
     {"FileFormat",               &cfgparams.FileFormat,                   0,   0.0,                       1,  0.0,              1.0,                             },
     {"RefOffset",                &cfgparams.ref_offset,                   0,   0.0,                       1,  0.0,              256.0,                           },
     {"POCScale",                 &cfgparams.poc_scale,                    0,   2.0,                       1,  1.0,              10.0,                            },
-	{"DecodeStep",               &cfgparams.dec_step,                     0,   40.0,                     1,  1.0,              1000.0,                          },
 #ifdef _LEAKYBUCKET_
     {"R_decoder",                &cfgparams.R_decoder,                    0,   500000.0,                  2,  0.0,              0.0,                             },
     {"B_decoder",                &cfgparams.B_decoder,                    0,   104000.0,                  2,  0.0,              0.0,                             },

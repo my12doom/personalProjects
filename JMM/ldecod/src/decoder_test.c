@@ -222,16 +222,9 @@ int main(int argc, char **argv)
   int hFileDecOutput0=-1, hFileDecOutput1=-1;
   int iFramesOutput=0, iFramesDecoded=0;
   InputParameters InputParams;
-
-  HANDLE hp = GetCurrentProcess();
   DWORD process_mask, sys_mask;
-  GetProcessAffinityMask(hp, &process_mask, &sys_mask);
-  printf("ProcessAffinityMask = 0x%02x\n", sys_mask);
-  if (sys_mask == 0xff) // 4core HT
-  {
-	  printf("Setting ProcessAffinityMask to 0xf5.\n");
-	  SetProcessAffinityMask(hp, 0xf5);
-  }
+  HANDLE hp = GetCurrentProcess();
+
 
   timeBeginPeriod(1);
 
@@ -247,6 +240,19 @@ int main(int argc, char **argv)
 
   //get input parameters;
   Configure(&InputParams, argc, argv);
+
+  // set thread count and Process Affinity Mask
+  GetProcessAffinityMask(hp, &process_mask, &sys_mask);
+  printf("ProcessAffinityMask = 0x%02x\n", sys_mask);
+  if (InputParams.cpu_mask)
+  {
+	  printf("Setting ProcessAffinityMask to 0x%02x.\n", InputParams.cpu_mask);
+	  SetProcessAffinityMask(hp, InputParams.cpu_mask);
+  }
+
+  if (InputParams.thread_count)
+	  omp_set_num_threads(InputParams.thread_count);
+
   //open decoder;
   iRet = OpenDecoder(&InputParams);
   if(iRet != DEC_OPEN_NOERR)

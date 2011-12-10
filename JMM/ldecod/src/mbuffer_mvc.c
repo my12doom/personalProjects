@@ -747,9 +747,9 @@ void reorder_ref_pic_list_mvc(Slice *currSlice, int cur_list, int **anchor_ref, 
       picViewIdxLXPred = picViewIdxLX;
 
       if (anchor_pic_flag)
-        targetViewID = anchor_ref[curr_VOIdx][picViewIdxLX];
+		  targetViewID = anchor_ref[curr_VOIdx] ? anchor_ref[curr_VOIdx][picViewIdxLX] : view_id;
       else
-        targetViewID = non_anchor_ref[curr_VOIdx][picViewIdxLX];
+		  targetViewID = non_anchor_ref[curr_VOIdx] ? non_anchor_ref[curr_VOIdx][picViewIdxLX] : view_id;
 
       reorder_interview(p_Vid, currSlice, currSlice->listX[cur_list], num_ref_idx_lX_active_minus1, &refIdxLX, targetViewID, currPOC, listidx);
     }

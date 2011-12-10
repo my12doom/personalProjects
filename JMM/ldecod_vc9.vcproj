@@ -267,7 +267,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/FIXED:NO"
-				AdditionalDependencies="Ws2_32.lib"
+				AdditionalDependencies="Ws2_32.lib libtcmalloc_minimal.lib"
 				OutputFile="./bin/ldecod.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

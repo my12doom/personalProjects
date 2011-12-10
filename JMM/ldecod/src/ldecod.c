@@ -386,6 +386,10 @@ static void init(VideoParameters *p_Vid)  //!< video parameters
   p_Vid->newframe = 0;
   p_Vid->previous_frame_num = 0;
 
+  // my12doom
+  p_Vid->IDR_decoded = 0;
+  p_Vid->frame_decoded = 0;
+
   p_Vid->iLumaPadX = MCBUF_LUMA_PAD_X;
   p_Vid->iLumaPadY = MCBUF_LUMA_PAD_Y;
   p_Vid->iChromaPadX = MCBUF_CHROMA_PAD_X;

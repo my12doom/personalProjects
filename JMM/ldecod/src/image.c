@@ -797,6 +797,21 @@ static void CopyPOC(Slice *pSlice0, Slice *currSlice)
 }
 
 
+int GetThreadAffinityMask(HANDLE thread)
+{
+	HANDLE h = GetCurrentProcess();
+
+	DWORD mask_h, mask_sys, old;
+	GetProcessAffinityMask(h, &mask_h, &mask_sys);
+
+
+	old = SetThreadAffinityMask(thread, mask_h);
+
+	SetThreadAffinityMask(thread, old);
+
+	return old;
+}
+
 
 /*!
  ***********************************************************************
@@ -805,6 +820,10 @@ static void CopyPOC(Slice *pSlice0, Slice *currSlice)
  *
  ***********************************************************************
  */
+
+int total_read_time = 0;
+int total_dec_time = 0;
+
 int decode_one_frame(DecoderParams *pDecoder)
 {
   VideoParameters *p_Vid = pDecoder->p_Vid;
@@ -813,8 +832,13 @@ int decode_one_frame(DecoderParams *pDecoder)
   Slice *currSlice; // = p_Vid->currentSlice;
   Slice **ppSliceList = p_Vid->ppSliceList;
   int iSliceNo;
+  int read_time = timeGetTime();
+  int dec_time;
+
+  static int skip = 48;
   
   //read one picture first;
+read:
   p_Vid->iSliceNumOfCurrPic=0;
   current_header=0;
   p_Vid->iNumOfSlicesDecoded=0;
@@ -930,6 +954,16 @@ int decode_one_frame(DecoderParams *pDecoder)
   iRet = current_header;
   init_picture_decoding(p_Vid);
 
+  //printf("slice type %d %s \n", ppSliceList[0]->slice_type, ppSliceList[0]->idr_flag ? "IDR" : "");
+  skip --;
+  if (skip>=0)
+	  goto read;
+
+  total_read_time += timeGetTime()-read_time;
+
+  //printf("total time:read %d, dec %d.\n", total_read_time, total_dec_time);
+
+  dec_time = timeGetTime();
   {
 	  for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
 	  {
@@ -939,10 +973,12 @@ int decode_one_frame(DecoderParams *pDecoder)
 	  }
 
 	  //my12doom : multi threading!
-#pragma omp parallel// num_threads(6)
+#pragma omp parallel// num_threads(4)
 	  //for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
 	  {
 		  Slice * to_dec = NULL;
+
+		  //printf("(%d)%02x.\n", GetCurrentThreadId(), GetThreadAffinityMask(GetCurrentThread()));
 		  //decode_slice(currSlice, current_header);
 
 		  //while (!currSlice->decoding_done)
@@ -968,6 +1004,7 @@ again:
 
 			  if (to_dec)
 				  to_dec->decoding = TRUE;
+
 		  }
 
 		  if (to_dec)
@@ -977,6 +1014,7 @@ again:
 			  goto again;
 		  }
 
+		  //printf("(%d)dec_time : %d\n", GetCurrentThreadId(), timeGetTime()-dec_time);
 	  }
 
 	  for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
@@ -987,6 +1025,8 @@ again:
 		  p_Vid->erc_mvperMB += currSlice->erc_mvperMB;
 	  }
   }
+
+  total_dec_time += timeGetTime()-dec_time;
 #if MVC_EXTENSION_ENABLE
   p_Vid->last_dec_view_id = p_Vid->dec_picture->view_id;
 #endif
@@ -2045,6 +2085,11 @@ void exit_picture(VideoParameters *p_Vid, StorablePicture **dec_picture)
     p_Vid->pre_frame_num = 0;
   }
 
+  // my12doom
+  p_Vid->frame_decoded ++;
+  if(slice_type == I_SLICE && is_idr) // IDR picture
+	  p_Vid->IDR_decoded ++;
+
   if (p_Inp->silent == FALSE)
   {
     if (structure==TOP_FIELD || structure==FRAME)
@@ -2109,6 +2154,10 @@ void exit_picture(VideoParameters *p_Vid, StorablePicture **dec_picture)
     }
     else
       fprintf(stdout,"Completed Decoding frame %05d.\r",snr->frame_ctr);
+
+	// my12doom
+	if(slice_type == I_SLICE && is_idr) // IDR picture
+		fprintf(stdout, "%dth IDR, fn=%d.\n", p_Vid->IDR_decoded-1, p_Vid->frame_decoded-1);
 
     fflush(stdout);
 

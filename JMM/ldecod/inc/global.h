@@ -803,6 +803,9 @@ typedef struct video_par
   ImageData imgData5;
   ImageData imgData6;
 
+  // my12doom
+  unsigned int IDR_decoded;
+  unsigned int frame_decoded;
 
   // Redundant slices. Should be moved to another structure and allocated only if extended profile
   unsigned int previous_frame_num; //!< frame number of previous slice
@@ -1010,6 +1013,8 @@ typedef struct inp_par
 
   // my12doom
   int dec_step;
+  int thread_count;
+  int cpu_mask;
 
 
   // dummy for encoder

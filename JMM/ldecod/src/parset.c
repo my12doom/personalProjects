@@ -229,7 +229,7 @@ static int InterpretSubsetSPS (VideoParameters *p_Vid, DataPartition *p, int *cu
   if(subset_sps->Valid || subset_sps->num_views_minus1>=0)
   {
     if(memcmp(&subset_sps->sps, sps, sizeof (seq_parameter_set_rbsp_t)-sizeof(int)))
-      assert(0);
+      ;//assert(0);
     reset_subset_sps(subset_sps);
   }
   memcpy (&subset_sps->sps, sps, sizeof (seq_parameter_set_rbsp_t));
@@ -635,9 +635,10 @@ void ProcessSubsetSPS (VideoParameters *p_Vid, NALU_t *nalu)
   if(subset_sps->num_views_minus1>1)
   {
     printf("Warning: num_views:%d is greater than 2, only decode baselayer!\n", subset_sps->num_views_minus1+1);
-    subset_sps->Valid = 0;
-    subset_sps->sps.Valid = 0;
-    p_Vid->p_Inp->DecodeAllLayers = 0;
+    //subset_sps->Valid = 0;
+    //subset_sps->sps.Valid = 0;
+    //p_Vid->p_Inp->DecodeAllLayers = 0;
+	subset_sps->num_views_minus1=1;
   }
   else if(subset_sps->num_views_minus1==1 && (subset_sps->view_id[0]!=0 || subset_sps->view_id[1]!=1))
   {

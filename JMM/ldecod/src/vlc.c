@@ -541,7 +541,7 @@ int GetVLCSymbol (byte buffer[],int totbitoffset,int *info, int bytecount)
   byte *cur_byte  = &(buffer[byteoffset]);
   int  ctr_bit    = ((*cur_byte) >> (bitoffset)) & 0x01;  // control bit for current bit posision
 
-  while (ctr_bit == 0)
+  while (ctr_bit == 0 && cur_byte < buffer + bytecount)
   {                 // find leading 1 bit
     len++;
     bitcounter++;
