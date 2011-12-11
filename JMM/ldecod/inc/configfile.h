@@ -30,6 +30,9 @@ Mapping Map[] = {
 	{"DecodeStep",               &cfgparams.dec_step,                     0,   40.0,                    1,  1.0,              10000.0,                          },
 	{"ThreadCount",              &cfgparams.thread_count,                 0,   0.0,                     1,  0.0,              16.0,                          },
 	{"CPUMask",                  &cfgparams.cpu_mask,                     0,   0.0,                     1,  0.0,              4096.0,                          },
+	{"InputFile2",               &cfgparams.infile2,                      1,   0.0,                     0,  0.0,              0.0,             FILE_NAME_SIZE, },
+	{"SkipToIDR",                &cfgparams.skip_to_idr,                  0,   1.0,                     1,  0.0,              1.0,                          },
+	{"FrameToSkip",              &cfgparams.frame_to_skip,                0,   0.0,                     1,  0.0,              999999.0,                          },
 
     {"InputFile",                &cfgparams.infile,                       1,   0.0,                       0,  0.0,              0.0,             FILE_NAME_SIZE, },
     {"OutputFile",               &cfgparams.outfile,                      1,   0.0,                       0,  0.0,              0.0,             FILE_NAME_SIZE, },

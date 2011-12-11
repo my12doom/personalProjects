@@ -73,6 +73,9 @@ typedef struct nalu_t
 #endif
 } NALU_t;
 
+// copy one NAL Unit
+extern int CopyNALU(NALU_t *src, NALU_t *dst);
+
 //! allocate one NAL Unit
 extern NALU_t *AllocNALU(int);
 

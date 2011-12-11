@@ -69,3 +69,21 @@ void FreeNALU(NALU_t *n)
     free (n);
   }
 }
+
+int CopyNALU(NALU_t *src, NALU_t *dst)
+{
+	// only buffer pointer and its size preserved
+	unsigned max_size_dst = dst->max_size;
+	byte *buf_dst = dst->buf;
+
+	if (dst->max_size < src->len)
+		return 0;
+
+	memcpy(dst, src, sizeof(NALU_t));
+	dst->max_size = max_size_dst;
+	dst->buf = buf_dst;
+
+	memcpy(dst->buf, src->buf, src->len);
+
+	return 1;
+}

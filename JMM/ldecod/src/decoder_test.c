@@ -36,6 +36,7 @@ static void Configure(InputParameters *p_Inp, int ac, char *av[])
   //char *config_filename=NULL;
   //char errortext[ET_SIZE];
   memset(p_Inp, 0, sizeof(InputParameters));
+  p_Inp->infile2[0] = '\0';
   strcpy(p_Inp->infile, BITSTREAM_FILENAME); //! set default bitstream name
   strcpy(p_Inp->outfile, DECRECON_FILENAME); //! set default output file name
   strcpy(p_Inp->reffile, ENCRECON_FILENAME); //! set default reference file name

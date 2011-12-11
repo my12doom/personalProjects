@@ -191,6 +191,13 @@ static void init_picture(VideoParameters *p_Vid, Slice *currSlice, InputParamete
   {
     // this may only happen on slice loss
     exit_picture(p_Vid, &p_Vid->dec_picture);
+
+	// if it is not freeed by exit_picture()
+	if (p_Vid->dec_picture)
+	{
+		free_storable_picture(p_Vid->dec_picture);
+		p_Vid->dec_picture = NULL;
+	}
   }
   p_Vid->dpb_layer_id = currSlice->layer_id;
   //set buffers;
@@ -835,7 +842,7 @@ int decode_one_frame(DecoderParams *pDecoder)
   int read_time = timeGetTime();
   int dec_time;
 
-  static int skip = 48;
+  int skip = p_Inp->frame_to_skip;
   
   //read one picture first;
 read:
@@ -955,10 +962,23 @@ read:
   init_picture_decoding(p_Vid);
 
   //printf("slice type %d %s \n", ppSliceList[0]->slice_type, ppSliceList[0]->idr_flag ? "IDR" : "");
-  skip --;
-  if (skip>=0)
+  if (!p_Inp->no_more_skip)
+  {
+	skip --;
+	if (skip>=0
+		 || (p_Vid->p_Inp->skip_to_idr == 1 && !ppSliceList[0]->idr_flag )
+		 || (p_Vid->p_Inp->skip_to_idr == 0 && ppSliceList[0]->slice_type != I_SLICE)
+		 )
+	{
+		printf("\r%d/%d frames skipped.", p_Inp->frame_to_skip-skip, p_Inp->frame_to_skip);
 	  goto read;
-
+	}
+	else
+	{
+		p_Inp->no_more_skip = 1;
+		printf("\n");
+	}
+  }
   total_read_time += timeGetTime()-read_time;
 
   //printf("total time:read %d, dec %d.\n", total_read_time, total_dec_time);

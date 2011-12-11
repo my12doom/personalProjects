@@ -165,6 +165,8 @@ static void alloc_video_params( VideoParameters **p_Vid)
   //(*p_Vid)->currentSlice = NULL;
   (*p_Vid)->pNextSlice = NULL;
   (*p_Vid)->nalu = AllocNALU(MAX_CODED_FRAME_SIZE);
+  (*p_Vid)->nalu0 = AllocNALU(MAX_CODED_FRAME_SIZE);
+  (*p_Vid)->nalu1 = AllocNALU(MAX_CODED_FRAME_SIZE);
   (*p_Vid)->pDecOuputPic = (DecodedPicList *)calloc(1, sizeof(DecodedPicList));
   (*p_Vid)->pNextPPS = AllocPPS();
   (*p_Vid)->first_sps = TRUE;
@@ -226,6 +228,8 @@ static void free_img( VideoParameters *p_Vid)
     if ( p_Vid->p_Inp->FileFormat == PAR_OF_ANNEXB )
     {
       free_annex_b (&p_Vid->annex_b);
+	  if (p_Vid->annex_b2)
+		  free_annex_b (&p_Vid->annex_b2);
     }
 #if (ENABLE_OUTPUT_TONEMAPPING)  
     if (p_Vid->seiToneMapping != NULL)
@@ -283,6 +287,16 @@ static void free_img( VideoParameters *p_Vid)
       FreeNALU(p_Vid->nalu);
       p_Vid->nalu=NULL;
     }
+	if(p_Vid->nalu0)
+	{
+		FreeNALU(p_Vid->nalu0);
+		p_Vid->nalu0=NULL;
+	}
+	if(p_Vid->nalu1)
+	{
+		FreeNALU(p_Vid->nalu1);
+		p_Vid->nalu1=NULL;
+	}
     //free memory;
     FreeDecPicList(p_Vid->pDecOuputPic);
     if(p_Vid->pNextPPS)
@@ -1170,6 +1184,7 @@ int OpenDecoder(InputParameters *p_Inp)
     int i;
     VideoParameters *p_Vid = pDecoder->p_Vid;
     // Set defaults
+	p_Vid->p_Inp->no_more_skip = 0;
     p_Vid->p_out = -1;
     for(i = 0; i < MAX_VIEW_NUM; i++)
     {
@@ -1211,8 +1226,16 @@ int OpenDecoder(InputParameters *p_Inp)
   {
   default:
   case PAR_OF_ANNEXB:
+	pDecoder->p_Vid->active_annex = 0;
     malloc_annex_b(pDecoder->p_Vid, &pDecoder->p_Vid->annex_b);
     open_annex_b(pDecoder->p_Inp->infile, pDecoder->p_Vid->annex_b);
+
+	if (pDecoder->p_Inp->infile2[0])
+	{
+		malloc_annex_b(pDecoder->p_Vid, &pDecoder->p_Vid->annex_b2);
+		open_annex_b(pDecoder->p_Inp->infile2, pDecoder->p_Vid->annex_b2);
+	}
+
     break;
   case PAR_OF_RTP:
     OpenRTPFile(pDecoder->p_Inp->infile, &pDecoder->p_Vid->BitStreamFile);
@@ -1290,7 +1313,10 @@ int FinitDecoder(DecodedPicList **ppDecPicList)
 #endif
   if (pDecoder->p_Inp->FileFormat == PAR_OF_ANNEXB)
   {
-    reset_annex_b(pDecoder->p_Vid->annex_b); 
+    reset_annex_b(pDecoder->p_Vid->annex_b);
+
+	if (pDecoder->p_Vid->annex_b2)
+		reset_annex_b(pDecoder->p_Vid->annex_b2);
   }
   pDecoder->p_Vid->newframe = 0;
   pDecoder->p_Vid->previous_frame_num = 0;
@@ -1316,6 +1342,8 @@ int CloseDecoder()
   default:
   case PAR_OF_ANNEXB:
     close_annex_b(pDecoder->p_Vid->annex_b);
+	if (pDecoder->p_Vid->annex_b2)
+		close_annex_b(pDecoder->p_Vid->annex_b2);
     break;
   case PAR_OF_RTP:
     CloseRTPFile(&pDecoder->p_Vid->BitStreamFile);

@@ -25,7 +25,10 @@ typedef struct annex_b_struct
 
   int IsFirstByteStreamNALU;
   int nextstartcodebytes;
-  byte *Buf;  
+  byte *Buf;
+
+  // my12doom
+  int can_read_next_nalu;
 } ANNEXB_t;
 
 extern int  get_annex_b_NALU (VideoParameters *p_Vid, NALU_t *nalu, ANNEXB_t *annex_b);

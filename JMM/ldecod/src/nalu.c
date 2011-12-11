@@ -54,11 +54,40 @@ int read_next_nalu(VideoParameters *p_Vid, NALU_t *nalu)
   InputParameters *p_Inp = p_Vid->p_Inp;
   int ret;
 
+  if (p_Vid->p_Inp->infile2[0])
+  {
+	  if (p_Vid->active_annex == 0 && p_Vid->nalu0->len > 0)
+	  {
+		  CopyNALU(p_Vid->nalu0, nalu);
+		  p_Vid->nalu0->len = 0;
+		  return nalu->len;
+	  }
+
+		if (p_Vid->active_annex == 1 && p_Vid->nalu1->len > 1)
+	  {
+		  CopyNALU(p_Vid->nalu1, nalu);
+		  p_Vid->nalu1->len = 0;
+		  return nalu->len;
+	  }
+  }
+
   switch( p_Inp->FileFormat )
   {
   default:
   case PAR_OF_ANNEXB:
-    ret = get_annex_b_NALU(p_Vid, nalu, p_Vid->annex_b);
+	if (p_Vid->p_Inp->infile2[0] == '\0')
+      ret = get_annex_b_NALU(p_Vid, nalu, p_Vid->annex_b);
+	else
+	{
+		ret = get_annex_b_NALU(p_Vid, nalu, p_Vid->active_annex == 0 ? p_Vid->annex_b : p_Vid->annex_b2);
+		if (nalu->nal_unit_type == NALU_TYPE_AUD || nalu->nal_unit_type == NALU_TYPE_VDRD)
+		{
+			CopyNALU(nalu, p_Vid->active_annex == 0 ? p_Vid->nalu0 : p_Vid->nalu1);
+			p_Vid->active_annex = 1 - p_Vid->active_annex;
+
+			return read_next_nalu(p_Vid, nalu);
+		}
+	}
     break;
   case PAR_OF_RTP:
     ret = GetRTPNALU(p_Vid, nalu, p_Vid->BitStreamFile);

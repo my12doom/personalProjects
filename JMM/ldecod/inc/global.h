@@ -857,6 +857,8 @@ typedef struct video_par
   int ec_flag[SE_MAX_ELEMENTS];        //!< array to set errorconcealment
 
   struct annex_b_struct *annex_b;
+  struct annex_b_struct *annex_b2;
+  int active_annex;
 
   struct frame_store *out_buffer;
 
@@ -892,6 +894,8 @@ typedef struct video_par
   DecodedPicList *pDecOuputPic;
   int iDeblockMode;  //0: deblock in picture, 1: deblock in slice;
   struct nalu_t *nalu;
+  struct nalu_t *nalu0;
+  struct nalu_t *nalu1;
   int iLumaPadX;
   int iLumaPadY;
   int iChromaPadX;
@@ -976,6 +980,7 @@ typedef struct snr_par
 typedef struct inp_par
 {
   char infile[FILE_NAME_SIZE];                       //!< H.264 inputfile
+  char infile2[FILE_NAME_SIZE];                       //!< H.264 inputfile
   char outfile[FILE_NAME_SIZE];                      //!< Decoded YUV 4:2:0 output
   char reffile[FILE_NAME_SIZE];                      //!< Optional YUV 4:2:0 reference file for SNR measurement
 
@@ -1012,9 +1017,12 @@ typedef struct inp_par
   int poc_gap;
 
   // my12doom
+  int frame_to_skip;
+  int no_more_skip;
   int dec_step;
   int thread_count;
   int cpu_mask;
+  int skip_to_idr;
 
 
   // dummy for encoder
