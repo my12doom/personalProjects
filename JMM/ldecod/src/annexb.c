@@ -30,6 +30,13 @@ void malloc_annex_b(VideoParameters *p_Vid, ANNEXB_t **p_annex_b)
   {
     error("malloc_annex_b: Buf", 101);
   }
+  (*p_annex_b)->iIOBufferSize = IOBUFFERSIZE * sizeof (byte);
+  (*p_annex_b)->iobuffer = malloc ((*p_annex_b)->iIOBufferSize);
+  if (NULL == (*p_annex_b)->iobuffer)
+  {
+	  error ("open_annex_b: cannot allocate IO buffer",500);
+  }
+
 }
 
 
@@ -60,7 +67,12 @@ void free_annex_b(ANNEXB_t **p_annex_b)
 */
 static inline int getChunk(ANNEXB_t *annex_b)
 {
-  unsigned int readbytes = read (annex_b->BitStreamFile, annex_b->iobuffer, annex_b->iIOBufferSize); 
+  unsigned int readbytes;
+  if (annex_b->is_ts)
+    readbytes = read_ts_stream(annex_b->is_ts, annex_b->iobuffer, annex_b->iIOBufferSize);
+  else
+    readbytes = read (annex_b->BitStreamFile, annex_b->iobuffer, annex_b->iIOBufferSize);
+
   if (0==readbytes)
   {
     annex_b->is_eof = TRUE;
@@ -305,24 +317,19 @@ int get_annex_b_NALU (VideoParameters *p_Vid, NALU_t *nalu, ANNEXB_t *annex_b)
  */
 void open_annex_b (char *fn, ANNEXB_t *annex_b)
 {
-  if (NULL != annex_b->iobuffer)
+  if ((annex_b->is_ts = open_ts(fn)))
   {
-    error ("open_annex_b: tried to open Annex B file twice",500);
+	  // TS
   }
-  if ((annex_b->BitStreamFile = open(fn, OPENFLAGS_READ)) == -1)
+
+  else if ((annex_b->BitStreamFile = open(fn, OPENFLAGS_READ)) == -1)
   {
     snprintf (errortext, ET_SIZE, "Cannot open Annex B ByteStream file '%s'", fn);
     error(errortext,500);
   }
 
-  annex_b->iIOBufferSize = IOBUFFERSIZE * sizeof (byte);
-  annex_b->iobuffer = malloc (annex_b->iIOBufferSize);
-  if (NULL == annex_b->iobuffer)
-  {
-    error ("open_annex_b: cannot allocate IO buffer",500);
-  }
   annex_b->is_eof = FALSE;
-  getChunk(annex_b);
+  //getChunk(annex_b);
 }
 
 
@@ -334,11 +341,15 @@ void open_annex_b (char *fn, ANNEXB_t *annex_b)
  */
 void close_annex_b(ANNEXB_t *annex_b)
 {
-  if (annex_b->BitStreamFile != -1)
+  if (annex_b->is_ts)
+  {
+    close_ts(annex_b->is_ts);
+  }
+  else if (annex_b->BitStreamFile != -1)
   {
     close(annex_b->BitStreamFile);
-    annex_b->BitStreamFile = - 1;
   }
+  annex_b->BitStreamFile = - 1;
   free (annex_b->iobuffer);
   annex_b->iobuffer = NULL;
 }

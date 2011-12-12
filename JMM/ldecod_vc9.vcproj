@@ -660,6 +660,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ldecod\src\ts_stream.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ldecod\src\vlc.c"
 				>
 				<FileConfiguration
@@ -937,6 +941,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ldecod\inc\ts_stream.h"
+				>
+			</File>
+			<File
 				RelativePath=".\lcommon\inc\typedefs.h"
 				>
 			</File>
@@ -954,6 +962,42 @@
 			</File>
 			<File
 				RelativePath=".\lcommon\inc\win32.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="tsdemux"
+			>
+			<File
+				RelativePath=".\ldecod\tsdemux\ac3.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\CCritSec.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\CFileBuffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\CFileBuffer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\tsdemux\common.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\tsdemux\h264.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\tsdemux\ts.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\tsdemux\ts.h"
 				>
 			</File>
 		</Filter>

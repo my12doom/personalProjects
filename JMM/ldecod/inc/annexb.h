@@ -13,6 +13,7 @@
 #define _ANNEXB_H_
 
 #include "nalucommon.h"
+#include "ts_stream.h"
 
 typedef struct annex_b_struct 
 {
@@ -28,7 +29,8 @@ typedef struct annex_b_struct
   byte *Buf;
 
   // my12doom
-  int can_read_next_nalu;
+  void *is_ts;							// NULL for raw stream, pointer for MPEG Transport Stream.
+  struct annex_b_struct * sub_annex;	// for MVC sub stream input
 } ANNEXB_t;
 
 extern int  get_annex_b_NALU (VideoParameters *p_Vid, NALU_t *nalu, ANNEXB_t *annex_b);

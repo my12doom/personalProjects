@@ -54,7 +54,7 @@ int read_next_nalu(VideoParameters *p_Vid, NALU_t *nalu)
   InputParameters *p_Inp = p_Vid->p_Inp;
   int ret;
 
-  if (p_Vid->p_Inp->infile2[0])
+  if (p_Vid->annex_b->sub_annex)
   {
 	  if (p_Vid->active_annex == 0 && p_Vid->nalu0->len > 0)
 	  {
@@ -75,11 +75,11 @@ int read_next_nalu(VideoParameters *p_Vid, NALU_t *nalu)
   {
   default:
   case PAR_OF_ANNEXB:
-	if (p_Vid->p_Inp->infile2[0] == '\0')
+	if (p_Vid->annex_b->sub_annex == NULL)
       ret = get_annex_b_NALU(p_Vid, nalu, p_Vid->annex_b);
 	else
 	{
-		ret = get_annex_b_NALU(p_Vid, nalu, p_Vid->active_annex == 0 ? p_Vid->annex_b : p_Vid->annex_b2);
+		ret = get_annex_b_NALU(p_Vid, nalu, p_Vid->active_annex == 0 ? p_Vid->annex_b : p_Vid->annex_b->sub_annex);
 		if (nalu->nal_unit_type == NALU_TYPE_AUD || nalu->nal_unit_type == NALU_TYPE_VDRD)
 		{
 			CopyNALU(nalu, p_Vid->active_annex == 0 ? p_Vid->nalu0 : p_Vid->nalu1);
@@ -151,7 +151,7 @@ void CheckZeroByteNonVCL(VideoParameters *p_Vid, NALU_t *nalu)
     CheckZeroByte=1;
   if(CheckZeroByte && nalu->startcodeprefix_len==3)   
   {
-    printf("Warning: zero_byte shall exist\n");
+    //printf("Warning: zero_byte shall exist\n");
     //because it is not a very serious problem, we do not exit here
   }
 }
@@ -176,7 +176,7 @@ void CheckZeroByteVCL(VideoParameters *p_Vid, NALU_t *nalu)
   p_Vid->LastAccessUnitExists = 1;
   if(CheckZeroByte && nalu->startcodeprefix_len==3)
   {
-    printf("warning: zero_byte shall exist\n");
+    //printf("warning: zero_byte shall exist\n");
     //because it is not a very serious problem, we do not exit here
   }
 }

@@ -857,7 +857,6 @@ typedef struct video_par
   int ec_flag[SE_MAX_ELEMENTS];        //!< array to set errorconcealment
 
   struct annex_b_struct *annex_b;
-  struct annex_b_struct *annex_b2;
   int active_annex;
 
   struct frame_store *out_buffer;

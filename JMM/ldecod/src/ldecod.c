@@ -227,9 +227,9 @@ static void free_img( VideoParameters *p_Vid)
   {
     if ( p_Vid->p_Inp->FileFormat == PAR_OF_ANNEXB )
     {
+		if (p_Vid->annex_b->sub_annex)
+			free_annex_b (&p_Vid->annex_b->sub_annex);
       free_annex_b (&p_Vid->annex_b);
-	  if (p_Vid->annex_b2)
-		  free_annex_b (&p_Vid->annex_b2);
     }
 #if (ENABLE_OUTPUT_TONEMAPPING)  
     if (p_Vid->seiToneMapping != NULL)
@@ -1230,10 +1230,23 @@ int OpenDecoder(InputParameters *p_Inp)
     malloc_annex_b(pDecoder->p_Vid, &pDecoder->p_Vid->annex_b);
     open_annex_b(pDecoder->p_Inp->infile, pDecoder->p_Vid->annex_b);
 
-	if (pDecoder->p_Inp->infile2[0])
+	if (pDecoder->p_Vid->annex_b->is_ts)
 	{
-		malloc_annex_b(pDecoder->p_Vid, &pDecoder->p_Vid->annex_b2);
-		open_annex_b(pDecoder->p_Inp->infile2, pDecoder->p_Vid->annex_b2);
+		void *sub_stream = get_ts_sub_stream(pDecoder->p_Vid->annex_b->is_ts);
+		if (sub_stream)
+		{
+			malloc_annex_b(pDecoder->p_Vid, &pDecoder->p_Vid->annex_b->sub_annex);
+			pDecoder->p_Vid->annex_b->sub_annex->is_ts = sub_stream;
+		}
+	}
+
+	if (NULL == pDecoder->p_Vid->annex_b->sub_annex && pDecoder->p_Inp->infile2[0])
+	{
+		malloc_annex_b(pDecoder->p_Vid, &pDecoder->p_Vid->annex_b->sub_annex);
+		open_annex_b(pDecoder->p_Inp->infile2, pDecoder->p_Vid->annex_b->sub_annex);
+
+		if (pDecoder->p_Vid->annex_b->sub_annex->is_ts)
+			switch_to_sub_stream(pDecoder->p_Vid->annex_b->sub_annex->is_ts);
 	}
 
     break;
@@ -1315,8 +1328,8 @@ int FinitDecoder(DecodedPicList **ppDecPicList)
   {
     reset_annex_b(pDecoder->p_Vid->annex_b);
 
-	if (pDecoder->p_Vid->annex_b2)
-		reset_annex_b(pDecoder->p_Vid->annex_b2);
+	if (pDecoder->p_Vid->annex_b->sub_annex)
+		reset_annex_b(pDecoder->p_Vid->annex_b->sub_annex);
   }
   pDecoder->p_Vid->newframe = 0;
   pDecoder->p_Vid->previous_frame_num = 0;
@@ -1341,9 +1354,9 @@ int CloseDecoder()
   {
   default:
   case PAR_OF_ANNEXB:
+	if (pDecoder->p_Vid->annex_b->sub_annex)
+	  close_annex_b(pDecoder->p_Vid->annex_b->sub_annex);
     close_annex_b(pDecoder->p_Vid->annex_b);
-	if (pDecoder->p_Vid->annex_b2)
-		close_annex_b(pDecoder->p_Vid->annex_b2);
     break;
   case PAR_OF_RTP:
     CloseRTPFile(&pDecoder->p_Vid->BitStreamFile);
