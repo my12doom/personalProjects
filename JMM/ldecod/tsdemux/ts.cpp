@@ -695,12 +695,12 @@ bool ts::demuxer::is_ts(const char * name)
 	HANDLE f = CreateFileA(name, FILE_READ_ACCESS, 7, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	if(INVALID_HANDLE_VALUE == f)
-		return -1;
+		return false;
 
 	LARGE_INTEGER filesize;
 	GetFileSizeEx(f, &filesize);
-	if (filesize.QuadPart<192)
-		return -1;
+	if (filesize.QuadPart<188)
+		return false;
 
 	ReadFile(f, buf, 188, &read, NULL);
 	CloseHandle(f);
@@ -799,7 +799,7 @@ int ts::demuxer::fast_scan_file(const char* name, int scan_packet_count/*=250000
 		if((n=demux_ts_packet(buf)))
 		{
 			//fprintf(stderr,"%s: invalid packet %llu (%i)\n",name,pn,n);
-			return -1;
+			//return -1;
 		}
 	}
 
@@ -820,7 +820,7 @@ int ts::demuxer::demux_file(const char* name)
 
     if(!file.open(file::in,"%s",name))
     {
-        fprintf(stderr,"can`t open file %s\n",name);
+        //fprintf(stderr,"can`t open file %s\n",name);
         return -1;
     }
 

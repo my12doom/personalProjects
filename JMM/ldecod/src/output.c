@@ -22,6 +22,8 @@
 #include "input.h"
 #include "fast_memory.h"
 
+#include "..\AVSMain.h"
+
 static void write_out_picture(VideoParameters *p_Vid, StorablePicture *p, int p_out);
 static void img2buf_byte   (imgpel** imgX, unsigned char* buf, int size_x, int size_y, int symbol_size_in_bytes, int crop_left, int crop_right, int crop_top, int crop_bottom, int iOutStride);
 static void img2buf_normal (imgpel** imgX, unsigned char* buf, int size_x, int size_y, int symbol_size_in_bytes, int crop_left, int crop_right, int crop_top, int crop_bottom, int iOutStride);
@@ -422,7 +424,17 @@ void write_picture(VideoParameters *p_Vid, StorablePicture *p, int p_out, int re
  */
 void write_picture(VideoParameters *p_Vid, StorablePicture *p, int p_out, int real_structure)
 {
-  write_out_picture(p_Vid, p, p_out);
+	if (p_Vid->p_avs)
+	{
+	int crop_left   = p->frame_crop_left_offset;
+	int crop_right  = p->frame_crop_right_offset;
+	int crop_top    = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_top_offset;
+	int crop_bottom = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_bottom_offset;
+
+    insert_frame(p_Vid->p_avs, p->imgY, p->imgUV[1], p->imgUV[0], p->view_id);
+	}
+  else
+	write_out_picture(p_Vid, p, p_out);
 }
 
 

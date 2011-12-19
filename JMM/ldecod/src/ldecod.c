@@ -70,6 +70,8 @@
 #include "h264decoder.h"
 #include "dec_statistics.h"
 
+#include "..\AVSMain.h"
+
 #define LOGFILE     "log.dec"
 #define DATADECFILE "dataDec.txt"
 #define TRACEFILE   "trace_dec.txt"
@@ -521,6 +523,10 @@ static void Report(VideoParameters *p_Vid)
   // normalize time
   p_Vid->tot_time  = timenorm(p_Vid->tot_time);
 
+  if (p_Inp->output_to_avs)
+  {}
+  else
+  {
   if (p_Inp->silent == FALSE)
   {
     fprintf(stdout,"-------------------- Average SNR all frames ------------------------------\n");
@@ -540,9 +546,10 @@ static void Report(VideoParameters *p_Vid)
     fprintf(stdout," Exit JM %s decoder, ver %s ",JM, VERSION);
     fprintf(stdout,"\n");
   }
+  }
 
   // write to log file
-  fprintf(stdout," Output status file                     : %s \n",LOGFILE);
+  //fprintf(stdout," Output status file                     : %s \n",LOGFILE);
   snprintf(string, OUTSTRING_SIZE, "%s", LOGFILE);
 
   if ((p_log=fopen(string,"r"))==0)                    // check if file exist
@@ -1189,24 +1196,34 @@ int OpenDecoder(InputParameters *p_Inp)
     for(i = 0; i < MAX_VIEW_NUM; i++)
     {
       p_Vid->p_out_mvc[i] = -1;
+	  p_Vid->p_out_mvc_avs[i] = NULL;
     }
 
-    if (p_Inp->DecodeAllLayers == 1)
-    {  
-      OpenOutputFiles(p_Vid, 0, 1);
-    }
-    else
-    { //Normal AVC      
-      if((strcasecmp(p_Inp->outfile, "\"\"")!=0) && (strlen(p_Inp->outfile)>0))
-      {
-        if( (strcasecmp(p_Inp->outfile, "\"\"")!=0) && ((p_Vid->p_out_mvc[0]=open(p_Inp->outfile, OPENFLAGS_WRITE, OPEN_PERMISSIONS))==-1) )
-        {
-          snprintf(errortext, ET_SIZE, "Error open file %s ",p_Inp->outfile);
-          error(errortext,500);
-        }
-      }
-      p_Vid->p_out = p_Vid->p_out_mvc[0];
-    }
+	// create MVC buffer
+	if (p_Inp->output_to_avs == 1)
+	{
+		pDecoder->p_Vid->p_avs = create_avs();
+	}
+
+    else 
+	{
+		if (p_Inp->DecodeAllLayers == 1)
+		{
+		  OpenOutputFiles(p_Vid, 0, 1);
+		}
+		else
+		{ //Normal AVC      
+		  if((strcasecmp(p_Inp->outfile, "\"\"")!=0) && (strlen(p_Inp->outfile)>0))
+		  {
+			if( (strcasecmp(p_Inp->outfile, "\"\"")!=0) && ((p_Vid->p_out_mvc[0]=open(p_Inp->outfile, OPENFLAGS_WRITE, OPEN_PERMISSIONS))==-1) )
+			{
+			  snprintf(errortext, ET_SIZE, "Error open file %s ",p_Inp->outfile);
+			  error(errortext,500);
+			}
+		  }
+		  p_Vid->p_out = p_Vid->p_out_mvc[0];
+		}
+	}
   }
 #endif
 
@@ -1227,10 +1244,12 @@ int OpenDecoder(InputParameters *p_Inp)
   default:
   case PAR_OF_ANNEXB:
 	pDecoder->p_Vid->active_annex = 0;
+	pDecoder->p_Vid->annex_b1_eos = 0;
+	pDecoder->p_Vid->annex_b2_eos = 0;
     malloc_annex_b(pDecoder->p_Vid, &pDecoder->p_Vid->annex_b);
     open_annex_b(pDecoder->p_Inp->infile, pDecoder->p_Vid->annex_b);
 
-	if (pDecoder->p_Vid->annex_b->is_ts)
+	if (pDecoder->p_Vid->annex_b->is_ts && pDecoder->p_Inp->infile2[0] == '\0')
 	{
 		void *sub_stream = get_ts_sub_stream(pDecoder->p_Vid->annex_b->is_ts);
 		if (sub_stream)
@@ -1363,6 +1382,8 @@ int CloseDecoder()
     break;   
   }
 
+  if (pDecoder->p_Vid->p_avs)
+	  close_avs(p_Dec->p_Vid->p_avs);
 #if (MVC_EXTENSION_ENABLE)
   for(i=0;i<MAX_VIEW_NUM;i++)
   {

@@ -80,7 +80,22 @@ int read_next_nalu(VideoParameters *p_Vid, NALU_t *nalu)
 	else
 	{
 		ret = get_annex_b_NALU(p_Vid, nalu, p_Vid->active_annex == 0 ? p_Vid->annex_b : p_Vid->annex_b->sub_annex);
-		if (nalu->nal_unit_type == NALU_TYPE_AUD || nalu->nal_unit_type == NALU_TYPE_VDRD)
+		if (ret <= 0)
+		{
+			if (p_Vid->active_annex == 0)
+				p_Vid->annex_b1_eos = 1;
+			else
+				p_Vid->annex_b2_eos = 1;
+
+			if(p_Vid->annex_b1_eos && p_Vid->annex_b2_eos)
+				return 0;
+			else
+			{
+				p_Vid->active_annex = 1 - p_Vid->active_annex;
+				return read_next_nalu(p_Vid, nalu);
+			}
+		}
+		else if (nalu->nal_unit_type == NALU_TYPE_AUD || nalu->nal_unit_type == NALU_TYPE_VDRD)
 		{
 			CopyNALU(nalu, p_Vid->active_annex == 0 ? p_Vid->nalu0 : p_Vid->nalu1);
 			p_Vid->active_annex = 1 - p_Vid->active_annex;

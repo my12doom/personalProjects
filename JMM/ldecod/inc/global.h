@@ -820,6 +820,8 @@ typedef struct video_par
   int p_out;                       //!< file descriptor to output YUV file
 #if (MVC_EXTENSION_ENABLE)
   int p_out_mvc[MAX_VIEW_NUM];     //!< file descriptor to output YUV file for MVC
+  void* p_out_mvc_avs[MAX_VIEW_NUM];     //!< pointers to output YUV Buffer for MVC
+  void* p_avs;
 #endif
   int p_ref;                       //!< pointer to input original reference YUV file file
 
@@ -858,6 +860,8 @@ typedef struct video_par
 
   struct annex_b_struct *annex_b;
   int active_annex;
+  int annex_b1_eos;
+  int annex_b2_eos;
 
   struct frame_store *out_buffer;
 
@@ -1022,6 +1026,7 @@ typedef struct inp_par
   int thread_count;
   int cpu_mask;
   int skip_to_idr;
+  int output_to_avs;
 
 
   // dummy for encoder

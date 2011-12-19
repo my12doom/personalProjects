@@ -803,23 +803,6 @@ static void CopyPOC(Slice *pSlice0, Slice *currSlice)
   currSlice->ThisPOC   = pSlice0->ThisPOC;
 }
 
-
-int GetThreadAffinityMask(HANDLE thread)
-{
-	HANDLE h = GetCurrentProcess();
-
-	DWORD mask_h, mask_sys, old;
-	GetProcessAffinityMask(h, &mask_h, &mask_sys);
-
-
-	old = SetThreadAffinityMask(thread, mask_h);
-
-	SetThreadAffinityMask(thread, old);
-
-	return old;
-}
-
-
 /*!
  ***********************************************************************
  * \brief
@@ -2162,6 +2145,8 @@ void exit_picture(VideoParameters *p_Vid, StorablePicture **dec_picture)
     tmp_time  = timenorm(tmp_time);
     sprintf(yuvFormat,"%s", yuv_types[chroma_format_idc]);
 
+	if (p_Inp->output_to_avs == FALSE)
+	{
     if (p_Inp->silent == FALSE)
     {
       SNRParameters   *snr = p_Vid->snr;
@@ -2174,9 +2159,10 @@ void exit_picture(VideoParameters *p_Vid, StorablePicture **dec_picture)
     }
     else
       fprintf(stdout,"Completed Decoding frame %05d.\r",snr->frame_ctr);
+	}
 
 	// my12doom
-	if(slice_type == I_SLICE && is_idr) // IDR picture
+	if(slice_type == I_SLICE && is_idr && p_Inp->output_to_avs == FALSE) // IDR picture
 		fprintf(stdout, "%dth IDR, fn=%d.\n", p_Vid->IDR_decoded-1, p_Vid->frame_decoded-1);
 
     fflush(stdout);

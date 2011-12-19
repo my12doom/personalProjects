@@ -24,6 +24,8 @@
 #include "mbuffer.h"
 #include "erc_api.h"
 
+#include "..\AVSMain.h"
+
 #if TRACE
 #define SYMTRACESTRING(s) strncpy(sym->tracestring,s,TRACESTRING_SIZE)
 #else
@@ -823,8 +825,12 @@ void reset_format_info(seq_parameter_set_rbsp_t *sps, VideoParameters *p_Vid, Fr
   updateMaxValue(output);
 
   if (p_Vid->first_sps == TRUE) {
+
+    if (p_Vid->p_avs)
+		set_avs_resolution(p_Vid->p_avs, source->width[0], source->height[0]);
+
     p_Vid->first_sps = FALSE;
-    if(!p_Inp->bDisplayDecParams) {
+    if(p_Inp->bDisplayDecParams) {
       fprintf(stdout,"Image Format : %dx%d (%dx%d)\n", source->width[0], source->height[0], p_Vid->width, p_Vid->height);
       if (p_Vid->yuv_format == YUV400)
         fprintf(stdout,"Color Format : 4:0:0 ");
@@ -838,7 +844,7 @@ void reset_format_info(seq_parameter_set_rbsp_t *sps, VideoParameters *p_Vid, Fr
       fprintf(stdout,"(%d:%d:%d)\n", source->bit_depth[0], source->bit_depth[1], source->bit_depth[2]);
       fprintf(stdout,"--------------------------------------------------------------------------\n");
     }
-    if (!p_Inp->silent)
+    if (!p_Inp->silent && !p_Inp->output_to_avs)
     {
       fprintf(stdout,"POC must = frame# or field# for SNRs to be correct\n");
       fprintf(stdout,"--------------------------------------------------------------------------\n");

@@ -6,7 +6,7 @@ DWORD WINAPI demuxer_thread(LPVOID p);
 
 typedef struct struct_ts_stream
 {
-	char filename[512];
+	char filename[255];
 	ts::demuxer *demuxer;
 	HANDLE demuxing_thread;
 } ts_stream;
@@ -16,8 +16,8 @@ void *open_ts(char *file)
 {
 	ts_stream *s = new ts_stream;
 	s->demuxer = new ts::demuxer();
-	memcpy(s->filename, file, min(strlen(file)+1, 511));
-	s->filename[511] = '\0';
+	memcpy(s->filename, file, min(strlen(file)+1, 254));
+	s->filename[254] = '\0';
 
 	if (s->demuxer->is_ts(file) == false)
 	{
@@ -38,7 +38,7 @@ void *get_ts_sub_stream(void *main_stream)
 
 	// now we really need to scan the file for 0x1012
 	ts::demuxer demuxer;
-	printf("scanning file %s for MVC sub stream...", main_stream_s->filename);
+	printf("Scanning file %s for MVC sub stream...", main_stream_s->filename);
 	if (demuxer.fast_scan_file(main_stream_s->filename) == -1)
 	{
 		printf("NOT TS.\n");
@@ -54,7 +54,7 @@ void *get_ts_sub_stream(void *main_stream)
 			s->demuxer->demux_target = new CFileBuffer(1024*1024);
 			s->demuxer->pid_to_demux = 0x1012;
 			s->demuxing_thread = INVALID_HANDLE_VALUE;
-			memcpy(s->filename, main_stream_s->filename, 512);
+			memcpy(s->filename, main_stream_s->filename, 255);
 
 			printf("OK.\n");
 			return s;
@@ -96,6 +96,8 @@ DWORD WINAPI demuxer_thread(LPVOID p)
 	demuxer->parse_only = true;
 
 	demuxer->demux_file(s->filename);
+
+	demuxer->demux_target->no_more_data = true;
 
 	return 0;
 }

@@ -30,6 +30,14 @@
 #define DECOUTPUT_VIEW0_FILENAME  "H264_Decoder_Output_View0.yuv"
 #define DECOUTPUT_VIEW1_FILENAME  "H264_Decoder_Output_View1.yuv"
 
+static void iPatchInp (InputParameters *p_Inp)
+{
+	//int i;
+	//int storedBplus1;
+	TestParams(Map, NULL);
+	if(p_Inp->export_views == 1)
+		p_Inp->dpb_plus[1] = imax(1, p_Inp->dpb_plus[1]);
+}
 
 static void Configure(InputParameters *p_Inp, int ac, char *av[])
 {
@@ -45,7 +53,34 @@ static void Configure(InputParameters *p_Inp, int ac, char *av[])
   strcpy(p_Inp->LeakyBucketParamFile,"leakybucketparam.cfg");    // file where Leaky Bucket parameters (computed by encoder) are stored
 #endif
 
-  ParseCommand(p_Inp, ac, av);
+  //ParseCommand(p_Inp, ac, av);
+  {
+	  char *content = NULL;
+	  char *filename=DEFAULTCONFIGFILENAME;
+
+	  memcpy (&cfgparams, p_Inp, sizeof (InputParameters));
+	  //Set default parameters.
+	  printf ("Setting Default Parameters...\n");
+	  InitParams(Map);
+
+	  printf ("Parsing Configfile %s\n", filename);
+	  content = GetConfigFileContent (filename);
+	  if (NULL != content)
+	  {
+		  //error (errortext, 300);
+		  ParseContent (p_Inp, Map, content, (int) strlen(content));
+		  printf ("\n");
+		  free (content);
+	  }
+
+	  iPatchInp(p_Inp);
+	  cfgparams = *p_Inp;
+	  p_Inp->enable_32_pulldown = 0;
+	  if (p_Inp->bDisplayDecParams)
+		  DisplayParams(Map, "Decoder Parameters");
+
+  }
+
 
   fprintf(stdout,"----------------------------- JM %s %s -----------------------------\n", VERSION, EXT_VERSION);
   //fprintf(stdout," Decoder config file                    : %s \n",config_filename);
@@ -223,7 +258,7 @@ int main(int argc, char **argv)
   int hFileDecOutput0=-1, hFileDecOutput1=-1;
   int iFramesOutput=0, iFramesDecoded=0;
   InputParameters InputParams;
-  DWORD process_mask, sys_mask;
+  DWORD_PTR process_mask, sys_mask;
   HANDLE hp = GetCurrentProcess();
 
 

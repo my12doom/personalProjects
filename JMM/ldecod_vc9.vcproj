@@ -399,12 +399,393 @@
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
+		<Configuration
+			Name="Debug_DLL|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/ldecod.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
+				Optimization="0"
+				AdditionalIncludeDirectories="ldecod/inc,lcommon/inc"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				OpenMP="true"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pch"
+				AssemblerListingLocation=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/"
+				ObjectFile=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/"
+				ProgramDataBaseFileName=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/"
+				BrowseInformation="1"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="4"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib"
+				OutputFile="./bin/ldecod.dll"
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pdb"
+				GenerateMapFile="true"
+				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug_DLL|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+				TypeLibraryName=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/ldecod.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
+				Optimization="0"
+				AdditionalIncludeDirectories="ldecod/inc,lcommon/inc"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				OpenMP="true"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pch"
+				AssemblerListingLocation=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/"
+				ObjectFile=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/"
+				ProgramDataBaseFileName=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/"
+				BrowseInformation="1"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib"
+				OutputFile="./bin/ldecod.exe"
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pdb"
+				GenerateMapFile="true"
+				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release_DLL|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/ldecod.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions=""
+				Optimization="2"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="ldecod\inc;lcommon\inc"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CRT_SECURE_NO_DEPRECATE"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="true"
+				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="2"
+				OpenMP="true"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pch"
+				AssemblerListingLocation=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/"
+				ObjectFile=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/"
+				ProgramDataBaseFileName=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/"
+				BrowseInformation="1"
+				BrowseInformationFile=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CallingConvention="0"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/FIXED:NO"
+				AdditionalDependencies="Ws2_32.lib libtcmalloc_minimal.lib"
+				OutputFile="./bin/ldecod.dll"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pdb"
+				GenerateMapFile="true"
+				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release_DLL|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+				TypeLibraryName=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/ldecod.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions=""
+				Optimization="2"
+				InlineFunctionExpansion="2"
+				AdditionalIncludeDirectories="ldecod\inc;lcommon\inc"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CRT_SECURE_NO_DEPRECATE"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="true"
+				EnableFunctionLevelLinking="true"
+				OpenMP="true"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pch"
+				AssemblerListingLocation=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/"
+				ObjectFile=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/"
+				ProgramDataBaseFileName=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/"
+				BrowseInformation="1"
+				BrowseInformationFile=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CallingConvention="0"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/FIXED:NO"
+				AdditionalDependencies="Ws2_32.lib"
+				OutputFile="./bin/ldecod64.dll"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pdb"
+				GenerateMapFile="true"
+				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
 	</Configurations>
 	<References>
 	</References>
 	<Files>
 		<Filter
-			Name="Source Files"
+			Name="ldecod sources"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
 			<File
@@ -660,14 +1041,18 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ldecod\src\ts_stream.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\ldecod\src\vlc.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_DLL|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -681,7 +1066,7 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Header Files"
+			Name="ldecod headers"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			>
 			<File
@@ -941,10 +1326,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ldecod\inc\ts_stream.h"
-				>
-			</File>
-			<File
 				RelativePath=".\lcommon\inc\typedefs.h"
 				>
 			</File>
@@ -998,6 +1379,38 @@
 			</File>
 			<File
 				RelativePath=".\ldecod\tsdemux\ts.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\src\ts_stream.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\inc\ts_stream.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="AviSynth"
+			>
+			<File
+				RelativePath=".\ldecod\avisynth.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\AVSMain.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\AVSMain.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\m2ts_scanner.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\m2ts_scanner.h"
 				>
 			</File>
 		</Filter>
