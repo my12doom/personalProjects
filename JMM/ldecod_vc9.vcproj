@@ -1270,6 +1270,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ldecod\mmx.h"
+				>
+			</File>
+			<File
 				RelativePath=".\lcommon\inc\mv_prediction.h"
 				>
 			</File>

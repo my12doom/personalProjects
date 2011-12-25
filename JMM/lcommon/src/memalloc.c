@@ -169,7 +169,8 @@ int get_mem2Dmp(PicMotionParams ***array2D, int dim0, int dim1)
 
   if((*array2D    = (PicMotionParams**)mem_malloc(dim0 *      sizeof(PicMotionParams*))) == NULL)
     no_mem_exit("get_mem2Dmp: array2D");
-  if((*(*array2D) = (PicMotionParams* )mem_calloc(dim0 * dim1, sizeof(PicMotionParams ))) == NULL)
+// my12doom warning
+  if((*(*array2D) = (PicMotionParams* )mem_malloc(dim0 * dim1 * sizeof(PicMotionParams ))) == NULL)
     no_mem_exit("get_mem2Dmp: array2D");
 
   for(i = 1 ; i < dim0; i++)
@@ -888,7 +889,8 @@ int get_mem2Dpel_pad(imgpel ***array2D, int dim0, int dim1, int iPadY, int iPadX
   iWidth = dim1+2*iPadX;
   if((*array2D    = (imgpel**)mem_malloc(iHeight*sizeof(imgpel*))) == NULL)
     no_mem_exit("get_mem2Dpel_pad: array2D");
-  if((*(*array2D) = (imgpel* )mem_calloc(iHeight * iWidth, sizeof(imgpel ))) == NULL)
+// my12doom warning
+  if((*(*array2D) = (imgpel* )mem_malloc(iHeight * iWidth * sizeof(imgpel ))) == NULL)
     no_mem_exit("get_mem2Dpel_pad: array2D");
 
   (*array2D)[0] += iPadX;

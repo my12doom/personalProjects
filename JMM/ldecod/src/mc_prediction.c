@@ -22,6 +22,31 @@
 #include "macroblock.h"
 #include "memalloc.h"
 #include "dec_statistics.h"
+#include <emmintrin.h>
+
+inline void my12doom_memcpy16(void *dst, void*src)
+{
+	__m128i *s = (__m128i*)src;
+	__m128i *d = (__m128i*)dst;
+
+	_mm_storeu_si128(d, _mm_loadu_si128(s));
+}
+
+inline void my12doom_memcpy8(void *dst, void*src)
+{
+	uint32 *s = (uint32*)src;
+	uint32 *d = (uint32*)dst;
+
+	d[0] = s[0];
+	d[1] = s[1];
+}
+inline void my12doom_memcpy4(void *dst, void*src)
+{
+	uint32 *s = (uint32*)src;
+	uint32 *d = (uint32*)dst;
+
+	d[0] = s[0];
+}
 
 int allocate_pred_mem(Slice *currSlice)
 {
@@ -54,12 +79,33 @@ static const int COEF[6] = { 1, -5, 20, 20, -5, 1 };
 static void mc_prediction(imgpel **mb_pred, imgpel **block, int block_size_y, int block_size_x, int ioff)
 {  
 
-  int j;
+	int j;
 
-  for (j = 0; j < block_size_y; j++)
-  {
-    memcpy(&mb_pred[j][ioff], block[j], block_size_x * sizeof(imgpel));
-  }
+	if (block_size_x == 4)
+		for (j = 0; j < block_size_y; j++)
+		{
+			my12doom_memcpy4(&mb_pred[j][ioff], block[j]);
+			//memcpy(&mb_pred[j][ioff], block[j], block_size_x * sizeof(imgpel));
+		}
+	else if (block_size_x == 8)
+		for (j = 0; j < block_size_y; j++)
+		{
+			my12doom_memcpy8(&mb_pred[j][ioff], block[j]);
+
+			//memcpy(&mb_pred[j][ioff], block[j], block_size_x * sizeof(imgpel));
+		}
+	else if (block_size_x == 16)
+		for (j = 0; j < block_size_y; j++)
+		{
+			my12doom_memcpy16(&mb_pred[j][ioff], block[j]);
+			memcpy(&mb_pred[j][ioff], block[j], block_size_x * sizeof(imgpel));
+		}
+	else
+		for (j = 0; j < block_size_y; j++)
+		{
+			memcpy(&mb_pred[j][ioff], block[j], block_size_x * sizeof(imgpel));
+		}
+
 }
 
 /*!
@@ -175,10 +221,12 @@ static void get_block_00(imgpel *block, imgpel *cur_img, int span, int block_siz
   
   for (j = 0; j < block_size_y; j += 2)
   { 
-    memcpy(block, cur_img, MB_BLOCK_SIZE * sizeof(imgpel));
+    //memcpy(block, cur_img, MB_BLOCK_SIZE * sizeof(imgpel));
+    my12doom_memcpy16(block, cur_img);
     block += MB_BLOCK_SIZE;
     cur_img += span;
-    memcpy(block, cur_img, MB_BLOCK_SIZE * sizeof(imgpel));
+    //memcpy(block, cur_img, MB_BLOCK_SIZE * sizeof(imgpel));
+	my12doom_memcpy16(block, cur_img);
     block += MB_BLOCK_SIZE;
     cur_img += span;
   }
@@ -190,16 +238,26 @@ static void get_block_00(imgpel *block, imgpel *cur_img, int span, int block_siz
  * \brief
  *    Qpel (1,0) horizontal
  ************************************************************************
- */ 
+ */
+
+
 static void get_luma_10(imgpel **block, imgpel **cur_imgY, int block_size_y, int block_size_x, int x_pos , int max_imgpel_value)
 {
-  imgpel *p0, *p1, *p2, *p3, *p4, *p5;
-  imgpel *orig_line, *cur_line;
-  int i, j;
-  int result;
+  //imgpel *p0, *p1, *p2, *p3, *p4, *p5;
+  //imgpel *orig_line, *cur_line;
+  int j;
+  //int result;
   
+  __m128i mm0 = _mm_set1_epi16(0);
+  __m128i mm16=_mm_set1_epi16(16);
+  __m128i mm5 = _mm_set1_epi16(5);
+  __m128i mm20 = _mm_set1_epi16(20);
+
   for (j = 0; j < block_size_y; j++)
   {
+	/*
+    if (block_size_x>8)
+	{
     cur_line = &(cur_imgY[j][x_pos]);
     p0 = &cur_imgY[j][x_pos - 2];
     p1 = p0 + 1;
@@ -217,6 +275,104 @@ static void get_luma_10(imgpel **block, imgpel **cur_imgY, int block_size_y, int
       *orig_line = (imgpel) ((*orig_line + *(cur_line++) + 1 ) >> 1);
       orig_line++;
     }
+	}
+	else
+	*/
+	{
+	
+
+	// loading
+    __m128i * pcur_line = (__m128i *)&cur_imgY[j][x_pos];
+	__m128i * porig_line = (__m128i*)block[j];
+	__m128i * pp0 = (__m128i*)(((imgpel*)pcur_line) - 2);
+	__m128i p0 = _mm_loadu_si128(pp0);
+	__m128i p1 = _mm_srli_si128(p0, 1);
+	__m128i p2 = _mm_srli_si128(p0, 2);
+	__m128i p3 = _mm_srli_si128(p0, 3);
+	__m128i p4 = _mm_srli_si128(p0, 4);
+	__m128i p5 = _mm_srli_si128(p0, 5);
+	__m128i cur_line = p2;
+
+	p0 = _mm_unpacklo_epi8(p0, mm0);
+	p1 = _mm_unpacklo_epi8(p1, mm0);
+	p2 = _mm_unpacklo_epi8(p2, mm0);
+	p3 = _mm_unpacklo_epi8(p3, mm0);
+	p4 = _mm_unpacklo_epi8(p4, mm0);
+	p5 = _mm_unpacklo_epi8(p5, mm0);
+
+	// p0 = (p0+p5) + 20(p2+p3) - 5(p1+p4)
+	p0 = _mm_add_epi16(p0, p5);
+	p1 = _mm_add_epi16(p1, p4);
+	p2 = _mm_add_epi16(p2, p3);
+
+	p1 = _mm_mullo_epi16(p1, mm5);
+	p2 = _mm_mullo_epi16(p2, mm20);
+
+	p0 = _mm_add_epi16(p0, p2);
+	p0 = _mm_sub_epi16(p0, p1);
+
+	// p0 = (p0 + 16) >> 5
+	p0 = _mm_add_epi16(p0, mm16);
+	p0 = _mm_srai_epi16(p0, 5);
+
+	// pack , p0 = clip(p0, 0, 255)
+	p0 = _mm_packus_epi16(p0, p0);
+
+	// p0 = avg(p0, cur_line)
+	p0 = _mm_avg_epu8(p0, cur_line);
+
+	// store
+	_mm_storel_epi64(porig_line, p0);
+
+	if (block_size_x>8)
+	{
+		// more than 8 pixel ? move 8 pixel ahead and do it again!
+		pcur_line = (__m128i *)&cur_imgY[j][x_pos+8];
+		porig_line = (__m128i*)(block[j]+8);
+
+		// loading
+		pp0 = (__m128i*)(((imgpel*)pcur_line) - 2);
+		p0 = _mm_loadu_si128(pp0);
+		p1 = _mm_srli_si128(p0, 1);
+		p2 = _mm_srli_si128(p0, 2);
+		p3 = _mm_srli_si128(p0, 3);
+		p4 = _mm_srli_si128(p0, 4);
+		p5 = _mm_srli_si128(p0, 5);
+		cur_line = p2;
+
+		p0 = _mm_unpacklo_epi8(p0, mm0);
+		p1 = _mm_unpacklo_epi8(p1, mm0);
+		p2 = _mm_unpacklo_epi8(p2, mm0);
+		p3 = _mm_unpacklo_epi8(p3, mm0);
+		p4 = _mm_unpacklo_epi8(p4, mm0);
+		p5 = _mm_unpacklo_epi8(p5, mm0);
+
+		// p0 = (p0+p5) + 20(p2+p3) - 5(p1+p4)
+		p0 = _mm_add_epi16(p0, p5);
+		p1 = _mm_add_epi16(p1, p4);
+		p2 = _mm_add_epi16(p2, p3);
+
+		p1 = _mm_mullo_epi16(p1, mm5);
+		p2 = _mm_mullo_epi16(p2, mm20);
+
+		p0 = _mm_add_epi16(p0, p2);
+		p0 = _mm_sub_epi16(p0, p1);
+
+		// p0 = (p0 + 16) >> 5
+		p0 = _mm_add_epi16(p0, mm16);
+		p0 = _mm_srai_epi16(p0, 5);
+
+		// pack , p0 = clip(p0, 0, 255)
+		p0 = _mm_packus_epi16(p0, p0);
+
+		// p0 = avg(p0, cur_line)
+		p0 = _mm_avg_epu8(p0, cur_line);
+
+		// store
+		_mm_storel_epi64(porig_line, p0);
+	}
+
+	}
   }
 }
 
@@ -298,19 +454,27 @@ static void get_luma_01(imgpel **block, imgpel **cur_imgY, int block_size_y, int
   imgpel *orig_line, *cur_line;
   int i, j;
   int result;
-  int jj = 0;
-  p0 = &(cur_imgY[ - 2][x_pos]);
+
+  __m128i mm0 = _mm_set1_epi16(0);
+  __m128i mm16=_mm_set1_epi16(16);
+  __m128i mm5 = _mm_set1_epi16(5);
+  __m128i mm20 = _mm_set1_epi16(20);
+
+  //int jj = 0;
+  //p0 = &(cur_imgY[ - 2][x_pos]);
   for (j = 0; j < block_size_y; j++)
-  {                  
+  {
+#if 0
+	p0 = &(cur_imgY[j - 2][x_pos]);
     p1 = p0 + shift_x;          
     p2 = p1 + shift_x;
     p3 = p2 + shift_x;
     p4 = p3 + shift_x;
     p5 = p4 + shift_x;
     orig_line = block[j];
-    cur_line = &(cur_imgY[jj++][x_pos]);
+    cur_line = &(cur_imgY[j][x_pos]);
 
-    for (i = 0; i < block_size_x; i++)
+    for (i = 0; i < 16; i++)
     {
       result  = (*(p0++) + *(p5++)) - 5 * (*(p1++) + *(p4++)) + 20 * (*(p2++) + *(p3++));
 
@@ -318,7 +482,109 @@ static void get_luma_01(imgpel **block, imgpel **cur_imgY, int block_size_y, int
       *orig_line = (imgpel) ((*orig_line + *(cur_line++) + 1 ) >> 1);
       orig_line++;
     }
-    p0 = p1 - block_size_x;
+    //p0 = p1 - 16;
+#else
+
+	  // loading
+	  __m128i * pcur_line = (__m128i *)&cur_imgY[j][x_pos];
+	  __m128i * porig_line = (__m128i*)block[j];
+	  __m128i * pp0 = (__m128i*)&cur_imgY[j-2][x_pos];
+	  __m128i * pp1 = (__m128i*)&cur_imgY[j-1][x_pos];
+	  __m128i * pp2 = (__m128i*)&cur_imgY[j-0][x_pos];
+	  __m128i * pp3 = (__m128i*)&cur_imgY[j+1][x_pos];
+	  __m128i * pp4 = (__m128i*)&cur_imgY[j+2][x_pos];
+	  __m128i * pp5 = (__m128i*)&cur_imgY[j+3][x_pos];
+	  __m128i p0 = _mm_loadu_si128(pp0);
+	  __m128i p1 = _mm_loadu_si128(pp1);
+	  __m128i p2 = _mm_loadu_si128(pp2);
+	  __m128i p3 = _mm_loadu_si128(pp3);
+	  __m128i p4 = _mm_loadu_si128(pp4);
+	  __m128i p5 = _mm_loadu_si128(pp5);
+	  __m128i cur_line = p2;
+
+	  p0 = _mm_unpacklo_epi8(p0, mm0);
+	  p1 = _mm_unpacklo_epi8(p1, mm0);
+	  p2 = _mm_unpacklo_epi8(p2, mm0);
+	  p3 = _mm_unpacklo_epi8(p3, mm0);
+	  p4 = _mm_unpacklo_epi8(p4, mm0);
+	  p5 = _mm_unpacklo_epi8(p5, mm0);
+
+	  // p0 = (p0+p5) + 20(p2+p3) - 5(p1+p4)
+	  p0 = _mm_add_epi16(p0, p5);
+	  p1 = _mm_add_epi16(p1, p4);
+	  p2 = _mm_add_epi16(p2, p3);
+
+	  p1 = _mm_mullo_epi16(p1, mm5);
+	  p2 = _mm_mullo_epi16(p2, mm20);
+
+	  p0 = _mm_add_epi16(p0, p2);
+	  p0 = _mm_sub_epi16(p0, p1);
+
+	  // p0 = (p0 + 16) >> 5
+	  p0 = _mm_add_epi16(p0, mm16);
+	  p0 = _mm_srai_epi16(p0, 5);
+
+	  // pack , p0 = clip(p0, 0, 255)
+	  p0 = _mm_packus_epi16(p0, p0);
+
+	  // p0 = avg(p0, cur_line)
+	  p0 = _mm_avg_epu8(p0, cur_line);
+
+	  // store
+	  _mm_storel_epi64(porig_line, p0);
+
+	  if (block_size_x>8)
+	  {
+		  // more than 8 pixel ? move 8 pixel ahead and do it again!
+		  // loading
+		  pcur_line = (__m128i *)&cur_imgY[j][x_pos+8];
+		  porig_line = (__m128i*)(block[j]+8);
+		  pp0 = (__m128i*)&cur_imgY[j-2][x_pos+8];
+		  pp1 = (__m128i*)&cur_imgY[j-1][x_pos+8];
+		  pp2 = (__m128i*)&cur_imgY[j-0][x_pos+8];
+		  pp3 = (__m128i*)&cur_imgY[j+1][x_pos+8];
+		  pp4 = (__m128i*)&cur_imgY[j+2][x_pos+8];
+		  pp5 = (__m128i*)&cur_imgY[j+3][x_pos+8];
+		  p0 = _mm_loadu_si128(pp0);
+		  p1 = _mm_loadu_si128(pp1);
+		  p2 = _mm_loadu_si128(pp2);
+		  p3 = _mm_loadu_si128(pp3);
+		  p4 = _mm_loadu_si128(pp4);
+		  p5 = _mm_loadu_si128(pp5);
+		  cur_line = p2;
+
+		  p0 = _mm_unpacklo_epi8(p0, mm0);
+		  p1 = _mm_unpacklo_epi8(p1, mm0);
+		  p2 = _mm_unpacklo_epi8(p2, mm0);
+		  p3 = _mm_unpacklo_epi8(p3, mm0);
+		  p4 = _mm_unpacklo_epi8(p4, mm0);
+		  p5 = _mm_unpacklo_epi8(p5, mm0);
+
+		  // p0 = (p0+p5) + 20(p2+p3) - 5(p1+p4)
+		  p0 = _mm_add_epi16(p0, p5);
+		  p1 = _mm_add_epi16(p1, p4);
+		  p2 = _mm_add_epi16(p2, p3);
+
+		  p1 = _mm_mullo_epi16(p1, mm5);
+		  p2 = _mm_mullo_epi16(p2, mm20);
+
+		  p0 = _mm_add_epi16(p0, p2);
+		  p0 = _mm_sub_epi16(p0, p1);
+
+		  // p0 = (p0 + 16) >> 5
+		  p0 = _mm_add_epi16(p0, mm16);
+		  p0 = _mm_srai_epi16(p0, 5);
+
+		  // pack , p0 = clip(p0, 0, 255)
+		  p0 = _mm_packus_epi16(p0, p0);
+
+		  // p0 = avg(p0, cur_line)
+		  p0 = _mm_avg_epu8(p0, cur_line);
+
+		  // store
+		  _mm_storel_epi64(porig_line, p0);
+	  }
+#endif
   }
 }
 
@@ -984,6 +1250,9 @@ void get_block_luma(StorablePicture *curr_ref, int x_pos, int y_pos, int block_s
  */ 
 static void get_chroma_0X(imgpel *block, imgpel *cur_img, int span, int block_size_y, int block_size_x, int w00, int w01, int total_scale)
 {
+  if (block_size_x == 16)
+  {
+
   imgpel *cur_row = cur_img;
   imgpel *nxt_row = cur_img + span;
 
@@ -997,13 +1266,52 @@ static void get_chroma_0X(imgpel *block, imgpel *cur_img, int span, int block_si
       cur_line    = cur_row;
       cur_line_p1 = nxt_row;
       blk_line = block;
+
       block += 16;
       cur_row = nxt_row;
       nxt_row += span;
+
     for (i = 0; i < block_size_x; i++)
     {
       result = (w00 * *cur_line++ + w01 * *cur_line_p1++);
       *(blk_line++) = (imgpel) rshift_rnd_sf(result, total_scale);
+    }
+  }
+  }
+  else
+  {
+    imgpel *cur_row = cur_img; 
+	imgpel *nxt_row = cur_img + span;
+    int j;
+
+	__m128i curline , curline_p1, result_p , pw00, pw01;
+	__m128i mm0 , mm_max;
+	__m128i *line, *line_p1 , *pblock;
+	int totalscale_p = (1<<(total_scale-1));
+
+	pw00 = _mm_set1_epi16((unsigned short) w00 );
+	pw01 = _mm_set1_epi16((unsigned short) w01 );
+	mm0  = _mm_set1_epi16(0);
+	mm_max=_mm_set1_epi16((unsigned short) 255 );
+
+    for (j = 0; j < block_size_y; j++)
+    {
+		line    = (__m128i*)cur_row;
+		line_p1 = (__m128i*)(nxt_row);
+		pblock = (__m128i *)block;
+
+		block += 16;
+		cur_row = nxt_row;
+		nxt_row += span;
+
+		curline     = _mm_unpacklo_epi8(_mm_loadu_si128 (line), mm0);
+		curline_p1   = _mm_unpacklo_epi8(_mm_loadu_si128 (line_p1), mm0);
+
+
+	    result_p = _mm_add_epi16( _mm_mullo_epi16(curline,pw00) , _mm_mullo_epi16( curline_p1, pw01) );
+	    result_p = _mm_min_epi16 ( _mm_max_epi16(_mm_srai_epi16( _mm_add_epi16(result_p,_mm_set1_epi16((unsigned short) totalscale_p)) , total_scale ) , mm0) , mm_max );
+	    _mm_storel_epi64( pblock ,_mm_packus_epi16 (result_p, result_p));
+
     }
   }
 }
@@ -1017,26 +1325,54 @@ static void get_chroma_0X(imgpel *block, imgpel *cur_img, int span, int block_si
  */ 
 static void get_chroma_X0(imgpel *block, imgpel *cur_img, int span, int block_size_y, int block_size_x, int w00, int w10, int total_scale)
 {
-  imgpel *cur_row = cur_img;
- 
+  imgpel *cur_row = cur_img; 
 
-    imgpel *cur_line, *cur_line_p1;
-    imgpel *blk_line;
-    int result;
-    int i, j;
+    //imgpel *cur_line, *cur_line_p1;
+    //imgpel *blk_line;
+    //int result;
+    int j;
+	//int i;
+
+	__m128i curline , curline_1, result_p , pw00, pw10;
+	__m128i mm0 , mm_max;
+	__m128i *line, *line_1 , *pblock;
+	int totalscale_p = (1<<(total_scale-1));
+
+	pw00 = _mm_set1_epi16((unsigned short) w00 );
+	pw10 = _mm_set1_epi16((unsigned short) w10 );
+	mm0  = _mm_set1_epi16(0);
+	mm_max=_mm_set1_epi16((unsigned short) 255 );
+
     for (j = 0; j < block_size_y; j++)
     {
-      cur_line    = cur_row;
-      cur_line_p1 = cur_line + 1;
-      blk_line = block;
+		line    = (__m128i*)cur_row;
+		//line_1 = (__m128i*)(cur_row+1);
+		pblock = (__m128i *)block;
+
+		curline = _mm_loadu_si128 (line);
+		curline_1   = _mm_srli_si128(curline, 1);
+		curline = _mm_unpacklo_epi8(curline, mm0);
+		curline_1 = _mm_unpacklo_epi8(curline_1, mm0);
+
+	  //cur_line    = cur_row;
+      //cur_line_p1 = cur_line + 1;
+      //blk_line = block;
       block += 16;
       cur_row += span;
+
+	  result_p = _mm_add_epi16( _mm_mullo_epi16(curline,pw00) , _mm_mullo_epi16( curline_1, pw10) );
+	  result_p = _mm_min_epi16 ( _mm_max_epi16(_mm_srai_epi16( _mm_add_epi16(result_p,_mm_set1_epi16((unsigned short) totalscale_p)) , total_scale ) , mm0) , mm_max );
+	  _mm_storel_epi64( pblock ,_mm_packus_epi16 (result_p, result_p));
+
+
+	  /*
       for (i = 0; i < block_size_x; i++)
       {
         result = (w00 * *cur_line++ + w10 * *cur_line_p1++);
         //*(blk_line++) = (imgpel) iClip1(max_imgpel_value, rshift_rnd_sf(result, total_scale));
         *(blk_line++) = (imgpel) rshift_rnd_sf(result, total_scale);
       }
+	  */
     }
 }
 
@@ -1050,8 +1386,19 @@ static void get_chroma_XY(imgpel *block, imgpel *cur_img, int span, int block_si
 { 
   imgpel *cur_row = cur_img;
   imgpel *nxt_row = cur_img + span;
+  __m128i curline , curline_1, curlinep1, curlinep1_1 , result_p , pw00, pw01, pw10, pw11 ;
+  __m128i mm0 , mm_max;
+  __m128i *line, *line_1 , *linep1 , *linep1_1 , *pblock;
+  int totalscale_p = (1<<(total_scale-1));
 
+  pw00 = _mm_set1_epi16((unsigned short) w00 );
+  pw01 = _mm_set1_epi16((unsigned short) w01 );
+  pw10 = _mm_set1_epi16((unsigned short) w10 );
+  pw11 = _mm_set1_epi16((unsigned short) w11 );
+  mm0  = _mm_set1_epi16(0);
+  mm_max=_mm_set1_epi16((unsigned short) 255 );
 
+  if (block_size_x==16)
   {
     imgpel *cur_line, *cur_line_p1;
     imgpel *blk_line;
@@ -1065,13 +1412,71 @@ static void get_chroma_XY(imgpel *block, imgpel *cur_img, int span, int block_si
       block += 16;
       cur_row = nxt_row;
       nxt_row += span;
-      for (i = 0; i < block_size_x; i++)
+     for (i = 0; i < block_size_x; i++)
       {
         result  = (w00 * *(cur_line++) + w01 * *(cur_line_p1++));
         result += (w10 * *(cur_line  ) + w11 * *(cur_line_p1  ));
         *(blk_line++) = (imgpel) rshift_rnd_sf(result, total_scale);
       }
     }
+  }
+  else
+  {
+	  int j;
+	  for (j = 0; j < block_size_y; j++)
+	  {
+		line    = (__m128i*)cur_row;
+		//line_1 = (__m128i*)(cur_row+1);
+		linep1 = (__m128i*)nxt_row;
+		//linep1_1 = (__m128i *)(nxt_row+1);
+
+		pblock = (__m128i*)block;
+
+		block += 16;
+		cur_row = nxt_row;
+		nxt_row += span;
+
+		//curline     = _mm_unpacklo_epi8(_mm_loadu_si128 (line), mm0);
+		//curline_1   = _mm_unpacklo_epi8(_mm_loadu_si128 (line_1), mm0);
+		//curlinep1   = _mm_unpacklo_epi8(_mm_loadu_si128 (linep1), mm0);
+		//curlinep1_1 = _mm_unpacklo_epi8(_mm_loadu_si128 (linep1_1), mm0);
+
+		curline = _mm_loadu_si128 (line);
+		curline_1   = _mm_srli_si128(curline, 1);
+		curline = _mm_unpacklo_epi8(curline, mm0);
+		curline_1 = _mm_unpacklo_epi8(curline_1, mm0);
+
+		curlinep1 = _mm_loadu_si128 (linep1);
+		curlinep1_1   = _mm_srli_si128(curlinep1, 1);
+		curlinep1 = _mm_unpacklo_epi8(curlinep1, mm0);
+		curlinep1_1 = _mm_unpacklo_epi8(curlinep1_1, mm0);
+
+		result_p = _mm_add_epi16( _mm_add_epi16( _mm_mullo_epi16(curline,pw00) , _mm_mullo_epi16( curlinep1, pw01) ) , _mm_add_epi16( _mm_mullo_epi16(curline_1,pw10), _mm_mullo_epi16(curlinep1_1,pw11) ) );
+		result_p = _mm_min_epi16 ( _mm_max_epi16(_mm_srai_epi16( _mm_add_epi16(result_p,_mm_set1_epi16((unsigned short) totalscale_p)) , total_scale ) , mm0) , mm_max );
+		_mm_storel_epi64( pblock ,_mm_packus_epi16 (result_p, result_p));
+
+		/*
+		if (block_size_x==16)
+		{
+			line     +=1;// (__m128i *) &cur_img[y_pos + j    ][x_pos];
+			line_1   +=1;// (__m128i *) &cur_img[y_pos + j    ][x_pos+1];
+			linep1   +=1;// (__m128i *) &cur_img[y_pos + j +1 ][x_pos];
+			linep1_1 +=1;// (__m128i *) &cur_img[y_pos + j +1 ][x_pos+1];
+			pblock   +=1;// (__m128i *) block[j];
+
+			curline     = _mm_loadu_si128 (line);
+			curline_1   = _mm_loadu_si128 (line_1);
+			curlinep1   = _mm_loadu_si128 (linep1);
+			curlinep1_1 = _mm_loadu_si128 (linep1_1);
+
+			result_p = _mm_add_epi16( _mm_add_epi16( _mm_mullo_epi16(curline,pw00) , _mm_mullo_epi16( curlinep1, pw01) ) , _mm_add_epi16( _mm_mullo_epi16(curline_1,pw10), _mm_mullo_epi16(curlinep1_1,pw11) ) );
+
+			_mm_storeu_si128( pblock ,_mm_min_epi16 ( _mm_max_epi16(_mm_srai_epi16( _mm_add_epi16(result_p,_mm_set1_epi16((unsigned short) totalscale_p)) , total_scale ) , mm0) , mm_max ));
+
+		}
+		*/
+
+	  }
   }
 }
 
@@ -1133,6 +1538,7 @@ static void get_block_chroma(StorablePicture *curr_ref, int x_pos, int y_pos, in
     }
   }
 }
+
 
 void intra_cr_decoding(Macroblock *currMB, int yuv)
 {

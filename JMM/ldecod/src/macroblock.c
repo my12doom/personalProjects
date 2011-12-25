@@ -593,9 +593,9 @@ void start_macroblock(Slice *currSlice, Macroblock **currMB)
   if (currSlice->slice_type != I_SLICE)
   {
     if (currSlice->slice_type != B_SLICE)
-      fast_memset((*currMB)->mvd[0][0][0], 0, MB_BLOCK_PARTITIONS * 2 * sizeof(short));
+      fast_memset_zero((*currMB)->mvd[0][0][0], MB_BLOCK_PARTITIONS * 2 * sizeof(short));
     else
-      fast_memset((*currMB)->mvd[0][0][0], 0, 2 * MB_BLOCK_PARTITIONS * 2 * sizeof(short));
+      fast_memset_zero((*currMB)->mvd[0][0][0], 2 * MB_BLOCK_PARTITIONS * 2 * sizeof(short));
   }
   
   fast_memset((*currMB)->s_cbp, 0, 3 * sizeof(CBPStructure));

@@ -266,8 +266,8 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	while (avs->left_buffer == NULL || avs->right_buffer == NULL)
 		Sleep(10);
 
-	// wait for buffer full
-	while(avs->left_buffer->m_item_count < buffer_count)
+	// wait for buffer fill
+	while(avs->left_buffer->m_item_count < buffer_count && avs->right_buffer->m_item_count == 0)
 		Sleep(10);
 
 	// delete right buffer if it is empty (2D)
@@ -388,12 +388,12 @@ retry:
 		// set it black and return
 		for(int i=0; i<m_height; i++)
 		{
-			memset(data, 0, m_width);
+			memset(data+offset, 0, m_width);
 			data += stride;
 		}
 		for(int i=0; i<m_height; i++)
 		{
-			memset(data, 0, m_width/2);
+			memset(data+offset/2, 128, m_width/2);
 			data += stride/2;
 		}
 

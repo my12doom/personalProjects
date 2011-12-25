@@ -814,8 +814,73 @@ static void CopyPOC(Slice *pSlice0, Slice *currSlice)
 int total_read_time = 0;
 int total_dec_time = 0;
 
+int thread_count = 4;
+int slice_count;
+HANDLE thread_handles[16] = {INVALID_HANDLE_VALUE};
+HANDLE thread_idle_handles[16] = {INVALID_HANDLE_VALUE};
+HANDLE thread_work_handles[16] = {INVALID_HANDLE_VALUE};
+Slice * thread_tasks[16];
+CRITICAL_SECTION cs;
+
+DWORD WINAPI slice_decoding_thread(LPVOID p)
+{
+	int task_id = *(int*)p;
+	free(p);
+idle:
+	//SuspendThread(GetCurrentThread());
+	WaitForSingleObject(thread_work_handles[task_id], INFINITE);
+
+	{
+		Slice * to_dec = NULL;
+		int i, current_header;
+again:
+
+		{
+			float min_mb = 2.0f;
+			float mb;
+
+			EnterCriticalSection(&cs);
+			to_dec = NULL;
+			for(i=0; i<slice_count; i++)
+			{
+				if (thread_tasks[i] == NULL)
+					continue;
+
+				mb = (float)(thread_tasks[i]->num_dec_mb + thread_tasks[i]->erc_mvperMB) / thread_tasks[i]->end_mb_nr_plus1;
+				if (mb < min_mb && !thread_tasks[i]->decoding_done && !thread_tasks[i]->decoding)
+				{
+					to_dec = thread_tasks[i];
+					current_header = to_dec->current_header;
+					min_mb = mb;
+				}
+			}
+
+			if (to_dec)
+				to_dec->decoding = TRUE;
+
+			LeaveCriticalSection(&cs);
+		}
+
+		if (to_dec)
+		{
+			decode_slice_step(to_dec, current_header);
+			to_dec->decoding = FALSE;
+			goto again;
+		}
+	}
+
+
+
+	ResetEvent(thread_work_handles[task_id]);
+	SetEvent(thread_idle_handles[task_id]);
+	goto idle;
+
+	return -1;		// never reach here!
+}
+
 int decode_one_frame(DecoderParams *pDecoder)
 {
+
   VideoParameters *p_Vid = pDecoder->p_Vid;
   InputParameters *p_Inp = p_Vid->p_Inp;
   int current_header, iRet;
@@ -827,6 +892,21 @@ int decode_one_frame(DecoderParams *pDecoder)
 
   int skip = p_Inp->frame_to_skip;
   
+  if (thread_handles[0] == INVALID_HANDLE_VALUE)
+  {
+	  int i;
+	  InitializeCriticalSection(&cs);
+	  for(i=0; i<thread_count; i++)
+	  {
+		  int *p = (int*)malloc(sizeof(int));
+		  *p = i;
+		  thread_idle_handles[i] = CreateEvent(NULL, TRUE, TRUE, NULL);
+		  thread_work_handles[i] = CreateEvent(NULL, TRUE, FALSE, NULL);
+		  thread_handles[i] = CreateThread(NULL, NULL, slice_decoding_thread, p, NULL, NULL);
+		  thread_tasks[i] = NULL;
+	  }
+  }
+
   //read one picture first;
 read:
   p_Vid->iSliceNumOfCurrPic=0;
@@ -968,57 +1048,27 @@ read:
 
   dec_time = timeGetTime();
   {
+	  int i;
 	  for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
 	  {
 		  Slice * currSlice = ppSliceList[iSliceNo];
 		  int current_header = currSlice->current_header;
 		  init_slice(p_Vid, currSlice);
+
+		  thread_tasks[iSliceNo] = currSlice;
 	  }
 
 	  //my12doom : multi threading!
-#pragma omp parallel// num_threads(4)
-	  //for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
+	  slice_count = p_Vid->iSliceNumOfCurrPic;
+
+	  for(i=0; i<thread_count; i++)
 	  {
-		  Slice * to_dec = NULL;
-
-		  //printf("(%d)%02x.\n", GetCurrentThreadId(), GetThreadAffinityMask(GetCurrentThread()));
-		  //decode_slice(currSlice, current_header);
-
-		  //while (!currSlice->decoding_done)
-		  //  decode_slice_step(currSlice, current_header);
-
-again:
-
-#pragma omp critical
-		  {
-			  int i;
-			  unsigned int min_mb = 0xffffff;
-
-			  to_dec = NULL;
-			  for(i=0; i<p_Vid->iSliceNumOfCurrPic; i++)
-			  {
-				  if (ppSliceList[i]->num_dec_mb + ppSliceList[i]->erc_mvperMB < min_mb && !ppSliceList[i]->decoding_done && !ppSliceList[i]->decoding)
-				  {
-					  to_dec = ppSliceList[i];
-					  current_header = to_dec->current_header;
-					  min_mb = ppSliceList[i]->num_dec_mb + ppSliceList[i]->erc_mvperMB;
-				  }
-			  }
-
-			  if (to_dec)
-				  to_dec->decoding = TRUE;
-
-		  }
-
-		  if (to_dec)
-		  {
-			  decode_slice_step(to_dec, current_header);
-			  to_dec->decoding = FALSE;
-			  goto again;
-		  }
-
-		  //printf("(%d)dec_time : %d\n", GetCurrentThreadId(), timeGetTime()-dec_time);
+		  ResetEvent(thread_idle_handles[i]);
+		  SetEvent(thread_work_handles[i]);
+		  //ResumeThread(thread_handles[i]);
 	  }
+
+	  WaitForMultipleObjects(thread_count, thread_idle_handles, TRUE, INFINITE);
 
 	  for(iSliceNo=0; iSliceNo<p_Vid->iSliceNumOfCurrPic; iSliceNo++)
 	  {
