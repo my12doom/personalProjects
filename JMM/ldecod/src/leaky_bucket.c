@@ -83,9 +83,9 @@ void calc_buffer(InputParameters *p_Inp)
 
   NumberLeakyBuckets = GetBigDoubleWord(outf);
   printf(" Number Leaky Buckets: %8ld \n\n", NumberLeakyBuckets);
-  Rmin = calloc(NumberLeakyBuckets, sizeof(unsigned long));
-  Bmin = calloc(NumberLeakyBuckets, sizeof(unsigned long));
-  Fmin = calloc(NumberLeakyBuckets, sizeof(unsigned long));
+  Rmin = mem_calloc(NumberLeakyBuckets, sizeof(unsigned long));
+  Bmin = mem_calloc(NumberLeakyBuckets, sizeof(unsigned long));
+  Fmin = mem_calloc(NumberLeakyBuckets, sizeof(unsigned long));
 
   for(iBucket =0; iBucket < NumberLeakyBuckets; iBucket++)
   {
@@ -131,9 +131,9 @@ void calc_buffer(InputParameters *p_Inp)
     printf(" Decoder Rate is too small; HRD cannot be verified \n");
   }
 
-  free(Rmin);
-  free(Bmin);
-  free(Fmin);
+  mem_free(Rmin);
+  mem_free(Bmin);
+  mem_free(Fmin);
   return;
 }
 #endif

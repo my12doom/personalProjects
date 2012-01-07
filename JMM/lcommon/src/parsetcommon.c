@@ -30,7 +30,7 @@ pic_parameter_set_rbsp_t *AllocPPS ()
  {
    pic_parameter_set_rbsp_t *p;
 
-   if ((p=calloc (1, sizeof (pic_parameter_set_rbsp_t))) == NULL)
+   if ((p=mem_calloc (1, sizeof (pic_parameter_set_rbsp_t))) == NULL)
      no_mem_exit ("AllocPPS: PPS");
    p->slice_group_id = NULL;
    return p;
@@ -51,7 +51,7 @@ seq_parameter_set_rbsp_t *AllocSPS ()
  {
    seq_parameter_set_rbsp_t *p;
 
-   if ((p=calloc (1, sizeof (seq_parameter_set_rbsp_t))) == NULL)
+   if ((p=mem_calloc (1, sizeof (seq_parameter_set_rbsp_t))) == NULL)
      no_mem_exit ("AllocSPS: SPS");
    return p;
  }
@@ -71,8 +71,8 @@ seq_parameter_set_rbsp_t *AllocSPS ()
  {
    assert (pps != NULL);
    if (pps->slice_group_id != NULL) 
-     free (pps->slice_group_id);
-   free (pps);
+     mem_free (pps->slice_group_id);
+   mem_free (pps);
  }
 
 
@@ -89,7 +89,7 @@ seq_parameter_set_rbsp_t *AllocSPS ()
  void FreeSPS (seq_parameter_set_rbsp_t *sps)
  {
    assert (sps != NULL);
-   free (sps);
+   mem_free (sps);
  }
 
 

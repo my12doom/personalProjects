@@ -90,6 +90,7 @@ static int intra16x16_dc_pred(Macroblock *currMB, ColorPlane pl)
   for(j = 0; j < MB_BLOCK_SIZE; ++j)
   {
 #if (IMGTYPE == 0)
+	  // TODO my12doom
     memset(mb_pred[j], s0, MB_BLOCK_SIZE * sizeof(imgpel));
 #else
     for(i = 0; i < MB_BLOCK_SIZE; i += 4)

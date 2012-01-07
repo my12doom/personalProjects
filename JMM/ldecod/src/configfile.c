@@ -181,7 +181,7 @@ void ParseCommand(InputParameters *p_Inp, int ac, char *av[])
       //error (errortext, 300);
       ParseContent (p_Inp, Map, content, (int) strlen(content));
       printf ("\n");
-      free (content);
+      mem_free (content);
     }
   }
   // Parse the command line
@@ -201,7 +201,7 @@ void ParseCommand(InputParameters *p_Inp, int ac, char *av[])
       printf ("Parsing Configfile %s", av[CLcount+1]);
       ParseContent (p_Inp, Map, content, (int) strlen (content));
       printf ("\n");
-      free (content);
+      mem_free (content);
       CLcount += 2;
     } 
     else if (0 == strncmp (av[CLcount], "-i", 2) || 0 == strncmp (av[CLcount], "-I", 2))  // A file parameter?
@@ -251,7 +251,7 @@ void ParseCommand(InputParameters *p_Inp, int ac, char *av[])
       ContentLen += 1000;                     // Additional 1000 bytes for spaces and \0s
 
 
-      if ((content = malloc (ContentLen))==NULL) no_mem_exit("Configure: content");;
+      if ((content = mem_malloc (ContentLen))==NULL) no_mem_exit("Configure: content");;
       content[0] = '\0';
 
       // concatenate all parameters identified before
@@ -276,7 +276,7 @@ void ParseCommand(InputParameters *p_Inp, int ac, char *av[])
       }
       printf ("Parsing command line string '%s'", content);
       ParseContent (p_Inp, Map, content, (int) strlen(content));
-      free (content);
+      mem_free (content);
       printf ("\n");
     }
     else

@@ -129,37 +129,37 @@ static void reset_dpb( VideoParameters *p_Vid, DecodedPictureBuffer *p_Dpb )
 static void alloc_video_params( VideoParameters **p_Vid)
 {
   int i;
-  if ((*p_Vid   =  (VideoParameters *) calloc(1, sizeof(VideoParameters)))==NULL) 
+  if ((*p_Vid   =  (VideoParameters *) mem_calloc(1, sizeof(VideoParameters)))==NULL) 
     no_mem_exit("alloc_video_params: p_Vid");
 
-  if (((*p_Vid)->old_slice = (OldSliceParams *) calloc(1, sizeof(OldSliceParams)))==NULL) 
+  if (((*p_Vid)->old_slice = (OldSliceParams *) mem_calloc(1, sizeof(OldSliceParams)))==NULL) 
     no_mem_exit("alloc_video_params: p_Vid->old_slice");
 
-  if (((*p_Vid)->snr =  (SNRParameters *)calloc(1, sizeof(SNRParameters)))==NULL) 
+  if (((*p_Vid)->snr =  (SNRParameters *)mem_calloc(1, sizeof(SNRParameters)))==NULL) 
     no_mem_exit("alloc_video_params: p_Vid->snr");  
 
   // Allocate new dpb buffer
   for (i = 0; i < MAX_NUM_DPB_LAYERS; i++)
   {
-    if (((*p_Vid)->p_Dpb_layer[i] =  (DecodedPictureBuffer*)calloc(1, sizeof(DecodedPictureBuffer)))==NULL) 
+    if (((*p_Vid)->p_Dpb_layer[i] =  (DecodedPictureBuffer*)mem_calloc(1, sizeof(DecodedPictureBuffer)))==NULL) 
       no_mem_exit("alloc_video_params: p_Vid->p_Dpb_layer[i]");
     (*p_Vid)->p_Dpb_layer[i]->layer_id = i;
     reset_dpb(*p_Vid, (*p_Vid)->p_Dpb_layer[i]);
-    if(((*p_Vid)->p_EncodePar[i] = (CodingParameters *)calloc(1, sizeof(CodingParameters))) == NULL)
+    if(((*p_Vid)->p_EncodePar[i] = (CodingParameters *)mem_calloc(1, sizeof(CodingParameters))) == NULL)
       no_mem_exit("alloc_video_params:p_Vid->p_EncodePar[i]");
     ((*p_Vid)->p_EncodePar[i])->layer_id = i;
-    if(((*p_Vid)->p_LayerPar[i] = (LayerParameters *)calloc(1, sizeof(LayerParameters))) == NULL)
+    if(((*p_Vid)->p_LayerPar[i] = (LayerParameters *)mem_calloc(1, sizeof(LayerParameters))) == NULL)
       no_mem_exit("alloc_video_params:p_Vid->p_LayerPar[i]");
     ((*p_Vid)->p_LayerPar[i])->layer_id = i;
   }
   (*p_Vid)->global_init_done[0] = (*p_Vid)->global_init_done[1] = 0;
 
 #if (ENABLE_OUTPUT_TONEMAPPING)  
-  if (((*p_Vid)->seiToneMapping =  (ToneMappingSEI*)calloc(1, sizeof(ToneMappingSEI)))==NULL) 
+  if (((*p_Vid)->seiToneMapping =  (ToneMappingSEI*)mem_calloc(1, sizeof(ToneMappingSEI)))==NULL) 
     no_mem_exit("alloc_video_params: (*p_Vid)->seiToneMapping");  
 #endif
 
-  if(((*p_Vid)->ppSliceList = (Slice **) calloc(MAX_NUM_DECSLICES, sizeof(Slice *))) == NULL)
+  if(((*p_Vid)->ppSliceList = (Slice **) mem_calloc(MAX_NUM_DECSLICES, sizeof(Slice *))) == NULL)
   {
     no_mem_exit("alloc_video_params: p_Vid->ppSliceList");
   }
@@ -169,7 +169,7 @@ static void alloc_video_params( VideoParameters **p_Vid)
   (*p_Vid)->nalu = AllocNALU(MAX_CODED_FRAME_SIZE);
   (*p_Vid)->nalu0 = AllocNALU(MAX_CODED_FRAME_SIZE);
   (*p_Vid)->nalu1 = AllocNALU(MAX_CODED_FRAME_SIZE);
-  (*p_Vid)->pDecOuputPic = (DecodedPicList *)calloc(1, sizeof(DecodedPicList));
+  (*p_Vid)->pDecOuputPic = (DecodedPicList *)mem_calloc(1, sizeof(DecodedPicList));
   (*p_Vid)->pNextPPS = AllocPPS();
   (*p_Vid)->first_sps = TRUE;
 }
@@ -185,7 +185,7 @@ static void alloc_video_params( VideoParameters **p_Vid)
  */
 static void alloc_params( InputParameters **p_Inp )
 {
-  if ((*p_Inp = (InputParameters *) calloc(1, sizeof(InputParameters)))==NULL) 
+  if ((*p_Inp = (InputParameters *) mem_calloc(1, sizeof(InputParameters)))==NULL) 
     no_mem_exit("alloc_params: p_Inp");
 }
 
@@ -199,7 +199,7 @@ static void alloc_params( InputParameters **p_Inp )
  */
 static int alloc_decoder( DecoderParams **p_Dec)
 {
-  if ((*p_Dec = (DecoderParams *) calloc(1, sizeof(DecoderParams)))==NULL) 
+  if ((*p_Dec = (DecoderParams *) mem_calloc(1, sizeof(DecoderParams)))==NULL) 
   {
     fprintf(stderr, "alloc_decoder: p_Dec\n");
     return -1;
@@ -236,7 +236,7 @@ static void free_img( VideoParameters *p_Vid)
 #if (ENABLE_OUTPUT_TONEMAPPING)  
     if (p_Vid->seiToneMapping != NULL)
     {
-      free (p_Vid->seiToneMapping);
+      mem_free (p_Vid->seiToneMapping);
       p_Vid->seiToneMapping = NULL;
     }
 #endif
@@ -246,28 +246,28 @@ static void free_img( VideoParameters *p_Vid)
     {
       if (p_Vid->p_Dpb_layer[i] != NULL)
       {
-        free (p_Vid->p_Dpb_layer[i]);
+        mem_free (p_Vid->p_Dpb_layer[i]);
         p_Vid->p_Dpb_layer[i] = NULL;
       }
       if(p_Vid->p_EncodePar[i])
       {
-        free(p_Vid->p_EncodePar[i]);
+        mem_free(p_Vid->p_EncodePar[i]);
         p_Vid->p_EncodePar[i] = NULL;
       }
       if(p_Vid->p_LayerPar[i])
       {
-        free(p_Vid->p_LayerPar[i]);
+        mem_free(p_Vid->p_LayerPar[i]);
         p_Vid->p_LayerPar[i] = NULL;
       }
     }    
     if (p_Vid->snr != NULL)
     {
-      free (p_Vid->snr);
+      mem_free (p_Vid->snr);
       p_Vid->snr = NULL;
     }
     if (p_Vid->old_slice != NULL)
     {
-      free (p_Vid->old_slice);
+      mem_free (p_Vid->old_slice);
       p_Vid->old_slice = NULL;
     }
 
@@ -282,7 +282,7 @@ static void free_img( VideoParameters *p_Vid)
       for(i=0; i<p_Vid->iNumOfSlicesAllocated; i++)
         if(p_Vid->ppSliceList[i])
           free_slice(p_Vid->ppSliceList[i]);
-      free(p_Vid->ppSliceList);
+      mem_free(p_Vid->ppSliceList);
     }
     if(p_Vid->nalu)
     {
@@ -310,10 +310,10 @@ static void free_img( VideoParameters *p_Vid)
     // clear decoder statistics
 #if ENABLE_DEC_STATS
     delete_dec_stats(p_Vid->dec_stats);
-    free (p_Vid->dec_stats);
+    mem_free (p_Vid->dec_stats);
 #endif
 
-    free (p_Vid);
+    mem_free (p_Vid);
     p_Vid = NULL;
   }
 }
@@ -325,12 +325,12 @@ void FreeDecPicList(DecodedPicList *pDecPicList)
     DecodedPicList *pPicNext = pDecPicList->pNext;
     if(pDecPicList->pY)
     {
-      free(pDecPicList->pY);
+      mem_free(pDecPicList->pY);
       pDecPicList->pY = NULL;
       pDecPicList->pU = NULL;
       pDecPicList->pV = NULL;
     }
-    free(pDecPicList);
+    mem_free(pDecPicList);
     pDecPicList = pPicNext;
   }
 }
@@ -417,7 +417,7 @@ static void init(VideoParameters *p_Vid)  //!< video parameters
   p_Vid->last_dec_layer_id = -1;
 
 #if ENABLE_DEC_STATS
-  if ((p_Vid->dec_stats = (DecStatParameters *) malloc (sizeof (DecStatParameters)))== NULL)
+  if ((p_Vid->dec_stats = (DecStatParameters *) mem_malloc (sizeof (DecStatParameters)))== NULL)
     no_mem_exit ("init: p_Vid->dec_stats");
   init_dec_stats(p_Vid->dec_stats);
 #endif
@@ -681,7 +681,7 @@ DataPartition *AllocPartition(int n)
   DataPartition *partArr, *dataPart;
   int i;
 
-  partArr = (DataPartition *) calloc(n, sizeof(DataPartition));
+  partArr = (DataPartition *) mem_calloc(n, sizeof(DataPartition));
   if (partArr == NULL)
   {
     snprintf(errortext, ET_SIZE, "AllocPartition: Memory allocation for Data Partition failed");
@@ -691,13 +691,13 @@ DataPartition *AllocPartition(int n)
   for (i = 0; i < n; ++i) // loop over all data partitions
   {
     dataPart = &(partArr[i]);
-    dataPart->bitstream = (Bitstream *) calloc(1, sizeof(Bitstream));
+    dataPart->bitstream = (Bitstream *) mem_calloc(1, sizeof(Bitstream));
     if (dataPart->bitstream == NULL)
     {
       snprintf(errortext, ET_SIZE, "AllocPartition: Memory allocation for Bitstream failed");
       error(errortext, 100);
     }
-    dataPart->bitstream->streamBuffer = (byte *) calloc(MAX_CODED_FRAME_SIZE, sizeof(byte));
+    dataPart->bitstream->streamBuffer = (byte *) mem_calloc(MAX_CODED_FRAME_SIZE, sizeof(byte));
     if (dataPart->bitstream->streamBuffer == NULL)
     {
       snprintf(errortext, ET_SIZE, "AllocPartition: Memory allocation for streamBuffer failed");
@@ -734,10 +734,10 @@ void FreePartition (DataPartition *dp, int n)
   assert (dp->bitstream->streamBuffer != NULL);
   for (i=0; i<n; ++i)
   {
-    free (dp[i].bitstream->streamBuffer);
-    free (dp[i].bitstream);
+    mem_free (dp[i].bitstream->streamBuffer);
+    mem_free (dp[i].bitstream);
   }
-  free (dp);
+  mem_free (dp);
 }
 
 
@@ -756,7 +756,7 @@ Slice *malloc_slice(InputParameters *p_Inp, VideoParameters *p_Vid)
   int i, j, memory_size = 0;
   Slice *currSlice;
 
-  currSlice = (Slice *) calloc(1, sizeof(Slice));
+  currSlice = (Slice *) mem_calloc(1, sizeof(Slice));
   if ( currSlice  == NULL)
   {
     snprintf(errortext, ET_SIZE, "Memory allocation for Slice datastruct in NAL-mode %d failed", p_Inp->FileFormat);
@@ -794,7 +794,7 @@ Slice *malloc_slice(InputParameters *p_Inp, VideoParameters *p_Vid)
   }
   for (i = 0; i < 6; i++)
   {
-    currSlice->listX[i] = calloc(MAX_LIST_SIZE, sizeof (StorablePicture*)); // +1 for reordering
+    currSlice->listX[i] = mem_calloc(MAX_LIST_SIZE, sizeof (StorablePicture*)); // +1 for reordering
     if (NULL==currSlice->listX[i])
       no_mem_exit("malloc_slice: currSlice->listX[i]");
   }
@@ -851,7 +851,7 @@ static void free_slice(Slice *currSlice)
   {
     if (currSlice->listX[i])
     {
-      free (currSlice->listX[i]);
+      mem_free (currSlice->listX[i]);
       currSlice->listX[i] = NULL;
     }
   }
@@ -859,10 +859,10 @@ static void free_slice(Slice *currSlice)
   {
     DecRefPicMarking_t *tmp_drpm=currSlice->dec_ref_pic_marking_buffer;
     currSlice->dec_ref_pic_marking_buffer=tmp_drpm->Next;
-    free (tmp_drpm);
+    mem_free (tmp_drpm);
   }
 
-  free(currSlice);
+  mem_free(currSlice);
   currSlice = NULL;
 }
 
@@ -906,34 +906,34 @@ int init_global_buffers(VideoParameters *p_Vid, int layer_id)
   {
     for( i=0; i<MAX_PLANE; ++i )
     {
-      if(((cps->mb_data_JV[i]) = (Macroblock *) calloc(cps->FrameSizeInMbs, sizeof(Macroblock))) == NULL)
+      if(((cps->mb_data_JV[i]) = (Macroblock *) mem_calloc(cps->FrameSizeInMbs, sizeof(Macroblock))) == NULL)
         no_mem_exit("init_global_buffers: cps->mb_data_JV");
     }
     cps->mb_data = NULL;
   }
   else
   {
-    if(((cps->mb_data) = (Macroblock *) calloc(cps->FrameSizeInMbs, sizeof(Macroblock))) == NULL)
+    if(((cps->mb_data) = (Macroblock *) mem_calloc(cps->FrameSizeInMbs, sizeof(Macroblock))) == NULL)
       no_mem_exit("init_global_buffers: cps->mb_data");
   }
   if( (cps->separate_colour_plane_flag != 0) )
   {
     for( i=0; i<MAX_PLANE; ++i )
     {
-      if(((cps->intra_block_JV[i]) = (char*) calloc(cps->FrameSizeInMbs, sizeof(char))) == NULL)
+      if(((cps->intra_block_JV[i]) = (char*) mem_calloc(cps->FrameSizeInMbs, sizeof(char))) == NULL)
         no_mem_exit("init_global_buffers: cps->intra_block_JV");
     }
     cps->intra_block = NULL;
   }
   else
   {
-    if(((cps->intra_block) = (char*) calloc(cps->FrameSizeInMbs, sizeof(char))) == NULL)
+    if(((cps->intra_block) = (char*) mem_calloc(cps->FrameSizeInMbs, sizeof(char))) == NULL)
       no_mem_exit("init_global_buffers: cps->intra_block");
   }
 
 
   //memory_size += get_mem2Dint(&PicPos,p_Vid->FrameSizeInMbs + 1,2);  //! Helper array to access macroblock positions. We add 1 to also consider last MB.
-  if(((cps->PicPos) = (BlockPos*) calloc(cps->FrameSizeInMbs + 1, sizeof(BlockPos))) == NULL)
+  if(((cps->PicPos) = (BlockPos*) mem_calloc(cps->FrameSizeInMbs + 1, sizeof(BlockPos))) == NULL)
     no_mem_exit("init_global_buffers: PicPos");
 
   PicPos = cps->PicPos;
@@ -1027,13 +1027,13 @@ void free_layer_buffers(VideoParameters *p_Vid, int layer_id)
     int i;
     for(i=0; i<MAX_PLANE; i++)
     {
-      free(cps->mb_data_JV[i]);
+      mem_free(cps->mb_data_JV[i]);
       cps->mb_data_JV[i] = NULL;
       free_mem2Dint(cps->siblock_JV[i]);
       cps->siblock_JV[i] = NULL;
       free_mem2D(cps->ipredmode_JV[i]);
       cps->ipredmode_JV[i] = NULL;
-      free (cps->intra_block_JV[i]);
+      mem_free (cps->intra_block_JV[i]);
       cps->intra_block_JV[i] = NULL;
     }   
   }
@@ -1041,7 +1041,7 @@ void free_layer_buffers(VideoParameters *p_Vid, int layer_id)
   {
     if (cps->mb_data != NULL)
     {
-      free(cps->mb_data);
+      mem_free(cps->mb_data);
       cps->mb_data = NULL;
     }
     if(cps->siblock)
@@ -1056,13 +1056,13 @@ void free_layer_buffers(VideoParameters *p_Vid, int layer_id)
     }
     if(cps->intra_block)
     {
-      free (cps->intra_block);
+      mem_free (cps->intra_block);
       cps->intra_block = NULL;
     }
   }
   if(cps->PicPos)
   {
-    free(cps->PicPos);
+    mem_free(cps->PicPos);
     cps->PicPos = NULL;
   }
 
@@ -1136,7 +1136,7 @@ DecodedPicList *get_one_avail_dec_pic_from_list(DecodedPicList *pDecPicList, int
 
   if(!pPic)
   {
-    pPic = (DecodedPicList *)calloc(1, sizeof(*pPic));
+    pPic = (DecodedPicList *)mem_calloc(1, sizeof(*pPic));
     pPrior->pNext = pPic;
   }
 
@@ -1429,8 +1429,8 @@ int CloseDecoder()
 #endif
 
   free_img (pDecoder->p_Vid);
-  free (pDecoder->p_Inp);
-  free(pDecoder);
+  mem_free (pDecoder->p_Inp);
+  mem_free(pDecoder);
 
   p_Dec = NULL;
   return DEC_CLOSE_NOERR;

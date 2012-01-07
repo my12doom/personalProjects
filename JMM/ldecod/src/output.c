@@ -559,7 +559,7 @@ static void write_out_picture(VideoParameters *p_Vid, StorablePicture *p, int p_
   
   if(rgb_output)
   {
-    buf = malloc (p->size_x * p->size_y * symbol_size_in_bytes);
+    buf = mem_malloc (p->size_x * p->size_y * symbol_size_in_bytes);
     crop_left   = p->frame_crop_left_offset;
     crop_right  = p->frame_crop_right_offset;
     crop_top    = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_top_offset;
@@ -587,7 +587,7 @@ static void write_out_picture(VideoParameters *p_Vid, StorablePicture *p, int p_
       crop_left = crop_right = crop_top = crop_bottom = 0;
     }
     if(buf) 
-      free(buf);
+      mem_free(buf);
   }
 
   buf = (pDecPic->bValid==1)? pDecPic->pY: pDecPic->pY+iLumaSizeX*symbol_size_in_bytes;
@@ -652,7 +652,7 @@ static void write_out_picture(VideoParameters *p_Vid, StorablePicture *p, int p_
       }
 
       // fake out U=V=128 to make a YUV 4:2:0 stream
-      buf = malloc (p->size_x*p->size_y*symbol_size_in_bytes);
+      buf = mem_malloc (p->size_x*p->size_y*symbol_size_in_bytes);
       p_Vid->img2buf (p->imgUV[0], buf, p->size_x/2, p->size_y/2, symbol_size_in_bytes, crop_left/2, crop_right/2, crop_top/2, crop_bottom/2, pDecPic->iYBufStride/2);
 
       ret = write(p_out, buf, symbol_size_in_bytes * (p->size_y-crop_bottom-crop_top)/2 * (p->size_x-crop_right-crop_left)/2 );
@@ -665,7 +665,7 @@ static void write_out_picture(VideoParameters *p_Vid, StorablePicture *p, int p_
       {
         error ("write_out_picture: error writing to YUV file", 500);
       }
-      free(buf);
+      mem_free(buf);
       free_mem3Dpel(p->imgUV);
       p->imgUV=NULL;
     }
@@ -689,7 +689,7 @@ void init_out_buffer(VideoParameters *p_Vid)
   p_Vid->out_buffer = alloc_frame_store();  
 
 #if (PAIR_FIELDS_IN_OUTPUT)
-  p_Vid->pending_output = calloc (sizeof(StorablePicture), 1);
+  p_Vid->pending_output = mem_calloc (sizeof(StorablePicture), 1);
   if (NULL==p_Vid->pending_output) no_mem_exit("init_out_buffer");
   p_Vid->pending_output->imgUV = NULL;
   p_Vid->pending_output->imgY  = NULL;
@@ -708,7 +708,7 @@ void uninit_out_buffer(VideoParameters *p_Vid)
   p_Vid->out_buffer=NULL;
 #if (PAIR_FIELDS_IN_OUTPUT)
   flush_pending_output(p_Vid, p_Vid->p_out);
-  free (p_Vid->pending_output);
+  mem_free (p_Vid->pending_output);
 #endif
 }
 

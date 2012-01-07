@@ -19,6 +19,7 @@
 #include "win32.h"
 #include "h264decoder.h"
 #include "configfile.h"
+#include "memalloc.h"
 
 #define DECOUTPUT_TEST      0
 
@@ -70,7 +71,7 @@ static void Configure(InputParameters *p_Inp, int ac, char *av[])
 		  //error (errortext, 300);
 		  ParseContent (p_Inp, Map, content, (int) strlen(content));
 		  printf ("\n");
-		  free (content);
+		  mem_free (content);
 	  }
 
 	  iPatchInp(p_Inp);

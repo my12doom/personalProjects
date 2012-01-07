@@ -18,6 +18,7 @@
 #include "header.h"
 
 #include "ctx_tables.h"
+#include "memalloc.h"
 
 
 #if TRACE
@@ -657,7 +658,7 @@ void dec_ref_pic_marking(VideoParameters *p_Vid, Bitstream *currStream, Slice *p
     tmp_drpm=pSlice->dec_ref_pic_marking_buffer;
 
     pSlice->dec_ref_pic_marking_buffer=tmp_drpm->Next;
-    free (tmp_drpm);
+    mem_free (tmp_drpm);
   }
 
 #if (MVC_EXTENSION_ENABLE)
@@ -678,7 +679,7 @@ void dec_ref_pic_marking(VideoParameters *p_Vid, Bitstream *currStream, Slice *p
       // read Memory Management Control Operation
       do
       {
-        tmp_drpm=(DecRefPicMarking_t*)calloc (1,sizeof (DecRefPicMarking_t));
+        tmp_drpm=(DecRefPicMarking_t*)mem_calloc (1,sizeof (DecRefPicMarking_t));
         tmp_drpm->Next=NULL;
 
         val = tmp_drpm->memory_management_control_operation = read_ue_v("SH: memory_management_control_operation", currStream, &p_Dec->UsedBits);

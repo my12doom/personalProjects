@@ -450,7 +450,7 @@ int InterpretPPS (VideoParameters *p_Vid, DataPartition *p, pic_parameter_set_rb
       else
         NumberBitsPerSliceGroupId = 1;
       pps->pic_size_in_map_units_minus1      = read_ue_v ("PPS: pic_size_in_map_units_minus1"               , s, &p_Dec->UsedBits);
-      if ((pps->slice_group_id = calloc (pps->pic_size_in_map_units_minus1+1, 1)) == NULL)
+      if ((pps->slice_group_id = mem_calloc (pps->pic_size_in_map_units_minus1+1, 1)) == NULL)
         no_mem_exit ("InterpretPPS: slice_group_id");
       for (i=0; i<=pps->pic_size_in_map_units_minus1; i++)
         pps->slice_group_id[i] = (byte) read_u_v (NumberBitsPerSliceGroupId, "slice_group_id[i]", s, &p_Dec->UsedBits);
@@ -530,7 +530,7 @@ void MakePPSavailable (VideoParameters *p_Vid, int id, pic_parameter_set_rbsp_t 
   assert (pps->Valid == TRUE);
 
   if (p_Vid->PicParSet[id].Valid == TRUE && p_Vid->PicParSet[id].slice_group_id != NULL)
-    free (p_Vid->PicParSet[id].slice_group_id);
+    mem_free (p_Vid->PicParSet[id].slice_group_id);
 
   memcpy (&p_Vid->PicParSet[id], pps, sizeof (pic_parameter_set_rbsp_t));
 
@@ -547,7 +547,7 @@ void CleanUpPPS(VideoParameters *p_Vid)
   for (i=0; i<MAXPPS; i++)
   {
     if (p_Vid->PicParSet[i].Valid == TRUE && p_Vid->PicParSet[i].slice_group_id != NULL)
-      free (p_Vid->PicParSet[i].slice_group_id);
+      mem_free (p_Vid->PicParSet[i].slice_group_id);
 
     p_Vid->PicParSet[i].Valid = FALSE;
   }
@@ -1205,23 +1205,23 @@ void seq_parameter_set_mvc_extension(subset_seq_parameter_set_rbsp_t *subset_sps
   num_views = 1+subset_sps->num_views_minus1;
   if( num_views >0)
   {
-    if ((subset_sps->view_id = (int*) calloc(num_views, sizeof(int))) == NULL)
+    if ((subset_sps->view_id = (int*) mem_calloc(num_views, sizeof(int))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->view_id");
-    if ((subset_sps->num_anchor_refs_l0 = (int*) calloc(num_views, sizeof(int))) == NULL)
+    if ((subset_sps->num_anchor_refs_l0 = (int*) mem_calloc(num_views, sizeof(int))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->num_anchor_refs_l0");
-    if ((subset_sps->num_anchor_refs_l1 = (int*) calloc(num_views, sizeof(int))) == NULL)
+    if ((subset_sps->num_anchor_refs_l1 = (int*) mem_calloc(num_views, sizeof(int))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->num_anchor_refs_l1");
-    if ((subset_sps->anchor_ref_l0 = (int**) calloc(num_views, sizeof(int*))) == NULL)
+    if ((subset_sps->anchor_ref_l0 = (int**) mem_calloc(num_views, sizeof(int*))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->anchor_ref_l0");
-    if ((subset_sps->anchor_ref_l1 = (int**) calloc(num_views, sizeof(int*))) == NULL)
+    if ((subset_sps->anchor_ref_l1 = (int**) mem_calloc(num_views, sizeof(int*))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->anchor_ref_l1");
-    if ((subset_sps->num_non_anchor_refs_l0 = (int*) calloc(num_views, sizeof(int))) == NULL)
+    if ((subset_sps->num_non_anchor_refs_l0 = (int*) mem_calloc(num_views, sizeof(int))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->num_non_anchor_refs_l0");
-    if ((subset_sps->num_non_anchor_refs_l1 = (int*) calloc(num_views, sizeof(int))) == NULL)
+    if ((subset_sps->num_non_anchor_refs_l1 = (int*) mem_calloc(num_views, sizeof(int))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->num_non_anchor_refs_l1");
-    if ((subset_sps->non_anchor_ref_l0 = (int**) calloc(num_views, sizeof(int*))) == NULL)
+    if ((subset_sps->non_anchor_ref_l0 = (int**) mem_calloc(num_views, sizeof(int*))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->non_anchor_ref_l0");
-    if ((subset_sps->non_anchor_ref_l1 = (int**) calloc(num_views, sizeof(int*))) == NULL)
+    if ((subset_sps->non_anchor_ref_l1 = (int**) mem_calloc(num_views, sizeof(int*))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->non_anchor_ref_l1");
   }
   for(i=0; i<num_views; i++)
@@ -1233,7 +1233,7 @@ void seq_parameter_set_mvc_extension(subset_seq_parameter_set_rbsp_t *subset_sps
     subset_sps->num_anchor_refs_l0[i] = read_ue_v("num_anchor_refs_l0", s, &p_Dec->UsedBits);
     if(subset_sps->num_anchor_refs_l0[i]>0)
     {
-      if ((subset_sps->anchor_ref_l0[i] = (int*) calloc(subset_sps->num_anchor_refs_l0[i], sizeof(int))) == NULL)
+      if ((subset_sps->anchor_ref_l0[i] = (int*) mem_calloc(subset_sps->num_anchor_refs_l0[i], sizeof(int))) == NULL)
         no_mem_exit("init_subset_seq_parameter_set: subset_sps->anchor_ref_l0[i]");
       for(j=0; j<subset_sps->num_anchor_refs_l0[i]; j++)
         subset_sps->anchor_ref_l0[i][j] = read_ue_v("anchor_ref_l0", s, &p_Dec->UsedBits);
@@ -1242,7 +1242,7 @@ void seq_parameter_set_mvc_extension(subset_seq_parameter_set_rbsp_t *subset_sps
     subset_sps->num_anchor_refs_l1[i] = read_ue_v("num_anchor_refs_l1", s, &p_Dec->UsedBits);
     if(subset_sps->num_anchor_refs_l1[i]>0)
     {
-      if ((subset_sps->anchor_ref_l1[i] = (int*) calloc(subset_sps->num_anchor_refs_l1[i], sizeof(int))) == NULL)
+      if ((subset_sps->anchor_ref_l1[i] = (int*) mem_calloc(subset_sps->num_anchor_refs_l1[i], sizeof(int))) == NULL)
         no_mem_exit("init_subset_seq_parameter_set: subset_sps->anchor_ref_l1[i]");
       for(j=0; j<subset_sps->num_anchor_refs_l1[i]; j++)
         subset_sps->anchor_ref_l1[i][j] = read_ue_v("anchor_ref_l1", s, &p_Dec->UsedBits);
@@ -1253,7 +1253,7 @@ void seq_parameter_set_mvc_extension(subset_seq_parameter_set_rbsp_t *subset_sps
     subset_sps->num_non_anchor_refs_l0[i] = read_ue_v("num_non_anchor_refs_l0", s, &p_Dec->UsedBits);
     if(subset_sps->num_non_anchor_refs_l0[i]>0)
     {
-      if ((subset_sps->non_anchor_ref_l0[i] = (int*) calloc(subset_sps->num_non_anchor_refs_l0[i], sizeof(int))) == NULL)
+      if ((subset_sps->non_anchor_ref_l0[i] = (int*) mem_calloc(subset_sps->num_non_anchor_refs_l0[i], sizeof(int))) == NULL)
         no_mem_exit("init_subset_seq_parameter_set: subset_sps->non_anchor_ref_l0[i]");
       for(j=0; j<subset_sps->num_non_anchor_refs_l0[i]; j++)
         subset_sps->non_anchor_ref_l0[i][j] = read_ue_v("non_anchor_ref_l0", s, &p_Dec->UsedBits);
@@ -1261,7 +1261,7 @@ void seq_parameter_set_mvc_extension(subset_seq_parameter_set_rbsp_t *subset_sps
     subset_sps->num_non_anchor_refs_l1[i] = read_ue_v("num_non_anchor_refs_l1", s, &p_Dec->UsedBits);
     if(subset_sps->num_non_anchor_refs_l1[i]>0)
     {
-      if ((subset_sps->non_anchor_ref_l1[i] = (int*) calloc(subset_sps->num_non_anchor_refs_l1[i], sizeof(int))) == NULL)
+      if ((subset_sps->non_anchor_ref_l1[i] = (int*) mem_calloc(subset_sps->num_non_anchor_refs_l1[i], sizeof(int))) == NULL)
         no_mem_exit("init_subset_seq_parameter_set: subset_sps->non_anchor_ref_l1[i]");
       for(j=0; j<subset_sps->num_non_anchor_refs_l1[i]; j++)
         subset_sps->non_anchor_ref_l1[i][j] = read_ue_v("non_anchor_ref_l1", s, &p_Dec->UsedBits);
@@ -1271,17 +1271,17 @@ void seq_parameter_set_mvc_extension(subset_seq_parameter_set_rbsp_t *subset_sps
   if(subset_sps->num_level_values_signalled_minus1 >=0)
   {
     i = 1+ subset_sps->num_level_values_signalled_minus1;
-    if ((subset_sps->level_idc = (int*) calloc(i, sizeof(int))) == NULL)
+    if ((subset_sps->level_idc = (int*) mem_calloc(i, sizeof(int))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->level_idc");
-    if ((subset_sps->num_applicable_ops_minus1 = (int*) calloc(i, sizeof(int))) == NULL)
+    if ((subset_sps->num_applicable_ops_minus1 = (int*) mem_calloc(i, sizeof(int))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->num_applicable_ops_minus1");
-    if ((subset_sps->applicable_op_temporal_id = (int**) calloc(i, sizeof(int*))) == NULL)
+    if ((subset_sps->applicable_op_temporal_id = (int**) mem_calloc(i, sizeof(int*))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->applicable_op_temporal_id");
-    if ((subset_sps->applicable_op_num_target_views_minus1 = (int**) calloc(i, sizeof(int*))) == NULL)
+    if ((subset_sps->applicable_op_num_target_views_minus1 = (int**) mem_calloc(i, sizeof(int*))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->applicable_op_num_target_views_minus1");
-    if ((subset_sps->applicable_op_target_view_id = (int***) calloc(i, sizeof(int**))) == NULL)
+    if ((subset_sps->applicable_op_target_view_id = (int***) mem_calloc(i, sizeof(int**))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->applicable_op_target_view_id");
-    if ((subset_sps->applicable_op_num_views_minus1 = (int**) calloc(i, sizeof(int*))) == NULL)
+    if ((subset_sps->applicable_op_num_views_minus1 = (int**) mem_calloc(i, sizeof(int*))) == NULL)
       no_mem_exit("init_subset_seq_parameter_set: subset_sps->applicable_op_num_views_minus1");
   }
   for(i=0; i<=subset_sps->num_level_values_signalled_minus1; i++)
@@ -1290,13 +1290,13 @@ void seq_parameter_set_mvc_extension(subset_seq_parameter_set_rbsp_t *subset_sps
     subset_sps->num_applicable_ops_minus1[i] = read_ue_v("num_applicable_ops_minus1", s, &p_Dec->UsedBits);
     if(subset_sps->num_applicable_ops_minus1[i]>=0)
     {
-      if ((subset_sps->applicable_op_temporal_id[i] = (int*) calloc(1+subset_sps->num_applicable_ops_minus1[i], sizeof(int))) == NULL)
+      if ((subset_sps->applicable_op_temporal_id[i] = (int*) mem_calloc(1+subset_sps->num_applicable_ops_minus1[i], sizeof(int))) == NULL)
         no_mem_exit("init_subset_seq_parameter_set: subset_sps->applicable_op_temporal_id[i]");
-      if ((subset_sps->applicable_op_num_target_views_minus1[i] = (int*) calloc(1+subset_sps->num_applicable_ops_minus1[i], sizeof(int))) == NULL)
+      if ((subset_sps->applicable_op_num_target_views_minus1[i] = (int*) mem_calloc(1+subset_sps->num_applicable_ops_minus1[i], sizeof(int))) == NULL)
         no_mem_exit("init_subset_seq_parameter_set: subset_sps->applicable_op_num_target_views_minus1[i]");
-      if ((subset_sps->applicable_op_target_view_id[i] = (int**) calloc(1+subset_sps->num_applicable_ops_minus1[i], sizeof(int *))) == NULL)
+      if ((subset_sps->applicable_op_target_view_id[i] = (int**) mem_calloc(1+subset_sps->num_applicable_ops_minus1[i], sizeof(int *))) == NULL)
         no_mem_exit("init_subset_seq_parameter_set: subset_sps->applicable_op_target_view_id[i]");
-      if ((subset_sps->applicable_op_num_views_minus1[i] = (int*) calloc(1+subset_sps->num_applicable_ops_minus1[i], sizeof(int))) == NULL)
+      if ((subset_sps->applicable_op_num_views_minus1[i] = (int*) mem_calloc(1+subset_sps->num_applicable_ops_minus1[i], sizeof(int))) == NULL)
         no_mem_exit("init_subset_seq_parameter_set: subset_sps->applicable_op_num_views_minus1[i]");
 
       for(j=0; j<=subset_sps->num_applicable_ops_minus1[i]; j++)
@@ -1306,7 +1306,7 @@ void seq_parameter_set_mvc_extension(subset_seq_parameter_set_rbsp_t *subset_sps
         subset_sps->applicable_op_num_target_views_minus1[i][j] = read_ue_v("applicable_op_num_target_views_minus1", s, &p_Dec->UsedBits);
         if(subset_sps->applicable_op_num_target_views_minus1[i][j]>=0)
         {
-          if ((subset_sps->applicable_op_target_view_id[i][j] = (int*) calloc(1+subset_sps->applicable_op_num_target_views_minus1[i][j], sizeof(int))) == NULL)
+          if ((subset_sps->applicable_op_target_view_id[i][j] = (int*) mem_calloc(1+subset_sps->applicable_op_num_target_views_minus1[i][j], sizeof(int))) == NULL)
             no_mem_exit("init_subset_seq_parameter_set: subset_sps->applicable_op_target_view_id[i][j]");
           for(k = 0; k <= subset_sps->applicable_op_num_target_views_minus1[i][j]; k++)
             subset_sps->applicable_op_target_view_id[i][j][k] = read_ue_v("applicable_op_target_view_id", s, &p_Dec->UsedBits);
@@ -1322,7 +1322,7 @@ int MemAlloc1D(void** ppBuf, int iEleSize, int iNum)
   if(iEleSize*iNum <=0)
     return 1;
 
-  *ppBuf = calloc(iNum, iEleSize);
+  *ppBuf = mem_calloc(iNum, iEleSize);
   return (*ppBuf == NULL);
 }
 
@@ -1357,7 +1357,7 @@ void mvc_vui_parameters_extension(MVCVUI_t *pMVCVUI, Bitstream *s)
   {
     MemAlloc1D((void **)&(pMVCVUI->temporal_id), sizeof(pMVCVUI->temporal_id[0]), iNumOps);
     MemAlloc1D((void **)&(pMVCVUI->num_target_output_views_minus1), sizeof(pMVCVUI->num_target_output_views_minus1[0]), iNumOps);
-    if ((pMVCVUI->view_id = (int**) calloc(iNumOps, sizeof(int*))) == NULL)
+    if ((pMVCVUI->view_id = (int**) mem_calloc(iNumOps, sizeof(int*))) == NULL)
       no_mem_exit("mvc_vui_parameters_extension: pMVCVUI->view_id");
     MemAlloc1D((void **)&(pMVCVUI->timing_info_present_flag), sizeof(pMVCVUI->timing_info_present_flag[0]), iNumOps);
     MemAlloc1D((void **)&(pMVCVUI->num_units_in_tick), sizeof(pMVCVUI->num_units_in_tick[0]), iNumOps);

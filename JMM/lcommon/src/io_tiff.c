@@ -15,6 +15,7 @@
 #include "contributors.h"
 #include "report.h"
 #include "io_tiff.h"
+#include "memalloc.h"
 
 
 // Maximum number of rows in image
@@ -1075,7 +1076,7 @@ int ReadTIFFImage (InputParameters *p_Inp, VideoDataFile *input_file, int FrameN
     case YUV420:
       // allocate planar buffer
       nComponents = width * height * 3 / 2;
-      yp = temp = (uint16 *) malloc( nComponents * sizeof(uint16));
+      yp = temp = (uint16 *) mem_malloc( nComponents * sizeof(uint16));
       up = yp + width * height;
       vp = up + width * height / 4;
       // Y
@@ -1085,7 +1086,7 @@ int ReadTIFFImage (InputParameters *p_Inp, VideoDataFile *input_file, int FrameN
         yp[i] = *p;  p += 3;
       }
       // subsample into planar buffer
-      temp2 = (uint16 *) malloc( height * width * sizeof(uint16) / 2);
+      temp2 = (uint16 *) mem_malloc( height * width * sizeof(uint16) / 2);
       // U
       horizontal_half_1chan_cosite( img+1, width, height, 3, temp2, 1, 65535);
       vertical_half_1chan( temp2, width/2, height, 1, up, 1, 65535);
@@ -1098,7 +1099,7 @@ int ReadTIFFImage (InputParameters *p_Inp, VideoDataFile *input_file, int FrameN
     case YUV422:
       // allocate planar buffer
       nComponents = width * height * 2;
-      yp = temp = (uint16 *) malloc( nComponents * sizeof(uint16));
+      yp = temp = (uint16 *) mem_malloc( nComponents * sizeof(uint16));
       up = yp + width*height;
       vp = yp + width*height/2;
       // Y

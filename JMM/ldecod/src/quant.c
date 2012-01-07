@@ -91,11 +91,11 @@ void init_qp_process(CodingParameters *cps)
   // We should allocate memory outside of this process since maybe we will have a change of SPS 
   // and we may need to recreate these. Currently should only support same bitdepth
   if (cps->qp_per_matrix == NULL)
-    if ((cps->qp_per_matrix = (int*)malloc((MAX_QP + 1 +  bitdepth_qp_scale)*sizeof(int))) == NULL)
+    if ((cps->qp_per_matrix = (int*)mem_malloc((MAX_QP + 1 +  bitdepth_qp_scale)*sizeof(int))) == NULL)
       no_mem_exit("init_qp_process: cps->qp_per_matrix");
 
   if (cps->qp_rem_matrix == NULL)
-    if ((cps->qp_rem_matrix = (int*)malloc((MAX_QP + 1 +  bitdepth_qp_scale)*sizeof(int))) == NULL)
+    if ((cps->qp_rem_matrix = (int*)mem_malloc((MAX_QP + 1 +  bitdepth_qp_scale)*sizeof(int))) == NULL)
       no_mem_exit("init_qp_process: cps->qp_rem_matrix");
 
   for (i = 0; i < MAX_QP + bitdepth_qp_scale + 1; i++)
@@ -109,13 +109,13 @@ void free_qp_matrices(CodingParameters *cps)
 {
   if (cps->qp_per_matrix != NULL)
   {
-    free (cps->qp_per_matrix);
+    mem_free (cps->qp_per_matrix);
     cps->qp_per_matrix = NULL;
   }
 
   if (cps->qp_rem_matrix != NULL)
   {
-    free (cps->qp_rem_matrix);
+    mem_free (cps->qp_rem_matrix);
     cps->qp_rem_matrix = NULL;
   }
 }

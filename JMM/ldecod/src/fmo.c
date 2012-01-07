@@ -20,6 +20,7 @@
 #include "header.h"
 #include "fmo.h"
 #include "fast_memory.h"
+#include "memalloc.h"
 
 //#define PRINT_FMO_MAPS
 
@@ -62,8 +63,8 @@ static int FmoGenerateMapUnitToSliceGroupMap (VideoParameters *p_Vid, Slice *cur
 
   // allocate memory for p_Vid->MapUnitToSliceGroupMap
   if (p_Vid->MapUnitToSliceGroupMap)
-    free (p_Vid->MapUnitToSliceGroupMap);
-  if ((p_Vid->MapUnitToSliceGroupMap = malloc ((NumSliceGroupMapUnits) * sizeof (int))) == NULL)
+    mem_free (p_Vid->MapUnitToSliceGroupMap);
+  if ((p_Vid->MapUnitToSliceGroupMap = mem_malloc ((NumSliceGroupMapUnits) * sizeof (int))) == NULL)
   {
     printf ("cannot allocated %d bytes for p_Vid->MapUnitToSliceGroupMap, exit\n", (int) ( (pps->pic_size_in_map_units_minus1+1) * sizeof (int)));
     exit (-1);
@@ -124,9 +125,9 @@ static int FmoGenerateMbToSliceGroupMap (VideoParameters *p_Vid, Slice *pSlice)
 
   // allocate memory for p_Vid->MbToSliceGroupMap
   if (p_Vid->MbToSliceGroupMap)
-    free (p_Vid->MbToSliceGroupMap);
+    mem_free (p_Vid->MbToSliceGroupMap);
 
-  if ((p_Vid->MbToSliceGroupMap = malloc ((p_Vid->PicSizeInMbs) * sizeof (int))) == NULL)
+  if ((p_Vid->MbToSliceGroupMap = mem_malloc ((p_Vid->PicSizeInMbs) * sizeof (int))) == NULL)
   {
     printf ("cannot allocate %d bytes for p_Vid->MbToSliceGroupMap, exit\n", (int) ((p_Vid->PicSizeInMbs) * sizeof (int)));
     exit (-1);
@@ -224,12 +225,12 @@ int FmoFinit(VideoParameters *p_Vid)
 {
   if (p_Vid->MbToSliceGroupMap)
   {
-    free (p_Vid->MbToSliceGroupMap);
+    mem_free (p_Vid->MbToSliceGroupMap);
     p_Vid->MbToSliceGroupMap = NULL;
   }
   if (p_Vid->MapUnitToSliceGroupMap)
   {
-    free (p_Vid->MapUnitToSliceGroupMap);
+    mem_free (p_Vid->MapUnitToSliceGroupMap);
     p_Vid->MapUnitToSliceGroupMap = NULL;
   }
   return 0;

@@ -423,7 +423,7 @@ static void init_picture(VideoParameters *p_Vid, Slice *currSlice, InputParamete
     dec_picture->seiHasTone_mapping    = 1;
     dec_picture->tone_mapping_model_id = p_Vid->seiToneMapping->model_id;
     dec_picture->tonemapped_bit_depth  = p_Vid->seiToneMapping->sei_bit_depth;
-    dec_picture->tone_mapping_lut      = malloc(coded_data_bit_max * sizeof(int));
+    dec_picture->tone_mapping_lut      = mem_malloc(coded_data_bit_max * sizeof(int));
     if (NULL == dec_picture->tone_mapping_lut)
     {
       no_mem_exit("init_picture: tone_mapping_lut");
@@ -696,12 +696,12 @@ void init_slice(VideoParameters *p_Vid, Slice *currSlice)
 
   if (currSlice->fs_listinterview0)
   {
-    free(currSlice->fs_listinterview0);
+    mem_free(currSlice->fs_listinterview0);
     currSlice->fs_listinterview0 = NULL;
   }
   if (currSlice->fs_listinterview1)
   {
-    free(currSlice->fs_listinterview1);
+    mem_free(currSlice->fs_listinterview1);
     currSlice->fs_listinterview1 = NULL;
   }
 #else
@@ -825,7 +825,7 @@ CRITICAL_SECTION cs;
 DWORD WINAPI slice_decoding_thread(LPVOID p)
 {
 	int task_id = *(int*)p;
-	free(p);
+	mem_free(p);
 idle:
 	//SuspendThread(GetCurrentThread());
 	WaitForSingleObject(thread_work_handles[task_id], INFINITE);
@@ -898,7 +898,7 @@ int decode_one_frame(DecoderParams *pDecoder)
 	  InitializeCriticalSection(&cs);
 	  for(i=0; i<thread_count; i++)
 	  {
-		  int *p = (int*)malloc(sizeof(int));
+		  int *p = (int*)mem_malloc(sizeof(int));
 		  *p = i;
 		  thread_idle_handles[i] = CreateEvent(NULL, TRUE, TRUE, NULL);
 		  thread_work_handles[i] = CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -990,10 +990,10 @@ read:
          Slice **tmpSliceList = (Slice **)realloc(p_Vid->ppSliceList, (p_Vid->iNumOfSlicesAllocated+MAX_NUM_DECSLICES)*sizeof(Slice*));
          if(!tmpSliceList)
          {
-           tmpSliceList = calloc((p_Vid->iNumOfSlicesAllocated+MAX_NUM_DECSLICES), sizeof(Slice*));
+           tmpSliceList = mem_calloc((p_Vid->iNumOfSlicesAllocated+MAX_NUM_DECSLICES), sizeof(Slice*));
            memcpy(tmpSliceList, p_Vid->ppSliceList, p_Vid->iSliceNumOfCurrPic*sizeof(Slice*));
            //free;
-           free(p_Vid->ppSliceList);
+           mem_free(p_Vid->ppSliceList);
            ppSliceList = p_Vid->ppSliceList = tmpSliceList;
          }
          else
@@ -1306,7 +1306,7 @@ void find_snr(VideoParameters *p_Vid,
   framesize_in_bytes = (((int64) comp_size_x[0] * comp_size_y[0]) + ((int64) comp_size_x[1] * comp_size_y[1] ) * 2) * symbol_size_in_bytes;
 
   // KS: this buffer should actually be allocated only once, but this is still much faster than the previous version
-  buf = malloc ( comp_size_x[0] * comp_size_y[0] * symbol_size_in_bytes );
+  buf = mem_malloc ( comp_size_x[0] * comp_size_y[0] * symbol_size_in_bytes );
 
   if (NULL == buf)
   {
@@ -1317,7 +1317,7 @@ void find_snr(VideoParameters *p_Vid,
   if (status == -1)
   {
     fprintf(stderr, "Warning: Could not seek to frame number %d in reference file. Shown PSNR might be wrong.\n", p_Vid->frame_no);
-    free (buf);
+    mem_free (buf);
     return;
   }
 
@@ -1360,7 +1360,7 @@ void find_snr(VideoParameters *p_Vid,
   if(rgb_output)
     lseek (*p_ref, framesize_in_bytes * 2 / 3, SEEK_CUR);
 
-  free (buf);
+  mem_free (buf);
 
   // picture error concealment
   if(p->concealed_pic)
@@ -2543,7 +2543,7 @@ void copy_dec_picture_JV( VideoParameters *p_Vid, StorablePicture *dst, Storable
   if( src->tone_mapping_lut )
   {
     int coded_data_bit_max = (1 << p_Vid->seiToneMapping->coded_data_bit_depth);
-    dst->tone_mapping_lut      = malloc(sizeof(int) * coded_data_bit_max);
+    dst->tone_mapping_lut      = mem_malloc(sizeof(int) * coded_data_bit_max);
     if (NULL == dst->tone_mapping_lut)
     {
       no_mem_exit("copy_dec_picture_JV: tone_mapping_lut");
@@ -2726,6 +2726,7 @@ void decode_slice_step(Slice *currSlice, int current_header)
 		InputParameters *p_Inp = currSlice->p_Inp;
 		Macroblock *currMB = NULL;
 		int counter = 0;
+		int i;
 
 		while (currSlice->decoding_done == FALSE && (counter++ < p_Inp->dec_step)) // loop over macroblocks
 		{
@@ -2734,10 +2735,11 @@ void decode_slice_step(Slice *currSlice, int current_header)
 			fprintf(p_Dec->p_trace,"\n*********** POC: %i (I/P) MB: %i Slice: %i Type %d **********\n", currSlice->ThisPOC, currSlice->current_mb_nr, currSlice->current_slice_nr, currSlice->slice_type);
 #endif
 
-			// Initializes the current macroblock
+
 			start_macroblock(currSlice, &currMB);
-			// Get the syntax elements from the NAL
 			currSlice->read_one_macroblock(currMB);
+			currSlice->decoding_done = exit_macroblock(currSlice, (!currSlice->mb_aff_frame_flag|| currSlice->current_mb_nr%2));
+
 			decode_one_macroblock(currMB, currSlice->dec_picture);
 
 			if(currSlice->mb_aff_frame_flag && currMB->mb_field)
@@ -2749,8 +2751,6 @@ void decode_slice_step(Slice *currSlice, int current_header)
 #if (DISABLE_ERC == 0)
 			ercWriteMBMODEandMV(currMB);
 #endif
-
-			currSlice->decoding_done = exit_macroblock(currSlice, (!currSlice->mb_aff_frame_flag|| currSlice->current_mb_nr%2));
 		}
 	}
 

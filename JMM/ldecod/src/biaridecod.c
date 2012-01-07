@@ -39,7 +39,7 @@ DecodingEnvironmentPtr arideco_create_decoding_environment()
 {
   DecodingEnvironmentPtr dep;
 
-  if ((dep = calloc(1,sizeof(DecodingEnvironment))) == NULL)
+  if ((dep = mem_calloc(1,sizeof(DecodingEnvironment))) == NULL)
     no_mem_exit("arideco_create_decoding_environment: dep");
   return dep;
 }
@@ -59,7 +59,7 @@ void arideco_delete_decoding_environment(DecodingEnvironmentPtr dep)
     error (errortext, 200);
   }
   else
-    free(dep);
+    mem_free(dep);
 }
 
 /*!
@@ -139,16 +139,7 @@ void arideco_start_decoding(DecodingEnvironmentPtr dep, unsigned char *code_buff
  *    arideco_bits_read
  ************************************************************************
  */
-int arideco_bits_read(DecodingEnvironmentPtr dep)
-{ 
-#if (2==TRACE)
-  int tmp = ((*dep->Dcodestrm_len) << 3) - dep->DbitsLeft;
-  fprintf(p_trace, "tmp: %d\n", tmp);
-  return tmp;
-#else
- return (((*dep->Dcodestrm_len) << 3) - dep->DbitsLeft);
-#endif
-}
+//int arideco_bits_read(DecodingEnvironmentPtr dep)
 
 
 /*!
@@ -165,14 +156,18 @@ unsigned int biari_decode_symbol(DecodingEnvironment *dep, BiContextType *bi_ct 
   unsigned int *value = &dep->Dvalue;
   unsigned int *range = &dep->Drange;  
   uint16       *state = &bi_ct->state;
-  unsigned int rLPS   = rLPS_table_64x4[*state][(*range>>6) & 0x03];
+  //unsigned int rLPS   = rLPS_table_64x4[*state][(*range>>6) & 0x03];
+  unsigned int rLPS = rLPS_table_256[(*state<<2) | ((*range >> 6) & 0x03)];
   int *DbitsLeft = &dep->DbitsLeft;
 
   *range -= rLPS;
 
   if(*value < (*range << *DbitsLeft))   //MPS
   {
-    *state = AC_next_state_MPS_64[*state]; // next state 
+    //*state = AC_next_state_MPS_64[*state]; // next state 
+    if ((*state) <= 61)
+		(*state) ++;
+
     if( *range >= QUARTER )
     {
       return (bit);

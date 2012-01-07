@@ -187,11 +187,16 @@ extern void free_mem3Dpel_2SLayers(imgpel ****buf0, imgpel ****buf1);
 static inline void* mem_malloc(size_t nitems)
 {
   void *d;
+#if 0
+  if((d = _aligned_malloc(nitems, SSE_MEMORY_ALIGNMENT)) == NULL)
+#else
   if((d = malloc(nitems)) == NULL)
+#endif
   {
     no_mem_exit("malloc failed.\n");
     return NULL;
   }
+
   return d;
 }
 

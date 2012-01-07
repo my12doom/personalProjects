@@ -28,7 +28,8 @@ static const short maxpos       [] = {15, 14, 63, 31, 31, 15,  3, 14,  7, 15, 15
 static const short c1isdc       [] = { 1,  0,  1,  1,  1,  1,  1,  0,  1,  1,  1,  0,  1,  1,  1,  1,  1,  0,  1,  1,  1,  1};
 static const short type2ctx_bcbp[] = { 0,  1,  2,  3,  3,  4,  5,  6,  5,  5, 10, 11, 12, 13, 13, 14, 16, 17, 18, 19, 19, 20};
 static const short type2ctx_map [] = { 0,  1,  2,  3,  4,  5,  6,  7,  6,  6, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}; // 8
-static const short type2ctx_last[] = { 0,  1,  2,  3,  4,  5,  6,  7,  6,  6, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}; // 8
+//static const short type2ctx_last[] = { 0,  1,  2,  3,  4,  5,  6,  7,  6,  6, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}; // 8
+#define type2ctx_last type2ctx_map
 static const short type2ctx_one [] = { 0,  1,  2,  3,  3,  4,  5,  6,  5,  5, 10, 11, 12, 13, 13, 14, 16, 17, 18, 19, 19, 20}; // 7
 static const short type2ctx_abs [] = { 0,  1,  2,  3,  3,  4,  5,  6,  5,  5, 10, 11, 12, 13, 13, 14, 16, 17, 18, 19, 19, 20}; // 7
 static const short max_c2       [] = { 4,  4,  4,  4,  4,  4,  3,  4,  3,  3,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4}; // 9
@@ -79,7 +80,7 @@ MotionInfoContexts* create_contexts_MotionInfo(void)
 {
   MotionInfoContexts *deco_ctx;
 
-  deco_ctx = (MotionInfoContexts*) calloc(1, sizeof(MotionInfoContexts) );
+  deco_ctx = (MotionInfoContexts*) mem_calloc(1, sizeof(MotionInfoContexts) );
   if( deco_ctx == NULL )
     no_mem_exit("create_contexts_MotionInfo: deco_ctx");
 
@@ -98,7 +99,7 @@ TextureInfoContexts* create_contexts_TextureInfo(void)
 {
   TextureInfoContexts *deco_ctx;
 
-  deco_ctx = (TextureInfoContexts*) calloc(1, sizeof(TextureInfoContexts) );
+  deco_ctx = (TextureInfoContexts*) mem_calloc(1, sizeof(TextureInfoContexts) );
   if( deco_ctx == NULL )
     no_mem_exit("create_contexts_TextureInfo: deco_ctx");
 
@@ -118,7 +119,7 @@ void delete_contexts_MotionInfo(MotionInfoContexts *deco_ctx)
   if( deco_ctx == NULL )
     return;
 
-  free( deco_ctx );
+  mem_free( deco_ctx );
 }
 
 
@@ -134,7 +135,7 @@ void delete_contexts_TextureInfo(TextureInfoContexts *deco_ctx)
   if( deco_ctx == NULL )
     return;
 
-  free( deco_ctx );
+  mem_free( deco_ctx );
 }
 
 void readFieldModeInfo_CABAC(Macroblock *currMB,  
@@ -191,10 +192,10 @@ int check_next_mb_and_get_field_mode_CABAC_p_slice( Slice *currSlice,
   CheckAvailabilityOfNeighborsCABAC(currMB);
 
   //create
-  dep_dp_copy = (DecodingEnvironmentPtr) calloc(1, sizeof(DecodingEnvironment) );
+  dep_dp_copy = (DecodingEnvironmentPtr) mem_calloc(1, sizeof(DecodingEnvironment) );
   for (i=0;i<3;++i)
-    mb_type_ctx_copy[i] = (BiContextTypePtr) calloc(NUM_MB_TYPE_CTX, sizeof(BiContextType) );
-  mb_aff_ctx_copy = (BiContextTypePtr) calloc(NUM_MB_AFF_CTX, sizeof(BiContextType) );
+    mb_type_ctx_copy[i] = (BiContextTypePtr) mem_calloc(NUM_MB_TYPE_CTX, sizeof(BiContextType) );
+  mb_aff_ctx_copy = (BiContextTypePtr) mem_calloc(NUM_MB_AFF_CTX, sizeof(BiContextType) );
 
   //copy
   memcpy(dep_dp_copy,dep_dp,sizeof(DecodingEnvironment));
@@ -234,10 +235,10 @@ int check_next_mb_and_get_field_mode_CABAC_p_slice( Slice *currSlice,
   CheckAvailabilityOfNeighborsCABAC(currMB);
 
   //delete
-  free(dep_dp_copy);
+  mem_free(dep_dp_copy);
   for (i=0;i<3;++i)
-    free(mb_type_ctx_copy[i]);
-  free(mb_aff_ctx_copy);
+    mem_free(mb_type_ctx_copy[i]);
+  mem_free(mb_aff_ctx_copy);
 
   return skip;
 }
@@ -276,10 +277,10 @@ int check_next_mb_and_get_field_mode_CABAC_b_slice( Slice *currSlice,
   CheckAvailabilityOfNeighborsCABAC(currMB);
 
   //create
-  dep_dp_copy = (DecodingEnvironmentPtr) calloc(1, sizeof(DecodingEnvironment) );
+  dep_dp_copy = (DecodingEnvironmentPtr) mem_calloc(1, sizeof(DecodingEnvironment) );
   for (i=0;i<3;++i)
-    mb_type_ctx_copy[i] = (BiContextTypePtr) calloc(NUM_MB_TYPE_CTX, sizeof(BiContextType) );
-  mb_aff_ctx_copy = (BiContextTypePtr) calloc(NUM_MB_AFF_CTX, sizeof(BiContextType) );
+    mb_type_ctx_copy[i] = (BiContextTypePtr) mem_calloc(NUM_MB_TYPE_CTX, sizeof(BiContextType) );
+  mb_aff_ctx_copy = (BiContextTypePtr) mem_calloc(NUM_MB_AFF_CTX, sizeof(BiContextType) );
 
   //copy
   memcpy(dep_dp_copy,dep_dp,sizeof(DecodingEnvironment));
@@ -322,10 +323,10 @@ int check_next_mb_and_get_field_mode_CABAC_b_slice( Slice *currSlice,
   CheckAvailabilityOfNeighborsCABAC(currMB);
 
   //delete
-  free(dep_dp_copy);
+  mem_free(dep_dp_copy);
   for (i=0;i<3;++i)
-    free(mb_type_ctx_copy[i]);
-  free(mb_aff_ctx_copy);
+    mem_free(mb_type_ctx_copy[i]);
+  mem_free(mb_aff_ctx_copy);
 
   return skip;
 }

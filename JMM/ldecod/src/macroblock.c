@@ -44,6 +44,7 @@
 #include "mb_prediction.h"
 #include "fast_memory.h"
 #include "filehandle.h"
+#include <emmintrin.h>
 
 
 #if TRACE
@@ -539,6 +540,165 @@ static inline void setup_mb_pos_info(Macroblock *currMB)
  *    initializes the current macroblock
  ************************************************************************
  */
+__m128i m0;
+inline void zero64(void* ptr)
+{
+	__m128i *p = (__m128i*)ptr;
+	m0 = _mm_xor_si128(m0, m0);
+
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+}
+inline void zero128(void* ptr)
+{
+	__m128i *p = (__m128i*)ptr;
+	m0 = _mm_xor_si128(m0, m0);
+
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+}
+
+inline void zero192(void* ptr)
+{
+	__m128i *p = (__m128i*)ptr;
+	m0 = _mm_xor_si128(m0, m0);
+
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+
+}
+
+
+inline void zero256(void* ptr)
+{
+	__m128i *p = (__m128i*)ptr;
+	m0 = _mm_xor_si128(m0, m0);
+
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+}
+
+inline void zero576(void* ptr)
+{
+	__m128i *p = (__m128i*)ptr;
+	m0 = _mm_xor_si128(m0, m0);
+
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+}
+inline void zero1024(void* ptr)
+{
+	__m128i *p = (__m128i*)ptr;
+	m0 = _mm_xor_si128(m0, m0);
+
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);	
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);	
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+	_mm_storeu_si128(p++, m0);
+}
+
 void start_macroblock(Slice *currSlice, Macroblock **currMB)
 {
   VideoParameters *p_Vid = currSlice->p_Vid;
@@ -593,27 +753,41 @@ void start_macroblock(Slice *currSlice, Macroblock **currMB)
   if (currSlice->slice_type != I_SLICE)
   {
     if (currSlice->slice_type != B_SLICE)
-      fast_memset_zero((*currMB)->mvd[0][0][0], MB_BLOCK_PARTITIONS * 2 * sizeof(short));
+      //fast_memset_zero((*currMB)->mvd[0][0][0], MB_BLOCK_PARTITIONS * 2 * sizeof(short));
+	  zero64((*currMB)->mvd[0][0][0]);
     else
-      fast_memset_zero((*currMB)->mvd[0][0][0], 2 * MB_BLOCK_PARTITIONS * 2 * sizeof(short));
+      //fast_memset_zero((*currMB)->mvd[0][0][0], 2 * MB_BLOCK_PARTITIONS * 2 * sizeof(short));
+	  zero128((*currMB)->mvd[0][0][0]);
   }
   
-  fast_memset((*currMB)->s_cbp, 0, 3 * sizeof(CBPStructure));
+  //fast_memset((*currMB)->s_cbp, 0, 3 * sizeof(CBPStructure));
+  zero576((*currMB)->s_cbp);
+  //zero192((*currMB)->s_cbp+1);
+  //zero192((*currMB)->s_cbp+2);
+
 
   // initialize currSlice->mb_rres
   if (currSlice->is_reset_coeff == FALSE)
   {
-    fast_memset_zero( currSlice->mb_rres[0][0], MB_PIXELS * sizeof(int));
-    fast_memset_zero( currSlice->mb_rres[1][0], p_Vid->mb_cr_size * sizeof(int));
-    fast_memset_zero( currSlice->mb_rres[2][0], p_Vid->mb_cr_size * sizeof(int));
+    //fast_memset_zero( currSlice->mb_rres[0][0], MB_PIXELS * sizeof(int));
+    //fast_memset_zero( currSlice->mb_rres[1][0], p_Vid->mb_cr_size * sizeof(int));
+    //fast_memset_zero( currSlice->mb_rres[2][0], p_Vid->mb_cr_size * sizeof(int));
+
+    zero1024(currSlice->mb_rres[0][0]);
+	zero256(currSlice->mb_rres[1][0]);
+	zero256(currSlice->mb_rres[2][0]);
     if (currSlice->is_reset_coeff_cr == FALSE)
     {
-      fast_memset_zero( currSlice->cof[0][0], 3 * MB_PIXELS * sizeof(int));
+      //fast_memset_zero( currSlice->cof[0][0], 3 * MB_PIXELS * sizeof(int));
+	  zero1024(currSlice->cof[0][0]);
+	  zero1024(((BYTE*)currSlice->cof[0][0])+1024);
+	  zero1024(((BYTE*)currSlice->cof[0][0])+2048);
       currSlice->is_reset_coeff_cr = TRUE;
     }
     else
     {
-      fast_memset_zero( currSlice->cof[0][0], MB_PIXELS * sizeof(int));
+      //fast_memset_zero( currSlice->cof[0][0], MB_PIXELS * sizeof(int));
+	  zero1024(currSlice->cof[0][0]);
     }
     //fast_memset_zero( currSlice->cof[0][0], MB_PIXELS * sizeof(int));
     //fast_memset_zero( currSlice->cof[1][0], p_Vid->mb_cr_size * sizeof(int));

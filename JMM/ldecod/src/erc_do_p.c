@@ -87,9 +87,9 @@ int ercConcealInterFrame(frame *recfr, objectBuffer_t *object_list,
     if ( errorVar->nOfCorruptedSegments )
     {
       if (chroma_format_idc != YUV400)
-        predMB = (imgpel *) malloc ( (256 + (p_Vid->mb_cr_size)*2) * sizeof (imgpel));
+        predMB = (imgpel *) mem_malloc ( (256 + (p_Vid->mb_cr_size)*2) * sizeof (imgpel));
       else
-        predMB = (imgpel *) malloc(256 * sizeof (imgpel));
+        predMB = (imgpel *) mem_malloc(256 * sizeof (imgpel));
 
       if ( predMB == NULL ) no_mem_exit("ercConcealInterFrame: predMB");
 
@@ -210,7 +210,7 @@ int ercConcealInterFrame(frame *recfr, objectBuffer_t *object_list,
         }
       }
 
-      free(predMB);
+      mem_free(predMB);
     }
     return 1;
   }
@@ -1163,11 +1163,11 @@ static void copy_to_conceal(StorablePicture *src, StorablePicture *dst, VideoPar
   {
     if (dec_picture->chroma_format_idc != YUV400)
     {
-      storeYUV = (imgpel *) malloc ( (16 + (p_Vid->mb_cr_size_x*p_Vid->mb_cr_size_y)*2/16) * sizeof (imgpel));
+      storeYUV = (imgpel *) mem_malloc ( (16 + (p_Vid->mb_cr_size_x*p_Vid->mb_cr_size_y)*2/16) * sizeof (imgpel));
     }
     else
     {
-      storeYUV = (imgpel *) malloc (16  * sizeof (imgpel));
+      storeYUV = (imgpel *) mem_malloc (16  * sizeof (imgpel));
     }
 
     p_Vid->erc_img = p_Vid;
@@ -1244,7 +1244,7 @@ static void copy_to_conceal(StorablePicture *src, StorablePicture *dst, VideoPar
         }
       }
     }
-    free(storeYUV);
+    mem_free(storeYUV);
   }
 }
 
@@ -1586,7 +1586,7 @@ struct concealment_node * init_node( StorablePicture* picture, int missingpoc )
 {
   struct concealment_node *ptr;
 
-  ptr = (struct concealment_node *) calloc( 1, sizeof(struct concealment_node ) );
+  ptr = (struct concealment_node *) mem_calloc( 1, sizeof(struct concealment_node ) );
 
   if( ptr == NULL )
     return (struct concealment_node *) NULL;
@@ -1667,7 +1667,7 @@ static void delete_node( VideoParameters *p_Vid, struct concealment_node *ptr )
     p_Vid->concealment_head = p_Vid->concealment_head->next;
     if( p_Vid->concealment_end == ptr )
       p_Vid->concealment_end = p_Vid->concealment_end->next;
-    free(ptr);
+    mem_free(ptr);
   }
 }
 
@@ -1702,7 +1702,7 @@ void delete_list( VideoParameters *p_Vid, struct concealment_node *ptr )
   while( ptr != NULL ) 
   {
     temp = ptr->next;
-    free( ptr );
+    mem_free( ptr );
     ptr = temp;
   }
 }

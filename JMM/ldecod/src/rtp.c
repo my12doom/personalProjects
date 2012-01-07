@@ -159,11 +159,11 @@ int GetRTPNALU (VideoParameters *p_Vid, NALU_t *nalu, int BitStreamFile)
   RTPpacket_t *p;
   int ret;
 
-  if ((p=malloc (sizeof (RTPpacket_t)))== NULL)
+  if ((p=mem_malloc (sizeof (RTPpacket_t)))== NULL)
     no_mem_exit ("GetRTPNALU-1");
-  if ((p->packet=malloc (MAXRTPPACKETSIZE))== NULL)
+  if ((p->packet=mem_malloc (MAXRTPPACKETSIZE))== NULL)
     no_mem_exit ("GetRTPNALU-2");
-  if ((p->payload=malloc (MAXRTPPACKETSIZE))== NULL)
+  if ((p->payload=mem_malloc (MAXRTPPACKETSIZE))== NULL)
     no_mem_exit ("GetRTPNALU-3");
 
   ret = RTPReadPacket (p, BitStreamFile);
@@ -195,9 +195,9 @@ int GetRTPNALU (VideoParameters *p_Vid, NALU_t *nalu, int BitStreamFile)
   }
 
   // free memory
-  free (p->payload);
-  free (p->packet);
-  free (p);
+  mem_free (p->payload);
+  mem_free (p->packet);
+  mem_free (p);
 
 //  printf ("Got an RTP NALU, len %d, first byte %x\n", nalu->len, nalu->buf[0]);
   

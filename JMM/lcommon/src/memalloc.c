@@ -919,7 +919,7 @@ int get_mem3Dpel(imgpel ****array3D, int dim0, int dim1, int dim2)
 {
   int i, mem_size = dim0 * sizeof(imgpel**);
 
-  if(((*array3D) = (imgpel***)malloc(dim0 * sizeof(imgpel**))) == NULL)
+  if(((*array3D) = (imgpel***)mem_malloc(dim0 * sizeof(imgpel**))) == NULL)
     no_mem_exit("get_mem3Dpel: array3D");
 
   mem_size += get_mem2Dpel(*array3D, dim0 * dim1, dim2);
@@ -2715,7 +2715,7 @@ void free_mem2Ddistblk(distblk **array2D)
       mem_free (*array2D);
     else 
       error ("free_mem2Ddistblk: trying to free unused memory",100);
-    free (array2D);
+    mem_free (array2D);
   } 
   else
   {

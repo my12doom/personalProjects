@@ -21,17 +21,17 @@ static const int IOBUFFERSIZE = 512*1024; //65536;
 
 void malloc_annex_b(VideoParameters *p_Vid, ANNEXB_t **p_annex_b)
 {
-  if ( ((*p_annex_b) = (ANNEXB_t *) calloc(1, sizeof(ANNEXB_t))) == NULL)
+  if ( ((*p_annex_b) = (ANNEXB_t *) mem_calloc(1, sizeof(ANNEXB_t))) == NULL)
   {
     snprintf(errortext, ET_SIZE, "Memory allocation for Annex_B file failed");
     error(errortext,100);
   }
-  if (((*p_annex_b)->Buf = (byte*) malloc(p_Vid->nalu->max_size)) == NULL)
+  if (((*p_annex_b)->Buf = (byte*) mem_malloc(p_Vid->nalu->max_size)) == NULL)
   {
     error("malloc_annex_b: Buf", 101);
   }
   (*p_annex_b)->iIOBufferSize = IOBUFFERSIZE * sizeof (byte);
-  (*p_annex_b)->iobuffer = malloc ((*p_annex_b)->iIOBufferSize);
+  (*p_annex_b)->iobuffer = mem_malloc ((*p_annex_b)->iIOBufferSize);
   if (NULL == (*p_annex_b)->iobuffer)
   {
 	  error ("open_annex_b: cannot allocate IO buffer",500);
@@ -53,9 +53,9 @@ void init_annex_b(ANNEXB_t *annex_b)
 
 void free_annex_b(ANNEXB_t **p_annex_b)
 {
-  free((*p_annex_b)->Buf);
+  mem_free((*p_annex_b)->Buf);
   (*p_annex_b)->Buf = NULL;
-  free(*p_annex_b);
+  mem_free(*p_annex_b);
   *p_annex_b = NULL;  
 }
 
@@ -350,7 +350,7 @@ void close_annex_b(ANNEXB_t *annex_b)
     close(annex_b->BitStreamFile);
   }
   annex_b->BitStreamFile = - 1;
-  free (annex_b->iobuffer);
+  mem_free (annex_b->iobuffer);
   annex_b->iobuffer = NULL;
 }
 

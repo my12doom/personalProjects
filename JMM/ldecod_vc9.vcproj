@@ -1422,6 +1422,10 @@
 			RelativePath="bin\decoder.cfg"
 			>
 		</File>
+		<File
+			RelativePath=".\ldecod120105.vsp"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

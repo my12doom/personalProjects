@@ -249,10 +249,10 @@ void init_lists_p_slice_mvc(Slice *currSlice)
   }
   else
   {
-    fs_list0 = calloc(p_Dpb->size, sizeof (FrameStore*));
+    fs_list0 = mem_calloc(p_Dpb->size, sizeof (FrameStore*));
     if (NULL==fs_list0)
       no_mem_exit("init_lists: fs_list0");
-    fs_listlt = calloc(p_Dpb->size, sizeof (FrameStore*));
+    fs_listlt = mem_calloc(p_Dpb->size, sizeof (FrameStore*));
     if (NULL==fs_listlt)
       no_mem_exit("init_lists: fs_listlt");
 
@@ -283,8 +283,8 @@ void init_lists_p_slice_mvc(Slice *currSlice)
 
     gen_pic_list_from_frame_list(currSlice->structure, fs_listlt, listltidx, currSlice->listX[0], &currSlice->listXsize[0], 1);
 
-    free(fs_list0);
-    free(fs_listlt);
+    mem_free(fs_list0);
+    mem_free(fs_listlt);
   }
 
   currSlice->listXsize[1] = 0;    
@@ -293,7 +293,7 @@ void init_lists_p_slice_mvc(Slice *currSlice)
   if (currSlice->svc_extension_flag == 0)
   {        
     int curr_view_id = currSlice->layer_id;
-    currSlice->fs_listinterview0 = calloc(p_Dpb->size, sizeof (FrameStore*));
+    currSlice->fs_listinterview0 = mem_calloc(p_Dpb->size, sizeof (FrameStore*));
     if (NULL==currSlice->fs_listinterview0)
       no_mem_exit("init_lists: fs_listinterview0");
     list0idx = currSlice->listXsize[0];
@@ -440,13 +440,13 @@ void init_lists_b_slice_mvc(Slice *currSlice)
     }
     else
     {
-      fs_list0 = calloc(p_Dpb->size, sizeof (FrameStore*));
+      fs_list0 = mem_calloc(p_Dpb->size, sizeof (FrameStore*));
       if (NULL==fs_list0)
         no_mem_exit("init_lists: fs_list0");
-      fs_list1 = calloc(p_Dpb->size, sizeof (FrameStore*));
+      fs_list1 = mem_calloc(p_Dpb->size, sizeof (FrameStore*));
       if (NULL==fs_list1)
         no_mem_exit("init_lists: fs_list1");
-      fs_listlt = calloc(p_Dpb->size, sizeof (FrameStore*));
+      fs_listlt = mem_calloc(p_Dpb->size, sizeof (FrameStore*));
       if (NULL==fs_listlt)
         no_mem_exit("init_lists: fs_listlt");
 
@@ -508,9 +508,9 @@ void init_lists_b_slice_mvc(Slice *currSlice)
       gen_pic_list_from_frame_list(currSlice->structure, fs_listlt, listltidx, currSlice->listX[0], &currSlice->listXsize[0], 1);
       gen_pic_list_from_frame_list(currSlice->structure, fs_listlt, listltidx, currSlice->listX[1], &currSlice->listXsize[1], 1);
 
-      free(fs_list0);
-      free(fs_list1);
-      free(fs_listlt);
+      mem_free(fs_list0);
+      mem_free(fs_list1);
+      mem_free(fs_listlt);
     }
   }
 
@@ -539,10 +539,10 @@ void init_lists_b_slice_mvc(Slice *currSlice)
   {
     int curr_view_id = currSlice->view_id;
     // B-Slice
-    currSlice->fs_listinterview0 = calloc(p_Dpb->size, sizeof (FrameStore*));
+    currSlice->fs_listinterview0 = mem_calloc(p_Dpb->size, sizeof (FrameStore*));
     if (NULL==currSlice->fs_listinterview0)
       no_mem_exit("init_lists: fs_listinterview0");
-    currSlice->fs_listinterview1 = calloc(p_Dpb->size, sizeof (FrameStore*));
+    currSlice->fs_listinterview1 = mem_calloc(p_Dpb->size, sizeof (FrameStore*));
     if (NULL==currSlice->fs_listinterview1)
       no_mem_exit("init_lists: fs_listinterview1");
     list0idx = currSlice->listXsize[0];

@@ -223,7 +223,7 @@ void interpret_spare_pic( byte* payload, int size, VideoParameters *p_Vid )
   assert( payload!=NULL);
   assert( p_Vid!=NULL);
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -431,7 +431,7 @@ void interpret_spare_pic( byte* payload, int size, VideoParameters *p_Vid )
 
   free_mem3D( map );
 
-  free(buf);
+  mem_free(buf);
 }
 
 
@@ -454,7 +454,7 @@ void interpret_subsequence_info( byte* payload, int size, VideoParameters *p_Vid
   int sub_seq_layer_num, sub_seq_id, first_ref_pic_flag, leading_non_ref_pic_flag, last_pic_flag,
     sub_seq_frame_num_flag, sub_seq_frame_num;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -486,7 +486,7 @@ void interpret_subsequence_info( byte* payload, int size, VideoParameters *p_Vid
   }
 #endif
 
-  free(buf);
+  mem_free(buf);
 #ifdef PRINT_SUBSEQUENCE_INFO
 #undef PRINT_SUBSEQUENCE_INFO
 #endif
@@ -511,7 +511,7 @@ void interpret_subsequence_layer_characteristics_info( byte* payload, int size, 
   long num_sub_layers, accurate_statistics_flag, average_bit_rate, average_frame_rate;
   int i;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -537,7 +537,7 @@ void interpret_subsequence_layer_characteristics_info( byte* payload, int size, 
     printf("layer %d: average_frame_rate       = %ld \n", i, average_frame_rate);
 #endif
   }
-  free (buf);
+  mem_free (buf);
 }
 
 
@@ -562,7 +562,7 @@ void interpret_subsequence_characteristics_info( byte* payload, int size, VideoP
   unsigned long sub_seq_duration, average_bit_rate, average_frame_rate;
   int num_referenced_subseqs, ref_sub_seq_layer_num, ref_sub_seq_id, ref_sub_seq_direction;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -626,7 +626,7 @@ void interpret_subsequence_characteristics_info( byte* payload, int size, VideoP
 #endif
   }
 
-  free( buf );
+  mem_free( buf );
 #ifdef PRINT_SUBSEQUENCE_CHAR
 #undef PRINT_SUBSEQUENCE_CHAR
 #endif
@@ -651,7 +651,7 @@ void interpret_scene_information( byte* payload, int size, VideoParameters *p_Vi
   Bitstream* buf;
   int scene_id, scene_transition_type, second_scene_id;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -674,7 +674,7 @@ void interpret_scene_information( byte* payload, int size, VideoParameters *p_Vi
     printf("second_scene_id       = %d\n", second_scene_id);
   }
 #endif
-  free( buf );
+  mem_free( buf );
 #ifdef PRINT_SCENE_INFORMATION
 #undef PRINT_SCENE_INFORMATION
 #endif
@@ -843,7 +843,7 @@ void interpret_pan_scan_rect_info( byte* payload, int size, VideoParameters *p_V
 
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -874,7 +874,7 @@ void interpret_pan_scan_rect_info( byte* payload, int size, VideoParameters *p_V
     pan_scan_rect_repetition_period = read_ue_v("SEI: pan_scan_rect_repetition_period", buf, &p_Dec->UsedBits);
   }
 
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_PAN_SCAN_RECT
 #undef PRINT_PAN_SCAN_RECT
 #endif
@@ -902,7 +902,7 @@ void interpret_recovery_point_info( byte* payload, int size, VideoParameters *p_
   Bitstream* buf;
 
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -924,7 +924,7 @@ void interpret_recovery_point_info( byte* payload, int size, VideoParameters *p_
   printf("broken_link_flag         = %d\n", broken_link_flag);
   printf("changing_slice_group_idc = %d\n", changing_slice_group_idc);
 #endif
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_RECOVERY_POINT
 #undef PRINT_RECOVERY_POINT
 #endif
@@ -955,7 +955,7 @@ void interpret_dec_ref_pic_marking_repetition_info( byte* payload, int size, Vid
 
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1047,7 +1047,7 @@ void interpret_dec_ref_pic_marking_repetition_info( byte* payload, int size, Vid
     tmp_drpm=pSlice->dec_ref_pic_marking_buffer;
 
     pSlice->dec_ref_pic_marking_buffer=tmp_drpm->Next;
-    free (tmp_drpm);
+    mem_free (tmp_drpm);
   }
 
   // restore old values in p_Vid
@@ -1058,7 +1058,7 @@ void interpret_dec_ref_pic_marking_repetition_info( byte* payload, int size, Vid
   pSlice->long_term_reference_flag = old_long_term_reference_flag;
   pSlice->adaptive_ref_pic_buffering_flag = old_adaptive_ref_pic_buffering_flag;
 
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_DEC_REF_PIC_MARKING
 #undef PRINT_DEC_REF_PIC_MARKING
 #endif
@@ -1082,7 +1082,7 @@ void interpret_full_frame_freeze_info( byte* payload, int size, VideoParameters 
   int full_frame_freeze_repetition_period;
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1093,7 +1093,7 @@ void interpret_full_frame_freeze_info( byte* payload, int size, VideoParameters 
   printf("full_frame_freeze_repetition_period = %d\n", full_frame_freeze_repetition_period);
 #endif
 
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_FULL_FRAME_FREEZE_INFO
 #undef PRINT_FULL_FRAME_FREEZE_INFO
 #endif
@@ -1147,7 +1147,7 @@ void interpret_full_frame_snapshot_info( byte* payload, int size, VideoParameter
 
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1160,7 +1160,7 @@ void interpret_full_frame_snapshot_info( byte* payload, int size, VideoParameter
   printf("Full-frame snapshot SEI message\n");
   printf("snapshot_id = %d\n", snapshot_id);
 #endif
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_FULL_FRAME_SNAPSHOT_INFO
 #undef PRINT_FULL_FRAME_SNAPSHOT_INFO
 #endif
@@ -1185,7 +1185,7 @@ void interpret_progressive_refinement_start_info( byte* payload, int size, Video
 
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1200,7 +1200,7 @@ void interpret_progressive_refinement_start_info( byte* payload, int size, Video
   printf("progressive_refinement_id   = %d\n", progressive_refinement_id);
   printf("num_refinement_steps_minus1 = %d\n", num_refinement_steps_minus1);
 #endif
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_PROGRESSIVE_REFINEMENT_START_INFO
 #undef PRINT_PROGRESSIVE_REFINEMENT_START_INFO
 #endif
@@ -1226,7 +1226,7 @@ void interpret_progressive_refinement_end_info( byte* payload, int size, VideoPa
 
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1239,7 +1239,7 @@ void interpret_progressive_refinement_end_info( byte* payload, int size, VideoPa
   printf("Progressive refinement segment end SEI message\n");
   printf("progressive_refinement_id   = %d\n", progressive_refinement_id);
 #endif
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_PROGRESSIVE_REFINEMENT_END_INFO
 #undef PRINT_PROGRESSIVE_REFINEMENT_END_INFO
 #endif
@@ -1267,7 +1267,7 @@ void interpret_motion_constrained_slice_group_set_info( byte* payload, int size,
 
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1306,7 +1306,7 @@ void interpret_motion_constrained_slice_group_set_info( byte* payload, int size,
 #endif
   }
 
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_MOTION_CONST_SLICE_GROUP_SET_INFO
 #undef PRINT_MOTION_CONST_SLICE_GROUP_SET_INFO
 #endif
@@ -1340,7 +1340,7 @@ void interpret_film_grain_characteristics_info( byte* payload, int size, VideoPa
 
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1420,7 +1420,7 @@ void interpret_film_grain_characteristics_info( byte* payload, int size, VideoPa
 #endif
   }
 
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_FILM_GRAIN_CHARACTERISTICS_INFO
 #undef PRINT_FILM_GRAIN_CHARACTERISTICS_INFO
 #endif
@@ -1446,7 +1446,7 @@ void interpret_deblocking_filter_display_preference_info( byte* payload, int siz
 
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1467,7 +1467,7 @@ void interpret_deblocking_filter_display_preference_info( byte* payload, int siz
 #endif
   }
 
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_DEBLOCKING_FILTER_DISPLAY_PREFERENCE_INFO
 #undef PRINT_DEBLOCKING_FILTER_DISPLAY_PREFERENCE_INFO
 #endif
@@ -1495,7 +1495,7 @@ void interpret_stereo_video_info_info( byte* payload, int size, VideoParameters 
 
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1528,7 +1528,7 @@ void interpret_stereo_video_info_info( byte* payload, int size, VideoParameters 
   printf("right_view_self_contained_flag = %d\n", right_view_self_contained_flag);
 #endif
 
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_STEREO_VIDEO_INFO_INFO
 #undef PRINT_STEREO_VIDEO_INFO_INFO
 #endif
@@ -1591,7 +1591,7 @@ void interpret_buffering_period_info( byte* payload, int size, VideoParameters *
   Bitstream* buf;
   seq_parameter_set_rbsp_t *sps;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1642,7 +1642,7 @@ void interpret_buffering_period_info( byte* payload, int size, VideoParameters *
     }
   }
 
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_BUFFERING_PERIOD_INFO
 #undef PRINT_BUFFERING_PERIOD_INFO
 #endif
@@ -1686,7 +1686,7 @@ void interpret_picture_timing_info( byte* payload, int size, VideoParameters *p_
     return;
   }
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1853,7 +1853,7 @@ void interpret_picture_timing_info( byte* payload, int size, VideoParameters *p_
     }
   }
 
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_PICTURE_TIMING_INFO
 #undef PRINT_PICTURE_TIMING_INFO
 #endif
@@ -1876,7 +1876,7 @@ void interpret_frame_packing_arrangement_info( byte* payload, int size, VideoPar
   frame_packing_arrangement_information_struct seiFramePackingArrangement;
   Bitstream* buf;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -1940,7 +1940,7 @@ void interpret_frame_packing_arrangement_info( byte* payload, int size, VideoPar
   printf("frame_packing_arrangement_extension_flag          = %d\n", seiFramePackingArrangement.frame_packing_arrangement_extension_flag);
 #endif
 
-  free (buf);
+  mem_free (buf);
 #ifdef PRINT_FRAME_PACKING_ARRANGEMENT_INFO
 #undef PRINT_FRAME_PACKING_ARRANGEMENT_INFO
 #endif
@@ -1989,7 +1989,7 @@ void interpret_tone_mapping( byte* payload, int size, VideoParameters *p_Vid )
 
   memset (&seiToneMappingTmp, 0, sizeof (tone_mapping_struct_tmp));
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -2133,7 +2133,7 @@ void interpret_tone_mapping( byte* payload, int size, VideoParameters *p_Vid )
     }
 #endif
   } // end !tone_map_cancel_flag
-  free (buf);
+  mem_free (buf);
 }
 
 #if (ENABLE_OUTPUT_TONEMAPPING)
@@ -2196,7 +2196,7 @@ void interpret_post_filter_hints_info( byte* payload, int size, VideoParameters 
   unsigned int filter_hint_size_y, filter_hint_size_x, filter_hint_type, color_component, cx, cy, additional_extension_flag;
   int ***filter_hint;
 
-  buf = malloc(sizeof(Bitstream));
+  buf = mem_malloc(sizeof(Bitstream));
   buf->bitstream_length = size;
   buf->streamBuffer = payload;
   buf->frame_bitoffset = 0;
@@ -2232,5 +2232,5 @@ void interpret_post_filter_hints_info( byte* payload, int size, VideoParameters 
 #endif
 
   free_mem3Dint (filter_hint);
-  free( buf );
+  mem_free( buf );
 }
