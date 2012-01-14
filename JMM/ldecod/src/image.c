@@ -813,8 +813,9 @@ static void CopyPOC(Slice *pSlice0, Slice *currSlice)
 
 int total_read_time = 0;
 int total_dec_time = 0;
+int total_dec_cpu_time = 0;
 
-int thread_count = 4;
+int thread_count = 1;
 int slice_count;
 HANDLE thread_handles[16] = {INVALID_HANDLE_VALUE};
 HANDLE thread_idle_handles[16] = {INVALID_HANDLE_VALUE};
@@ -825,10 +826,12 @@ CRITICAL_SECTION cs;
 DWORD WINAPI slice_decoding_thread(LPVOID p)
 {
 	int task_id = *(int*)p;
+	int l;
 	mem_free(p);
 idle:
 	//SuspendThread(GetCurrentThread());
 	WaitForSingleObject(thread_work_handles[task_id], INFINITE);
+	l = timeGetTime();
 
 	{
 		Slice * to_dec = NULL;
@@ -869,6 +872,8 @@ again:
 		}
 	}
 
+	//printf("thread %d: %dms.\n", task_id, timeGetTime() - l);
+	total_dec_cpu_time += timeGetTime() - l;
 
 
 	ResetEvent(thread_work_handles[task_id]);
@@ -895,6 +900,10 @@ int decode_one_frame(DecoderParams *pDecoder)
   if (thread_handles[0] == INVALID_HANDLE_VALUE)
   {
 	  int i;
+	  thread_count = pDecoder->p_Inp->thread_count;
+	  if (thread_count == 0)
+		  thread_count = 4;			// TODO
+
 	  InitializeCriticalSection(&cs);
 	  for(i=0; i<thread_count; i++)
 	  {
@@ -1044,7 +1053,7 @@ read:
   }
   total_read_time += timeGetTime()-read_time;
 
-  //printf("total time:read %d, dec %d.\n", total_read_time, total_dec_time);
+  printf("total time:read %d, dec %d/%d(%d%% decoding load).\n", total_read_time, total_dec_cpu_time, total_dec_time, 100*total_dec_cpu_time/max(1,total_dec_time));
 
   dec_time = timeGetTime();
   {

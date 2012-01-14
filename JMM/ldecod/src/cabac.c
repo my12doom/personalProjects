@@ -2028,7 +2028,7 @@ static int read_significance_map (Macroblock              *currMB,
     }
   }
   //--- last coefficient must be significant if no last symbol was received ---
-  if (i < i1 + 1)
+  //if (i < i1 + 1)
   {
     *coeff = 1;
     ++coeff_ctr;

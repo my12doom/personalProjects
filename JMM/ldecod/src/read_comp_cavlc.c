@@ -293,6 +293,7 @@ void read_coeff_4x4_CAVLC (Macroblock *currMB,
     numtrailingones =  currSE.value2;
   }
 
+  // TODO
   memset(levarr, 0, max_coeff_num * sizeof(int));
   memset(runarr, 0, max_coeff_num * sizeof(int));
 

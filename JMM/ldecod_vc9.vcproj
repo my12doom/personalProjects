@@ -239,7 +239,6 @@
 				BufferSecurityCheck="true"
 				EnableFunctionLevelLinking="true"
 				EnableEnhancedInstructionSet="2"
-				OpenMP="true"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pch"
 				AssemblerListingLocation=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/"
@@ -271,6 +270,7 @@
 				OutputFile="./bin/ldecod.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				ForceSymbolReferences="__tcmalloc"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\ldecod\$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pdb"
 				GenerateMapFile="true"
@@ -795,6 +795,15 @@
 			<File
 				RelativePath=".\ldecod\src\biaridecod.c"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+						CompileAs="2"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\lcommon\src\blk_prediction.c"
@@ -807,6 +816,14 @@
 			<File
 				RelativePath=".\ldecod\src\cabac.c"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\lcommon\src\config_common.c"
@@ -979,6 +996,14 @@
 			<File
 				RelativePath=".\ldecod\src\mc_prediction.c"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\lcommon\src\memalloc.c"
@@ -1035,6 +1060,14 @@
 			<File
 				RelativePath=".\lcommon\src\transform.c"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\ldecod\src\transform8x8.c"

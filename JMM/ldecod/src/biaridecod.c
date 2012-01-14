@@ -18,9 +18,19 @@
  *************************************************************************************
  */
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "global.h"
 #include "memalloc.h"
 #include "biaridecod.h"
+
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #define B_BITS    10      // Number of bits to represent the whole coding interval
@@ -39,7 +49,7 @@ DecodingEnvironmentPtr arideco_create_decoding_environment()
 {
   DecodingEnvironmentPtr dep;
 
-  if ((dep = mem_calloc(1,sizeof(DecodingEnvironment))) == NULL)
+  if ((dep = (DecodingEnvironmentPtr)mem_calloc(1,sizeof(DecodingEnvironment))) == NULL)
     no_mem_exit("arideco_create_decoding_environment: dep");
   return dep;
 }
@@ -152,57 +162,58 @@ void arideco_start_decoding(DecodingEnvironmentPtr dep, unsigned char *code_buff
 */
 unsigned int biari_decode_symbol(DecodingEnvironment *dep, BiContextType *bi_ct )
 {  
+  int &DbitsLeft = dep->DbitsLeft;
+  unsigned int &value = dep->Dvalue;
+  unsigned int &range = dep->Drange;  
   unsigned int bit    = bi_ct->MPS;
-  unsigned int *value = &dep->Dvalue;
-  unsigned int *range = &dep->Drange;  
-  uint16       *state = &bi_ct->state;
+  uint16       &state = bi_ct->state;
+
   //unsigned int rLPS   = rLPS_table_64x4[*state][(*range>>6) & 0x03];
-  unsigned int rLPS = rLPS_table_256[(*state<<2) | ((*range >> 6) & 0x03)];
-  int *DbitsLeft = &dep->DbitsLeft;
+  unsigned int rLPS = rLPS_table_256[(state<<2) | ((range >> 6) & 0x03)];
 
-  *range -= rLPS;
+  range -= rLPS;
 
-  if(*value < (*range << *DbitsLeft))   //MPS
+  if(value < (range << DbitsLeft))   //MPS
   {
     //*state = AC_next_state_MPS_64[*state]; // next state 
-    if ((*state) <= 61)
-		(*state) ++;
+    if ((state) <= 61)
+		(state) ++;
 
-    if( *range >= QUARTER )
+    if( range >= QUARTER )
     {
       return (bit);
     }
     else 
     {
-      *range <<= 1;
-      (*DbitsLeft)--;
+      range <<= 1;
+      (DbitsLeft)--;
     }
   }
   else         // LPS 
   {
     int renorm = renorm_table_32[(rLPS>>3) & 0x1F];
-    *value -= (*range << *DbitsLeft);
+    value -= (range << DbitsLeft);
 
-    *range = (rLPS << renorm);
-    (*DbitsLeft) -= renorm;
+    range = (rLPS << renorm);
+    (DbitsLeft) -= renorm;
 
     bit ^= 0x01;
-    if (!(*state))          // switch meaning of MPS if necessary 
+    if (!(state))          // switch meaning of MPS if necessary 
       bi_ct->MPS ^= 0x01; 
 
-    *state = AC_next_state_LPS_64[*state]; // next state 
+    state = AC_next_state_LPS_64[state]; // next state 
   }
 
-  if( *DbitsLeft > 0 )
+  if( DbitsLeft > 0 )
   {     
     return (bit);
   } 
   else
   {
-    *value <<= 16;
-    *value |=  getword(dep);    // lookahead of 2 bytes: always make sure that bitstream buffer
+    value <<= 16;
+    value |=  getword(dep);    // lookahead of 2 bytes: always make sure that bitstream buffer
     // contains 2 more bytes than actual bitstream
-    (*DbitsLeft) += 16;
+    (DbitsLeft) += 16;
 
     return (bit);
   }

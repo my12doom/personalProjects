@@ -282,6 +282,21 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 		avs->vi.width *= 2;
 	}
 
+	// check for invalid FPS
+	if (avs->vi.fps_denominator == 0)
+	{
+		if (avs->vi.width == 1280 || avs->vi.width == 2560)
+		{
+			avs->vi.fps_numerator = 60000;
+			avs->vi.fps_denominator = 1001;
+		}
+		else
+		{
+			avs->vi.fps_numerator = 24000;
+			avs->vi.fps_denominator = 1001;
+		}
+	}
+
 	return avs;
 }
 

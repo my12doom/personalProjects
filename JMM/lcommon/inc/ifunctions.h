@@ -348,7 +348,7 @@ static inline void free_pointer(void *pointer)
 {
   if (pointer != NULL)
   {
-#if 0
+#if 1
     _aligned_free(pointer);
 #else
 	free(pointer);

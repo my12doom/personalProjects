@@ -631,6 +631,9 @@ inline void zero576(void* ptr)
 inline void zero1024(void* ptr)
 {
 	__m128i *p = (__m128i*)ptr;
+
+	return memset(ptr, 0, 1024);
+
 	m0 = _mm_xor_si128(m0, m0);
 
 	_mm_storeu_si128(p++, m0);

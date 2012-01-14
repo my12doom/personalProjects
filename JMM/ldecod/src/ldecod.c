@@ -676,12 +676,15 @@ static void Report(VideoParameters *p_Vid)
  ************************************************************************
  */
 
+
+// my12doom: changed calloc into malloc
+
 DataPartition *AllocPartition(int n)
 {
   DataPartition *partArr, *dataPart;
   int i;
 
-  partArr = (DataPartition *) mem_calloc(n, sizeof(DataPartition));
+  partArr = (DataPartition *) mem_malloc(n* sizeof(DataPartition));
   if (partArr == NULL)
   {
     snprintf(errortext, ET_SIZE, "AllocPartition: Memory allocation for Data Partition failed");
@@ -691,13 +694,13 @@ DataPartition *AllocPartition(int n)
   for (i = 0; i < n; ++i) // loop over all data partitions
   {
     dataPart = &(partArr[i]);
-    dataPart->bitstream = (Bitstream *) mem_calloc(1, sizeof(Bitstream));
+    dataPart->bitstream = (Bitstream *) mem_malloc( sizeof(Bitstream));
     if (dataPart->bitstream == NULL)
     {
       snprintf(errortext, ET_SIZE, "AllocPartition: Memory allocation for Bitstream failed");
       error(errortext, 100);
     }
-    dataPart->bitstream->streamBuffer = (byte *) mem_calloc(MAX_CODED_FRAME_SIZE, sizeof(byte));
+    dataPart->bitstream->streamBuffer = (byte *) mem_malloc(MAX_CODED_FRAME_SIZE);
     if (dataPart->bitstream->streamBuffer == NULL)
     {
       snprintf(errortext, ET_SIZE, "AllocPartition: Memory allocation for streamBuffer failed");

@@ -138,6 +138,9 @@ static const byte AC_next_state_LPS_64[64] =
 
 static const byte renorm_table_32[32]={6,5,4,4,3,3,3,3,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern void arideco_start_decoding(DecodingEnvironmentPtr eep, unsigned char *code_buffer, int firstbyte, int *code_len);
 inline int arideco_bits_read(DecodingEnvironmentPtr dep)
@@ -156,5 +159,10 @@ extern void biari_init_context (int qp, BiContextTypePtr ctx, const char* ini);
 extern unsigned int biari_decode_symbol(DecodingEnvironment *dep, BiContextType *bi_ct );
 extern unsigned int biari_decode_symbol_eq_prob(DecodingEnvironmentPtr dep);
 extern unsigned int biari_decode_final(DecodingEnvironmentPtr dep);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif  // BIARIDECOD_H_
 

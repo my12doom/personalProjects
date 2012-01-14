@@ -43,7 +43,7 @@
 #define ENABLE_OUTPUT_TONEMAPPING 0    //!< enable tone map the output if tone mapping SEI present
 #define JCOST_CALC_SCALEUP        1    //!< 1: J = (D<<LAMBDA_ACCURACY_BITS)+Lambda*R; 0: J = D + ((Lambda*R+Rounding)>>LAMBDA_ACCURACY_BITS)
 #define DISABLE_ERC               1    //!< Disable any error concealment processes
-#define JM_PARALLEL_DEBLOCK       1    //!< Enables Parallel Deblocking
+#define JM_PARALLEL_DEBLOCK       0    //!< Enables Parallel Deblocking
 #define SIMULCAST_ENABLE          0    //!< to test the decoder
 
 #define MVC_EXTENSION_ENABLE      1    //!< enable support for the Multiview High Profile
@@ -228,7 +228,8 @@ typedef enum {
 } I8x8PredModes;
 
 // Color components
-enum {
+
+typedef enum {
   Y_COMP = 0,    // Y Component
   U_COMP = 1,    // U Component
   V_COMP = 2,    // V Component
