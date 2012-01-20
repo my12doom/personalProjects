@@ -110,14 +110,17 @@ typedef struct
 } BlockPos;
 
 //! struct for context management
+/*
 typedef struct
 {
-  uint16 state;         // index into state-table CP
+  uint16 state;					// index into state-table CP
   unsigned char  MPS;           // Least Probable Symbol 0/1 CP
   unsigned char dummy;          // for alignment
 } BiContextType;
+*/
+typedef int BiContextType;
 
-typedef BiContextType *BiContextTypePtr;
+typedef int *BiContextTypePtr;
 
 
 /**********************************************************************

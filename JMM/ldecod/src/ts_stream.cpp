@@ -38,6 +38,7 @@ void *get_ts_sub_stream(void *main_stream)
 
 	// now we really need to scan the file for 0x1012
 	ts::demuxer demuxer;
+	demuxer.parse_only = true;
 	printf("Scanning file %s for MVC sub stream...", main_stream_s->filename);
 	if (demuxer.fast_scan_file(main_stream_s->filename) == -1)
 	{

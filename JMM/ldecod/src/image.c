@@ -900,9 +900,24 @@ int decode_one_frame(DecoderParams *pDecoder)
   if (thread_handles[0] == INVALID_HANDLE_VALUE)
   {
 	  int i;
+	  int cores_found = 0;
+	  DWORD_PTR process, system;
 	  thread_count = pDecoder->p_Inp->thread_count;
+	  GetProcessAffinityMask(GetCurrentProcess(), &process, &system);
+
+	  for(i=0; i<32; i++)
+	  {
+		  if (system & (1<<i))
+			  cores_found++;
+	  }
 	  if (thread_count == 0)
-		  thread_count = 4;			// TODO
+	  {
+
+		  thread_count = cores_found;
+
+		  if (cores_found >=8)
+			  thread_count = 4;
+	  }
 
 	  InitializeCriticalSection(&cs);
 	  for(i=0; i<thread_count; i++)
@@ -912,7 +927,11 @@ int decode_one_frame(DecoderParams *pDecoder)
 		  thread_idle_handles[i] = CreateEvent(NULL, TRUE, TRUE, NULL);
 		  thread_work_handles[i] = CreateEvent(NULL, TRUE, FALSE, NULL);
 		  thread_handles[i] = CreateThread(NULL, NULL, slice_decoding_thread, p, NULL, NULL);
+
+		  if (cores_found>=8)
+			  SetThreadAffinityMask(thread_handles[i], 1<<(i*2));
 		  thread_tasks[i] = NULL;
+		  SetThreadPriority(thread_handles[i], THREAD_PRIORITY_HIGHEST);
 	  }
   }
 
@@ -1053,7 +1072,7 @@ read:
   }
   total_read_time += timeGetTime()-read_time;
 
-  printf("total time:read %d, dec %d/%d(%d%% decoding load).\n", total_read_time, total_dec_cpu_time, total_dec_time, 100*total_dec_cpu_time/max(1,total_dec_time));
+  //printf("total time:read %d, dec %d/%d(%d%% decoding load).\n", total_read_time, total_dec_cpu_time, total_dec_time, 100*total_dec_cpu_time/max(1,total_dec_time));
 
   dec_time = timeGetTime();
   {

@@ -571,7 +571,10 @@ int ts::demuxer::demux_ts_packet(const char* ptr)
                         if(pts>s.last_pts)
                             s.last_pts=pts;
 
-                        if(!s.first_dts)
+						if(!s.first_pts)
+							s.first_pts=pts;
+
+						if(!s.first_dts)
                             s.first_dts=dts;
                     }
                     break;
@@ -718,7 +721,8 @@ int ts::demuxer::fast_scan_file(const char* name, int scan_packet_count/*=250000
 	// some init
 	prefix.clear();
 
-	char buf[192];
+	const int packets_count_per_read = 100;
+	char buf[192 * packets_count_per_read];
 
 	int buf_len=0;
 
@@ -768,15 +772,16 @@ int ts::demuxer::fast_scan_file(const char* name, int scan_packet_count/*=250000
 	}
 
 	// scan first packets
-	for(u_int64_t pn=0; pn<scan_packet_count; pn++)
+	for(u_int64_t pn=0; pn<scan_packet_count; pn+=packets_count_per_read)
 	{
-		ReadFile(f, buf, buf_len, &read, NULL);
+		ReadFile(f, buf, buf_len*packets_count_per_read, &read, NULL);
 
-		if (read != buf_len)
+		if (!read)
 			break;
 
 		int n;
-		if((n=demux_ts_packet(buf)))
+		for(int i=0; i<read/buf_len; i++)
+		if((n=demux_ts_packet(buf+i*buf_len)))
 		{
 			//fprintf(stderr,"%s: invalid packet %llu (%i)\n",name,pn,n);
 			return -1;
@@ -788,15 +793,17 @@ int ts::demuxer::fast_scan_file(const char* name, int scan_packet_count/*=250000
 	LARGE_INTEGER target_pos;
 	target_pos.QuadPart = max(0, (packet_count-scan_packet_count)*buf_len);
 	SetFilePointerEx(f, target_pos, NULL, FILE_BEGIN);
-	for(u_int64_t pn=0; pn<scan_packet_count; pn++)
-	{
-		ReadFile(f, buf, buf_len, &read, NULL);
 
-		if (read != buf_len)
+	for(u_int64_t pn=0; pn<scan_packet_count; pn+=packets_count_per_read)
+	{
+		ReadFile(f, buf, buf_len*packets_count_per_read, &read, NULL);
+
+		if (!read)
 			break;
 
 		int n;
-		if((n=demux_ts_packet(buf)))
+		for(int i=0; i<read/buf_len; i++)
+		if((n=demux_ts_packet(buf+i*buf_len)))
 		{
 			//fprintf(stderr,"%s: invalid packet %llu (%i)\n",name,pn,n);
 			//return -1;

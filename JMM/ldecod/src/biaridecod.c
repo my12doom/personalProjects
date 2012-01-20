@@ -165,19 +165,19 @@ unsigned int biari_decode_symbol(DecodingEnvironment *dep, BiContextType *bi_ct 
   int &DbitsLeft = dep->DbitsLeft;
   unsigned int &value = dep->Dvalue;
   unsigned int &range = dep->Drange;  
-  unsigned int bit    = bi_ct->MPS;
-  uint16       &state = bi_ct->state;
+  int       &state = *bi_ct;
+  unsigned int bit    = (state & 0x40) >> 6;
 
   //unsigned int rLPS   = rLPS_table_64x4[*state][(*range>>6) & 0x03];
-  unsigned int rLPS = rLPS_table_256[(state<<2) | ((range >> 6) & 0x03)];
+  unsigned int rLPS = rLPS_table_256[((state&0x3f)<<2) | ((range >> 6) & 0x03)];
 
   range -= rLPS;
 
   if(value < (range << DbitsLeft))   //MPS
   {
-    //*state = AC_next_state_MPS_64[*state]; // next state 
-    if ((state) <= 61)
-		(state) ++;
+    state = AC_next_state_MPS_64[state&0x3f] | (state&0x40); // next state 
+    //if ((state) <= 61)
+	//	(state) ++;
 
     if( range >= QUARTER )
     {
@@ -198,10 +198,10 @@ unsigned int biari_decode_symbol(DecodingEnvironment *dep, BiContextType *bi_ct 
     (DbitsLeft) -= renorm;
 
     bit ^= 0x01;
-    if (!(state))          // switch meaning of MPS if necessary 
-      bi_ct->MPS ^= 0x01; 
+    if (!(state&0x3f))          // switch meaning of MPS if necessary 
+      *bi_ct ^= 0x40; 
 
-    state = AC_next_state_LPS_64[state]; // next state 
+    state = AC_next_state_LPS_64[state&0x3f] | (state&0x40); // next state 
   }
 
   if( DbitsLeft > 0 )
@@ -307,14 +307,18 @@ void biari_init_context (int qp, BiContextTypePtr ctx, const char* ini)
   if ( pstate >= 64 )
   {
     pstate = imin(126, pstate);
-    ctx->state = (uint16) (pstate - 64);
-    ctx->MPS   = 1;
+    //ctx->state = (uint16) (pstate - 64);
+    //ctx->MPS   = 1;
+
+	*ctx = (pstate - 64) | 0x40;
   }
   else
   {
     pstate = imax(1, pstate);
-    ctx->state = (uint16) (63 - pstate);
-    ctx->MPS   = 0;
+    //ctx->state = (uint16) (63 - pstate);
+    //ctx->MPS   = 0;
+
+	*ctx = (63 - pstate);
   }
 }
 
