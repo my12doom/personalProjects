@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <windows.h>
 #include "AVSMain.h"
+#include "readmpls.h"
+#include "ts_stream.h"
+
+#include "..\..\my12doom_revision.h"
 
 // ldecod decoding
 extern "C"
@@ -173,8 +177,8 @@ wait_ok:
 		memcpy(dstU, pU[y], m_width/2);
 		dstU += m_width/2;
 	}
-
 	cs.Unlock();
+
 	return id;
 }
 
@@ -205,6 +209,7 @@ int CFrameBuffer::remove(int n, BYTE *buf, int stride, int offset)
 				dst += stride/2;
 			}
 
+			//cs.Lock();
 			the_buffer[i].frame_number = -1;
 			m_item_count --;
 			cs.Unlock();
@@ -241,6 +246,9 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	avs = new JMAvs();
 
 	// get paras
+	char tmp[1024];
+	char tmp1[1024];
+	char tmp2[1024];
 	const char *file1 = args[0].AsString("");
 	const char *file2 = args[1].AsString("");
 	int frame_count = args[2].AsInt(-1);
@@ -251,9 +259,70 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	if (file1[0] == NULL)
 		env->ThrowError("must have a input file.");
 
-	h264_scan_result scan_result = scan_m2ts(file1);
+	// check for mpls
+	int main_playlist_count = 0;
+	int sub_playlist_count = 0;
+	char main_playlist[4096];
+	char sub_playlist[4096];
+	int lengths[4096] = {0};
+	if (file2[0] == NULL && 0 == scan_mpls(file1, &main_playlist_count, main_playlist, lengths, sub_playlist, &sub_playlist_count))
+	{
+		if (main_playlist_count != sub_playlist_count)
+			env->ThrowError("Invalid playlist file, main count != sub count.");
+
+		printf("MPLS file detected.\n");
+
+		// find path
+		int path_pos = 0;
+		for(int i=strlen(file1); i>0; i--)
+		{
+			if (file1[i] == '\\')
+			{
+				if (path_pos)
+				{
+					path_pos = i+1;
+					break;
+				}
+				else
+					path_pos = i+1;
+			}
+		}
+		memcpy(tmp1, file1, path_pos);
+		tmp1[path_pos] = '\0';
+		strcat(tmp1, "STREAM\\");
+
+		strcpy(tmp2, tmp1);
+
+		for(int i=0; i<main_playlist_count; i++)
+		{
+			strcat(tmp1, main_playlist+6*i);
+			strcat(tmp1, i==main_playlist_count-1?".m2ts":".m2ts:");
+			strcat(tmp2, sub_playlist+6*i);
+			strcat(tmp2, i==main_playlist_count-1?".m2ts":".m2ts:");
+		}
+
+		file1 = tmp1;
+		file2 = tmp2;
+
+		printf("left  eye:%s.\n", file1);
+		printf("right eye:%s.\n", file2);
+	}
+
+	parse_combined_filename(file1, 0, tmp);
+	h264_scan_result scan_result = scan_m2ts(tmp);
 	if (scan_result.frame_count == 0 && frame_count == -1)
 		env->ThrowError("can't detect frame count of input file.");
+
+	// recalculate frame count if it is a valid mpls
+	if (main_playlist_count > 0 && lengths[0] > 0)
+	{
+		int total_length = 0;
+		for(int i=0; i<main_playlist_count; i++)
+			total_length += lengths[i];
+
+		scan_result.frame_count = (LONGLONG)total_length * scan_result.fps_numerator / scan_result.fps_denominator / 1000;
+
+	}
 
 	// avs init
 	avs->avs_init(file1, env, file2, frame_count == -1 ? scan_result.frame_count : frame_count,
@@ -302,7 +371,9 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env)
 {
+	printf("ldecod for avisynth rev %d.\n", my12doom_rev);
 	env->AddFunction("ldecod","[file1]s[file2]s[frame_count]i[buffer_count]i[ldecod_args]s",Create_JM3DSource,0);
+	env->SetMemoryMax(32);
 	return 0;
 }
 
@@ -466,20 +537,6 @@ DWORD WINAPI decoding_thread(LPVOID p)
 
 	if (InputParams.cpu_mask)
 		SetProcessAffinityMask(GetCurrentProcess(), InputParams.cpu_mask);
-
-	printf("Scanning input file....");
-	h264_scan_result result = scan_m2ts(InputParams.infile);
-
-	if (!result.error)
-	{
-		printf("TS.\n");
-		printf("Input TS file has %d frames, %.3f fps, %.2f second.\n", result.frame_count, 
-			(double)result.fps_numerator/ result.fps_denominator, result.length_in_second);
-	}
-	else
-	{
-		printf("NOT TS.\n");
-	}
 
 	//open decoder;
 	iRet = OpenDecoder(&InputParams);

@@ -632,7 +632,7 @@ static void init_decoding_engine_IPCM(Slice *currSlice)
     currStream = currSlice->partArr[i].bitstream;
     ByteStartPosition = currStream->read_len;
 
-    arideco_start_decoding (&currSlice->partArr[i].de_cabac, currStream->streamBuffer, ByteStartPosition, &currStream->read_len);
+    arideco_start_decoding (&currSlice->partArr[i].de_cabac, currStream->streamBuffer + ByteStartPosition/*, &currStream->read_len*/);
   }
 }
 

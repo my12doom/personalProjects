@@ -83,7 +83,7 @@ typedef enum {
   STEREO_HIGH    = 128       //!< YUV 4:2:0/8  "Stereo High"
 } ProfileIDC;
 
-#define FILE_NAME_SIZE  255
+#define FILE_NAME_SIZE  1024
 #define INPUT_TEXT_SIZE 1024
 
 #if (ENABLE_HIGH444_CTX == 1)

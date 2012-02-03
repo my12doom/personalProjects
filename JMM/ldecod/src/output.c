@@ -23,6 +23,7 @@
 #include "fast_memory.h"
 
 #include "..\AVSMain.h"
+#include <Windows.h>
 
 static void write_out_picture(VideoParameters *p_Vid, StorablePicture *p, int p_out);
 static void img2buf_byte   (imgpel** imgX, unsigned char* buf, int size_x, int size_y, int symbol_size_in_bytes, int crop_left, int crop_right, int crop_top, int crop_bottom, int iOutStride);
@@ -422,16 +423,148 @@ void write_picture(VideoParameters *p_Vid, StorablePicture *p, int p_out, int re
  *    real picture structure
  ************************************************************************
  */
+
+#define MAX_OUTPUT_QUEUE 4
+StorablePicture * output_queue[MAX_OUTPUT_QUEUE] = {0};
+StorablePicture * output_done_queue[MAX_OUTPUT_QUEUE] = {0};
+CRITICAL_SECTION output_queue_cs, output_done_queue_cs;
+HANDLE g_output_thread = INVALID_HANDLE_VALUE;
+VideoParameters *Vid = NULL;
+int output_queue_flush = 0;
+
+DWORD WINAPI output_thread(LPVOID para)
+{
+	StorablePicture *p = NULL;
+	int i;
+
+retry:
+	if (output_queue_flush)
+		return 1;	// exit
+	EnterCriticalSection(&output_queue_cs);
+	if (!(p = output_queue[0]))
+	{
+		LeaveCriticalSection(&output_queue_cs);
+		Sleep(1);
+		goto retry;
+	}
+
+	for(i=1; i<MAX_OUTPUT_QUEUE; i++)
+		output_queue[i-1] = output_queue[i];
+	output_queue[MAX_OUTPUT_QUEUE-1] = NULL;
+	LeaveCriticalSection(&output_queue_cs);
+
+	{
+		int crop_left   = p->frame_crop_left_offset;
+		int crop_right  = p->frame_crop_right_offset;
+		int crop_top    = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_top_offset;
+		int crop_bottom = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_bottom_offset;
+
+		insert_frame(Vid->p_avs, p->imgY, p->imgUV[1], p->imgUV[0], p->view_id);
+	}
+
+retry2:
+	EnterCriticalSection(&output_done_queue_cs);
+	for(i=0; i<MAX_OUTPUT_QUEUE; i++)
+		if (output_done_queue[i] == NULL)
+		{
+			output_done_queue[i] = p;
+			LeaveCriticalSection(&output_done_queue_cs);
+			goto retry;		// wait for next
+		}
+
+
+	LeaveCriticalSection(&output_done_queue_cs);
+	Sleep(1);
+	goto retry2;
+
+	return 0;
+}
+
+void flush_output_queue()
+{
+	int i;
+retry:
+	// free all output_done picture
+	EnterCriticalSection(&output_done_queue_cs);
+	for(i=0; i<MAX_OUTPUT_QUEUE; i++)
+	if (output_done_queue[i])
+	{
+		free_storable_picture(output_done_queue[i]);
+		output_done_queue[i] = NULL;
+	}
+	LeaveCriticalSection(&output_done_queue_cs);
+
+	// try add to output queue
+	EnterCriticalSection(&output_queue_cs);
+	if (output_queue[0])
+	{
+		LeaveCriticalSection(&output_queue_cs);
+		Sleep(10);
+		goto retry;
+	}
+	LeaveCriticalSection(&output_queue_cs);
+
+	// wait for output thread to exit
+	output_queue_flush = 1;
+	WaitForSingleObject(g_output_thread, INFINITE);
+
+	// final release
+	for(i=0; i<MAX_OUTPUT_QUEUE; i++)
+		if (output_done_queue[i])
+		{
+			free_storable_picture(output_done_queue[i]);
+			output_done_queue[i] = NULL;
+		}
+}
+
 void write_picture(VideoParameters *p_Vid, StorablePicture *p, int p_out, int real_structure)
 {
 	if (p_Vid->p_avs)
 	{
-	int crop_left   = p->frame_crop_left_offset;
-	int crop_right  = p->frame_crop_right_offset;
-	int crop_top    = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_top_offset;
-	int crop_bottom = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_bottom_offset;
 
-    insert_frame(p_Vid->p_avs, p->imgY, p->imgUV[1], p->imgUV[0], p->view_id);
+
+		int i;
+		if (g_output_thread == INVALID_HANDLE_VALUE)
+		{
+			Vid = p_Vid;
+			InitializeCriticalSection(&output_queue_cs);
+			InitializeCriticalSection(&output_done_queue_cs);
+			g_output_thread = CreateThread(NULL, 0, output_thread, NULL, 0, NULL);
+		}
+
+		p->ref_count++;
+retry:
+		{
+			//insert_frame(Vid->p_avs, p->imgY, p->imgUV[1], p->imgUV[0], p->view_id);
+			//free_storable_picture(p);
+			//return;
+		}
+		// add ref
+
+		// free all output_done picture
+		EnterCriticalSection(&output_done_queue_cs);
+		for(i=0; i<MAX_OUTPUT_QUEUE; i++)
+			if (output_done_queue[i])
+			{
+				//printf("\nfree %08x(%d).\n", output_done_queue[i], output_done_queue[i]->ref_count);
+				free_storable_picture(output_done_queue[i]);
+				output_done_queue[i] = NULL;
+			}
+		LeaveCriticalSection(&output_done_queue_cs);
+
+		// try add to output queue
+		EnterCriticalSection(&output_queue_cs);
+		for(i=0; i<MAX_OUTPUT_QUEUE; i++)
+			if (output_queue[i] == NULL)
+			{
+				//printf("\nadd work %08x(%d).\n", p, p->ref_count);
+				output_queue[i] = p;
+				LeaveCriticalSection(&output_queue_cs);
+				return;
+			}
+		LeaveCriticalSection(&output_queue_cs);
+		Sleep(1);
+		goto retry;
 	}
   else
 	write_out_picture(p_Vid, p, p_out);

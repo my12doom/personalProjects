@@ -767,8 +767,12 @@ Slice *malloc_slice(InputParameters *p_Inp, VideoParameters *p_Vid)
   }
 
   // create all context models
-  currSlice->mot_ctx = create_contexts_MotionInfo();
-  currSlice->tex_ctx = create_contexts_TextureInfo();
+  //currSlice->mot_ctx = create_contexts_MotionInfo();
+  //currSlice->tex_ctx = create_contexts_TextureInfo();
+
+  currSlice->mot_ctx = (MotionInfoContexts*)mem_malloc(sizeof(MotionInfoContexts)+sizeof(TextureInfoContexts));
+  currSlice->tex_ctx = (TextureInfoContexts *)(currSlice->mot_ctx+1);
+
 
   currSlice->max_part_nr = 3;  //! assume data partitioning (worst case) for the following mallocs()
   currSlice->partArr = AllocPartition(currSlice->max_part_nr);
@@ -847,7 +851,7 @@ static void free_slice(Slice *currSlice)
   {
     // delete all context models
     delete_contexts_MotionInfo (currSlice->mot_ctx);
-    delete_contexts_TextureInfo(currSlice->tex_ctx);
+    //delete_contexts_TextureInfo(currSlice->tex_ctx);
   }
 
   for (i=0; i<6; i++)
@@ -1331,11 +1335,14 @@ int DecodeOneFrame(DecodedPicList **ppDecPicList)
   return iRet;
 }
 
+extern void flush_output_queue();
+
 int FinitDecoder(DecodedPicList **ppDecPicList)
 {
   DecoderParams *pDecoder = p_Dec;
   if(!pDecoder)
     return DEC_GEN_NOERR;
+
   ClearDecPicList(pDecoder->p_Vid);
 #if (MVC_EXTENSION_ENABLE)
   flush_dpb(pDecoder->p_Vid->p_Dpb_layer[0]);
@@ -1346,6 +1353,8 @@ int FinitDecoder(DecodedPicList **ppDecPicList)
 #if (PAIR_FIELDS_IN_OUTPUT)
   flush_pending_output(pDecoder->p_Vid, pDecoder->p_Vid->p_out);
 #endif
+  if(pDecoder->p_Vid->p_avs)
+	  flush_output_queue();
   if (pDecoder->p_Inp->FileFormat == PAR_OF_ANNEXB)
   {
     reset_annex_b(pDecoder->p_Vid->annex_b);

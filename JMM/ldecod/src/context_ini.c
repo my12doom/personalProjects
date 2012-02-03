@@ -59,6 +59,8 @@
   } \
 }
 
+// FFMPEG
+// ff_h264_init_cabac_states()
 void init_contexts (Slice *currSlice)
 {
   MotionInfoContexts*  mc = currSlice->mot_ctx;

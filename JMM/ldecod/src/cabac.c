@@ -2112,7 +2112,7 @@ void readRunLevel_CABAC (Macroblock *currMB,
       read_significant_coefficients    (dep_dp, currSlice->tex_ctx, se->context, coeff);
     }
   }
-
+ 
   //--- set run and level ---
   if (*coeff_ctr)
   {
@@ -2144,19 +2144,19 @@ void readRunLevel_CABAC (Macroblock *currMB,
 int readSyntaxElement_CABAC(Macroblock *currMB, SyntaxElement *se, DataPartition *this_dataPart)
 {
   DecodingEnvironmentPtr dep_dp = &(this_dataPart->de_cabac);
-  int curr_len = arideco_bits_read(dep_dp);
+  //int curr_len = arideco_bits_read(dep_dp);
 
   // perform the actual decoding by calling the appropriate method
   se->reading(currMB, se, dep_dp);
   //read again and minus curr_len = arideco_bits_read(dep_dp); from above
-  se->len = (arideco_bits_read(dep_dp) - curr_len);
+  //se->len = (arideco_bits_read(dep_dp) - curr_len);
 
 #if (TRACE==2)
   fprintf(p_Dec->p_trace, "curr_len: %d\n",curr_len);
   fprintf(p_Dec->p_trace, "se_len: %d\n",se->len);
 #endif
 
-  return (se->len); 
+  return (0); 
 }
 
 

@@ -131,6 +131,9 @@ typedef struct storable_picture
   char listXsize[MAX_NUM_SLICES][2];
   struct storable_picture **listX[MAX_NUM_SLICES][2];
   int         layer_id;
+
+  // my12doom:
+  int ref_count;
 } StorablePicture;
 
 typedef StorablePicture *StorablePicturePtr;

@@ -90,6 +90,17 @@ typedef struct
   int             DbitsLeft;
   byte            *Dcodestrm;
   int             *Dcodestrm_len;
+  int			  dummy;
+
+  // ffmpeg CABAC decoder
+  int low;
+  int range;
+  const byte *bytestream_start;
+  const byte *bytestream;
+  //const byte *bytestream_end;
+
+  // ffmpeg CABAC encoder (ignored)
+
 } DecodingEnvironment;
 
 typedef DecodingEnvironment *DecodingEnvironmentPtr;
@@ -118,9 +129,9 @@ typedef struct
   unsigned char dummy;          // for alignment
 } BiContextType;
 */
-typedef int BiContextType;
+typedef byte BiContextType;
 
-typedef int *BiContextTypePtr;
+typedef byte *BiContextTypePtr;
 
 
 /**********************************************************************

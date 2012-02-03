@@ -1482,6 +1482,14 @@
 				RelativePath=".\ldecod\m2ts_scanner.h"
 				>
 			</File>
+			<File
+				RelativePath=".\ldecod\readmpls.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ldecod\readmpls.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath="bin\decoder.cfg"

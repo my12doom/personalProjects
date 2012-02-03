@@ -24,6 +24,7 @@
 #include "transform.h"
 #include "quant.h"
 #include "memalloc.h"
+#include <emmintrin.h>
 
 /*!
  ***********************************************************************
@@ -834,6 +835,7 @@ void iTransform(Macroblock *currMB, ColorPlane pl, int smb)
  */
 void copy_image_data_16x16(imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int off2)
 {
+#if !0
   int j;
   for(j = 0; j < MB_BLOCK_SIZE; j += 4)
   { 
@@ -842,6 +844,97 @@ void copy_image_data_16x16(imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int o
     memcpy((*imgBuf1++ + off1), (*imgBuf2++ + off2), MB_BLOCK_SIZE * sizeof (imgpel));
     memcpy((*imgBuf1++ + off1), (*imgBuf2++ + off2), MB_BLOCK_SIZE * sizeof (imgpel));
   }
+#else
+	__asm
+	{
+		push ebx;
+
+		// load 8*16 bytes
+		mov esi, off2;
+		mov edi, imgBuf2;
+		mov eax, [edi];
+		mov ebx, [edi+4];
+		mov ecx, [edi+8];
+		mov edx, [edi+12];
+		movdqu xmm0, [eax+esi];
+		movdqu xmm1, [ebx+esi];
+		movdqu xmm2, [ecx+esi];
+		movdqu xmm3, [edx+esi];
+		mov eax, [edi+16];
+		mov ebx, [edi+20];
+		mov ecx, [edi+24];
+		mov edx, [edi+28];
+		movdqu xmm4, [eax+esi];
+		movdqu xmm5, [ebx+esi];
+		movdqu xmm6, [ecx+esi];
+		movdqu xmm7, [edx+esi];
+		
+		// save 8*16 bytes
+		mov esi, off1;
+		mov edi, imgBuf1;
+		mov eax, [edi];
+		mov ebx, [edi+4];
+		mov ecx, [edi+8];
+		mov edx, [edi+12];
+		movdqu [eax+esi], xmm0;
+		movdqu [ebx+esi], xmm1;
+		movdqu [ecx+esi], xmm2;
+		movdqu [edx+esi], xmm3;
+		mov eax, [edi+16];
+		mov ebx, [edi+20];
+		mov ecx, [edi+24];
+		mov edx, [edi+28];
+		movdqu [eax+esi], xmm4;
+		movdqu [ebx+esi], xmm5;
+		movdqu [ecx+esi], xmm6;
+		movdqu [edx+esi], xmm7;
+
+		// load another 8*16 bytes
+		mov esi, off2;
+		mov edi, imgBuf2;
+		add edi, 32
+		mov eax, [edi];
+		mov ebx, [edi+4];
+		mov ecx, [edi+8];
+		mov edx, [edi+12];
+		movdqu xmm0, [eax+esi];
+		movdqu xmm1, [ebx+esi];
+		movdqu xmm2, [ecx+esi];
+		movdqu xmm3, [edx+esi];
+		mov eax, [edi+16];
+		mov ebx, [edi+20];
+		mov ecx, [edi+24];
+		mov edx, [edi+28];
+		movdqu xmm4, [eax+esi];
+		movdqu xmm5, [ebx+esi];
+		movdqu xmm6, [ecx+esi];
+		movdqu xmm7, [edx+esi];
+
+		// save
+		mov esi, off1;
+		mov edi, imgBuf1;
+		add edi, 32;
+		mov eax, [edi];
+		mov ebx, [edi+4];
+		mov ecx, [edi+8];
+		mov edx, [edi+12];
+		movdqu [eax+esi], xmm0;
+		movdqu [ebx+esi], xmm1;
+		movdqu [ecx+esi], xmm2;
+		movdqu [edx+esi], xmm3;
+		mov eax, [edi+16];
+		mov ebx, [edi+20];
+		mov ecx, [edi+24];
+		mov edx, [edi+28];
+		movdqu [eax+esi], xmm4;
+		movdqu [ebx+esi], xmm5;
+		movdqu [ecx+esi], xmm6;
+		movdqu [edx+esi], xmm7;
+
+		pop ebx;
+	}
+
+#endif
 }
 
 /*!
@@ -900,8 +993,10 @@ int CheckVertMV(Macroblock *currMB, int vec1_y, int block_size_y)
 void copy_image_data(imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int off2, int width, int height)
 {
   int j;
+  assert(width == 8 && height == 8);
+  assert(off1 % 8 == 0 && off2 % 8 == 0);
   for(j = 0; j < height; ++j)
   {
-    memcpy((*imgBuf1++ + off1), (*imgBuf2++ + off2), width * sizeof (imgpel));
+    memcpy((*imgBuf1++ + off1), (*imgBuf2++ + off2), 8 * sizeof (imgpel));
   }
 }

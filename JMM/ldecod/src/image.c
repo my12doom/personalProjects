@@ -162,8 +162,10 @@ static void init_mvc_picture(Slice *currSlice)
   }
   else
   {
-    process_picture_in_dpb_s(p_Vid, p_pic);
-    store_proc_picture_in_dpb (currSlice->p_Dpb, clone_storable_picture(p_Vid, p_pic));
+    //process_picture_in_dpb_s(p_Vid, p_pic);
+	p_pic->ref_count++;
+    store_proc_picture_in_dpb(currSlice->p_Dpb, p_pic);
+    //store_proc_picture_in_dpb (currSlice->p_Dpb, clone_storable_picture(p_Vid, p_pic));
   }
 }
 #endif
@@ -666,7 +668,6 @@ static void init_picture_decoding(VideoParameters *p_Vid)
   update_pic_num(pSlice);
   i = 0;
 #endif
-  init_Deblock(p_Vid, pSlice->mb_aff_frame_flag);
   //init mb_data;
   for(j=0; j<p_Vid->iSliceNumOfCurrPic; j++)
   {
@@ -676,6 +677,9 @@ static void init_picture_decoding(VideoParameters *p_Vid)
     assert(p_Vid->ppSliceList[j]->view_id == i);
 #endif
   }
+  if (!iDeblockMode)
+	  init_Deblock(p_Vid, pSlice->mb_aff_frame_flag);
+
   p_Vid->iDeblockMode = iDeblockMode;
 }
 
@@ -915,9 +919,11 @@ int decode_one_frame(DecoderParams *pDecoder)
 
 		  thread_count = cores_found;
 
-		  if (cores_found >=8)
-			  thread_count = 4;
+		  //if (cores_found >=8)
+		  //	  thread_count = 4;
 	  }
+
+	  printf("Thread count = %d.\n", thread_count);
 
 	  InitializeCriticalSection(&cs);
 	  for(i=0; i<thread_count; i++)
@@ -928,8 +934,8 @@ int decode_one_frame(DecoderParams *pDecoder)
 		  thread_work_handles[i] = CreateEvent(NULL, TRUE, FALSE, NULL);
 		  thread_handles[i] = CreateThread(NULL, NULL, slice_decoding_thread, p, NULL, NULL);
 
-		  if (cores_found>=8)
-			  SetThreadAffinityMask(thread_handles[i], 1<<(i*2));
+		  //if (cores_found>=8)
+		  //	  SetThreadAffinityMask(thread_handles[i], 1<<(i*2));
 		  thread_tasks[i] = NULL;
 		  SetThreadPriority(thread_handles[i], THREAD_PRIORITY_HIGHEST);
 	  }
@@ -1053,6 +1059,7 @@ read:
   init_picture_decoding(p_Vid);
 
   //printf("slice type %d %s \n", ppSliceList[0]->slice_type, ppSliceList[0]->idr_flag ? "IDR" : "");
+//skip:
   if (!p_Inp->no_more_skip)
   {
 	skip --;
@@ -1074,6 +1081,7 @@ read:
 
   //printf("total time:read %d, dec %d/%d(%d%% decoding load).\n", total_read_time, total_dec_cpu_time, total_dec_time, 100*total_dec_cpu_time/max(1,total_dec_time));
 
+//decode:
   dec_time = timeGetTime();
   {
 	  int i;
@@ -1108,6 +1116,8 @@ read:
   }
 
   total_dec_time += timeGetTime()-dec_time;
+
+//output:
 #if MVC_EXTENSION_ENABLE
   p_Vid->last_dec_view_id = p_Vid->dec_picture->view_id;
 #endif
@@ -1710,7 +1720,7 @@ process_nalu:
         {
           ++ByteStartPosition;
         }
-        arideco_start_decoding (&currSlice->partArr[0].de_cabac, currStream->streamBuffer, ByteStartPosition, &currStream->read_len);
+        arideco_start_decoding (&currSlice->partArr[0].de_cabac, currStream->streamBuffer + ByteStartPosition/*, &currStream->read_len*/);
       }
       // printf ("read_new_slice: returning %s\n", current_header == SOP?"SOP":"SOS");
       //FreeNALU(nalu);

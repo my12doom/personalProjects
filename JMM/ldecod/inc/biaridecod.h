@@ -111,6 +111,7 @@ static const byte rLPS_table_256[256]  =
  9, 11, 12, 7, 9, 10, 12, 7, 8, 10, 11, 6, 8, 9, 11, 6, 7, 9, 10, 6, 7, 8, 9, 2,
  2, 2, 2};
 
+static byte rLPS_table_512[512];
 
 
 static const byte AC_next_state_MPS_64[64] =    
@@ -136,13 +137,16 @@ static const byte AC_next_state_LPS_64[64] =
   37,38,38,63
 };
 
+static byte AC_next_state_MPS_128[128];
+static byte AC_next_state_LPS_128[128];
+
 static const byte renorm_table_32[32]={6,5,4,4,3,3,3,3,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void arideco_start_decoding(DecodingEnvironmentPtr eep, unsigned char *code_buffer, int firstbyte, int *code_len);
+/*
 inline int arideco_bits_read(DecodingEnvironmentPtr dep)
 {
 #if (2==TRACE)
@@ -154,11 +158,101 @@ inline int arideco_bits_read(DecodingEnvironmentPtr dep)
 #endif
 
 }
-extern void arideco_done_decoding(DecodingEnvironmentPtr dep);
+*/
+
+// ffmpeg's defines, variables and functions
+#define USE_FFMPEG_CABAC 1
+#define BRANCHLESS_CABAC_DECODER 1
+#define CABAC_BITS 16
+#define CABAC_MASK ((1<<CABAC_BITS)-1)
+
+extern void ff_refill2(DecodingEnvironment *c);		// with renorm
+extern byte ff_h264_mlps_state[4*64];
+extern byte ff_h264_lps_range[4*2*64];
+extern byte ff_h264_lps_state[2*64];
+extern byte ff_h264_mps_state[2*64];
+extern const byte ff_h264_norm_shift[512];
+
+void ff_init_cabac_global_tables();
+void ff_init_cabac_decoder(DecodingEnvironment *c, const byte *buf);
+//int ff_get_cabac(DecodingEnvironment *c, byte * const state)
+__forceinline int ff_get_cabac(DecodingEnvironment *c, byte * const state)
+{
+
+	int s = *state;
+	int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + s];
+	int bit, lps_mask;
+
+	c->range -= RangeLPS;
+	lps_mask= ((c->range<<(CABAC_BITS+1)) - c->low)>>31;
+
+	c->low -= (c->range<<(CABAC_BITS+1)) & lps_mask;
+	c->range += (RangeLPS - c->range) & lps_mask;
+
+	s^=lps_mask;
+	*state= (ff_h264_mlps_state+128)[s];
+	bit= s&1;
+
+	lps_mask= ff_h264_norm_shift[c->range];
+	c->range<<= lps_mask;
+	c->low  <<= lps_mask;
+	if(!(c->low & CABAC_MASK))
+	{
+		//ff_refill2(c);
+		int i, x;
+
+		x= c->low ^ (c->low-1);
+		i= 7 - ff_h264_norm_shift[x>>(CABAC_BITS-1)];
+
+		x= -CABAC_MASK;
+
+		x+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
+
+		c->low += x<<i;
+		c->bytestream+= CABAC_BITS/8;
+	}
+	return bit;
+}
+
+__forceinline int ff_get_cabac_bypass(DecodingEnvironment *c)
+{
+	int range;
+	c->low += c->low;
+
+	if(!(c->low & CABAC_MASK))
+	{
+		//ff_refill(c);
+		c->low+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
+		c->low -= CABAC_MASK;
+		c->bytestream+= CABAC_BITS/8;
+	}
+
+	range= c->range<<(CABAC_BITS+1);
+	if(c->low < range)
+		return 0;
+	else
+	{
+		c->low -= range;
+		return 1;
+	}
+}
+
+int ff_get_cabac_terminate(DecodingEnvironment *c);
+
+// JM's original CABAC functions
 extern void biari_init_context (int qp, BiContextTypePtr ctx, const char* ini);
+//extern void arideco_done_decoding(DecodingEnvironmentPtr dep);
+#if USE_FFMPEG_CABAC
+#define arideco_start_decoding ff_init_cabac_decoder
+#define biari_decode_symbol ff_get_cabac
+#define biari_decode_symbol_eq_prob ff_get_cabac_bypass
+#define biari_decode_final ff_get_cabac_terminate
+#else
+extern void arideco_start_decoding(DecodingEnvironmentPtr dep, unsigned char *code_buffer/*, int firstbyte, int *code_len*/);
 extern unsigned int biari_decode_symbol(DecodingEnvironment *dep, BiContextType *bi_ct );
 extern unsigned int biari_decode_symbol_eq_prob(DecodingEnvironmentPtr dep);
 extern unsigned int biari_decode_final(DecodingEnvironmentPtr dep);
+#endif
 
 #ifdef __cplusplus
 }
