@@ -95,7 +95,7 @@ inline void sample_reconstruct8_8_255(imgpel **curImg, imgpel **mpr, int **mb_rr
 {
 	imgpel *imgOrg, *imgPred;
 	int    *m7;
-	int i, j;
+	int j;
 
 	__m128i tmp;
 	__m128i mm_dq2 = _mm_set1_epi16((1<<(DQ_BITS-1)));
@@ -129,7 +129,7 @@ inline void sample_reconstruct16_255(imgpel **curImg, imgpel **mpr, int **mb_rre
 {
 	imgpel *imgOrg, *imgPred;
 	int    *m7;
-	int i, j;
+	int j;
 
 	__m128i tmp, tmp2;
 	__m128i mm_dq2 = _mm_set1_epi16((1<<(DQ_BITS-1)));

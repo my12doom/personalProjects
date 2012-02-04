@@ -206,9 +206,9 @@ typedef struct DecRefPicMarking_s
 //! cbp structure
 typedef struct cbp_s
 {
-  int64         blk     ;
-  int64         bits    ;
-  int64         bits_8x8;
+  int         blk     ;
+  int         bits    ;
+  int         bits_8x8;
 } CBPStructure;
 
 //! Macroblock

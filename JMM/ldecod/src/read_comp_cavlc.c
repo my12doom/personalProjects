@@ -693,7 +693,7 @@ static void read_comp_coeff_4x4_CAVLC (Macroblock *currMB, ColorPlane pl, int (*
   const byte (*pos_scan4x4)[2] = ((p_Vid->structure == FRAME) && (!currMB->mb_field)) ? SNGL_SCAN : FIELD_SCAN;
   const byte *pos_scan_4x4 = pos_scan4x4[0];
   int start_scan = IS_I16MB(currMB) ? 1 : 0;
-  int64 *cur_cbp = &currMB->s_cbp[pl].blk;
+  int *cur_cbp = &currMB->s_cbp[pl].blk;
   int cur_context; 
   int block_y4, block_x4;
 
@@ -781,7 +781,7 @@ static void read_comp_coeff_4x4_CAVLC_ls (Macroblock *currMB, ColorPlane pl, int
   VideoParameters *p_Vid = currMB->p_Vid;
   const byte (*pos_scan4x4)[2] = ((p_Vid->structure == FRAME) && (!currMB->mb_field)) ? SNGL_SCAN : FIELD_SCAN;
   int start_scan = IS_I16MB(currMB) ? 1 : 0;
-  int64 *cur_cbp = &currMB->s_cbp[pl].blk;
+  int *cur_cbp = &currMB->s_cbp[pl].blk;
   int coef_ctr, cur_context; 
 
   if (IS_I16MB(currMB))
@@ -865,7 +865,7 @@ static void read_comp_coeff_8x8_CAVLC (Macroblock *currMB, ColorPlane pl, int (*
   VideoParameters *p_Vid = currMB->p_Vid;
   const byte (*pos_scan8x8)[2] = ((p_Vid->structure == FRAME) && (!currMB->mb_field)) ? SNGL_SCAN8x8 : FIELD_SCAN8x8;
   int start_scan = IS_I16MB(currMB) ? 1 : 0;
-  int64 *cur_cbp = &currMB->s_cbp[pl].blk;
+  int *cur_cbp = &currMB->s_cbp[pl].blk;
   int coef_ctr, cur_context; 
 
   if (IS_I16MB(currMB))
@@ -954,7 +954,7 @@ static void read_comp_coeff_8x8_CAVLC_ls (Macroblock *currMB, ColorPlane pl, int
   VideoParameters *p_Vid = currMB->p_Vid;
   const byte (*pos_scan8x8)[2] = ((p_Vid->structure == FRAME) && (!currMB->mb_field)) ? SNGL_SCAN8x8 : FIELD_SCAN8x8;
   int start_scan = IS_I16MB(currMB) ? 1 : 0;
-  int64 *cur_cbp = &currMB->s_cbp[pl].blk;
+  int *cur_cbp = &currMB->s_cbp[pl].blk;
   int coef_ctr, cur_context; 
 
   if (IS_I16MB(currMB))

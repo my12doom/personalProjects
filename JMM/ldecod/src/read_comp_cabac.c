@@ -42,7 +42,7 @@ extern void  read_delta_quant   (SyntaxElement *currSE, DataPartition *dP, Macro
 *    from the NAL (CABAC Mode)
 ************************************************************************
 */
-static void read_comp_coeff_4x4_smb_CABAC (Macroblock *currMB, SyntaxElement *currSE, ColorPlane pl, int block_y, int block_x, int start_scan, int64 *cbp_blk)
+static void read_comp_coeff_4x4_smb_CABAC (Macroblock *currMB, SyntaxElement *currSE, ColorPlane pl, int block_y, int block_x, int start_scan, int *cbp_blk)
 {
   int i,j,k;
   int i0, j0;
@@ -160,7 +160,7 @@ static void read_comp_coeff_4x4_CABAC (Macroblock *currMB, SyntaxElement *currSE
   int start_scan = IS_I16MB (currMB)? 1 : 0; 
   int block_y, block_x;
   int i, j;
-  int64 *cbp_blk = &currMB->s_cbp[pl].blk;
+  int *cbp_blk = &currMB->s_cbp[pl].blk;
 
   if( pl == PLANE_Y || (p_Vid->separate_colour_plane_flag != 0) )
     currSE->context = (IS_I16MB(currMB) ? LUMA_16AC: LUMA_4x4);
@@ -242,7 +242,7 @@ static void read_comp_coeff_4x4_CABAC_ls (Macroblock *currMB, SyntaxElement *cur
   VideoParameters *p_Vid = currMB->p_Vid;
   int start_scan = IS_I16MB (currMB)? 1 : 0; 
   int block_y, block_x;
-  int64 *cbp_blk = &currMB->s_cbp[pl].blk;
+  int *cbp_blk = &currMB->s_cbp[pl].blk;
 
   if( pl == PLANE_Y || (p_Vid->separate_colour_plane_flag != 0) )
     currSE->context = (IS_I16MB(currMB) ? LUMA_16AC: LUMA_4x4);
@@ -288,7 +288,7 @@ static void readCompCoeff8x8_CABAC (Macroblock *currMB, SyntaxElement *currSE, C
     int boff_x, boff_y;
 
     int64 cbp_mask = (int64) 51 << (4 * b8 - 2 * (b8 & 0x01)); // corresponds to 110011, as if all four 4x4 blocks contain coeff, shifted to block position            
-    int64 *cur_cbp = &currMB->s_cbp[pl].blk;
+    int *cur_cbp = &currMB->s_cbp[pl].blk;
 
     // select scan type
     const byte (*pos_scan8x8) = ((p_Vid->structure == FRAME) && (!currMB->mb_field)) ? SNGL_SCAN8x8[0] : FIELD_SCAN8x8[0];
@@ -411,7 +411,7 @@ static void readCompCoeff8x8_CABAC_lossless (Macroblock *currMB, SyntaxElement *
     int boff_x, boff_y;
 
     int64 cbp_mask = (int64) 51 << (4 * b8 - 2 * (b8 & 0x01)); // corresponds to 110011, as if all four 4x4 blocks contain coeff, shifted to block position            
-    int64 *cur_cbp = &currMB->s_cbp[pl].blk;
+    int *cur_cbp = &currMB->s_cbp[pl].blk;
 
     // select scan type
     const byte (*pos_scan8x8) = ((p_Vid->structure == FRAME) && (!currMB->mb_field)) ? SNGL_SCAN8x8[0] : FIELD_SCAN8x8[0];

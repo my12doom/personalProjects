@@ -1,4 +1,3 @@
-
 /*! \file
  *     contributors.h
  *  \brief
@@ -31,7 +30,7 @@
   \verbatim
 
       Lowell Winger                   <lwinger@videolocus.com><lwinger@uwaterloo.ca>
-      Guy Côté                        <gcote@videolocus.com>
+      Guy Côt?                       <gcote@videolocus.com>
       Michael Gallant                 <mgallant@videolocus.com>
       VideoLocus Inc.
       97 Randall Dr.

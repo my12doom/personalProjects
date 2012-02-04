@@ -2764,7 +2764,6 @@ void decode_slice_step(Slice *currSlice, int current_header)
 		InputParameters *p_Inp = currSlice->p_Inp;
 		Macroblock *currMB = NULL;
 		int counter = 0;
-		int i;
 
 		while (currSlice->decoding_done == FALSE && (counter++ < p_Inp->dec_step)) // loop over macroblocks
 		{

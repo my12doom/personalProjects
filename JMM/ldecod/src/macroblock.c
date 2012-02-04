@@ -920,7 +920,8 @@ void start_macroblock(Slice *currSlice, Macroblock **currMB)
 	  printf("64bit.\n");
   }
 
-  zero192((*currMB)->s_cbp);
+  //zero192((*currMB)->s_cbp);
+  memset((*currMB)->s_cbp, 0, sizeof(CBPStructure) * 3);
 
   //zero192((*currMB)->s_cbp+1);
   //zero192((*currMB)->s_cbp+2);
