@@ -494,7 +494,7 @@ retry:
 	}
 	LeaveCriticalSection(&output_done_queue_cs);
 
-	// try add to output queue
+	// wait all output work done
 	EnterCriticalSection(&output_queue_cs);
 	if (output_queue[0])
 	{

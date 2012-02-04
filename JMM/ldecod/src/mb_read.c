@@ -949,7 +949,7 @@ static void read_intra4x4_macroblock_cavlc(Macroblock *currMB, const byte *partM
     TRACE_STRING("transform_size_8x8_flag");
 
     // read CAVLC transform_size_8x8_flag
-    currSE.len = (int64) 1;
+    currSE.len = 1;
     readSyntaxElement_FLC(&currSE, dP->bitstream);
 
     currMB->luma_transform_size_8x8_flag = (Boolean) currSE.value1;
@@ -999,7 +999,7 @@ static void read_intra4x4_macroblock_cabac(Macroblock *currMB, const byte *partM
     // read CAVLC transform_size_8x8_flag
     if (dP->bitstream->ei_flag)
     {
-      currSE.len = (int64) 1;
+      currSE.len = 1;
       readSyntaxElement_FLC(&currSE, dP->bitstream);
     }
     else
@@ -1162,7 +1162,7 @@ static void read_one_macroblock_i_slice_cavlc(Macroblock *currMB)
   if (currSlice->mb_aff_frame_flag && (mb_nr&0x01)==0)
   {
     TRACE_STRING("mb_field_decoding_flag");
-    currSE.len = (int64) 1;
+    currSE.len = 1;
     readSyntaxElement_FLC(&currSE, dP->bitstream);
     currMB->mb_field = (Boolean) currSE.value1;
   }
@@ -1236,7 +1236,7 @@ static void read_one_macroblock_i_slice_cabac(Macroblock *currMB)
     TRACE_STRING("mb_field_decoding_flag");
     if (dP->bitstream->ei_flag)
     {
-      currSE.len = (int64) 1;
+      currSE.len = 1;
       readSyntaxElement_FLC(&currSE, dP->bitstream);
     }
     else
@@ -1288,7 +1288,7 @@ static void read_one_macroblock_i_slice_cabac(Macroblock *currMB)
       // read CAVLC transform_size_8x8_flag
       if (dP->bitstream->ei_flag)
       {
-        currSE.len = (int64) 1;
+        currSE.len = 1;
         readSyntaxElement_FLC(&currSE, dP->bitstream);
       }
       else
@@ -1435,7 +1435,7 @@ static void read_one_macroblock_p_slice_cavlc(Macroblock *currMB)
       if ((((mb_nr&0x01)==0) || ((mb_nr&0x01) && prevMbSkipped)))
       {
         TRACE_STRING("mb_field_decoding_flag");
-        currSE.len = (int64) 1;
+        currSE.len = 1;
         readSyntaxElement_FLC(&currSE, dP->bitstream);
         currMB->mb_field = (Boolean) currSE.value1;
       }
@@ -1461,7 +1461,7 @@ static void read_one_macroblock_p_slice_cavlc(Macroblock *currMB)
       if(currSlice->cod_counter == 0 && ((mb_nr&0x01) == 0))
       {
         TRACE_STRING("mb_field_decoding_flag (of coded bottom mb)");
-        currSE.len = (int64) 1;
+        currSE.len = 1;
         readSyntaxElement_FLC(&currSE, dP->bitstream);
         dP->bitstream->frame_bitoffset--;
         TRACE_DECBITS(1);
@@ -1832,7 +1832,7 @@ static void read_one_macroblock_b_slice_cavlc(Macroblock *currMB)
       if ((((mb_nr&0x01)==0) || ((mb_nr&0x01) && prevMbSkipped)))
       {
         TRACE_STRING("mb_field_decoding_flag");
-        currSE.len = (int64) 1;
+        currSE.len = 1;
         readSyntaxElement_FLC(&currSE, dP->bitstream);
         currMB->mb_field = (Boolean) currSE.value1;
       }
@@ -1857,7 +1857,7 @@ static void read_one_macroblock_b_slice_cavlc(Macroblock *currMB)
       if(currSlice->cod_counter == 0 && ((mb_nr&0x01) == 0))
       {
         TRACE_STRING("mb_field_decoding_flag (of coded bottom mb)");
-        currSE.len = (int64) 1;
+        currSE.len = 1;
         readSyntaxElement_FLC(&currSE, dP->bitstream);
         dP->bitstream->frame_bitoffset--;
         TRACE_DECBITS(1);

@@ -540,166 +540,316 @@ static inline void setup_mb_pos_info(Macroblock *currMB)
  *    initializes the current macroblock
  ************************************************************************
  */
+#define _my12doom_store_si128 _mm_store_si128
+//#define my12doom_movdq movntdq
+#define my12doom_movdq movdqa
 __m128i m0;
-inline void zero64(void* ptr)
+inline void zero64(void* pp)
 {
-	__m128i *p = (__m128i*)ptr;
+#ifdef _M_X64
+	__m128i *p = (__m128i*)pp;
 	m0 = _mm_xor_si128(m0, m0);
 
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+#else
+	__asm
+	{
+		pxor xmm0, xmm0;
+		mov esi, pp;
+		my12doom_movdq [esi], xmm0;
+		my12doom_movdq [esi+16], xmm0;
+		my12doom_movdq [esi+32], xmm0;
+		my12doom_movdq [esi+48], xmm0;
+	}
+#endif
 }
-inline void zero128(void* ptr)
+inline void zero128(void* pp)
 {
-	__m128i *p = (__m128i*)ptr;
+#ifdef _M_X64
+	__m128i *p = (__m128i*)pp;
 	m0 = _mm_xor_si128(m0, m0);
 
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+#else
+	__asm
+	{
+		pxor xmm0, xmm0;
+		mov esi, pp;
+		my12doom_movdq [esi], xmm0;
+		my12doom_movdq [esi+16], xmm0;
+		my12doom_movdq [esi+32], xmm0;
+		my12doom_movdq [esi+48], xmm0;
+		my12doom_movdq [esi+64], xmm0;
+		my12doom_movdq [esi+80], xmm0;
+		my12doom_movdq [esi+96], xmm0;
+		my12doom_movdq [esi+112], xmm0;
+	}
+#endif
 }
 
-inline void zero192(void* ptr)
+inline void zero192(void* pp)
 {
-	__m128i *p = (__m128i*)ptr;
+#ifdef _M_X64
+	__m128i *p = (__m128i*)pp;
 	m0 = _mm_xor_si128(m0, m0);
 
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+#else
+	__asm
+	{
+		pxor xmm0, xmm0;
+		mov esi, pp;
+		my12doom_movdq [esi+0x00], xmm0;
+		my12doom_movdq [esi+0x10], xmm0;
+		my12doom_movdq [esi+0x20], xmm0;
+		my12doom_movdq [esi+0x30], xmm0;
+		my12doom_movdq [esi+0x40], xmm0;
+		my12doom_movdq [esi+0x50], xmm0;
+		my12doom_movdq [esi+0x60], xmm0;
+		my12doom_movdq [esi+0x70], xmm0;
+		my12doom_movdq [esi+0x80], xmm0;
+		my12doom_movdq [esi+0x90], xmm0;
+		my12doom_movdq [esi+0xa0], xmm0;
+		my12doom_movdq [esi+0xb0], xmm0;
+	}
+#endif
 }
 
 
-inline void zero256(void* ptr)
+inline void zero256(void* pp)
 {
-	__m128i *p = (__m128i*)ptr;
+#ifdef _M_X64
+	__m128i *p = (__m128i*)pp;
 	m0 = _mm_xor_si128(m0, m0);
 
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+#else
+	__asm
+	{
+		pxor xmm0, xmm0;
+		mov esi, pp;
+		my12doom_movdq [esi+0x00], xmm0;
+		my12doom_movdq [esi+0x10], xmm0;
+		my12doom_movdq [esi+0x20], xmm0;
+		my12doom_movdq [esi+0x30], xmm0;
+		my12doom_movdq [esi+0x40], xmm0;
+		my12doom_movdq [esi+0x50], xmm0;
+		my12doom_movdq [esi+0x60], xmm0;
+		my12doom_movdq [esi+0x70], xmm0;
+		my12doom_movdq [esi+0x80], xmm0;
+		my12doom_movdq [esi+0x90], xmm0;
+		my12doom_movdq [esi+0xa0], xmm0;
+		my12doom_movdq [esi+0xb0], xmm0;
+		my12doom_movdq [esi+0xc0], xmm0;
+		my12doom_movdq [esi+0xd0], xmm0;
+		my12doom_movdq [esi+0xe0], xmm0;
+		my12doom_movdq [esi+0xf0], xmm0;
+	}
+#endif
 }
 
+/*
 inline void zero576(void* ptr)
 {
 	__m128i *p = (__m128i*)ptr;
 	m0 = _mm_xor_si128(m0, m0);
 
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
 }
-inline void zero1024(void* ptr)
+*/
+
+inline void zero1024(void* pp)
 {
-	__m128i *p = (__m128i*)ptr;
-
-	return memset(ptr, 0, 1024);
-
+#ifdef _M_X64
+	__m128i *p = (__m128i*)pp;
 	m0 = _mm_xor_si128(m0, m0);
 
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);	
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);	
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
-	_mm_storeu_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);	
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);	
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+	_my12doom_store_si128(p++, m0);
+#else
+	__asm
+	{
+	pxor xmm0, xmm0;
+	mov esi, pp;
+	my12doom_movdq [esi+0x00], xmm0;
+	my12doom_movdq [esi+0x10], xmm0;
+	my12doom_movdq [esi+0x20], xmm0;
+	my12doom_movdq [esi+0x30], xmm0;
+	my12doom_movdq [esi+0x40], xmm0;
+	my12doom_movdq [esi+0x50], xmm0;
+	my12doom_movdq [esi+0x60], xmm0;
+	my12doom_movdq [esi+0x70], xmm0;
+	my12doom_movdq [esi+0x80], xmm0;
+	my12doom_movdq [esi+0x90], xmm0;
+	my12doom_movdq [esi+0xa0], xmm0;
+	my12doom_movdq [esi+0xb0], xmm0;
+	my12doom_movdq [esi+0xc0], xmm0;
+	my12doom_movdq [esi+0xd0], xmm0;
+	my12doom_movdq [esi+0xe0], xmm0;
+	my12doom_movdq [esi+0xf0], xmm0;
+
+	my12doom_movdq [esi+0x100], xmm0;
+	my12doom_movdq [esi+0x110], xmm0;
+	my12doom_movdq [esi+0x120], xmm0;
+	my12doom_movdq [esi+0x130], xmm0;
+	my12doom_movdq [esi+0x140], xmm0;
+	my12doom_movdq [esi+0x150], xmm0;
+	my12doom_movdq [esi+0x160], xmm0;
+	my12doom_movdq [esi+0x170], xmm0;
+	my12doom_movdq [esi+0x180], xmm0;
+	my12doom_movdq [esi+0x190], xmm0;
+	my12doom_movdq [esi+0x1a0], xmm0;
+	my12doom_movdq [esi+0x1b0], xmm0;
+	my12doom_movdq [esi+0x1c0], xmm0;
+	my12doom_movdq [esi+0x1d0], xmm0;
+	my12doom_movdq [esi+0x1e0], xmm0;
+	my12doom_movdq [esi+0x1f0], xmm0;
+
+	my12doom_movdq [esi+0x200], xmm0;
+	my12doom_movdq [esi+0x210], xmm0;
+	my12doom_movdq [esi+0x220], xmm0;
+	my12doom_movdq [esi+0x230], xmm0;
+	my12doom_movdq [esi+0x240], xmm0;
+	my12doom_movdq [esi+0x250], xmm0;
+	my12doom_movdq [esi+0x260], xmm0;
+	my12doom_movdq [esi+0x270], xmm0;
+	my12doom_movdq [esi+0x280], xmm0;
+	my12doom_movdq [esi+0x290], xmm0;
+	my12doom_movdq [esi+0x2a0], xmm0;
+	my12doom_movdq [esi+0x2b0], xmm0;
+	my12doom_movdq [esi+0x2c0], xmm0;
+	my12doom_movdq [esi+0x2d0], xmm0;
+	my12doom_movdq [esi+0x2e0], xmm0;
+	my12doom_movdq [esi+0x2f0], xmm0;
+
+	my12doom_movdq [esi+0x300], xmm0;
+	my12doom_movdq [esi+0x310], xmm0;
+	my12doom_movdq [esi+0x320], xmm0;
+	my12doom_movdq [esi+0x330], xmm0;
+	my12doom_movdq [esi+0x340], xmm0;
+	my12doom_movdq [esi+0x350], xmm0;
+	my12doom_movdq [esi+0x360], xmm0;
+	my12doom_movdq [esi+0x370], xmm0;
+	my12doom_movdq [esi+0x380], xmm0;
+	my12doom_movdq [esi+0x390], xmm0;
+	my12doom_movdq [esi+0x3a0], xmm0;
+	my12doom_movdq [esi+0x3b0], xmm0;
+	my12doom_movdq [esi+0x3c0], xmm0;
+	my12doom_movdq [esi+0x3d0], xmm0;
+	my12doom_movdq [esi+0x3e0], xmm0;
+	my12doom_movdq [esi+0x3f0], xmm0;
+	}
+
+#endif
 }
 
 void start_macroblock(Slice *currSlice, Macroblock **currMB)
@@ -764,7 +914,14 @@ void start_macroblock(Slice *currSlice, Macroblock **currMB)
   }
   
   //fast_memset((*currMB)->s_cbp, 0, 3 * sizeof(CBPStructure));
-  zero576((*currMB)->s_cbp);
+
+  if ((*currMB)->s_cbp[0].blk >> 24)
+  {
+	  printf("64bit.\n");
+  }
+
+  zero192((*currMB)->s_cbp);
+
   //zero192((*currMB)->s_cbp+1);
   //zero192((*currMB)->s_cbp+2);
 

@@ -254,10 +254,10 @@ typedef struct macroblock_dec
 
   // some storage of macroblock syntax elements for global access
   short         mb_type;
-  short         mvd[2][BLOCK_MULTIPLE][BLOCK_MULTIPLE][2];      //!< indices correspond to [forw,backw][block_y][block_x][x,y]
+  __declspec (align(16)) short         mvd[2][BLOCK_MULTIPLE][BLOCK_MULTIPLE][2];      //!< indices correspond to [forw,backw][block_y][block_x][x,y]
   //short         ****mvd;      //!< indices correspond to [forw,backw][block_y][block_x][x,y]
   int           cbp;
-  CBPStructure  s_cbp[3];
+  __declspec (align(16)) CBPStructure  s_cbp[3];
 
   int           i16mode;
   char          b8mode[4];

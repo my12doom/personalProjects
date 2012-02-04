@@ -396,15 +396,18 @@ JMAvs::JMAvs()
 	m_decoding_thread = INVALID_HANDLE_VALUE;
 }
 
+extern "C" void flush_output_queue();
+
 JMAvs::~JMAvs()
 {
+	TerminateThread(m_decoding_thread, 0);
+	flush_output_queue();
+
 	if (left_buffer)
 		delete left_buffer;
 
 	if (right_buffer)
 		delete right_buffer;
-
-	TerminateThread(m_decoding_thread, 0);
 }
 
 int JMAvs::avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2ts_right /* = NULL */, const int frame_count /* = -1 */, int buffer_count /* = 10 */, int fps_numerator /* = 24000 */, int fps_denominator /* = 1001 */)
