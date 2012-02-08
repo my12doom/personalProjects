@@ -902,13 +902,11 @@ void start_macroblock(Slice *currSlice, Macroblock **currMB)
   
   //fast_memset((*currMB)->s_cbp, 0, 3 * sizeof(CBPStructure));
 
-  zero96((*currMB)->s_cbp);
+  {
+  int s = sizeof(CBPStructure) * 3;
+  zero96((*currMB)->s_cbp);		// warning: access violation
+  }
 
-<<<<<<< .mine
-=======
-  //zero192((*currMB)->s_cbp);
-  memset((*currMB)->s_cbp, 0, sizeof(CBPStructure) * 3);
->>>>>>> .r189
 
   // initialize currSlice->mb_rres
   if (currSlice->is_reset_coeff == FALSE)
