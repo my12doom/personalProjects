@@ -306,7 +306,15 @@ static void GetMotionVectorPredictorNormal (Macroblock *currMB,
 void init_motion_vector_prediction(Macroblock *currMB, int mb_aff_frame_flag)
 {
   if (mb_aff_frame_flag)
-    currMB->GetMVPredictor = GetMotionVectorPredictorMBAFF;
+    currMB->p_Slice->GetMVPredictor = GetMotionVectorPredictorMBAFF;
   else
-    currMB->GetMVPredictor = GetMotionVectorPredictorNormal;
+    currMB->p_Slice->GetMVPredictor = GetMotionVectorPredictorNormal;
+}
+
+void init_slice_motion_vector_prediction(Slice *p_Slice)
+{
+	if (p_Slice->mb_aff_frame_flag)
+		p_Slice->GetMVPredictor = GetMotionVectorPredictorMBAFF;
+	else
+		p_Slice->GetMVPredictor = GetMotionVectorPredictorNormal;
 }

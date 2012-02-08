@@ -377,7 +377,7 @@ static void readMBMotionVectors (SyntaxElement *currSE, DataPartition *dP, Macro
       get_neighbors(currMB, block, 0, 0, step_h0 << 2);
 
       // first get MV predictor
-      currMB->GetMVPredictor (currMB, block, &pred_mv, mv_info[j4][i4].ref_idx[list], mv_info, list, 0, 0, step_h0 << 2, step_v0 << 2);
+      currMB->p_Slice->GetMVPredictor (currMB, block, &pred_mv, mv_info[j4][i4].ref_idx[list], mv_info, list, 0, 0, step_h0 << 2, step_v0 << 2);
 
       // X component
 #if TRACE
@@ -462,7 +462,7 @@ static void readMBMotionVectors (SyntaxElement *currSE, DataPartition *dP, Macro
               get_neighbors(currMB, block, BLOCK_SIZE * i, BLOCK_SIZE * j, step_h4);
 
               // first get MV predictor
-              currMB->GetMVPredictor (currMB, block, &pred_mv, cur_ref_idx, mv_info, list, BLOCK_SIZE * i, BLOCK_SIZE * j, step_h4, step_v4);
+              currMB->p_Slice->GetMVPredictor (currMB, block, &pred_mv, cur_ref_idx, mv_info, list, BLOCK_SIZE * i, BLOCK_SIZE * j, step_h4, step_v4);
 
               for (k=0; k < 2; ++k)
               {
@@ -597,18 +597,12 @@ inline void zero128(void* pp)
 #endif
 }
 
-inline void zero192(void* pp)
+inline void zero96(void* pp)
 {
 #ifdef _M_X64
 	__m128i *p = (__m128i*)pp;
 	m0 = _mm_xor_si128(m0, m0);
 
-	_my12doom_store_si128(p++, m0);
-	_my12doom_store_si128(p++, m0);
-	_my12doom_store_si128(p++, m0);
-	_my12doom_store_si128(p++, m0);
-	_my12doom_store_si128(p++, m0);
-	_my12doom_store_si128(p++, m0);
 	_my12doom_store_si128(p++, m0);
 	_my12doom_store_si128(p++, m0);
 	_my12doom_store_si128(p++, m0);
@@ -626,12 +620,6 @@ inline void zero192(void* pp)
 		my12doom_movdq [esi+0x30], xmm0;
 		my12doom_movdq [esi+0x40], xmm0;
 		my12doom_movdq [esi+0x50], xmm0;
-		my12doom_movdq [esi+0x60], xmm0;
-		my12doom_movdq [esi+0x70], xmm0;
-		my12doom_movdq [esi+0x80], xmm0;
-		my12doom_movdq [esi+0x90], xmm0;
-		my12doom_movdq [esi+0xa0], xmm0;
-		my12doom_movdq [esi+0xb0], xmm0;
 	}
 #endif
 }
@@ -897,9 +885,8 @@ void start_macroblock(Slice *currSlice, Macroblock **currMB)
   CheckAvailabilityOfNeighbors(*currMB);
 
   // Select appropriate MV predictor function
-  init_motion_vector_prediction(*currMB, currSlice->mb_aff_frame_flag);
+  //init_motion_vector_prediction(*currMB, currSlice->mb_aff_frame_flag);
 
-  set_read_and_store_CBP(currMB, currSlice->active_sps->chroma_format_idc);
 
   // Reset syntax element entries in MB struct
 
@@ -915,17 +902,13 @@ void start_macroblock(Slice *currSlice, Macroblock **currMB)
   
   //fast_memset((*currMB)->s_cbp, 0, 3 * sizeof(CBPStructure));
 
-  if ((*currMB)->s_cbp[0].blk >> 24)
-  {
-	  printf("64bit.\n");
-  }
+  zero96((*currMB)->s_cbp);
 
+<<<<<<< .mine
+=======
   //zero192((*currMB)->s_cbp);
   memset((*currMB)->s_cbp, 0, sizeof(CBPStructure) * 3);
-
-  //zero192((*currMB)->s_cbp+1);
-  //zero192((*currMB)->s_cbp+2);
-
+>>>>>>> .r189
 
   // initialize currSlice->mb_rres
   if (currSlice->is_reset_coeff == FALSE)

@@ -926,42 +926,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ldecod\src\intra16x16_pred.c"
-				>
-			</File>
-			<File
-				RelativePath=".\ldecod\src\intra16x16_pred_mbaff.c"
-				>
-			</File>
-			<File
-				RelativePath=".\ldecod\src\intra16x16_pred_normal.c"
-				>
-			</File>
-			<File
-				RelativePath=".\ldecod\src\intra4x4_pred.c"
-				>
-			</File>
-			<File
-				RelativePath=".\ldecod\src\intra4x4_pred_mbaff.c"
-				>
-			</File>
-			<File
-				RelativePath=".\ldecod\src\intra4x4_pred_normal.c"
-				>
-			</File>
-			<File
-				RelativePath=".\ldecod\src\intra8x8_pred.c"
-				>
-			</File>
-			<File
-				RelativePath=".\ldecod\src\intra8x8_pred_mbaff.c"
-				>
-			</File>
-			<File
-				RelativePath=".\ldecod\src\intra8x8_pred_normal.c"
-				>
-			</File>
-			<File
 				RelativePath=".\ldecod\src\intra_chroma_pred.c"
 				>
 			</File>
@@ -1137,6 +1101,53 @@
 				RelativePath=".\lcommon\src\win32.c"
 				>
 			</File>
+			<Filter
+				Name="NewFilter1"
+				>
+				<File
+					RelativePath=".\ldecod\src\intra16x16_pred.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\ldecod\src\intra16x16_pred_mbaff.c"
+					>
+				</File>
+				<File
+					RelativePath=".\ldecod\src\intra16x16_pred_normal.c"
+					>
+				</File>
+				<File
+					RelativePath=".\ldecod\src\intra4x4_pred.c"
+					>
+				</File>
+				<File
+					RelativePath=".\ldecod\src\intra4x4_pred_mbaff.c"
+					>
+				</File>
+				<File
+					RelativePath=".\ldecod\src\intra4x4_pred_normal.c"
+					>
+				</File>
+				<File
+					RelativePath=".\ldecod\src\intra8x8_pred.c"
+					>
+				</File>
+				<File
+					RelativePath=".\ldecod\src\intra8x8_pred_mbaff.c"
+					>
+				</File>
+				<File
+					RelativePath=".\ldecod\src\intra8x8_pred_normal.c"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="ldecod headers"

@@ -161,7 +161,7 @@ inline int arideco_bits_read(DecodingEnvironmentPtr dep)
 */
 
 // ffmpeg's defines, variables and functions
-#define USE_FFMPEG_CABAC 1
+#define USE_FFMPEG_CABAC 0
 #define BRANCHLESS_CABAC_DECODER 1
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
@@ -248,7 +248,7 @@ extern void biari_init_context (int qp, BiContextTypePtr ctx, const char* ini);
 #define biari_decode_symbol_eq_prob ff_get_cabac_bypass
 #define biari_decode_final ff_get_cabac_terminate
 #else
-extern void arideco_start_decoding(DecodingEnvironmentPtr dep, unsigned char *code_buffer/*, int firstbyte, int *code_len*/);
+extern void arideco_start_decoding(DecodingEnvironmentPtr dep, unsigned char *code_buffer, int firstbyte, int *code_len);
 extern unsigned int biari_decode_symbol(DecodingEnvironment *dep, BiContextType *bi_ct );
 extern unsigned int biari_decode_symbol_eq_prob(DecodingEnvironmentPtr dep);
 extern unsigned int biari_decode_final(DecodingEnvironmentPtr dep);

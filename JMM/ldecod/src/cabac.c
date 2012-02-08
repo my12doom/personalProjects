@@ -1911,14 +1911,21 @@ static int read_and_store_CBP_block_bit_normal (Macroblock              *currMB,
 
 void set_read_and_store_CBP(Macroblock **currMB, int chroma_format_idc)
 {
+/*
   if (chroma_format_idc == YUV444)
     (*currMB)->read_and_store_CBP_block_bit = read_and_store_CBP_block_bit_444;
   else
     (*currMB)->read_and_store_CBP_block_bit = read_and_store_CBP_block_bit_normal; 
+*/
 }
 
-
-
+void set_slice_read_and_store_CBP(Slice *currSlice, int chroma_format_idc)
+{
+	if (currSlice->active_sps->chroma_format_idc == YUV444)
+		currSlice->read_and_store_CBP_block_bit = read_and_store_CBP_block_bit_444;
+	else
+		currSlice->read_and_store_CBP_block_bit = read_and_store_CBP_block_bit_normal;
+}
 
 //===== position -> ctx for MAP =====
 //--- zig-zag scan ----
@@ -2103,7 +2110,7 @@ void readRunLevel_CABAC (Macroblock *currMB,
   if (*coeff_ctr < 0)
   {
     //===== decode CBP-BIT =====
-    if ((*coeff_ctr = currMB->read_and_store_CBP_block_bit (currMB, dep_dp, se->context) ) != 0)
+    if ((*coeff_ctr = currSlice->read_and_store_CBP_block_bit (currMB, dep_dp, se->context) ) != 0)
     {
       //===== decode significance map =====
       *coeff_ctr = read_significance_map (currMB, dep_dp, se->context, coeff);

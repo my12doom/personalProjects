@@ -1190,11 +1190,11 @@ static void read_CBP_and_coeffs_from_NAL_CAVLC_400(Macroblock *currMB)
   {
     if (!currMB->luma_transform_size_8x8_flag) // 4x4 transform
     {
-      currMB->read_comp_coeff_4x4_CAVLC (currMB, PLANE_Y, InvLevelScale4x4, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
+      currSlice->read_comp_coeff_4x4_CAVLC (currMB, PLANE_Y, InvLevelScale4x4, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
     }
     else // 8x8 transform
     {
-      currMB->read_comp_coeff_8x8_CAVLC (currMB, PLANE_Y, InvLevelScale8x8, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
+      currSlice->read_comp_coeff_8x8_CAVLC (currMB, PLANE_Y, InvLevelScale8x8, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
     }
   }
   else
@@ -1381,11 +1381,11 @@ static void read_CBP_and_coeffs_from_NAL_CAVLC_422(Macroblock *currMB)
   {
     if (!currMB->luma_transform_size_8x8_flag) // 4x4 transform
     {
-      currMB->read_comp_coeff_4x4_CAVLC (currMB, PLANE_Y, InvLevelScale4x4, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
+      currSlice->read_comp_coeff_4x4_CAVLC (currMB, PLANE_Y, InvLevelScale4x4, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
     }
     else // 8x8 transform
     {
-      currMB->read_comp_coeff_8x8_CAVLC (currMB, PLANE_Y, InvLevelScale8x8, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
+      currSlice->read_comp_coeff_8x8_CAVLC (currMB, PLANE_Y, InvLevelScale8x8, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
     }
   }
   else
@@ -1724,11 +1724,11 @@ static void read_CBP_and_coeffs_from_NAL_CAVLC_444(Macroblock *currMB)
   {
     if (!currMB->luma_transform_size_8x8_flag) // 4x4 transform
     {
-      currMB->read_comp_coeff_4x4_CAVLC (currMB, PLANE_Y, InvLevelScale4x4, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
+      currSlice->read_comp_coeff_4x4_CAVLC (currMB, PLANE_Y, InvLevelScale4x4, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
     }
     else // 8x8 transform
     {
-      currMB->read_comp_coeff_8x8_CAVLC (currMB, PLANE_Y, InvLevelScale8x8, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
+      currSlice->read_comp_coeff_8x8_CAVLC (currMB, PLANE_Y, InvLevelScale8x8, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
     }
   }
   else
@@ -1778,11 +1778,11 @@ static void read_CBP_and_coeffs_from_NAL_CAVLC_444(Macroblock *currMB)
 
     if (!currMB->luma_transform_size_8x8_flag) // 4x4 transform
     {
-      currMB->read_comp_coeff_4x4_CAVLC (currMB, (ColorPlane) (uv), InvLevelScale4x4, qp_per_uv[uv], cbp, p_Vid->nz_coeff[mb_nr][uv]);
+      currSlice->read_comp_coeff_4x4_CAVLC (currMB, (ColorPlane) (uv), InvLevelScale4x4, qp_per_uv[uv], cbp, p_Vid->nz_coeff[mb_nr][uv]);
     }
     else // 8x8 transform
     {
-      currMB->read_comp_coeff_8x8_CAVLC (currMB, (ColorPlane) (uv), InvLevelScale8x8, qp_per_uv[uv], cbp, p_Vid->nz_coeff[mb_nr][uv]);
+      currSlice->read_comp_coeff_8x8_CAVLC (currMB, (ColorPlane) (uv), InvLevelScale8x8, qp_per_uv[uv], cbp, p_Vid->nz_coeff[mb_nr][uv]);
     }   
   }   
 }
@@ -1963,11 +1963,11 @@ static void read_CBP_and_coeffs_from_NAL_CAVLC_420(Macroblock *currMB)
   {
     if (!currMB->luma_transform_size_8x8_flag) // 4x4 transform
     {
-      currMB->read_comp_coeff_4x4_CAVLC (currMB, PLANE_Y, InvLevelScale4x4, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
+      currSlice->read_comp_coeff_4x4_CAVLC (currMB, PLANE_Y, InvLevelScale4x4, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
     }
     else // 8x8 transform
     {
-      currMB->read_comp_coeff_8x8_CAVLC (currMB, PLANE_Y, InvLevelScale8x8, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
+      currSlice->read_comp_coeff_8x8_CAVLC (currMB, PLANE_Y, InvLevelScale8x8, qp_per, cbp, p_Vid->nz_coeff[mb_nr][PLANE_Y]);
     }
   }
   else
@@ -2113,6 +2113,7 @@ static void read_CBP_and_coeffs_from_NAL_CAVLC_420(Macroblock *currMB)
 */
 void set_read_comp_coeff_cavlc(Macroblock *currMB)
 {
+/*
   if (currMB->is_lossless == FALSE)
   {
     currMB->read_comp_coeff_4x4_CAVLC = read_comp_coeff_4x4_CAVLC;
@@ -2123,6 +2124,13 @@ void set_read_comp_coeff_cavlc(Macroblock *currMB)
     currMB->read_comp_coeff_4x4_CAVLC = read_comp_coeff_4x4_CAVLC_ls;
     currMB->read_comp_coeff_8x8_CAVLC = read_comp_coeff_8x8_CAVLC_ls;
   }
+*/
+}
+
+void set_slice_read_comp_coeff_cavlc(Slice *currSlice)
+{
+	currSlice->read_comp_coeff_4x4_CAVLC = read_comp_coeff_4x4_CAVLC;
+	currSlice->read_comp_coeff_8x8_CAVLC = read_comp_coeff_8x8_CAVLC;
 }
 
 

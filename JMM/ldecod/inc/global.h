@@ -74,10 +74,10 @@ typedef enum
 
 typedef struct pix_pos
 {
-  int   available;
-  int   mb_addr;
-  short x;
-  short y;
+  byte   available;
+  short   mb_addr;
+  byte x;
+  byte y;
   short pos_x;
   short pos_y;
 } PixelPos;
@@ -211,6 +211,14 @@ typedef struct cbp_s
   int         bits_8x8;
 } CBPStructure;
 
+typedef struct neighbor_struct
+{
+	int mbAddrA, mbAddrB, mbAddrC, mbAddrD;
+	Boolean mbAvailA, mbAvailB, mbAvailC, mbAvailD;
+	struct macroblock_dec   *mb_up;   //!< pointer to neighboring MB (CABAC)
+	struct macroblock_dec   *mb_left; //!< pointer to neighboring MB (CABAC)
+} NeighborStruct;
+
 //! Macroblock
 typedef struct macroblock_dec
 {
@@ -220,6 +228,9 @@ typedef struct macroblock_dec
   int                 mbAddrX;                    //!< current MB address
   int mbAddrA, mbAddrB, mbAddrC, mbAddrD;
   Boolean mbAvailA, mbAvailB, mbAvailC, mbAvailD;
+
+  struct macroblock_dec   *mb_up;   //!< pointer to neighboring MB (CABAC)
+  struct macroblock_dec   *mb_left; //!< pointer to neighboring MB (CABAC)
   BlockPos mb;
   int block_x;
   int block_y;
@@ -245,9 +256,6 @@ typedef struct macroblock_dec
   char          dpl_flag;            //!< error indicator flag that signals a missing data partition
   short         delta_quant;          //!< for rate control
   short         list_offset;
-
-  struct macroblock_dec   *mb_up;   //!< pointer to neighboring MB (CABAC)
-  struct macroblock_dec   *mb_left; //!< pointer to neighboring MB (CABAC)
 
   struct macroblock_dec   *mbup;   // neighbors for loopfilter
   struct macroblock_dec   *mbleft; // neighbors for loopfilter
@@ -284,17 +292,8 @@ typedef struct macroblock_dec
   void (*itrans_4x4)(struct macroblock_dec *currMB, ColorPlane pl, int ioff, int joff);
   void (*itrans_8x8)(struct macroblock_dec *currMB, ColorPlane pl, int ioff, int joff);
 
-  void (*GetMVPredictor) (struct macroblock_dec *currMB, PixelPos *block, 
-    MotionVector *pmv, short ref_frame, struct pic_motion_params **mv_info, int list, int mb_x, int mb_y, int blockshape_x, int blockshape_y);
-
-  int  (*read_and_store_CBP_block_bit)  (struct macroblock_dec *currMB, DecodingEnvironmentPtr  dep_dp, int type);
   char (*readRefPictureIdx)             (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, struct datapartition_dec *dP, char b8mode, int list);
 
-  void (*read_comp_coeff_4x4_CABAC)     (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, ColorPlane pl, int (*InvLevelScale4x4)[4], int qp_per, int cbp);
-  void (*read_comp_coeff_8x8_CABAC)     (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, ColorPlane pl);
-
-  void (*read_comp_coeff_4x4_CAVLC)     (struct macroblock_dec *currMB, ColorPlane pl, int (*InvLevelScale4x4)[4], int qp_per, int cbp, byte **nzcoeff);
-  void (*read_comp_coeff_8x8_CAVLC)     (struct macroblock_dec *currMB, ColorPlane pl, int (*InvLevelScale8x8)[8], int qp_per, int cbp, byte **nzcoeff);
 } Macroblock;
 
 //! Syntaxelement
@@ -376,6 +375,11 @@ typedef struct slice
   pic_parameter_set_rbsp_t *active_pps;
   seq_parameter_set_rbsp_t *active_sps;
   int svc_extension_flag;
+
+  // macroblock decoding
+  void (*GetMVPredictor) (struct macroblock_dec *currMB, PixelPos *block, 
+    MotionVector *pmv, short ref_frame, struct pic_motion_params **mv_info, int list, int mb_x, int mb_y, int blockshape_x, int blockshape_y);
+
 
   // dpb pointer
   struct decoded_picture_buffer *p_Dpb;
@@ -585,6 +589,14 @@ typedef struct slice
   void (*linfo_cbp_inter          )    (int len, int info, int *cbp, int *dummy);    
   void (*update_direct_mv_info    )    (Macroblock *currMB);
   void (*read_coeff_4x4_CAVLC     )    (Macroblock *currMB, int block_type, int i, int j, int levarr[16], int runarr[16], int *number_coefficients);
+
+  // these 5: from macroblock to slice
+  int  (*read_and_store_CBP_block_bit)  (struct macroblock_dec *currMB, DecodingEnvironmentPtr  dep_dp, int type);
+  void (*read_comp_coeff_4x4_CABAC)     (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, ColorPlane pl, int (*InvLevelScale4x4)[4], int qp_per, int cbp);
+  void (*read_comp_coeff_8x8_CABAC)     (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, ColorPlane pl);
+
+  void (*read_comp_coeff_4x4_CAVLC)     (struct macroblock_dec *currMB, ColorPlane pl, int (*InvLevelScale4x4)[4], int qp_per, int cbp, byte **nzcoeff);
+  void (*read_comp_coeff_8x8_CAVLC)     (struct macroblock_dec *currMB, ColorPlane pl, int (*InvLevelScale8x8)[8], int qp_per, int cbp, byte **nzcoeff);
 
 } Slice;
 

@@ -528,8 +528,9 @@ static void init_macroblock_direct(Macroblock *currMB)
   PicMotionParams **mv_info = &currMB->p_Slice->dec_picture->mv_info[currMB->block_y]; 
   int i, j;
 
-  set_read_comp_coeff_cabac(currMB);
-  set_read_comp_coeff_cavlc(currMB);
+  //set_read_comp_coeff_cabac(currMB);
+  //set_read_comp_coeff_cavlc(currMB);
+
   i = currMB->block_x;
   for(j = 0; j < BLOCK_SIZE; ++j)
   {                        
@@ -564,8 +565,8 @@ static void init_macroblock(Macroblock *currMB)
     reset_mv_info(*(mv_info++) + i, slice_no);
   }
 
-  set_read_comp_coeff_cabac(currMB);
-  set_read_comp_coeff_cavlc(currMB);
+  //set_read_comp_coeff_cabac(currMB);
+  //set_read_comp_coeff_cavlc(currMB);
 }
 
 static void concealIPCMcoeffs(Macroblock *currMB)
@@ -632,7 +633,7 @@ static void init_decoding_engine_IPCM(Slice *currSlice)
     currStream = currSlice->partArr[i].bitstream;
     ByteStartPosition = currStream->read_len;
 
-    arideco_start_decoding (&currSlice->partArr[i].de_cabac, currStream->streamBuffer + ByteStartPosition/*, &currStream->read_len*/);
+    arideco_start_decoding (&currSlice->partArr[i].de_cabac, currStream->streamBuffer, ByteStartPosition, &currStream->read_len);
   }
 }
 
@@ -865,7 +866,7 @@ void skip_macroblock(Macroblock *currMB)
     PicMotionParams **dec_mv_info = &dec_picture->mv_info[img_block_y];
     PicMotionParams *mv_info = NULL;
     StorablePicture *cur_pic = currSlice->listX[list_offset][0];
-    currMB->GetMVPredictor (currMB, mb, &pred_mv, 0, dec_picture->mv_info, LIST_0, 0, 0, MB_BLOCK_SIZE, MB_BLOCK_SIZE);
+    currMB->p_Slice->GetMVPredictor (currMB, mb, &pred_mv, 0, dec_picture->mv_info, LIST_0, 0, 0, MB_BLOCK_SIZE, MB_BLOCK_SIZE);
 
     // Set first block line (position img_block_y)
     for(j = 0; j < BLOCK_SIZE; ++j)

@@ -348,7 +348,7 @@ static void init_picture(VideoParameters *p_Vid, Slice *currSlice, InputParamete
       char *intra_block = p_Vid->intra_block_JV[nplane];
       for(i=0; i<(int)p_Vid->PicSizeInMbs; ++i)
       {
-        reset_mbs(currMB++);
+        //reset_mbs(currMB++);
       }
       fast_memset(p_Vid->ipredmode_JV[nplane][0], DC_PRED, 16 * p_Vid->FrameHeightInMbs * p_Vid->PicWidthInMbs * sizeof(char));
       if(p_Vid->active_pps->constrained_intra_pred_flag)
@@ -367,9 +367,11 @@ static void init_picture(VideoParameters *p_Vid, Slice *currSlice, InputParamete
     for(i=0; i<(int)p_Vid->PicSizeInMbs; ++i)
       reset_mbs(&p_Vid->mb_data[i]);
 #else
+	/*
     Macroblock *currMB = p_Vid->mb_data;
     for(i=0; i<(int)p_Vid->PicSizeInMbs; ++i)
       reset_mbs(currMB++);
+    */
 #endif
     if(p_Vid->active_pps->constrained_intra_pred_flag)
     {
@@ -887,6 +889,9 @@ again:
 	return -1;		// never reach here!
 }
 
+extern int neighbors_init_done;
+extern PixelPos *pix_cache;
+
 int decode_one_frame(DecoderParams *pDecoder)
 {
 
@@ -900,13 +905,19 @@ int decode_one_frame(DecoderParams *pDecoder)
   int dec_time;
 
   int skip = p_Inp->frame_to_skip;
+
+  {
+	  //getNonAffNeighbour() init
+	  //if (!pix_cache)
+		//  pix_cache = mem_malloc(sizeof(PixelPos) * 42 * 8192 * 2);
+  }
   
   if (thread_handles[0] == INVALID_HANDLE_VALUE)
   {
 	  int i;
 	  int cores_found = 0;
 	  DWORD_PTR process, system;
-	  thread_count = pDecoder->p_Inp->thread_count;
+	  thread_count = pDecoder->p_Inp->thread_count = 1;
 	  GetProcessAffinityMask(GetCurrentProcess(), &process, &system);
 
 	  for(i=0; i<32; i++)
@@ -932,7 +943,7 @@ int decode_one_frame(DecoderParams *pDecoder)
 		  *p = i;
 		  thread_idle_handles[i] = CreateEvent(NULL, TRUE, TRUE, NULL);
 		  thread_work_handles[i] = CreateEvent(NULL, TRUE, FALSE, NULL);
-		  thread_handles[i] = CreateThread(NULL, NULL, slice_decoding_thread, p, NULL, NULL);
+		  thread_handles[i] = CreateThread(NULL, 0, slice_decoding_thread, p, NULL, NULL);
 
 		  //if (cores_found>=8)
 		  //	  SetThreadAffinityMask(thread_handles[i], 1<<(i*2));
@@ -1129,6 +1140,11 @@ read:
     p_Vid->last_dec_poc = p_Vid->dec_picture->bottom_poc;
   exit_picture(p_Vid, &p_Vid->dec_picture);
   p_Vid->previous_frame_num = ppSliceList[0]->frame_num;
+
+
+  // macroblock init done
+  neighbors_init_done = 1;
+
   return (iRet);
 }
 
@@ -1720,7 +1736,7 @@ process_nalu:
         {
           ++ByteStartPosition;
         }
-        arideco_start_decoding (&currSlice->partArr[0].de_cabac, currStream->streamBuffer + ByteStartPosition/*, &currStream->read_len*/);
+        arideco_start_decoding (&currSlice->partArr[0].de_cabac, currStream->streamBuffer, ByteStartPosition, &currStream->read_len);
       }
       // printf ("read_new_slice: returning %s\n", current_header == SOP?"SOP":"SOS");
       //FreeNALU(nalu);
@@ -2710,6 +2726,12 @@ void decode_one_slice(Slice *currSlice)
   //reset_ec_flags(p_Vid);
 }
 
+extern void init_slice_motion_vector_prediction(Slice *p_Slice);
+extern void set_slice_read_and_store_CBP(Slice *currSlice);
+extern void set_slice_read_comp_coeff_cabac(Slice *currSlice);
+extern void set_slice_read_comp_coeff_cavlc(Slice *currSlice);
+
+
 void decode_slice_step(Slice *currSlice, int current_header)
 {
 	if (currSlice->decoding_done)
@@ -2718,6 +2740,13 @@ void decode_slice_step(Slice *currSlice, int current_header)
 	// init
 	if (!currSlice->decoding_done && (currSlice->num_dec_mb + currSlice->erc_mvperMB == 0))
 	{
+		// function pointers moved from macroblock level
+		init_slice_motion_vector_prediction(currSlice);
+		set_slice_read_and_store_CBP(currSlice);
+		set_slice_read_comp_coeff_cabac(currSlice);
+		set_slice_read_comp_coeff_cavlc(currSlice);
+
+
 		// these two init were copied from decode_slice()
 		if (currSlice->active_pps->entropy_coding_mode_flag)
 		{

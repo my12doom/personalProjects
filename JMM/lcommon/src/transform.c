@@ -183,10 +183,10 @@ void inverse4x4(int **tblock, int **block, int pos_y, int pos_x)
 
   __m128i m0, m1, m2, m3, p0, p1, p2, p3;
   // load
-  m0 = _mm_loadu_si128((__m128i*)&tblock[pos_y  ][pos_x]);
-  m1 = _mm_loadu_si128((__m128i*)&tblock[pos_y+1][pos_x]);
-  m2 = _mm_loadu_si128((__m128i*)&tblock[pos_y+2][pos_x]);
-  m3 = _mm_loadu_si128((__m128i*)&tblock[pos_y+3][pos_x]);
+  m0 = _mm_load_si128((__m128i*)&tblock[pos_y  ][pos_x]);
+  m1 = _mm_load_si128((__m128i*)&tblock[pos_y+1][pos_x]);
+  m2 = _mm_load_si128((__m128i*)&tblock[pos_y+2][pos_x]);
+  m3 = _mm_load_si128((__m128i*)&tblock[pos_y+3][pos_x]);
 
   //_MM_TRANSPOSE4_PS2(*((__m128*)&m0), *((__m128*)&m1), *((__m128*)&m2), *((__m128*)&m3));
   _MM_TRANSPOSE4I(m0, m1, m2, m3);
@@ -220,10 +220,10 @@ void inverse4x4(int **tblock, int **block, int pos_y, int pos_x)
   m3 = _mm_sub_epi32(p0, p3);
 
   // store
-  _mm_storeu_si128((__m128i*)&block[pos_y    ][pos_x], m0);
-  _mm_storeu_si128((__m128i*)&block[pos_y +1 ][pos_x], m1);
-  _mm_storeu_si128((__m128i*)&block[pos_y +2 ][pos_x], m2);
-  _mm_storeu_si128((__m128i*)&block[pos_y +3 ][pos_x], m3);
+  _mm_store_si128((__m128i*)&block[pos_y    ][pos_x], m0);
+  _mm_store_si128((__m128i*)&block[pos_y +1 ][pos_x], m1);
+  _mm_store_si128((__m128i*)&block[pos_y +2 ][pos_x], m2);
+  _mm_store_si128((__m128i*)&block[pos_y +3 ][pos_x], m3);
 
 
 #endif

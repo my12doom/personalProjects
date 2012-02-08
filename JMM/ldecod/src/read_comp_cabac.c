@@ -711,12 +711,12 @@ static void read_CBP_and_coeffs_from_NAL_CABAC_420(Macroblock *currMB)
     if(currMB->luma_transform_size_8x8_flag) 
     {
       //======= 8x8 transform size & CABAC ========
-      currMB->read_comp_coeff_8x8_CABAC (currMB, &currSE, PLANE_Y); 
+      currSlice->read_comp_coeff_8x8_CABAC (currMB, &currSE, PLANE_Y); 
     }
     else
     {
       InvLevelScale4x4 = intra? currSlice->InvLevelScale4x4_Intra[currSlice->colour_plane_id][qp_rem] : currSlice->InvLevelScale4x4_Inter[currSlice->colour_plane_id][qp_rem];
-      currMB->read_comp_coeff_4x4_CABAC (currMB, &currSE, PLANE_Y, InvLevelScale4x4, qp_per, cbp);        
+      currSlice->read_comp_coeff_4x4_CABAC (currMB, &currSE, PLANE_Y, InvLevelScale4x4, qp_per, cbp);        
     }
   }
 
@@ -1118,12 +1118,12 @@ static void read_CBP_and_coeffs_from_NAL_CABAC_400(Macroblock *currMB)
     if(currMB->luma_transform_size_8x8_flag) 
     {
       //======= 8x8 transform size & CABAC ========
-      currMB->read_comp_coeff_8x8_CABAC (currMB, &currSE, PLANE_Y); 
+      currSlice->read_comp_coeff_8x8_CABAC (currMB, &currSE, PLANE_Y); 
     }
     else
     {
       InvLevelScale4x4 = intra? currSlice->InvLevelScale4x4_Intra[currSlice->colour_plane_id][qp_rem] : currSlice->InvLevelScale4x4_Inter[currSlice->colour_plane_id][qp_rem];
-      currMB->read_comp_coeff_4x4_CABAC (currMB, &currSE, PLANE_Y, InvLevelScale4x4, qp_per, cbp);        
+      currSlice->read_comp_coeff_4x4_CABAC (currMB, &currSE, PLANE_Y, InvLevelScale4x4, qp_per, cbp);        
     }
   }  
 }
@@ -1348,11 +1348,11 @@ static void read_CBP_and_coeffs_from_NAL_CABAC_444(Macroblock *currMB)
       if(currMB->luma_transform_size_8x8_flag) 
       {
         //======= 8x8 transform size & CABAC ========
-        currMB->read_comp_coeff_8x8_CABAC (currMB, &currSE, PLANE_Y); 
+        currSlice->read_comp_coeff_8x8_CABAC (currMB, &currSE, PLANE_Y); 
       }
       else
       {
-        currMB->read_comp_coeff_4x4_CABAC (currMB, &currSE, PLANE_Y, InvLevelScale4x4, qp_per, cbp);        
+        currSlice->read_comp_coeff_4x4_CABAC (currMB, &currSE, PLANE_Y, InvLevelScale4x4, qp_per, cbp);        
       }
     }
   }
@@ -1430,11 +1430,11 @@ static void read_CBP_and_coeffs_from_NAL_CABAC_444(Macroblock *currMB)
         if(currMB->luma_transform_size_8x8_flag) 
         {
           //======= 8x8 transform size & CABAC ========
-          currMB->read_comp_coeff_8x8_CABAC (currMB, &currSE, (ColorPlane) (PLANE_U + uv)); 
+          currSlice->read_comp_coeff_8x8_CABAC (currMB, &currSE, (ColorPlane) (PLANE_U + uv)); 
         }
         else //4x4
         {        
-          currMB->read_comp_coeff_4x4_CABAC (currMB, &currSE, (ColorPlane) (PLANE_U + uv), InvLevelScale4x4,  qp_per_uv[uv], cbp);
+          currSlice->read_comp_coeff_4x4_CABAC (currMB, &currSE, (ColorPlane) (PLANE_U + uv), InvLevelScale4x4,  qp_per_uv[uv], cbp);
         }
       }
     }
@@ -1664,11 +1664,11 @@ static void read_CBP_and_coeffs_from_NAL_CABAC_422(Macroblock *currMB)
       if(currMB->luma_transform_size_8x8_flag) 
       {
         //======= 8x8 transform size & CABAC ========
-        currMB->read_comp_coeff_8x8_CABAC (currMB, &currSE, PLANE_Y); 
+        currSlice->read_comp_coeff_8x8_CABAC (currMB, &currSE, PLANE_Y); 
       }
       else
       {
-        currMB->read_comp_coeff_4x4_CABAC (currMB, &currSE, PLANE_Y, InvLevelScale4x4, qp_per, cbp);        
+        currSlice->read_comp_coeff_4x4_CABAC (currMB, &currSE, PLANE_Y, InvLevelScale4x4, qp_per, cbp);        
       }
     }
   }
@@ -1929,6 +1929,7 @@ void set_read_CBP_and_coeffs_cabac(Slice *currSlice)
 */
 void set_read_comp_coeff_cabac(Macroblock *currMB)
 {
+/*
   if (currMB->is_lossless == FALSE)
   {
     currMB->read_comp_coeff_4x4_CABAC = read_comp_coeff_4x4_CABAC;
@@ -1939,4 +1940,13 @@ void set_read_comp_coeff_cabac(Macroblock *currMB)
     currMB->read_comp_coeff_4x4_CABAC = read_comp_coeff_4x4_CABAC_ls;
     currMB->read_comp_coeff_8x8_CABAC = read_comp_coeff_8x8_MB_CABAC_ls;
   }
+*/
+}
+
+// warning: lossless broken
+
+void set_slice_read_comp_coeff_cabac(Slice *currSlice)
+{
+	currSlice->read_comp_coeff_4x4_CABAC = read_comp_coeff_4x4_CABAC;
+	currSlice->read_comp_coeff_8x8_CABAC = read_comp_coeff_8x8_MB_CABAC;
 }

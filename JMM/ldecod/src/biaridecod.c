@@ -126,8 +126,8 @@ static inline unsigned int getword(DecodingEnvironmentPtr dep)
  ************************************************************************
  FFMPEG: ff_init_cabac_decoder(context, buf, size)
  */
-void arideco_start_decoding(DecodingEnvironmentPtr dep, unsigned char *code_buffer/*,
-                            int firstbyte, int *code_len*/)
+void arideco_start_decoding(DecodingEnvironmentPtr dep, unsigned char *code_buffer,
+                                                        int firstbyte, int *code_len)
 {
 	// my12doom table init
 	static int init = 0;
@@ -152,9 +152,9 @@ void arideco_start_decoding(DecodingEnvironmentPtr dep, unsigned char *code_buff
 	}
 
   dep->Dcodestrm      = code_buffer;
-  //dep->Dcodestrm_len  = code_len;
-  dep->Dcodestrm_len = &dep->dummy;
-  *dep->Dcodestrm_len = 0;
+  dep->Dcodestrm_len  = code_len;
+  //dep->Dcodestrm_len = &dep->dummy;
+  *dep->Dcodestrm_len = firstbyte;
 
   dep->Dvalue = getbyte(dep);
   dep->Dvalue = (dep->Dvalue << 16) | getword(dep); // lookahead of 2 bytes: always make sure that bitstream buffer
@@ -185,6 +185,7 @@ void arideco_start_decoding(DecodingEnvironmentPtr dep, unsigned char *code_buff
 *    the decoded symbol
 ************************************************************************
 */
+
 unsigned int biari_decode_symbol(DecodingEnvironment *dep, BiContextType *bi_ct )
 {
   int &DbitsLeft = dep->DbitsLeft;
