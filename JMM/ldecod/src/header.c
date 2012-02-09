@@ -161,6 +161,9 @@ int RestOfSliceHeader(Slice *currSlice)
   currSlice->mb_aff_frame_flag = (active_sps->mb_adaptive_frame_field_flag && (currSlice->field_pic_flag==0));
   //currSlice->mb_aff_frame_flag = p_Vid->mb_aff_frame_flag;
 
+  if ((active_sps->mb_adaptive_frame_field_flag && (currSlice->field_pic_flag==0)))
+	  error("this version only support progressive video streams.\n", -1);
+
   if (p_Vid->structure == FRAME       ) 
     assert (currSlice->field_pic_flag == 0);
   if (p_Vid->structure == TOP_FIELD   ) 

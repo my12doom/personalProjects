@@ -917,7 +917,7 @@ int decode_one_frame(DecoderParams *pDecoder)
 	  int i;
 	  int cores_found = 0;
 	  DWORD_PTR process, system;
-	  thread_count = pDecoder->p_Inp->thread_count = 1;
+	  thread_count = pDecoder->p_Inp->thread_count;
 	  GetProcessAffinityMask(GetCurrentProcess(), &process, &system);
 
 	  for(i=0; i<32; i++)

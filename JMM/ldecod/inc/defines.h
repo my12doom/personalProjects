@@ -29,9 +29,9 @@
 # define TRACE           0     //!< 0:Trace off 1:Trace on 2:detailed CABAC context information
 #endif
 
-#define JM                  "18 (FRExt, 6 thread slice-based parallel)"
+#define JM                  "18 (FRExt, slice-based parallel)"
 #define VERSION             "18.2"
-#define EXT_VERSION         "(6 thread slice-based parallel)"
+#define EXT_VERSION         "(slice-based parallel)"
 
 #define DUMP_DPB                  0    //!< Dump DPB info for debug purposes
 #define PRINTREFLIST              0    //!< Print ref list info for debug purposes
