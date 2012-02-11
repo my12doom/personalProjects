@@ -102,7 +102,7 @@ static const unsigned char subblk_offset_y[3][8][4] =
 
 static const byte decode_block_scan[16] = {0, 1, 4, 5, 2, 3, 6, 7, 8, 9, 12, 13, 10, 11, 14, 15};
 
-extern void iMBtrans4x4(Macroblock *currMB, ColorPlane pl, int smb);
+extern void iMBtrans4x4(Macroblock *currMB, ColorPlane pl);
 extern void iMBtrans8x8(Macroblock *currMB, ColorPlane pl);
 
 extern void itrans_sp_cr(Macroblock *currMB, int uv);
@@ -116,9 +116,9 @@ extern void itrans4x4   (Macroblock *currMB, ColorPlane pl, int ioff, int joff);
 extern void itrans4x4_ls(Macroblock *currMB, ColorPlane pl, int ioff, int joff);
 extern void itrans_sp   (Macroblock *currMB, ColorPlane pl, int ioff, int joff);
 extern void itrans_2    (Macroblock *currMB, ColorPlane pl);
-extern void iTransform  (Macroblock *currMB, ColorPlane pl, int smb);
+extern void iTransform  (Macroblock *currMB, ColorPlane pl);
 
-extern void copy_image_data       (imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int off2, int width, int height);
+//extern void copy_image_data       (imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int off2, int width, int height);
 extern void copy_image_data_16x16 (imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int off2);
 extern void copy_image_data_8x8   (imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int off2);
 extern void copy_image_data_4x4   (imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int off2);

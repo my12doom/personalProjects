@@ -280,7 +280,7 @@ static void init_picture(VideoParameters *p_Vid, Slice *currSlice, InputParamete
   dec_picture->slice_qp_delta = currSlice->slice_qp_delta;
   dec_picture->chroma_qp_offset[0] = p_Vid->active_pps->chroma_qp_index_offset;
   dec_picture->chroma_qp_offset[1] = p_Vid->active_pps->second_chroma_qp_index_offset;
-  dec_picture->iCodingType = currSlice->structure==FRAME? (currSlice->mb_aff_frame_flag? FRAME_MB_PAIR_CODING:FRAME_CODING): FIELD_CODING; //currSlice->slice_type;
+  dec_picture->iCodingType = currSlice->structure==FRAME? FRAME_CODING : FIELD_CODING; //currSlice->slice_type;
   dec_picture->layer_id = currSlice->layer_id;
 #if (MVC_EXTENSION_ENABLE)
   dec_picture->view_id         = currSlice->view_id;
@@ -393,11 +393,10 @@ static void init_picture(VideoParameters *p_Vid, Slice *currSlice, InputParamete
   dec_picture->dec_ref_pic_marking_buffer = currSlice->dec_ref_pic_marking_buffer;
   currSlice->dec_ref_pic_marking_buffer   = NULL;
 
-  dec_picture->mb_aff_frame_flag = currSlice->mb_aff_frame_flag;
+  dec_picture->mb_aff_frame_flag = 0/*MBAFF replace*/;
   dec_picture->PicWidthInMbs     = p_Vid->PicWidthInMbs;
 
   p_Vid->get_mb_block_pos = dec_picture->mb_aff_frame_flag ? get_mb_block_pos_mbaff : get_mb_block_pos_normal;
-  p_Vid->getNeighbour     = dec_picture->mb_aff_frame_flag ? getAffNeighbour : getNonAffNeighbour;
 
   dec_picture->pic_num   = currSlice->frame_num;
   dec_picture->frame_num = currSlice->frame_num;
@@ -571,7 +570,7 @@ static void fill_wp_params(Slice *currSlice)
       }
     }
 
-    if (currSlice->mb_aff_frame_flag)
+    if (0/*MBAFF replace*/)
     {
       for (i=0; i<2*max_l0_ref; ++i)
       {
@@ -680,7 +679,7 @@ static void init_picture_decoding(VideoParameters *p_Vid)
 #endif
   }
   if (!iDeblockMode)
-	  init_Deblock(p_Vid, pSlice->mb_aff_frame_flag);
+	  init_Deblock(p_Vid, 0);
 
   p_Vid->iDeblockMode = iDeblockMode;
 }
@@ -1053,7 +1052,7 @@ read:
     }
     else
     {
-      if(ppSliceList[p_Vid->iSliceNumOfCurrPic-1]->mb_aff_frame_flag)
+      if(0)//MBAFF
        ppSliceList[p_Vid->iSliceNumOfCurrPic-1]->end_mb_nr_plus1 = p_Vid->FrameSizeInMbs/2;
       else
        ppSliceList[p_Vid->iSliceNumOfCurrPic-1]->end_mb_nr_plus1 = p_Vid->FrameSizeInMbs/(1+ppSliceList[p_Vid->iSliceNumOfCurrPic-1]->field_pic_flag);
@@ -1724,7 +1723,7 @@ process_nalu:
       setup_slice_methods(currSlice);
 
       // From here on, p_Vid->active_sps, p_Vid->active_pps and the slice header are valid
-      if (currSlice->mb_aff_frame_flag)
+      if (0/*MBAFF replace*/)
         currSlice->current_mb_nr = currSlice->start_mb_nr << 1;
       else
         currSlice->current_mb_nr = currSlice->start_mb_nr;
@@ -1795,7 +1794,7 @@ process_nalu:
       setup_slice_methods(currSlice);
 
       // From here on, p_Vid->active_sps, p_Vid->active_pps and the slice header are valid
-      if (currSlice->mb_aff_frame_flag)
+      if (0/*MBAFF replace*/)
         currSlice->current_mb_nr = currSlice->start_mb_nr << 1;
       else
         currSlice->current_mb_nr = currSlice->start_mb_nr;
@@ -2639,7 +2638,7 @@ static void init_cur_imgy(Slice *currSlice, VideoParameters *p_Vid)
   {
     StorablePicture *vidref = p_Vid->no_reference_picture;
     int noref = (currSlice->framepoc < p_Vid->recovery_poc);
-    int total_lists = currSlice->mb_aff_frame_flag ? 6 : (currSlice->slice_type==B_SLICE ? 2 : 1);
+    int total_lists = 0/*MBAFF replace*/ ? 6 : (currSlice->slice_type==B_SLICE ? 2 : 1);
     //    for (j = 0; j < 6; j++) {  //for (j = 0; j < (currSlice->slice_type==B_SLICE?2:1); j++) { 
     for (j = 0; j < total_lists; j++) 
     {
@@ -2711,7 +2710,7 @@ void decode_one_slice(Slice *currSlice)
     currSlice->read_one_macroblock(currMB);
     decode_one_macroblock(currMB, currSlice->dec_picture);
 
-    if(currSlice->mb_aff_frame_flag && currMB->mb_field)
+    if(0/*MBAFF replace*/ && currMB->mb_field)
     {
       currSlice->num_ref_idx_active[LIST_0] >>= 1;
       currSlice->num_ref_idx_active[LIST_1] >>= 1;
@@ -2721,12 +2720,11 @@ void decode_one_slice(Slice *currSlice)
     ercWriteMBMODEandMV(currMB);
 #endif
 
-    end_of_slice = exit_macroblock(currSlice, (!currSlice->mb_aff_frame_flag|| currSlice->current_mb_nr%2));
+    end_of_slice = exit_macroblock(currSlice, currSlice->current_mb_nr%2);
   }
   //reset_ec_flags(p_Vid);
 }
 
-extern void init_slice_motion_vector_prediction(Slice *p_Slice);
 extern void set_slice_read_and_store_CBP(Slice *currSlice);
 extern void set_slice_read_comp_coeff_cabac(Slice *currSlice);
 extern void set_slice_read_comp_coeff_cavlc(Slice *currSlice);
@@ -2741,7 +2739,6 @@ void decode_slice_step(Slice *currSlice, int current_header)
 	if (!currSlice->decoding_done && (currSlice->num_dec_mb + currSlice->erc_mvperMB == 0))
 	{
 		// function pointers moved from macroblock level
-		init_slice_motion_vector_prediction(currSlice);
 		set_slice_read_and_store_CBP(currSlice);
 		set_slice_read_comp_coeff_cabac(currSlice);
 		set_slice_read_comp_coeff_cavlc(currSlice);
@@ -2797,26 +2794,12 @@ void decode_slice_step(Slice *currSlice, int current_header)
 		while (currSlice->decoding_done == FALSE && (counter++ < p_Inp->dec_step)) // loop over macroblocks
 		{
 
-#if TRACE
-			fprintf(p_Dec->p_trace,"\n*********** POC: %i (I/P) MB: %i Slice: %i Type %d **********\n", currSlice->ThisPOC, currSlice->current_mb_nr, currSlice->current_slice_nr, currSlice->slice_type);
-#endif
-
-
 			start_macroblock(currSlice, &currMB);
 			currSlice->read_one_macroblock(currMB);
-			currSlice->decoding_done = exit_macroblock(currSlice, (!currSlice->mb_aff_frame_flag|| currSlice->current_mb_nr%2));
+			currSlice->decoding_done = exit_macroblock(currSlice, 1);
 
 			decode_one_macroblock(currMB, currSlice->dec_picture);
 
-			if(currSlice->mb_aff_frame_flag && currMB->mb_field)
-			{
-				currSlice->num_ref_idx_active[LIST_0] >>= 1;
-				currSlice->num_ref_idx_active[LIST_1] >>= 1;
-			}
-
-#if (DISABLE_ERC == 0)
-			ercWriteMBMODEandMV(currMB);
-#endif
 		}
 	}
 

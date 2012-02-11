@@ -77,7 +77,6 @@ static int  decode_one_component_p_slice       (Macroblock *currMB, ColorPlane c
 static int  decode_one_component_b_slice       (Macroblock *currMB, ColorPlane curr_plane, imgpel **currImg, StorablePicture *dec_picture);
 static int  decode_one_component_sp_slice      (Macroblock *currMB, ColorPlane curr_plane, imgpel **currImg, StorablePicture *dec_picture);
 extern void update_direct_types                (Slice *currSlice);
-extern void set_intra_prediction_modes         (Slice *currSlice);
 
 /*!
  ************************************************************************
@@ -151,19 +150,22 @@ static void prepareListforRefIdx ( Macroblock *currMB, SyntaxElement *currSE, Da
     if (currMB->p_Vid->active_pps->entropy_coding_mode_flag == (Boolean) CAVLC || dP->bitstream->ei_flag)
     {
       currSE->mapping = linfo_ue;
+
+	  /*
       if (refidx_present)
         currMB->readRefPictureIdx = (num_ref_idx_active == 2) ? readRefPictureIdx_FLC : readRefPictureIdx_VLC;
       else
         currMB->readRefPictureIdx = readRefPictureIdx_Null;
+	  */
     }
     else
     {
       currSE->reading = readRefFrame_CABAC;
-      currMB->readRefPictureIdx = (refidx_present) ? readRefPictureIdx_VLC : readRefPictureIdx_Null;
+      //currMB->readRefPictureIdx = (refidx_present) ? readRefPictureIdx_VLC : readRefPictureIdx_Null;
     }
   }
-  else
-    currMB->readRefPictureIdx = readRefPictureIdx_Null; 
+  //else
+    //currMB->readRefPictureIdx = readRefPictureIdx_Null; 
 }
 
 void set_chroma_qp(Macroblock* currMB)
@@ -235,6 +237,23 @@ void read_delta_quant(SyntaxElement *currSE, DataPartition *dP, Macroblock *curr
  */
 static void readMBRefPictureIdx (SyntaxElement *currSE, DataPartition *dP, Macroblock *currMB, PicMotionParams **mv_info, int list, int step_v0, int step_h0)
 {
+  Slice *currSlice = currMB->p_Slice;
+  int read_func = 0;	//0: 0, 1:VLC, else:FLC
+
+  // copied from prepare
+  if(currSlice->num_ref_idx_active[list] > 1)
+  {
+    if (currMB->p_Vid->active_pps->entropy_coding_mode_flag == (Boolean) CAVLC || dP->bitstream->ei_flag)
+    {
+      if (!currSlice->allrefzero)
+        read_func = (currSlice->num_ref_idx_active[list] == 2) ? 2 : 1;
+    }
+    else
+    {
+      read_func = !currSlice->allrefzero;
+    }
+  }
+
   if (currMB->mb_type == 1)
   {
     if ((currMB->b8pdir[0] == list || currMB->b8pdir[0] == BI_PRED))
@@ -245,7 +264,14 @@ static void readMBRefPictureIdx (SyntaxElement *currSE, DataPartition *dP, Macro
 
       currMB->subblock_x = 0;
       currMB->subblock_y = 0;
-      refframe = currMB->readRefPictureIdx(currMB, currSE, dP, 1, list);
+      //refframe = currMB->readRefPictureIdx(currMB, currSE, dP, 1, list);
+	  if (read_func == 0)
+		  refframe = 0;
+	  else if (read_func == 1)
+		  refframe = readRefPictureIdx_VLC(currMB, currSE, dP, 1, list);
+	  else
+		  refframe = readRefPictureIdx_FLC(currMB, currSE, dP, 1, list);
+
       for (j = 0; j <  step_v0; ++j)
       {
         char *ref_idx = &mv_info[j][currMB->block_x].ref_idx[list];
@@ -272,7 +298,14 @@ static void readMBRefPictureIdx (SyntaxElement *currSE, DataPartition *dP, Macro
       {
         currMB->subblock_y = j0 << 2;
         currMB->subblock_x = 0;
-        refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
+        //refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
+		if (read_func == 0)
+			refframe = 0;
+		else if (read_func == 1)
+			refframe = readRefPictureIdx_VLC(currMB, currSE, dP, currMB->b8mode[k], list);
+		else
+			refframe = readRefPictureIdx_FLC(currMB, currSE, dP, currMB->b8mode[k], list);
+
         for (j = j0; j < j0 + step_v0; ++j)
         {
           char *ref_idx = &mv_info[j][currMB->block_x].ref_idx[list];
@@ -300,7 +333,13 @@ static void readMBRefPictureIdx (SyntaxElement *currSE, DataPartition *dP, Macro
       if ((currMB->b8pdir[k] == list || currMB->b8pdir[k] == BI_PRED) && currMB->b8mode[k] != 0)
       {
         currMB->subblock_x = i0 << 2;
-        refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
+        //refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
+		if (read_func == 0 )
+			refframe = 0;
+		else if (read_func == 1)
+			refframe = readRefPictureIdx_VLC(currMB, currSE, dP, currMB->b8mode[k], list);
+		else
+			refframe = readRefPictureIdx_FLC(currMB, currSE, dP, currMB->b8mode[k], list);
         for (j = 0; j < step_v0; ++j)
         {
           char *ref_idx = &mv_info[j][currMB->block_x + i0].ref_idx[list];
@@ -330,7 +369,13 @@ static void readMBRefPictureIdx (SyntaxElement *currSE, DataPartition *dP, Macro
         if ((currMB->b8pdir[k] == list || currMB->b8pdir[k] == BI_PRED) && currMB->b8mode[k] != 0)
         {
           currMB->subblock_x = i0 << 2;
-          refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
+          //refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
+		  if (read_func == 0 )
+			  refframe = 0;
+		  else if (read_func == 1)
+			  refframe = readRefPictureIdx_VLC(currMB, currSE, dP, currMB->b8mode[k], list);
+		  else
+			  refframe = readRefPictureIdx_FLC(currMB, currSE, dP, currMB->b8mode[k], list);
           for (j = j0; j < j0 + step_v0; ++j)
           {
             char *ref_idx = &mv_info[j][currMB->block_x + i0].ref_idx[list];
@@ -377,7 +422,7 @@ static void readMBMotionVectors (SyntaxElement *currSE, DataPartition *dP, Macro
       get_neighbors(currMB, block, 0, 0, step_h0 << 2);
 
       // first get MV predictor
-      currMB->p_Slice->GetMVPredictor (currMB, block, &pred_mv, mv_info[j4][i4].ref_idx[list], mv_info, list, 0, 0, step_h0 << 2, step_v0 << 2);
+      GetMotionVectorPredictorNormal(currMB, block, &pred_mv, mv_info[j4][i4].ref_idx[list], mv_info, list, 0, 0, step_h0 << 2, step_v0 << 2);
 
       // X component
 #if TRACE
@@ -462,7 +507,7 @@ static void readMBMotionVectors (SyntaxElement *currSE, DataPartition *dP, Macro
               get_neighbors(currMB, block, BLOCK_SIZE * i, BLOCK_SIZE * j, step_h4);
 
               // first get MV predictor
-              currMB->p_Slice->GetMVPredictor (currMB, block, &pred_mv, cur_ref_idx, mv_info, list, BLOCK_SIZE * i, BLOCK_SIZE * j, step_h4, step_v4);
+              GetMotionVectorPredictorNormal (currMB, block, &pred_mv, cur_ref_idx, mv_info, list, BLOCK_SIZE * i, BLOCK_SIZE * j, step_h4, step_v4);
 
               for (k=0; k < 2; ++k)
               {
@@ -854,7 +899,7 @@ void start_macroblock(Slice *currSlice, Macroblock **currMB)
   //assert (mb_nr < (int) p_Vid->PicSizeInMbs);
 
   /* Update coordinates of the current macroblock */
-  if (currSlice->mb_aff_frame_flag)
+  if (0/*MBAFF replace*/)
   {
     (*currMB)->mb.x = (short) (   (mb_nr) % ((2*p_Vid->width) / MB_BLOCK_SIZE));
     (*currMB)->mb.y = (short) (2*((mb_nr) / ((2*p_Vid->width) / MB_BLOCK_SIZE)));
@@ -885,7 +930,7 @@ void start_macroblock(Slice *currSlice, Macroblock **currMB)
   CheckAvailabilityOfNeighbors(*currMB);
 
   // Select appropriate MV predictor function
-  //init_motion_vector_prediction(*currMB, currSlice->mb_aff_frame_flag);
+  //init_motion_vector_prediction(*currMB, 0/*MBAFF replace*/);
 
 
   // Reset syntax element entries in MB struct
@@ -1289,8 +1334,6 @@ void setup_slice_methods(Slice *currSlice)
     break;
   }
 
-  set_intra_prediction_modes(currSlice);
-
   if ( currSlice->p_Vid->active_sps->chroma_format_idc==YUV444 && (currSlice->p_Vid->separate_colour_plane_flag == 0) )
     currSlice->read_coeff_4x4_CAVLC = read_coeff_4x4_CAVLC_444;
   else
@@ -1398,7 +1441,7 @@ static void read_motion_info_from_NAL_p_slice (Macroblock *currMB)
   if (p_Vid->active_pps->entropy_coding_mode_flag == (Boolean) CAVLC || dP->bitstream->ei_flag) 
     currSE.mapping = linfo_se;
   else                                                  
-    currSE.reading = currSlice->mb_aff_frame_flag ? read_mvd_CABAC_mbaff : read_MVD_CABAC;
+    currSE.reading = 0/*MBAFF replace*/ ? read_mvd_CABAC_mbaff : read_MVD_CABAC;
 
   // LIST_0 Motion vectors
   readMBMotionVectors (&currSE, dP, currMB, LIST_0, step_h0, step_v0);
@@ -1465,7 +1508,7 @@ static void read_motion_info_from_NAL_b_slice (Macroblock *currMB)
   if (p_Vid->active_pps->entropy_coding_mode_flag == (Boolean) CAVLC || dP->bitstream->ei_flag) 
     currSE.mapping = linfo_se;
   else                                                  
-    currSE.reading = currSlice->mb_aff_frame_flag ? read_mvd_CABAC_mbaff : read_MVD_CABAC;
+    currSE.reading = 0/*MBAFF replace*/ ? read_mvd_CABAC_mbaff : read_MVD_CABAC;
 
   // LIST_0 Motion vectors
   readMBMotionVectors (&currSE, dP, currMB, LIST_0, step_h0, step_v0);
@@ -1502,8 +1545,8 @@ void check_dp_neighbors (Macroblock *currMB)
   VideoParameters *p_Vid = currMB->p_Vid;
   PixelPos up, left;
 
-  p_Vid->getNeighbour(currMB, -1,  0, p_Vid->mb_size[1], &left);
-  p_Vid->getNeighbour(currMB,  0, -1, p_Vid->mb_size[1], &up);
+  getNonAffNeighbour(currMB, -1,  0, p_Vid->mb_size[1], &left);
+  getNonAffNeighbour(currMB,  0, -1, p_Vid->mb_size[1], &up);
 
   if ((currMB->is_intra_block == FALSE) || (!(p_Vid->active_pps->constrained_intra_pred_flag)) )
   {

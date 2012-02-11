@@ -1809,7 +1809,6 @@ static void read_CBP_and_coeffs_from_NAL_CAVLC_420(Macroblock *currMB)
 
   int qp_per, qp_rem;
   VideoParameters *p_Vid = currMB->p_Vid;
-  int smb = ((p_Vid->type==SP_SLICE) && (currMB->is_intra_block == FALSE)) || (p_Vid->type == SI_SLICE && currMB->mb_type == SI4MB);
 
   int uv; 
   int qp_per_uv[2];
@@ -2002,7 +2001,7 @@ static void read_CBP_and_coeffs_from_NAL_CAVLC_420(Macroblock *currMB)
       }
 
 
-      if (smb || (currMB->is_lossless == TRUE)) // check to see if MB type is SPred or SIntra4x4
+      if (0/*smb*/ || (currMB->is_lossless == TRUE)) // check to see if MB type is SPred or SIntra4x4
       {
         currSlice->cof[PLANE_U + uv][0][0] = currSlice->cofu[0];
         currSlice->cof[PLANE_U + uv][4][0] = currSlice->cofu[1];

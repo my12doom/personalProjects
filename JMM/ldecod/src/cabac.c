@@ -49,8 +49,8 @@ void CheckAvailabilityOfNeighborsCABAC(Macroblock *currMB)
   PixelPos up, left;
   int *mb_size = p_Vid->mb_size[IS_LUMA];
 
-  p_Vid->getNeighbour(currMB, -1,  0, mb_size, &left);
-  p_Vid->getNeighbour(currMB,  0, -1, mb_size, &up);
+  getNonAffNeighbour(currMB, -1,  0, mb_size, &left);
+  getNonAffNeighbour(currMB,  0, -1, mb_size, &up);
 
   if (up.available)
     currMB->mb_up = &currMB->p_Slice->mb_data[up.mb_addr]; //&p_Vid->mb_data[up.mb_addr];
@@ -186,7 +186,7 @@ int check_next_mb_and_get_field_mode_CABAC_p_slice( Slice *currSlice,
   currMB->slice_nr = currSlice->current_slice_nr;
   currMB->mb_field = currSlice->mb_data[currSlice->current_mb_nr-1].mb_field;
   currMB->mbAddrX  = currSlice->current_mb_nr;
-  currMB->list_offset = ((currSlice->mb_aff_frame_flag)&&(currMB->mb_field))? (currMB->mbAddrX&0x01) ? 4 : 2 : 0;
+  currMB->list_offset = ((0/*MBAFF replace*/)&&(currMB->mb_field))? (currMB->mbAddrX&0x01) ? 4 : 2 : 0;
 
   CheckAvailabilityOfNeighborsMBAFF(currMB);
   CheckAvailabilityOfNeighborsCABAC(currMB);
@@ -271,7 +271,7 @@ int check_next_mb_and_get_field_mode_CABAC_b_slice( Slice *currSlice,
   currMB->slice_nr = currSlice->current_slice_nr;
   currMB->mb_field = currSlice->mb_data[currSlice->current_mb_nr-1].mb_field;
   currMB->mbAddrX  = currSlice->current_mb_nr;
-  currMB->list_offset = ((currSlice->mb_aff_frame_flag)&&(currMB->mb_field))? (currMB->mbAddrX & 0x01) ? 4 : 2 : 0;
+  currMB->list_offset = ((0/*MBAFF replace*/)&&(currMB->mb_field))? (currMB->mbAddrX & 0x01) ? 4 : 2 : 0;
 
   CheckAvailabilityOfNeighborsMBAFF(currMB);
   CheckAvailabilityOfNeighborsCABAC(currMB);
@@ -424,7 +424,7 @@ void read_mvd_CABAC_mbaff( Macroblock *currMB,
   if (block_a.available)
   {
     a = iabs(currSlice->mb_data[block_a.mb_addr].mvd[list_idx][block_a.y][block_a.x][k]);
-    if (currSlice->mb_aff_frame_flag && (k==1))
+    if (0/*MBAFF replace*/ && (k==1))
     {
       if ((currMB->mb_field==0) && (currSlice->mb_data[block_a.mb_addr].mb_field==1))
         a *= 2;
@@ -437,7 +437,7 @@ void read_mvd_CABAC_mbaff( Macroblock *currMB,
   if (block_b.available)
   {
     b = iabs(currSlice->mb_data[block_b.mb_addr].mvd[list_idx][block_b.y][block_b.x][k]);
-    if (currSlice->mb_aff_frame_flag && (k==1))
+    if (0/*MBAFF replace*/ && (k==1))
     {
       if ((currMB->mb_field==0) && (currSlice->mb_data[block_b.mb_addr].mb_field==1))
         b *= 2;
@@ -1096,7 +1096,7 @@ void readRefFrame_CABAC(Macroblock *currMB,
     neighborMB = &currSlice->mb_data[block_b.mb_addr];
     if (!( (neighborMB->mb_type==IPCM) || IS_DIRECT(neighborMB) || (neighborMB->b8mode[b8b]==0 && neighborMB->b8pdir[b8b]==2)))
     {
-      if (currSlice->mb_aff_frame_flag && (currMB->mb_field == FALSE) && (neighborMB->mb_field == TRUE))
+      if (0/*MBAFF replace*/ && (currMB->mb_field == FALSE) && (neighborMB->mb_field == TRUE))
         b = (dec_picture->mv_info[block_b.pos_y][block_b.pos_x].ref_idx[list] > 1 ? 2 : 0);
       else
         b = (dec_picture->mv_info[block_b.pos_y][block_b.pos_x].ref_idx[list] > 0 ? 2 : 0);
@@ -1109,7 +1109,7 @@ void readRefFrame_CABAC(Macroblock *currMB,
     neighborMB = &currSlice->mb_data[block_a.mb_addr];
     if (!((neighborMB->mb_type==IPCM) || IS_DIRECT(neighborMB) || (neighborMB->b8mode[b8a]==0 && neighborMB->b8pdir[b8a]==2)))
     {
-      if (currSlice->mb_aff_frame_flag && (currMB->mb_field == FALSE) && (neighborMB->mb_field == 1))
+      if (0/*MBAFF replace*/ && (currMB->mb_field == FALSE) && (neighborMB->mb_field == 1))
         a = (dec_picture->mv_info[block_a.pos_y][block_a.pos_x].ref_idx[list] > 1 ? 1 : 0);
       else
         a = (dec_picture->mv_info[block_a.pos_y][block_a.pos_x].ref_idx[list] > 0 ? 1 : 0);
@@ -2385,6 +2385,64 @@ static unsigned int unary_exp_golomb_mv_decode(DecodingEnvironmentPtr dep_dp,
  *    Read I_PCM macroblock 
  ************************************************************************
 */
+
+#if USE_FFMPEG_CABAC
+void readIPCM_CABAC(Slice *currSlice, struct datapartition_dec *dP)
+{
+	VideoParameters *p_Vid = currSlice->p_Vid;
+	StorablePicture *dec_picture = currSlice->dec_picture;
+	Bitstream* currStream = dP->bitstream;
+	DecodingEnvironmentPtr dep = &(dP->de_cabac);
+	byte *buf = currStream->streamBuffer;
+	int BitstreamLengthInBits = (dP->bitstream->bitstream_length << 3) + 7;
+
+	int val = 0;
+
+	int bits_read = 0;
+	int bitdepth;
+	int uv, i, j;
+
+
+	const byte *ptr;
+
+	// We assume these blocks are very rare so we do not optimize it.
+	// FIXME The two following lines get the bitstream position in the cabac
+	// decode, I think it should be done by a function in cabac.h (or cabac.c).
+	ptr= dep->Dcodestrm + *dep->Dcodestrm_len;
+	if(dep->low&0x1) ptr--;
+	if(dep->low&0x1FF) ptr--;
+
+	// read luma values
+	bitdepth = p_Vid->bitdepth_luma;
+	for(i=0;i<MB_BLOCK_SIZE;++i)
+	{
+		for(j=0;j<MB_BLOCK_SIZE;++j)
+		{
+			currSlice->cof[0][i][j] = *ptr++;
+
+		}
+	}
+
+	// read chroma values
+	bitdepth = p_Vid->bitdepth_chroma;
+	if ((dec_picture->chroma_format_idc != YUV400) && (p_Vid->separate_colour_plane_flag == 0))
+	{
+		for (uv = 1; uv < 3; ++uv)
+		{
+			for(i = 0; i < p_Vid->mb_cr_size_y; ++i)
+			{
+				for(j = 0; j < p_Vid->mb_cr_size_x; ++j)
+				{
+					currSlice->cof[uv][i][j] = *ptr++;
+
+				}
+			}
+		}
+	}
+
+	(*dep->Dcodestrm_len) += ptr - (dep->Dcodestrm + *dep->Dcodestrm_len);
+}
+#else
 void readIPCM_CABAC(Slice *currSlice, struct datapartition_dec *dP)
 {
   VideoParameters *p_Vid = currSlice->p_Vid;
@@ -2453,4 +2511,4 @@ void readIPCM_CABAC(Slice *currSlice, struct datapartition_dec *dP)
     ++(*dep->Dcodestrm_len);
   }
 }
-
+#endif

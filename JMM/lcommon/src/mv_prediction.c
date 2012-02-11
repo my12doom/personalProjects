@@ -189,7 +189,7 @@ static void GetMotionVectorPredictorMBAFF (Macroblock *currMB,
  *    Get motion vector predictor
  ************************************************************************
  */
-static void GetMotionVectorPredictorNormal (Macroblock *currMB, 
+void GetMotionVectorPredictorNormal (Macroblock *currMB, 
                                             PixelPos *block,      // <--> block neighbors
                                             MotionVector *pmv,
                                             short  ref_frame,
@@ -301,20 +301,4 @@ static void GetMotionVectorPredictorNormal (Macroblock *currMB,
   default:
     break;
   }
-}
-
-void init_motion_vector_prediction(Macroblock *currMB, int mb_aff_frame_flag)
-{
-  if (mb_aff_frame_flag)
-    currMB->p_Slice->GetMVPredictor = GetMotionVectorPredictorMBAFF;
-  else
-    currMB->p_Slice->GetMVPredictor = GetMotionVectorPredictorNormal;
-}
-
-void init_slice_motion_vector_prediction(Slice *p_Slice)
-{
-	if (p_Slice->mb_aff_frame_flag)
-		p_Slice->GetMVPredictor = GetMotionVectorPredictorMBAFF;
-	else
-		p_Slice->GetMVPredictor = GetMotionVectorPredictorNormal;
 }

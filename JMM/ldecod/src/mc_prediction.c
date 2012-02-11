@@ -22,6 +22,7 @@
 #include "macroblock.h"
 #include "memalloc.h"
 #include <emmintrin.h>
+#include "mv_prediction.h"
 
 #define USE_SSE2 1
 
@@ -2552,6 +2553,7 @@ static void get_block_chroma(StorablePicture *curr_ref, int x_pos, int y_pos, in
   }
 }
 
+extern void intra_pred_chroma      (Macroblock *currMB);
 
 void intra_cr_decoding(Macroblock *currMB, int yuv)
 {
@@ -2564,11 +2566,10 @@ void intra_cr_decoding(Macroblock *currMB, int yuv)
   int ioff, joff;
   int i,j;
 
-  currSlice->intra_pred_chroma(currMB);// last argument is ignored, computes needed data for both uv channels
+  intra_pred_chroma(currMB);// last argument is ignored, computes needed data for both uv channels
 
   for(uv = 0; uv < 2; uv++)
   {
-    currMB->itrans_4x4 = (currMB->is_lossless == FALSE) ? itrans4x4 : itrans4x4_ls;
 
     curUV = dec_picture->imgUV[uv];
 
@@ -2593,7 +2594,7 @@ void intra_cr_decoding(Macroblock *currMB, int yuv)
           joff = subblk_offset_y[yuv][b8][b4];          
           ioff = subblk_offset_x[yuv][b8][b4];          
 
-          currMB->itrans_4x4(currMB, (ColorPlane) (uv + 1), ioff, joff);
+          itrans4x4(currMB, (ColorPlane) (uv + 1), ioff, joff);
 
           copy_image_data_4x4(&curUV[currMB->pix_c_y + joff], &(currSlice->mb_rec[uv + 1][joff]), currMB->pix_c_x + ioff, ioff);
         }
@@ -2608,7 +2609,7 @@ void intra_cr_decoding(Macroblock *currMB, int yuv)
       {
         for(ioff = 0; ioff < 8;ioff+=4)
         {          
-          currMB->itrans_4x4(currMB, (ColorPlane) (uv + 1), ioff, joff);
+          itrans4x4(currMB, (ColorPlane) (uv + 1), ioff, joff);
         
           copy_image_data_4x4(&curUV[currMB->pix_c_y + joff], &(currSlice->mb_rec[uv + 1][joff]), currMB->pix_c_x + ioff, ioff);
         }
@@ -2704,37 +2705,19 @@ void prepare_direct_params(Macroblock *currMB, StorablePicture *dec_picture, Mot
 
   get_neighbors(currMB, mb, 0, 0, 16);
 
-  if (!currSlice->mb_aff_frame_flag)
-  {
+  // maybe?
     set_direct_references(&mb[0], &l0_refA, &l1_refA, mv_info);
     set_direct_references(&mb[1], &l0_refB, &l1_refB, mv_info);
     set_direct_references(&mb[2], &l0_refC, &l1_refC, mv_info);
-  }
-  else
-  {
-    VideoParameters *p_Vid = currMB->p_Vid;
-    if (currMB->mb_field)
-    {
-      set_direct_references_mb_field(&mb[0], &l0_refA, &l1_refA, mv_info, p_Vid->mb_data);
-      set_direct_references_mb_field(&mb[1], &l0_refB, &l1_refB, mv_info, p_Vid->mb_data);
-      set_direct_references_mb_field(&mb[2], &l0_refC, &l1_refC, mv_info, p_Vid->mb_data);
-    }
-    else
-    {
-      set_direct_references_mb_frame(&mb[0], &l0_refA, &l1_refA, mv_info, p_Vid->mb_data);
-      set_direct_references_mb_frame(&mb[1], &l0_refB, &l1_refB, mv_info, p_Vid->mb_data);
-      set_direct_references_mb_frame(&mb[2], &l0_refC, &l1_refC, mv_info, p_Vid->mb_data);
-    }
-  }
 
   *l0_rFrame = (char) imin(imin((unsigned char) l0_refA, (unsigned char) l0_refB), (unsigned char) l0_refC);
   *l1_rFrame = (char) imin(imin((unsigned char) l1_refA, (unsigned char) l1_refB), (unsigned char) l1_refC);
 
   if (*l0_rFrame >=0)
-    currMB->p_Slice->GetMVPredictor (currMB, mb, pmvl0, *l0_rFrame, mv_info, LIST_0, 0, 0, 16, 16);
+    GetMotionVectorPredictorNormal(currMB, mb, pmvl0, *l0_rFrame, mv_info, LIST_0, 0, 0, 16, 16);
 
   if (*l1_rFrame >=0)
-    currMB->p_Slice->GetMVPredictor (currMB, mb, pmvl1, *l1_rFrame, mv_info, LIST_1, 0, 0, 16, 16);
+    GetMotionVectorPredictorNormal(currMB, mb, pmvl1, *l1_rFrame, mv_info, LIST_1, 0, 0, 16, 16);
 }
 
 static void check_motion_vector_range(const MotionVector *mv, Slice *pSlice)

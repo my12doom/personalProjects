@@ -457,8 +457,8 @@ void ff_init_cabac_global_tables()
 	}
 }
 
-void ff_init_cabac_decoder(DecodingEnvironment *c, const byte *buf){
-
+void ff_init_cabac_decoder(DecodingEnvironment *c, const byte *buf, int firstbyte, int *code_len)
+{
 	static bool init_done = false;
 	if (!init_done)
 	{
@@ -466,16 +466,31 @@ void ff_init_cabac_decoder(DecodingEnvironment *c, const byte *buf){
 		init_done = true;
 	}
 
-	c->bytestream_start=
-	c->bytestream= buf;
+	/*
+	dep->Dcodestrm      = code_buffer;
+	dep->Dcodestrm_len  = code_len;
+	//dep->Dcodestrm_len = &dep->dummy;
+	*dep->Dcodestrm_len = firstbyte;
 
-#if CABAC_BITS == 16
-	c->low =  (*c->bytestream++)<<18;
-	c->low+=  (*c->bytestream++)<<10;
-#else
-	c->low =  (*c->bytestream++)<<10;
-#endif
-	c->low+= ((*c->bytestream++)<<2) + 2;
+	dep->Dvalue = getbyte(dep);
+	dep->Dvalue = (dep->Dvalue << 16) | getword(dep); // lookahead of 2 bytes: always make sure that bitstream buffer
+	// contains 2 more bytes than actual bitstream
+	dep->DbitsLeft = 15;
+	dep->Drange = HALF;
+	*/
+
+	c->Dcodestrm      = (byte*)buf;
+	c->Dcodestrm_len  = code_len;
+	*c->Dcodestrm_len = firstbyte;
+
+
+
+	c->low =  (c->Dcodestrm[*c->Dcodestrm_len])<<18;
+	c->low+=  (c->Dcodestrm[*c->Dcodestrm_len+1])<<10;
+	c->low+= ((c->Dcodestrm[*c->Dcodestrm_len+2])<<2) + 2;
+
+	*c->Dcodestrm_len += 3;
+
 	c->range= 0x1FE;
 }
 
@@ -487,9 +502,9 @@ void renorm_cabac_decoder_once(DecodingEnvironment *c){
 	if(!(c->low & CABAC_MASK))
 	{
 		//ff_refill(c);
-		c->low+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
+		c->low+= (c->Dcodestrm[*c->Dcodestrm_len]<<9) + (c->Dcodestrm[*c->Dcodestrm_len+1]<<1);
 		c->low -= CABAC_MASK;
-		c->bytestream+= CABAC_BITS/8;
+		*c->Dcodestrm_len+= CABAC_BITS/8;
 	}
 }
 

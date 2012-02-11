@@ -42,7 +42,7 @@ void itrans4x4(Macroblock *currMB,   //!< current macroblock
 
   inverse4x4(currSlice->cof[pl],mb_rres,joff,ioff);
 
-  sample_reconstruct (&currSlice->mb_rec[pl][joff], &currSlice->mb_pred[pl][joff], &mb_rres[joff], ioff, ioff, BLOCK_SIZE, BLOCK_SIZE, currMB->p_Vid->max_pel_value_comp[pl], DQ_BITS);
+  sample_reconstruct4_4_255 (&currSlice->mb_rec[pl][joff], &currSlice->mb_pred[pl][joff], &mb_rres[joff], ioff, ioff);
 }
 
 /*!
@@ -610,7 +610,7 @@ void itrans_sp_cr(Macroblock *currMB, int uv)
   free_mem2Dint(PBlock);
 }
 
-void iMBtrans4x4(Macroblock *currMB, ColorPlane pl, int smb)
+void iMBtrans4x4(Macroblock *currMB, ColorPlane pl)
 {
   Slice *currSlice = currMB->p_Slice;
   //VideoParameters *p_Vid = currMB->p_Vid;
@@ -628,9 +628,9 @@ void iMBtrans4x4(Macroblock *currMB, ColorPlane pl, int smb)
   {
     Inv_Residual_trans_16x16(currMB, pl) ;
   }
-  else if (smb || currMB->is_lossless == TRUE)
+  else if (0/*smb*/ || currMB->is_lossless == TRUE)
   {
-    currMB->itrans_4x4 = (smb) ? itrans_sp : ((currMB->is_lossless == FALSE) ? itrans4x4 : Inv_Residual_trans_4x4);
+    //currMB->itrans_4x4 = itrans_sp;//(0/*smb*/) ? itrans_sp : ((currMB->is_lossless == FALSE) ? itrans4x4 : Inv_Residual_trans_4x4);
     for (block8x8=0; block8x8 < MB_BLOCK_SIZE; block8x8 += 4)
     { 
       for (k = block8x8; k < block8x8 + 4; ++k )
@@ -638,7 +638,7 @@ void iMBtrans4x4(Macroblock *currMB, ColorPlane pl, int smb)
         jj = ((decode_block_scan[k] >> 2) & 3) << BLOCK_SHIFT;
         ii = (decode_block_scan[k] & 3) << BLOCK_SHIFT;
 
-        currMB->itrans_4x4(currMB, pl, ii, jj);   // use integer transform and make 4x4 block mb_rres from prediction block mb_pred
+        itrans4x4(currMB, pl, ii, jj);   // use integer transform and make 4x4 block mb_rres from prediction block mb_pred
       }
     }
   }
@@ -688,7 +688,7 @@ void iMBtrans4x4(Macroblock *currMB, ColorPlane pl, int smb)
         inverse4x4(cof, mb_rres, jj, 12);
       }
     }
-    sample_reconstruct (currSlice->mb_rec[pl], currSlice->mb_pred[pl], mb_rres, 0, 0, MB_BLOCK_SIZE, MB_BLOCK_SIZE, currMB->p_Vid->max_pel_value_comp[pl], DQ_BITS);
+    sample_reconstruct16_255 (currSlice->mb_rec[pl], currSlice->mb_pred[pl], mb_rres, 0, 0);
   }
 
   // construct picture from 4x4 blocks
@@ -725,7 +725,7 @@ void iMBtrans8x8(Macroblock *currMB, ColorPlane pl)
   copy_image_data_16x16(&curr_img[currMB->pix_y], currMB->p_Slice->mb_rec[pl], currMB->pix_x, 0);
 }
 
-void iTransform(Macroblock *currMB, ColorPlane pl, int smb)
+void iTransform(Macroblock *currMB, ColorPlane pl)
 {
   Slice *currSlice = currMB->p_Slice;
   VideoParameters *p_Vid = currMB->p_Vid;
@@ -733,11 +733,11 @@ void iTransform(Macroblock *currMB, ColorPlane pl, int smb)
   imgpel **curr_img;
   int uv = pl-1; 
 
-  if ((currMB->cbp & 15) != 0 || smb)
+  if ((currMB->cbp & 15) != 0 || 0/*smb*/)
   {
     if(currMB->luma_transform_size_8x8_flag == 0) // 4x4 inverse transform
     {
-      iMBtrans4x4(currMB, pl, smb); 
+      iMBtrans4x4(currMB, pl); 
     }
     else // 8x8 inverse transform
     {  
@@ -749,7 +749,7 @@ void iTransform(Macroblock *currMB, ColorPlane pl, int smb)
     curr_img = pl ? dec_picture->imgUV[uv] : dec_picture->imgY;
     copy_image_data_16x16(&curr_img[currMB->pix_y], currSlice->mb_pred[pl], currMB->pix_x, 0);
   }
-  if(smb)
+  if(0/*smb*/)
     currSlice->is_reset_coeff = FALSE;
 
   if ((dec_picture->chroma_format_idc != YUV400) && (dec_picture->chroma_format_idc != YUV444)) 
@@ -766,7 +766,7 @@ void iTransform(Macroblock *currMB, ColorPlane pl, int smb)
       curUV = &dec_picture->imgUV[uv - 1][currMB->pix_c_y]; 
       mb_rec = currSlice->mb_rec[uv];
 
-      if (!smb && (currMB->cbp >> 4))
+      if (!0/*smb*/ && (currMB->cbp >> 4))
       {
         if (currMB->is_lossless == FALSE)
         {
@@ -782,8 +782,7 @@ void iTransform(Macroblock *currMB, ColorPlane pl, int smb)
             itrans4x4(currMB, uv, *x_pos++, *y_pos++);
             itrans4x4(currMB, uv, *x_pos  , *y_pos  );
           }
-          sample_reconstruct (mb_rec, currSlice->mb_pred[uv], currSlice->mb_rres[uv], 0, 0, 
-            p_Vid->mb_size[1][0], p_Vid->mb_size[1][1], currMB->p_Vid->max_pel_value_comp[uv], DQ_BITS);
+          sample_reconstruct8_8_255 (mb_rec, currSlice->mb_pred[uv], currSlice->mb_rres[uv], 0, 0);
         }
         else
         {
@@ -799,29 +798,28 @@ void iTransform(Macroblock *currMB, ColorPlane pl, int smb)
             itrans4x4_ls(currMB, uv, *x_pos  , *y_pos  );
           }
         }
-        copy_image_data(curUV, mb_rec, currMB->pix_c_x, 0, p_Vid->mb_size[1][0], p_Vid->mb_size[1][1]);
+        copy_image_data_8x8(curUV, mb_rec, currMB->pix_c_x, 0);
 
         currSlice->is_reset_coeff_cr = FALSE;
       }
-      else if (smb)
+      else if (0/*smb*/)
       {
-        currMB->itrans_4x4 = (currMB->is_lossless == FALSE) ? itrans4x4 : itrans4x4_ls;
         itrans_sp_cr(currMB, uv - 1);
 
         for (joff = 0; joff < p_Vid->mb_cr_size_y; joff += BLOCK_SIZE)
         {
           for(ioff = 0; ioff < p_Vid->mb_cr_size_x ;ioff += BLOCK_SIZE)
           {
-            currMB->itrans_4x4(currMB, uv, ioff, joff);
+            itrans4x4(currMB, uv, ioff, joff);
           }
         }
 
-        copy_image_data(curUV, mb_rec, currMB->pix_c_x, 0, p_Vid->mb_size[1][0], p_Vid->mb_size[1][1]);
+        copy_image_data_8x8(curUV, mb_rec, currMB->pix_c_x, 0);
         currSlice->is_reset_coeff_cr = FALSE;
       }
       else 
       {
-        copy_image_data(curUV, currSlice->mb_pred[uv], currMB->pix_c_x, 0, p_Vid->mb_size[1][0], p_Vid->mb_size[1][1]);
+        copy_image_data_8x8(curUV, currSlice->mb_pred[uv], currMB->pix_c_x, 0);
       }
     }
   }
@@ -835,8 +833,12 @@ void iTransform(Macroblock *currMB, ColorPlane pl, int smb)
  */
 void copy_image_data_16x16(imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int off2)
 {
-#if !0
+#if 0
   int j;
+
+  assert(off1 % 16 == 0);
+  assert(off2 % 16 == 0);
+
   for(j = 0; j < MB_BLOCK_SIZE; j += 4)
   { 
     memcpy((*imgBuf1++ + off1), (*imgBuf2++ + off2), MB_BLOCK_SIZE * sizeof (imgpel));
@@ -981,22 +983,4 @@ int CheckVertMV(Macroblock *currMB, int vec1_y, int block_size_y)
     return 1;
   else
     return 0;
-}
-
-
-/*!
- *************************************************************************************
- * \brief
- *    Copy ImgPel Data from one structure to another (8x8)
- *************************************************************************************
- */
-void copy_image_data(imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int off2, int width, int height)
-{
-  int j;
-  assert(width == 8 && height == 8);
-  assert(off1 % 8 == 0 && off2 % 8 == 0);
-  for(j = 0; j < height; ++j)
-  {
-    memcpy((*imgBuf1++ + off1), (*imgBuf2++ + off2), 8 * sizeof (imgpel));
-  }
 }

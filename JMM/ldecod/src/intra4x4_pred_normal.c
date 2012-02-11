@@ -369,8 +369,8 @@ static int intra4x4_diag_down_left_pred(Macroblock *currMB,    //!< current macr
   int block_available_up;
   int block_available_up_right;
 
-  p_Vid->getNeighbour(currMB, ioff    , joff - 1, p_Vid->mb_size[IS_LUMA], &pix_b);
-  p_Vid->getNeighbour(currMB, ioff + 4, joff - 1, p_Vid->mb_size[IS_LUMA], &pix_c);
+  getNonAffNeighbour(currMB, ioff    , joff - 1, p_Vid->mb_size[IS_LUMA], &pix_b);
+  getNonAffNeighbour(currMB, ioff + 4, joff - 1, p_Vid->mb_size[IS_LUMA], &pix_c);
 
   pix_c.available = pix_c.available && !((ioff==4) && ((joff==4)||(joff==12)));
 
@@ -540,8 +540,8 @@ static int intra4x4_vert_left_pred(Macroblock *currMB,    //!< current macrobloc
   int block_available_up;
   int block_available_up_right;
 
-  p_Vid->getNeighbour(currMB, ioff    , joff -1 , p_Vid->mb_size[IS_LUMA], &pix_b);
-  p_Vid->getNeighbour(currMB, ioff +4 , joff -1 , p_Vid->mb_size[IS_LUMA], &pix_c);
+  getNonAffNeighbour(currMB, ioff    , joff -1 , p_Vid->mb_size[IS_LUMA], &pix_b);
+  getNonAffNeighbour(currMB, ioff +4 , joff -1 , p_Vid->mb_size[IS_LUMA], &pix_c);
 
   pix_c.available = pix_c.available && !((ioff==4) && ((joff==4)||(joff==12)));
   

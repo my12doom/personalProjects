@@ -95,8 +95,6 @@ typedef struct
   // ffmpeg CABAC decoder
   int low;
   int range;
-  const byte *bytestream_start;
-  const byte *bytestream;
   //const byte *bytestream_end;
 
   // ffmpeg CABAC encoder (ignored)
@@ -289,10 +287,10 @@ typedef struct macroblock_dec
   Boolean       luma_transform_size_8x8_flag;
   Boolean       NoMbPartLessThan8x8Flag;
 
-  void (*itrans_4x4)(struct macroblock_dec *currMB, ColorPlane pl, int ioff, int joff);
-  void (*itrans_8x8)(struct macroblock_dec *currMB, ColorPlane pl, int ioff, int joff);
+  //void (*itrans_4x4)(struct macroblock_dec *currMB, ColorPlane pl, int ioff, int joff);
+  //void (*itrans_8x8)(struct macroblock_dec *currMB, ColorPlane pl, int ioff, int joff);
 
-  char (*readRefPictureIdx)             (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, struct datapartition_dec *dP, char b8mode, int list);
+  //char (*readRefPictureIdx)             (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, struct datapartition_dec *dP, char b8mode, int list);
 
 } Macroblock;
 
@@ -377,8 +375,8 @@ typedef struct slice
   int svc_extension_flag;
 
   // macroblock decoding
-  void (*GetMVPredictor) (struct macroblock_dec *currMB, PixelPos *block, 
-    MotionVector *pmv, short ref_frame, struct pic_motion_params **mv_info, int list, int mb_x, int mb_y, int blockshape_x, int blockshape_y);
+  //void (*GetMVPredictor) (struct macroblock_dec *currMB, PixelPos *block, 
+  //  MotionVector *pmv, short ref_frame, struct pic_motion_params **mv_info, int list, int mb_x, int mb_y, int blockshape_x, int blockshape_y);
 
 
   // dpb pointer
@@ -437,7 +435,7 @@ typedef struct slice
   int allrefzero;
   //end;
 
-  int                 mb_aff_frame_flag;
+  //int                 mb_aff_frame_flag;
   int                 direct_spatial_mv_pred_flag;       //!< Indicator for direct mode type (1 for Spatial, 0 for Temporal)
   int                 num_ref_idx_active[2];             //!< number of available list references
   //int                 num_ref_idx_l0_active;             //!< number of available list 0 references
@@ -580,10 +578,12 @@ typedef struct slice
   void (*interpret_mb_mode        )    (Macroblock *currMB);
   void (*init_lists               )    (struct slice *currSlice);
 
-  void (*intra_pred_chroma        )    (Macroblock *currMB);
-  int  (*intra_pred_4x4)               (Macroblock *currMB, ColorPlane pl, int ioff, int joff,int i4,int j4);
-  int  (*intra_pred_8x8)               (Macroblock *currMB, ColorPlane pl, int ioff, int joff);
-  int  (*intra_pred_16x16)             (Macroblock *currMB, ColorPlane pl, int predmode);
+
+  // TODO
+  //void (*intra_pred_chroma        )    (Macroblock *currMB);
+  //int  (*intra_pred_4x4)               (Macroblock *currMB, ColorPlane pl, int ioff, int joff,int i4,int j4);
+  //int  (*intra_pred_8x8)               (Macroblock *currMB, ColorPlane pl, int ioff, int joff);
+  //int  (*intra_pred_16x16)             (Macroblock *currMB, ColorPlane pl, int predmode);
 
   void (*linfo_cbp_intra          )    (int len, int info, int *cbp, int *dummy);
   void (*linfo_cbp_inter          )    (int len, int info, int *cbp, int *dummy);    
@@ -909,7 +909,7 @@ typedef struct video_par
 #endif
 
   void (*buf2img)          (imgpel** imgX, unsigned char* buf, int size_x, int size_y, int o_size_x, int o_size_y, int symbol_size_in_bytes, int bitshift);
-  void (*getNeighbour)     (Macroblock *currMB, int xN, int yN, int mb_size[2], PixelPos *pix);
+  //void (*getNeighbour)     (Macroblock *currMB, int xN, int yN, int mb_size[2], PixelPos *pix);
   void (*get_mb_block_pos) (BlockPos *PicPos, int mb_addr, short *x, short *y);
   void (*GetStrengthVer)   (Macroblock *MbQ, int edge, int mvlimit, struct storable_picture *p);
   void (*GetStrengthHor)   (Macroblock *MbQ, int edge, int mvlimit, struct storable_picture *p);

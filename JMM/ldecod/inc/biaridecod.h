@@ -174,7 +174,7 @@ extern byte ff_h264_mps_state[2*64];
 extern const byte ff_h264_norm_shift[512];
 
 void ff_init_cabac_global_tables();
-void ff_init_cabac_decoder(DecodingEnvironment *c, const byte *buf);
+void ff_init_cabac_decoder(DecodingEnvironment *c, const byte *buf, int firstbyte, int *code_len);
 //int ff_get_cabac(DecodingEnvironment *c, byte * const state)
 __forceinline int ff_get_cabac(DecodingEnvironment *c, byte * const state)
 {
@@ -206,10 +206,10 @@ __forceinline int ff_get_cabac(DecodingEnvironment *c, byte * const state)
 
 		x= -CABAC_MASK;
 
-		x+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
+		x+= (c->Dcodestrm[*c->Dcodestrm_len]<<9) + (c->Dcodestrm[*c->Dcodestrm_len+1]<<1);
 
 		c->low += x<<i;
-		c->bytestream+= CABAC_BITS/8;
+		*c->Dcodestrm_len+= CABAC_BITS/8;
 	}
 	return bit;
 }
@@ -222,9 +222,9 @@ __forceinline int ff_get_cabac_bypass(DecodingEnvironment *c)
 	if(!(c->low & CABAC_MASK))
 	{
 		//ff_refill(c);
-		c->low+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
+		c->low+= (c->Dcodestrm[*c->Dcodestrm_len]<<9) + (c->Dcodestrm[*c->Dcodestrm_len+1]<<1);
 		c->low -= CABAC_MASK;
-		c->bytestream+= CABAC_BITS/8;
+		*c->Dcodestrm_len+= CABAC_BITS/8;
 	}
 
 	range= c->range<<(CABAC_BITS+1);

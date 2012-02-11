@@ -2858,7 +2858,7 @@ void compute_colocated (Slice *currSlice, StorablePicture **listX[6])
 
   if (currSlice->direct_spatial_mv_pred_flag == 0)
   {
-    for (j = 0; j < 2 + (currSlice->mb_aff_frame_flag * 4); j += 2)
+    for (j = 0; j < 2 + (0/*MBAFF replace*/ * 4); j += 2)
     {
       for (i = 0; i < currSlice->listXsize[j];i++)
       {

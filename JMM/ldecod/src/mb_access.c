@@ -60,12 +60,12 @@ void CheckAvailabilityOfNeighbors(Macroblock *currMB)
 
   if (neighbors_init_done)
   {
-	  //memcpy(&currMB->mbAddrA, &cache[mb_nr], sizeof(NeighborStruct));
+	  memcpy(&currMB->mbAddrA, &cache[mb_nr], sizeof(NeighborStruct));
 	  
 	  //currMB->mb_left = (currMB->mbAvailA) ? &(currSlice->mb_data[currMB->mbAddrA]) : NULL;
 	  //currMB->mb_up   = (currMB->mbAvailB) ? &(currSlice->mb_data[currMB->mbAddrB]) : NULL;
 
-	  //return;
+	  return;
   }
 
   if (dec_picture->mb_aff_frame_flag)
@@ -716,7 +716,7 @@ void getAffNeighbour(Macroblock *currMB, int xN, int yN, int mb_size[2], PixelPo
  */
 void get4x4Neighbour (Macroblock *currMB, int block_x, int block_y, int mb_size[2], PixelPos *pix)
 {
-  currMB->p_Vid->getNeighbour(currMB, block_x, block_y, mb_size, pix);
+  getNonAffNeighbour(currMB, block_x, block_y, mb_size, pix);
 
   if (pix->available)
   {
@@ -745,7 +745,7 @@ void get4x4Neighbour (Macroblock *currMB, int block_x, int block_y, int mb_size[
  */
 void get4x4NeighbourBase (Macroblock *currMB, int block_x, int block_y, int mb_size[2], PixelPos *pix)
 {
-  currMB->p_Vid->getNeighbour(currMB, block_x, block_y, mb_size, pix);
+  getNonAffNeighbour(currMB, block_x, block_y, mb_size, pix);
 
   if (pix->available)
   {

@@ -426,7 +426,7 @@ static void read_ipred_modes(Macroblock *currMB)
   Slice *currSlice = currMB->p_Slice;
   StorablePicture *dec_picture = currSlice->dec_picture;
 
-  if (currSlice->mb_aff_frame_flag)
+  if (0/*MBAFF replace*/)
   {
     if (currMB->mb_type == I8MB)
       read_ipred_8x8_modes_mbaff(currMB);
@@ -783,7 +783,7 @@ void skip_macroblock(Macroblock *currMB)
   MotionVector *b_mv = NULL;
 
   get_neighbors(currMB, mb, 0, 0, MB_BLOCK_SIZE);
-  if (currSlice->mb_aff_frame_flag == 0)
+  if (0/*MBAFF replace*/ == 0)
   {
     if (mb[0].available)
     {
@@ -866,7 +866,7 @@ void skip_macroblock(Macroblock *currMB)
     PicMotionParams **dec_mv_info = &dec_picture->mv_info[img_block_y];
     PicMotionParams *mv_info = NULL;
     StorablePicture *cur_pic = currSlice->listX[list_offset][0];
-    currMB->p_Slice->GetMVPredictor (currMB, mb, &pred_mv, 0, dec_picture->mv_info, LIST_0, 0, 0, MB_BLOCK_SIZE, MB_BLOCK_SIZE);
+    GetMotionVectorPredictorNormal(currMB, mb, &pred_mv, 0, dec_picture->mv_info, LIST_0, 0, 0, MB_BLOCK_SIZE, MB_BLOCK_SIZE);
 
     // Set first block line (position img_block_y)
     for(j = 0; j < BLOCK_SIZE; ++j)
@@ -1160,7 +1160,7 @@ static void read_one_macroblock_i_slice_cavlc(Macroblock *currMB)
   currSE.mapping = linfo_ue;
 
   // read MB aff
-  if (currSlice->mb_aff_frame_flag && (mb_nr&0x01)==0)
+  if (0/*MBAFF replace*/ && (mb_nr&0x01)==0)
   {
     TRACE_STRING("mb_field_decoding_flag");
     currSE.len = 1;
@@ -1178,7 +1178,7 @@ static void read_one_macroblock_i_slice_cavlc(Macroblock *currMB)
 
   motion->mb_field[mb_nr] = (byte) currMB->mb_field;
 
-  currMB->block_y_aff = ((currSlice->mb_aff_frame_flag) && (currMB->mb_field)) ? (mb_nr&0x01) ? (currMB->block_y - 4)>>1 : currMB->block_y >> 1 : currMB->block_y;
+  currMB->block_y_aff = ((0/*MBAFF replace*/) && (currMB->mb_field)) ? (mb_nr&0x01) ? (currMB->block_y - 4)>>1 : currMB->block_y >> 1 : currMB->block_y;
 
   currSlice->siblock[currMB->mb.y][currMB->mb.x] = 0;
 
@@ -1232,7 +1232,7 @@ static void read_one_macroblock_i_slice_cabac(Macroblock *currMB)
     currSE.mapping = linfo_ue;
 
   // read MB aff
-  if (currSlice->mb_aff_frame_flag && (mb_nr&0x01)==0)
+  if (0/*MBAFF replace*/ && (mb_nr&0x01)==0)
   {
     TRACE_STRING("mb_field_decoding_flag");
     if (dP->bitstream->ei_flag)
@@ -1261,7 +1261,7 @@ static void read_one_macroblock_i_slice_cabac(Macroblock *currMB)
 
   motion->mb_field[mb_nr] = (byte) currMB->mb_field;
 
-  currMB->block_y_aff = ((currSlice->mb_aff_frame_flag) && (currMB->mb_field)) ? (mb_nr&0x01) ? (currMB->block_y - 4)>>1 : currMB->block_y >> 1 : currMB->block_y;
+  currMB->block_y_aff = ((0/*MBAFF replace*/) && (currMB->mb_field)) ? (mb_nr&0x01) ? (currMB->block_y - 4)>>1 : currMB->block_y >> 1 : currMB->block_y;
 
   currSlice->siblock[currMB->mb.y][currMB->mb.x] = 0;
 
@@ -1342,7 +1342,7 @@ static void read_one_macroblock_p_slice_cavlc(Macroblock *currMB)
   DataPartition *dP;
   const byte *partMap = assignSE2partition[currSlice->dp_mode];
 
-  if (currSlice->mb_aff_frame_flag == 0)
+  if (0/*MBAFF replace*/ == 0)
   {
     StorablePicture *dec_picture = currSlice->dec_picture;
     PicMotionParamsOld *motion = &dec_picture->motion;
@@ -1555,7 +1555,7 @@ static void read_one_macroblock_p_slice_cabac(Macroblock *currMB)
   DataPartition *dP;
   const byte *partMap = assignSE2partition[currSlice->dp_mode];
 
-  if (currSlice->mb_aff_frame_flag == 0)
+  if (0/*MBAFF replace*/ == 0)
   {
     StorablePicture *dec_picture = currSlice->dec_picture;
     PicMotionParamsOld *motion = &dec_picture->motion;
@@ -1747,7 +1747,7 @@ static void read_one_macroblock_b_slice_cavlc(Macroblock *currMB)
   SyntaxElement currSE;
   const byte *partMap = assignSE2partition[currSlice->dp_mode];
 
-  if (currSlice->mb_aff_frame_flag == 0)
+  if (0/*MBAFF replace*/ == 0)
   {
     StorablePicture *dec_picture = currSlice->dec_picture;
     PicMotionParamsOld *motion = &dec_picture->motion;
@@ -1894,7 +1894,7 @@ static void read_one_macroblock_b_slice_cavlc(Macroblock *currMB)
 
     currSlice->interpret_mb_mode(currMB);
 
-    if(currSlice->mb_aff_frame_flag)
+    if(0/*MBAFF replace*/)
     {
       if(currMB->mb_field)
       {
@@ -1974,7 +1974,7 @@ static void read_one_macroblock_b_slice_cabac(Macroblock *currMB)
   DataPartition *dP;
   const byte *partMap = assignSE2partition[currSlice->dp_mode];
 
-  if (currSlice->mb_aff_frame_flag == 0)
+  if (0/*MBAFF replace*/ == 0)
   {
     StorablePicture *dec_picture = currSlice->dec_picture;
     PicMotionParamsOld *motion = &dec_picture->motion;
