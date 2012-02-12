@@ -833,7 +833,7 @@ void iTransform(Macroblock *currMB, ColorPlane pl)
  */
 void copy_image_data_16x16(imgpel  **imgBuf1, imgpel  **imgBuf2, int off1, int off2)
 {
-#if 0
+#ifdef _M_X64
   int j;
 
   assert(off1 % 16 == 0);

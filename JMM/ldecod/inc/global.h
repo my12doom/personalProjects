@@ -534,6 +534,10 @@ typedef struct slice
   int  coeff_ctr;
   int  pos;  
 
+  // my12doom's CABAC
+  int run[64];
+  int level[64];
+
 
   //weighted prediction
   unsigned short weighted_pred_flag;

@@ -1990,7 +1990,7 @@ static const byte* pos2ctx_last    [] = {pos2ctx_last4x4, pos2ctx_last4x4, pos2c
  *    Read Significance MAP
  ************************************************************************
  */
-static int read_significance_map (Macroblock              *currMB,
+int read_significance_map (Macroblock              *currMB,
                                   DecodingEnvironmentPtr  dep_dp,
                                   int                     type,
                                   int                     coeff[])
@@ -2005,19 +2005,34 @@ static int read_significance_map (Macroblock              *currMB,
 
   int   i;
   int   coeff_ctr = 0;
-  int   i0        = 0;
   int   i1        = maxpos[type];
 
 
   if (!c1isdc[type])
   {
-    ++i0; 
-    ++i1; 
+    //++i0; 
+    //++i1; 
+	  pos2ctx_Map ++;
+	  pos2ctx_Last++;
   }
 
-  for (i=i0; i < i1; ++i) // if last coeff is reached, it has to be significant
+  memset(coeff, 0, (i1 + 1) * sizeof(int));
+
+
+  for (i=0; i < i1; ++i) // if last coeff is reached, it has to be significant
   {
     //--- read significance symbol ---
+    
+    coeff[i] = biari_decode_symbol   (dep_dp, map_ctx + pos2ctx_Map[i]);
+	coeff_ctr += coeff[i];
+
+	if (coeff[i])
+		if (biari_decode_symbol (dep_dp, last_ctx + pos2ctx_Last[i]))
+			return coeff_ctr;
+
+	//coeff++;
+
+	/*
     if (biari_decode_symbol   (dep_dp, map_ctx + pos2ctx_Map[i]))
     {
       *(coeff++) = 1;
@@ -2025,7 +2040,7 @@ static int read_significance_map (Macroblock              *currMB,
       //--- read last coefficient symbol ---
       if (biari_decode_symbol (dep_dp, last_ctx + pos2ctx_Last[i]))
       {
-        memset(coeff, 0, (i1 - i) * sizeof(int));
+        //memset(coeff, 0, (i1 - i) * sizeof(int));
         return coeff_ctr;
       }
     }
@@ -2033,15 +2048,11 @@ static int read_significance_map (Macroblock              *currMB,
     {
       *(coeff++) = 0;
     }
+	*/
   }
   //--- last coefficient must be significant if no last symbol was received ---
-  //if (i < i1 + 1)
-  {
-    *coeff = 1;
-    ++coeff_ctr;
-  }
-
-  return coeff_ctr;
+  coeff[i] = 1;
+  return coeff_ctr+1;
 }
 
 
@@ -2052,7 +2063,8 @@ static int read_significance_map (Macroblock              *currMB,
  *    Read Levels
  ************************************************************************
  */
-static void read_significant_coefficients (DecodingEnvironmentPtr  dep_dp,
+int c1tbl[5] = {0, 2, 3, 4, 4};
+void read_significant_coefficients (DecodingEnvironmentPtr  dep_dp,
                                            TextureInfoContexts    *tex_ctx,
                                            int                     type,
                                            int                    *coeff)
@@ -2077,10 +2089,15 @@ static void read_significant_coefficients (DecodingEnvironmentPtr  dep_dp,
         c2 = imin (++c2, max_type);
         c1 = 0;
       }
-      else if (c1)
+	  else
+		  c1 = c1tbl[c1];
+
+	  /*
+      if (c1)
       {
         c1 = imin (++c1, 4);
       }
+	  */
 
       if (biari_decode_symbol_eq_prob(dep_dp))
       {
@@ -2092,6 +2109,78 @@ static void read_significant_coefficients (DecodingEnvironmentPtr  dep_dp,
 }
 
 
+void readRunLevel_my12doom(Macroblock              *currMB,
+                                  DecodingEnvironmentPtr  dep_dp,
+								  TextureInfoContexts    *tex_ctx,
+                                  int                     type)
+{
+  Slice *currSlice = currMB->p_Slice;
+  int               fld    = ( currSlice->structure!=FRAME || currMB->mb_field );
+  const byte *pos2ctx_Map = (fld) ? pos2ctx_map_int[type] : pos2ctx_map[type];
+  const byte *pos2ctx_Last = pos2ctx_last[type];
+
+  BiContextTypePtr  map_ctx  = currSlice->tex_ctx->map_contexts [fld][type2ctx_map [type]];
+  BiContextTypePtr  last_ctx = currSlice->tex_ctx->last_contexts[fld][type2ctx_last[type]];
+  BiContextType *one_contexts = tex_ctx->one_contexts[type2ctx_one[type]];
+  BiContextType *abs_contexts = tex_ctx->abs_contexts[type2ctx_abs[type]];
+
+  const short max_type = max_c2[type];
+  int   i;
+  int   coeff_ctr = 0;
+  int   i1        = maxpos[type];
+  int   *prun = currSlice->run;
+  int   *plevel = currSlice->level;
+  int   c1 = 1;
+  int   c2 = 0;
+
+  if (!c1isdc[type])
+  {
+	  pos2ctx_Map ++;
+	  pos2ctx_Last++;
+  }
+
+  prun[0] = 0;
+  for (i=0; i < i1; ++i) // if last coeff is reached, it has to be significant
+  {
+    //--- read significance symbol ---    
+	if (biari_decode_symbol   (dep_dp, map_ctx + pos2ctx_Map[i]))
+	{
+		prun[++coeff_ctr] = 0;
+		if (biari_decode_symbol (dep_dp, last_ctx + pos2ctx_Last[i]))
+			goto coeff_ctr_OK;
+	}
+	else
+		prun[coeff_ctr]++;
+  }
+
+  //--- last coefficient must be significant if no last symbol was received ---
+  coeff_ctr++;
+
+coeff_ctr_OK:
+
+  for (i= coeff_ctr-1; i>=0; --i)
+  {
+	  plevel[i] = 1;
+
+      plevel[i] += biari_decode_symbol (dep_dp, one_contexts + c1);
+
+      if (plevel[i] == 2)
+      {        
+        plevel[i] += unary_exp_golomb_level_decode (dep_dp, abs_contexts + c2);
+        c2 = imin (++c2, max_type);
+        c1 = 0;
+      }
+	  else
+		  c1 = c1tbl[c1];
+
+      if (biari_decode_symbol_eq_prob(dep_dp))
+        plevel[i] = - plevel[i];
+  }
+  
+  currSlice->coeff_ctr = coeff_ctr;
+  currSlice->pos = 0;
+  return;
+}
 /*!
  ************************************************************************
  * \brief
@@ -2106,6 +2195,25 @@ void readRunLevel_CABAC (Macroblock *currMB,
   int  *coeff_ctr = &currSlice->coeff_ctr;
   int  *coeff = currSlice->coeff;
 
+#if 1
+  // read next block
+  if (currSlice->pos > currSlice->coeff_ctr)
+  {
+	if ((*coeff_ctr = currSlice->read_and_store_CBP_block_bit (currMB, dep_dp, se->context) ) != 0)
+	  readRunLevel_my12doom(currMB, dep_dp, currSlice->tex_ctx, se->context);
+  }
+
+  // EOB
+  if (currSlice->pos >= currSlice->coeff_ctr)
+	  se->value1 = se->value2 = 0;
+  else
+  {
+	se->value1 = currSlice->level[currSlice->pos];
+	se->value2 = currSlice->run[currSlice->pos];
+  }
+  currSlice->pos++;
+
+#else
   //--- read coefficients for whole block ---
   if (*coeff_ctr < 0)
   {
@@ -2135,7 +2243,8 @@ void readRunLevel_CABAC (Macroblock *currMB,
   //--- decrement coefficient counter and re-set position ---
   if ((*coeff_ctr)-- == 0) 
     currSlice->pos = 0;
-
+#endif
+  //printf("CABAC RunLevel:%d, %d.\n", se->value1, se->value2);
 #if TRACE
   fprintf(p_Dec->p_trace, "@%-6d %-53s %3d  %3d\n",symbolCount++, se->tracestring, se->value1,se->value2);
   fflush(p_Dec->p_trace);
