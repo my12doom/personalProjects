@@ -595,9 +595,9 @@ typedef struct slice
   void (*read_coeff_4x4_CAVLC     )    (Macroblock *currMB, int block_type, int i, int j, int levarr[16], int runarr[16], int *number_coefficients);
 
   // these 5: from macroblock to slice
-  int  (*read_and_store_CBP_block_bit)  (struct macroblock_dec *currMB, DecodingEnvironmentPtr  dep_dp, int type);
-  void (*read_comp_coeff_4x4_CABAC)     (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, ColorPlane pl, int (*InvLevelScale4x4)[4], int qp_per, int cbp);
-  void (*read_comp_coeff_8x8_CABAC)     (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, ColorPlane pl);
+  //int  (*read_and_store_CBP_block_bit)  (struct macroblock_dec *currMB, DecodingEnvironmentPtr  dep_dp, int type);
+  //void (*read_comp_coeff_4x4_CABAC)     (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, ColorPlane pl, int (*InvLevelScale4x4)[4], int qp_per, int cbp);
+  //void (*read_comp_coeff_8x8_CABAC)     (struct macroblock_dec *currMB, struct syntaxelement_dec *currSE, ColorPlane pl);
 
   void (*read_comp_coeff_4x4_CAVLC)     (struct macroblock_dec *currMB, ColorPlane pl, int (*InvLevelScale4x4)[4], int qp_per, int cbp, byte **nzcoeff);
   void (*read_comp_coeff_8x8_CAVLC)     (struct macroblock_dec *currMB, ColorPlane pl, int (*InvLevelScale8x8)[8], int qp_per, int cbp, byte **nzcoeff);

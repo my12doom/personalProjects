@@ -142,7 +142,7 @@ static int predict_nnz_chroma(Macroblock *currMB, int i,int j)
 {
   StorablePicture *dec_picture = currMB->p_Slice->dec_picture;
 
-  if (dec_picture->chroma_format_idc != YUV444)
+  if (1)
   {
     VideoParameters *p_Vid = currMB->p_Vid;    
     Slice *currSlice = currMB->p_Slice;
@@ -2137,16 +2137,6 @@ void set_read_CBP_and_coeffs_cavlc(Slice *currSlice)
 {
   switch (currSlice->p_Vid->active_sps->chroma_format_idc)
   {
-  case YUV444:
-    if (currSlice->p_Vid->separate_colour_plane_flag == 0)
-    {
-      currSlice->read_CBP_and_coeffs_from_NAL = read_CBP_and_coeffs_from_NAL_CAVLC_444;
-    }
-    else
-    {
-      currSlice->read_CBP_and_coeffs_from_NAL = read_CBP_and_coeffs_from_NAL_CAVLC_400;
-    }
-    break;
   case YUV422:
     currSlice->read_CBP_and_coeffs_from_NAL = read_CBP_and_coeffs_from_NAL_CAVLC_422;
     break;

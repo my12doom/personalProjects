@@ -2802,7 +2802,7 @@ static void perform_mc_single_wp(Macroblock *currMB, ColorPlane pl, StorablePict
     weighted_mc_prediction(&currSlice->mb_pred[pl][joff], tmp_block_l0, block_size_y, block_size_x, ioff, alpha_l0, wp_offset, wp_denom, max_imgpel_value);
   }
 
-  if ((chroma_format_idc != YUV400) && (chroma_format_idc != YUV444) ) 
+  if ((chroma_format_idc != YUV400)) 
   {
     int ioff_cr,joff_cr,block_size_x_cr,block_size_y_cr;
     int vec1_y_cr = vec1_y + ((active_sps->chroma_format_idc == 1)? currSlice->chroma_vector_adjustment[list_offset + pred_dir][ref_idx] : 0);
@@ -2892,7 +2892,7 @@ static void perform_mc_single(Macroblock *currMB, ColorPlane pl, StorablePicture
 
   mc_prediction(&currSlice->mb_pred[pl][joff], tmp_block_l0, block_size_y, block_size_x, ioff); 
 
-  if ((chroma_format_idc != YUV400) && (chroma_format_idc != YUV444) ) 
+  if ((chroma_format_idc != YUV400) ) 
   {
     int ioff_cr,joff_cr,block_size_x_cr,block_size_y_cr;
     int vec1_y_cr = vec1_y + ((active_sps->chroma_format_idc == 1)? currSlice->chroma_vector_adjustment[list_offset + pred_dir][ref_idx] : 0);
@@ -3008,7 +3008,7 @@ static void perform_mc_bi_wp(Macroblock *currMB, ColorPlane pl, StorablePicture 
   wp_denom  = pl > 0 ? currSlice->chroma_log2_weight_denom : currSlice->luma_log2_weight_denom;
   weighted_bi_prediction(&currSlice->mb_pred[pl][joff][ioff], block0, block1, block_size_y, block_size_x, weight0[pl], weight1[pl], wp_offset, wp_denom + 1, max_imgpel_value);
 
-  if ((chroma_format_idc != YUV400) && (chroma_format_idc != YUV444) ) 
+  if ((chroma_format_idc != YUV400)) 
   {
     int ioff_cr, joff_cr,block_size_y_cr,block_size_x_cr,vec2_y_cr,vec1_y_cr;    
     int maxold_x = dec_picture->size_x_cr_m1;
@@ -3125,7 +3125,7 @@ static void perform_mc_bi(Macroblock *currMB, ColorPlane pl, StorablePicture *de
     get_block_luma(list1, vec2_x, vec2_y, block_size_x, block_size_y, tmp_block_l1,shift_x,maxold_x,maxold_y,tmp_res,max_imgpel_value,no_ref_value, currMB);
   bi_prediction(&currSlice->mb_pred[pl][joff],tmp_block_l0,tmp_block_l1, block_size_y, block_size_x, ioff); 
 
-  if ((chroma_format_idc != YUV400) && (chroma_format_idc != YUV444) ) 
+  if ((chroma_format_idc != YUV400)) 
   {
     int ioff_cr, joff_cr,block_size_y_cr,block_size_x_cr,vec2_y_cr,vec1_y_cr;    
     int chroma_format_idc = p_Vid->active_sps->chroma_format_idc;

@@ -1244,7 +1244,7 @@ void read_CBP_CABAC(Macroblock *currMB,
     }
   }
 
-  if ((dec_picture->chroma_format_idc != YUV400) && (dec_picture->chroma_format_idc != YUV444)) 
+  if ((dec_picture->chroma_format_idc != YUV400)) 
   {
     // coding of chroma part
     // CABAC decoding for BinIdx 0
@@ -1407,7 +1407,7 @@ static int read_and_store_CBP_block_bit_444 (Macroblock              *currMB,
     get4x4Neighbour(currMB, i    , j - 1, p_Vid->mb_size[IS_CHROMA], &block_b);
   }
   
-  if (dec_picture->chroma_format_idc!=YUV444)
+  if (1)
   {
     if (type!=LUMA_8x8)
     {
@@ -1528,7 +1528,7 @@ static int read_and_store_CBP_block_bit_444 (Macroblock              *currMB,
     {      
       s_cbp[0].bits |= ((int64) 0x33 << bit   );
       
-      if (dec_picture->chroma_format_idc==YUV444)
+      if (0)
       {
         s_cbp[0].bits_8x8   |= ((int64) 0x33 << bit   );
       }
@@ -1909,24 +1909,6 @@ static int read_and_store_CBP_block_bit_normal (Macroblock              *currMB,
 }
 
 
-void set_read_and_store_CBP(Macroblock **currMB, int chroma_format_idc)
-{
-/*
-  if (chroma_format_idc == YUV444)
-    (*currMB)->read_and_store_CBP_block_bit = read_and_store_CBP_block_bit_444;
-  else
-    (*currMB)->read_and_store_CBP_block_bit = read_and_store_CBP_block_bit_normal; 
-*/
-}
-
-void set_slice_read_and_store_CBP(Slice *currSlice, int chroma_format_idc)
-{
-	if (currSlice->active_sps->chroma_format_idc == YUV444)
-		currSlice->read_and_store_CBP_block_bit = read_and_store_CBP_block_bit_444;
-	else
-		currSlice->read_and_store_CBP_block_bit = read_and_store_CBP_block_bit_normal;
-}
-
 //===== position -> ctx for MAP =====
 //--- zig-zag scan ----
 static const byte  pos2ctx_map8x8 [] = { 0,  1,  2,  3,  4,  5,  5,  4,  4,  3,  3,  4,  4,  4,  5,  5,
@@ -2162,11 +2144,9 @@ coeff_ctr_OK:
   {
 	  plevel[i] = 1;
 
-      plevel[i] += biari_decode_symbol (dep_dp, one_contexts + c1);
-
-      if (plevel[i] == 2)
+      if (biari_decode_symbol (dep_dp, one_contexts + c1))
       {        
-        plevel[i] += unary_exp_golomb_level_decode (dep_dp, abs_contexts + c2);
+		plevel[i] += 1 + unary_exp_golomb_level_decode (dep_dp, abs_contexts + c2);
         c2 = imin (++c2, max_type);
         c1 = 0;
       }
@@ -2199,8 +2179,13 @@ void readRunLevel_CABAC (Macroblock *currMB,
   // read next block
   if (currSlice->pos > currSlice->coeff_ctr)
   {
-	if ((*coeff_ctr = currSlice->read_and_store_CBP_block_bit (currMB, dep_dp, se->context) ) != 0)
+	if (read_and_store_CBP_block_bit_normal(currMB, dep_dp, se->context))
 	  readRunLevel_my12doom(currMB, dep_dp, currSlice->tex_ctx, se->context);
+	else
+	{
+		se->value1 = se->value2 = 0;
+		return;
+	}
   }
 
   // EOB
@@ -2218,7 +2203,7 @@ void readRunLevel_CABAC (Macroblock *currMB,
   if (*coeff_ctr < 0)
   {
     //===== decode CBP-BIT =====
-    if ((*coeff_ctr = currSlice->read_and_store_CBP_block_bit (currMB, dep_dp, se->context) ) != 0)
+    if ((*coeff_ctr = read_and_store_CBP_block_bit_normal (currMB, dep_dp, se->context) ) != 0)
     {
       //===== decode significance map =====
       *coeff_ctr = read_significance_map (currMB, dep_dp, se->context, coeff);

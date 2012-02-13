@@ -915,7 +915,7 @@ void get_db_strength_mbaff(VideoParameters *p_Vid, StorablePicture *p, int MbQAd
       // If cbp == 0 then deblocking for some macroblock types could be skipped
       if (MbQ->cbp == 0)
       {
-        if (filterNon8x8LumaEdgesFlag[edge] == 0 && active_sps->chroma_format_idc != YUV444)
+        if (filterNon8x8LumaEdgesFlag[edge] == 0)
           continue;
         else if (edge > 0)
         {
@@ -1025,7 +1025,7 @@ void perform_db_mbaff(VideoParameters *p_Vid, StorablePicture *p, int MbQAddr)
       // If cbp == 0 then deblocking for some macroblock types could be skipped
       if (MbQ->cbp == 0)
       {
-        if (filterNon8x8LumaEdgesFlag[edge] == 0 && active_sps->chroma_format_idc != YUV444)
+        if (filterNon8x8LumaEdgesFlag[edge] == 0)
           continue;
         else if (edge > 0 && (currSlice->slice_type == P_SLICE || currSlice->slice_type == B_SLICE))
         {

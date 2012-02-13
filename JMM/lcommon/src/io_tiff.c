@@ -1115,8 +1115,6 @@ int ReadTIFFImage (InputParameters *p_Inp, VideoDataFile *input_file, int FrameN
       }
       img = yp;                       // img points at result
       break;
-    case YUV444:
-      break;
     default:
       fprintf( stderr, "ReadTIFFImage:  Unsupported ColorFormat (%d)\n", source->yuv_format);
       goto Error;

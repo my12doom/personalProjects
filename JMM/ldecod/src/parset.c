@@ -135,8 +135,9 @@ int InterpretSPS (VideoParameters *p_Vid, DataPartition *p, seq_parameter_set_rb
   {
     sps->chroma_format_idc                      = read_ue_v ("SPS: chroma_format_idc"                       , s, &p_Dec->UsedBits);
 
-    if(sps->chroma_format_idc == YUV444)
+    if(sps->chroma_format_idc == 3)
     {
+		error("YUV 4:4:4 not supported.\n", -3);
       sps->separate_colour_plane_flag           = read_u_1  ("SPS: separate_colour_plane_flag"              , s, &p_Dec->UsedBits);
     }
 
@@ -152,7 +153,7 @@ int InterpretSPS (VideoParameters *p_Vid, DataPartition *p, seq_parameter_set_rb
     
     if(sps->seq_scaling_matrix_present_flag)
     {
-      n_ScalingList = (sps->chroma_format_idc != YUV444) ? 8 : 12;
+      n_ScalingList = (1) ? 8 : 12;
       for(i=0; i<n_ScalingList; i++)
       {
         sps->seq_scaling_list_present_flag[i]   = read_u_1  (   "SPS: seq_scaling_list_present_flag"         , s, &p_Dec->UsedBits);
@@ -481,7 +482,7 @@ int InterpretPPS (VideoParameters *p_Vid, DataPartition *p, pic_parameter_set_rb
     if(pps->pic_scaling_matrix_present_flag)
     {
       chroma_format_idc = p_Vid->SeqParSet[pps->seq_parameter_set_id].chroma_format_idc;
-      n_ScalingList = 6 + ((chroma_format_idc != YUV444) ? 2 : 6) * pps->transform_8x8_mode_flag;
+      n_ScalingList = 6 + ((1) ? 2 : 6) * pps->transform_8x8_mode_flag;
       for(i=0; i<n_ScalingList; i++)
       {
         pps->pic_scaling_list_present_flag[i]= read_u_1  ("PPS: pic_scaling_list_present_flag"          , s, &p_Dec->UsedBits);
@@ -932,7 +933,7 @@ static void set_coding_par(seq_parameter_set_rbsp_t *sps, CodingParameters *cps)
     cps->height_cr = cps->height;
     cps->iChromaPadY = MCBUF_CHROMA_PAD_Y*2;
   }
-  else if (sps->chroma_format_idc == YUV444)
+  else if (0)
   {
     //YUV444
     cps->width_cr = cps->width;
@@ -963,7 +964,7 @@ static void set_coding_par(seq_parameter_set_rbsp_t *sps, CodingParameters *cps)
     cps->num_uv_blocks = (cps->num_blk8x8_uv >> 1);
     cps->num_cdc_coeff = (cps->num_blk8x8_uv << 1);
     cps->mb_size[1][0] = cps->mb_size[2][0] = cps->mb_cr_size_x  = (sps->chroma_format_idc==YUV420 || sps->chroma_format_idc==YUV422)?  8 : 16;
-    cps->mb_size[1][1] = cps->mb_size[2][1] = cps->mb_cr_size_y  = (sps->chroma_format_idc==YUV444 || sps->chroma_format_idc==YUV422)? 16 :  8;
+    cps->mb_size[1][1] = cps->mb_size[2][1] = cps->mb_cr_size_y  = (sps->chroma_format_idc==YUV422)? 16 :  8;
 
     cps->subpel_x    = cps->mb_cr_size_x == 8 ? 7 : 3;
     cps->subpel_y    = cps->mb_cr_size_y == 8 ? 7 : 3;

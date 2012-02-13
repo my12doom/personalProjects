@@ -441,7 +441,7 @@ static void read_ipred_modes(Macroblock *currMB)
     read_ipred_4x4_modes(currMB);
   }
 
-  if ((dec_picture->chroma_format_idc != YUV400) && (dec_picture->chroma_format_idc != YUV444))
+  if ((dec_picture->chroma_format_idc != YUV400))
   {
     SyntaxElement currSE;
     DataPartition *dP;

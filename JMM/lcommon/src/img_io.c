@@ -302,7 +302,6 @@ VideoFileType ParseVideoType (VideoDataFile *input_file)
   else if (strcasecmp (format, "rgb") == 0)
   {
     input_file->vdtype = VIDEO_RGB;
-    input_file->format.yuv_format = YUV444;
     input_file->avi = NULL;
   }
   else if (strcasecmp (format, "tif") == 0)

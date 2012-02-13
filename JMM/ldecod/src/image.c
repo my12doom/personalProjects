@@ -1690,7 +1690,7 @@ process_nalu:
       currSlice->active_sps = p_Vid->active_sps;
       currSlice->active_pps = p_Vid->active_pps;
       currSlice->Transform8x8Mode = p_Vid->active_pps->transform_8x8_mode_flag;
-      currSlice->chroma444_not_separate = (p_Vid->active_sps->chroma_format_idc==YUV444)&&((p_Vid->separate_colour_plane_flag == 0));
+      currSlice->chroma444_not_separate = 0 &&((p_Vid->separate_colour_plane_flag == 0));
 
       BitsUsedByHeader += RestOfSliceHeader (currSlice);
 #if (MVC_EXTENSION_ENABLE)
@@ -1771,7 +1771,7 @@ process_nalu:
       currSlice->active_sps = p_Vid->active_sps;
       currSlice->active_pps = p_Vid->active_pps;
       currSlice->Transform8x8Mode = p_Vid->active_pps->transform_8x8_mode_flag;
-      currSlice->chroma444_not_separate = (p_Vid->active_sps->chroma_format_idc==YUV444)&&((p_Vid->separate_colour_plane_flag == 0));
+      currSlice->chroma444_not_separate = 0 &&((p_Vid->separate_colour_plane_flag == 0));
 
       BitsUsedByHeader += RestOfSliceHeader (currSlice);
       currSlice->p_Dpb = p_Vid->p_Dpb_layer[currSlice->view_id];
@@ -2066,7 +2066,7 @@ void exit_picture(VideoParameters *p_Vid, StorablePicture **dec_picture)
   char   yuvFormat[10];
 
   // return if the last picture has already been finished
-  if (*dec_picture==NULL || (p_Vid->num_dec_mb != p_Vid->PicSizeInMbs && (p_Vid->yuv_format != YUV444 || !p_Vid->separate_colour_plane_flag)))
+  if (*dec_picture==NULL || (p_Vid->num_dec_mb != p_Vid->PicSizeInMbs && (!p_Vid->separate_colour_plane_flag)))
   {
     return;
   }
@@ -2725,8 +2725,6 @@ void decode_one_slice(Slice *currSlice)
   //reset_ec_flags(p_Vid);
 }
 
-extern void set_slice_read_and_store_CBP(Slice *currSlice);
-extern void set_slice_read_comp_coeff_cabac(Slice *currSlice);
 extern void set_slice_read_comp_coeff_cavlc(Slice *currSlice);
 
 
@@ -2739,8 +2737,6 @@ void decode_slice_step(Slice *currSlice, int current_header)
 	if (!currSlice->decoding_done && (currSlice->num_dec_mb + currSlice->erc_mvperMB == 0))
 	{
 		// function pointers moved from macroblock level
-		set_slice_read_and_store_CBP(currSlice);
-		set_slice_read_comp_coeff_cabac(currSlice);
 		set_slice_read_comp_coeff_cavlc(currSlice);
 
 

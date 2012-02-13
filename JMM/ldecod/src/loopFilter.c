@@ -160,7 +160,7 @@ static void init_neighbors(VideoParameters *p_Vid)
 
 void  init_Deblock(VideoParameters *p_Vid, int mb_aff_frame_flag)
 {
-  if(p_Vid->yuv_format == YUV444 && p_Vid->separate_colour_plane_flag)
+  if(0 && p_Vid->separate_colour_plane_flag)
   {
     change_plane_JV(p_Vid, PLANE_Y, NULL);
     init_neighbors(p_Dec->p_Vid);
@@ -250,7 +250,7 @@ static void DeblockMb(VideoParameters *p_Vid, StorablePicture *p, int MbQAddr)
       // If cbp == 0 then deblocking for some macroblock types could be skipped
       if (MbQ->cbp == 0 && (currSlice->slice_type == P_SLICE || currSlice->slice_type == B_SLICE))
       {
-        if (filterNon8x8LumaEdgesFlag[edge] == 0 && active_sps->chroma_format_idc != YUV444)
+        if (filterNon8x8LumaEdgesFlag[edge] == 0)
           continue;
         else if (edge > 0)
         {
@@ -434,7 +434,7 @@ static void get_db_strength(VideoParameters *p_Vid, StorablePicture *p, int MbQA
       // If cbp == 0 then deblocking for some macroblock types could be skipped
       if (MbQ->cbp == 0 && (currSlice->slice_type == P_SLICE || currSlice->slice_type == B_SLICE))
       {
-        if (filterNon8x8LumaEdgesFlag[edge] == 0 && active_sps->chroma_format_idc != YUV444)
+        if (filterNon8x8LumaEdgesFlag[edge] == 0)
           continue;
         else if (edge > 0)
         {
@@ -539,7 +539,7 @@ static void perform_db(VideoParameters *p_Vid, StorablePicture *p, int MbQAddr)
       // If cbp == 0 then deblocking for some macroblock types could be skipped
       if (MbQ->cbp == 0 && (currSlice->slice_type == P_SLICE || currSlice->slice_type == B_SLICE))
       {
-        if (filterNon8x8LumaEdgesFlag[edge] == 0 && active_sps->chroma_format_idc != YUV444)
+        if (filterNon8x8LumaEdgesFlag[edge] == 0)
           continue;
         else if (edge > 0)
         {

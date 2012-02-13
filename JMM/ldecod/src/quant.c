@@ -148,7 +148,7 @@ void assign_quant_params(Slice *currSlice)
   }
   else
   {
-    n_ScalingList = (sps->chroma_format_idc != YUV444) ? 8 : 12;
+    n_ScalingList = (1) ? 8 : 12;
     if(sps->seq_scaling_matrix_present_flag) // check sps first
     {
       for(i=0; i<n_ScalingList; i++)

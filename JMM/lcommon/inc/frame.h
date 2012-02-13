@@ -24,7 +24,7 @@ typedef enum {
   YUV400     =  0,     //!< Monochrome
   YUV420     =  1,     //!< 4:2:0
   YUV422     =  2,     //!< 4:2:2
-  YUV444     =  3      //!< 4:4:4
+  //YUV444     =  3      //!< 4:4:4
 } ColorFormat;
 
 typedef enum {

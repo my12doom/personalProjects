@@ -454,7 +454,7 @@ void init_frext(VideoParameters *p_Vid)  //!< video parameters
     p_Vid->num_uv_blocks = (p_Vid->num_blk8x8_uv >> 1);
     p_Vid->num_cdc_coeff = (p_Vid->num_blk8x8_uv << 1);
     p_Vid->mb_size[1][0] = p_Vid->mb_size[2][0] = p_Vid->mb_cr_size_x  = (p_Vid->active_sps->chroma_format_idc==YUV420 || p_Vid->active_sps->chroma_format_idc==YUV422)?  8 : 16;
-    p_Vid->mb_size[1][1] = p_Vid->mb_size[2][1] = p_Vid->mb_cr_size_y  = (p_Vid->active_sps->chroma_format_idc==YUV444 || p_Vid->active_sps->chroma_format_idc==YUV422)? 16 :  8;
+    p_Vid->mb_size[1][1] = p_Vid->mb_size[2][1] = p_Vid->mb_cr_size_y  = (p_Vid->active_sps->chroma_format_idc==YUV422)? 16 :  8;
 
     p_Vid->subpel_x    = p_Vid->mb_cr_size_x == 8 ? 7 : 3;
     p_Vid->subpel_y    = p_Vid->mb_cr_size_y == 8 ? 7 : 3;
@@ -1531,14 +1531,6 @@ void set_global_coding_par(VideoParameters *p_Vid, CodingParameters *cps)
       p_Vid->width_cr  = (p_Vid->width >> 1);
       p_Vid->height_cr = p_Vid->height;
       p_Vid->iChromaPadY = MCBUF_CHROMA_PAD_Y*2;
-    }
-    else if (p_Vid->yuv_format == YUV444)
-    {
-      //YUV444
-      p_Vid->width_cr = p_Vid->width;
-      p_Vid->height_cr = p_Vid->height;
-      p_Vid->iChromaPadX = p_Vid->iLumaPadX;
-      p_Vid->iChromaPadY = p_Vid->iLumaPadY;
     }
 
     init_frext(p_Vid);

@@ -125,10 +125,7 @@ static int WriteOneFrame(DecodedPicList *pDecPic, int hFileOutput0, int hFileOut
     iWidth = pPic->iWidth*((pPic->iBitDepth+7)>>3);
     iHeight = pPic->iHeight;
     iStride = pPic->iYBufStride;
-    if(pPic->iYUVFormat != YUV444)
-      iWidthUV = pPic->iWidth>>1;
-    else
-      iWidthUV = pPic->iWidth;
+    iWidthUV = pPic->iWidth>>1;
     if(pPic->iYUVFormat == YUV420)
       iHeightUV = pPic->iHeight>>1;
     else

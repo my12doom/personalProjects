@@ -1334,7 +1334,7 @@ void setup_slice_methods(Slice *currSlice)
     break;
   }
 
-  if ( currSlice->p_Vid->active_sps->chroma_format_idc==YUV444 && (currSlice->p_Vid->separate_colour_plane_flag == 0) )
+  if ( 0 && (currSlice->p_Vid->separate_colour_plane_flag == 0) )
     currSlice->read_coeff_4x4_CAVLC = read_coeff_4x4_CAVLC_444;
   else
     currSlice->read_coeff_4x4_CAVLC = read_coeff_4x4_CAVLC;

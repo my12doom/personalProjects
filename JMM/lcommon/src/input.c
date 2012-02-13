@@ -411,8 +411,6 @@ static void deinterleave ( unsigned char** input,       //!< input buffer
       exit(EXIT_FAILURE);
     }
   }
-  else if (source->yuv_format == YUV444)  
-    deinterleave_yuv444(input, output, source, symbol_size_in_bytes);
 }
 
 /*!
@@ -799,7 +797,7 @@ int read_one_frame (VideoParameters *p_Vid, VideoDataFile *input_file, int Frame
   const int bytes_uv = source->size_cmp[1] * symbol_size_in_bytes;
   int bit_scale;  
 
-  Boolean rgb_input = (Boolean) (source->color_model == CM_RGB && source->yuv_format == YUV444);
+  Boolean rgb_input = 0;
 
   if (input_file->is_concatenated == 0)
   {    

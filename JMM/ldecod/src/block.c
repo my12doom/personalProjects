@@ -752,7 +752,7 @@ void iTransform(Macroblock *currMB, ColorPlane pl)
   if(0/*smb*/)
     currSlice->is_reset_coeff = FALSE;
 
-  if ((dec_picture->chroma_format_idc != YUV400) && (dec_picture->chroma_format_idc != YUV444)) 
+  if ((dec_picture->chroma_format_idc != YUV400)) 
   {
     imgpel **curUV;
     int b8;
