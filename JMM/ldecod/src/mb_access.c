@@ -38,7 +38,21 @@ Boolean mb_is_available(int mbAddr, Macroblock *currMB)
   return TRUE;
 }
 
+Boolean mb_is_available2(int mbAddr, Macroblock *currMB, int PicSizeInMbs)
+{
+	Slice *currSlice = currMB->p_Slice;
+	if ((mbAddr < 0) || (mbAddr > (PicSizeInMbs - 1)))
+		return FALSE;
 
+	// the following line checks both: slice number and if the mb has been decoded
+	if (!currMB->DeblockCall)
+	{
+		if (currSlice->mb_data[mbAddr].slice_nr != currMB->slice_nr)
+			return FALSE;
+	}
+
+	return TRUE;
+}
 /*!
  ************************************************************************
  * \brief
@@ -47,18 +61,154 @@ Boolean mb_is_available(int mbAddr, Macroblock *currMB)
  ************************************************************************
  */
 
-#define max_mb_nr 8192			// level 4.1
 NeighborStruct cache[max_mb_nr];
+PixelPos cache_xy[3][3][max_mb_nr];
 int neighbors_init_done = 0;
 
+void init_mb_neighbors(Slice **Slices, int slice_count)
+{
+	int iSlice, iMB, x, y;
+	VideoParameters *p_Vid = Slices[0]->p_Vid;
+	BlockPos *PicPos = p_Vid->PicPos;
+	int PicWidthInMbs = p_Vid->PicWidthInMbs;
+	int PicSizeInMbs = p_Vid->PicSizeInMbs;
+
+	if (neighbors_init_done)
+		return;
+
+	// neighbor init
+	for(iSlice = 0; iSlice<slice_count; ++iSlice)
+	{
+		Slice *currSlice = Slices[iSlice];
+
+		if( (p_Vid->separate_colour_plane_flag != 0) )
+		{
+			change_plane_JV( p_Vid, currSlice->colour_plane_id, currSlice );
+		}
+		else
+		{
+			currSlice->mb_data = p_Vid->mb_data;
+			currSlice->dec_picture = p_Vid->dec_picture;
+			currSlice->siblock = p_Vid->siblock;
+			currSlice->ipredmode = p_Vid->ipredmode;
+			currSlice->intra_block = p_Vid->intra_block;
+		}
+
+		for(iMB = currSlice->start_mb_nr; iMB<currSlice->end_mb_nr_plus1; ++iMB)
+		{
+			// copied from CheckAvailabilityOfNeighbors()
+			Macroblock *currMB = &currSlice->mb_data[iMB];
+			BlockPos *p_pic_pos = &PicPos[iMB];
+
+			currMB->slice_nr = iSlice;
+			currMB->p_Slice = currSlice;
+			currMB->mbAddrX = iMB;
+			currMB->mbAddrA = iMB - 1;
+			currMB->mbAddrD = currMB->mbAddrA - PicWidthInMbs;
+			currMB->mbAddrB = currMB->mbAddrD + 1;
+			currMB->mbAddrC = currMB->mbAddrB + 1;
+
+
+			currMB->mbAvailA = (Boolean) (mb_is_available2(currMB->mbAddrA, currMB, PicSizeInMbs) && ((p_pic_pos->x)!=0));
+			currMB->mbAvailD = (Boolean) (mb_is_available2(currMB->mbAddrD, currMB, PicSizeInMbs) && ((p_pic_pos->x)!=0));
+			currMB->mbAvailC = (Boolean) (mb_is_available2(currMB->mbAddrC, currMB, PicSizeInMbs) && (((p_pic_pos + 1)->x)!=0));
+			currMB->mbAvailB = (Boolean) (mb_is_available2(currMB->mbAddrB, currMB, PicSizeInMbs));        
+
+			currMB->mb_left = (currMB->mbAvailA) ? &(currSlice->mb_data[currMB->mbAddrA]) : NULL;
+			currMB->mb_up   = (currMB->mbAvailB) ? &(currSlice->mb_data[currMB->mbAddrB]) : NULL;
+
+			memcpy(&cache[iMB], &currMB->mbAddrA, sizeof(NeighborStruct));
+		}
+	}
+
+
+	// neighbor with offset table init
+	for(iSlice = 0; iSlice<slice_count; ++iSlice)
+	{
+		Slice *currSlice = Slices[iSlice];
+		for(iMB = currSlice->start_mb_nr; iMB<currSlice->end_mb_nr_plus1; ++iMB)
+		{
+			for(x=0; x<3; ++x)
+			{
+				for(y=0; y<3; ++y)
+				{
+					PixelPos * pix = &cache_xy[x][y][iMB];
+					NeighborStruct *currMB = &cache[iMB];
+
+					// copied from getNonAffNeighbour
+					if (x == 0)
+					{
+						if (y == 0)
+						{
+							pix->mb_addr   = currMB->mbAddrD;
+							pix->available = currMB->mbAvailD;
+						}
+						else if (y == 1)
+						{
+							pix->mb_addr   = currMB->mbAddrA;
+							pix->available = currMB->mbAvailA;
+						}
+						else // y==2
+						{
+							pix->available = FALSE;
+						}
+					}
+					else if (x==1)
+					{
+						if (y == 0)
+						{
+							pix->mb_addr   = currMB->mbAddrB;
+							pix->available = currMB->mbAvailB;
+						}
+						else if (y==1)
+						{
+							pix->mb_addr   = iMB;
+							pix->available = TRUE;
+						}
+						else// y==2
+						{
+							pix->available = FALSE;
+						}
+					}
+					else if ((x==2) && (y==0))
+					{
+						pix->mb_addr   = currMB->mbAddrC;
+						pix->available = currMB->mbAvailC;
+					}
+					else
+					{
+						pix->available = FALSE;
+					}
+
+					// after
+					if (pix->available)
+					{
+						BlockPos *CurPos = &(p_Vid->PicPos[ pix->mb_addr ]);
+						pix->pos_x = CurPos->x * 8;
+						pix->pos_y = CurPos->y * 8;
+					}
+
+				}
+			}
+		}
+	}
+	neighbors_init_done = 1;
+}
+
 void CheckAvailabilityOfNeighbors(Macroblock *currMB)
+{
+	memcpy(&currMB->mbAddrA, &cache[currMB->mbAddrX], sizeof(NeighborStruct));
+}
+
+
+void CheckAvailabilityOfNeighbors2(Macroblock *currMB)
 {
   Slice *currSlice = currMB->p_Slice;
   StorablePicture *dec_picture = currSlice->dec_picture; //p_Vid->dec_picture;
   const int mb_nr = currMB->mbAddrX;
   BlockPos *PicPos = currMB->p_Vid->PicPos;
 
-  if (neighbors_init_done)
+  //if (neighbors_init_done)
   {
 	  memcpy(&currMB->mbAddrA, &cache[mb_nr], sizeof(NeighborStruct));
 	  
@@ -94,6 +244,8 @@ void CheckAvailabilityOfNeighbors(Macroblock *currMB)
     currMB->mbAvailD = (Boolean) (mb_is_available(currMB->mbAddrD, currMB) && ((p_pic_pos->x)!=0));
     currMB->mbAvailC = (Boolean) (mb_is_available(currMB->mbAddrC, currMB) && (((p_pic_pos + 1)->x)!=0));
     currMB->mbAvailB = (Boolean) (mb_is_available(currMB->mbAddrB, currMB));        
+
+
   }
 
   currMB->mb_left = (currMB->mbAvailA) ? &(currSlice->mb_data[currMB->mbAddrA]) : NULL;
@@ -255,102 +407,105 @@ void get_mb_pos (VideoParameters *p_Vid, int mb_addr, int mb_size[2], short *x, 
  42048/42049, 15.743969fps
  MD5:25521D7EE2D8005550F67595FC7249B4
  */
-
-
-
-int x_tbl[18] = {0, 1, -1, -1, 2, 3, -1, -1, 4, 5, -1, -1, -1, -1, -1, -1, -1, 6};
-int y_tbl[18] = {0, 1, -1, -1, 2, 3, -1, -1, 4, 5, -1, -1, -1, -1, -1, -1, -1, -1};
-int lookup[7][7][2] = {0};
-PixelPos *pix_cache = NULL;
-void getNonAffNeighbour(Macroblock *currMB, int xN, int yN, int mb_size[2], PixelPos *pix)
+void getNonAffNeighbour2(Macroblock *currMB, int xN, int yN, int mb_size[2], PixelPos *pix)
 {
-  int maxW = mb_size[0], maxH = mb_size[1];
-  int x = x_tbl[xN+1];
-  int y = y_tbl[yN+1];
-  int n = currMB->mbAddrX * 42*2 + y*7*2 + x*2 + (mb_size[0] >> 4);
-  PixelPos * p = &pix_cache[n];
+	int maxW = mb_size[0], maxH = mb_size[1];
 
-  assert(maxW == 16 || maxW == 8);
-  assert(maxH == 16 || maxH == 8);
-  assert(maxW == maxH);
-  assert(n < 42 * 8192 * 2);
+	if (xN < 0)
+	{
+		if (yN < 0)
+		{
+			pix->mb_addr   = currMB->mbAddrD;
+			pix->available = currMB->mbAvailD;
+		}
+		else if (yN < maxH)
+		{
+			pix->mb_addr   = currMB->mbAddrA;
+			pix->available = currMB->mbAvailA;
+		}
+		else
+		{
+			pix->available = FALSE;
+		}
+	}
+	else if (xN < maxW)
+	{
+		if (yN < 0)
+		{
+			pix->mb_addr   = currMB->mbAddrB;
+			pix->available = currMB->mbAvailB;
+		}
+		else if (yN < maxH)
+		{
+			pix->mb_addr   = currMB->mbAddrX;
+			pix->available = TRUE;
+		}
+		else
+		{
+			pix->available = FALSE;
+		}
+	}
+	else if ((xN >= maxW) && (yN < 0))
+	{
+		pix->mb_addr   = currMB->mbAddrC;
+		pix->available = currMB->mbAvailC;
+	}
+	else
+	{
+		pix->available = FALSE;
+	}
 
-/*
-  if (neighbors_init_done)
-  {
-	  *pix = *p;
-	  return;
-  }
-*/
-
-  if(0)
-  {
-  if (!lookup[x][y][mb_size[0] >> 4])
-  {
-	printf("getNonAffNeighbour (%d,%d) of %dx%d.\n", xN, yN, maxW, maxH);
-	printf("");
-  }
-
-  lookup[x][y][mb_size[0] >> 4] = 1;
-  }
-
-
-  if (xN < 0)
-  {
-    if (yN < 0)
-    {
-      pix->mb_addr   = currMB->mbAddrD;
-      pix->available = currMB->mbAvailD;
-    }
-    else if (yN < maxH)
-    {
-      pix->mb_addr   = currMB->mbAddrA;
-      pix->available = currMB->mbAvailA;
-    }
-    else
-    {
-      pix->available = FALSE;
-    }
-  }
-  else if (xN < maxW)
-  {
-    if (yN < 0)
-    {
-      pix->mb_addr   = currMB->mbAddrB;
-      pix->available = currMB->mbAvailB;
-    }
-    else if (yN < maxH)
-    {
-      pix->mb_addr   = currMB->mbAddrX;
-      pix->available = TRUE;
-    }
-    else
-    {
-      pix->available = FALSE;
-    }
-  }
-  else if ((xN >= maxW) && (yN < 0))
-  {
-    pix->mb_addr   = currMB->mbAddrC;
-    pix->available = currMB->mbAvailC;
-  }
-  else
-  {
-    pix->available = FALSE;
-  }
-
-  if (pix->available || currMB->DeblockCall)
-  {
-    BlockPos *CurPos = &(currMB->p_Vid->PicPos[ pix->mb_addr ]);
-    pix->x     = (byte) (xN & (maxW - 1));
-    pix->y     = (byte) (yN & (maxH - 1));    
-    pix->pos_x = (short) (pix->x + CurPos->x * maxW);
-    pix->pos_y = (short) (pix->y + CurPos->y * maxH);
-  }
-
-  //*p = *pix;
+	if (pix->available || currMB->DeblockCall)
+	{
+		BlockPos *CurPos = &(currMB->p_Vid->PicPos[ pix->mb_addr ]);
+		pix->x     = (byte) (xN & (maxW - 1));
+		pix->y     = (byte) (yN & (maxH - 1));    
+		pix->pos_x = (short) (pix->x + CurPos->x * maxW);
+		pix->pos_y = (short) (pix->y + CurPos->y * maxH);
+	}
 }
 
+
+
+
+int tbl8_base[18] = {0,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2};
+int tbl16_base[18] = {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2};
+int *tbl8 = tbl8_base+1;
+int *tbl16 = tbl16_base+1;
+
+/*
+void getNonAffNeighbour(Macroblock *currMB, int xN, int yN, int mb_size[2], PixelPos *pix)
+{
+	int size = mb_size[0];
+	int x,y;
+
+	//getNonAffNeighbour2(currMB, xN, yN, mb_size, pix);
+
+	if (size==8)
+	{
+		x = tbl8[xN];
+		y = tbl8[yN];
+		*pix = cache_xy[x][y][currMB->mbAddrX];
+		pix->x = (byte) (xN & 7);
+		pix->y = (byte) (yN & 7);
+		pix->pos_x += pix->x;
+		pix->pos_y += pix->y;
+	}
+	else
+	{
+		x = tbl16[xN];
+		y = tbl16[yN];
+		*pix = cache_xy[x][y][currMB->mbAddrX];
+		pix->x = (byte) (xN & 15);
+		pix->y = (byte) (yN & 15);
+		pix->pos_x = pix->x + (pix->pos_x * 2);
+		pix->pos_y = pix->y + (pix->pos_y * 2);
+	}
+
+	
+}
+
+*/
 /*!
  ************************************************************************
  * \brief
@@ -714,9 +869,10 @@ void getAffNeighbour(Macroblock *currMB, int xN, int yN, int mb_size[2], PixelPo
  *    returns position informations 
  ************************************************************************
  */
-void get4x4Neighbour (Macroblock *currMB, int block_x, int block_y, int mb_size[2], PixelPos *pix)
+/*
+void get4x4Neighbour (Macroblock *currMB, int xN, int yN, int mb_size[2], PixelPos *pix)
 {
-  getNonAffNeighbour(currMB, block_x, block_y, mb_size, pix);
+  getNonAffNeighbour(currMB, xN, yN, mb_size, pix);
 
   if (pix->available)
   {
@@ -726,7 +882,7 @@ void get4x4Neighbour (Macroblock *currMB, int block_x, int block_y, int mb_size[
     pix->pos_y >>= 2;
   }
 }
-
+*/
 /*!
  ************************************************************************
  * \brief
@@ -743,6 +899,7 @@ void get4x4Neighbour (Macroblock *currMB, int block_x, int block_y, int mb_size[
  *    returns position informations
  ************************************************************************
  */
+/*
 void get4x4NeighbourBase (Macroblock *currMB, int block_x, int block_y, int mb_size[2], PixelPos *pix)
 {
   getNonAffNeighbour(currMB, block_x, block_y, mb_size, pix);
@@ -753,3 +910,4 @@ void get4x4NeighbourBase (Macroblock *currMB, int block_x, int block_y, int mb_s
     pix->y >>= 2;
   }
 }
+*/

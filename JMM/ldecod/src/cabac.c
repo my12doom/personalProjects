@@ -2242,6 +2242,7 @@ void readRunLevel_CABAC (Macroblock *currMB,
  *    arithmetic decoding
  ************************************************************************
  */
+/*
 int readSyntaxElement_CABAC(Macroblock *currMB, SyntaxElement *se, DataPartition *this_dataPart)
 {
   DecodingEnvironmentPtr dep_dp = &(this_dataPart->de_cabac);
@@ -2259,6 +2260,7 @@ int readSyntaxElement_CABAC(Macroblock *currMB, SyntaxElement *se, DataPartition
 
   return (0); 
 }
+*/
 
 
 /*!

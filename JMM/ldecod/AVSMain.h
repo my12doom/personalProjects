@@ -6,6 +6,9 @@
 extern "C" {
 #endif
 
+// a global varable for load balance
+extern float buffer_load;
+
 // declaration
 void* create_avs();
 int set_avs_resolution(void *avs, int width, int height);

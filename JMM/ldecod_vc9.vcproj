@@ -976,6 +976,13 @@
 			<File
 				RelativePath=".\ldecod\src\mb_read.c"
 				>
+				<FileConfiguration
+					Name="Debug_DLL|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\ldecod\src\mbuffer.c"

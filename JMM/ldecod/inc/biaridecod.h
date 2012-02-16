@@ -161,7 +161,7 @@ inline int arideco_bits_read(DecodingEnvironmentPtr dep)
 */
 
 // ffmpeg's defines, variables and functions
-#define USE_FFMPEG_CABAC 0
+#define USE_FFMPEG_CABAC 1
 #define BRANCHLESS_CABAC_DECODER 1
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)

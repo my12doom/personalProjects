@@ -317,6 +317,9 @@ typedef struct syntaxelement_dec
   void  (*reading)(struct macroblock_dec *currMB, struct syntaxelement_dec *, DecodingEnvironmentPtr);
 } SyntaxElement;
 
+#define my12doom_reading_auto(currMB, currSE, dP) 	{(p_Vid->active_pps->entropy_coding_mode_flag == (Boolean) CAVLC ? readSyntaxElement_UVLC:readSyntaxElement_CABAC)(currMB, &currSE, dP);}
+
+
 
 //! Bitstream
 struct bit_stream_dec
@@ -339,7 +342,7 @@ typedef struct datapartition_dec
   Bitstream           *bitstream;
   DecodingEnvironment de_cabac;
 
-  int     (*readSyntaxElement)(struct macroblock_dec *currMB, struct syntaxelement_dec *, struct datapartition_dec *);
+  void     (*readSyntaxElement)(struct macroblock_dec *currMB, struct syntaxelement_dec *, struct datapartition_dec *);
           /*!< virtual function;
                actual method depends on chosen data partition and
                entropy coding method  */

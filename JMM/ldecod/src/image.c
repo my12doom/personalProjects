@@ -828,6 +828,7 @@ HANDLE thread_work_handles[16] = {INVALID_HANDLE_VALUE};
 Slice * thread_tasks[16];
 CRITICAL_SECTION cs;
 
+#include "..\AVSMain.h"
 DWORD WINAPI slice_decoding_thread(LPVOID p)
 {
 	int task_id = *(int*)p;
@@ -854,8 +855,13 @@ again:
 				if (thread_tasks[i] == NULL)
 					continue;
 
-				mb = (float)(thread_tasks[i]->num_dec_mb + thread_tasks[i]->erc_mvperMB) / thread_tasks[i]->end_mb_nr_plus1;
-				if (mb < min_mb && !thread_tasks[i]->decoding_done && !thread_tasks[i]->decoding)
+				mb = (float)(thread_tasks[i]->num_dec_mb + thread_tasks[i]->erc_mvperMB) / (thread_tasks[i]->end_mb_nr_plus1 - thread_tasks[i]->start_mb_nr);
+
+				// minimize cache miss if consumer slow
+				if (buffer_load > 0.8)
+					mb = 0;
+
+				if ((mb < min_mb - 0.3) && !thread_tasks[i]->decoding_done && !thread_tasks[i]->decoding)
 				{
 					to_dec = thread_tasks[i];
 					current_header = to_dec->current_header;
@@ -890,6 +896,7 @@ again:
 
 extern int neighbors_init_done;
 extern PixelPos *pix_cache;
+extern void init_mb_neighbors(Slice **Slices, int slice_count);
 
 int decode_one_frame(DecoderParams *pDecoder)
 {
@@ -1103,6 +1110,9 @@ read:
 
 		  thread_tasks[iSliceNo] = currSlice;
 	  }
+
+	  // init macroblock neighbors position table
+	  init_mb_neighbors(thread_tasks, p_Vid->iSliceNumOfCurrPic);
 
 	  //my12doom : multi threading!
 	  slice_count = p_Vid->iSliceNumOfCurrPic;

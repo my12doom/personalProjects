@@ -27,7 +27,7 @@ InputParameters cfgparams;
 // LimitType: {0:none, 1:both, 2:minimum, 3: QP based}
 // We could separate this based on types to make it more flexible and allow also defaults for text types.
 Mapping Map[] = {
-	{"DecodeStep",               &cfgparams.dec_step,                     0,   40.0,                    1,  1.0,              10000.0,                          },
+	{"DecodeStep",               &cfgparams.dec_step,                     0,   512.0,                    1,  1.0,              10000.0,                          },
 	{"ThreadCount",              &cfgparams.thread_count,                 0,   0.0,                     1,  0.0,              16.0,                          },
 	{"CPUMask",                  &cfgparams.cpu_mask,                     0,   0.0,                     1,  0.0,              4096.0,                          },
 	{"InputFile2",               &cfgparams.infile2,                      1,   0.0,                     0,  0.0,              0.0,             FILE_NAME_SIZE, },

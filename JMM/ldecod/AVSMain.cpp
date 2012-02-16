@@ -14,6 +14,7 @@ extern "C"
 #include "configfile.h"
 };
 
+float buffer_load = 0;
 JMAvs *avs = NULL;
 DWORD WINAPI decoding_thread(LPVOID p);
 
@@ -57,6 +58,11 @@ int insert_frame(void *pavs, void **pY, void **pV, void **pU, int view_id)
 	}
 
 	buffer->insert_no_number((const BYTE**)pY, (const BYTE**)pV, (const BYTE**)pU);
+
+	int total = avs->left_buffer->m_unit_count + (avs->right_buffer ? avs->right_buffer->m_unit_count : 0);
+	int current = avs->left_buffer->m_item_count + (avs->right_buffer ? avs->right_buffer->m_item_count : 0);
+
+	buffer_load = (float)current/total;
 
 	return 0;
 }
@@ -459,6 +465,12 @@ PVideoFrame __stdcall JMAvs::GetFrame(int n, IScriptEnvironment* env)
 		// get left and copy to dst;
 		get_frame(n, left_buffer,dst->GetWritePtr(PLANAR_Y), m_width, 0);
 	}
+
+	int total = avs->left_buffer->m_unit_count + (avs->right_buffer ? avs->right_buffer->m_unit_count : 0);
+	int current = avs->left_buffer->m_item_count + (avs->right_buffer ? avs->right_buffer->m_item_count : 0);
+
+	buffer_load = (float)current/total;
+
 
 	return dst;
 }

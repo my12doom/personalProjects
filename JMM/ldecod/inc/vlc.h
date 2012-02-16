@@ -88,7 +88,10 @@ extern void linfo_levrun_c2x2(int len,int info,int *level,int *irun);
 extern int  uvlc_startcode_follows(Slice *currSlice, int dummy);
 
 extern int  readSyntaxElement_VLC (SyntaxElement *sym, Bitstream *currStream);
-extern int  readSyntaxElement_UVLC(Macroblock *currMB, SyntaxElement *sym, struct datapartition_dec *dp);
+inline void  readSyntaxElement_UVLC(Macroblock *currMB, SyntaxElement *sym, struct datapartition_dec *dp)
+{
+	readSyntaxElement_VLC(sym, dp->bitstream);
+}
 extern int  readSyntaxElement_Intra4x4PredictionMode(SyntaxElement *sym, Bitstream   *currStream);
 
 extern int  GetVLCSymbol (byte buffer[],int totbitoffset,int *info, int bytecount);

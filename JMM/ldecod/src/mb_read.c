@@ -375,7 +375,9 @@ static void read_ipred_4x4_modes(Macroblock *currMB)
         else
         {
           currSE.context=(b8<<2) + (j<<1) +i;
-          dP->readSyntaxElement(currMB, &currSE, dP);
+          //dP->readSyntaxElement(currMB, &currSE, dP);
+		  //(p_Vid->active_pps->entropy_coding_mode_flag == (Boolean) CAVLC ? readSyntaxElement_UVLC:readSyntaxElement_CABAC)(currMB, &currSE, dP);
+		  my12doom_reading_auto(currMB, currSE, dP);
         }
 
         get4x4Neighbour(currMB, (bx<<2) - 1, (by<<2),     p_Vid->mb_size[IS_LUMA], &left_block);
