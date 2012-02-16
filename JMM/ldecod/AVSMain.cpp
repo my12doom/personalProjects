@@ -79,6 +79,7 @@ CFrameBuffer::CFrameBuffer()
 	m_frame_count = 0;
 	m_max_fn_recieved = -1;
 	m_item_count = 0;
+	m_discard_all = false;
 }
 
 CFrameBuffer::~CFrameBuffer()
@@ -116,6 +117,9 @@ int CFrameBuffer::insert(int n, const BYTE*buf)
 	int id = -1;
 	while(true)
 	{
+		if (m_discard_all)
+			return -1;
+
 		cs.Lock();
 		for(int i=0; i<m_unit_count; i++)
 		{
@@ -144,6 +148,9 @@ int CFrameBuffer::insert_no_number(const BYTE **pY, const BYTE **pV, const BYTE 
 	int id = -1;
 	while(true)
 	{
+		if (m_discard_all)
+			return -1;
+
 		cs.Lock();
 		for(int i=0; i<m_unit_count; i++)
 		{
@@ -406,6 +413,12 @@ extern "C" void flush_output_queue();
 
 JMAvs::~JMAvs()
 {
+	if (left_buffer)
+		left_buffer->m_discard_all = true;
+
+	if (right_buffer)
+		right_buffer->m_discard_all = true;
+
 	TerminateThread(m_decoding_thread, 0);
 	flush_output_queue();
 

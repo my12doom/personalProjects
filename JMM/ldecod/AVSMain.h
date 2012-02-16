@@ -39,6 +39,7 @@ public:
 	int m_frame_count;		// total frame count
 	int m_max_fn_recieved;	// = -1, max fn inserted yet
 	int m_item_count;		// = 0;
+	bool m_discard_all;		// discard all incoming packets, mainly for exitting 
 
 	CCritSec cs;
 
