@@ -60,7 +60,9 @@ int g_cTemplates = countof(g_Templates);
 
 STDAPI DllRegisterServer()
 {
+#ifndef DEBUG
 	return E_FAIL;
+#endif
 	/*
 	DeleteRegKey(_T("Media Type\\Extensions\\"), _T(".ts"));
 
@@ -778,6 +780,12 @@ HRESULT CMpegSplitterFilter::DemuxNextPacket(REFERENCE_TIME rtStartOffset)
 					TRACE ("Sub=%S\n", ReftimeToString(h2.pts - rtStartOffset));
 				}
 
+				if (!h2.fpts)
+				{
+					("INVALID time: %d\r\n", (h2.pts - rtStartOffset) / 10000);
+
+				}
+
 				p->rtStart = h2.fpts ? (h2.pts - rtStartOffset) : Packet::INVALID_TIME;
 				p->rtStop = p->rtStart+1;
 				p->SetCount(h.bytes - (size_t)(m_pFile->GetPos() - pos));
@@ -883,6 +891,16 @@ HRESULT CMpegSplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 			CMpegSplitterFile::stream& s = m_pFile->m_streams[i].GetNext(pos);
 			CAtlArray<CMediaType> mts;
 			mts.Add(s.mt);
+
+			CMediaType dummy_avc1;
+			dummy_avc1.Set(s.mt);
+			if (s.mt.subtype == FOURCCMap('CVMA'))
+			{
+				dummy_avc1.subtype = FOURCCMap('1CVA');
+				MPEG2VIDEOINFO* vih = (MPEG2VIDEOINFO*)dummy_avc1.pbFormat;
+				vih->hdr.bmiHeader.biCompression = '1CVA';
+				mts.Add(dummy_avc1);
+			}
 
 			CStringW name = CMpegSplitterFile::CStreamList::ToString(i);
 			CStringW str;
@@ -1937,11 +1955,11 @@ HRESULT CMpegSplitterOutputPin::DeliverPacket(CAutoPtr<Packet> p)
 			Packet* pPacket = m_pl.GetAt(pos);
 			BYTE* pData = pPacket->GetData();
 
-			if( (pData[4]&0x1f) == 0x09 || (pData[4]&0x1f) == 0x18) {
+			if( (pData[4]&0x1f) == 0x09 || (pPacket->TrackNumber==0x1012 && (pData[4]&0x1f) == 0x18)) {
 				m_fHasAccessUnitDelimiters = true;
 			}
 
-			if( ( (pData[4]&0x1f) == 0x09 || (pData[4]&0x1f) == 0x18)|| !m_fHasAccessUnitDelimiters && pPacket->rtStart != Packet::INVALID_TIME) {
+			if( ( (pData[4]&0x1f) == 0x09 || (pPacket->TrackNumber==0x1012 && (pData[4]&0x1f) == 0x18))|| !m_fHasAccessUnitDelimiters && pPacket->rtStart != Packet::INVALID_TIME) {
 				p = m_pl.RemoveHead();
 
 				while(pos != m_pl.GetHeadPosition()) {

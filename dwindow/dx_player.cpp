@@ -119,7 +119,7 @@ dx_player::dx_player(HINSTANCE hExe):
 m_renderer1(NULL),
 dwindow(m_screen1, m_screen2),
 m_lFontPointSize(L"FontSize", 40),
-m_FontName(L"Font", L"Arial"),
+m_FontName(L"Font", g_active_language == CHINESE ? L"ºÚÌå" : L"Arial"),
 m_FontStyle(L"FontStyle", L"Regular"),
 m_font_color(L"FontColor", 0x00ffffff),
 m_input_layout(L"InputLayout", input_layout_auto),
@@ -155,6 +155,12 @@ m_contrast2(L"Contrast2", 0.5)
 	select_font(false);
 	m_grenderer.set_font(m_font);
 	m_grenderer.set_font_color(m_font_color);
+
+	// playlist
+	m_playlist_playing = m_playlist_count = 0;
+	m_playlist[0] = (wchar_t*)malloc(MAX_PATH * sizeof(wchar_t) * max_playlist);
+	for(int i=0; i<max_playlist; i++)
+		m_playlist[i] = m_playlist[0] + i * MAX_PATH;
 
 	// subtitle
 	m_lastCBtime = -1;
@@ -297,6 +303,8 @@ HRESULT dx_player::set_output_monitor(int out_id, int monitor_id)
 
 dx_player::~dx_player()
 {
+	free(m_playlist[0]);
+
 	if (m_log)
 	{
 		free(m_log);
@@ -1567,6 +1575,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		unsigned char passkey_big_decrypted[128];
 		RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
 		m_renderer1->m_AES.set_key((unsigned char*)passkey_big_decrypted+64, 256);
+		memcpy(m_renderer1->m_key, (unsigned char*)passkey_big_decrypted+64, 32);
 		memset(passkey_big_decrypted, 0, 128);
 		init_done_flag = 0x12345678;
 	}
@@ -1645,7 +1654,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	TimeStart -= m_subtitle_latency * 10000;
 	TimeStart /= m_subtitle_ratio;
 
-	m_internel_offset = 10;
+	m_internel_offset = 5;
 	bool movie_has_offset_metadata = false;
 	if (m_offset_metadata)
 	{
@@ -1823,6 +1832,8 @@ HRESULT dx_player::on_dshow_event()
 	{
 		stop();
 		seek(0);
+
+		play_next_file();
 	}
 
 	else if (event_code == EC_VIDEO_SIZE_CHANGED)
@@ -1879,10 +1890,24 @@ HRESULT dx_player::start_loading()
 
 HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, bool stop)
 {
+	if (GetCurrentThreadId() == GetThreadId(m_thread1))
+	{
+		HRESULT hr = reset_and_loadfile_internal(pathname);
+
+		if (stop)
+			pause();
+
+		return hr;
+	}
+
 	wcscpy(m_file_to_load, pathname);
 	m_reset_and_load = true;
 	m_stop_after_load = stop;
 	m_reset_load_done = false;
+
+	while (!m_reset_load_done)
+		Sleep(1);
+
 	return S_OK;
 }
 
@@ -1925,10 +1950,11 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 		}
 
 	wchar_t search_pattern[MAX_PATH];
-	for(int i=0; i<2; i++)
+	wchar_t exts[5][512] = {L"*.srt", L"*.sup", L"*.ssa", L"*.ass", L"*.idx"};
+	for(int i=0; i<5; i++)
 	{
 		wcscpy(search_pattern, file_to_search);
-		wcscat(search_pattern, i == 0 ? L"*.srt" : L"*.sup");
+		wcscat(search_pattern, exts[i]);
 
 		WIN32_FIND_DATAW find_data;
 		HANDLE find_handle = FindFirstFileW(search_pattern, &find_data);
@@ -1955,15 +1981,35 @@ fail:
 	return hr;
 }
 
+HRESULT dx_player::play_next_file()
+{
+restart:
+	if (m_playlist_playing >= m_playlist_count - 1)
+		return E_FAIL;
+
+	m_playlist_playing ++ ;
+	if (FAILED(reset_and_loadfile(m_playlist[m_playlist_playing], false)))
+		goto restart;
+
+	return S_OK;
+}
+
 HRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 {
-	if (count>0)
+
+	if (count == 1)
 	{
 		HRESULT hr = load_subtitle(filenames[0], false);
 		if (SUCCEEDED(hr) && m_file_loaded)
 			return S_OK;
-		reset_and_loadfile_internal(filenames[0]);
 	}
+
+	m_playlist_count = count;
+	m_playlist_playing = -1;
+	for(int i=0; i<count; i++)
+		wcscpy(m_playlist[i], filenames[i]);
+
+	play_next_file();
 
 	return S_OK;
 }
@@ -1978,7 +2024,7 @@ LRESULT dx_player::on_idle_time()
 
 	if (m_reset_and_load)
 	{
-		reset_and_loadfile_internal(m_file_to_load);
+		m_reset_load_hr = reset_and_loadfile_internal(m_file_to_load);
 		m_reset_and_load = false;
 
 		if (m_stop_after_load)

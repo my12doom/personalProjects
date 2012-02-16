@@ -114,7 +114,7 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 				for(int i=0; i<count; i++)
 				{
 					filenames[i] = (wchar_t*)malloc(sizeof(wchar_t) * MAX_PATH);
-					DragQueryFileW(hDropInfo, 0, filenames[i], MAX_PATH);
+					DragQueryFileW(hDropInfo, i, filenames[i], MAX_PATH);
 				}
 				lr = _this->on_dropfile(id, count, filenames);
 				for(int i=0; i<count; i++) free(filenames[i]);

@@ -91,9 +91,11 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 	{
 
 		char *downloaded = result + 5;
+#ifdef DEBUG
 		OutputDebugStringA(url);
 		OutputDebugStringA("\n");
 		OutputDebugStringA(downloaded);
+#endif
 
 		if (strlen(downloaded) == 256)
 		{

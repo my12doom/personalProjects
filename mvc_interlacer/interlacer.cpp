@@ -223,13 +223,11 @@ non_offset:
 			{
 				current_start = true;
 
-				// test remove delimeter
-				/*
+				// comment these lines to test remove delimeter
 				if(read_buffer[2] == 0x1)
 					delimeter_buffer[size++] = 0;
 				memcpy(delimeter_buffer + size, read_buffer, nal_size);
 				size += nal_size;
-				*/
 
 				f->remove_data(nal_size);
 			}
@@ -351,13 +349,17 @@ int main(int argc, char * argv[])
 
 	char out_mvc_name[MAX_PATH];
 	char out_avs_name[MAX_PATH];
+	char out_avs_JM_name[MAX_PATH];
 	strcpy(out_mvc_name, argv[1]);
 	strcpy(out_avs_name, argv[1]);
 	strcat(out_avs_name, ".avs");
+	strcpy(out_avs_JM_name, argv[1]);
+	strcat(out_avs_JM_name, ".JM.avs");
 
 
 	FILE *o = fopen(out_mvc_name, "wb");
 	FILE *avs = fopen(out_avs_name, "wb");
+	FILE *avs_JM = fopen(out_avs_JM_name, "wb");
 
 	for(int i=2; i<argc; i++)
 	{
@@ -391,6 +393,46 @@ int main(int argc, char * argv[])
 	char *out_buffer = (char*)malloc(max_nal_size*4 + sizeof(watermark)*2);
 	int out_data_count = 0;
 
+	// write "decoder.cfg"
+	char decoder_cfg[MAX_PATH];
+	strcpy(decoder_cfg, out_mvc_name);
+	for(int i=strlen(decoder_cfg); i>0; i--)
+	{
+		if (decoder_cfg[i] == '\\')
+		{
+			decoder_cfg[i+1] = NULL;
+			break;
+		}
+	}
+	strcat(decoder_cfg, "decoder.cfg");
+
+
+	// remove path
+	for(int i=strlen(out_mvc_name); i>0; i--)
+	{
+		if (out_mvc_name[i] == '\\')
+		{
+			strcpy(out_mvc_name, out_mvc_name+i+1);
+			break;
+		}
+	}
+
+	FILE * cfg_file = fopen(decoder_cfg, "wb");
+	if (cfg_file)
+	{
+		fprintf(cfg_file, "InputFile =\"%s\"\r\n", out_mvc_name);
+		fprintf(cfg_file, "DecodeAllLayers = 1\r\n");
+		fflush(cfg_file);
+		fclose(cfg_file);
+	}
+	else
+	{
+		printf("error writing file %s.\r\n", decoder_cfg);
+	}
+
+	bool sbs = true;
+
+
 	create_watermark();
 	int first = 5;
 	bool idr_found = false;
@@ -403,7 +445,9 @@ int main(int argc, char * argv[])
 		{
 			first --;
 		}
+
 		//if (n>36000 && n<37000)
+		if (n>=284*2)
 		{
 			if (is_idr)
 				idr_found = true;
@@ -415,16 +459,17 @@ int main(int argc, char * argv[])
 			}
 		}
 
-		int delimeter_size_right = read_a_delimeter(&right);
+		int delimeter_size_right = 0;// read_a_delimeter(&right);
 		//if (n>36000 && n<37000 && idr_found)
+		if (n>=283 && idr_found)
 		{
 			memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_right);
 			out_data_count += delimeter_size_right;
 		}
-
+	
 		//watermark
-		//memcpy(out_buffer+out_data_count, watermark, watermark_size);
-		//out_data_count += watermark_size;
+		memcpy(out_buffer+out_data_count, watermark, watermark_size);
+		out_data_count += watermark_size;
 
 
 		if (out_data_count >= max_nal_size*2)
@@ -441,6 +486,24 @@ int main(int argc, char * argv[])
 			(double)muxed_size/1024/1024,
 			(double)(GetTickCount()-l)/1000,
 			(int)(muxed_size/(GetTickCount()-l+1)));
+
+		// write avs script
+		fseek(avs, 0, SEEK_SET);
+		if(sbs) fprintf(avs, "LoadPlugin(\"pd10\")\r\n");
+		fprintf(avs, "grf = CreateGRF(\"%s\")\r\n", out_mvc_name);
+		fprintf(avs, "v = DirectShowSource(grf, audio=false, framecount=%d)\r\n", n*2);
+		if(sbs)
+			fprintf(avs, "return v.sq2sbs\r\n");
+		else
+			fprintf(avs, "return v.AssumeFPS(v.FrameRate*2)\r\n");
+		fflush(avs);
+
+		// JM avs script
+		fseek(avs_JM, 0, SEEK_SET);
+		fflush(avs_JM);
+		if(sbs) fprintf(avs_JM, "LoadPlugin(\"JM3D_Source\")\r\n");
+		fprintf(avs_JM, "tb = JM3DSource(%d)\r\n", n);
+		fprintf(avs_JM, "l = crop(tb, 0, 0, 0, tb.Height/2)\r\nr = crop(tb, 0, tb.height/2, 0, 0)\r\nreturn StackHorizontal(l,r)\r\n");
 	}
 
 	fwrite(out_buffer, 1, out_data_count, o);
@@ -448,27 +511,10 @@ int main(int argc, char * argv[])
 
 	fflush(o);
 	fclose(o);
-
-	bool sbs = true;
-
-	// remove path
-	for(int i=strlen(out_mvc_name); i>0; i--)
-	{
-		if (out_mvc_name[i] == '\\')
-		{
-			strcpy(out_mvc_name, out_mvc_name+i+1);
-			break;
-		}
-	}
-	if(sbs) fprintf(avs, "LoadPlugin(\"pd10\")\r\n");
-	fprintf(avs, "grf = CreateGRF(\"%s\")\r\n", out_mvc_name);
-	fprintf(avs, "v = DirectShowSource(grf, audio=false, framecount=%d)\r\n", n*2);
-	if(sbs)
-		fprintf(avs, "return v.sq2sbs\r\n");
-	else
-		fprintf(avs, "return v.AssumeFPS(v.FrameRate*2)\r\n");
-	fflush(avs);
 	fclose(avs);
+	fclose(avs_JM);
+
+
 
 	printf("\ndone, press any key to exit");
 	getch();
@@ -510,7 +556,7 @@ void main2()
 
 }
 
-// just test function
+// offset metadata extraction
 int main3(int argc, char * argv[])
 {
 	memset(nal_type_found, 0, sizeof(nal_type_found));
@@ -557,6 +603,8 @@ int main3(int argc, char * argv[])
 			//fprintf(log, "SEI:%d byte.\r\n", max_sei_size);
 			i = 0;
 		}
+
+		fprintf(offset, is_idr ? "(IDR)" : "(non-IDR)");
 
 		if (offset_metadata_count)
 		{

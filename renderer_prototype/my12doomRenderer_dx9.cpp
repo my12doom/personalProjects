@@ -95,6 +95,8 @@ my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/):
 m_left_queue(_T("left queue")),
 m_right_queue(_T("right queue"))
 {
+
+
 	// D3D && NV3D
 	m_render_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_pool = NULL;
@@ -478,7 +480,7 @@ find_match:
 				for(POSITION pos_right = m_right_queue.GetHeadPosition(); pos_right; pos_right = m_right_queue.Next(pos_right))
 				{
 					gpu_sample *right_sample = m_right_queue.Get(pos_right);
-					if (abs((int)(left_sample->m_start - right_sample->m_start)) < 100)
+					if (abs((int)(left_sample->m_start - right_sample->m_start)) < m_frame_length/2)
 					{
 						matched_time = left_sample->m_start;
 						matched = true;
@@ -498,7 +500,7 @@ match_end:
 				while(true)
 				{
 					sample_left = m_left_queue.RemoveHead();
-					if(abs((int)(sample_left->m_start - matched_time)) > m_frame_length/4)
+					if(abs((int)(sample_left->m_start - matched_time)) > m_frame_length/2)
 					{
 						printf("drop left\n");
 						m_dsr0->drop_packets(1);
@@ -511,7 +513,7 @@ match_end:
 				while(true)
 				{
 					sample_right = m_right_queue.RemoveHead();
-					if(abs((int)(sample_right->m_start - matched_time)) > m_frame_length/4)
+					if(abs((int)(sample_right->m_start - matched_time)) > m_frame_length/2)
 					{
 						printf("drop right\n");
 						(m_remux_mode?m_dsr0:m_dsr1)->drop_packets(1);
@@ -578,7 +580,7 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 	int max_retry = 5;
 	{
 retry:
-		CAutoLock lck(&m_pool_lock);
+		//CAutoLock lck(&m_pool_lock);
 		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, need_detect, m_remux_mode);
 
 		if ( (m_dsr0->m_format == MEDIASUBTYPE_RGB32 && (!loaded_sample->m_tex_RGB32 || loaded_sample->m_tex_RGB32->creator != m_Device)) ||
@@ -593,16 +595,28 @@ retry:
 		}
 	}
 
+	//loaded_sample->prepare_rendering();
 	if (false)
 	{
 		CAutoLock frame_lock(&m_frame_lock);
-		loaded_sample->prepare_rendering();
 		int l = timeGetTime();
 		loaded_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
 		int l2 = timeGetTime();
 		if (need_detect) loaded_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
 		mylog("queue size:%d, convert_to_RGB32(): %dms, stereo_test:%dms\n", m_left_queue.GetCount(), l2-l, timeGetTime()-l2);
 	}
+
+	/// GPU RAM protector:
+	if (m_left_queue.GetCount() > my12doom_queue_size*2 || m_right_queue.GetCount() > my12doom_queue_size*2)
+	{
+		CAutoLock lck(&m_queue_lock);
+		gpu_sample *sample = NULL;
+		while (sample = m_left_queue.RemoveHead())
+			delete sample;
+		while (sample = m_right_queue.RemoveHead())
+			delete sample;
+	}
+
 
 	AM_MEDIA_TYPE *pmt = NULL;
 	media_sample->GetMediaType(&pmt);
@@ -654,6 +668,7 @@ retry:
 		loaded_sample->m_end = loaded_sample->m_start + 1;
 		loaded_sample->m_fn = fn;
 
+		CAutoLock lck(&m_queue_lock);
 		if ( 1- (fn & 0x1))
 		{
 			printf("left(%f)", frn);
@@ -776,7 +791,7 @@ HRESULT my12doomRenderer::create_render_targets()
 
 HRESULT my12doomRenderer::handle_device_state()							//handle device create/recreate/lost/reset
 {
-	if (!m_recreating_dshow_renderer)
+	if (!m_recreating_dshow_renderer && GetCurrentThreadId() == GetThreadId(m_render_thread))
 	{
 		D3DSURFACE_DESC desc;
 		memset(&desc, 0, sizeof(desc));
@@ -1090,6 +1105,7 @@ HRESULT my12doomRenderer::invalidate_cpu_objects()
 HRESULT my12doomRenderer::invalidate_gpu_objects()
 {
 	m_uidrawer->invalidate_gpu();
+	m_red_blue.invalid();
 
 	// query
 	//m_d3d_query = NULL;
@@ -1172,9 +1188,10 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 
 	return S_OK;
 }
+
 HRESULT my12doomRenderer::restore_gpu_objects()
 {
-
+	m_red_blue.set_source(m_Device, g_code_anaglyph, sizeof(g_code_anaglyph), true, (DWORD*)m_key);
 
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
@@ -1654,7 +1671,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			|| (m_dsr0->is_connected() && m_dsr1->is_connected())
 			|| (!m_dsr0->is_connected() && !m_dsr1->is_connected())
 			|| m_remux_mode)
-			m_Device->SetPixelShader(m_ps_anaglyph);
+			m_Device->SetPixelShader(m_red_blue);
 
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
@@ -1901,7 +1918,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	}
 
 	m_Device->EndScene();
-	//if (timeGetTime() - l > 5)
+	if (timeGetTime() - l > 5)
 		printf("All Draw Calls = %dms\n", timeGetTime() - l);
 presant:
 	static int n = timeGetTime();
@@ -2105,7 +2122,7 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	float pic_top = (float)tar.top / m_active_pp.BackBufferHeight;
 	float pic_height = (float)(tar.bottom - tar.top) / m_active_pp.BackBufferHeight;
 
-	// config position
+	// config subtitle position
 	float left = pic_left + pic_width * m_bmp_fleft;
 	float width = pic_width * m_bmp_fwidth;
 	float top = pic_top + pic_height * m_bmp_ftop;
@@ -2282,6 +2299,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 
 	//SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+	SetThreadAffinityMask(GetCurrentThread(), 1);
 	while(!_this->m_render_thread_exit)
 	{
 		if (_this->m_output_mode != pageflipping)
@@ -2310,7 +2328,23 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 		else
 		{
 			_this->render_nolock(true);
-			Sleep(1);
+			//Sleep(33+(rand()%18));
+			//Sleep(40+(rand()%24));
+			//Sleep(50);
+			//Sleep(33);
+
+			/*
+			LARGE_INTEGER start, current, frequency;
+			QueryPerformanceFrequency(&frequency);
+			QueryPerformanceCounter(&start);
+
+			do 
+			{
+				QueryPerformanceCounter(&current);
+				Sleep(0);
+			} while (current.QuadPart - start.QuadPart < (frequency.QuadPart/29.15));
+			*/
+
 		}
 	}
 	
@@ -3494,6 +3528,9 @@ gpu_sample::~gpu_sample()
 CCritSec g_gpu_lock;
 HRESULT gpu_sample::prepare_rendering()
 {
+	//LARGE_INTEGER counter1, counter2, fre;
+	//QueryPerformanceCounter(&counter1);
+	//QueryPerformanceFrequency(&fre);
 	if (m_prepared_for_rendering)
 		return S_FALSE;
 
@@ -3519,6 +3556,9 @@ HRESULT gpu_sample::prepare_rendering()
 	m_allocator->UpdateTexture(m_tex_NV12_UV, m_tex_gpu_NV12_UV);
 
 	m_prepared_for_rendering = true;
+	//QueryPerformanceCounter(&counter2);
+
+	//mylog("prepare_rendering() cost %d cycle(%.3fms).\n", (int)(counter2.QuadPart - counter1.QuadPart), (double)(counter2.QuadPart-counter1.QuadPart)/fre.QuadPart);
 
 	return S_OK;
 }
@@ -3748,7 +3788,7 @@ bool gpu_sample::is_ignored_line(int line)
 
 gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test, bool remux_mode, D3DPOOL pool)
 {
-	CAutoLock lck(&g_gpu_lock);
+	//CAutoLock lck(&g_gpu_lock);
 	m_allocator = allocator;
 	m_interlace_flags = 0;
 	m_tex_RGB32 = m_tex_YUY2 = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
@@ -3939,4 +3979,94 @@ clearup:
 	safe_delete(m_tex_Y);
 	safe_delete(m_tex_YV12_UV);
 	safe_delete(m_tex_NV12_UV);
+}
+
+my12doom_auto_shader::my12doom_auto_shader()
+{
+	m_has_key = false;
+	m_device = NULL;
+	m_data = NULL;
+	m_key = (DWORD*)malloc(32);
+}
+
+HRESULT my12doom_auto_shader::set_source(IDirect3DDevice9 *device, const DWORD *data, int datasize, bool is_ps, DWORD *aes_key)
+{
+	if (!device || !data)
+		return E_POINTER;
+
+	if (m_data) free(m_data);
+	m_data = NULL;
+
+	m_device = device;
+	m_is_ps = is_ps;
+	m_has_key = false;
+	m_data = (DWORD *) malloc(datasize);
+	m_datasize = datasize;
+	memcpy(m_data, data, datasize);
+	if (aes_key)
+	{
+		memcpy(m_key, aes_key, 32);
+		m_has_key = true;
+	}
+
+	invalid();
+	return S_OK;
+}
+
+my12doom_auto_shader::~my12doom_auto_shader()
+{
+	if (m_data) free(m_data);
+	free(m_key);
+	m_data = NULL;
+}
+
+HRESULT my12doom_auto_shader::invalid()
+{
+	m_ps = NULL;
+	m_vs = NULL;
+
+	return S_OK;
+}
+
+HRESULT my12doom_auto_shader::restore()
+{
+	DWORD * data = m_data;
+	if (m_has_key)
+	{
+		data = (DWORD*)malloc(m_datasize);
+		memcpy(data, m_data, m_datasize);
+
+		AESCryptor aes;
+		aes.set_key((unsigned char*)m_key, 256);
+		for(int i=0; i<(m_datasize/16*16)/4; i+=4)
+			aes.decrypt((unsigned char*)(data+i), (unsigned char*)(data+i));
+	}
+	HRESULT hr = E_FAIL;
+	if (m_is_ps)
+		hr = m_device->CreatePixelShader(data, &m_ps);
+	else 
+		hr = m_device->CreateVertexShader(data, &m_vs);
+
+	if (m_has_key)
+		free(data);
+
+	return hr;
+}
+
+my12doom_auto_shader::operator IDirect3DPixelShader9*()
+{
+	if (!m_is_ps)
+		return NULL;
+	if (!m_ps)
+		restore();
+	return m_ps;
+}
+
+my12doom_auto_shader::operator IDirect3DVertexShader9*()
+{
+	if (m_is_ps)
+		return NULL;
+	if (!m_vs)
+		restore();
+	return m_vs;
 }

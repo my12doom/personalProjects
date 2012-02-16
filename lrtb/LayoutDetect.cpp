@@ -171,8 +171,8 @@ HRESULT layout_detector::CheckMediaTypeCB(const CMediaType *inType)
 		return E_FAIL;
 	if (*inType->FormatType() != FORMAT_VideoInfo && *inType->FormatType() != FORMAT_VideoInfo2)
 		return E_FAIL;
-	if (*inType->Subtype() != MEDIASUBTYPE_YV12)
-		return E_FAIL;
+	//if (*inType->Subtype() != MEDIASUBTYPE_YV12)
+	//	return E_FAIL;
 
 	if( *inType->FormatType() == FORMAT_VideoInfo)
 	{
@@ -195,6 +195,8 @@ HRESULT layout_detector::SampleCB(IMediaSample *sample)
 	{
 		return S_OK;
 	}
+
+	return S_OK;
 
 	BYTE *p = NULL;
 	sample->GetPointer(&p);

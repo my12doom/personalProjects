@@ -36,6 +36,7 @@
 #define FILTER_MODE_STEREO 2
 
 #define WM_LOADFILE (WM_USER + 5)
+#define max_playlist (50)
 
 class subtitle_file_handler
 {
@@ -71,6 +72,9 @@ public:
 	HRESULT set_revert(bool revert);
 	HRESULT set_letterbox(double delta);	// 1.0 = top, -1.0 = bottom, 0 = center
 
+	// playlist
+	HRESULT play_next_file();
+
 	// play control functions
 	HRESULT play();
 	HRESULT pause();
@@ -94,6 +98,11 @@ public:
 	wchar_t *m_log;
 
 protected:
+	// playlist	
+	wchar_t *m_playlist[max_playlist];
+	int m_playlist_count;
+	int m_playlist_playing;
+
 	// saved screen settings
 	AutoSetting<RECT> m_saved_screen1;
 	AutoSetting<RECT> m_saved_screen2;
@@ -125,6 +134,7 @@ protected:
 	HRESULT reset_and_loadfile_internal(const wchar_t *pathname);
 	bool m_reset_and_load;
 	bool m_stop_after_load;
+	HRESULT m_reset_load_hr;
 	wchar_t m_file_to_load[MAX_PATH];
 
 

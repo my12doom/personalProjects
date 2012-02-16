@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib d3dx9.lib winmm.lib dxguid.lib ddraw.lib"
+				AdditionalDependencies="nvapi.lib strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode;C:\DS_SDK_LITE\BaseClasses\Debug_Unicode"
@@ -381,6 +381,14 @@
 				RelativePath=".\main.cpp"
 				>
 				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="release_mt|Win32"
 					>
 					<Tool
@@ -403,6 +411,10 @@
 			</File>
 			<File
 				RelativePath=".\private_filter.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\ZBuffer\stereo_test.h"
 				>
 			</File>
 			<Filter

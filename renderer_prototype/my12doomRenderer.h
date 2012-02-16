@@ -128,6 +128,30 @@ public:
 	DWORD m_interlace_flags;
 	int m_fn;
 };
+
+class my12doom_auto_shader
+{
+public:
+	my12doom_auto_shader();
+	HRESULT set_source(IDirect3DDevice9 *device, const DWORD *data, int datasize, bool is_ps, DWORD *aes_key);
+	~my12doom_auto_shader();
+
+	HRESULT invalid();
+	HRESULT restore();
+	operator IDirect3DPixelShader9*();
+	operator IDirect3DVertexShader9*();
+
+protected:
+	DWORD *m_data;
+	int m_datasize;
+	DWORD *m_key;
+	bool m_has_key;
+	bool m_is_ps;
+	CComPtr<IDirect3DPixelShader9> m_ps;
+	CComPtr<IDirect3DVertexShader9> m_vs;
+	IDirect3DDevice9 *m_device;
+};
+
 class my12doomRendererDShow : public DBaseVideoRenderer
 {
 public:
@@ -217,6 +241,7 @@ public:
 	CComPtr<IBaseFilter> m_dshow_renderer1;
 	CComPtr<IBaseFilter> m_dshow_renderer2;
 	AESCryptor m_AES;
+	unsigned char m_key[32];
 	REFERENCE_TIME m_frame_length;
 	bool m_deinterlace;
 	bool m_forced_deinterlace;
@@ -419,6 +444,8 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_color_adjust;
 	CComPtr <IDirect3DPixelShader9> m_ps_bmp_lanczos;
 	CComPtr <IDirect3DPixelShader9> m_ps_bmp_blur;
+
+	my12doom_auto_shader m_red_blue;
 
 	/*
 	CComPtr<IDirect3DTexture9> m1_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width

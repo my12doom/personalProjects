@@ -181,7 +181,7 @@ BEGIN
             VALUE "FileDescription", "dwindow"
             VALUE "FileVersion", "1, 0, 0, 1"
             VALUE "InternalName", "dwindow"
-            VALUE "LegalCopyright", "版权所有 (C) 2010"
+            VALUE "LegalCopyright", "版权所有 (C) 2011"
             VALUE "OriginalFilename", "dwindow.exe"
             VALUE "ProductName", "dwindow"
             VALUE "ProductVersion", "1, 0, 0, 1"
