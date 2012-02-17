@@ -1792,11 +1792,20 @@ static void get_luma_33(imgpel **block, imgpel **cur_imgY, int block_size_y, int
 	__m128i mm5 = _mm_set1_epi16(5);
 	__m128i mm20 = _mm_set1_epi16(20);
 
-	p1 = _mm_loadu_si128((__m128i*)&cur_imgY[-2][x_pos+1]);
-	p2 = _mm_loadu_si128((__m128i*)&cur_imgY[-1][x_pos+1]);
-	p3 = _mm_loadu_si128((__m128i*)&cur_imgY[0][x_pos+1]);
-	p4 = _mm_loadu_si128((__m128i*)&cur_imgY[1][x_pos+1]);
-	p5 = _mm_loadu_si128((__m128i*)&cur_imgY[2][x_pos+1]);
+	imgpel * Y = &cur_imgY[-2][x_pos+1];
+	imgpel * C = &cur_imgY[1][x_pos - 2];
+	imgpel * B = &block[0][0];
+
+	p1 = _mm_loadu_si128((__m128i*)Y);
+	Y += shift_x;
+	p2 = _mm_loadu_si128((__m128i*)Y);
+	Y += shift_x;
+	p3 = _mm_loadu_si128((__m128i*)Y);
+	Y += shift_x;
+	p4 = _mm_loadu_si128((__m128i*)Y);
+	Y += shift_x;
+	p5 = _mm_loadu_si128((__m128i*)Y);
+	Y +=shift_x;
 	if (block_size_x<=8)
 	{
 		for (j=0; j<block_size_y; j++)
@@ -1806,15 +1815,18 @@ static void get_luma_33(imgpel **block, imgpel **cur_imgY, int block_size_y, int
 			p2 = p3;
 			p3 = p4;
 			p4 = p5;
-			p5 = _mm_loadu_si128((__m128i*)&cur_imgY[j+3][x_pos+1]);
+			p5 = _mm_loadu_si128((__m128i*)Y);
+			Y += shift_x;
 
 			luma_vertical_8pixel(v, p0, p1, p2, p3, p4, p5, t0, t1, t2, t3, t4, t5);
 
-			luma_horizontal_8pixel2((__m128i*)&cur_imgY[j+1][x_pos - 2], h, t0, t1, t2, t3, t4, t5);
+			luma_horizontal_8pixel2((__m128i*)C, h, t0, t1, t2, t3, t4, t5);
+			C += shift_x;
 
 			h = _mm_avg_epu8(v, h);
 
-			_mm_storel_epi64((__m128i*)block[j], h);
+			_mm_storel_epi64((__m128i*)B, h);
+			B += 16;
 		}
 
 	}
@@ -1827,15 +1839,18 @@ static void get_luma_33(imgpel **block, imgpel **cur_imgY, int block_size_y, int
 			p2 = p3;
 			p3 = p4;
 			p4 = p5;
-			p5 = _mm_loadu_si128((__m128i*)&cur_imgY[j+3][x_pos+1]);
+			p5 = _mm_loadu_si128((__m128i*)Y);
+			Y += shift_x;
 
 			luma_vertical_16pixel(v, p0, p1, p2, p3, p4, p5, t0, t1, t2, t3, t4, t5, tmp);
 
-			luma_horizontal_16pixel2((__m128i*)&cur_imgY[j+1][x_pos - 2], h, t0, t1, t2, t3, t4, t5, tmp);
+			luma_horizontal_16pixel2((__m128i*)C, h, t0, t1, t2, t3, t4, t5, tmp);
+			C += shift_x;
 
 			h = _mm_avg_epu8(v, h);
 
-			_mm_storeu_si128((__m128i*)block[j], h);
+			_mm_storeu_si128((__m128i*)B, h);
+			B += 16;
 		}
 	}
 #endif
@@ -2315,6 +2330,8 @@ static void get_chroma_0X(imgpel *block, imgpel *cur_img, int span, int block_si
 	mm0  = _mm_set1_epi16(0);
 	mm_max=_mm_set1_epi16((unsigned short) 255 );
 
+	assert(block_size_x<=8);
+
     for (j = 0; j < block_size_y; j++)
     {
 		line    = (__m128i*)cur_row;
@@ -2463,8 +2480,9 @@ static void get_chroma_XY(imgpel *block, imgpel *cur_img, int span, int block_si
 		result_p = _mm_add_epi16( _mm_add_epi16( _mm_mullo_epi16(curline,pw00) , _mm_mullo_epi16( curlinep1, pw01) ) , _mm_add_epi16( _mm_mullo_epi16(curline_1,pw10), _mm_mullo_epi16(curlinep1_1,pw11) ) );
 		result_p = _mm_srai_epi16( _mm_add_epi16(result_p,_mm_set1_epi16((unsigned short) totalscale_p)) , total_scale );
 
-		if (block_size_x <= 8)
+		//if (block_size_x <= 8)
 			_mm_storel_epi64( pblock ,_mm_packus_epi16 (result_p, result_p));
+		/*
 		else
 		{
 			tmp = result_p;
@@ -2484,6 +2502,7 @@ static void get_chroma_XY(imgpel *block, imgpel *cur_img, int span, int block_si
 			_mm_storeu_si128(pblock ,_mm_packus_epi16 (tmp, result_p));
 
 		}
+		*/
 
 		block += 16;
 		cur_row = nxt_row;
@@ -2516,8 +2535,10 @@ static void get_block_chroma(StorablePicture *curr_ref, int x_pos, int y_pos, in
     assert(vert_block_size <=p_Vid->iChromaPadY && block_size_x<=p_Vid->iChromaPadX);
     x_pos = iClip3(-p_Vid->iChromaPadX, maxold_x, x_pos); //16
     y_pos = iClip3(-p_Vid->iChromaPadY, maxold_y, y_pos); //8
-    img1 = &curr_ref->imgUV[0][y_pos][x_pos];
-    img2 = &curr_ref->imgUV[1][y_pos][x_pos];
+    //img1 = &curr_ref->imgUV[0][y_pos][x_pos];
+    //img2 = &curr_ref->imgUV[1][y_pos][x_pos];
+	img1 = &curr_ref->imgUV[0][0][0] + y_pos * curr_ref->iChromaStride + x_pos;
+	img2 = &curr_ref->imgUV[1][0][0] + y_pos * curr_ref->iChromaStride + x_pos;
 
     if (dx == 0 && dy == 0) 
     {

@@ -150,3 +150,66 @@ int scan_mpls(const char *file, int *main_playlist_count, char *main_playlist, i
 	fclose(f);
 	return 0;
 }
+
+LONGLONG read_mpls(const char *file)
+{
+	int main_playlist_count = 0;
+	int sub_playlist_count = 0;
+	char main_playlist[4096];
+	char sub_playlist[4096];
+	int lengths[4096] = {0};
+
+	scan_mpls(file, &main_playlist_count, main_playlist, lengths, sub_playlist, &sub_playlist_count);
+
+	// check for duplicate files
+	for(int i=0; i<main_playlist_count; i++)
+		for(int j=i+1; j<main_playlist_count; j++)
+			if (strcmp(main_playlist+6*i, main_playlist+6*j)==0)
+				return -1;
+
+	LONGLONG o = -1;
+	for(int i=0; i<main_playlist_count; i++)
+		o = o == -1 ? lengths[i] : lengths[i] + o;
+
+	return o;
+}
+
+HRESULT find_main_movie(const char* path, char*out)
+{
+	HRESULT	hr	= E_FAIL;
+
+	char tmp_folder[MAX_PATH];
+	strcpy(tmp_folder, path);
+	if (tmp_folder[strlen(tmp_folder)-1] == L'\\')
+	tmp_folder[strlen(tmp_folder)-1] = NULL;
+
+	char	strFilter[MAX_PATH];
+	wsprintfA(strFilter, "%s\\BDMV\\PLAYLIST\\*.mpls", tmp_folder);
+
+	WIN32_FIND_DATAA fd = {0};
+	HANDLE hFind = FindFirstFileA(strFilter, &fd);
+	if(hFind != INVALID_HANDLE_VALUE)
+	{
+		LONGLONG		rtMax	= 0;
+		LONGLONG		rtCurrent;
+		char	strCurrentPlaylist[MAX_PATH];
+		do
+		{
+			wsprintfA(strCurrentPlaylist, "%s\\BDMV\\PLAYLIST\\%s", tmp_folder, fd.cFileName);
+
+			// Main movie shouldn't have duplicate files...
+			if ((rtCurrent = read_mpls(strCurrentPlaylist) )> rtMax)
+			{
+				rtMax			= rtCurrent;
+
+				strcpy(out, strCurrentPlaylist);
+				hr				= S_OK;
+			}
+		}
+		while(FindNextFileA(hFind, &fd));
+
+		FindClose(hFind);
+	}
+
+	return hr;
+}

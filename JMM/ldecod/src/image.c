@@ -954,7 +954,7 @@ int decode_one_frame(DecoderParams *pDecoder)
 		  //if (cores_found>=8)
 		  //	  SetThreadAffinityMask(thread_handles[i], 1<<(i*2));
 		  thread_tasks[i] = NULL;
-		  SetThreadPriority(thread_handles[i], THREAD_PRIORITY_HIGHEST);
+		  //SetThreadPriority(thread_handles[i], THREAD_PRIORITY_HIGHEST);
 	  }
   }
 

@@ -557,7 +557,8 @@ static void Report(VideoParameters *p_Vid)
     if ((p_log=fopen(string,"a"))==0)
     {
       snprintf(errortext, ET_SIZE, "Error open file %s for appending",string);
-      error(errortext, 500);
+      fprintf(stderr, errortext);
+	  return;
     }
     else                                              // Create header to new file
     {
@@ -618,6 +619,9 @@ static void Report(VideoParameters *p_Vid)
 
   snprintf(string, OUTSTRING_SIZE,"%s", DATADECFILE);
   p_log=fopen(string,"a");
+
+  if (!p_log)
+	  return;
 
   if(p_Vid->Bframe_ctr != 0) // B picture used
   {

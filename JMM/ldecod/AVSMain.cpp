@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <windows.h>
+#include <Shlwapi.h>
 #include "AVSMain.h"
 #include "readmpls.h"
 #include "ts_stream.h"
 
 #include "..\..\my12doom_revision.h"
+
+#pragma comment (lib, "Shlwapi.lib")
 
 // ldecod decoding
 extern "C"
@@ -267,10 +270,25 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	int frame_count = args[2].AsInt(-1);
 	int buffer_count = args[3].AsInt(10);
 	const char *ldecod_args = args[4].AsString("");
+	char playlist[MAX_PATH];
 
 	// check para and input files
 	if (file1[0] == NULL)
 		env->ThrowError("must have a input file.");
+
+	// check for folder
+	if(PathIsDirectoryA(file1))
+	{
+		HRESULT hr;
+		if (FAILED(hr = find_main_movie(file1, playlist)))
+			env->ThrowError("Couldn't find main movie for '%s'", file1);
+		else
+		{
+			printf("Found main movie: %s\n", playlist);
+			file1 = playlist;
+		}
+	}
+
 
 	// check for mpls
 	int main_playlist_count = 0;
