@@ -149,6 +149,88 @@ HRESULT detect_monitors()
 	return S_OK;
 }
 
+int get_mixed_monitor_count(bool horizontal /* = false */, bool vertical /* = false */)
+{
+	for(int i=0; i<32; i++)
+		if (get_mixed_monitor_by_id(i, NULL, NULL, horizontal, vertical) != 0)
+			return i;
+	return 0;
+}
+
+int get_mixed_monitor_by_id(int id, RECT *rect, wchar_t *descriptor, bool horizontal /* = false */, bool vertical /* = false */)
+{
+	RECT found[48];
+	int counter = 0;
+
+	if (id < 0)
+		return -1;
+
+	// return on direct logical match
+	if (id < g_logic_monitor_count)
+	{
+		if (rect)
+			*rect = g_logic_monitor_rects[id];
+
+		if (descriptor)
+		{
+			RECT rect = g_logic_monitor_rects[id];
+			wsprintfW(descriptor, L"%s %d (%dx%d)", C(L"Monitor"), id+1, rect.right - rect.left, rect.bottom - rect.top);
+		}
+
+		return 0;
+	}
+
+	// find neighbor monitors
+	for(int i=0; i<g_logic_monitor_count; i++)
+		for(int j=i+1; j<g_logic_monitor_count; j++)
+		{
+			bool neighbor = false;
+			RECT &r1 = g_logic_monitor_rects[i];
+			RECT &r2 = g_logic_monitor_rects[j];
+			if (horizontal)
+			{
+				if ((r1.right == r2.left || r2.right == r1.left) &&			// neighbor
+					 (r1.bottom - r1.top == r2.bottom - r2.top) &&			// same height
+					 (r1.right - r1.left == r2.right - r2.left))			// same width
+					 neighbor = true;
+			}
+
+			if (vertical)
+			{
+				if ((r1.top == r2.bottom || r2.top == r1.bottom) &&			// neighbor
+					(r1.bottom - r1.top == r2.bottom - r2.top) &&			// same height
+					(r1.right - r1.left == r2.right - r2.left))				// same width
+					neighbor = true;
+			}
+
+			if (neighbor)
+			{
+				if (counter == id - g_logic_monitor_count)
+				{
+					if (rect)
+					{
+						rect->left = min(r1.left, r2.left);
+						rect->right = max(r1.right, r2.right);
+						rect->top = min(r1.top, r2.top);
+						rect->bottom = max(r1.bottom, r2.bottom);
+					}
+
+					if (descriptor)
+					{
+						RECT rect = g_logic_monitor_rects[id];
+						wsprintfW(descriptor, L"%s %d+%d (%dx%dx2)", C(L"Monitor"), i+1, j+1, r1.right - r1.left, r2.bottom - r2.top);
+					}
+
+					return 0;
+				}
+
+				counter++;
+			}
+		}
+
+	return -1;
+}
+
 bool browse_folder(wchar_t *out, HWND owner/* = NULL*/)
 {
 	BROWSEINFOW b;

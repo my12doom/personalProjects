@@ -219,11 +219,13 @@ HRESULT dx_player::detect_monitors()
 	m_screen2 = m_saved_screen2;
 	bool saved_screen1_exist = false;
 	bool saved_screen2_exist = false;
-	for(int i=0; i<g_logic_monitor_count; i++)
+	for(int i=0; i<get_mixed_monitor_count(true,true); i++)
 	{
-		if (compare_rect(g_logic_monitor_rects[i], m_saved_screen1))
+		RECT rect;
+		get_mixed_monitor_by_id(i, &rect, NULL, true, true);
+		if (compare_rect(rect, m_saved_screen1))
 			saved_screen1_exist = true;
-		if (compare_rect(g_logic_monitor_rects[i], m_saved_screen2))
+		if (compare_rect(rect, m_saved_screen2))
 			saved_screen2_exist = true;
 	}
 
@@ -273,7 +275,7 @@ HRESULT dx_player::set_output_monitor(int out_id, int monitor_id)
 {
 
 	::detect_monitors();
-	if (monitor_id < 0 || monitor_id >= g_logic_monitor_count)
+	if (monitor_id < 0 || monitor_id >= get_mixed_monitor_count(true, true))
 		return E_FAIL;
 	if (out_id<0 || out_id>1)
 		return E_FAIL;
@@ -286,9 +288,12 @@ HRESULT dx_player::set_output_monitor(int out_id, int monitor_id)
 	}
 
 	if (out_id)
-		m_screen2 = g_logic_monitor_rects[monitor_id];
+		get_mixed_monitor_by_id(monitor_id, &m_screen2, NULL, true, true);
+		//m_screen2 = g_logic_monitor_rects[monitor_id];
 	else
-		m_screen1 = g_logic_monitor_rects[monitor_id];
+		//m_screen1 = g_logic_monitor_rects[monitor_id];
+		get_mixed_monitor_by_id(monitor_id, &m_screen1, NULL, true, true);
+
 
 	m_saved_screen1 = m_screen1;
 	m_saved_screen2 = m_screen2;
@@ -652,14 +657,13 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 
 	if (m_output_mode == out_tb)
 	{
-		if (hit_y < height/2)
-			hit_y += height/2;
+		height /= 2;
+		hit_y %= height;
 	}
 
 	if (m_output_mode == out_htb)
 	{
-		if (hit_y < height/2)
-			hit_y *= 2;
+		hit_y = (hit_y%(height/2)) * 2;
 	}
 
 	if (m_output_mode == out_sbs)
@@ -728,14 +732,17 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		}
 
 		// list monitors
-		for(int i=0; i<g_logic_monitor_count; i++)
+		for(int i=0; i<get_mixed_monitor_count(true, true); i++)
 		{
-			RECT &rect = g_logic_monitor_rects[i];
+			RECT rect;// = g_logic_monitor_rects[i];
+			wchar_t tmp[256];
+
+			get_mixed_monitor_by_id(i, &rect, tmp, true, true);
+
 			DWORD flag1 = compare_rect(rect, m_screen1) ? MF_CHECKED : MF_UNCHECKED;
 			DWORD flag2 = compare_rect(rect, m_screen2) ? MF_CHECKED : MF_UNCHECKED;
 
-			wchar_t tmp[256];
-			wsprintfW(tmp, L"%s %d (%dx%d)", C(L"Monitor"), i+1, rect.right - rect.left, rect.bottom - rect.top);
+			//wsprintfW(tmp, L"%s %d (%dx%d)", C(L"Monitor"), i+1, rect.right - rect.left, rect.bottom - rect.top);
 			InsertMenuW(output1, 0, flag1, 'M0' + i, tmp);
 			InsertMenuW(output2, 0, flag2, 'N0' + i, tmp);
 		}
@@ -881,14 +888,15 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 		if (m_output_mode == out_tb)
 		{
-			if (hit_y < height/2)
-				hit_y += height/2;
+			//if (hit_y < height/2)
+			//	hit_y += height/2;
+			height /= 2;
+			hit_y %= height;
 		}
 
 		if (m_output_mode == out_htb)
 		{
-			if (hit_y < height/2)
-				hit_y *= 2;
+			hit_y = (hit_y%(height/2)) * 2;
 		}
 
 		if (m_output_mode == out_sbs)
@@ -964,14 +972,13 @@ LRESULT dx_player::on_timer(int id)
 
 			if (m_output_mode == out_tb)
 			{
-				if (hit_y < height/2)
-					hit_y += height/2;
+				height /= 2;
+				hit_y %= height;
 			}
 
 			if (m_output_mode == out_htb)
 			{
-				if (hit_y < height/2)
-					hit_y *= 2;
+				hit_y = (hit_y%(height/2)) * 2;
 			}
 
 			if (m_output_mode == out_sbs)
@@ -1000,14 +1007,13 @@ LRESULT dx_player::on_timer(int id)
 
 			if (m_output_mode == out_tb)
 			{
-				if (hit_y < height/2)
-					hit_y += height/2;
+				height /= 2;
+				hit_y %= height;
 			}
 
 			if (m_output_mode == out_htb)
 			{
-				if (hit_y < height/2)
-					hit_y *= 2;
+				hit_y = (hit_y%(height/2)) * 2;
 			}
 
 			if (m_output_mode == out_sbs)
@@ -1510,11 +1516,14 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		enable_subtitle_track(trackid);
 	}
 
+	// output monitor 1
 	else if (uid >= 'M0' && uid <'N0')
 	{
 		int monitorid = uid - 'M0';
 		set_output_monitor(0, monitorid);
 	}
+
+	// output monitor 2
 	else if (uid >= 'N0' && uid <'O0')
 	{
 		int monitorid = uid - 'N0';

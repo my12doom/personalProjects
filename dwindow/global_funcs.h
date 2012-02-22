@@ -82,6 +82,9 @@ DWORD WINAPI killer_thread2(LPVOID time);
 HRESULT detect_monitors();
 int wcsexplode(const wchar_t *string_to_explode, const wchar_t *delimeter, wchar_t **out, int max_part = 0xfffffff);			// caller should alloc a wchar_t *out[max_part] and free every element of out;
 int wcstrim(wchar_t *str, wchar_t char_ = L' ' );
+int get_mixed_monitor_count(bool horizontal = false, bool vertical = false);
+int get_mixed_monitor_by_id(int id, RECT *rect, wchar_t *descriptor, bool horizontal = false, bool vertical = false);
+
 
 
 // CoreMVC
