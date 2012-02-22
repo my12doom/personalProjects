@@ -708,7 +708,37 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	show_ui(true);
 	show_mouse(true);
 	reset_timer(1, 99999999);
-	if ( (button == VK_RBUTTON || (!m_file_loaded && m_renderer1 && m_renderer1->hittest(x, y, NULL) == -2) && 
+
+	RECT r;
+	GetClientRect(id_to_hwnd(id), &r);
+	m_bar_drawer.total_width = r.right - r.left;
+	int height = r.bottom - r.top;
+	if (m_output_mode == out_tb)
+	{
+		//if (hit_y < height/2)
+		//	hit_y += height/2;
+		height /= 2;
+		y %= height;
+	}
+
+	if (m_output_mode == out_htb)
+	{
+		y = (y%(height/2)) * 2;
+	}
+
+	if (m_output_mode == out_sbs)
+	{
+		m_bar_drawer.total_width /= 2;
+		x %= m_bar_drawer.total_width;
+	}
+
+	if (m_output_mode == out_hsbs)
+	{
+		x *= 2;
+		x %= m_bar_drawer.total_width;
+	}
+
+	if ( (button == VK_RBUTTON || (!m_file_loaded && m_renderer1 && m_renderer1->hittest(x, y, NULL) == hit_logo) && 
 		(!m_renderer1 || !m_renderer1->get_fullscreen())))
 	{
 
@@ -876,40 +906,13 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	}
 	else if (button == VK_LBUTTON)
 	{
-		RECT r;
-		GetClientRect(id_to_hwnd(id), &r);
 		double v;
 		int type;
 		
-		m_bar_drawer.total_width = r.right - r.left;
-		int height = r.bottom - r.top;
 		int hit_x = x;
 		int hit_y = y;
 
-		if (m_output_mode == out_tb)
-		{
-			//if (hit_y < height/2)
-			//	hit_y += height/2;
-			height /= 2;
-			hit_y %= height;
-		}
 
-		if (m_output_mode == out_htb)
-		{
-			hit_y = (hit_y%(height/2)) * 2;
-		}
-
-		if (m_output_mode == out_sbs)
-		{
-			m_bar_drawer.total_width /= 2;
-			hit_x %= m_bar_drawer.total_width;
-		}
-
-		if (m_output_mode == out_hsbs)
-		{
-			hit_x *= 2;
-			hit_x %= m_bar_drawer.total_width;
-		}
 
 		type = -1;
 		if (m_renderer1) type = m_renderer1->hittest(hit_x, hit_y, &v);
