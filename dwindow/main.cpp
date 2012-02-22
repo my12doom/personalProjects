@@ -254,25 +254,6 @@ static const byte rLPS_table_64x4[64][4]=
 
 int main()
 {
-	char *tmp = new char [1024*512];
-	FILE * f = fopen("Z:\\ran.yuv", "wb");
-	for(int j=0; j<100; j++)
-	{
-	for(int i=0; i<1024*512; i++)
-		tmp[i] = rand() & 0xff;
-
-	fwrite(tmp, 1, sizeof(char)*1024*512, f);
-	fflush(f);
-	}
-
-	for(int i = 0; i<64; i++)
-		for(int j=0; j<4; j++)
-		{
-			int c256 = i<<2 | j;
-			int v256 = rLPS_table_64x4[i][j];
-
-			printf("%d, ", v256);
-		}
 	WinMain(GetModuleHandle(NULL), 0, "", SW_SHOW);
 
 

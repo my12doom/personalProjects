@@ -101,7 +101,12 @@ m_right_queue(_T("right queue"))
 	m_render_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_pool = NULL;
 	m_last_rendered_sample1 = m_last_rendered_sample2 = m_sample2render_1 = m_sample2render_2 = NULL;
-	m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
+	Direct3DCreate9Ex(D3D_SDK_VERSION, &m_D3DEx);
+	if (m_D3DEx)
+		m_D3DEx->QueryInterface(IID_IDirect3D9, (void**)&m_D3D);
+	else
+		m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
+
 	m_nv3d_enabled = false;
 	m_nv3d_actived = false;
 	m_nv3d_display = NULL;
@@ -763,7 +768,7 @@ HRESULT my12doomRenderer::create_render_targets()
 
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_left, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_right, NULL));
-	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, NULL, D3DFMT_L8, D3DPOOL_MANAGED, &m_tex_mask, NULL));
+	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, NULL, D3DFMT_L8, D3DPOOL_DEFAULT, &m_tex_mask, NULL));
 	FAIL_RET( m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, TRUE, &m_nv3d_surface, NULL));
 	FAIL_RET(generate_mask());
 
@@ -1028,10 +1033,22 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			}
 #endif
 		}
+		HRESULT hr;
 		CAutoLock lck(&m_frame_lock);
-		HRESULT hr = m_D3D->CreateDevice( AdapterToUse, DeviceType,
-			m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
-			&m_active_pp, &m_Device );
+		if (m_D3DEx)
+		{
+			hr = m_D3DEx->CreateDeviceEx( AdapterToUse, DeviceType,
+				m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
+				&m_active_pp, NULL, &m_DeviceEx );
+
+			m_DeviceEx->QueryInterface(IID_IDirect3DDevice9, (void**)&m_Device);
+		}
+		else
+		{
+			hr = m_D3D->CreateDevice( AdapterToUse, DeviceType,
+				m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
+				&m_active_pp, &m_Device );
+		}
 
 		if (FAILED(hr))
 			return hr;
@@ -1048,7 +1065,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		}
 
 		FAIL_SLEEP_RET(restore_gpu_objects());
-		m_device_state = fine;
+		m_device_state = fine;	
 	}
 
 	return S_OK;
@@ -3099,15 +3116,20 @@ HRESULT my12doomRenderer::calculate_vertex()
 }
 HRESULT my12doomRenderer::generate_mask()
 {
+	HRESULT hr;
 	if (m_output_mode != masking)
 		return S_FALSE;
 
 	if (!m_tex_mask)
 		return VFW_E_NOT_CONNECTED;
 
+	CComPtr<IDirect3DTexture9> mask_cpu;
+	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, NULL, D3DFMT_L8, D3DPOOL_SYSTEMMEM, &mask_cpu, NULL));
+
+
 	CAutoLock lck(&m_frame_lock);
 	D3DLOCKED_RECT locked;
-	HRESULT hr = m_tex_mask->LockRect(0, &locked, NULL, NULL);
+	hr = mask_cpu->LockRect(0, &locked, NULL, NULL);
 	if (FAILED(hr)) return hr;
 
 	BYTE *dst = (BYTE*) locked.pBits;
@@ -3146,7 +3168,8 @@ HRESULT my12doomRenderer::generate_mask()
 			dst += locked.Pitch;
 		}
 	}
-	hr = m_tex_mask->UnlockRect(0);
+	hr = mask_cpu->UnlockRect(0);
+	hr = m_Device->UpdateTexture(mask_cpu, m_tex_mask);
 
 	return hr;
 }

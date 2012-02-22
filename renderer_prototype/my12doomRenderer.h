@@ -411,7 +411,9 @@ protected:
 	HWND m_hWnd;
 	HWND m_hWnd2;
 	CComPtr<IDirect3D9>		m_D3D;
+	CComPtr<IDirect3D9Ex>	m_D3DEx;
 	CComPtr<IDirect3DDevice9> m_Device;
+	CComPtr<IDirect3DDevice9Ex> m_DeviceEx;
 	CComPtr<IDirect3DSwapChain9> m_swap1;
 	CComPtr<IDirect3DSwapChain9> m_swap2;
 	//CComPtr<IDirect3DQuery9> m_d3d_query;
