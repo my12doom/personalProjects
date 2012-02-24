@@ -91,6 +91,7 @@ public:
 	}
 	bool is_closed();
 	HRESULT toggle_fullscreen();
+	HRESULT set_output_mode(int mode);
 	POINT m_mouse;
 
 	// error reporting vars and functions

@@ -803,7 +803,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		// disable output mode when fullscreen
 		if (m_full1 || (m_renderer1 ? m_renderer1->get_fullscreen() : false))
 		{
-			ModifyMenuW(video, 1, MF_BYPOSITION | MF_GRAYED, ID_PLAY, C(L"Output Mode"));
+			//ModifyMenuW(video, 1, MF_BYPOSITION | MF_GRAYED, ID_PLAY, C(L"Output Mode"));
 		}
 
 
@@ -960,7 +960,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 			seek((int)(total_time * v));
 			m_dragging = hit_progress;
 		}
-		else if (type < 0 && !m_full1)
+		else if (type < 0 && !m_full1 && (!m_renderer1 || !m_renderer1->get_fullscreen()))
 		{
 			// move this window
 			ReleaseCapture();
@@ -1278,91 +1278,81 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// output mode
 	else if (uid == ID_OUTPUTMODE_NVIDIA3DVISION)
 	{
-		m_output_mode = NV3D;
-		if (m_renderer1)
-			m_renderer1->set_output_mode(m_output_mode);			
+		set_output_mode(NV3D);			
 	}
 	else if (uid == ID_OUTPUTMODE_MONOSCOPIC2D)
 	{
-		m_output_mode = mono;
-		if (m_renderer1)
-			m_renderer1->set_output_mode(m_output_mode);			
+		set_output_mode(mono);			
 	}
 	else if (uid == ID_OUTPUTMODE_ROWINTERLACE)
 	{
-		m_output_mode = masking;
 		m_mask_mode = row_interlace;
 		if (m_renderer1)
 		{
 			m_renderer1->set_mask_mode(m_mask_mode);
-			m_renderer1->set_output_mode(m_output_mode);
 		}
+		set_output_mode(masking);
 	}
 	else if (uid == ID_OUTPUTMODE_LINEINTERLACE)
 	{
-		m_output_mode = masking;
 		m_mask_mode = line_interlace;
 		if (m_renderer1)
 		{
 			m_renderer1->set_mask_mode(m_mask_mode);
-			m_renderer1->set_output_mode(m_output_mode);
 		}
+		set_output_mode(masking);
 	}
 	else if (uid == ID_OUTPUTMODE_CHECKBOARDINTERLACE)
 	{
-		m_output_mode = masking;
 		m_mask_mode = checkboard_interlace;
 		if (m_renderer1)
 		{
 			m_renderer1->set_mask_mode(m_mask_mode);
-			m_renderer1->set_output_mode(m_output_mode);
 		}
+		set_output_mode(masking);
 	}
 	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR)
 	{
-		m_output_mode = dual_window;
-		if (m_renderer1)
-			m_renderer1->set_output_mode(m_output_mode);			
+		set_output_mode(dual_window);			
 	}
 	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR_SBS)
 	{
-		m_output_mode = out_sbs;
-		if (m_renderer1)
-			m_renderer1->set_output_mode(m_output_mode);			
+		set_output_mode(out_sbs);			
 	}
 	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR_TB)
 	{
-		m_output_mode = out_tb;
-		if (m_renderer1)
-			m_renderer1->set_output_mode(m_output_mode);			
+		set_output_mode(out_tb);			
 	}
 	else if (uid == ID_OUTPUTMODE_3DTV_SBS)
 	{
-		m_output_mode = out_hsbs;
-		if (m_renderer1)
-			m_renderer1->set_output_mode(m_output_mode);			
+		set_output_mode(out_hsbs);			
 	}
 	else if (uid == ID_OUTPUTMODE_3DTV_TB)
 	{
-		m_output_mode = out_htb;
-		if (m_renderer1)
-			m_renderer1->set_output_mode(m_output_mode);			
+		set_output_mode(out_htb);			
 	}
 	else if (uid == ID_OUTPUTMODE_IZ3D)
 	{
-		m_output_mode = iz3d;
-		if (m_renderer1)
-			m_renderer1->set_output_mode(m_output_mode);
+		set_output_mode(iz3d);
 	}
 	else if (uid == ID_OUTPUTMODE_GERNERAL120HZGLASSES)
 	{
-		m_output_mode = pageflipping;
+		set_output_mode(pageflipping);			
+	}
+	else if (uid == ID_OUTPUTMODE_ANAGLYPH)
+	{
+		m_anaglygh_left_color = RGB(255,0,0);
+		m_anaglygh_right_color = RGB(0,255,255);
 		if (m_renderer1)
-			m_renderer1->set_output_mode(m_output_mode);			
+		{
+			m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
+			m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
+		}
+		set_output_mode(anaglyph);
+
 	}
 
 	// aspect ratio
-
 	else if (uid == ID_ASPECTRATIO_DEFAULT)
 	{
 		m_aspect = -1;
@@ -1397,20 +1387,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		set_revert(!m_revert);
 	}
 
-	// anaglygh
-	else if (uid == ID_OUTPUTMODE_ANAGLYPH)
-	{
-		m_anaglygh_left_color = RGB(255,0,0);
-		m_anaglygh_right_color = RGB(0,255,255);
-		m_output_mode = anaglyph;
-		if (m_renderer1)
-		{
-			m_renderer1->set_output_mode(m_output_mode);
-			m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
-			m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
-		}
-
-	}
+	/*
 	else if (uid == ID_ANAGLYPH_CUSTOMCOLOR)
 	{
 		m_output_mode = anaglyph;
@@ -1455,6 +1432,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			}
 		}
 	}
+	*/
 
 	else if (uid == ID_LOADAUDIOTRACK)
 	{
@@ -2690,6 +2668,27 @@ HRESULT dx_player::select_font(bool show_dlg)
 	m_lFontPointSize = cf.iPointSize / 10;  // Specified in 1/10 point units
 	//m_font_color = cf.rgbColors;
 	m_font = CreateFontIndirectW(cf.lpLogFont); 
+
+	return S_OK;
+}
+
+HRESULT dx_player::set_output_mode(int mode)
+{
+	if (!m_renderer1)
+		return VFW_E_NOT_CONNECTED;
+
+	bool toggle = false;
+	if (m_full1 || m_full2)
+	{
+		toggle = true;
+		toggle_fullscreen();
+	}
+
+	m_output_mode = mode;
+	m_renderer1->set_output_mode(mode);
+
+	if (toggle)
+		toggle_fullscreen();
 
 	return S_OK;
 }
