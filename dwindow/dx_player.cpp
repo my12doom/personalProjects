@@ -146,7 +146,8 @@ m_contrast(L"Contrast", 0.5),
 m_saturation2(L"Saturation2", 0.5),
 m_luminance2(L"Luminance2", 0.5),
 m_hue2(L"Hue2", 0.5),
-m_contrast2(L"Contrast2", 0.5)
+m_contrast2(L"Contrast2", 0.5),
+m_theater_owner(NULL)
 {
 	detect_monitors();
 
@@ -512,6 +513,21 @@ HRESULT dx_player::get_volume(double *volume)
 	return S_OK;
 }
 
+bool dx_player::is_playing()
+{
+	bool is = false;
+
+	if (m_mc)
+	{
+		OAFilterState state = State_Stopped;
+		m_mc->GetState(500, &state);
+		if (state == State_Running)
+			is = true;
+	}
+
+	return is;
+}
+
 bool dx_player::is_closed()
 {
 	return !is_visible(1) && !is_visible(2);
@@ -724,6 +740,173 @@ LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 	return S_OK;
 }
 
+HRESULT dx_player::popup_menu(HWND owner)
+{
+	HMENU menu = LoadMenu(m_hexe, MAKEINTRESOURCE(IDR_MENU1));
+	menu = GetSubMenu(menu, 0);
+	localize_menu(menu);
+	HMENU video = GetSubMenu(menu, 4);
+
+	// output selection menu
+	::detect_monitors();
+	HMENU output1 = GetSubMenu(video, 3);
+	HMENU output2 = GetSubMenu(video, 4);
+	DeleteMenu(output1, 0, MF_BYPOSITION);
+	DeleteMenu(output2, 0, MF_BYPOSITION);
+
+	// disable selection while full screen
+	if (m_full1 && m_full2 && false)
+	{
+		ModifyMenuW(video, 3, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT1, C(L"Output 1"));
+		ModifyMenuW(video, 4, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT2, C(L"Output 2"));
+	}
+
+	// list monitors
+	for(int i=0; i<get_mixed_monitor_count(true, true); i++)
+	{
+		RECT rect;// = g_logic_monitor_rects[i];
+		wchar_t tmp[256];
+
+		get_mixed_monitor_by_id(i, &rect, tmp, true, true);
+
+		DWORD flag1 = compare_rect(rect, m_screen1) ? MF_CHECKED : MF_UNCHECKED;
+		DWORD flag2 = compare_rect(rect, m_screen2) ? MF_CHECKED : MF_UNCHECKED;
+
+		//wsprintfW(tmp, L"%s %d (%dx%d)", C(L"Monitor"), i+1, rect.right - rect.left, rect.bottom - rect.top);
+		InsertMenuW(output1, 0, flag1, 'M0' + i, tmp);
+		InsertMenuW(output2, 0, flag2, 'N0' + i, tmp);
+	}
+
+	// disable output mode when fullscreen
+	if (m_full1 || (m_renderer1 ? m_renderer1->get_fullscreen() : false))
+	{
+		//ModifyMenuW(video, 1, MF_BYPOSITION | MF_GRAYED, ID_PLAY, C(L"Output Mode"));
+	}
+
+
+	// play / pause
+	bool paused = true;
+	if (m_mc)
+	{
+		static OAFilterState fs = State_Running;
+		HRESULT hr = m_mc->GetState(100, &fs);
+		if (fs == State_Running)
+			paused = false;
+	}
+	int flag = GetMenuState(menu, ID_PLAY, MF_BYCOMMAND);
+	ModifyMenuW(menu, ID_PLAY, MF_BYCOMMAND| flag, ID_PLAY, paused ? C(L"Play\t(Space)") : C(L"Pause\t(Space)"));
+
+	// find BD drives
+	HMENU sub_open_BD = GetSubMenu(menu, 1);
+	bool drive_found = false;
+	for(int i=L'Z'; i>L'B'; i--)
+	{
+		wchar_t tmp[MAX_PATH] = L"C:\\";
+		wchar_t tmp2[MAX_PATH];
+		tmp[0] = i;
+		tmp[4] = NULL;
+		if (GetDriveTypeW(tmp) == DRIVE_CDROM)
+		{
+			drive_found = true;
+			UINT flag = MF_BYPOSITION | MF_STRING;
+			if (!GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
+			{
+				wcscat(tmp, C(L" (No Disc)"));
+				flag |= MF_GRAYED;
+			}
+			else if (FAILED(find_main_movie(tmp, tmp2)))
+			{
+				wcscat(tmp, C(L" (No Movie Disc)"));
+				flag |= MF_GRAYED;
+			}
+			else
+			{
+				GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0);
+				wsprintfW(tmp, L"%s (%s)", tmp, tmp2);
+			}
+			InsertMenuW(sub_open_BD, 0, flag, i, tmp);
+		}
+	}
+	if (drive_found)
+		DeleteMenu(sub_open_BD, ID_OPENBLURAY3D_NONE, MF_BYCOMMAND);
+
+	// input mode
+	CheckMenuItem(menu, ID_INPUTLAYOUT_AUTO,		m_input_layout == input_layout_auto ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INPUTLAYOUT_SIDEBYSIDE,	m_input_layout == side_by_side ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INPUTLAYOUT_TOPBOTTOM,	m_input_layout == top_bottom ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INPUTLAYOUT_MONOSCOPIC,	m_input_layout == mono2d ? MF_CHECKED:MF_UNCHECKED);
+
+	// output mode
+	CheckMenuItem(menu, ID_OUTPUTMODE_NVIDIA3DVISION,		m_output_mode == NV3D ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_MONOSCOPIC2D,			m_output_mode == mono ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_ROWINTERLACE,			m_output_mode == masking && m_mask_mode == row_interlace ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_LINEINTERLACE,		m_output_mode == masking && m_mask_mode == line_interlace? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_CHECKBOARDINTERLACE,	m_output_mode == masking && m_mask_mode == checkboard_interlace ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR,		m_output_mode == dual_window ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_SBS,	m_output_mode == out_sbs ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_TB,		m_output_mode == out_tb ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_IZ3D,					m_output_mode == iz3d ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_GERNERAL120HZGLASSES,	m_output_mode == pageflipping ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				m_output_mode == out_hsbs ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
+
+	// Aspect Ration
+	if (m_aspect == -1) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
+	if (m_aspect == 2.35) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
+	if (m_aspect == (double)16/9) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
+	if (m_aspect == (double)4/3) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
+
+	// subtitle menu
+	CheckMenuItem(menu, ID_SUBTITLE_DISPLAYSUBTITLE, MF_BYCOMMAND | (m_display_subtitle ? MF_CHECKED : MF_UNCHECKED));
+	HMENU sub_subtitle = GetSubMenu(menu, 6);
+	{
+		CAutoLock lck(&m_subtitle_sec);
+		if (!m_srenderer || FAILED(m_srenderer->set_font_color(m_font_color)))
+		{
+			EnableMenuItem(sub_subtitle, ID_SUBTITLE_FONT, MF_GRAYED);
+			EnableMenuItem(sub_subtitle, ID_SUBTITLE_COLOR, MF_GRAYED);
+		}
+		else
+		{
+			EnableMenuItem(sub_subtitle, ID_SUBTITLE_FONT, MF_ENABLED);
+			EnableMenuItem(sub_subtitle, ID_SUBTITLE_COLOR, MF_ENABLED);
+		}
+	}
+
+	// LAV Audio Decoder and 
+	CheckMenuItem(menu, ID_AUDIO_USELAV, MF_BYCOMMAND | (m_useLAV ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_AUDIO_BITSTREAM, MF_BYCOMMAND | (m_useLAV && m_bitstreaming ? MF_CHECKED : MF_UNCHECKED));
+
+	// audio tracks
+	HMENU sub_audio = GetSubMenu(menu, 5);
+	list_audio_track(sub_audio);
+
+	// subtitle tracks
+	list_subtitle_track(sub_subtitle);
+
+	// language
+	if (g_active_language == ENGLISH)
+		CheckMenuItem(menu, ID_LANGUAGE_ENGLISH, MF_CHECKED | MF_BYCOMMAND);
+	else if (g_active_language == CHINESE)
+		CheckMenuItem(menu, ID_LANGUAGE_CHINESE, MF_CHECKED | MF_BYCOMMAND);
+
+	// swap
+	CheckMenuItem(menu, ID_SWAPEYES, m_revert ? MF_CHECKED:MF_UNCHECKED);
+
+	// CUDA
+	CheckMenuItem(menu, ID_CUDA, g_CUDA ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_DEINTERLACE, m_forced_deinterlace ? MF_CHECKED:MF_UNCHECKED);
+
+
+	// show it
+	POINT mouse_pos;
+	GetCursorPos(&mouse_pos);
+	TrackPopupMenu(menu, TPM_TOPALIGN | TPM_LEFTALIGN, mouse_pos.x-5, mouse_pos.y-5, 0, owner, NULL);
+
+	return S_OK;
+}
+
 LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 {
 	if (!m_gb)
@@ -764,168 +947,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	if ( (button == VK_RBUTTON || (!m_file_loaded && m_renderer1 && m_renderer1->hittest(x, y, NULL) == hit_logo) && 
 		(!m_renderer1 || !m_renderer1->get_fullscreen())))
 	{
-
-		HMENU menu = LoadMenu(m_hexe, MAKEINTRESOURCE(IDR_MENU1));
-		menu = GetSubMenu(menu, 0);
-		localize_menu(menu);
-		HMENU video = GetSubMenu(menu, 4);
-
-		// output selection menu
-		::detect_monitors();
-		HMENU output1 = GetSubMenu(video, 3);
-		HMENU output2 = GetSubMenu(video, 4);
-		DeleteMenu(output1, 0, MF_BYPOSITION);
-		DeleteMenu(output2, 0, MF_BYPOSITION);
-
-		// disable selection while full screen
-		if (m_full1 && m_full2 && false)
-		{
-			ModifyMenuW(video, 3, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT1, C(L"Output 1"));
-			ModifyMenuW(video, 4, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT2, C(L"Output 2"));
-		}
-
-		// list monitors
-		for(int i=0; i<get_mixed_monitor_count(true, true); i++)
-		{
-			RECT rect;// = g_logic_monitor_rects[i];
-			wchar_t tmp[256];
-
-			get_mixed_monitor_by_id(i, &rect, tmp, true, true);
-
-			DWORD flag1 = compare_rect(rect, m_screen1) ? MF_CHECKED : MF_UNCHECKED;
-			DWORD flag2 = compare_rect(rect, m_screen2) ? MF_CHECKED : MF_UNCHECKED;
-
-			//wsprintfW(tmp, L"%s %d (%dx%d)", C(L"Monitor"), i+1, rect.right - rect.left, rect.bottom - rect.top);
-			InsertMenuW(output1, 0, flag1, 'M0' + i, tmp);
-			InsertMenuW(output2, 0, flag2, 'N0' + i, tmp);
-		}
-
-		// disable output mode when fullscreen
-		if (m_full1 || (m_renderer1 ? m_renderer1->get_fullscreen() : false))
-		{
-			//ModifyMenuW(video, 1, MF_BYPOSITION | MF_GRAYED, ID_PLAY, C(L"Output Mode"));
-		}
-
-
-		// play / pause
-		bool paused = true;
-		if (m_mc)
-		{
-			static OAFilterState fs = State_Running;
-			HRESULT hr = m_mc->GetState(100, &fs);
-			if (fs == State_Running)
-				paused = false;
-		}
-		int flag = GetMenuState(menu, ID_PLAY, MF_BYCOMMAND);
-		ModifyMenuW(menu, ID_PLAY, MF_BYCOMMAND| flag, ID_PLAY, paused ? C(L"Play\t(Space)") : C(L"Pause\t(Space)"));
-
-		// find BD drives
-		HMENU sub_open_BD = GetSubMenu(menu, 1);
-		bool drive_found = false;
-		for(int i=L'Z'; i>L'B'; i--)
-		{
-			wchar_t tmp[MAX_PATH] = L"C:\\";
-			wchar_t tmp2[MAX_PATH];
-			tmp[0] = i;
-			tmp[4] = NULL;
-			if (GetDriveTypeW(tmp) == DRIVE_CDROM)
-			{
-				drive_found = true;
-				UINT flag = MF_BYPOSITION | MF_STRING;
-				if (!GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
-				{
-					wcscat(tmp, C(L" (No Disc)"));
-					flag |= MF_GRAYED;
-				}
-				else if (FAILED(find_main_movie(tmp, tmp2)))
-				{
-					wcscat(tmp, C(L" (No Movie Disc)"));
-					flag |= MF_GRAYED;
-				}
-				else
-				{
-					GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0);
-					wsprintfW(tmp, L"%s (%s)", tmp, tmp2);
-				}
-				InsertMenuW(sub_open_BD, 0, flag, i, tmp);
-			}
-		}
-		if (drive_found)
-			DeleteMenu(sub_open_BD, ID_OPENBLURAY3D_NONE, MF_BYCOMMAND);
-
-		// input mode
-		CheckMenuItem(menu, ID_INPUTLAYOUT_AUTO,		m_input_layout == input_layout_auto ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_INPUTLAYOUT_SIDEBYSIDE,	m_input_layout == side_by_side ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_INPUTLAYOUT_TOPBOTTOM,	m_input_layout == top_bottom ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_INPUTLAYOUT_MONOSCOPIC,	m_input_layout == mono2d ? MF_CHECKED:MF_UNCHECKED);
-
-		// output mode
-		CheckMenuItem(menu, ID_OUTPUTMODE_NVIDIA3DVISION,		m_output_mode == NV3D ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_MONOSCOPIC2D,			m_output_mode == mono ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_ROWINTERLACE,			m_output_mode == masking && m_mask_mode == row_interlace ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_LINEINTERLACE,		m_output_mode == masking && m_mask_mode == line_interlace? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_CHECKBOARDINTERLACE,	m_output_mode == masking && m_mask_mode == checkboard_interlace ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR,		m_output_mode == dual_window ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_SBS,	m_output_mode == out_sbs ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_TB,		m_output_mode == out_tb ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_IZ3D,					m_output_mode == iz3d ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_GERNERAL120HZGLASSES,	m_output_mode == pageflipping ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				m_output_mode == out_hsbs ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
-
-		// Aspect Ration
-		if (m_aspect == -1) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
-		if (m_aspect == 2.35) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
-		if (m_aspect == (double)16/9) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
-		if (m_aspect == (double)4/3) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
-
-		// subtitle menu
-		CheckMenuItem(menu, ID_SUBTITLE_DISPLAYSUBTITLE, MF_BYCOMMAND | (m_display_subtitle ? MF_CHECKED : MF_UNCHECKED));
-		HMENU sub_subtitle = GetSubMenu(menu, 6);
-		{
-			CAutoLock lck(&m_subtitle_sec);
-			if (!m_srenderer || FAILED(m_srenderer->set_font_color(m_font_color)))
-			{
-				EnableMenuItem(sub_subtitle, ID_SUBTITLE_FONT, MF_GRAYED);
-				EnableMenuItem(sub_subtitle, ID_SUBTITLE_COLOR, MF_GRAYED);
-			}
-			else
-			{
-				EnableMenuItem(sub_subtitle, ID_SUBTITLE_FONT, MF_ENABLED);
-				EnableMenuItem(sub_subtitle, ID_SUBTITLE_COLOR, MF_ENABLED);
-			}
-		}
-
-		// LAV Audio Decoder and 
-		CheckMenuItem(menu, ID_AUDIO_USELAV, MF_BYCOMMAND | (m_useLAV ? MF_CHECKED : MF_UNCHECKED));
-		CheckMenuItem(menu, ID_AUDIO_BITSTREAM, MF_BYCOMMAND | (m_useLAV && m_bitstreaming ? MF_CHECKED : MF_UNCHECKED));
-
-		// audio tracks
-		HMENU sub_audio = GetSubMenu(menu, 5);
-		list_audio_track(sub_audio);
-
-		// subtitle tracks
-		list_subtitle_track(sub_subtitle);
-
-		// language
-		if (g_active_language == ENGLISH)
-			CheckMenuItem(menu, ID_LANGUAGE_ENGLISH, MF_CHECKED | MF_BYCOMMAND);
-		else if (g_active_language == CHINESE)
-			CheckMenuItem(menu, ID_LANGUAGE_CHINESE, MF_CHECKED | MF_BYCOMMAND);
-
-		// swap
-		CheckMenuItem(menu, ID_SWAPEYES, m_revert ? MF_CHECKED:MF_UNCHECKED);
-
-		// CUDA
-		CheckMenuItem(menu, ID_CUDA, g_CUDA ? MF_CHECKED:MF_UNCHECKED);
-		CheckMenuItem(menu, ID_VIDEO_DEINTERLACE, m_forced_deinterlace ? MF_CHECKED:MF_UNCHECKED);
-
-
-		// show it
-		POINT mouse_pos;
-		GetCursorPos(&mouse_pos);
-		TrackPopupMenu(menu, TPM_TOPALIGN | TPM_LEFTALIGN, mouse_pos.x-5, mouse_pos.y-5, 0, id_to_hwnd(id), NULL);
+		popup_menu(id_to_hwnd(1));
 	}
 	else if (button == VK_LBUTTON)
 	{
@@ -1192,7 +1214,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	if (uid == ID_OPENFILE)
 	{
 		wchar_t file[MAX_PATH] = L"";
-		if (open_file_dlg(file, id_to_hwnd(1), L"Video files\0"
+		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Video files\0"
 			L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d\0"))
 		{
 			reset_and_loadfile_internal(file);
@@ -1203,7 +1225,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_AUDIO_USELAV)
 	{
 		m_useLAV = !m_useLAV;
-		if (m_file_loaded) MessageBoxW(id_to_hwnd(1), C(L"Audio Decoder setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
+		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Audio Decoder setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
 	}
 
 	// Bitstreaming
@@ -1219,14 +1241,14 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			set_lav_audio_bitstreaming(filter, m_bitstreaming);
 			filter = NULL;
 		}
-		if (m_file_loaded) MessageBoxW(id_to_hwnd(1), C(L"Bitstreaming setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
+		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Bitstreaming setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
 	}
 
 	// CUDA
 	else if (uid == ID_CUDA)
 	{
 		g_CUDA = !g_CUDA;
-		if (m_file_loaded) MessageBoxW(id_to_hwnd(1), C(L"CUDA setting will apply on next file play."), L"...", MB_OK);
+		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"CUDA setting will apply on next file play."), L"...", MB_OK);
 	}
 
 	// deinterlacing
@@ -1236,13 +1258,13 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
 
 		if (m_forced_deinterlace)
-			MessageBoxW(id_to_hwnd(1), C(L"Deinterlacing is not recommended unless you see combing artifacts on moving objects."), L"...", MB_ICONINFORMATION);
+			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Deinterlacing is not recommended unless you see combing artifacts on moving objects."), L"...", MB_ICONINFORMATION);
 	}
 
 	// color adjusting
 	else if (uid == ID_VIDEO_ADJUSTCOLOR)
 	{
-		show_color_adjust(m_hexe, id_to_hwnd(id), this);
+		show_color_adjust(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), this);
 	}
 
 
@@ -1437,7 +1459,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_LOADAUDIOTRACK)
 	{
 		wchar_t file[MAX_PATH] = L"";
-		if (open_file_dlg(file, id_to_hwnd(1), L"Audio Tracks\0*.mp3;*.dts;*.ac3;*.aac;*.m4a;*.mka\0All Files\0*.*\0\0"))
+		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Audio Tracks\0*.mp3;*.dts;*.ac3;*.aac;*.m4a;*.mka\0All Files\0*.*\0\0"))
 		{
 			load_audiotrack(file);
 		}
@@ -1446,7 +1468,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_SUBTITLE_LOADFILE)
 	{
 		wchar_t file[MAX_PATH] = L"";
-		if (open_file_dlg(file, id_to_hwnd(1), L"Subtitles\0*.srt;*.sup;*.ssa;*.ass\0All Files\0*.*\0\0"))
+		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Subtitles\0*.srt;*.sup;*.ssa;*.ass\0All Files\0*.*\0\0"))
 		{
 			load_subtitle(file, false);
 		}
@@ -1461,7 +1483,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		int t_latency = m_subtitle_latency;
 		double t_ratio = m_subtitle_ratio;
-		HRESULT hr = latency_modify_dialog(m_hexe, id_to_hwnd(id), &t_latency, &t_ratio);
+		HRESULT hr = latency_modify_dialog(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), &t_latency, &t_ratio);
 		m_subtitle_latency = t_latency;
 		m_subtitle_ratio = t_ratio;
 
@@ -1478,7 +1500,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		DWORD tmp = m_font_color;
 		bool ok;
-		if (ok = select_color(&tmp, id_to_hwnd(id)))
+		if (ok = select_color(&tmp, m_theater_owner ? m_theater_owner : id_to_hwnd(id)))
 			m_font_color = tmp;
 		CAutoLock lck(&m_subtitle_sec);
 		if (m_srenderer && ok)
@@ -1498,7 +1520,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_OPENBDFOLDER)
 	{
 		wchar_t file[MAX_PATH] = L"";
-		if (browse_folder(file, id_to_hwnd(id)))
+		if (browse_folder(file, m_theater_owner ? m_theater_owner : id_to_hwnd(id)))
 		{
 			reset_and_loadfile_internal(file);
 		}
@@ -1918,7 +1940,7 @@ HRESULT dx_player::show_ui(bool show)
 HRESULT dx_player::draw_ui()
 {
 	if (m_renderer1)
-		m_renderer1->set_ui_visible(m_show_ui);
+		m_renderer1->set_ui_visible(m_show_ui && m_theater_owner == NULL);
 	return S_OK;
 }
 

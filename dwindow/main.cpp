@@ -87,6 +87,10 @@ INT_PTR CALLBACK select_monitor_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 
 	return TRUE; // Handled message
 }
+
+extern HRESULT show_theater_controller(HINSTANCE inst, HWND owner, dx_player *p);
+
+
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
 	char volumeName[MAX_PATH];
@@ -149,9 +153,12 @@ retry:
 		while(!test->m_reset_load_done)
 			Sleep(50);
 
-		//test.toggle_fullscreen();
+		//test->toggle_fullscreen();
 		SetFocus(test->m_hwnd1);
 	}
+	if (true)
+		show_theater_controller(hinstance, NULL, test);
+	else
 	while (!test->is_closed())
 		Sleep(100);
 

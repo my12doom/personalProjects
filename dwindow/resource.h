@@ -14,6 +14,7 @@
 #define IDD_LATENCY                     119
 #define IDD_DIALOG2                     120
 #define IDD_COLOR                       120
+#define IDD_THEATER                     121
 #define IDC_CHECK_SOUND1                1009
 #define IDC_CHECK_MKV1                  1010
 #define IDC_EDIT_INPUT1                 1011
@@ -34,6 +35,7 @@
 #define IDC_BUTTON1                     1025
 #define IDC_SLIDER1                     1026
 #define IDC_LUM                         1026
+#define IDC_PROGRESS                    1026
 #define IDC_EDIT_SOUND                  1027
 #define IDC_LUM2                        1027
 #define IDC_BUTTON_SOUND                1028
@@ -43,8 +45,11 @@
 #define IDC_PREVIEW                     1030
 #define IDC_CHECK2                      1031
 #define IDC_SYNC                        1031
+#define IDC_FULL                        1032
+#define IDC_MENU                        1033
 #define IDC_SLIDER2                     1034
 #define IDC_CON                         1034
+#define IDC_VOLUME                      1034
 #define IDC_SLIDER3                     1035
 #define IDC_SAT                         1035
 #define IDC_SLIDER4                     1036
@@ -165,9 +170,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        121
+#define _APS_NEXT_RESOURCE_VALUE        122
 #define _APS_NEXT_COMMAND_VALUE         40111
-#define _APS_NEXT_CONTROL_VALUE         1032
+#define _APS_NEXT_CONTROL_VALUE         1034
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

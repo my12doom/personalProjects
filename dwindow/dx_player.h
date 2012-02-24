@@ -84,21 +84,30 @@ public:
 	HRESULT total(int *time);
 	HRESULT set_volume(double volume);			// 0 - 1.0 = 0% - 100%, linear
 	HRESULT get_volume(double *volume);
+	bool is_playing();
 	HRESULT show_mouse(bool show)
 	{
 		GetCursorPos(&m_mouse);
-		return __super::show_mouse(show);
+		return __super::show_mouse(show || m_theater_owner);
 	}
 	bool is_closed();
 	HRESULT toggle_fullscreen();
 	HRESULT set_output_mode(int mode);
+	HRESULT set_theater(HWND owner){m_theater_owner = owner; return S_OK;}
+	HRESULT popup_menu(HWND owner);
 	POINT m_mouse;
 
 	// error reporting vars and functions
 	HRESULT log_line(wchar_t *format, ...);
 	wchar_t *m_log;
+	bool m_file_loaded /*= false*/;
 
 protected:
+
+	// theater
+	HWND m_theater_owner;
+
+
 	// playlist	
 	wchar_t *m_playlist[max_playlist];
 	int m_playlist_count;
@@ -113,7 +122,6 @@ protected:
 	HRESULT set_output_monitor(int out_id, int monitor_id);
 	HRESULT init_window_size_positions();
 
-	bool m_file_loaded /*= false*/;
 	// image control vars
 	HINSTANCE m_hexe;
 	//AutoSetting<bool> m_always_show_right/*(L"AlwaysShowRight", false)*/;

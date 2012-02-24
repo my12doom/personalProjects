@@ -417,6 +417,10 @@
 				RelativePath="..\ZBuffer\stereo_test.h"
 				>
 			</File>
+			<File
+				RelativePath=".\theater.cpp"
+				>
+			</File>
 			<Filter
 				Name="subtitle"
 				>
