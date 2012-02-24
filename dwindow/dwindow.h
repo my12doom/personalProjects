@@ -61,8 +61,9 @@ protected:
 
 	// need init:
 	HACCEL m_accel;				// should be inited by devired class
-	HANDLE m_thread1;
+	HANDLE m_thread1;	
 	HANDLE m_thread2;
+	int m_thread_id1;
 	LONG m_style1;
 	LONG m_style2;
 	LONG m_exstyle1;

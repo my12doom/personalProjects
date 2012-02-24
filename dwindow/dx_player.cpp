@@ -135,6 +135,8 @@ m_subtitle_ratio(L"SubtitleRatio", 1.0),
 m_bitstreaming(L"BitStreaming", false),
 m_saved_screen1(L"Screen1", rect_zero),
 m_saved_screen2(L"Screen2", rect_zero),
+m_saved_rect1(L"Window1", rect_zero),
+m_saved_rect2(L"Window2", rect_zero),
 m_useLAV(L"LAV", true),
 m_forced_deinterlace(L"ForcedDeinterlace", false),
 m_saturation(L"Saturation", 0.5),
@@ -232,6 +234,7 @@ HRESULT dx_player::detect_monitors()
 	if (compare_rect(m_saved_screen1, rect_zero) || compare_rect(m_saved_screen2, rect_zero) ||
 		!saved_screen1_exist || !saved_screen2_exist)
 	{
+		// reset position if monitor changed.
 		if (g_logic_monitor_count == 1)
 			m_screen1 = m_screen2 = g_logic_monitor_rects[0];
 		else if (g_logic_monitor_count == 2)
@@ -239,6 +242,9 @@ HRESULT dx_player::detect_monitors()
 			m_screen1 = g_logic_monitor_rects[0];
 			m_screen2 = g_logic_monitor_rects[1];
 		}
+
+		m_saved_rect1 = rect_zero;
+		m_saved_rect2 = rect_zero;
 	}
 
 	m_saved_screen1 = m_screen1;
@@ -263,10 +269,24 @@ HRESULT dx_player::init_window_size_positions()
 	int dcx = m_screen1.right - m_screen1.left - (result.right - result.left);
 	int dcy = m_screen1.bottom - m_screen1.top - (result.bottom - result.top);
 
-	SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + width1/4, m_screen1.top + height1/4,
-		width1/2 + dcx, height1/2 + dcy, SWP_NOZORDER);
-	SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + width2/4, m_screen2.top + height2/4,
-		width2/2 + dcx, height2/2 + dcy, SWP_NOZORDER);
+	if (compare_rect(m_saved_screen1, rect_zero) || compare_rect(m_saved_screen2, rect_zero) || compare_rect(m_saved_rect1, rect_zero))
+	{
+		SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + width1/4, m_screen1.top + height1/4,
+			width1/2 + dcx, height1/2 + dcy, SWP_NOZORDER);
+		SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + width2/4, m_screen2.top + height2/4,
+			width2/2 + dcx, height2/2 + dcy, SWP_NOZORDER);
+	}
+	else
+	{
+		RECT r1 = m_saved_rect1;
+		RECT r2 = m_saved_rect2;
+
+		SetWindowPos(id_to_hwnd(1), NULL, r1.left, r1.top,
+			r1.right - r1.left, r1.bottom - r1.top, SWP_NOZORDER);
+		SetWindowPos(id_to_hwnd(2), NULL, r2.left, r2.top,
+			r2.right - r2.left, r2.bottom - r2.top, SWP_NOZORDER);
+
+	}
 
 	return S_OK;
 }
@@ -297,9 +317,12 @@ HRESULT dx_player::set_output_monitor(int out_id, int monitor_id)
 
 	m_saved_screen1 = m_screen1;
 	m_saved_screen2 = m_screen2;
+	m_saved_rect1 = rect_zero;
+	init_done_flag = 0;
 
 	init_window_size_positions();
 
+	init_done_flag = 0x12345678;
 	if (toggle)
 		toggle_fullscreen();
 
@@ -1047,6 +1070,19 @@ LRESULT dx_player::on_timer(int id)
 
 LRESULT dx_player::on_move(int id, int x, int y)
 {
+	if (id == 1 && init_done_flag == 0x12345678 && !m_full1)
+	{
+		RECT rect1;
+		GetWindowRect(id_to_hwnd(1), &rect1);
+		m_saved_rect1 = rect1;
+	}
+	if (id == 2 && init_done_flag == 0x12345678 && !m_full1)
+	{
+		RECT rect2;
+		GetWindowRect(id_to_hwnd(2), &rect2);
+		m_saved_rect2 = rect2;
+	}
+
 	if (id == 1 && is_visible(2) && init_done_flag == 0x12345678 && !m_full1)
 	{
 		RECT rect1;
@@ -1062,6 +1098,7 @@ LRESULT dx_player::on_move(int id, int x, int y)
 		GetWindowRect(id_to_hwnd(2), &rect2);
 		x = rect2.left - m_screen2.left;
 		y = rect2.top - m_screen2.top;
+		m_saved_rect2 = rect2;
 		SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + x, m_screen1.top + y, 0, 0, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOSIZE);
 	}
 
@@ -1070,10 +1107,24 @@ LRESULT dx_player::on_move(int id, int x, int y)
 
 LRESULT dx_player::on_size(int id, int type, int x, int y)
 {
+	if (id == 1 && init_done_flag == 0x12345678 && !m_full1)
+	{
+		RECT rect1;
+		GetWindowRect(id_to_hwnd(1), &rect1);
+		m_saved_rect1 = rect1;
+	}
+	if (id == 2 && init_done_flag == 0x12345678 && !m_full1)
+	{
+		RECT rect2;
+		GetWindowRect(id_to_hwnd(2), &rect2);
+		m_saved_rect2 = rect2;
+	}
+
 	if (id == 1 && is_visible(2) && init_done_flag == 0x12345678 && !m_full1)
 	{
 		RECT rect1;
 		GetWindowRect(id_to_hwnd(1), &rect1);
+		m_saved_rect1 = rect1;
 		SetWindowPos(id_to_hwnd(2), NULL, 0, 0, rect1.right - rect1.left, rect1.bottom - rect1.top, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
 	}
 
@@ -1081,6 +1132,7 @@ LRESULT dx_player::on_size(int id, int type, int x, int y)
 	{
 		RECT rect2;
 		GetWindowRect(id_to_hwnd(2), &rect2);
+		m_saved_rect2 = rect2;
 		SetWindowPos(id_to_hwnd(1), NULL, 0, 0, rect2.right - rect2.left, rect2.bottom - rect2.top, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
 	}
 
@@ -1902,7 +1954,7 @@ HRESULT dx_player::start_loading()
 
 HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, bool stop)
 {
-	if (GetCurrentThreadId() == GetThreadId(m_thread1))
+	if (GetCurrentThreadId() == m_thread_id1)
 	{
 		HRESULT hr = reset_and_loadfile_internal(pathname);
 

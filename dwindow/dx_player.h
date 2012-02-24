@@ -106,6 +106,8 @@ protected:
 	// saved screen settings
 	AutoSetting<RECT> m_saved_screen1;
 	AutoSetting<RECT> m_saved_screen2;
+	AutoSetting<RECT> m_saved_rect1;
+	AutoSetting<RECT> m_saved_rect2;
 	HRESULT detect_monitors();
 	HRESULT set_output_monitor(int out_id, int monitor_id);
 	HRESULT init_window_size_positions();

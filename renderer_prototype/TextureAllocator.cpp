@@ -16,8 +16,8 @@ CPooledTexture::CPooledTexture(CTextureAllocator *pool)
 
 HRESULT CPooledTexture::Unlock()
 {
-	//locked_rect.pBits = NULL;
-	texture->AddDirtyRect(NULL);
+	locked_rect.pBits = NULL;
+	//texture->AddDirtyRect(NULL);
 	return texture->UnlockRect(0);
 }
 

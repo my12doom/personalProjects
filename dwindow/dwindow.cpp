@@ -166,6 +166,7 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 	ShowWindow(hwnd, SW_HIDE);
 	UpdateWindow(hwnd);
 	*((window_proc_param*)lpParame)->hwnd1 = hwnd;
+	((window_proc_param*)lpParame)->that->m_thread_id1 = GetCurrentThreadId();
 
 	hwnd = CreateWindowExA(
 		WS_EX_ACCEPTFILES,

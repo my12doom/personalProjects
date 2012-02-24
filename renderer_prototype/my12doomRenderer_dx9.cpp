@@ -96,12 +96,27 @@ m_left_queue(_T("left queue")),
 m_right_queue(_T("right queue"))
 {
 
+	typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)(UINT, IDirect3D9Ex**);
 
 	// D3D && NV3D
 	m_render_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_pool = NULL;
 	m_last_rendered_sample1 = m_last_rendered_sample2 = m_sample2render_1 = m_sample2render_2 = NULL;
-	Direct3DCreate9Ex(D3D_SDK_VERSION, &m_D3DEx);
+	HMODULE h = LoadLibrary( L"d3d9.dll" );
+	if ( h )
+	{
+		typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)( UINT, 
+			IDirect3D9Ex**);
+
+		LPDIRECT3DCREATE9EX func = (LPDIRECT3DCREATE9EX)GetProcAddress( h, 
+			"Direct3DCreate9Ex" );
+
+		if ( func )
+			func( D3D_SDK_VERSION, &m_D3DEx );
+
+		FreeLibrary( h );
+	}
+
 	if (m_D3DEx)
 		m_D3DEx->QueryInterface(IID_IDirect3D9, (void**)&m_D3D);
 	else
@@ -796,7 +811,7 @@ HRESULT my12doomRenderer::create_render_targets()
 
 HRESULT my12doomRenderer::handle_device_state()							//handle device create/recreate/lost/reset
 {
-	if (!m_recreating_dshow_renderer && GetCurrentThreadId() == GetThreadId(m_render_thread))
+	if (!m_recreating_dshow_renderer && GetCurrentThreadId() == m_render_thread_id)
 	{
 		D3DSURFACE_DESC desc;
 		memset(&desc, 0, sizeof(desc));
@@ -2309,6 +2324,7 @@ DWORD WINAPI my12doomRenderer::test_thread(LPVOID param)
 DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 {
 	my12doomRenderer *_this = (my12doomRenderer*)param;
+	_this->m_render_thread_id = GetCurrentThreadId();
 
 	int l = timeGetTime();
 	while (timeGetTime() - l < 0 && !_this->m_render_thread_exit)
@@ -3129,8 +3145,7 @@ HRESULT my12doomRenderer::generate_mask()
 
 	CAutoLock lck(&m_frame_lock);
 	D3DLOCKED_RECT locked;
-	hr = mask_cpu->LockRect(0, &locked, NULL, NULL);
-	if (FAILED(hr)) return hr;
+	FAIL_RET(mask_cpu->LockRect(0, &locked, NULL, NULL));
 
 	BYTE *dst = (BYTE*) locked.pBits;
 
@@ -3168,8 +3183,8 @@ HRESULT my12doomRenderer::generate_mask()
 			dst += locked.Pitch;
 		}
 	}
-	hr = mask_cpu->UnlockRect(0);
-	hr = m_Device->UpdateTexture(mask_cpu, m_tex_mask);
+	FAIL_RET(mask_cpu->UnlockRect(0));
+	FAIL_RET(m_Device->UpdateTexture(mask_cpu, m_tex_mask));
 
 	return hr;
 }

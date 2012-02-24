@@ -498,6 +498,7 @@ protected:
 	// render thread variables
 	CCritSec m_thread_lock;
 	HANDLE m_render_thread;
+	DWORD m_render_thread_id;
 	bool m_render_thread_exit;
 	DWORD m_color1;
 	DWORD m_color2;
