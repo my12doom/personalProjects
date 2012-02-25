@@ -52,8 +52,10 @@
 #define IDC_VOLUME                      1034
 #define IDC_SLIDER3                     1035
 #define IDC_SAT                         1035
+#define IDC_CURRENT                     1035
 #define IDC_SLIDER4                     1036
 #define IDC_HUE                         1036
+#define IDC_TOTAL                       1036
 #define IDC_CON2                        1037
 #define IDC_SAT2                        1038
 #define IDC_HUE2                        1039
@@ -172,7 +174,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        122
 #define _APS_NEXT_COMMAND_VALUE         40111
-#define _APS_NEXT_CONTROL_VALUE         1034
+#define _APS_NEXT_CONTROL_VALUE         1037
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

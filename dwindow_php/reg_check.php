@@ -42,9 +42,21 @@ else
 	$user = $row["user"];
 	$rtn = "S_OK\0";
 	
+	// get max_bar_user and usertype
+	$result = mysql_query("SELECT * FROM users where name = '".$user."'");
+	if (mysql_num_rows($result) <= 0)
+	{
+		db_log("HACK_ACTIVE_PASSKEY", $user, $passkey);
+		die("E_FAIL");
+	}
+	
 	// passkey update
-	$newkey = $com->genkeys($passkey, time() - (12*3600), time() + 24*7*3600);
+	$row = mysql_fetch_array($result);
+	$bar_user = $row["bar_max_users"];
+	$theater = $row["usertype"];
+	$newkey = $com->genkey4($passkey, time() - (12*3600), time() + 24*7*3600, $bar_user, $theater);
 	$newkey = $com->AES($newkey, $return_key);
+
 }
 
 db_log("PlayerStartup", $rtn, $user, $passkey);

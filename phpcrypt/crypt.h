@@ -64,6 +64,8 @@ public:
 	STDMETHOD(decode_binarystring)(BSTR in, BSTR* out);
 	STDMETHOD(SHA1)(BSTR in, BSTR* out);
 	STDMETHOD(genkeys2)(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, BSTR* out);
+	STDMETHOD(genkey3)(BSTR passkey, LONG time_start, BSTR time_end, LONG max_bar_user, BSTR* out);
+	STDMETHOD(genkey4)(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, LONG theater_version, BSTR* out);
 };
 
 OBJECT_ENTRY_AUTO(__uuidof(crypt), Ccrypt)

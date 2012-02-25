@@ -93,6 +93,9 @@ extern HRESULT show_theater_controller(HINSTANCE inst, HWND owner, dx_player *p)
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
+	int argc = 1;
+	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+
 	char volumeName[MAX_PATH];
 	DWORD sn;
 	DWORD max_component_length;
@@ -128,8 +131,6 @@ retry:
 	save_passkey();
 #include "bomb_function.h"
 
-	int argc = 1;
-	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 	HWND pre_instance = FindWindowA("DWindowClass", NULL);
 	if (pre_instance)
 	{
@@ -156,11 +157,17 @@ retry:
 		//test->toggle_fullscreen();
 		SetFocus(test->m_hwnd1);
 	}
-	if (true)
+	if (is_theeater_version())
 		show_theater_controller(hinstance, NULL, test);
 	else
 	while (!test->is_closed())
 		Sleep(100);
+
+	// reset passkey on need
+	if(GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) < 0)
+		memset(g_passkey_big, 0, 128);
+	save_passkey();
+
 
 	CreateThread(NULL, NULL, killer_thread2, new DWORD(3000), NULL, NULL);
 	bar_logout();

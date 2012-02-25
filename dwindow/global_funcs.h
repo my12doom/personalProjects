@@ -191,3 +191,31 @@ HRESULT localize_menu(HMENU menu);
 
 // CUDA
 extern AutoSetting<bool> g_CUDA;
+
+
+// forceinline functions
+bool __forceinline is_theeater_version()
+{
+	DWORD e[32];
+	dwindow_passkey_big m1;
+	BigNumberSetEqualdw(e, 65537, 32);
+	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+	for(int i=0; i<32; i++)
+		if (m1.passkey[i] != m1.passkey2[i])
+			return false;
+
+	__time64_t t = mytime();
+
+	tm * t2 = _localtime64(&m1.time_end);
+
+	if (m1.time_start > mytime() || mytime() > m1.time_end)
+	{
+		memset(&m1, 0, 128);
+		return false;
+	}
+
+	memcpy(g_passkey, &m1, 32);
+	bool is = (1 == m1.theater_version);
+	memset(&m1, 0, 128);
+	return is;
+}

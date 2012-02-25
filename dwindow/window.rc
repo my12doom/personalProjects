@@ -158,6 +158,8 @@ BEGIN
     PUSHBUTTON      "2",IDC_FULL,270,63,23,19
     CONTROL         "",IDC_VOLUME,"msctls_trackbar32",TBS_VERT | TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,395,34,13,49
     PUSHBUTTON      "...",IDC_MENU,270,82,23,17
+    LTEXT           "¾²Ì¬",IDC_TOTAL,330,48,61,14
+    LTEXT           "¾²Ì¬",IDC_CURRENT,31,51,98,15
 END
 
 

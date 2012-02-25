@@ -16,6 +16,9 @@ bool is_draging = false;
 // overrided slider proc
 LRESULT CALLBACK VolumeProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
 LRESULT CALLBACK ProgressProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
+void format_time(int time, wchar_t *out);
+void format_time_noms(int time, wchar_t *out);
+void format_time2(int current, int total, wchar_t *out);
 
 INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
 {
@@ -34,8 +37,21 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 			else
 				SetWindowTextW(GetDlgItem(hDlg, IDC_PLAY), L"4");			
 
-			if (!is_draging)
+			if (!is_draging && player->m_file_loaded)
+			{
 				SendMessage(hProgress, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)1000*((double)current/total));
+				wchar_t tmp[200];
+				format_time_noms(total, tmp);
+					SetDlgItemTextW(hDlg, IDC_TOTAL, tmp);
+				format_time(current, tmp);
+					SetDlgItemTextW(hDlg, IDC_CURRENT, tmp);
+			}
+
+			else if (!is_draging)
+			{
+				SetDlgItemTextW(hDlg, IDC_TOTAL, L"");
+				SetDlgItemTextW(hDlg, IDC_CURRENT, L"");
+			}
 
 			if (player->is_closed())
 				EndDialog(hDlg, 0);
@@ -46,17 +62,24 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 		if (hProgress == (HWND)lParam)
 		{
 			is_draging = true;
+			int total = 0;
+			player->total(&total);
 			if ( LOWORD(wParam) & SB_ENDSCROLL)
 			{
 
-				int total = 0;
-				player->total(&total);
 
 				int target = (LONGLONG)SendMessage(hProgress, TBM_GETPOS, 0, 0) * total / 1000;
 
 				player->seek(target);
 
 				is_draging = false;
+			}
+			else if (LOWORD(wParam) & SB_THUMBTRACK)
+			{
+				int target = (LONGLONG)SendMessage(hProgress, TBM_GETPOS, 0, 0) * total / 1000;
+				wchar_t tmp[200];
+				format_time(target, tmp);
+				SetDlgItemTextW(hDlg, IDC_CURRENT, tmp);
 			}
 		}
 		break;
@@ -72,8 +95,8 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 			int id = LOWORD(wParam);
 			if (id == IDC_FULL)
 			{
-				SendMessageW(player->m_hwnd1, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
-				SendMessageW(player->m_hwnd2, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
+				if (IsIconic(player->m_hwnd1)) SendMessageW(player->m_hwnd1, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
+				if (IsIconic(player->m_hwnd2)) SendMessageW(player->m_hwnd2, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
 
 				player->toggle_fullscreen();
 			}
@@ -149,7 +172,7 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 
 			// etc
 			player->set_theater(hDlg);
-			SetTimer(hDlg, 0, 100, NULL);
+			SetTimer(hDlg, 0, 33, NULL);
 		}
 		break;
 
@@ -309,4 +332,36 @@ LRESULT CALLBACK ProgressProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 	}
 
 	return 	CallWindowProc((WNDPROC)g_OldProgressProc, hDlg ,msg, wParam, lParam);
+}
+
+void format_time(int time, wchar_t *out)
+{
+	int ms = time % 1000;
+	int s = (time / 1000) % 60;
+	int m = (time / 1000 / 60) % 60;
+	int h = (time / 1000 / 3600);
+
+	wsprintfW(out, L"%02d:%02d:%02d.%03d", h, m, s, ms);
+}
+
+void format_time_noms(int time, wchar_t *out)
+{
+	int s = (time / 1000) % 60;
+	int m = (time / 1000 / 60) % 60;
+	int h = (time / 1000 / 3600);
+
+	wsprintfW(out, L"%02d:%02d:%02d", h, m, s);
+}
+
+void format_time2(int current, int total, wchar_t *out)
+{
+	wchar_t tmp[256];
+
+	format_time(current, tmp);
+	wcscpy(out, tmp);
+	
+	wcscat(out, L" / ");
+
+	format_time(total, tmp);
+	wcscat(out, tmp);
 }

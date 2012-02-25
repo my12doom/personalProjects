@@ -97,7 +97,7 @@ HRESULT decode_client_request(BSTR input, dwindow_message_uncrypt *output)
 	return S_OK;
 }
 
-HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_start, __time64_t time_end, int max_bar_user, dwindow_passkey_big *out)
+HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_start, __time64_t time_end, int max_bar_user, dwindow_passkey_big *out, int theater_version = 0)
 {
 	memcpy(out->passkey, passkey, 32);
 	memcpy(out->passkey2, passkey, 32);
@@ -105,6 +105,7 @@ HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_star
 	out->time_start = time_start;
 	out->time_end = time_end;
 	out->max_bar_user = max_bar_user;
+	out->theater_version = theater_version;
 	memset(out->reserved, 0, sizeof(out->reserved));
 	out->zero = 0;
 
@@ -302,6 +303,30 @@ STDMETHODIMP Ccrypt::genkeys2(BSTR passkey, LONG time_start, LONG time_end, LONG
 	dwindow_passkey_big passkey_big;
 
 	generate_passkey_big(pk, start, end, max_bar_user, &passkey_big);
+	return binary2bstr(&passkey_big, 128, out);
+
+	return S_OK;
+}
+
+STDMETHODIMP Ccrypt::genkey3(BSTR passkey, LONG time_start, BSTR time_end, LONG max_bar_user, BSTR* out)
+{
+	return S_OK;
+}
+
+STDMETHODIMP Ccrypt::genkey4(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, LONG theater_version, BSTR* out)
+{
+	unsigned char pk[32];
+	if (FAILED(bstr2binary(passkey, pk, 32)))
+	{
+		*out = SysAllocString(L"");
+		return S_OK;
+	}
+	__time64_t start = time_start;
+	__time64_t end = time_end;
+
+	dwindow_passkey_big passkey_big;
+
+	generate_passkey_big(pk, start, end, max_bar_user, &passkey_big, theater_version);
 	return binary2bstr(&passkey_big, 128, out);
 
 	return S_OK;
