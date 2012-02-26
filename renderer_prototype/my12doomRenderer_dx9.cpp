@@ -177,6 +177,9 @@ m_right_queue(_T("right queue"))
 
 void my12doomRenderer::init_variables()
 {
+	// PC level test
+	m_PC_level = 0;
+
 	// 2D - 3D Convertion
 	m_convert3d = false;
 
@@ -601,11 +604,12 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 	{
 retry:
 		//CAutoLock lck(&m_pool_lock);
-		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, need_detect, m_remux_mode);
+		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, need_detect, m_remux_mode, D3DPOOL_SYSTEMMEM, m_PC_level);
 
-		if ( (m_dsr0->m_format == MEDIASUBTYPE_RGB32 && (!loaded_sample->m_tex_RGB32 || loaded_sample->m_tex_RGB32->creator != m_Device)) ||
-			 (m_dsr0->m_format == MEDIASUBTYPE_YUY2 && (!loaded_sample->m_tex_YUY2 || loaded_sample->m_tex_YUY2->creator != m_Device)) ||
-			 ((!loaded_sample->m_tex_Y || loaded_sample->m_tex_Y->creator != m_Device) && (m_dsr0->m_format == MEDIASUBTYPE_YV12 || m_dsr1->m_format == MEDIASUBTYPE_NV12))  )
+//		if ( (m_dsr0->m_format == MEDIASUBTYPE_RGB32 && (!loaded_sample->m_tex_RGB32 || loaded_sample->m_tex_RGB32->creator != m_Device)) ||
+//			 (m_dsr0->m_format == MEDIASUBTYPE_YUY2 && (!loaded_sample->m_tex_YUY2 || loaded_sample->m_tex_YUY2->creator != m_Device)) ||
+//			 ((!loaded_sample->m_tex_Y || loaded_sample->m_tex_Y->creator != m_Device) && (m_dsr0->m_format == MEDIASUBTYPE_YV12 || m_dsr1->m_format == MEDIASUBTYPE_NV12))  )
+		if (!loaded_sample->m_ready)
 		{
 			delete loaded_sample;
 			if (max_retry--)
@@ -1210,6 +1214,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	// surfaces
 	m_deinterlace_surface = NULL;
 	m_stereo_test_gpu = NULL;
+	m_PC_level_test = NULL;
 
 	// vertex buffers
 	g_VertexBuffer = NULL;
@@ -1217,6 +1222,98 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 
 	// swap chains
 	delete_render_targets();
+
+	return S_OK;
+}
+
+// test_PC_leve()'s helper function
+HRESULT mark_level_result(IDirect3DSurface9 *result, DWORD *out, DWORD flag)
+{
+	HRESULT hr;
+	D3DLOCKED_RECT lock_rect;
+	FAIL_RET(result->LockRect(&lock_rect, NULL, NULL));
+	BYTE *p = (BYTE*)lock_rect.pBits;
+
+	for(int i=0; i<stereo_test_texture_size; i++)
+	{
+		for (int j=0; j<stereo_test_texture_size; j++)
+			if (p[j*4] || p[j*4+1] || p[j*4+2])
+			{
+				*out &= ~flag;
+				result->UnlockRect();
+				return S_FALSE;
+			}
+
+		p += lock_rect.Pitch;
+	}
+
+	*out |= flag;
+	result->UnlockRect();
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::test_PC_level()
+{
+	HRESULT hr;
+
+	// YV12
+	m_PC_level_test = NULL;
+	FAIL_RET(m_Device->CreateOffscreenPlainSurface(stereo_test_texture_size, stereo_test_texture_size, (D3DFORMAT)MAKEFOURCC('Y','V','1','2'), D3DPOOL_DEFAULT, &m_PC_level_test, NULL));
+	D3DLOCKED_RECT lock_rect;
+	m_PC_level_test->LockRect(&lock_rect, NULL, NULL);
+	if (lock_rect.pBits)
+	{
+		memset(lock_rect.pBits, 16, stereo_test_texture_size * lock_rect.Pitch);
+		memset((BYTE*)lock_rect.pBits +  stereo_test_texture_size * lock_rect.Pitch, 128, stereo_test_texture_size * lock_rect.Pitch / 2);
+	}
+	hr = m_PC_level_test->UnlockRect();
+	hr = clear(m_stereo_test_gpu, D3DCOLOR_XRGB(255,255,255));
+	hr = m_Device->StretchRect(m_PC_level_test, NULL, m_stereo_test_gpu, NULL, D3DTEXF_NONE);
+	hr = m_Device->GetRenderTargetData(m_stereo_test_gpu, m_stereo_test_cpu);
+	mark_level_result(m_stereo_test_cpu, &m_PC_level, PCLEVELTEST_YV12);
+
+
+	// NV12
+	m_PC_level_test = NULL;
+	FAIL_RET(m_Device->CreateOffscreenPlainSurface(stereo_test_texture_size, stereo_test_texture_size, (D3DFORMAT)MAKEFOURCC('N','V','1','2'), D3DPOOL_DEFAULT, &m_PC_level_test, NULL));
+	m_PC_level_test->LockRect(&lock_rect, NULL, NULL);
+	if (lock_rect.pBits)
+	{
+		memset(lock_rect.pBits, 16, stereo_test_texture_size * lock_rect.Pitch);
+		memset((BYTE*)lock_rect.pBits +  stereo_test_texture_size * lock_rect.Pitch, 128, stereo_test_texture_size * lock_rect.Pitch / 2);
+	}
+	hr = m_PC_level_test->UnlockRect();
+	hr = clear(m_stereo_test_gpu, D3DCOLOR_XRGB(255,255,255));
+	hr = m_Device->StretchRect(m_PC_level_test, NULL, m_stereo_test_gpu, NULL, D3DTEXF_NONE);
+	hr = m_Device->GetRenderTargetData(m_stereo_test_gpu, m_stereo_test_cpu);
+	mark_level_result(m_stereo_test_cpu, &m_PC_level, PCLEVELTEST_NV12);
+
+
+	// YUY2
+	unsigned char one_line[stereo_test_texture_size*2];
+	for(int i=0; i<stereo_test_texture_size; i++)
+	{
+		one_line[i*2] = 16;
+		one_line[i*2+1] = 128;
+	}
+	m_PC_level_test = NULL;
+	FAIL_RET(m_Device->CreateOffscreenPlainSurface(stereo_test_texture_size, stereo_test_texture_size, (D3DFORMAT)MAKEFOURCC('Y','U','Y','2'), D3DPOOL_DEFAULT, &m_PC_level_test, NULL));
+	m_PC_level_test->LockRect(&lock_rect, NULL, NULL);
+	if (lock_rect.pBits)
+	{
+		for(int i=0; i<stereo_test_texture_size; i++)
+			memcpy((BYTE*)lock_rect.pBits + lock_rect.Pitch * i, one_line, sizeof(one_line));
+	}
+	hr = m_PC_level_test->UnlockRect();
+	hr = clear(m_stereo_test_gpu, D3DCOLOR_XRGB(255,255,255));
+	hr = m_Device->StretchRect(m_PC_level_test, NULL, m_stereo_test_gpu, NULL, D3DTEXF_NONE);
+	hr = m_Device->GetRenderTargetData(m_stereo_test_gpu, m_stereo_test_cpu);
+	mark_level_result(m_stereo_test_cpu, &m_PC_level, PCLEVELTEST_YUY2);
+
+
+	m_PC_level |= PCLEVELTEST_TESTED;
+	m_PC_level_test = NULL;
+	m_PC_level = 0;
 
 	return S_OK;
 }
@@ -1375,6 +1472,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	// load and start thread
 	restore_rgb();
 	create_render_thread();
+	test_PC_level();
 	return S_OK;
 }
 
@@ -2045,8 +2143,7 @@ HRESULT my12doomRenderer::clear(IDirect3DSurface9 *surface, DWORD color)
 	if (!surface)
 		return E_POINTER;
 	m_Device->SetRenderTarget(0, surface);
-	m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, color, 1.0f, 0L );
-	return S_OK;
+	return m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, color, 1.0f, 0L );
 }
 
 HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
@@ -2094,6 +2191,12 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags );
 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, left_eye ? vertex_pass2_main : vertex_pass2_main_r, 2 );
+
+
+	// test
+	RECT rect = {0,0,stereo_test_texture_size, stereo_test_texture_size};
+	hr = m_Device->StretchRect(m_PC_level_test, NULL, surface, &rect, D3DTEXF_LINEAR);
+
 	return S_OK;
 }
 HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
@@ -3561,6 +3664,10 @@ gpu_sample::~gpu_sample()
 
 	safe_delete(m_tex_stereo_test);
 	safe_delete(m_tex_stereo_test_cpu);
+
+	safe_delete(m_surf_YV12);
+	safe_delete(m_surf_NV12);
+	safe_delete(m_surf_YUY2);
 }
 
 CCritSec g_gpu_lock;
@@ -3593,6 +3700,13 @@ HRESULT gpu_sample::prepare_rendering()
 	m_allocator->UpdateTexture(m_tex_YV12_UV, m_tex_gpu_YV12_UV);
 	m_allocator->UpdateTexture(m_tex_NV12_UV, m_tex_gpu_NV12_UV);
 
+	if (m_surf_YV12)
+		m_surf_YV12->Unlock();
+	if (m_surf_NV12)
+		m_surf_NV12->Unlock();
+	if (m_surf_YUY2)
+		m_surf_YUY2->Unlock();
+
 	m_prepared_for_rendering = true;
 	//QueryPerformanceCounter(&counter2);
 
@@ -3616,46 +3730,60 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 	if (m_format == MEDIASUBTYPE_RGB32)
 		return S_FALSE;
 
-	CComPtr<IDirect3DSurface9> rt;
-	m_tex_gpu_RGB32->get_first_level(&rt);
-	device->SetRenderTarget(0, rt);
+	if (m_StretchRect)
+	{
+		CComPtr<IDirect3DSurface9> rgb_surf;
+		m_tex_gpu_RGB32->get_first_level(&rgb_surf);
+		if (m_surf_YV12)
+			device->StretchRect(m_surf_YV12->surface, NULL, rgb_surf, NULL, D3DTEXF_LINEAR);
+		if (m_surf_NV12)
+			device->StretchRect(m_surf_NV12->surface, NULL, rgb_surf, NULL, D3DTEXF_LINEAR);
+		if (m_surf_YUY2)
+			device->StretchRect(m_surf_YUY2->surface, NULL, rgb_surf, NULL, D3DTEXF_LINEAR);
+	}
+	else
+	{
+		CComPtr<IDirect3DSurface9> rt;
+		m_tex_gpu_RGB32->get_first_level(&rt);
+		device->SetRenderTarget(0, rt);
 
-	hr = device->BeginScene();
-	device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
-	device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-	device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
-	hr = device->SetPixelShader(NULL);
-	if (m_format == MEDIASUBTYPE_YV12) hr = device->SetPixelShader(ps_yv12);
-	if (m_format == MEDIASUBTYPE_NV12) hr = device->SetPixelShader(ps_nv12);
-	if (m_format == MEDIASUBTYPE_YUY2) hr = device->SetPixelShader(ps_yuy2);
-	float rect_data[4] = {m_width, m_height, m_width/2, m_height};
-	hr = device->SetPixelShaderConstantF(0, rect_data, 1);
-	hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
-	hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-	CComPtr<IDirect3DSurface9> left_surface;
-	CComPtr<IDirect3DSurface9> right_surface;
+		hr = device->BeginScene();
+		device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+		device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+		device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+		hr = device->SetPixelShader(NULL);
+		if (m_format == MEDIASUBTYPE_YV12) hr = device->SetPixelShader(ps_yv12);
+		if (m_format == MEDIASUBTYPE_NV12) hr = device->SetPixelShader(ps_nv12);
+		if (m_format == MEDIASUBTYPE_YUY2) hr = device->SetPixelShader(ps_yuy2);
+		float rect_data[4] = {m_width, m_height, m_width/2, m_height};
+		hr = device->SetPixelShaderConstantF(0, rect_data, 1);
+		hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
+		hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		CComPtr<IDirect3DSurface9> left_surface;
+		CComPtr<IDirect3DSurface9> right_surface;
 
-	// drawing
-	hr = device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-	hr = device->SetSamplerState( 1, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-	hr = device->SetSamplerState( 2, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+		// drawing
+		hr = device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+		hr = device->SetSamplerState( 1, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+		hr = device->SetSamplerState( 2, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
 
-	hr = device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = device->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = device->SetSamplerState( 2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+		hr = device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+		hr = device->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+		hr = device->SetSamplerState( 2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 
-	hr = device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = device->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = device->SetStreamSource( 0, vb, 0, sizeof(MyVertex) );
-	hr = device->SetFVF( FVF_Flags );
+		hr = device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+		hr = device->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+		hr = device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+		hr = device->SetStreamSource( 0, vb, 0, sizeof(MyVertex) );
+		hr = device->SetFVF( FVF_Flags );
 
-	hr = device->SetTexture( 0, m_format == MEDIASUBTYPE_YUY2 ? m_tex_gpu_YUY2->texture : m_tex_gpu_Y->texture );
-	if (m_format == MEDIASUBTYPE_YV12 || m_format == MEDIASUBTYPE_NV12)
-		hr = device->SetTexture( 1, m_format == MEDIASUBTYPE_NV12 ? m_tex_gpu_NV12_UV->texture : m_tex_gpu_YV12_UV->texture);
-	hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
+		hr = device->SetTexture( 0, m_format == MEDIASUBTYPE_YUY2 ? m_tex_gpu_YUY2->texture : m_tex_gpu_Y->texture );
+		if (m_format == MEDIASUBTYPE_YV12 || m_format == MEDIASUBTYPE_NV12)
+			hr = device->SetTexture( 1, m_format == MEDIASUBTYPE_NV12 ? m_tex_gpu_NV12_UV->texture : m_tex_gpu_YV12_UV->texture);
+		hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
 
-	hr = device->EndScene();
+		hr = device->EndScene();
+	}
 
 
 	m_converted = true;
@@ -3824,13 +3952,14 @@ bool gpu_sample::is_ignored_line(int line)
 	return false;
 }
 
-gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test, bool remux_mode, D3DPOOL pool)
+gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test, bool remux_mode, D3DPOOL pool, DWORD PC_LEVEL)
 {
 	//CAutoLock lck(&g_gpu_lock);
 	m_allocator = allocator;
 	m_interlace_flags = 0;
 	m_tex_RGB32 = m_tex_YUY2 = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
 	m_tex_gpu_RGB32 = m_tex_gpu_YUY2 = m_tex_gpu_Y = m_tex_gpu_YV12_UV = m_tex_gpu_NV12_UV = NULL;
+	m_surf_YV12 = m_surf_NV12 = m_surf_YUY2 = NULL;
 	m_tex_stereo_test = m_tex_stereo_test_cpu = NULL;
 	m_width = width;
 	m_height = height;
@@ -3864,16 +3993,27 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 		//printf("sample interlace_flag: %02x.\n", m_interlace_flags);
 	}
 
-	m_ready = true;
 
 	int l = timeGetTime();
 	// texture creation
 	JIF( allocator->CreateTexture(m_width, m_height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_gpu_RGB32));
 
+	m_ready = true;
+	//return;
+
+	m_StretchRect = false;
 	if (m_format == MEDIASUBTYPE_YUY2)
 	{
-		JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8,pool,	&m_tex_YUY2));
-		JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_gpu_YUY2));
+		if (PC_LEVEL & (PCLEVELTEST_TESTED|PCLEVELTEST_YUY2))
+		{
+			m_StretchRect = true;
+			JIF( allocator->CreateOffscreenSurface(m_width, m_height, (D3DFORMAT)MAKEFOURCC('Y','U','Y','2'), D3DPOOL_DEFAULT, &m_surf_YUY2));
+		}
+		else
+		{
+			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8,pool,	&m_tex_YUY2));
+			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_gpu_YUY2));
+		}
 	}
 
 	else if (m_format == MEDIASUBTYPE_RGB32)
@@ -3883,21 +4023,38 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 	else if (m_format == MEDIASUBTYPE_NV12)
 	{
-		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,pool,	&m_tex_Y));
-		JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,pool,	&m_tex_NV12_UV));
-		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
-		JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_gpu_NV12_UV));
+		if (PC_LEVEL & (PCLEVELTEST_TESTED|PCLEVELTEST_NV12))
+		{
+			m_StretchRect = true;
+			JIF( allocator->CreateOffscreenSurface(m_width, m_height, (D3DFORMAT)MAKEFOURCC('N','V','1','2'), D3DPOOL_DEFAULT, &m_surf_NV12));
+		}
+		else
+		{
+			JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,pool,	&m_tex_Y));
+			JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,pool,	&m_tex_NV12_UV));
+			JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
+			JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_gpu_NV12_UV));
+		}
 	}
 
 	else if (m_format == MEDIASUBTYPE_YV12)
 	{
-		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,pool,	&m_tex_Y));
-		JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,pool,	&m_tex_YV12_UV));
-		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
-		JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_YV12_UV));
+		if (PC_LEVEL & (PCLEVELTEST_TESTED|PCLEVELTEST_YV12))
+		{
+			m_StretchRect = true;
+			JIF( allocator->CreateOffscreenSurface(m_width, m_height, (D3DFORMAT)MAKEFOURCC('Y','V','1','2'), D3DPOOL_DEFAULT, &m_surf_YV12));
+		}
+		else
+		{
+			JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,pool,	&m_tex_Y));
+			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,pool,	&m_tex_YV12_UV));
+			JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
+			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_YV12_UV));
+		}
 	}
 
 	m_pool = pool;
+	m_ready = true;
 
 
 	int l2 = timeGetTime();
@@ -3924,7 +4081,11 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	else if (m_format == MEDIASUBTYPE_YUY2)
 	{
 		// loading YUY2 image as one ARGB half width texture
-		D3DLOCKED_RECT &d3dlr = m_tex_YUY2->locked_rect;
+		D3DLOCKED_RECT d3dlr;
+		if (PC_LEVEL & (PCLEVELTEST_TESTED | PCLEVELTEST_YUY2))
+			d3dlr = m_surf_YUY2->locked_rect;
+		else
+			d3dlr = m_tex_YUY2->locked_rect;
 		dst = (BYTE*)d3dlr.pBits;
 		int j = 0;
 		for(int i=0; i<m_height; i++)
@@ -3949,26 +4110,41 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 	else if (m_format == MEDIASUBTYPE_NV12)
 	{
-		// loading NV12 image as one L8 texture and one A8L8 texture
 
-		//load Y
-		D3DLOCKED_RECT &d3dlr = m_tex_Y->locked_rect;
-		dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_height; i++)
+		if (PC_LEVEL & (PCLEVELTEST_TESTED | PCLEVELTEST_NV12))
 		{
-			memcpy(dst, src, m_width);
-			src += m_width;
-			dst += d3dlr.Pitch;
+			D3DLOCKED_RECT &d3dlr = m_surf_NV12->locked_rect;
+			dst = (BYTE*)d3dlr.pBits;
+			for(int i=0; i<m_height*3/2; i++)
+			{
+				memcpy(dst, src, m_width);
+				src += m_width;
+				dst += d3dlr.Pitch;
+			}
 		}
 
-		// load UV
-		D3DLOCKED_RECT &d3dlr2 = m_tex_NV12_UV->locked_rect;
-		dst = (BYTE*)d3dlr2.pBits;
-		for(int i=0; i<m_height/2; i++)
+		else
 		{
-			memcpy(dst, src, m_width);
-			src += m_width;
-			dst += d3dlr2.Pitch;
+			// loading NV12 image as one L8 texture and one A8L8 texture
+			// load Y
+			D3DLOCKED_RECT &d3dlr = m_tex_Y->locked_rect;
+			dst = (BYTE*)d3dlr.pBits;
+			for(int i=0; i<m_height; i++)
+			{
+				memcpy(dst, src, m_width);
+				src += m_width;
+				dst += d3dlr.Pitch;
+			}
+
+			// load UV
+			D3DLOCKED_RECT &d3dlr2 = m_tex_NV12_UV->locked_rect;
+			dst = (BYTE*)d3dlr2.pBits;
+			for(int i=0; i<m_height/2; i++)
+			{
+				memcpy(dst, src, m_width);
+				src += m_width;
+				dst += d3dlr2.Pitch;
+			}
 		}
 
 		memory_sample->GetPointer(&src);
@@ -3977,25 +4153,46 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 	else if (m_format == MEDIASUBTYPE_YV12)
 	{
-		// loading YV12 image as two L8 texture
-		// load Y
-		D3DLOCKED_RECT &d3dlr = m_tex_Y->locked_rect;
-		dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_height; i++)
+		if (PC_LEVEL & (PCLEVELTEST_TESTED | PCLEVELTEST_YV12))
 		{
-			memcpy(dst, src, m_width);
-			src += m_width;
-			dst += d3dlr.Pitch;
+			D3DLOCKED_RECT &d3dlr = m_surf_YV12->locked_rect;
+			dst = (BYTE*)d3dlr.pBits;
+			for(int i=0; i<m_height; i++)
+			{
+				memcpy(dst, src, m_width);
+				src += m_width;
+				dst += d3dlr.Pitch;
+			}
+			for(int i=0; i<m_height; i++)
+			{
+				memcpy(dst, src, m_width/2);
+				src += m_width/2;
+				dst += d3dlr.Pitch/2;
+			}
 		}
 
-		// load UV
-		D3DLOCKED_RECT &d3dlr2 = m_tex_YV12_UV->locked_rect;
-		dst = (BYTE*)d3dlr2.pBits;
-		for(int i=0; i<m_height; i++)
+		else
 		{
-			memcpy(dst, src, m_width/2);
-			src += m_width/2;
-			dst += d3dlr2.Pitch;
+			// loading YV12 image as two L8 texture
+			// load Y
+			D3DLOCKED_RECT &d3dlr = m_tex_Y->locked_rect;
+			dst = (BYTE*)d3dlr.pBits;
+			for(int i=0; i<m_height; i++)
+			{
+				memcpy(dst, src, m_width);
+				src += m_width;
+				dst += d3dlr.Pitch;
+			}
+
+			// load UV
+			D3DLOCKED_RECT &d3dlr2 = m_tex_YV12_UV->locked_rect;
+			dst = (BYTE*)d3dlr2.pBits;
+			for(int i=0; i<m_height; i++)
+			{
+				memcpy(dst, src, m_width/2);
+				src += m_width/2;
+				dst += d3dlr2.Pitch;
+			}
 		}
 
 		memory_sample->GetPointer(&src);

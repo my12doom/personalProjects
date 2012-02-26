@@ -29,9 +29,31 @@ HRESULT CPooledTexture::get_first_level(IDirect3DSurface9 **out)
 	return texture->GetSurfaceLevel(0, out);
 }
 
+// surface class
+CPooledSurface::~CPooledSurface()
+{
+	m_allocator->DeleteSurface(this);
+}
+
+CPooledSurface::CPooledSurface(CTextureAllocator *pool)
+{
+	m_allocator = pool;
+}
+
+HRESULT CPooledSurface::Unlock()
+{
+	hr = S_OK;
+	if (locked_rect.pBits)
+		hr = surface->UnlockRect();
+	locked_rect.pBits = NULL;
+	return hr;
+}
+
+
 // texture pool
 CTextureAllocator::CTextureAllocator(IDirect3DDevice9 *device):
-m_pool_count(0),
+m_texture_count(0),
+m_surface_count(0),
 m_device(device)
 {
 
@@ -52,15 +74,15 @@ HRESULT CTextureAllocator::CreateTexture(int width, int height, DWORD usage, D3D
 
 	{
 		// find in pool
-		CAutoLock lck(&m_pool_lock);
-		for(int i=0; i<m_pool_count; i++)
+		CAutoLock lck(&m_texture_pool_lock);
+		for(int i=0; i<m_texture_count; i++)
 		{
-			PooledTexture &t = m_pool[i];
+			PooledTexture &t = m_texture_pool[i];
 			if (t.width == width && t.height == height && t.pool == pool && t.format == format)
 			{
 				*(PooledTexture*)o = t;
-				m_pool_count --;
-				memcpy(m_pool+i, m_pool+i+1, (m_pool_count-i)*sizeof(PooledTexture));
+				m_texture_count --;
+				memcpy(m_texture_pool+i, m_texture_pool+i+1, (m_texture_count-i)*sizeof(PooledTexture));
 				//for(int j=i; j<m_pool_count; j++)
 				//	m_pool[j] = m_pool[j+1];
 
@@ -92,6 +114,53 @@ HRESULT CTextureAllocator::CreateTexture(int width, int height, DWORD usage, D3D
 
 	return o->hr;
 }
+
+HRESULT CTextureAllocator::CreateOffscreenSurface(int width, int height, D3DFORMAT format, D3DPOOL pool, CPooledSurface **out)
+{
+	if (out == NULL)
+		return E_POINTER;
+
+	CPooledSurface *& o = *out;
+	o = new CPooledSurface(this);
+
+	{
+		// find in pool
+		CAutoLock lck(&m_surface_pool_lock);
+		for(int i=0; i<m_surface_count; i++)
+		{
+			PooledSurface &t = m_surface_pool[i];
+			if (t.width == width && t.height == height && t.pool == pool && t.format == format)
+			{
+				*(PooledSurface*)o = t;
+				m_surface_count --;
+				memcpy(m_surface_pool+i, m_surface_pool+i+1, (m_surface_count-i)*sizeof(PooledSurface));
+				//for(int j=i; j<m_pool_count; j++)
+				//	m_pool[j] = m_pool[j+1];
+
+				return S_OK;
+			}
+		}
+	}
+
+	// no match, just create new one and lock it
+	o->width = width;
+	o->height = height;
+	o->pool = pool;
+	o->format = format;
+	o->creator = m_device;
+	o->hr = m_device->CreateOffscreenPlainSurface(width, height, format, pool, &o->surface, NULL);
+	if (FAILED(o->hr))
+		return o->hr;
+	o->hr = o->surface->LockRect(&o->locked_rect, NULL, NULL);
+
+	if (FAILED(o->hr))
+	{
+		o->surface->Release();
+		o->surface = NULL;
+	}
+
+	return o->hr;
+}
 HRESULT CTextureAllocator::DeleteTexture(CPooledTexture *texture)
 {
 	if (FAILED(texture->hr))
@@ -112,26 +181,70 @@ HRESULT CTextureAllocator::DeleteTexture(CPooledTexture *texture)
 		return S_FALSE;
 	}
 	
-	CAutoLock lck(&m_pool_lock);
-	m_pool[m_pool_count++] = *texture;
+	CAutoLock lck(&m_texture_pool_lock);
+	m_texture_pool[m_texture_count++] = *texture;
+
+	return S_OK;
+}
+HRESULT CTextureAllocator::DeleteSurface(CPooledSurface *surface)
+{
+	if (FAILED(surface->hr))
+		return S_OK;
+
+	/*
+	if (surface->locked_rect.pBits == NULL)
+	{
+		surface->hr = surface->surface->LockRect(&surface->locked_rect, NULL, NULL);
+	}
+	if (FAILED(surface->hr))
+	{
+		surface->surface->Release();
+		return S_FALSE;
+	}
+
+	CAutoLock lck(&m_surface_pool_lock);
+	m_surface_pool[m_surface_count++] = *surface;
+	*/
+	surface->surface->Release();
 
 	return S_OK;
 }
 HRESULT CTextureAllocator::DestroyPool(D3DPOOL pool2destroy)
 {
-	CAutoLock lck(&m_pool_lock);
-	int i = 0;
-	int j = 0;
-	int c = m_pool_count;
-	while (i<c)
+	// destroy textures
 	{
-		if (m_pool[i].pool == pool2destroy)
+		CAutoLock lck(&m_texture_pool_lock);
+		int i = 0;
+		int j = 0;
+		int c = m_texture_count;
+		while (i<c)
 		{
-			m_pool[i++].texture->Release();
-			m_pool_count--;
+			if (m_texture_pool[i].pool == pool2destroy)
+			{
+				m_texture_pool[i++].texture->Release();
+				m_texture_count--;
+			}
+			else
+				m_texture_pool[j++] = m_texture_pool[i++];
 		}
-		else
-			m_pool[j++] = m_pool[i++];
+	}
+
+	// destroy surfaces
+	{
+		CAutoLock lck(&m_surface_pool_lock);
+		int i = 0;
+		int j = 0;
+		int c = m_surface_count;
+		while (i<c)
+		{
+			if (m_surface_pool[i].pool == pool2destroy)
+			{
+				m_surface_pool[i++].surface->Release();
+				m_surface_count--;
+			}
+			else
+				m_surface_pool[j++] = m_surface_pool[i++];
+		}
 	}
 
 	/*

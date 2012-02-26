@@ -9,6 +9,11 @@
 
 struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
 #define WM_NV_NOTIFY (WM_USER+10086)
+#define PCLEVELTEST_TESTED 1
+#define PCLEVELTEST_YV12 2
+#define PCLEVELTEST_NV12 4
+#define PCLEVELTEST_YUY2 8
+
 const int fade_in_out_time = 500;
 void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName);
 
@@ -88,7 +93,7 @@ protected:
 class gpu_sample
 {
 public:
-	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test = false, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM);
+	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test = false, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM, DWORD PC_LEVEL = 0);
 	~gpu_sample();
 	bool is_ignored_line(int line);
 	HRESULT prepare_rendering();		// it's just unlock textures
@@ -117,6 +122,11 @@ public:
 	CPooledTexture *m_tex_gpu_Y;					// GPU Y plane of YV12/NV12, in L8
 	CPooledTexture *m_tex_gpu_YV12_UV;				// GPU UV plane of YV12, in L8, double height
 	CPooledTexture *m_tex_gpu_NV12_UV;				// GPU UV plane of NV12, in A8L8
+
+	CPooledSurface *m_surf_YUY2;
+	CPooledSurface *m_surf_YV12;
+	CPooledSurface *m_surf_NV12;
+	bool m_StretchRect;								// StretchRect level correct
 
 	CPooledTexture *m_tex_stereo_test;
 	CPooledTexture *m_tex_stereo_test_cpu;
@@ -389,6 +399,9 @@ protected:
 	HRESULT set_device_state(device_state new_state);
 	HRESULT backup_rgb();
 	HRESULT restore_rgb();
+	HRESULT test_PC_level();		// test hardware YUV-RGB conversion level
+	DWORD m_PC_level;				// 0
+
 	bool m_backuped;
 
 	// variables
@@ -462,6 +475,9 @@ protected:
 	CComPtr<IDirect3DTexture9> m2_tex_YV12_UV;					// UV plane of YV12, in L8, double height
 	CComPtr<IDirect3DTexture9> m2_tex_NV12_UV;					// UV plane of NV12, in A8L8
 	*/
+
+	// TV - PC level test surfaces
+	CComPtr<IDirect3DSurface9> m_PC_level_test;
 
 	CComPtr<IDirect3DTexture9> m_tex_rgb_left;				// source texture, converted to RGB32
 	CComPtr<IDirect3DTexture9> m_tex_rgb_right;

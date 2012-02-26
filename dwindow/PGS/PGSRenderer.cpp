@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <assert.h>
 #include "PGSRenderer.h"
+
 
 PGSRenderer::PGSRenderer()
 {
@@ -61,6 +63,9 @@ HRESULT PGSRenderer::add_data(BYTE *data, int size, int start, int end)
 
 	memmove(m_seg_buffer, tmp, m_seg_buffer_pos - (tmp-m_seg_buffer));
 	m_seg_buffer_pos -= (tmp-m_seg_buffer);
+
+	assert(m_seg_buffer_pos == 0);
+	m_seg_buffer_pos = 0;
 
 	return hr;
 }
