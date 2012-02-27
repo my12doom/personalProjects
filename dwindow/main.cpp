@@ -268,6 +268,37 @@ static const byte rLPS_table_64x4[64][4]=
 
 int main()
 {
+
+	FILE *f = fopen("F:\\mpc.pgs", "rb");
+	unsigned char hdr[3];
+	while (fread(hdr, 1, 3, f) == 3)
+	{
+		int size = (hdr[1] << 8) + hdr[2];
+		int type = hdr[0];
+
+			if (type==0x14)
+				printf("PALETTE");
+			else if (type == 0x15)
+				printf("OBJECT");
+			else if (type == 0x16)
+				printf("PRESENTATION_SEG");
+			else if (type == 0x17)
+				printf("WINDOW_DEF");
+			else if (type == 0x18)
+				printf("INTERACTIVE_SEG");
+			else if (type == 0x80)
+				printf("DISPLAY");
+			else if (type == 0x81)
+				printf("HDMV_SUB1");
+			else if (type == 0x82)
+				printf("HDMV_SUB2");
+			else
+				printf("unkown type %02x", type);
+
+			printf(", size = %d\n", size);
+			fseek(f, size, SEEK_CUR);
+	}
+
 	WinMain(GetModuleHandle(NULL), 0, "", SW_SHOW);
 
 

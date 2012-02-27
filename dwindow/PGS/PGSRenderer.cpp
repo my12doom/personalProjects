@@ -42,6 +42,7 @@ HRESULT PGSRenderer::add_data(BYTE *data, int size, int start, int end)
 		return S_OK;
 	}
 
+
 	// pack together
 	memcpy(m_seg_buffer+m_seg_buffer_pos, data, size);
 	m_seg_buffer_pos += size;
@@ -56,6 +57,11 @@ HRESULT PGSRenderer::add_data(BYTE *data, int size, int start, int end)
 			break;
 
 		hr = m_parser.parse_raw_element(tmp+3, type, ele_size, start, end);
+		if (FAILED(hr))
+		{
+			m_seg_buffer_pos = 0;	// drop all data recieved, wait for new packets
+			return hr;
+		}
 
 		tmp += ele_size + 3;
 		counter++;
@@ -63,9 +69,6 @@ HRESULT PGSRenderer::add_data(BYTE *data, int size, int start, int end)
 
 	memmove(m_seg_buffer, tmp, m_seg_buffer_pos - (tmp-m_seg_buffer));
 	m_seg_buffer_pos -= (tmp-m_seg_buffer);
-
-	assert(m_seg_buffer_pos == 0);
-	m_seg_buffer_pos = 0;
 
 	return hr;
 }

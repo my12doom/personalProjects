@@ -173,7 +173,12 @@ HRESULT PGSParser::parse_raw_element(BYTE *data, int type, int size, int start, 
 	if(f)fprintf(f, "(#%d)type=%02x(%s), size=%d\r\n", m_subtitle_count, type, tbl[type], size);
 	*/
 
-	HRESULT hr = S_OK;
+	if (start == 0 || end == 0)
+	{
+		printf("0:0!.\n");
+	}
+
+	HRESULT hr = E_FAIL;		// we use E_FAILT here, to prevent error packets
 	if (type == PRESENTATION_SEG)
 		hr = parsePresentaionSegment(data, size, start);
 	else if (type == WINDOW_DEF)
@@ -184,6 +189,12 @@ HRESULT PGSParser::parse_raw_element(BYTE *data, int type, int size, int start, 
 		hr = parseObject(data, size);
 	else if (type == DISPLAY)
 		hr = parseDisplay(data, size, start);
+	else if (type == INTERACTIVE_SEG)
+		hr = S_OK;
+	else if (type == HDMV_SUB1)
+		hr = S_OK;
+	else if (type == HDMV_SUB2)
+		hr = S_OK;
 	//else
 	//	printf("type=%02x, size=%d\n", type, size);
 
