@@ -367,7 +367,7 @@ HRESULT CMpegSplitterFile::SearchStreams(__int64 start, __int64 stop, IAsyncRead
 							if (m_ClipInfo.IsHdmv()) {
 								for (int i=0; i<m_ClipInfo.GetStreamNumber(); i++) {
 									CHdmvClipInfo::Stream* stream = m_ClipInfo.GetStreamByIndex(i);
-									if (stream->m_Type == VIDEO_STREAM_H264 && m_rtMin == 116506666) {
+									if (stream->m_Type == VIDEO_STREAM_H264 /*&& m_rtMin == 116506666*/) {
 										CComQIPtr<ISyncReader>	pReader = pAsyncReader;
 										if (pReader) pReader->SetPTSOffset (&m_rtPTSOffset);
 										//TRACE ("UPDATE m_rtPTSOffset(SearchStreams)=%S\n", ReftimeToString(m_rtPTSOffset));
