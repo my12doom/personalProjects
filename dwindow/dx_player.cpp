@@ -6,6 +6,7 @@
 #include "..\libchecksum\libchecksum.h"
 #include "..\AESFile\E3DReader.h"
 #include "latency_dialog.h"
+#include "..\mySplitter\audio_downmix.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
@@ -138,6 +139,7 @@ m_saved_screen2(L"Screen2", rect_zero),
 m_saved_rect1(L"Window1", rect_zero),
 m_saved_rect2(L"Window2", rect_zero),
 m_useLAV(L"LAV", true),
+m_downmix(L"Downmix", false),
 m_forced_deinterlace(L"ForcedDeinterlace", false),
 m_saturation(L"Saturation", 0.5),
 m_luminance(L"Luminance", 0.5),
@@ -147,7 +149,8 @@ m_saturation2(L"Saturation2", 0.5),
 m_luminance2(L"Luminance2", 0.5),
 m_hue2(L"Hue2", 0.5),
 m_contrast2(L"Contrast2", 0.5),
-m_theater_owner(NULL)
+m_theater_owner(NULL),
+m_trial_shown(L"Trial", false)
 {
 	detect_monitors();
 
@@ -874,9 +877,10 @@ HRESULT dx_player::popup_menu(HWND owner)
 		}
 	}
 
-	// LAV Audio Decoder and 
+	// LAV Audio Decoder and downmixing
 	CheckMenuItem(menu, ID_AUDIO_USELAV, MF_BYCOMMAND | (m_useLAV ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(menu, ID_AUDIO_BITSTREAM, MF_BYCOMMAND | (m_useLAV && m_bitstreaming ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_AUDIO_DOWNMIX, MF_BYCOMMAND | (m_downmix ? MF_CHECKED : MF_UNCHECKED));
 
 	// audio tracks
 	HMENU sub_audio = GetSubMenu(menu, 5);
@@ -997,6 +1001,20 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 LRESULT dx_player::on_timer(int id)
 {
+	if (m_renderer1)
+	{
+		if (timeGetTime() - m_renderer1->m_last_reset_time > TRAIL_TIME_1 &&!m_trial_shown && is_trial_version())
+		{
+			// TRIAL
+			m_trial_shown = true;
+			show_mouse(true);
+			reset_timer(1, 999999);
+			if (is_trial_version())
+				MessageBoxW(id_to_hwnd(1), C(L"You are using a trial copy of DWindow, each clip will play normally for 10 minutes, after that the picture will become grayscale.\nYou can reopen it to play normally for another 10 minutes.\nRegister to remove this limitation."), L"....", MB_ICONINFORMATION);
+			reset_timer(1, 2000);
+		}
+	}
+
 	if (id == 1)
 	{
 		RECT client1, client2;
@@ -1226,6 +1244,12 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		m_useLAV = !m_useLAV;
 		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Audio Decoder setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
+	}
+
+	else if (uid == ID_AUDIO_DOWNMIX)
+	{
+		m_downmix = !m_downmix;
+		handle_downmixer();
 	}
 
 	// Bitstreaming
@@ -1643,6 +1667,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		memset(passkey_big_decrypted, 0, 128);
 		init_done_flag = 0x12345678;
 	}
+
 	return S_OK;
 }
 
@@ -1658,6 +1683,10 @@ HRESULT dx_player::init_direct_show()
 	JIF(m_gb->QueryInterface(IID_IMediaControl,  (void **)&m_mc));
 	JIF(m_gb->QueryInterface(IID_IMediaSeeking,  (void **)&m_ms));
 	JIF(m_gb->QueryInterface(IID_IBasicAudio,  (void **)&m_ba));
+
+	myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&m_lav);
+	CDWindowAudioDownmix *mixer = new CDWindowAudioDownmix(L"Downmixer", NULL, &hr);
+	mixer->QueryInterface(IID_IBaseFilter, (void**)&m_downmixer);
 
 	return S_OK;
 
@@ -1700,6 +1729,8 @@ HRESULT dx_player::exit_direct_show()
 	m_file_loaded = false;
 	
 	m_offset_metadata = NULL;
+	m_downmixer = NULL;
+	m_lav = NULL;
 	m_ba = NULL;
 	m_ms = NULL;
 	m_mc = NULL;
@@ -2322,11 +2353,10 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 						if ( (audio_track>=0 && (LOADFILE_TRACK_NUMBER(audio_num) & audio_track ))
 							|| audio_track == LOADFILE_ALL_TRACK)
 						{
-							CComPtr<IBaseFilter> lav_audio;
-							hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
-							set_lav_audio_bitstreaming(lav_audio, m_bitstreaming);
-							hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
+							set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
+							hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
 							m_gb->Render(pin);
+							handle_downmixer();
 							log_line(L"done renderering audio pin #%d", audio_num);
 						}
 						audio_num ++;
@@ -2381,12 +2411,11 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 					log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
 			}
 
-			CComPtr<IBaseFilter> lav_audio;
-			hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
-			set_lav_audio_bitstreaming(lav_audio, m_bitstreaming);
-			hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
+			set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
+			hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
 
 			hr = m_gb->RenderFile(file_to_play, NULL);
+			handle_downmixer();
 		}
 		else
 		{
@@ -2431,12 +2460,11 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 				log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
 		}
 
-		CComPtr<IBaseFilter> lav_audio;
-		hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&lav_audio);
-		set_lav_audio_bitstreaming(lav_audio, m_bitstreaming);
-		hr = m_gb->AddFilter(lav_audio, L"LAV Audio Decoder");
+		set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
+		hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
 
 		hr = m_gb->RenderFile(file_to_play, NULL);
+		handle_downmixer();
 	}
 
 	// check result
@@ -2951,11 +2979,10 @@ HRESULT dx_player::enable_audio_track(int track)
 	HRESULT hr = S_OK;
 	if (pin_to_render)
 	{
-		CComPtr<IBaseFilter> LAV;
-		HRESULT hr = myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&LAV);
-		set_lav_audio_bitstreaming(LAV, m_bitstreaming);
-		m_gb->AddFilter(LAV, L"LAV Audio Deocder");
+		set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
+		m_gb->AddFilter(m_lav, L"LAV Audio Deocder");
 		m_gb->Render(pin_to_render);
+		handle_downmixer();
 	}
 	else
 		hr = VFW_E_NOT_FOUND;
@@ -3149,6 +3176,104 @@ HRESULT dx_player::enable_subtitle_track(int track)
 	draw_subtitle();
 	return S_OK;
 }
+
+HRESULT dx_player::handle_downmixer()
+{
+	// search audio renderer
+retry:
+	CComPtr<IEnumFilters> ef;
+	CComPtr<IBaseFilter> renderer;
+	m_gb->EnumFilters(&ef);
+	while (ef->Next(1, &renderer, NULL) == S_OK)
+	{
+		CComQIPtr<IAMAudioRendererStats, &IID_IAMAudioRendererStats> helper(renderer);
+		if (helper)
+			break;
+
+		renderer = NULL;
+	}
+
+	if (!renderer)
+		return E_UNEXPECTED;
+
+	CComPtr<IPin> input;
+	GetConnectedPin(renderer, PINDIR_INPUT, &input);
+	if (!input)
+	{
+		// assume stopped
+		m_gb->RemoveFilter(renderer);
+		goto retry;
+	}
+
+	CComPtr<IPin> connectedto;
+	input->ConnectedTo(&connectedto);
+	PIN_INFO pinfo;
+	connectedto->QueryPinInfo(&pinfo);
+	CComPtr<IBaseFilter> up_filter;
+	up_filter.Attach(pinfo.pFilter);
+	CLSID clsid;
+	up_filter->GetClassID(&clsid);
+
+	if (m_downmix && clsid==CLSID_DWindowAudioDownmix)
+		return S_OK;
+	if (!m_downmix && clsid!=CLSID_DWindowAudioDownmix)
+		return S_OK;
+
+	// Save Filter State
+	bool filter_stopped = false;
+	OAFilterState state_before = 3, state = State_Stopped;
+	HRESULT hr = m_mc->GetState(1000, &state_before);
+	if (state_before == 3)
+		return E_FAIL;
+	if (state_before != State_Stopped)
+	{
+		m_mc->Stop();
+		m_mc->GetState(INFINITE, &state);
+	}
+
+	m_gb->Disconnect(input);
+	m_gb->Disconnect(connectedto);
+
+	if (!m_downmix)
+	{
+		CComPtr<IPin> input2;
+		GetConnectedPin(up_filter, PINDIR_INPUT, &input2);
+		if (!input2)
+			return E_UNEXPECTED;
+		connectedto = NULL;
+		input2->ConnectedTo(&connectedto);
+		if (!connectedto)
+			return E_UNEXPECTED;
+
+		m_gb->RemoveFilter(up_filter);
+		m_gb->ConnectDirect(connectedto, input, NULL);
+	}
+	else
+	{
+		m_gb->AddFilter(m_downmixer, L"Downmixer");
+		CComPtr<IPin> mixer_i;
+		CComPtr<IPin> mixer_o;
+		GetUnconnectedPin(m_downmixer, PINDIR_INPUT, &mixer_i);
+		GetUnconnectedPin(m_downmixer, PINDIR_OUTPUT, &mixer_o);
+
+		if (!mixer_i || !mixer_o)
+			return E_UNEXPECTED;
+
+		m_gb->ConnectDirect(connectedto, mixer_i, NULL);
+		m_gb->ConnectDirect(mixer_o, input, NULL);
+	}
+
+	debug_list_filters();
+
+	// restore filter state
+	if (state_before == State_Running) 
+		m_mc->Run();
+	else if (state_before == State_Paused)
+		m_mc->Pause();
+
+	return S_OK;
+}
+
 HRESULT dx_player::list_audio_track(HMENU submenu)
 {
 	CComPtr<IEnumFilters> ef;

@@ -402,7 +402,9 @@ protected:
 	HRESULT test_PC_level();		// test hardware YUV-RGB conversion level
 	DWORD m_PC_level;				// 0
 
+	friend class dx_player;
 	bool m_backuped;
+	int m_last_reset_time;
 
 	// variables
 	void init_variables();

@@ -34,9 +34,11 @@ typedef struct _dwindow_message_uncrypt
 	unsigned char random_AES_key[32];
 	unsigned char password_uncrypted[20];
 	__time64_t client_time;
-	unsigned char reserved[15];
+	unsigned short client_rev;
+	unsigned char reserved[13];
 	unsigned char zero;
 }dwindow_message_uncrypt;
+
 
 typedef struct _dwindow_passkey_big
 {
@@ -46,10 +48,14 @@ typedef struct _dwindow_passkey_big
 	__time64_t time_start;			// 8 byte
 	__time64_t time_end;			// 8 byte
 	unsigned short max_bar_user;
-	unsigned char theater_version;
+	unsigned char usertype;
 	unsigned char reserved[12];
 	unsigned char zero;				// = 0
 } dwindow_passkey_big;
+const unsigned char USERTYPE_NORMAL = 0;
+const unsigned char USERTYPE_THEATER = 1;
+const unsigned char USERTYPE_TRAIL = 2;
+
 
 extern unsigned int dwindow_n[32];
 extern DWORD dwindow_network_n[32];

@@ -296,6 +296,7 @@ BEGIN
         BEGIN
             MENUITEM "None",                        ID_AUDIO_NONE
             MENUITEM SEPARATOR
+            MENUITEM "Downmix To 16bit Stereo",     ID_AUDIO_DOWNMIX
             MENUITEM "Use LAV Audio Decoder",       ID_AUDIO_USELAV
             MENUITEM "Use Bitstreaming",            ID_AUDIO_BITSTREAM
             MENUITEM "Load Audio Track...",         ID_LOADAUDIOTRACK

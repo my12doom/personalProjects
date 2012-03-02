@@ -1,4 +1,5 @@
 <?php
+die("")
 $db = mysql_connect("localhost", "root", "tester88");
 $result = mysql_select_db("mydb");
 if (!$db || !$result)

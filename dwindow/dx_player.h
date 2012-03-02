@@ -104,6 +104,9 @@ public:
 
 protected:
 
+	// trial
+	AutoSetting<bool> m_trial_shown;
+
 	// theater
 	HWND m_theater_owner;
 
@@ -175,6 +178,7 @@ protected:
 	// helper
 	HRESULT enable_audio_track(int track);
 	HRESULT enable_subtitle_track(int track);
+	HRESULT handle_downmixer();
 	HRESULT list_audio_track(HMENU submenu);
 	HRESULT list_subtitle_track(HMENU submenu);
 	HRESULT debug_list_filters();
@@ -191,6 +195,7 @@ protected:
 	AutoSetting<double> m_volume;	// = 1.0
 	AutoSetting<bool> m_bitstreaming;	// = 1.0
 	AutoSetting<bool> m_useLAV;		// = true
+	AutoSetting<bool> m_downmix;	// = false
 	HRESULT show_ui(bool show);
 	HRESULT draw_ui();
 
@@ -204,6 +209,8 @@ protected:
 	CComPtr<IMediaSeeking>		m_ms;
 	CComPtr<IMediaControl>		m_mc;
 	CComPtr<IBasicAudio>		m_ba;
+	CComPtr<IBaseFilter>		m_lav;
+	CComPtr<IBaseFilter>		m_downmixer;
 
 	// renderer and input layout and output mode and deinterlacing
 	my12doomRenderer *m_renderer1;

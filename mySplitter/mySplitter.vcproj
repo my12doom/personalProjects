@@ -278,6 +278,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\audio_downmix.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\dll.def"
 				>
 			</File>
@@ -345,6 +349,10 @@
 			>
 			<File
 				RelativePath=".\asm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\audio_downmix.h"
 				>
 			</File>
 			<File

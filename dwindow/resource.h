@@ -167,13 +167,15 @@
 #define ID_VIDEO_FORCEDDEINTERLACING    40108
 #define ID_VIDEO_DEINTERLACE            40109
 #define ID_VIDEO_ADJUSTCOLOR            40110
+#define ID_AUDIO_DOWNMIXTO16BITSTEREO   40111
+#define ID_AUDIO_DOWNMIX                40112
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        122
-#define _APS_NEXT_COMMAND_VALUE         40111
+#define _APS_NEXT_COMMAND_VALUE         40113
 #define _APS_NEXT_CONTROL_VALUE         1037
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

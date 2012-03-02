@@ -20,6 +20,7 @@
 #include <dvdmedia.h>
 #include <math.h>
 #include "..\ZBuffer\stereo_test.h"
+#include "..\dwindow\global_funcs.h"
 
 #define FAIL_RET(x) hr=x; if(FAILED(hr)){return hr;}
 #define FAIL_SLEEP_RET(x) hr=x; if(FAILED(hr)){Sleep(1); return hr;}
@@ -179,6 +180,7 @@ void my12doomRenderer::init_variables()
 {
 	// PC level test
 	m_PC_level = 0;
+	m_last_reset_time = timeGetTime();
 
 	// 2D - 3D Convertion
 	m_convert3d = false;
@@ -1472,7 +1474,6 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	// load and start thread
 	restore_rgb();
 	create_render_thread();
-	test_PC_level();
 	return S_OK;
 }
 
@@ -1637,6 +1638,9 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	//if (m_d3d_query) m_d3d_query->Issue(D3DISSUE_BEGIN);
 
+	if (!(m_PC_level&PCLEVELTEST_TESTED))
+		test_PC_level();
+
 	// image loading and idle check
 	if (load_image() != S_OK && !forced)	// no more rendering except pageflipping mode
 		return S_FALSE;
@@ -1677,6 +1681,9 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			if (need_detect) right_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
 		}
 	}
+
+	if (timeGetTime() - m_last_reset_time > TRAIL_TIME_2 && is_trial_version())
+		m_ps_yv12 = m_ps_nv12 = m_ps_yuy2 = NULL;
 
 	int l = timeGetTime();
 
@@ -2152,7 +2159,10 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 		return E_POINTER;
 
 	if (!m_dsr0->is_connected() && m_uidrawer)
+	{
+		m_last_reset_time = timeGetTime();
 		return m_uidrawer->draw_nonmovie_bg(surface, left_eye);
+	}
 
 	D3DSURFACE_DESC desc;
 	surface->GetDesc(&desc);
@@ -2328,8 +2338,21 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 	memset(&desc, 0, sizeof(desc));
 	surface_to_adjust->GetDesc(&desc);
 
-	// create a temp texture, copy the surface to it, render to m_nv3d_surface(which is just a double size temp RT surface with LOCKABLE on) , and then copy back again
+	// create a temp texture, copy the surface to it, render to it, and then copy back again
 	HRESULT hr = S_OK;
+	double saturation1 = m_saturation1;
+	double saturation2 = m_saturation2;
+
+	if (timeGetTime() - m_last_reset_time > TRAIL_TIME_1 && is_trial_version())
+	{
+		saturation1 -= (double)(timeGetTime() - m_last_reset_time - TRAIL_TIME_1) / TRAIL_TIME_3;
+		saturation2 -= (double)(timeGetTime() - m_last_reset_time - TRAIL_TIME_1) / TRAIL_TIME_3;
+
+		saturation1 = max(saturation1, -1);
+		saturation2 = max(saturation2, -2);
+	}
+	if ( (left && (abs(saturation1-0.5)>0.005 || abs(m_luminance1-0.5)>0.005 || abs(m_hue1-0.5)>0.005 || abs(m_contrast1-0.5)>0.005)) || 
+		(!left && (abs(saturation2-0.5)>0.005 || abs(m_luminance2-0.5)>0.005 || abs(m_hue2-0.5)>0.005 || abs(m_contrast2-0.5)>0.005)))
 	{
 		// creating
 		CAutoLock lck(&m_pool_lock);
@@ -2357,9 +2380,8 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 		hr = m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 		hr = m_Device->SetTexture( 0, tex_src->texture );
 		hr = m_Device->SetPixelShader(m_ps_color_adjust);
-		//float ps_parameter[4] = {0.5, 0.5, 0.5, 0.6};
-		float ps_parameter[4] = {m_saturation1, m_luminance1, m_hue1, m_contrast1};
-		float ps_parameter2[4] = {m_saturation2, m_luminance2, m_hue2, m_contrast2};
+		float ps_parameter[4] = {saturation1, m_luminance1, m_hue1, m_contrast1};
+		float ps_parameter2[4] = {saturation2, m_luminance2, m_hue2, m_contrast2};
 		hr = m_Device->SetPixelShaderConstantF(0, left?ps_parameter:ps_parameter2, 1);
 
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );

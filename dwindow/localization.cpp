@@ -247,6 +247,10 @@ HRESULT set_localization_language(localization_language language)
 														L"初始化失败：显示设备检测失败，程序将退出。");
 			add_localization(L"System initialization failed : server not found, the program will exit now.",
 														L"初始化失败：服务器无响应，程序将退出。");
+			add_localization(L"You are using a trial copy of DWindow, each clip will play normally for 10 minutes, after that the picture will become grayscale.\nYou can reopen it to play normally for another 10 minutes.\nRegister to remove this limitation.",
+							 L"你正在使用免费版的DWindow, 影片播放10分钟后会逐渐变为黑白，其他方面与正式版没有区别\n而且你也可以重新打开影片即可恢复色彩\n注册正式版后无此限制！");
+
+			add_localization(L"Downmix To 16bit Stereo", L"输出16位双声道音频");
 		}
 		break;
 	}

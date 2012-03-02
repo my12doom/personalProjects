@@ -167,10 +167,10 @@ float4 YUY2toRGB(float2 tex : TEXCOORD0) : COLOR
 float4 anaglyph(float2 tex : TEXCOORD0) : COLOR
 {
 	//float2 delta = float2((1-tex.y)*0.004+0.002, 0);
-	float2 delta = 0;
+	//float2 delta = 0;
 
-	float4 l = tex2D(s0, tex+delta);
-	float4 r = tex2D(s1, tex-delta);
+	float4 l = tex2D(s0, tex);
+	float4 r = tex2D(s1, tex);
 	
 	r.r = 0;
 	l.r = 0.299 * l.r + 0.587 * l.g + 0.114 * l.b;

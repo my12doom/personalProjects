@@ -604,7 +604,7 @@ int main3(int argc, char * argv[])
 			i = 0;
 		}
 
-		fprintf(offset, is_idr ? "(IDR)" : "(non-IDR)");
+		//fprintf(offset, is_idr ? "(IDR)" : "(non-IDR)");
 
 		if (offset_metadata_count)
 		{

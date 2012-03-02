@@ -97,7 +97,7 @@ HRESULT decode_client_request(BSTR input, dwindow_message_uncrypt *output)
 	return S_OK;
 }
 
-HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_start, __time64_t time_end, int max_bar_user, dwindow_passkey_big *out, int theater_version = 0)
+HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_start, __time64_t time_end, int max_bar_user, dwindow_passkey_big *out, int usertype = USERTYPE_NORMAL)
 {
 	memcpy(out->passkey, passkey, 32);
 	memcpy(out->passkey2, passkey, 32);
@@ -105,7 +105,7 @@ HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_star
 	out->time_start = time_start;
 	out->time_end = time_end;
 	out->max_bar_user = max_bar_user;
-	out->theater_version = theater_version;
+	out->usertype = usertype;
 	memset(out->reserved, 0, sizeof(out->reserved));
 	out->zero = 0;
 
@@ -159,7 +159,7 @@ STDMETHODIMP Ccrypt::decode_message(BSTR input, BSTR* ret)
 	binary2bstr(message.password_uncrypted, 20, &password);
 
 	wchar_t out[64+40+64+40+20+3+1] = L"";
-	wsprintfW(out, L"%s,%s,%s,%s,%d", passkey, requested_hash, aes_key, password, (unsigned int)message.client_time);
+	wsprintfW(out, L"%s,%s,%s,%s,%d,%d", passkey, requested_hash, aes_key, password, (unsigned int)message.client_time, message.client_rev);
 
 	SysFreeString(passkey);
 	SysFreeString(requested_hash);

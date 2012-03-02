@@ -513,6 +513,18 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="Audiodownmix"
+				>
+				<File
+					RelativePath="..\mySplitter\audio_downmix.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\mySplitter\audio_downmix.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"

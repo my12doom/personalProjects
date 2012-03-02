@@ -20,7 +20,7 @@ char *g_server_address = "http://bo3d.net:80/";
 //char *g_server_address = "http://127.0.0.1:8080/";
 
 // public variables
-AutoSetting<localization_language> g_active_language(L"Language", CHINESE);
+AutoSetting<localization_language> g_active_language(L"Language", get_system_default_lang());
 AutoSettingString g_bar_server(L"BarServer", L"");
 char g_passkey[32];
 char g_passkey_big[128];
@@ -1251,6 +1251,7 @@ HRESULT download_e3d_key(const wchar_t *filename)
 	dwindow_message_uncrypt message;
 	memset(&message, 0, sizeof(message));
 	message.zero = 0;
+	message.client_rev = my12doom_rev;
 	memcpy(message.passkey, g_passkey, 32);
 	memcpy(message.requested_hash, reader.m_hash, 20);
 	srand(time(NULL));
@@ -1391,17 +1392,28 @@ int wcstrim(wchar_t *str, wchar_t char_ )
 			break;
 		}
 
-		//ENDING:
-		int end = 0;
-		for (int i=len-1; i>=0; i--)
-			if (str[i] != char_)
-			{
-				end = len - 1 - i;
-				break;
-			}
-			//TRIMMING:
-			memmove(str, str+lead, (len-lead-end)*sizeof(wchar_t));
-			str[len-lead-end] = NULL;
+	//ENDING:
+	int end = 0;
+	for (int i=len-1; i>=0; i--)
+		if (str[i] != char_)
+		{
+			end = len - 1 - i;
+			break;
+		}
+	//TRIMMING:
+	memmove(str, str+lead, (len-lead-end)*sizeof(wchar_t));
+	str[len-lead-end] = NULL;
 
-			return len - lead - end;
+	return len - lead - end;
+}
+
+localization_language get_system_default_lang()
+{
+	LCID lcid = GetSystemDefaultLCID();
+	if (lcid == 2052)
+		return CHINESE;
+	else if (lcid == 3076)
+		return CHINESE;
+	else
+		return ENGLISH;
 }

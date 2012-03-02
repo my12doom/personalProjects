@@ -4,6 +4,7 @@
 #include <d3d9.h>
 #include <dshow.h>
 #include "..\libchecksum\libchecksum.h"
+#include "..\my12doom_revision.h"
 
 
 // setting class
@@ -33,6 +34,9 @@ extern HMONITOR g_logic_monitors[16];
 
 //definitions
 #define AmHresultFromWin32(x) (MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, x))
+#define TRAIL_TIME_1 587537
+#define TRAIL_TIME_2 923579
+#define TRAIL_TIME_3 28532
 
 // GUIDs
 DEFINE_GUID(CLSID_HaaliSimple, 0x8F43B7D9, 0x9D6B, 0x4F48, 0xBE, 0x18, 0x4D, 0x78, 0x7C, 0x79, 0x5E, 0xEA);
@@ -84,7 +88,6 @@ int wcsexplode(const wchar_t *string_to_explode, const wchar_t *delimeter, wchar
 int wcstrim(wchar_t *str, wchar_t char_ = L' ' );
 int get_mixed_monitor_count(bool horizontal = false, bool vertical = false);
 int get_mixed_monitor_by_id(int id, RECT *rect, wchar_t *descriptor, bool horizontal = false, bool vertical = false);
-
 
 
 // CoreMVC
@@ -187,6 +190,7 @@ const wchar_t *C(const wchar_t *English);
 HRESULT add_localization(const wchar_t *English, const wchar_t *Localized = NULL);
 HRESULT set_localization_language(localization_language language);
 HRESULT localize_menu(HMENU menu);
+localization_language get_system_default_lang();
 
 
 // CUDA
@@ -215,7 +219,41 @@ bool __forceinline is_theeater_version()
 	}
 
 	memcpy(g_passkey, &m1, 32);
-	bool is = (1 == m1.theater_version);
+	bool is = (1 == m1.usertype);
 	memset(&m1, 0, 128);
 	return is;
+}
+
+bool __forceinline is_trial_version()
+{
+	static bool last_rtn = true;
+	static int counter = 0xffffff;
+	if (counter<0xffff)
+	{
+		counter++;
+		return last_rtn;
+	}
+	counter = 0;
+	DWORD e[32];
+	dwindow_passkey_big m1;
+	BigNumberSetEqualdw(e, 65537, 32);
+	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+	for(int i=0; i<32; i++)
+		if (m1.passkey[i] != m1.passkey2[i])
+			return false;
+
+	__time64_t t = mytime();
+
+	tm * t2 = _localtime64(&m1.time_end);
+
+	if (m1.time_start > mytime() || mytime() > m1.time_end)
+	{
+		memset(&m1, 0, 128);
+		return false;
+	}
+
+	memcpy(g_passkey, &m1, 32);
+	last_rtn = (2 == m1.usertype);
+	memset(&m1, 0, 128);
+	return last_rtn;
 }

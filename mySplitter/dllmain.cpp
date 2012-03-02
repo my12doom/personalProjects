@@ -15,6 +15,7 @@
 #include "filter_mono.h"
 #include "extender.h"
 #include "ssp.h"
+#include "audio_downmix.h"
 
 //////////////////////////////////////////////////////////////////////////
 // This file contains the standard COM glue code required for registering the 
@@ -26,10 +27,12 @@
 #define g_wszDWindowExtenderMono   L"DWindow Extender Mono"
 #define g_wszDWindowExtenderStereo   L"DWindow Extender Stereo"
 #define g_wszDWindowSSP L"DWindow SSP filter"
+#define g_wszDWindowAudioDownmix L"DWindow Audio Downmix"
 
 // Filter setup data
 const AMOVIESETUP_MEDIATYPE sudPinTypes = { &MEDIATYPE_Video, &MEDIASUBTYPE_NULL};
 const AMOVIESETUP_MEDIATYPE sudPinTypesSSP = { &MEDIATYPE_Video, &MEDIASUBTYPE_YUY2};
+const AMOVIESETUP_MEDIATYPE sudPinTypesAudio = {&MEDIATYPE_Audio, &MEDIASUBTYPE_NULL};
 
 const AMOVIESETUP_PIN sudYV12StereoMixerPins[] =
 {
@@ -186,6 +189,31 @@ const AMOVIESETUP_PIN sudDWindowSSPPins[] =
 };
 
 
+const AMOVIESETUP_PIN sudDWindowAudiodownmixPins[] =
+{
+	{ 
+		L"Input",             // Pins string name
+			FALSE,                // Is it rendered
+			FALSE,                // Is it an output
+			FALSE,                // Are we allowed none
+			FALSE,                // And allowed many
+			&CLSID_NULL,          // Connects to filter
+			NULL,                 // Connects to pin
+			1,                    // Number of types
+			&sudPinTypesAudio     // Pin information
+	},
+	{ 
+		L"Output",				  // Pins string name
+			FALSE,                // Is it rendered
+			TRUE,                 // Is it an output
+			FALSE,                // Are we allowed none
+			FALSE,                // And allowed many
+			&CLSID_NULL,          // Connects to filter
+			NULL,                 // Connects to pin
+			1,                    // Number of types
+			&sudPinTypesAudio     // Pin information
+		}
+};
 const AMOVIESETUP_FILTER sudYV12StereoMixer =
 {
     &CLSID_YV12StereoMixer,				// Filter CLSID
@@ -238,13 +266,24 @@ const AMOVIESETUP_FILTER sudDWindowSSP =
 	CLSID_LegacyAmFilterCategory
 };
 
+const AMOVIESETUP_FILTER sudDWindowAudio =
+{
+	&CLSID_DWindowAudioDownmix,			// Filter CLSID
+	g_wszDWindowAudioDownmix,			// String name
+	MERIT_DO_NOT_USE,					// Filter merit
+	2,									// Number of pins
+	sudDWindowAudiodownmixPins,					// Pin information
+	CLSID_LegacyAmFilterCategory
+};
+
 CFactoryTemplate g_Templates[] = 
 {
     //{ g_wszYV12StereoMixer, &CLSID_YV12StereoMixer, CYV12StereoMixer::CreateInstance, NULL, &sudYV12StereoMixer },
 	//{ g_wszYV12MonoMixer,	&CLSID_YV12MonoMixer,	CYV12MonoMixer::CreateInstance,   NULL, &sudYV12MonoMixer	},
 	{ g_wszDWindowExtenderMono,	&CLSID_DWindowMono,	CDWindowExtenderMono::CreateInstance,   NULL, &sudDWindowExtenderMono	},
 	{ g_wszDWindowExtenderStereo,	&CLSID_DWindowStereo,	CDWindowExtenderStereo::CreateInstance,   NULL, &sudDWindowExtenderStereo	},
-	{ g_wszDWindowSSP,	&CLSID_DWindowSSP,	CDWindowSSP::CreateInstance,   NULL, &sudDWindowSSP	}
+	{ g_wszDWindowSSP,	&CLSID_DWindowSSP,	CDWindowSSP::CreateInstance,   NULL, &sudDWindowSSP	},
+	{ g_wszDWindowAudioDownmix,	&CLSID_DWindowAudioDownmix,	CDWindowAudioDownmix::CreateInstance,   NULL, &sudDWindowAudio	}
 
 };
 
@@ -257,7 +296,9 @@ int g_cTemplates = sizeof(g_Templates) / sizeof(g_Templates[0]);
 
 STDAPI DllRegisterServer()
 {
+#ifndef DEBUG
 	return E_FAIL;
+#endif
     return AMovieDllRegisterServer2( TRUE );
 }
 

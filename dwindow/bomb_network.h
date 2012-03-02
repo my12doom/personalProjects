@@ -36,6 +36,8 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 	dwindow_message_uncrypt message;
 	memset(&message, 0, sizeof(message));
 	message.zero = 0;
+	message.client_rev = my12doom_rev;
+	message.client_time = _time64(NULL);
 	memcpy(message.passkey, g_passkey, 32);
 	memset(message.requested_hash, 0, 20);
 	srand(time(NULL));
