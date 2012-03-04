@@ -66,6 +66,7 @@ public:
 	STDMETHOD(genkeys2)(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, BSTR* out);
 	STDMETHOD(genkey3)(BSTR passkey, LONG time_start, BSTR time_end, LONG max_bar_user, BSTR* out);
 	STDMETHOD(genkey4)(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, LONG theater_version, BSTR* out);
+	STDMETHOD(gen_freekey)(LONG time_start, LONG time_end, BSTR* out);
 };
 
 OBJECT_ENTRY_AUTO(__uuidof(crypt), Ccrypt)

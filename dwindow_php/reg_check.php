@@ -22,6 +22,18 @@ if (time() - $time > 3600*12 || $time - time() > 3600*12)
 	//die("S_OK\0本机时间与服务器时间差异过大，请检查日期/时间设置");
 }
 
+// check trial
+if ($rev == 2)
+{
+$passkey = $com->gen_freekey(time() - (12*3600), time() + 24*7*3600);
+$passkey = $com->AES($passkey, $return_key);
+db_log("PLAYER_STARTUP_FREE", "S_OK");
+echo "S_OK\0";
+echo $passkey;
+die("\0free");
+}
+
+
 // check rev
 $rev_state = 1;
 $result = mysql_query("SELECT * FROM revs where rev = ".$rev);

@@ -20,6 +20,7 @@ INT_PTR CALLBACK register_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 		break;
 
 	case WM_INITDIALOG:
+		localize_window(hDlg);
 		init_dialog(hDlg);
 		break;
 
@@ -42,8 +43,8 @@ INT_PTR CALLBACK select_monitor_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDOK)
 		{
-			HWND combo1 = GetDlgItem(hDlg, IDC_COMBO1);
-			HWND combo2 = GetDlgItem(hDlg, IDC_COMBO2);
+			HWND combo1 = GetDlgItem(hDlg, CB_ADDSTRING);
+			HWND combo2 = GetDlgItem(hDlg, CB_ADDSTRING);
 			select1 = SendMessage(combo1, CB_GETCURSEL, 0, 0);
 			select2 = SendMessage(combo2, CB_GETCURSEL, 0, 0);
 
@@ -57,8 +58,8 @@ INT_PTR CALLBACK select_monitor_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 	case WM_INITDIALOG:
 		{
 			USES_CONVERSION;
-			HWND combo1 = GetDlgItem(hDlg, IDC_COMBO1);
-			HWND combo2 = GetDlgItem(hDlg, IDC_COMBO2);
+			HWND combo1 = GetDlgItem(hDlg, CB_ADDSTRING);
+			HWND combo2 = GetDlgItem(hDlg, CB_ADDSTRING);
 			for(int i=0; i<g_logic_monitor_count; i++)
 			{
 				wchar_t tmp[1024];
@@ -120,7 +121,8 @@ retry:
 		if (g_bar_server[0] == NULL)
 		{
 			int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), NULL, register_proc );
-			return 0;
+			if (!is_trial_version())
+				return 0;
 		}
 		else
 		{
@@ -128,8 +130,12 @@ retry:
 				goto retry;
 		}
 	}
+	else if (is_trial_version())
+		MessageBoxW(NULL, C(L"You are using a trial copy of DWindow, each clip will play normally for 10 minutes, after that the picture will become grayscale.\nYou can reopen it to play normally for another 10 minutes.\nRegister to remove this limitation."), L"....", MB_ICONINFORMATION);
 	save_passkey();
-#include "bomb_function.h"
+
+	BRC();
+
 
 	HWND pre_instance = FindWindowA("DWindowClass", NULL);
 	if (pre_instance)
@@ -298,14 +304,14 @@ int main()
 
 int init_dialog(HWND hWnd)
 {
-	SetWindowTextW(hWnd, C(L"Enter User ID"));
+	//SetWindowTextW(hWnd, C(L"Enter User ID"));
 
 	return 0;
 }
 
 int on_command(HWND hWnd, int uid)
 {
-	if (uid == IDOK)
+	if (uid == IDOK || uid == ID_TRIAL)
 	{
 		char username[512];
 		GetWindowTextA(GetDlgItem(hWnd, IDC_EDIT1), username, 512);
@@ -334,7 +340,7 @@ int on_command(HWND hWnd, int uid)
 
 		char url[512];
 		strcpy(url, g_server_address);
-		strcat(url, g_server_gen_key);
+		strcat(url, uid == IDOK ? g_server_gen_key : g_server_free);
 		strcat(url, "?");
 		char tmp[3];
 		for(int i=0; i<128; i++)
@@ -343,7 +349,7 @@ int on_command(HWND hWnd, int uid)
 			strcat(url, tmp);
 		}
 
-		char downloaded[400] = "";
+		char downloaded[800] = "";
 		memset(downloaded, 0, 400);
 		download_url(url, downloaded, 400);
 
@@ -368,7 +374,8 @@ int on_command(HWND hWnd, int uid)
 			save_passkey();
 			mytime(true);
 
-			MessageBoxW(hWnd, C(L"This program will exit now, Restart it to use new user id."), C(L"Exiting"), MB_ICONINFORMATION);
+			if (!is_trial_version())
+				MessageBoxW(hWnd, C(L"This program will exit now, Restart it to use new user id."), C(L"Exiting"), MB_ICONINFORMATION);
 
 			EndDialog(hWnd, IDOK);
 		}

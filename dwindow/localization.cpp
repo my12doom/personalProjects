@@ -251,6 +251,41 @@ HRESULT set_localization_language(localization_language language)
 							 L"你正在使用免费版的DWindow, 影片播放10分钟后会逐渐变为黑白，其他方面与正式版没有区别\n而且你也可以重新打开影片即可恢复色彩\n注册正式版后无此限制！");
 
 			add_localization(L"Downmix To 16bit Stereo", L"输出16位双声道音频");
+			add_localization(L"Logged out, the program will exit now, restart the program to login.",
+							 L"注销成功，现在程序将退出，下一次启动时你可以登录其他账号");
+			add_localization(L"Are you sure want to logout?", L"确定要注销么？");
+			add_localization(L"Logout...", L"注销...");
+			add_localization(L"Are you sure?", L"确定?");
+
+			// login window
+			add_localization(L"Trial", L"免费测试");
+			add_localization(L"Login", L"登录");
+			add_localization(L"OK",    L"确定");
+			add_localization(L"Cancel", L"取消");
+			add_localization(L"User", L"用户");
+			add_localization(L"Password", L"密码");
+			
+			// latency/stretch window
+			add_localization(L"Delay/Stretch", L"延迟/拉伸");
+			add_localization(L"Delay", L"延迟");
+			add_localization(L"Stretch", L"拉伸");
+			add_localization(L"Reset", L"重置");
+			add_localization(L"Ms", L"毫秒");
+			add_localization(L"Warning: negative delay or stretch less than 1.0 can cause internal subtitle loss, external subtitle is not affected.",
+				L"注意，提前/缩短功能对内置字幕支持较差，调整时尽量不要超过10秒，否则可能出现字幕丢失，延迟/拉伸功能不受限制，独立字幕亦不受限制。");
+
+			// color adjustment
+			add_localization(L"Adjust Color", L"色彩调节");
+			add_localization(L"Preview", L"预览");
+			add_localization(L"SyncAdjust", L"双眼同时调节");
+			add_localization(L"Left Eye", L"左眼");
+			add_localization(L"Right Eye", L"右眼");
+			add_localization(L"Luminance", L"亮度");
+			add_localization(L"Saturation", L"饱和度");
+			add_localization(L"Hue", L"色调");
+			add_localization(L"Contrast", L"对比度");
+
+
 		}
 		break;
 	}

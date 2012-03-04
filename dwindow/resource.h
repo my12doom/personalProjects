@@ -2,14 +2,13 @@
 // Microsoft Visual C++ generated include file.
 // Used by window.rc
 //
-#define IDD_DIALOG1                     101
+#define ID_TRIAL                        3
 #define IDB_BAR                         103
 #define IDI_ICON1                       107
 #define IDR_DATA1                       114
 #define IDR_DLL                         114
 #define IDR_MENU1                       115
 #define IDD_USERID                      116
-#define IDD_SELECTMONITOR               117
 #define IDR_ACCELERATOR1                118
 #define IDD_LATENCY                     119
 #define IDD_DIALOG2                     120
@@ -17,30 +16,20 @@
 #define IDD_THEATER                     121
 #define IDC_CHECK_SOUND1                1009
 #define IDC_CHECK_MKV1                  1010
-#define IDC_EDIT_INPUT1                 1011
-#define IDC_BUTTON_INPUT1               1012
 #define IDC_PLAY                        1013
-#define IDC_COMBO1                      1014
-#define IDC_COMBO2                      1015
 #define IDC_EDIT1                       1017
 #define IDC_EDIT2                       1018
 #define IDC_EDIT3                       1019
 #define IDC_CHECK_SOUND2                1021
 #define IDC_CHECK_MKV2                  1022
 #define IDC_SPIN1                       1022
-#define IDC_EDIT_INPUT2                 1023
 #define IDC_SPIN2                       1023
-#define IDC_BUTTON_INPUT2               1024
 #define IDC_RESET                       1024
 #define IDC_BUTTON1                     1025
 #define IDC_SLIDER1                     1026
 #define IDC_LUM                         1026
 #define IDC_PROGRESS                    1026
-#define IDC_EDIT_SOUND                  1027
 #define IDC_LUM2                        1027
-#define IDC_BUTTON_SOUND                1028
-#define IDC_EDIT_SUBTITLE               1029
-#define IDC_BUTTON_SUBTITLE             1030
 #define IDC_CHECK1                      1030
 #define IDC_PREVIEW                     1030
 #define IDC_CHECK2                      1031
@@ -169,13 +158,15 @@
 #define ID_VIDEO_ADJUSTCOLOR            40110
 #define ID_AUDIO_DOWNMIXTO16BITSTEREO   40111
 #define ID_AUDIO_DOWNMIX                40112
+#define ID_ENGLISH_40113                40113
+#define ID_LOGOUT                       40114
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        122
-#define _APS_NEXT_COMMAND_VALUE         40113
+#define _APS_NEXT_COMMAND_VALUE         40115
 #define _APS_NEXT_CONTROL_VALUE         1037
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

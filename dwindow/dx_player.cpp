@@ -1239,6 +1239,18 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		}
 	}
 
+	else if (uid == ID_LOGOUT)
+	{
+		if (MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Are you sure want to logout?"), L"Are you sure?", MB_YESNO) == IDYES)
+		{
+			memset(g_passkey_big, 0, 128);
+			save_passkey();
+
+			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Logged out, the program will exit now, restart the program to login."), L"...", MB_OK);
+			TerminateProcess(GetCurrentProcess(), 1);
+		}
+	}
+
 	// LAV Audio Decoder
 	else if (uid == ID_AUDIO_USELAV)
 	{
@@ -3263,6 +3275,7 @@ retry:
 		m_gb->ConnectDirect(mixer_o, input, NULL);
 	}
 
+	m_gb->Render(connectedto);
 	debug_list_filters();
 
 	// restore filter state

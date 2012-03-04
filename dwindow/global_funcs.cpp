@@ -15,9 +15,11 @@
 #include <wininet.h>
 #pragma comment(lib,"wininet.lib")
 
-
+#ifdef DEBUG && 1
+char *g_server_address = "http://127.0.0.1:8080/";
+#else
 char *g_server_address = "http://bo3d.net:80/";
-//char *g_server_address = "http://127.0.0.1:8080/";
+#endif
 
 // public variables
 AutoSetting<localization_language> g_active_language(L"Language", get_system_default_lang());
@@ -755,32 +757,6 @@ HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *
 	return E_FAIL;
 }
 
-
-HRESULT check_passkey()
-{
-	DWORD e[32];
-	dwindow_passkey_big m1;
-	BigNumberSetEqualdw(e, 65537, 32);
-	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
-	for(int i=0; i<32; i++)
-		if (m1.passkey[i] != m1.passkey2[i])
-			return E_FAIL;
-
-	__time64_t t = mytime();
-
-	tm * t2 = _localtime64(&m1.time_end);
-
-	if (m1.time_start > mytime() || mytime() > m1.time_end)
-	{
-		memset(&m1, 0, 128);
-		return E_FAIL;
-	}
-
-	memcpy(g_passkey, &m1, 32);
-	memset(&m1, 0, 128);
-	return S_OK;
-}
-
 __time64_t mytime(bool reset)
 {
 	const char* key_word = "DWindow's Kernel Corrupted.";
@@ -1098,6 +1074,24 @@ HRESULT localize_menu(HMENU menu)
 	}
 
 	return hr;
+}
+
+BOOL CALLBACK localize_window_proc(HWND hwnd, LPARAM lParam)
+{
+	wchar_t tmp[1024];
+	GetWindowTextW(hwnd, tmp, 1024);
+	SetWindowTextW(hwnd, C(tmp));
+
+	return TRUE;
+}
+
+HRESULT localize_window(HWND hwnd)
+{
+	wchar_t tmp[1024];
+	GetWindowTextW(hwnd, tmp, 1024);
+	SetWindowTextW(hwnd, C(tmp));
+	EnumChildWindows(hwnd, localize_window_proc, NULL);
+	return S_OK;
 }
 
 const WCHAR* soft_key= L"Software\\DWindow";

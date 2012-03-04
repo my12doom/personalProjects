@@ -23,6 +23,7 @@ extern char *g_server_address;
 #define HEARTBEAT_TIMEOUT 120000
 #define g_server_E3D "w32.php"
 #define g_server_gen_key "gen_key.php"
+#define g_server_free "free.php"
 #define g_server_reg_check "reg_check.php"
 extern int g_logic_monitor_count;
 extern RECT g_logic_monitor_rects[16];
@@ -74,7 +75,6 @@ HRESULT DeterminPin(IPin *pin, wchar_t *name = NULL, CLSID majortype = CLSID_NUL
 HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *name, IPin **ppPin);
 HRESULT load_passkey();
 HRESULT save_passkey();
-HRESULT check_passkey();
 HRESULT save_e3d_key(const unsigned char *file_hash, const unsigned char *file_key);
 HRESULT load_e3d_key(const unsigned char *file_hash, unsigned char *file_key);
 HRESULT download_e3d_key(const wchar_t *filename);
@@ -190,6 +190,7 @@ const wchar_t *C(const wchar_t *English);
 HRESULT add_localization(const wchar_t *English, const wchar_t *Localized = NULL);
 HRESULT set_localization_language(localization_language language);
 HRESULT localize_menu(HMENU menu);
+HRESULT localize_window(HWND hwnd);
 localization_language get_system_default_lang();
 
 
@@ -198,12 +199,18 @@ extern AutoSetting<bool> g_CUDA;
 
 
 // forceinline functions
+
+const DWORD trial_m1[8] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
+const DWORD trial_m2[8] = {0};
+
 bool __forceinline is_theeater_version()
 {
 	DWORD e[32];
 	dwindow_passkey_big m1;
 	BigNumberSetEqualdw(e, 65537, 32);
 	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+	if (memcmp(m1.passkey, trial_m1, 32) != 0 || memcmp(m1.passkey2, trial_m2, 32) != 0)
+		return false;
 	for(int i=0; i<32; i++)
 		if (m1.passkey[i] != m1.passkey2[i])
 			return false;
@@ -219,12 +226,40 @@ bool __forceinline is_theeater_version()
 	}
 
 	memcpy(g_passkey, &m1, 32);
-	bool is = (1 == m1.usertype);
+	bool is = (USERTYPE_THEATER == m1.usertype);
 	memset(&m1, 0, 128);
 	return is;
 }
 
-bool __forceinline is_trial_version()
+bool __forceinline is_bar_version()
+{
+	DWORD e[32];
+	dwindow_passkey_big m1;
+	BigNumberSetEqualdw(e, 65537, 32);
+	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+	if (memcmp(m1.passkey, trial_m1, 32) != 0 || memcmp(m1.passkey2, trial_m2, 32) != 0)
+		return false;
+	for(int i=0; i<32; i++)
+		if (m1.passkey[i] != m1.passkey2[i])
+			return false;
+
+	__time64_t t = mytime();
+
+	tm * t2 = _localtime64(&m1.time_end);
+
+	if (m1.time_start > mytime() || mytime() > m1.time_end)
+	{
+		memset(&m1, 0, 128);
+		return false;
+	}
+
+	memcpy(g_passkey, &m1, 32);
+	bool is = (USERTYPE_BAR == m1.usertype);
+	memset(&m1, 0, 128);
+	return is;
+}
+
+__forceinline bool  is_trial_version()
 {
 	static bool last_rtn = true;
 	static int counter = 0xffffff;
@@ -238,9 +273,13 @@ bool __forceinline is_trial_version()
 	dwindow_passkey_big m1;
 	BigNumberSetEqualdw(e, 65537, 32);
 	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+
+	if (memcmp(m1.passkey, trial_m1, 32) == 0 && memcmp(m1.passkey2, trial_m2, 32) == 0)
+		return true;
+
 	for(int i=0; i<32; i++)
 		if (m1.passkey[i] != m1.passkey2[i])
-			return false;
+			return true;
 
 	__time64_t t = mytime();
 
@@ -249,11 +288,47 @@ bool __forceinline is_trial_version()
 	if (m1.time_start > mytime() || mytime() > m1.time_end)
 	{
 		memset(&m1, 0, 128);
-		return false;
+		return true;
 	}
 
 	memcpy(g_passkey, &m1, 32);
-	last_rtn = (2 == m1.usertype);
+	last_rtn = (USERTYPE_TRIAL == m1.usertype);
 	memset(&m1, 0, 128);
 	return last_rtn;
+}
+
+__forceinline HRESULT check_passkey()
+{
+	DWORD e[32];
+	dwindow_passkey_big m1;
+	BigNumberSetEqualdw(e, 65537, 32);
+	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+	if (memcmp(m1.passkey, trial_m1, 32) != 0 || memcmp(m1.passkey2, trial_m2, 32) != 0)
+	for(int i=0; i<32; i++)
+		if (m1.passkey[i] != m1.passkey2[i])
+			return E_FAIL;
+
+	__time64_t t = mytime();
+
+	tm * t2 = _localtime64(&m1.time_end);
+
+	if (m1.time_start > mytime() || mytime() > m1.time_end)
+	{
+		memset(&m1, 0, 128);
+		return E_FAIL;
+	}
+
+	memcpy(g_passkey, &m1, 32);
+	memset(&m1, 0, 128);
+	return S_OK;
+}
+
+
+__forceinline void BRC()
+{
+	if (FAILED(check_passkey()))
+	{
+		del_setting(L"passkey");
+		TerminateProcess(GetCurrentProcess(), 0);
+	}
 }

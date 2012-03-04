@@ -1,4 +1,5 @@
 #include "latency_dialog.h"
+#include "global_funcs.h"
 #include <wchar.h>
 #include <Commctrl.h>
 
@@ -60,6 +61,9 @@ INT_PTR CALLBACK latency_dialog_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 
 	case WM_INITDIALOG:
 		{
+			// localization
+			localize_window(hDlg);
+
 			// value
 			wchar_t tmp[200];
 			swprintf(tmp, L"%d", t_latency);

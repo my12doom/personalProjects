@@ -21,6 +21,9 @@ float4 p2 : register(c2);
 #define px (1/t_width)
 #define py (1/t_height)
 
+#define time1 (p1[0])
+#define time2 (p1[1])
+
 float4 main(float2 tex : TEXCOORD0) : COLOR
 {
 	if (tex.x > 0.5) tex.x -= 0.5;
@@ -140,15 +143,20 @@ float4 planar_rgb_yv12(float2 tex : TEXCOORD0) : COLOR
 }
 
 float4 YV12toRGB(float2 tex : TEXCOORD0) : COLOR
-{
+{	
+	if (time2<=time1 || time2-time1>2000 || time2<0.1)
+		return tex2D(s0, tex);
+		
 	float2 tex_v = {tex.x, tex.y/2};
 	float2 tex_u = {tex.x, tex.y/2+0.5};
-		
 	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex_u)[0], tex2D(s1, tex_v)[0], 1));
 }
 
 float4 YUY2toRGB(float2 tex : TEXCOORD0) : COLOR
 {
+	if (time2<=time1 || time2-time1>2000 || time2<0.1)
+		return tex2D(s0, tex);
+		
 	float4 uv = tex2D(s0, tex);		//u:1,v:3
 	int x2 = floor((tex.x - 0.5/(width)) * (width) + 0.5);
 	
@@ -163,6 +171,16 @@ float4 YUY2toRGB(float2 tex : TEXCOORD0) : COLOR
 		
 	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex)[1], tex2D(s1, tex)[3], 1));
 }
+
+#define left_eye_a			(p0[0])
+#define left_eye_r			(p0[1])
+#define left_eye_g			(p0[2])
+#define left_eye_b			(p0[3])
+
+#define right_eye_a			(p1[0])
+#define right_eye_r			(p1[1])
+#define right_eye_g			(p1[2])
+#define right_eye_b			(p1[3])
 
 float4 anaglyph(float2 tex : TEXCOORD0) : COLOR
 {
@@ -182,6 +200,9 @@ float4 anaglyph(float2 tex : TEXCOORD0) : COLOR
 
 float4 NV12toRGB(float2 tex : TEXCOORD0) : COLOR		//NV12
 {
+	if (time2<=time1 || time2-time1>2000 || time2<0.1)
+		return tex2D(s0, tex);
+		
 	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex)[0], tex2D(s1, tex)[3], 1));
 }
 

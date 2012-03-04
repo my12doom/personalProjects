@@ -32,6 +32,7 @@ interface Icrypt : IDispatch{
 	[id(14), helpstring("genkeys2")] HRESULT genkeys2(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, [out,retval] BSTR* out);
 	[id(15), helpstring("genkey3")] HRESULT genkey3(BSTR passkey, LONG time_start, BSTR time_end, LONG max_bar_user, [out,retval] BSTR* out);
 	[id(16), helpstring("genkey4")] HRESULT genkey4(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, LONG theater_version, [out,retval] BSTR* out);
+	[id(17), helpstring("gen_freekey")] HRESULT gen_freekey(LONG time_start, LONG time_end, [out,retval] BSTR* out);
 };
 [
 	uuid(D49AC205-730C-4F01-A52A-B49F9F4621B4),

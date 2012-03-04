@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0500 */
-/* at Sat Feb 25 13:03:52 2012
+/* at Sun Mar 04 17:54:52 2012
  */
 /* Compiler settings for .\phpcrypt.idl:
     Oicf, W1, Zp8, env=Win32 (32b run)
@@ -164,6 +164,11 @@ EXTERN_C const IID IID_Icrypt;
             LONG theater_version,
             /* [retval][out] */ BSTR *out) = 0;
         
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE gen_freekey( 
+            LONG time_start,
+            LONG time_end,
+            /* [retval][out] */ BSTR *out) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -306,6 +311,12 @@ EXTERN_C const IID IID_Icrypt;
             LONG theater_version,
             /* [retval][out] */ BSTR *out);
         
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *gen_freekey )( 
+            Icrypt * This,
+            LONG time_start,
+            LONG time_end,
+            /* [retval][out] */ BSTR *out);
+        
         END_INTERFACE
     } IcryptVtbl;
 
@@ -389,6 +400,9 @@ EXTERN_C const IID IID_Icrypt;
 
 #define Icrypt_genkey4(This,passkey,time_start,time_end,max_bar_user,theater_version,out)	\
     ( (This)->lpVtbl -> genkey4(This,passkey,time_start,time_end,max_bar_user,theater_version,out) ) 
+
+#define Icrypt_gen_freekey(This,time_start,time_end,out)	\
+    ( (This)->lpVtbl -> gen_freekey(This,time_start,time_end,out) ) 
 
 #endif /* COBJMACROS */
 

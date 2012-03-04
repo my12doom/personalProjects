@@ -626,7 +626,7 @@ retry:
 	{
 		CAutoLock frame_lock(&m_frame_lock);
 		int l = timeGetTime();
-		loaded_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
+		loaded_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
 		int l2 = timeGetTime();
 		if (need_detect) loaded_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
 		mylog("queue size:%d, convert_to_RGB32(): %dms, stereo_test:%dms\n", m_left_queue.GetCount(), l2-l, timeGetTime()-l2);
@@ -1671,13 +1671,13 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		for(POSITION pos_left = m_left_queue.GetHeadPosition(); pos_left; pos_left = m_left_queue.Next(pos_left))
 		{
 			gpu_sample *left_sample = m_left_queue.Get(pos_left);
-			left_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
+			left_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
 			if (need_detect) left_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
 		}
 		for(POSITION pos_right = m_right_queue.GetHeadPosition(); pos_right; pos_right = m_right_queue.Next(pos_right))
 		{
 			gpu_sample *right_sample = m_right_queue.Get(pos_right);
-			right_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
+			right_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
 			if (need_detect) right_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
 		}
 	}
@@ -2622,7 +2622,7 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	CComPtr<IDirect3DSurface9> s3;
 	if (m_last_rendered_sample1)
 	{
-		m_last_rendered_sample1->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
+		m_last_rendered_sample1->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
 		if (need_detect) m_last_rendered_sample1->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
 		m_last_rendered_sample1->m_tex_gpu_RGB32->get_first_level(&s1);
 		if (m_last_rendered_sample1->m_tex_stereo_test)
@@ -2630,7 +2630,7 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	}
 	if (m_last_rendered_sample2)
 	{
-		m_last_rendered_sample2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer);
+		m_last_rendered_sample2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
 		m_last_rendered_sample2->m_tex_gpu_RGB32->get_first_level(&s2);
 	}
 
@@ -3737,7 +3737,8 @@ HRESULT gpu_sample::prepare_rendering()
 	return S_OK;
 }
 
-HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2, IDirect3DVertexBuffer9 *vb)
+HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2,
+									 IDirect3DVertexBuffer9 *vb, int time)
 {
 	if (!m_ready)
 		return VFW_E_WRONG_STATE;
@@ -3777,8 +3778,8 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 		if (m_format == MEDIASUBTYPE_YV12) hr = device->SetPixelShader(ps_yv12);
 		if (m_format == MEDIASUBTYPE_NV12) hr = device->SetPixelShader(ps_nv12);
 		if (m_format == MEDIASUBTYPE_YUY2) hr = device->SetPixelShader(ps_yuy2);
-		float rect_data[4] = {m_width, m_height, m_width/2, m_height};
-		hr = device->SetPixelShaderConstantF(0, rect_data, 1);
+		float rect_data[8] = {m_width, m_height, m_width/2, m_height, (float)time/100000, (float)timeGetTime()/100000};
+		hr = device->SetPixelShaderConstantF(0, rect_data, 2);
 		hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
 		hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 		CComPtr<IDirect3DSurface9> left_surface;
@@ -3974,7 +3975,8 @@ bool gpu_sample::is_ignored_line(int line)
 	return false;
 }
 
-gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test, bool remux_mode, D3DPOOL pool, DWORD PC_LEVEL)
+gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format,
+					   bool topdown_RGB32, bool do_cpu_test, bool remux_mode, D3DPOOL pool, DWORD PC_LEVEL)
 {
 	//CAutoLock lck(&g_gpu_lock);
 	m_allocator = allocator;

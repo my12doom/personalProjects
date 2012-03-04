@@ -95,6 +95,9 @@ INT_PTR CALLBACK color_adjust_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 		break;
 	case WM_INITDIALOG:
 		{
+			// local
+			localize_window(hDlg);
+
 			for(int i=0; i<color_adjust_max; i++)
 			{
 				HWND slider = GetDlgItem(hDlg, type2IDC(i));

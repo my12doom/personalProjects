@@ -97,7 +97,7 @@ HRESULT decode_client_request(BSTR input, dwindow_message_uncrypt *output)
 	return S_OK;
 }
 
-HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_start, __time64_t time_end, int max_bar_user, dwindow_passkey_big *out, int usertype = USERTYPE_NORMAL)
+HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_start, __time64_t time_end, int max_bar_user, dwindow_passkey_big *out, int usertype = USERTYPE_NORMAL, bool trial = false)
 {
 	memcpy(out->passkey, passkey, 32);
 	memcpy(out->passkey2, passkey, 32);
@@ -108,6 +108,14 @@ HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_star
 	out->usertype = usertype;
 	memset(out->reserved, 0, sizeof(out->reserved));
 	out->zero = 0;
+
+	if (trial)
+	{
+		memset(out->passkey, 0xff, 32);
+		memset(out->passkey2, 0, 32);
+		out->usertype = USERTYPE_TRIAL;
+		out->max_bar_user = 0;
+	}
 
 	RSA_dwindow_private(out, out);
 
@@ -330,4 +338,16 @@ STDMETHODIMP Ccrypt::genkey4(BSTR passkey, LONG time_start, LONG time_end, LONG 
 	return binary2bstr(&passkey_big, 128, out);
 
 	return S_OK;
+}
+
+STDMETHODIMP Ccrypt::gen_freekey(LONG time_start, LONG time_end, BSTR* out)
+{
+	unsigned char pk[32];
+	__time64_t start = time_start;
+	__time64_t end = time_end;
+
+	dwindow_passkey_big passkey_big;
+
+	generate_passkey_big(pk, start, end, 0, &passkey_big, 0, true);
+	return binary2bstr(&passkey_big, 128, out);
 }
