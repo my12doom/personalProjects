@@ -353,6 +353,7 @@ dx_player::~dx_player()
 
 HRESULT dx_player::reset()
 {
+	BRC();
 	log_line(L"reset!");
 	CAutoLock lock(&m_draw_sec);
 
@@ -409,6 +410,7 @@ DWORD WINAPI dx_player::select_font_thread(LPVOID lpParame)
 // play control
 HRESULT dx_player::play()
 {
+	BRC();
 	CAutoLock lock(&m_seek_sec);
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
@@ -417,6 +419,7 @@ HRESULT dx_player::play()
 }
 HRESULT dx_player::pause()
 {
+	BRC();
 	CAutoLock lock(&m_seek_sec);
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
@@ -430,6 +433,7 @@ HRESULT dx_player::pause()
 }
 HRESULT dx_player::stop()
 {
+	BRC();
 	CAutoLock lock(&m_seek_sec);
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
@@ -438,6 +442,7 @@ HRESULT dx_player::stop()
 }
 HRESULT dx_player::seek(int time)
 {
+	BRC();
 	CAutoLock lock(&m_seek_sec);
 	if (m_ms == NULL)
 		return VFW_E_WRONG_STATE;
@@ -492,6 +497,7 @@ HRESULT dx_player::total(int *time)
 }
 HRESULT dx_player::set_volume(double volume)
 {
+	BRC();
 	m_volume = volume;
 	if (m_ba)
 	{
@@ -1758,6 +1764,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		return S_OK;
 
 	// latency and ratio
+	REFERENCE_TIME time_for_offset_metadata = TimeStart;
 	TimeStart -= m_subtitle_latency * 10000;
 	TimeStart /= m_subtitle_ratio;
 
@@ -1766,7 +1773,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	if (m_offset_metadata)
 	{
 		REFERENCE_TIME frame_time = m_renderer1->m_frame_length;
-		HRESULT hr = m_offset_metadata->GetOffset(TimeStart+frame_time*2, frame_time, &m_internel_offset);	//preroll 2 frames
+		HRESULT hr = m_offset_metadata->GetOffset(time_for_offset_metadata, frame_time, &m_internel_offset);
 		//log_line(L"offset = %d(%s)", m_internel_offset, hr == S_OK ? L"S_OK" : L"S_FALSE");
 
 		if (SUCCEEDED(hr))

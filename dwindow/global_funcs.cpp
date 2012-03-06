@@ -760,6 +760,8 @@ HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *
 __time64_t mytime(bool reset)
 {
 	const char* key_word = "DWindow's Kernel Corrupted.";
+	__time64_t current_time =  _time64(NULL);
+
 	char key[256];
 	memset(key, 0, 256);
 	strcpy(key, key_word);
@@ -769,7 +771,6 @@ __time64_t mytime(bool reset)
 	int got = load_D3D_setting(L"Flags", e, 128);
 	for(int i=0; i<128; i+=16)
 		codec.decrypt(((unsigned char*)e) + i, ((unsigned char*)e) + i);
-	__time64_t current_time =  _time64(NULL);
 	if (got == 128 && *(__time64_t*)e > current_time)
 		current_time = 0xffffffff;
 
@@ -894,6 +895,7 @@ HRESULT save_passkey()
 	for(int i=0; i<16; i++)
 		CPUBrandString[i] ^= CPUBrandString[i+32];
 
+	mytime();
 
 	DWORD volume_c_sn = 0;
 	wchar_t volume_name[MAX_PATH];

@@ -35,7 +35,11 @@ extern HMONITOR g_logic_monitors[16];
 
 //definitions
 #define AmHresultFromWin32(x) (MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, x))
-#define TRAIL_TIME_1 587537
+#if 1
+#define TRAIL_TIME_1 17537
+#else
+#define TRAIL_TIME_1 597537
+#endif
 #define TRAIL_TIME_2 923579
 #define TRAIL_TIME_3 28532
 
@@ -323,11 +327,26 @@ __forceinline HRESULT check_passkey()
 	return S_OK;
 }
 
+const LARGE_INTEGER freq;
+const BOOL helper = QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
 
 __forceinline void BRC()
-{
+{	
+	mytime();
+	static __int64 delta = timeGetTime()/1000 - _time64(NULL);
+	static int delta2 = timeGetTime() - GetTickCount();
+	if (abs((int)(timeGetTime()/1000- _time64(NULL)-delta)) > 16
+		|| abs((int)(timeGetTime() - GetTickCount() - delta2)) > 16000)
+	{
+		memset(g_passkey, 0, 32);
+		memset(g_passkey_big, 0, 32);
+		del_setting(L"passkey");
+	}
+
 	if (FAILED(check_passkey()))
 	{
+		memset(g_passkey, 0, 32);
+		memset(g_passkey_big, 0, 32);
 		del_setting(L"passkey");
 		TerminateProcess(GetCurrentProcess(), 0);
 	}

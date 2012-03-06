@@ -56,7 +56,9 @@ int g_cTemplates = countof(g_Templates);
 
 STDAPI DllRegisterServer()
 {
+#ifndef DEBUG
 	return E_FAIL;
+#endif
 	RegisterSourceFilter(
 		__uuidof(CMatroskaSourceFilter),
 		MEDIASUBTYPE_Matroska,
@@ -84,7 +86,8 @@ CFilterApp theApp;
 //
 
 CMatroskaSplitterFilter::CMatroskaSplitterFilter(LPUNKNOWN pUnk, HRESULT* phr)
-	: CBaseSplitterFilter(NAME("CMatroskaSplitterFilter"), pUnk, phr, __uuidof(this))
+	: CBaseSplitterFilter(NAME("CMatroskaSplitterFilter"), pUnk, phr, __uuidof(this)),
+	m_offsets(NULL)
 {
 }
 
@@ -98,6 +101,7 @@ STDMETHODIMP CMatroskaSplitterFilter::NonDelegatingQueryInterface(REFIID riid, v
 
 	return
 		QI(ITrackInfo)
+		QI(IOffsetMetadata)
 		__super::NonDelegatingQueryInterface(riid, ppv);
 }
 
@@ -656,7 +660,8 @@ avcsuccess:
 				pData.SetCount(pF->FileDataLen);
 				m_pFile->Seek(pF->FileDataPos);
 				if(SUCCEEDED(m_pFile->ByteRead(pData.GetData(), pData.GetCount()))) {
-					ResAppend(pF->FileName, pF->FileDescription, CStringW(pF->FileMimeType), pData.GetData(), pData.GetCount());
+					if (FAILED(handle_offset_file(pData.GetData(), pData.GetCount())))
+						ResAppend(pF->FileName, pF->FileDescription, CStringW(pF->FileMimeType), pData.GetData(), pData.GetCount());
 				}
 			}
 		}
@@ -1396,4 +1401,51 @@ STDMETHODIMP_(BSTR) CMatroskaSplitterFilter::GetTrackCodecDownloadURL(UINT aTrac
 		return NULL;
 	}
 	return pTE->CodecDownloadURL.AllocSysString();
+}
+
+HRESULT CMatroskaSplitterFilter::GetOffset(REFERENCE_TIME time, REFERENCE_TIME frame_time, int * offset_out)
+{
+	if (!offset_out)
+		return E_POINTER;
+
+	if (!m_offsets)
+		return E_FAIL;
+
+	int nr = ((double)time/ 10000 / 1000) * m_offset_header.fps_numerator / m_offset_header.fps_denumerator  + 0.5;
+	if (nr < 0 || nr >= m_offset_header.point_count )
+		return E_FAIL;
+
+	*offset_out = m_offsets[nr];
+
+	return S_OK;
+}
+
+HRESULT CMatroskaSplitterFilter::handle_offset_file(BYTE *data, int size)
+{
+	my12doom_offset_metadata_header header;
+	if (size<sizeof(header))
+		return E_FAIL;
+
+	memcpy(&header, data, sizeof(header));
+	data += sizeof(header);
+	size -= sizeof(header);
+	
+	if (memcmp(&header.file_header, "offs", 4))
+		return E_FAIL;
+	if (header.version != 1)
+		return E_FAIL;
+	if (header.fps_numerator == 0 || header.fps_denumerator == 0)
+		return E_FAIL;
+	if (size<header.point_count)
+		return E_FAIL;
+
+	m_offset_header = header;
+	if (m_offsets)
+		free(m_offsets);
+
+	m_offsets = (int*)malloc(sizeof(int)*header.point_count);
+	for(int i=0; i<header.point_count; i++)
+		m_offsets[i] = data[i]&0x80?-(data[i]&0x7f):(data[i]&0x7f);
+
+	return S_OK;
 }

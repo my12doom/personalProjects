@@ -10,3 +10,16 @@ class DECLSPEC_UUID("51C07ADF-30AE-4058-9CD7-F76D4B35C2F7") IOffsetMetadata : pu
 public:
 	virtual HRESULT GetOffset(REFERENCE_TIME time, REFERENCE_TIME frame_time, int * offset_out)=0;
 };
+
+// my12doom's offset metadata format:
+typedef struct struct_my12doom_offset_metadata_header
+{
+	DWORD file_header;		// should be 'offs'
+	DWORD version;
+	DWORD point_count;
+	DWORD fps_numerator;
+	DWORD fps_denumerator;
+} my12doom_offset_metadata_header;
+
+// point data is stored in 8bit signed integer, upper 1bit is sign bit, lower 7bit is integer bits
+// int value = (v&0x80)? -(&0x7f)v:(v&0x7f);

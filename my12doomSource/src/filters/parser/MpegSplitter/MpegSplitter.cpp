@@ -535,6 +535,7 @@ HRESULT CMpegSplitterFilter::SetPD10(BOOL Enable)
 
 HRESULT CMpegSplitterFilter::GetOffset(REFERENCE_TIME time, REFERENCE_TIME frame_time, int * offset_out)
 {
+	time += frame_time*2;
 	if (!offset_out)
 		return E_POINTER;
 

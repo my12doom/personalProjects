@@ -275,6 +275,15 @@ static const byte rLPS_table_64x4[64][4]=
 
 int main()
 {
+	static __int64 delta = timeGetTime()/1000 - _time64(NULL);
+	while(0)
+	{
+		int now1 = timeGetTime()/1000 - _time64(NULL) - delta;
+		__int64 t = _time64(NULL);
+		printf("\r, %d, %d, %d, %d, ", GetTickCount(), timeGetTime(), mytime(), now1);
+		printf("%d            ", t);
+	}
+
 	WinMain(GetModuleHandle(NULL), 0, "", SW_SHOW);
 
 

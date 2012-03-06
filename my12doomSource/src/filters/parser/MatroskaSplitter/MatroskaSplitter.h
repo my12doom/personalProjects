@@ -26,6 +26,7 @@
 #include "MatroskaFile.h"
 #include "../BaseSplitter/BaseSplitter.h"
 #include <ITrackInfo.h>
+#include "..\MpegSplitter\IOffsetMetadata.h"
 
 class MatroskaPacket : public Packet
 {
@@ -72,7 +73,7 @@ public:
 };
 
 class __declspec(uuid("149D2E01-C32E-4939-80F6-C07B81015A7A"))
-	CMatroskaSplitterFilter : public CBaseSplitterFilter, public ITrackInfo
+	CMatroskaSplitterFilter : public CBaseSplitterFilter, public ITrackInfo, public IOffsetMetadata
 {
 	void SetupChapters(LPCSTR lng, MatroskaReader::ChapterAtom* parent, int level = 0);
 	void InstallFonts();
@@ -91,6 +92,13 @@ protected:
 	bool DemuxInit();
 	void DemuxSeek(REFERENCE_TIME rt);
 	bool DemuxLoop();
+
+	// IOffsetMetadata
+	int *m_offsets;
+	my12doom_offset_metadata_header m_offset_header;
+	HRESULT handle_offset_file(BYTE *data, int size);
+	HRESULT GetOffset(REFERENCE_TIME time, REFERENCE_TIME frame_time, int * offset_out);
+
 
 public:
 	CMatroskaSplitterFilter(LPUNKNOWN pUnk, HRESULT* phr);
