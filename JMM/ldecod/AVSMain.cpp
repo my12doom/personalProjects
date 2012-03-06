@@ -35,13 +35,21 @@ int close_avs(void *pavs)		// just set no_more_data = 1
 	return 0;
 }
 
+int insert_offset_metadata(void *avs, BYTE *data, int count)
+{
+	if (!avs)
+		return 0;
 
+	JMAvs *p = (JMAvs*)avs;
+	p->insert_offset(data, count);
+	return 0;
+}
 
-int set_avs_resolution(void *pavs, int width, int height)
+int set_avs_resolution(void *pavs, int width, int height, int fps, int fpsdenumorator)
 {
 	JMAvs * avs = (JMAvs *) pavs;
 
-	avs->ldecod_init(width, height);
+	avs->ldecod_init(width, height, fps, fpsdenumorator);
 
 	return 0;
 }
@@ -69,6 +77,7 @@ int insert_frame(void *pavs, void **pY, void **pV, void **pU, int view_id)
 
 	return 0;
 }
+
 
 
 CFrameBuffer::CFrameBuffer()
@@ -250,6 +259,13 @@ int CFrameBuffer::remove(int n, BYTE *buf, int stride, int offset)
 	}
 }
 
+const char* get_filename(const char*pathname)
+{
+	const char *p = pathname + strlen(pathname) - 1;
+	while (*p != '\\' && p>pathname)
+		p--;
+	return p==pathname?p:p+1;
+}
 
 AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
@@ -270,7 +286,7 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	int frame_count = args[2].AsInt(-1);
 	int buffer_count = args[3].AsInt(10);
 	const char *ldecod_args = args[4].AsString("");
-	char playlist[MAX_PATH];
+	char playlist[MAX_PATH] = {0};
 
 	// check para and input files
 	if (file1[0] == NULL)
@@ -356,7 +372,7 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	}
 
 	// avs init
-	avs->avs_init(file1, env, file2, frame_count == -1 ? scan_result.frame_count : frame_count,
+	avs->avs_init(file1, env, file2, playlist[0] ? playlist : file1, frame_count == -1 ? scan_result.frame_count : frame_count,
 		buffer_count, scan_result.fps_numerator, scan_result.fps_denominator);
 
 	// start decoding thread
@@ -412,12 +428,18 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScri
 JMAvs::JMAvs()
 {
 	memset(&vi, 0, sizeof(vi));
+	m_offset_file = NULL;
 	m_frame_count = 0;
 	m_width = 0;
 	m_height = 0;
 	m_buffer_unit_count = 0;
 	m_m2ts_left[0] = '\0';
 	m_m2ts_right[0] = '\0';
+
+	memcpy(&m_header.file_header, "offs", 4);
+	m_header.version = 1;
+	m_header.point_count = 0;
+
 
 	left_buffer = NULL;
 	right_buffer = NULL;
@@ -447,10 +469,19 @@ JMAvs::~JMAvs()
 		delete right_buffer;
 }
 
-int JMAvs::avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2ts_right /* = NULL */, const int frame_count /* = -1 */, int buffer_count /* = 10 */, int fps_numerator /* = 24000 */, int fps_denominator /* = 1001 */)
+int JMAvs::avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2ts_right /* = NULL */,
+					const char*offset_out, const int frame_count /* = -1 */, int buffer_count /* = 10 */, int fps_numerator /* = 24000 */, int fps_denominator /* = 1001 */)
 {
 	strcpy(m_m2ts_left, m2ts_left);
 	strcpy(m_m2ts_right, m2ts_right);
+
+	char offset_file[MAX_PATH];
+	strcpy(offset_file, get_filename(offset_out));
+	strcat(offset_file, ".offset");
+	printf("Opening file %s for offset metadata output...", offset_file);
+	m_offset_file = fopen(offset_file, "wb");
+	printf("%s\n", m_offset_file ? "OK" : "FAILED");
+
 
 	m_frame_count = frame_count;
 	m_buffer_unit_count = buffer_count;
@@ -462,7 +493,7 @@ int JMAvs::avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2
 	return 0;
 }
 
-int JMAvs::ldecod_init(int width, int height)
+int JMAvs::ldecod_init(int width, int height, int fps, int fpsdenumorator)
 {
 	m_width = width;
 	m_height = height;
@@ -475,6 +506,26 @@ int JMAvs::ldecod_init(int width, int height)
 
 	vi.width = width;
 	vi.height = height;
+	vi.fps_numerator = fps;
+	vi.fps_denominator = fpsdenumorator;
+
+	return 0;
+}
+
+int JMAvs::insert_offset(BYTE *data, int count)
+{
+	FILE *f = m_offset_file;
+	if (!f)
+		return 0;
+
+	m_header.point_count += count;
+	m_header.fps_numerator = vi.fps_numerator;
+	m_header.fps_denumerator = vi.fps_denominator;
+	fseek(f, 0, SEEK_SET);
+	fwrite(&m_header, 1, sizeof(m_header), f);
+	fseek(f, 0, SEEK_END);
+	fwrite(data, 1, count, f);
+	fflush(f);
 
 	return 0;
 }

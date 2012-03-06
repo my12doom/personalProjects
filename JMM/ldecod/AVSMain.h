@@ -11,8 +11,9 @@ extern float buffer_load;
 
 // declaration
 void* create_avs();
-int set_avs_resolution(void *avs, int width, int height);
+int set_avs_resolution(void *avs, int width, int height, int fps, int fpsdenumorator);
 int insert_frame(void *avs, void **pY, void **pV, void **pU, int view_id);
+int insert_offset_metadata(void *avs, BYTE *data, int count);
 int close_avs(void *avs);		// just set no_more_data = 1
 
 // C++ classes
@@ -27,6 +28,21 @@ typedef struct buffer_unit_struct
 	int frame_number;
 	BYTE *data;
 } buffer_unit;
+
+// my12doom's offset metadata format:
+typedef struct struct_my12doom_offset_metadata_header
+{
+	DWORD file_header;		// should be 'offs'
+	DWORD version;
+	DWORD point_count;
+	DWORD fps_numerator;
+	DWORD fps_denumerator;
+} my12doom_offset_metadata_header;
+
+// point data is stored in 8bit signed integer, upper 1bit is sign bit, lower 7bit is integer bits
+// int value = (v&0x80)? -(v&7f):(v&7f);
+
+
 
 class CFrameBuffer
 {
@@ -65,6 +81,8 @@ public:
 	int m_width;
 	int m_height;
 	int m_buffer_unit_count;
+	my12doom_offset_metadata_header m_header;
+	FILE *m_offset_file;
 
 	CFrameBuffer *left_buffer; 
 	CFrameBuffer *right_buffer;
@@ -75,10 +93,11 @@ public:
 	char m_m2ts_right[MAX_PATH];
 
 	JMAvs();
-	int avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2ts_right = NULL,
+	int avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2ts_right = NULL, const char * offset_out = NULL,
 		const int frame_count = -1, int buffer_count = 10,
 		int fps_numerator = 24000, int fps_denominator = 1001);
-	int ldecod_init(int width, int height);
+	int ldecod_init(int width, int height, int fps, int fpsdenumorator);
+	int insert_offset(BYTE *data, int count);
 	virtual ~JMAvs();
 
 	// avisynth virtual functions

@@ -135,6 +135,7 @@ void interpret_stereo_video_info_info                   ( byte* payload, int siz
 void interpret_post_filter_hints_info                   ( byte* payload, int size, VideoParameters *p_Vid );
 void interpret_tone_mapping                             ( byte* payload, int size, VideoParameters *p_Vid );
 void interpret_frame_packing_arrangement_info           ( byte* payload, int size, VideoParameters *p_Vid );
+void interpret_mvc_scalable_nesting_info                    ( byte* payload, int size, VideoParameters *p_Vid );
 
 #if (ENABLE_OUTPUT_TONEMAPPING)
 void tone_map               (imgpel** imgX, imgpel* lut, int size_x, int size_y);

@@ -828,7 +828,10 @@ void reset_format_info(seq_parameter_set_rbsp_t *sps, VideoParameters *p_Vid, Fr
   if (p_Vid->first_sps == TRUE) {
 
     if (p_Vid->p_avs)
-		set_avs_resolution(p_Vid->p_avs, source->width[0], source->height[0]);
+		set_avs_resolution(p_Vid->p_avs, source->width[0], source->height[0],
+			p_Vid->active_sps->vui_seq_parameters.time_scale / 2,
+			p_Vid->active_sps->vui_seq_parameters.num_units_in_tick
+		);
 
     p_Vid->first_sps = FALSE;
     if(p_Inp->bDisplayDecParams) {
@@ -841,9 +844,19 @@ void reset_format_info(seq_parameter_set_rbsp_t *sps, VideoParameters *p_Vid, Fr
         fprintf(stdout,"Color Format : 4:2:2 ");
       else
         fprintf(stdout,"Color Format : 4:4:4 ");
+	  fprintf(stdout,"(%d:%d:%d)\n", source->bit_depth[0], source->bit_depth[1], source->bit_depth[2]);
 
-      fprintf(stdout,"(%d:%d:%d)\n", source->bit_depth[0], source->bit_depth[1], source->bit_depth[2]);
+	  fprintf(stdout,"FPS : ");
+	  if (p_Vid->active_sps->vui_seq_parameters.num_units_in_tick && p_Vid->active_sps->vui_seq_parameters.time_scale)
+	  {
+		  float fps = (float)p_Vid->active_sps->vui_seq_parameters.time_scale / p_Vid->active_sps->vui_seq_parameters.num_units_in_tick;
+		  fprintf(stdout, "%.3f\n",  fps/2);
+	  }
+	  else
+		  fprintf(stdout, "Not set\n");
+
       fprintf(stdout,"--------------------------------------------------------------------------\n");
+
     }
     if (!p_Inp->silent && !p_Inp->output_to_avs)
     {

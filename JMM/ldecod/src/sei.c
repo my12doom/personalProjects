@@ -22,6 +22,7 @@
 #include "header.h"
 #include "mbuffer.h"
 #include "parset.h"
+#include "..\AVSMain.h"
 
 
 // #define PRINT_BUFFERING_PERIOD_INFO    // uncomment to print buffering period SEI info
@@ -167,6 +168,8 @@ void InterpretSEIMessage(byte* msg, int size, VideoParameters *p_Vid, Slice *pSl
     case  SEI_FRAME_PACKING_ARRANGEMENT:
       interpret_frame_packing_arrangement_info( msg+offset, payload_size, p_Vid );
       break;
+	case SEI_MVC_SCALABLE_NESTING:
+	  interpret_mvc_scalable_nesting_info(msg + offset, payload_size, p_Vid);
     default:
       interpret_reserved_info( msg+offset, payload_size, p_Vid );
       break;    
@@ -2233,4 +2236,39 @@ void interpret_post_filter_hints_info( byte* payload, int size, VideoParameters 
 
   free_mem3Dint (filter_hint);
   mem_free( buf );
+}
+
+void interpret_mvc_scalable_nesting_info( byte* payload, int size, VideoParameters *p_Vid )
+{
+	typedef struct _offset_meta_header
+	{
+		unsigned char unkown1[27];
+		unsigned char point_count;
+		unsigned char unkown2[2];
+	} offset_meta_header;
+	int pos = 2;
+	int nest_size = 0;
+	byte * payload_start = payload;
+	offset_meta_header header;
+
+
+	if (size <= 3+sizeof(offset_meta_header))
+		return;
+	if (*payload & 0x80)
+		return;
+
+	while(payload[pos] == 0xff)
+		nest_size += payload[pos++];
+	nest_size += payload[pos++];
+
+	if (nest_size <= sizeof(offset_meta_header))
+		return;	// empty or incomplete packet
+	if (payload+nest_size-payload_start > size)
+		return;	// incomplete packet, not fully checked
+
+	payload += pos;
+	memcpy(&header, payload, sizeof(header));
+	payload += sizeof(header);
+
+	insert_offset_metadata(p_Vid->p_avs, payload, header.point_count);
 }
