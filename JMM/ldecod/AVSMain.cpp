@@ -479,8 +479,17 @@ int JMAvs::avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2
 	strcpy(offset_file, get_filename(offset_out));
 	strcat(offset_file, ".offset");
 	printf("Opening file %s for offset metadata output...", offset_file);
+	FILE * f = fopen(offset_file, "rb");
+	if (f)
+	{
+		printf("Already exist\n");
+		fclose(f);
+	}
+	else
+	{
 	m_offset_file = fopen(offset_file, "wb");
 	printf("%s\n", m_offset_file ? "OK" : "FAILED");
+	}
 
 
 	m_frame_count = frame_count;
