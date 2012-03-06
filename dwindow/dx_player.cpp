@@ -275,10 +275,11 @@ HRESULT dx_player::init_window_size_positions()
 
 	if (compare_rect(m_saved_screen1, rect_zero) || compare_rect(m_saved_screen2, rect_zero) || compare_rect(m_saved_rect1, rect_zero))
 	{
-		SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + width1/4, m_screen1.top + height1/4,
-			width1/2 + dcx, height1/2 + dcy, SWP_NOZORDER);
-		SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + width2/4, m_screen2.top + height2/4,
-			width2/2 + dcx, height2/2 + dcy, SWP_NOZORDER);
+		const double ratio = 0.1;
+		SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + width1*ratio, m_screen1.top + height1*ratio,
+			width1*(1-ratio*2) + dcx, height1*(1-ratio*2) + dcy, SWP_NOZORDER);
+		SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + width2*ratio, m_screen2.top + height2*ratio,
+			width2*(1-ratio*2) + dcx, height2*(1-ratio*2) + dcy, SWP_NOZORDER);
 	}
 	else
 	{

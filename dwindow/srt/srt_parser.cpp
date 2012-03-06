@@ -511,6 +511,7 @@ int srt_parser::handle_line(wchar_t *line)
 			}
 
 			wcs_replace(line, L"\\N", L"\n");
+			wcs_replace(line, L"\\n", L"\n");
 
 			direct_add_subtitle(line, start, end);
 

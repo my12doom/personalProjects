@@ -35,7 +35,7 @@ extern HMONITOR g_logic_monitors[16];
 
 //definitions
 #define AmHresultFromWin32(x) (MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, x))
-#if 1
+#if 0
 #define TRAIL_TIME_1 17537
 #else
 #define TRAIL_TIME_1 597537
