@@ -976,13 +976,6 @@
 			<File
 				RelativePath=".\ldecod\src\mb_read.c"
 				>
-				<FileConfiguration
-					Name="Debug_DLL|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\ldecod\src\mbuffer.c"
@@ -1484,6 +1477,22 @@
 			<File
 				RelativePath=".\ldecod\AVSMain.cpp"
 				>
+				<FileConfiguration
+					Name="Debug_DLL|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_DLL|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\ldecod\AVSMain.h"
