@@ -38,14 +38,20 @@ if ($form)
 	$oldsha1 = $com->SHA1($password);
 	$newsha1 = $com->SHA1($newpassword);
 
-	$userexist = false;
-	$sql = sprintf("SELECT * FROM users where name='%s' and pass_hash='%s'", $username, $oldsha1);
-	$result = mysql_query($sql);
+	$result = mysql_query("SELECT * FROM users where name = '".$username."'");		//warning: possible SQL injection
 	if (mysql_num_rows($result) <= 0)
 	{
-		db_log("PasswordCrack", "BLOCKED", $username, $password, $newpassword);
-		die("ÓÃ»§/ ÃÜÂë´íÎó");
+			db_log("PasswordCrack", "User not found", $username, $password, $newpassword);
+			die("ÓÃ»§/ ÃÜÂë´íÎó");
 	}
+	$row = mysql_fetch_array($result);
+	$salt = $row["salt"];
+	if ($com->SHA1($oldsha1.$salt) != $row["pass_hash"])
+	{
+			db_log("PasswordCrack", "BLOCKED", $username, $password, $newpassword);
+			die("ÓÃ»§/ ÃÜÂë´íÎó");
+	}
+
 
 	// deleting active passkey
 	$result = mysql_query("DELETE FROM active_passkeys where user='".$username."'");
@@ -53,7 +59,7 @@ if ($form)
 		goto theend;
 
 	// update password
-	$sql = sprintf("UPDATE users set pass_hash='%s' where name='%s'", $newsha1, $username);
+	$sql = sprintf("UPDATE users set pass_hash='%s' where name='%s'", $com->SHA1($newsha1.$salt), $username);
 	$result = mysql_query($sql);
 	if (!$result)
 		goto theend;

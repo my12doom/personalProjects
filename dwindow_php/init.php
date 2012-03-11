@@ -1,6 +1,6 @@
 <?php
 die("")
-$db = mysql_connect("localhost", "root", "tester88");
+$db = mysql_connect("localhost", "root", "");
 $result = mysql_select_db("mydb");
 if (!$db || !$result)
 	die("connect failed<br>.\n");

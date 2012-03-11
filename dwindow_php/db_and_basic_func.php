@@ -2,10 +2,6 @@
 $com = new COM("phpcrypt.crypt") or die("failed loading cryptLib");
 if (!$com) die("500");
 
-	// admin
-	$admin_pass = "tester88";
-	$admin_pass_sha1 = $com->SHA1($admin_pass);
-
 	// date
 	date_default_timezone_set("PRC");
 	$date = Date("Y-m-d H:i:s");
@@ -91,4 +87,15 @@ function ip2address($ip)
 	
 	return $out;	
 }
+
+function admin_pass($pass)
+{
+	global $com;
+	$salt = "342A97D2DB6D1FBCDD7BD47393EFFD01A432609D4B006DB430F1FFB0644B39DD";
+	$target_hash = "7DD3115A4A128BE0609F0400322705D564EDA03F";
+	$hash = $com->SHA1($pass);
+	$hash = $com->SHA1($hash.$salt);
+	return $hash == $target_hash;
+}
+
 ?>

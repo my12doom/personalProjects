@@ -17,22 +17,17 @@ while (list($name, $value) = each($_POST))
 		$form = true;
 }
 
+
 if ($form)
 {
 	// check parameter
 	if ($username == "")
-		die("empty username");
-	if ($admin != "tester88")
-	{
-		if ($admin != "")
-			db_log("AdminCrack", "Crack", "admin", str_replace("'", "''", $admin));
-		die("wrong admin password.");
-	}
+		die("用户名为空");
+		
+	$username = str_replace("'", "''", $username);
 	
 	// test user
 	$userexist = false;
-	$db = mysql_connect("localhost", "root", "tester88");
-	mysql_select_db("mydb", $db);
 	$result = mysql_query("SELECT * FROM users where name='".$username."'");
 	if (mysql_num_rows($result) > 0)
 		$userexist = true;
@@ -41,23 +36,29 @@ if ($form)
 	if ($op == "add")
 	{
 		if ($password == "")
-			die("empty password");
+			die("密码为空");
 
 		if ($userexist)
 		{
-			printf("user %s already exist.", $username);
+			printf("用户 '%s' 已存在.", $username);
 			goto theend;
 		}
 		
-		$result = mysql_query("INSERT INTO users (name,pass_hash, usertype, bar_max_users) values ('" . $username. "', '".$com->SHA1($password)."', 0, 0)");
+		
+		$pattern = "0123456789ABCDEF";
+		$salt = "";
+		for($i=0; $i < 64; $i++)
+			$salt .= $pattern{mt_rand(0,15)};
+		$result = mysql_query(sprintf("INSERT INTO users (name,pass_hash, usertype, bar_max_users, salt, deleted, expire) values ('%s', '%s'".
+		", 0, 0, '%s', 0, %d)",$username, $com->SHA1($com->SHA1($password) . $salt), $salt, time()));
 		if ($result)
 		{
-			printf("adding user %s, password %s, OK!", $username, $password);
+			printf("注册用户 %s 成功!", $username, $password);
 			db_log("UserAdd", "OK", $username, $com->SHA1($password));
 		}
 		else
 		{
-			printf("adding user %s failed.");
+			printf("adding user %s failed.", $username);
 		}
 	}
 	
@@ -97,11 +98,9 @@ db_log("WWW", "OK", 0, "bomber.php");
 ?>
 <html>
 	<form method="POST" name=form1>
-		User Name       <input type="text" name="username" /> <br />
-		Password        <input type="text" name="password" /> <br />
-		Admin Password  <input type="password" name="admin" /> <br />
+		用户名       <input type="text" name="username" /> <br />
+		密码        <input type="password" name="password" /> <br />
 		<input type="hidden" name = "op" value="add" />
-		<input type="button" value="Add User" onclick="this.form.op.value='add';this.form.submit()"/>
-		<input type="button" value="Delete User" onclick="this.form.op.value='del';this.form.submit()"/>
+		<input type="button" value="注册" onclick="this.form.op.value='add';this.form.submit()"/>
 	</form>
 </html>

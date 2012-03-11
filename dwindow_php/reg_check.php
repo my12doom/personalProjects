@@ -55,9 +55,6 @@ else if ($rev_state == 2)
 }
 
 // check passkey and return
-$db = mysql_connect("localhost", "root", "tester88");
-mysql_select_db("mydb", $db);
-
 $sql = sprintf("INSERT INTO logs (ip, date, passkey, hash, operation) values ('%s', '%s', '%s', '%s', '%s');", $ip, $date, $passkey, "", "CHECK_REGISTER");
 $result = mysql_query($sql);
 
@@ -94,7 +91,8 @@ else
 	$row = mysql_fetch_array($result);
 	$bar_user = $row["bar_max_users"];
 	$theater = $row["usertype"];
-	$newkey = $com->genkey4($passkey, time() - (12*3600), time() + 24*7*3600, $bar_user, $theater);
+	$expire = $row["expire"];
+	$newkey = $com->genkey4($passkey, time() - (12*3600), min($expire, time() + 24*7*3600), $bar_user, $theater);
 	$newkey = $com->AES($newkey, $return_key);
 
 }

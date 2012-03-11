@@ -1,5 +1,5 @@
 <?php
-include "db_and_basic_func.php";
+include "checkadmin.php";
 db_log("WWW", "OK", 0, $_SERVER['PHP_SELF']);
 
 $form = false;
@@ -14,13 +14,7 @@ while (list($name, $value) = each($_POST))
 }
 
 if ($form)
-{
-	if ($password != $admin_pass)
-	{
-		db_log("SQL", "wrong password", 0, str_replace("'", "''", $password), str_replace("'", "''", $sql));
-		die("wrong password");
-	}
-	
+{	
 	printf("sql = %s.<br>\n", $sql);
 	$result = mysql_query($sql);
 	if (!$result)
@@ -70,7 +64,6 @@ if ($form)
 
 <html>
 	<form method="POST" name=form1>
-		√‹¬Î         <input type="password" name="password" /> <br />
 		SQL         <input type="text" name="sql" /> <br />
 		<input type="button" value="œ‘ æ£°" onclick="this.form.submit()"/>
 	</form>

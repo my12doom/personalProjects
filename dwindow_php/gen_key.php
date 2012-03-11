@@ -53,19 +53,40 @@ else if ($rev_state == 2)
 
 // search user
 // test user : my12doom
-// test key sha1:	0F4F2AA23F104C59F24BE531E3C1666B2169AA97	(tester88)
+// test key sha1:	0F4F2AA23F104C59F24BE531E3C1666B2169AA97	()
 // $user = "my12doom";
 // $password_hash = "0F4F2AA23F104C59F24BE531E3C1666B2169AA97";
 
 $max_bar_user = 0;
 $usertype = 0;
-$result = mysql_query("SELECT * FROM users where name = '".$user."' and pass_hash = '".$password_hash."'");		//warning: possible SQL injection
+$result = mysql_query("SELECT * FROM users where name = '".$user."'");		//warning: possible SQL injection
 if (mysql_num_rows($result) <= 0)
 {
-	db_log("ACTIVE", "INVALID PASSWORD", $user, $password_hash, $password_uncrypt);
-	die("ERROR:INVALID USERNAME OR PASSWORD");
+	db_log("ACTIVE", "NO such USER", $user, $password_hash, $password_uncrypt);
+	die("ERROR:INVALID USERNAME OR PASSWORD, 无效的用户名或密码");	
 }
 $row = mysql_fetch_array($result);
+$salt = $row["salt"];
+$pass_hash = $row["pass_hash"];
+if ($com->SHA1($password_hash.$salt) != $pass_hash)
+{
+	db_log("ACTIVE", "INVALID PASSWORD", $user, $password_hash, $password_uncrypt);
+	die("ERROR:INVALID USERNAME OR PASSWORD, 无效的用户名或密码");
+}
+
+$expire = $row["expire"];
+if ($expire <= time())
+{
+	db_log("ACTIVE", "EXPIRED", $user, $password_hash, $password_uncrypt);
+	die("ERROR:USER EXPIRED, 用户已过期");
+}
+
+if ($row["deleted"] != 0)
+{
+	db_log("ACTIVE", "BANNED", $user, $password_hash, $password_uncrypt);
+	die("ERROR:USER BANNED, 用户已被禁用");
+}
+
 $max_bar_user = $row["bar_max_users"];
 $usertype = $row["usertype"];
 db_log("ACTIVE", "OK", $user, $password_hash);
@@ -89,7 +110,7 @@ $result = mysql_query("delete FROM active_passkeys WHERE user='".$user."'");
 $result = mysql_query("INSERT INTO active_passkeys (passkey, user) values('".$passkey."', '".$user."')");
 
 // encode them to RSA activation code
-$passkey = $com->genkey4($passkey, time() - (12*3600), time() + 24*7*3600, $max_bar_user, $usertype);
+$passkey = $com->genkey4($passkey, time() - (12*3600), min(time() + 24*7*3600, $expire), $max_bar_user, $usertype);
 $passkey = $com->AES($passkey, $return_key);
 echo $passkey;
 ?>

@@ -1,34 +1,12 @@
 <?php
-include "db_and_basic_func.php";
-
-$form = false;
-
-while (list($name, $value) = each($_POST))
-{
-	if ($name == "password")
-		$password = $value;
-	$form = true;
-}
-
-if ($form)
-{
-	if ($password != "tester88")
-		die("wrong password");
+include "checkadmin.php";
 	
-	$result = mysql_query("SELECT * FROM users order by id");
-	while ($row = mysql_fetch_array($result))
-	{		
-		$user = $row["name"];
-		printf("%d:%s<BR>\n", $row["id"], $user);
-	}
-	
-	die("<BR>");
+$result = mysql_query("SELECT id,name FROM users order by id");
+while ($row = mysql_fetch_array($result))
+{		
+	$user = $row["name"];
+	printf("<A href = \"edituser.php?id=%s\">", $row["id"]);
+	printf("%d:%s</a><BR>\n", $row["id"], $user);
 }
+	
 ?>
-
-<html>
-	<form method="POST" name=form1>
-		√‹¬Î         <input type="password" name="password" /> <br />
-		<input type="button" value="œ‘ æ£°" onclick="this.form.submit()"/>
-	</form>
-</html>
