@@ -28,10 +28,10 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 			load_passkey();
 		}
 	}
+	HWND parent_window = (HWND)lpParame;
 
 	Sleep(60*1000);
 
-	HWND parent_window = (HWND)lpParame;
 
 	dwindow_message_uncrypt message;
 	memset(&message, 0, sizeof(message));
@@ -82,9 +82,9 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 #define DS_SHOW_MOUSE (WM_USER + 3)
 #endif
 
+		KillTimer(parent_window, 1);
+		KillTimer(parent_window, 2);
 		SendMessage(parent_window, DS_SHOW_MOUSE, TRUE, NULL);
-		SetTimer(parent_window, 1, 9999999, NULL);
-		SetTimer(parent_window, 2, 9999999, NULL);
 
 		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), parent_window, register_proc );
 		TerminateProcess(GetCurrentProcess(), o);

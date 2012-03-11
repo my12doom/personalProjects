@@ -10,6 +10,7 @@
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
+AutoSetting<BOOL> g_ExclusiveMode(L"ExclusiveMode", false, REG_DWORD);
 
 #include "bomb_network.h"
 
@@ -752,6 +753,9 @@ LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 
 HRESULT dx_player::popup_menu(HWND owner)
 {
+	if (m_renderer1 && m_renderer1->get_fullscreen())
+		return S_FALSE;
+
 	HMENU menu = LoadMenu(m_hexe, MAKEINTRESOURCE(IDR_MENU1));
 	menu = GetSubMenu(menu, 0);
 	localize_menu(menu);
@@ -2765,13 +2769,8 @@ HRESULT dx_player::set_output_mode(int mode)
 
 HRESULT dx_player::toggle_fullscreen()
 {
-	if (m_output_mode == pageflipping || m_output_mode == NV3D)
-	{
-		if (m_renderer1)
-			m_renderer1->set_fullscreen(!m_renderer1->get_fullscreen());
-	}
 
-	else if (m_output_mode == dual_window || m_output_mode == iz3d)
+	if (m_output_mode == dual_window || m_output_mode == iz3d)
 	{
 		//show_window(2, !m_full2);		// show/hide it before set fullscreen, or you may got a strange window
 		show_window(2, true);
@@ -2780,6 +2779,11 @@ HRESULT dx_player::toggle_fullscreen()
 		//show_window(2, m_full2);		// show/hide it again
 	}
 
+	else if (m_output_mode == pageflipping || m_output_mode == NV3D || g_ExclusiveMode)
+	{
+		if (m_renderer1)
+			m_renderer1->set_fullscreen(!m_renderer1->get_fullscreen());
+	}
 	else
 	{
 		show_window(2, false);

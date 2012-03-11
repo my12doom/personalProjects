@@ -15,8 +15,8 @@
 #include <wininet.h>
 #pragma comment(lib,"wininet.lib")
 
-#ifdef DEBUG && 1
-char *g_server_address = "http://127.0.0.1:8080/";
+#if 0
+char *g_server_address = "http://127.0.0.1/";
 #else
 char *g_server_address = "http://bo3d.net:80/";
 #endif
@@ -627,7 +627,6 @@ coremvc_hooker::~coremvc_hooker()
 AutoSetting<bool> g_CUDA(L"CUDA", false);
 HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 {
-
 	CComQIPtr<IPropertyBag, &IID_IPropertyBag> pbag(decoder);
 	if (pbag)
 	{

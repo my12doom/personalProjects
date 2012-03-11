@@ -140,8 +140,11 @@ public:
 	}
 	ValueType& operator= (ValueType in)
 	{
-		m_value = in;
-		save_setting(m_key, &m_value, sizeof(ValueType), m_reg_type);
+		if (memcmp(&in, &m_value, sizeof(in)))
+		{
+			m_value = in;
+			save_setting(m_key, &m_value, sizeof(ValueType), m_reg_type);
+		}
 		return m_value;
 	}
 
@@ -177,8 +180,11 @@ public:
 	}
 	wchar_t* operator=(const wchar_t*in)
 	{
-		wcscpy(m_value, in);
-		save_setting(m_key, m_value, 1024, REG_SZ);
+		if (wcscmp(in, m_value))
+		{
+			wcscpy(m_value, in);
+			save_setting(m_key, m_value, 1024, REG_SZ);
+		}
 		return m_value;
 	}
 protected:
@@ -213,7 +219,7 @@ bool __forceinline is_theeater_version()
 	dwindow_passkey_big m1;
 	BigNumberSetEqualdw(e, 65537, 32);
 	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
-	if (memcmp(m1.passkey, trial_m1, 32) != 0 || memcmp(m1.passkey2, trial_m2, 32) != 0)
+	if (memcmp(m1.passkey, trial_m1, 32) == 0 || memcmp(m1.passkey2, trial_m2, 32) == 0)
 		return false;
 	for(int i=0; i<32; i++)
 		if (m1.passkey[i] != m1.passkey2[i])
