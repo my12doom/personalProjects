@@ -774,7 +774,12 @@ HRESULT dx_player::popup_menu(HWND owner)
 		ModifyMenuW(video, 3, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT1, C(L"Output 1"));
 		ModifyMenuW(video, 4, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT2, C(L"Output 2"));
 	}
-
+#ifdef no_dual_projector
+	ModifyMenuW(video, 3, MF_BYPOSITION, ID_OUTPUT1, C(L"Fullscreen Output"));
+	DeleteMenu(video, 4, MF_BYPOSITION);
+	DeleteMenu(menu, ID_LOGOUT, MF_BYCOMMAND);
+	//DeleteMenu(video, ID_OUTPUTMODE_IZ3D, MF_BYCOMMAND);
+#endif
 	// list monitors
 	for(int i=0; i<get_mixed_monitor_count(true, true); i++)
 	{
@@ -1014,6 +1019,7 @@ LRESULT dx_player::on_timer(int id)
 {
 	if (m_renderer1)
 	{
+#ifndef no_dual_projector
 		if (timeGetTime() - m_renderer1->m_last_reset_time > TRAIL_TIME_1 &&!m_trial_shown && is_trial_version())
 		{
 			// TRIAL
@@ -1024,6 +1030,7 @@ LRESULT dx_player::on_timer(int id)
 				MessageBoxW(id_to_hwnd(1), C(L"You are using a trial copy of DWindow, each clip will play normally for 10 minutes, after that the picture will become grayscale.\nYou can reopen it to play normally for another 10 minutes.\nRegister to remove this limitation."), L"....", MB_ICONINFORMATION);
 			reset_timer(1, 2000);
 		}
+#endif
 	}
 
 	if (id == 1)
@@ -1380,6 +1387,16 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		}
 		set_output_mode(masking);
 	}
+#ifdef no_dual_projector
+	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR ||
+			 uid == ID_OUTPUTMODE_DUALPROJECTOR_SBS ||
+			 uid == ID_OUTPUTMODE_DUALPROJECTOR_TB ||
+			 uid == ID_OUTPUTMODE_IZ3D)
+	{
+		MessageBoxW(id_to_hwnd(id), C(L"Dual projector and IZ3D mode is only available in registered version."), L"", MB_OK | MB_ICONINFORMATION);
+		WinExec("explorer.exe http://www.bo3d.net/buy.php",SW_SHOW);
+	}
+#else
 	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR)
 	{
 		set_output_mode(dual_window);			
@@ -1392,6 +1409,11 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		set_output_mode(out_tb);			
 	}
+	else if (uid == ID_OUTPUTMODE_IZ3D)
+	{
+		set_output_mode(iz3d);
+	}
+#endif
 	else if (uid == ID_OUTPUTMODE_3DTV_SBS)
 	{
 		set_output_mode(out_hsbs);			
@@ -1399,10 +1421,6 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_OUTPUTMODE_3DTV_TB)
 	{
 		set_output_mode(out_htb);			
-	}
-	else if (uid == ID_OUTPUTMODE_IZ3D)
-	{
-		set_output_mode(iz3d);
 	}
 	else if (uid == ID_OUTPUTMODE_GERNERAL120HZGLASSES)
 	{
@@ -1505,11 +1523,16 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 	else if (uid == ID_LOADAUDIOTRACK)
 	{
+#ifndef no_dual_projector
 		wchar_t file[MAX_PATH] = L"";
 		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Audio Tracks\0*.mp3;*.dts;*.ac3;*.aac;*.m4a;*.mka\0All Files\0*.*\0\0"))
 		{
 			load_audiotrack(file);
 		}
+#else
+		MessageBoxW(id_to_hwnd(id), C(L"External audio track support is only available in registered version."), L"", MB_OK | MB_ICONINFORMATION);
+		WinExec("explorer.exe http://www.bo3d.net/buy.php",SW_SHOW);
+#endif
 	}
 
 	else if (uid == ID_SUBTITLE_LOADFILE)
@@ -2037,6 +2060,7 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 	HRESULT hr;
 	//hr = load_file(L"Z:\\00001.m2ts");
 	hr = load_file(pathname);
+	//hr = load_file(L"http://127.0.0.1/C%3A/TDDOWNLOAD/ding540%20(1)%20(1).mkv");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\haa\\00002.haa");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00005n.m2ts");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00006.m2ts");
@@ -2604,6 +2628,7 @@ HRESULT dx_player::debug_list_filters()
 
 HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
 {
+#ifndef no_dual_projector
 	//disable all audio first
 	enable_audio_track(-1);
 
@@ -2626,6 +2651,9 @@ HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
 	m_mc->GetState(INFINITE, &state);
 	hr = seek(time);
 	return hr;
+#else
+	return S_OK;
+#endif
 }
 HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME : always reset 
 {

@@ -130,8 +130,10 @@ retry:
 				goto retry;
 		}
 	}
+#ifndef no_dual_projector
 	else if (is_trial_version())
 		MessageBoxW(NULL, C(L"You are using a trial copy of DWindow, each clip will play normally for 10 minutes, after that the picture will become grayscale.\nYou can reopen it to play normally for another 10 minutes.\nRegister to remove this limitation."), L"....", MB_ICONINFORMATION);
+#endif
 	save_passkey();
 
 	BRC();

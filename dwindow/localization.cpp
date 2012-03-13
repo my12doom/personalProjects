@@ -165,6 +165,10 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Aspect Ratio",			L"画面比例");
 			add_localization(L"Default",				L"默认");
 
+			add_localization(L"Fullscreen Output",						L"全屏输出");
+			add_localization(L"Fullscreen Output 1",					L"全屏输出1");
+			add_localization(L"Fullscreen Output 2",					L"全屏输出2");
+
 			add_localization(L"Output 1",					L"输出1");
 			add_localization(L"Output 2",					L"输出2");
 			add_localization(L"Output Mode",					L"输出模式");
@@ -258,6 +262,7 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Are you sure?", L"确定?");
 
 			// login window
+			add_localization(L"Start Activation", L"开始激活");
 			add_localization(L"Trial", L"免费测试");
 			add_localization(L"Login", L"登录");
 			add_localization(L"OK",    L"确定");
@@ -285,6 +290,10 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Hue", L"色调");
 			add_localization(L"Contrast", L"对比度");
 
+
+			// free version
+			add_localization(L"Dual projector and IZ3D mode is only available in registered version.", L"双投影与IZ3D功能仅在付费版可用");
+			add_localization(L"External audio track support is only available in registered version.", L"载入外部音轨功能仅在付费版可用");
 
 		}
 		break;

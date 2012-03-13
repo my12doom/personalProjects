@@ -271,6 +271,9 @@ bool __forceinline is_bar_version()
 
 __forceinline bool  is_trial_version()
 {
+#ifdef no_dual_projector
+	return true;
+#endif
 	static bool last_rtn = true;
 	static int counter = 0xffffff;
 	if (counter<0xffff)
