@@ -23,7 +23,9 @@ void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName);
 
 enum output_mode_types
 {
-	NV3D, masking, anaglyph, mono, pageflipping, dual_window, iz3d, out_sbs, out_tb, out_hsbs, out_htb, output_mode_types_max
+	NV3D, masking, anaglyph, mono, pageflipping, iz3d,
+	dual_window, out_sbs, out_tb,
+	out_hsbs, out_htb, output_mode_types_max
 };
 
 #ifndef def_input_layout_types

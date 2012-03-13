@@ -33,6 +33,7 @@
 int lockrect_surface = 0;
 int lockrect_texture = 0;
 __int64 lockrect_texture_cycle = 0;
+AutoSetting<BOOL> GPUIdle(L"GPUIdle", true, REG_DWORD);
 
 typedef struct tagTHREADNAME_INFO {
 	DWORD dwType; // must be 0x1000
@@ -1315,7 +1316,7 @@ HRESULT my12doomRenderer::test_PC_level()
 
 	m_PC_level |= PCLEVELTEST_TESTED;
 	m_PC_level_test = NULL;
-	m_PC_level = 0;
+	m_PC_level = PCLEVELTEST_TESTED;
 
 	return S_OK;
 }
@@ -1682,8 +1683,10 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		}
 	}
 
+#ifndef no_dual_projector
 	if (timeGetTime() - m_last_reset_time > TRAIL_TIME_2 && is_trial_version())
 		m_ps_yv12 = m_ps_nv12 = m_ps_yuy2 = NULL;
+#endif
 
 	int l = timeGetTime();
 
@@ -1915,30 +1918,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		//	(int)(l3.QuadPart-l2.QuadPart), (int)(l4.QuadPart-l3.QuadPart), (int)(l5.QuadPart-l4.QuadPart) );
 	}
 
-	else if (m_output_mode == dual_window)
-	{
-		clear(back_buffer);
-		draw_movie(back_buffer, true);
-		draw_bmp(back_buffer, true);
-		adjust_temp_color(back_buffer, true);
-		draw_ui(back_buffer);
-
-		// set render target to swap chain2
-		if (m_swap2)
-		{
-			CComPtr<IDirect3DSurface9> back_buffer2;
-			m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
-			hr = m_Device->SetRenderTarget(0, back_buffer2);
-
-			clear(back_buffer2);
-			draw_movie(back_buffer2, false);
-			draw_bmp(back_buffer2, false);
-			adjust_temp_color(back_buffer2, false);
-			draw_ui(back_buffer2);
-		}
-
-	}
-
+#ifndef no_dual_projector	
 	else if (m_output_mode == iz3d)
 	{
 		CComPtr<IDirect3DSurface9> temp_surface;
@@ -1986,6 +1966,31 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_Device->SetPixelShader(NULL);
 		draw_ui(back_buffer);
 	}
+	else if (m_output_mode == dual_window)
+	{
+		clear(back_buffer);
+		draw_movie(back_buffer, true);
+		draw_bmp(back_buffer, true);
+		adjust_temp_color(back_buffer, true);
+		draw_ui(back_buffer);
+
+		// set render target to swap chain2
+		if (m_swap2)
+		{
+			CComPtr<IDirect3DSurface9> back_buffer2;
+			m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
+			hr = m_Device->SetRenderTarget(0, back_buffer2);
+
+			clear(back_buffer2);
+			draw_movie(back_buffer2, false);
+			draw_bmp(back_buffer2, false);
+			adjust_temp_color(back_buffer2, false);
+			draw_ui(back_buffer2);
+		}
+
+	}
+
+#endif
 	else if (m_output_mode == out_sbs || m_output_mode == out_tb || m_output_mode == out_hsbs || m_output_mode == out_htb)
 	{
 		CComPtr<IDirect3DSurface9> temp_surface;
@@ -2005,7 +2010,12 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 
 		// pass 3: copy to backbuffer
-		if (m_output_mode == out_sbs)
+		if(false)
+		{
+
+		}
+#ifndef no_dual_projector
+		else if (m_output_mode == out_sbs)
 		{
 			RECT src = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
 			RECT dst = src;
@@ -2029,6 +2039,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			m_Device->StretchRect(temp_surface2, &src, back_buffer, &dst, D3DTEXF_NONE);
 
 		}
+#endif
 
 		else if (m_output_mode == out_hsbs)
 		{
@@ -2343,6 +2354,7 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 	double saturation1 = m_saturation1;
 	double saturation2 = m_saturation2;
 
+#ifndef no_dual_projector
 	if (timeGetTime() - m_last_reset_time > TRAIL_TIME_1 && is_trial_version())
 	{
 		saturation1 -= (double)(timeGetTime() - m_last_reset_time - TRAIL_TIME_1) / TRAIL_TIME_3;
@@ -2351,6 +2363,7 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 		saturation1 = max(saturation1, -1);
 		saturation2 = max(saturation2, -2);
 	}
+#endif
 	if ( (left && (abs(saturation1-0.5)>0.005 || abs(m_luminance1-0.5)>0.005 || abs(m_hue1-0.5)>0.005 || abs(m_contrast1-0.5)>0.005)) || 
 		(!left && (abs(saturation2-0.5)>0.005 || abs(m_luminance2-0.5)>0.005 || abs(m_hue2-0.5)>0.005 || abs(m_contrast2-0.5)>0.005)))
 	{
@@ -2457,10 +2470,10 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 
 	//SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
-	SetThreadAffinityMask(GetCurrentThread(), 1);
+	//SetThreadAffinityMask(GetCurrentThread(), 1);
 	while(!_this->m_render_thread_exit)
 	{
-		if (_this->m_output_mode != pageflipping)
+		if (_this->m_output_mode != pageflipping && GPUIdle)
 		{
 			if (_this->m_dsr0->m_State == State_Running && timeGetTime() - _this->m_last_frame_time < 333)
 			{
@@ -4028,7 +4041,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	m_StretchRect = false;
 	if (m_format == MEDIASUBTYPE_YUY2)
 	{
-		if (PC_LEVEL & (PCLEVELTEST_TESTED|PCLEVELTEST_YUY2))
+		if ((PC_LEVEL & PCLEVELTEST_TESTED) && (PC_LEVEL &PCLEVELTEST_YUY2))
 		{
 			m_StretchRect = true;
 			JIF( allocator->CreateOffscreenSurface(m_width, m_height, (D3DFORMAT)MAKEFOURCC('Y','U','Y','2'), D3DPOOL_DEFAULT, &m_surf_YUY2));
@@ -4047,7 +4060,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 	else if (m_format == MEDIASUBTYPE_NV12)
 	{
-		if (PC_LEVEL & (PCLEVELTEST_TESTED|PCLEVELTEST_NV12))
+		if ((PC_LEVEL & PCLEVELTEST_TESTED) && (PC_LEVEL &PCLEVELTEST_NV12))
 		{
 			m_StretchRect = true;
 			JIF( allocator->CreateOffscreenSurface(m_width, m_height, (D3DFORMAT)MAKEFOURCC('N','V','1','2'), D3DPOOL_DEFAULT, &m_surf_NV12));
@@ -4063,7 +4076,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 	else if (m_format == MEDIASUBTYPE_YV12)
 	{
-		if (PC_LEVEL & (PCLEVELTEST_TESTED|PCLEVELTEST_YV12))
+		if ((PC_LEVEL & PCLEVELTEST_TESTED) && (PC_LEVEL &PCLEVELTEST_YV12))
 		{
 			m_StretchRect = true;
 			JIF( allocator->CreateOffscreenSurface(m_width, m_height, (D3DFORMAT)MAKEFOURCC('Y','V','1','2'), D3DPOOL_DEFAULT, &m_surf_YV12));
@@ -4106,7 +4119,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	{
 		// loading YUY2 image as one ARGB half width texture
 		D3DLOCKED_RECT d3dlr;
-		if (PC_LEVEL & (PCLEVELTEST_TESTED | PCLEVELTEST_YUY2))
+		if (m_StretchRect)
 			d3dlr = m_surf_YUY2->locked_rect;
 		else
 			d3dlr = m_tex_YUY2->locked_rect;
@@ -4135,7 +4148,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	else if (m_format == MEDIASUBTYPE_NV12)
 	{
 
-		if (PC_LEVEL & (PCLEVELTEST_TESTED | PCLEVELTEST_NV12))
+		if (m_StretchRect)
 		{
 			D3DLOCKED_RECT &d3dlr = m_surf_NV12->locked_rect;
 			dst = (BYTE*)d3dlr.pBits;
@@ -4177,7 +4190,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 	else if (m_format == MEDIASUBTYPE_YV12)
 	{
-		if (PC_LEVEL & (PCLEVELTEST_TESTED | PCLEVELTEST_YV12))
+		if (m_StretchRect)
 		{
 			D3DLOCKED_RECT &d3dlr = m_surf_YV12->locked_rect;
 			dst = (BYTE*)d3dlr.pBits;
