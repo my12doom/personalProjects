@@ -178,10 +178,10 @@ SectionEnd
 ;	ExecWait '"$INSTDIR\CoralExplorer_221282.exe"'
 ;SectionEnd
 
-Section "PPTV网络电视" pptv
-  File "PPTV(pplive)_forjixian_114230.exe"
-	ExecWait '"$INSTDIR\PPTV(pplive)_forjixian_114230.exe"'
-SectionEnd
+;Section "PPTV网络电视" pptv
+;  File "PPTV(pplive)_forjixian_114230.exe"
+;	ExecWait '"$INSTDIR\PPTV(pplive)_forjixian_114230.exe"'
+;SectionEnd
 
 Function .onSelChange
   SectionGetFlags ${pptv} $0

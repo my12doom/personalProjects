@@ -556,7 +556,22 @@ void main2()
 
 }
 
+
+// my12doom's offset metadata format:
+typedef struct struct_my12doom_offset_metadata_header
+{
+	DWORD file_header;		// should be 'offs'
+	DWORD version;
+	DWORD point_count;
+	DWORD fps_numerator;
+	DWORD fps_denumerator;
+} my12doom_offset_metadata_header;
+
+// point data is stored in 8bit signed integer, upper 1bit is sign bit, lower 7bit is integer bits
+// int value = (v&0x80)? -(&0x7f)v:(v&0x7f);
+
 // offset metadata extraction
+#define use_new_offset
 int main3(int argc, char * argv[])
 {
 	memset(nal_type_found, 0, sizeof(nal_type_found));
@@ -605,6 +620,23 @@ int main3(int argc, char * argv[])
 		}
 
 		//fprintf(offset, is_idr ? "(IDR)" : "(non-IDR)");
+#ifdef use_new_offset
+		my12doom_offset_metadata_header header;
+		memcpy(&header.file_header, "offs", 4);
+		header.version = 0;
+		header.point_count = n+1;
+		header.fps_numerator = 24000;
+		header.fps_denumerator = 1001;
+
+		unsigned char this_frame = 0x80;
+		if (offset_metadata_count>0)
+			this_frame = offset_metadata[0]>=0 ? offset_metadata[0] : (-offset_metadata[0]) |0x80;
+		offset_metadata_count--;
+		fseek(offset, 0, SEEK_SET);
+		fwrite(&header, 1, sizeof(header), offset);
+		fseek(offset, 0, SEEK_END);
+		fwrite(&this_frame, 1, 1, offset);
+#else
 
 		if (offset_metadata_count)
 		{
@@ -616,6 +648,7 @@ int main3(int argc, char * argv[])
 		{
 			fprintf(offset, "00\r\n");
 		}
+#endif
 
 		fflush(offset);
 		//fflush(log);
