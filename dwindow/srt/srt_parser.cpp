@@ -50,11 +50,11 @@ int srt_parser::time_to_decimal(wchar_t *str)
 {
 	//11:22:33,444
 
-	if (wcslen(str) != 12)
-		return -1;
+	//if (wcslen(str) != 12)
+	//	return -1;
 
-	int h,m,s,ms;
-	if (str[8] == L',')
+	int h=0,m=0,s=0,ms=0;
+	if (wcschr(str, L','))
 		swscanf(str, L"%d:%d:%d,%d", &h,&m,&s,&ms);
 	else
 		swscanf(str, L"%d:%d:%d.%d", &h,&m,&s,&ms);
@@ -160,6 +160,20 @@ int srt_parser::load(wchar_t *pathname)
 	return 0;
 }
 
+#define new_offset
+// my12doom's offset metadata format:
+typedef struct struct_my12doom_offset_metadata_header
+{
+	DWORD file_header;		// should be 'offs'
+	DWORD version;
+	DWORD point_count;
+	DWORD fps_numerator;
+	DWORD fps_denumerator;
+} my12doom_offset_metadata_header;
+
+// point data is stored in 8bit signed integer, upper 1bit is sign bit, lower 7bit is integer bits
+// int value = (v&0x80)? -(&0x7f)v:(v&0x7f);
+
 int srt_parser::load_offset_metadata(const wchar_t *pathname, int fps /* = 24 */)		// sorry, no Unicode support
 {
 	FILE * f = _wfopen(pathname, L"rb");
@@ -167,9 +181,30 @@ int srt_parser::load_offset_metadata(const wchar_t *pathname, int fps /* = 24 */
 
 	int frame_count = 0;
 	int *offset_data = (int*) malloc(2048000);
-
+#ifndef new_offset
 	while (fscanf(f, "%d", offset_data+frame_count) != EOF)
 		frame_count++;
+#else
+	my12doom_offset_metadata_header header;
+	fread(&header, 1, sizeof(header), f);
+	if (header.version != 1)
+		goto clearup;
+	if (memcmp(&header.file_header, "offs", 4))
+		goto clearup;
+	if (header.point_count > 512000)
+		goto clearup;
+	fps = (int)((double)header.fps_numerator/header.fps_denumerator);
+	frame_count = header.point_count;
+	if (fread(offset_data, 1, frame_count, f) != frame_count)
+		goto clearup;
+
+	for(int i=frame_count-1; i>=0; i--)
+	{
+		unsigned char frame = ((unsigned char*)offset_data)[i];
+		offset_data[i] = frame & 0x80 ? -(frame&0x7f) : frame&0x7f;
+	}
+
+#endif
 
 	for(int i=0; i<m_index_pos; i++)
 	{
@@ -198,9 +233,14 @@ int srt_parser::load_offset_metadata(const wchar_t *pathname, int fps /* = 24 */
 			m_index[i].offset = offset;
 		}
 	}
-
 	free(offset_data);
+	if (f) fclose(f);
 	return 0;
+
+clearup:
+	free(offset_data);
+	if (f) fclose(f);
+	return -1;
 }
 
 int srt_parser::save(const wchar_t *pathname)

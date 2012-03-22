@@ -53,6 +53,6 @@ $passkey = $com->gen_freekey(time() - (12*3600), time() + 24*7*3600);
 $passkey = $com->AES($passkey, $return_key);
 echo $passkey;
 
-db_log("ACTIVAT_FREE", "OK");
+db_log("ACTIVAT_FREE", "OK", $rev);
 
 ?>
