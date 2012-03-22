@@ -117,6 +117,7 @@ inline bool compare_rect(const RECT in1, const RECT in2)
 }
 
 // constructor & destructor
+LOGFONTW empty_logfontw = {0};
 dx_player::dx_player(HINSTANCE hExe):
 m_renderer1(NULL),
 dwindow(m_screen1, m_screen2),
@@ -151,7 +152,8 @@ m_luminance2(L"Luminance2", 0.5),
 m_hue2(L"Hue2", 0.5),
 m_contrast2(L"Contrast2", 0.5),
 m_theater_owner(NULL),
-m_trial_shown(L"Trial", false)
+m_trial_shown(L"Trial", false),
+m_LogFont(L"LogFont", empty_logfontw)
 {
 	detect_monitors();
 
@@ -2725,7 +2727,7 @@ HRESULT dx_player::select_font(bool show_dlg)
 {
 	CHOOSEFONTW cf={0};
 	memset(&cf, 0, sizeof(cf));
-	LOGFONTW lf={0}; 
+	LOGFONTW lf=m_LogFont; 
 	HDC hdc;
 	LONG lHeight;
 
@@ -2734,14 +2736,17 @@ HRESULT dx_player::select_font(bool show_dlg)
 	lHeight = -MulDiv( m_lFontPointSize, GetDeviceCaps(hdc, LOGPIXELSY), 72 );
 	ReleaseDC( NULL, hdc );
 
-	// Initialize members of the LOGFONT structure. 
-	lstrcpynW(lf.lfFaceName, m_FontName, 32);
-	lf.lfHeight = lHeight;      // Logical units
-	lf.lfCharSet = GB2312_CHARSET;
-	lf.lfOutPrecision =  OUT_STROKE_PRECIS;
-	lf.lfClipPrecision = CLIP_STROKE_PRECIS;
-	lf.lfQuality = DEFAULT_QUALITY;
-	lf.lfPitchAndFamily = VARIABLE_PITCH;
+	// Initialize members of the LOGFONT structure.
+	if (memcmp(&lf, &empty_logfontw, sizeof(lf)) == 0)
+	{
+		lstrcpynW(lf.lfFaceName, m_FontName, 32);
+		lf.lfHeight = lHeight;      // Logical units
+		lf.lfCharSet = GB2312_CHARSET;
+		lf.lfOutPrecision =  OUT_STROKE_PRECIS;
+		lf.lfClipPrecision = CLIP_STROKE_PRECIS;
+		lf.lfQuality = DEFAULT_QUALITY;
+		lf.lfPitchAndFamily = VARIABLE_PITCH;
+	}
 
 	// Initialize members of the CHOOSEFONT structure. 
 	cf.lStructSize = sizeof(CHOOSEFONT); 
@@ -2767,6 +2772,7 @@ HRESULT dx_player::select_font(bool show_dlg)
 	lstrcpynW(m_FontName, lf.lfFaceName, sizeof(m_FontName)/sizeof(TCHAR));
 	m_FontStyle.save();
 	m_FontName.save();
+	m_LogFont = lf;
 	m_lFontPointSize = cf.iPointSize / 10;  // Specified in 1/10 point units
 	//m_font_color = cf.rgbColors;
 	m_font = CreateFontIndirectW(cf.lpLogFont); 

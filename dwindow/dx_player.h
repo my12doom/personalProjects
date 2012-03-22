@@ -244,6 +244,7 @@ protected:
 	AutoSetting<bool> m_display_subtitle;
 	AutoSettingString m_FontName/*(L"Font", L"Arial")*/;
 	AutoSettingString m_FontStyle/*(L"FontStyle", L"Regular")*/;
+	AutoSetting<LOGFONTW> m_LogFont;
 	HRESULT select_font(bool show_dlg);
 	// end font
 
