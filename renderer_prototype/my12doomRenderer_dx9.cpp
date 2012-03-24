@@ -1748,7 +1748,11 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	hr = m_Device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
 	static NvU32 l_counter = 0;
-	if (m_output_mode == NV3D && m_nv3d_enabled && m_nv3d_actived /*&& !m_active_pp.Windowed*/)
+	if (m_output_mode == NV3D
+#ifdef explicit_nv3d
+		&& m_nv3d_enabled && m_nv3d_actived /*&& !m_active_pp.Windowed*/
+#endif
+		)
 	{
 		clear(back_buffer);
 		draw_movie(back_buffer, true);
@@ -1776,7 +1780,11 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		draw_ui(back_buffer);
 	}
 
-	else if (m_output_mode == mono || (m_output_mode == NV3D && !(m_nv3d_enabled && m_nv3d_actived)))
+	else if (m_output_mode == mono 
+#ifdef explicit_nv3d
+		|| (m_output_mode == NV3D && !(m_nv3d_enabled && m_nv3d_actived))
+#endif
+		)
 	{
 		clear(back_buffer);
 		draw_movie(back_buffer, true);

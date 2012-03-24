@@ -53,12 +53,28 @@ int srt_parser::time_to_decimal(wchar_t *str)
 	//if (wcslen(str) != 12)
 	//	return -1;
 
-	int h=0,m=0,s=0,ms=0;
+	int h=0,m=0,s=0,ms=0,c=0;
 	if (wcschr(str, L','))
-		swscanf(str, L"%d:%d:%d,%d", &h,&m,&s,&ms);
+	{
+		c = swscanf(str, L"%d:%d:%d,%d", &h,&m,&s,&ms);
+		if (c!=4)
+			return 0;
+		c = wcslen(wcschr(str, L','))-1;
+	}
+	else if (wcschr(str, L'.'))
+	{
+		c = swscanf(str, L"%d:%d:%d.%d", &h,&m,&s,&ms);
+		if (c!=4)
+			return 0;
+		c = wcslen(wcschr(str, L'.'))-1;
+	}
 	else
-		swscanf(str, L"%d:%d:%d.%d", &h,&m,&s,&ms);
-
+	{
+		return 0;
+	}
+	c-=3;
+	while (c--)
+		ms /= 10;
 
 	return h*3600000 + m*60000 +s*1000 +ms;
 }
