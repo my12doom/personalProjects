@@ -3471,7 +3471,8 @@ HRESULT my12doomRenderer::NV3D_notify(WPARAM wparam)
 	else
 	{
 		m_nv3d_actived = false;
-		set_device_state(need_resize_back_buffer);
+		if (m_output_mode == NV3D)
+			set_device_state(need_resize_back_buffer);
 		printf("deactived!\n");
 	}
 
