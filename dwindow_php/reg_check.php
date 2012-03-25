@@ -27,7 +27,7 @@ if ($rev == 2)
 {
 $passkey = $com->gen_freekey(time() - (12*3600), time() + 24*7*3600);
 $passkey = $com->AES($passkey, $return_key);
-db_log("PLAYER_STARTUP_FREE", "S_OK");
+db_log("PLAYER_STARTUP_FREE", "S_OK", $rev);
 echo "S_OK\0";
 echo $passkey;
 die("\0free");

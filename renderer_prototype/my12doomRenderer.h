@@ -41,6 +41,15 @@ enum mask_mode_types
 	row_interlace, line_interlace, checkboard_interlace, mask_mode_types_max
 };
 
+enum aspect_mode_types
+{
+	aspect_letterbox,
+	aspect_stretch,
+	aspect_horizontal_fill,
+	aspect_vertical_fill,
+	aspect_mode_types_max,
+};
+
 
 
 class Imy12doomRendererCallback
@@ -293,6 +302,7 @@ public:
 	HRESULT set_ui_visible(bool visible);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
 	HRESULT set_2dto3d(bool convert){m_convert3d = convert;}
+	HRESULT set_aspect_mode(int mode);
 
 
 	// settings GET function
@@ -308,6 +318,7 @@ public:
 	double get_bmp_offset(){return m_bmp_offset;}
 	double get_parallax(){return m_parallax;}
 	bool get_2dto3d(){return m_convert3d;}
+	aspect_mode_types get_aspect_mode(){return m_aspect_mode;}
 
 protected:
 
@@ -424,6 +435,7 @@ protected:
 	output_mode_types m_output_mode;
 	input_layout_types m_input_layout;
 	bool m_convert3d;			// = false
+	aspect_mode_types m_aspect_mode;
 	mask_mode_types m_mask_mode;
 	HWND m_hWnd;
 	HWND m_hWnd2;

@@ -25,6 +25,7 @@ extern char *g_server_address;
 #define g_server_gen_key "gen_key.php"
 #define g_server_free "free.php"
 #define g_server_reg_check "reg_check.php"
+#define g_server_ad "ad.php"
 extern int g_logic_monitor_count;
 extern RECT g_logic_monitor_rects[16];
 extern int g_phy_monitor_count;
@@ -87,6 +88,7 @@ HRESULT download_url(char *url_to_download, char *out, int outlen = 64, int time
 HRESULT bar_logout();
 DWORD WINAPI killer_thread(LPVOID time);
 DWORD WINAPI killer_thread2(LPVOID time);
+DWORD WINAPI ad_thread(LPVOID time);
 HRESULT detect_monitors();
 int wcsexplode(const wchar_t *string_to_explode, const wchar_t *delimeter, wchar_t **out, int max_part = 0xfffffff);			// caller should alloc a wchar_t *out[max_part] and free every element of out;
 int wcstrim(wchar_t *str, wchar_t char_ = L' ' );

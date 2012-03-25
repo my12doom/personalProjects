@@ -181,6 +181,7 @@ retry:
 	CreateThread(NULL, NULL, killer_thread2, new DWORD(3000), NULL, NULL);
 	bar_logout();
 	delete test;
+	Sleep(3000);
 	return 0;
 }
 

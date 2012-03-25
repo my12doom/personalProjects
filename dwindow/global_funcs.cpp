@@ -15,7 +15,7 @@
 #include <wininet.h>
 #pragma comment(lib,"wininet.lib")
 
-#if 0
+#if 1
 char *g_server_address = "http://127.0.0.1/";
 #else
 char *g_server_address = "http://bo3d.net:80/";
@@ -27,6 +27,7 @@ AutoSettingString g_bar_server(L"BarServer", L"");
 char g_passkey[32];
 char g_passkey_big[128];
 DWORD g_last_bar_time;
+char g_ad_address[512] = {0};
 
 
 int g_logic_monitor_count;
@@ -1305,8 +1306,34 @@ DWORD WINAPI killer_thread(LPVOID time)
 	return 0;
 }
 
+DWORD WINAPI ad_thread(LPVOID lpParame)
+{
+	char url[512+1];
+
+	strcpy(url, g_server_address);
+	strcat(url, g_server_ad);
+	while (FAILED(download_url(url, g_ad_address, 512)))
+		Sleep(30*1000);
+
+
+	return 0;
+}
+
 DWORD WINAPI killer_thread2(LPVOID time)
 {
+#ifdef no_dual_projector
+	char url[512+1];
+	if (strstr(g_ad_address, "http") == g_ad_address)
+	{
+		sprintf(url, "explorer.exe \"%s\"", g_ad_address);
+
+		WinExec(url, SW_HIDE);
+	}
+	else
+	{
+		// no ad / invalid ad
+	}
+#endif
 	Sleep(*(DWORD*)time);
 	TerminateProcess(GetCurrentProcess(), 0);
 	return 0;

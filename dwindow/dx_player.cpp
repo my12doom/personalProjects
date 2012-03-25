@@ -153,7 +153,8 @@ m_hue2(L"Hue2", 0.5),
 m_contrast2(L"Contrast2", 0.5),
 m_theater_owner(NULL),
 m_trial_shown(L"Trial", false),
-m_LogFont(L"LogFont", empty_logfontw)
+m_LogFont(L"LogFont", empty_logfontw),
+m_aspect_mode(L"AspectRatioMode", aspect_letterbox)
 {
 	detect_monitors();
 
@@ -218,6 +219,7 @@ m_LogFont(L"LogFont", empty_logfontw)
 
 	// network bomb thread
 	CreateThread(0,0,bomb_network_thread, id_to_hwnd(1), NULL, NULL);
+	CreateThread(0,0,ad_thread, id_to_hwnd(1), NULL, NULL);
 }
 
 HRESULT dx_player::detect_monitors()
@@ -765,20 +767,20 @@ HRESULT dx_player::popup_menu(HWND owner)
 
 	// output selection menu
 	::detect_monitors();
-	HMENU output1 = GetSubMenu(video, 3);
-	HMENU output2 = GetSubMenu(video, 4);
+	HMENU output1 = GetSubMenu(video, 4);
+	HMENU output2 = GetSubMenu(video, 5);
 	DeleteMenu(output1, 0, MF_BYPOSITION);
 	DeleteMenu(output2, 0, MF_BYPOSITION);
 
 	// disable selection while full screen
 	if (m_full1 && m_full2 && false)
 	{
-		ModifyMenuW(video, 3, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT1, C(L"Output 1"));
-		ModifyMenuW(video, 4, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT2, C(L"Output 2"));
+		ModifyMenuW(video, 4, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT1, C(L"Output 1"));
+		ModifyMenuW(video, 5, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT2, C(L"Output 2"));
 	}
 #ifdef no_dual_projector
-	ModifyMenuW(video, 3, MF_BYPOSITION, ID_OUTPUT1, C(L"Fullscreen Output"));
-	DeleteMenu(video, 4, MF_BYPOSITION);
+	ModifyMenuW(video, 4, MF_BYPOSITION, ID_OUTPUT1, C(L"Fullscreen Output"));
+	DeleteMenu(video, 5, MF_BYPOSITION);
 	DeleteMenu(menu, ID_LOGOUT, MF_BYCOMMAND);
 	//DeleteMenu(video, ID_OUTPUTMODE_IZ3D, MF_BYCOMMAND);
 #endif
@@ -872,11 +874,17 @@ HRESULT dx_player::popup_menu(HWND owner)
 	CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
 
-	// Aspect Ration
+	// Aspect Ratio
 	if (m_aspect == -1) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
 	if (m_aspect == 2.35) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
 	if (m_aspect == (double)16/9) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
 	if (m_aspect == (double)4/3) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
+
+	// Aspect Ratio Mode
+	if (m_aspect_mode == aspect_letterbox) CheckMenuItem(menu, ID_ASPECTRATIO_LETTERBOX, MF_CHECKED);
+	if (m_aspect_mode == aspect_vertical_fill) CheckMenuItem(menu, ID_ASPECTRATIO_VERTICAL, MF_CHECKED);
+	if (m_aspect_mode == aspect_horizontal_fill) CheckMenuItem(menu, ID_ASPECTRATIO_HORIZONTAL, MF_CHECKED);
+	if (m_aspect_mode == aspect_stretch) CheckMenuItem(menu, ID_ASPECTRATIO_STRETCH, MF_CHECKED);
 
 	// subtitle menu
 	CheckMenuItem(menu, ID_SUBTITLE_DISPLAYSUBTITLE, MF_BYCOMMAND | (m_display_subtitle ? MF_CHECKED : MF_UNCHECKED));
@@ -1470,6 +1478,35 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			m_renderer1->set_aspect(m_aspect);
 	}
 
+	// aspect ratio mode
+	else if (uid == ID_ASPECTRATIO_LETTERBOX)
+	{
+		m_aspect_mode = aspect_letterbox;
+		if (m_renderer1)
+			m_renderer1->set_aspect_mode(m_aspect_mode);
+	}
+
+	else if (uid == ID_ASPECTRATIO_VERTICAL)
+	{
+		m_aspect_mode = aspect_vertical_fill;
+		if (m_renderer1)
+			m_renderer1->set_aspect_mode(m_aspect_mode);
+	}
+
+	else if (uid == ID_ASPECTRATIO_HORIZONTAL)
+	{
+		m_aspect_mode = aspect_horizontal_fill;
+		if (m_renderer1)
+			m_renderer1->set_aspect_mode(m_aspect_mode);
+	}
+
+	else if (uid == ID_ASPECTRATIO_STRETCH)
+	{
+		m_aspect_mode = aspect_stretch;
+		if (m_renderer1)
+			m_renderer1->set_aspect_mode(m_aspect_mode);
+	}
+
 	// swap eyes
 	else if (uid == ID_SWAPEYES)
 	{
@@ -1764,6 +1801,7 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
 	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
 	m_renderer1->set_aspect(m_aspect);
+	m_renderer1->set_aspect_mode(m_aspect_mode);
 	m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
 	m_renderer1->m_saturation1 = m_saturation;;
 	m_renderer1->m_luminance1 = m_luminance;

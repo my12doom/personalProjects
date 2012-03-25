@@ -240,12 +240,19 @@ BEGIN
                 MENUITEM "Anaglyph",                    ID_OUTPUTMODE_ANAGLYPH
                 MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
             END
-            POPUP "Aspect Ratio"
+            POPUP "Output Aspect Ratio"
             BEGIN
                 MENUITEM "Default",                     ID_ASPECTRATIO_DEFAULT
                 MENUITEM "16:9",                        ID_ASPECTRATIO_169
                 MENUITEM "4:3",                         ID_ASPECTRATIO_43
                 MENUITEM "2.35:1",                      ID_ASPECTRATIO_235
+            END
+            POPUP "Aspect Ratio Mode"
+            BEGIN
+                MENUITEM "Default(Letterbox)",          ID_ASPECTRATIO_LETTERBOX
+                MENUITEM "Stretch",                     ID_ASPECTRATIO_STRETCH
+                MENUITEM "Horizontal Fill",             ID_ASPECTRATIO_HORIZONTAL
+                MENUITEM "Vertical Fill",               ID_ASPECTRATIO_VERTICAL
             END
             POPUP "Output 1"
             BEGIN

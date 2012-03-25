@@ -213,6 +213,7 @@ void my12doomRenderer::init_variables()
 	m_bmp_offset_y = 0.0;
 	m_source_aspect = 1.0;
 	m_forced_aspect = -1;
+	m_aspect_mode = aspect_letterbox;
 
 	// input / output
 	m_input_layout = input_layout_auto;
@@ -3174,13 +3175,41 @@ HRESULT my12doomRenderer::calculate_vertex()
 	int delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
 	if (delta_w > 0)
 	{
-		tar.left += delta_w/2;
-		tar.right -= delta_w/2;
+		// letterbox left and right (default), or vertical fill(vertical is already full)
+		if (m_aspect_mode == aspect_letterbox || m_aspect_mode == aspect_vertical_fill)
+		{
+			tar.left += delta_w/2;
+			tar.right -= delta_w/2;
+		}
+		else if (m_aspect_mode == aspect_horizontal_fill)
+		{
+			// extent horizontally, top and bottom cut
+			// (delta_h < 0)
+			tar.top += delta_h/2;
+			tar.bottom -= delta_h/2;
+		}
+		else	// stretch mode, do nothing
+		{
+		}
 	}
 	else if (delta_h > 0)
 	{
-		tar.top += delta_h/2;
-		tar.bottom -= delta_h/2;
+		// letterbox top and bottome (default)
+		if (m_aspect_mode == aspect_letterbox || m_aspect_mode == aspect_horizontal_fill)
+		{
+			tar.top += delta_h/2;
+			tar.bottom -= delta_h/2;
+		}
+		else if (m_aspect_mode == aspect_vertical_fill)
+		{
+			// extent vertically, top and bottom cut
+			// (delta_w < 0)
+			tar.left += delta_w/2;
+			tar.right -= delta_w/2;
+		}
+		else	// stretch mode, do nothing
+		{
+		}
 	}
 
 
@@ -3191,20 +3220,20 @@ HRESULT my12doomRenderer::calculate_vertex()
 	tar.top += (LONG)(tar_height * m_bmp_offset_y);
 	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
 
-	MyVertex *tmp = m_vertices + vertex_pass2_main;
-	tmp[0].x = tar.left-0.5f; tmp[0].y = tar.top-0.5f;
-	tmp[1].x = tar.right-0.5f; tmp[1].y = tar.top-0.5f;
-	tmp[2].x = tar.left-0.5f; tmp[2].y = tar.bottom-0.5f;
-	tmp[3].x = tar.right-0.5f; tmp[3].y = tar.bottom-0.5f;
+	MyVertex *pass2_main = m_vertices + vertex_pass2_main;
+	pass2_main[0].x = tar.left-0.5f; pass2_main[0].y = tar.top-0.5f;
+	pass2_main[1].x = tar.right-0.5f; pass2_main[1].y = tar.top-0.5f;
+	pass2_main[2].x = tar.left-0.5f; pass2_main[2].y = tar.bottom-0.5f;
+	pass2_main[3].x = tar.right-0.5f; pass2_main[3].y = tar.bottom-0.5f;
 
 	MyVertex *pass2_main_r = m_vertices + vertex_pass2_main_r;
-	memcpy(pass2_main_r, tmp, sizeof(MyVertex) * 4);
+	memcpy(pass2_main_r, pass2_main, sizeof(MyVertex) * 4);
 
 	if (m_parallax > 0)
 	{
 		// cut right edge of right eye and left edge of left eye
-		tmp[0].tu += m_parallax;
-		tmp[2].tu += m_parallax;
+		pass2_main[0].tu += m_parallax;
+		pass2_main[2].tu += m_parallax;
 		pass2_main_r[1].tu -= m_parallax;
 		pass2_main_r[3].tu -= m_parallax;
 
@@ -3214,17 +3243,17 @@ HRESULT my12doomRenderer::calculate_vertex()
 		// cut left edge of right eye and right edge of left eye
 		pass2_main_r[0].tu += abs(m_parallax);
 		pass2_main_r[2].tu += abs(m_parallax);
-		tmp[1].tu -= abs(m_parallax);
-		tmp[3].tu -= abs(m_parallax);
+		pass2_main[1].tu -= abs(m_parallax);
+		pass2_main[3].tu -= abs(m_parallax);
 	}
 
 	MyVertex *bmp = m_vertices + vertex_bmp;
 	tar_width = tar.right-tar.left;
 	tar_height = tar.bottom - tar.top;
-	bmp[0] = tmp[0];
-	bmp[1] = tmp[1];
-	bmp[2] = tmp[2];
-	bmp[3] = tmp[3];
+	bmp[0] = pass2_main[0];
+	bmp[1] = pass2_main[1];
+	bmp[2] = pass2_main[2];
+	bmp[3] = pass2_main[3];
 	//bmp[0].x += m_bmp_fleft * tar_width; bmp[0].y += m_bmp_ftop * tar_height;
 	//bmp[1] = bmp[0]; bmp[1].x += m_bmp_fwidth * tar_width;
 	//bmp[3] = bmp[1]; bmp[3].y += m_bmp_fheight* tar_height;
@@ -3251,40 +3280,41 @@ HRESULT my12doomRenderer::calculate_vertex()
 		//bmp2[i].x -= tar_width * (m_bmp_offset);
 	}
 
-	tmp = m_vertices + vertex_pass3;
-	tmp[0].x = -0.5f; tmp[0].y = -0.5f;
-	tmp[1].x = m_active_pp.BackBufferWidth-0.5f; tmp[1].y = -0.5f;
-	tmp[2].x = -0.5f; tmp[2].y = m_active_pp.BackBufferHeight-0.5f;
-	tmp[3].x = m_active_pp.BackBufferWidth-0.5f; tmp[3].y = m_active_pp.BackBufferHeight-0.5f;
+	MyVertex *pass3 = m_vertices + vertex_pass3;
+	pass3[0].x = -0.5f; pass3[0].y = -0.5f;
+	pass3[1].x = m_active_pp.BackBufferWidth-0.5f; pass3[1].y = -0.5f;
+	pass3[2].x = -0.5f; pass3[2].y = m_active_pp.BackBufferHeight-0.5f;
+	pass3[3].x = m_active_pp.BackBufferWidth-0.5f; pass3[3].y = m_active_pp.BackBufferHeight-0.5f;
 
 	// second window coordinate
+	// not used
 	tar.left = tar.top = 0;
-	tar.right = m_active_pp2.BackBufferWidth; tar.bottom = m_active_pp2.BackBufferHeight;
+	tar.right = m_active_pp2.BackBufferWidth;
+	tar.bottom = m_active_pp2.BackBufferHeight;
 	delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
 	delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
 	if (delta_w > 0)
 	{
+		// letterbox at left and right
+
 		tar.left += delta_w/2;
 		tar.right -= delta_w/2;
 	}
 	else if (delta_h > 0)
 	{
+		// letterbox at top and bottom
 		tar.top += delta_h/2;
 		tar.bottom -= delta_h/2;
 	}
 
 	tar_width = tar.right-tar.left;
 	tar_height = tar.bottom - tar.top;
+
+	// movie position offset
 	tar.left += (LONG)(tar_width * m_bmp_offset_x);
 	tar.right += (LONG)(tar_width * m_bmp_offset_x);
 	tar.top += (LONG)(tar_height * m_bmp_offset_y);
 	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
-
-	tmp = m_vertices + vertex_pass2_second;
-	tmp[0].x = tar.left-0.5f; tmp[0].y = tar.top-0.5f;
-	tmp[1].x = tar.right-0.5f; tmp[1].y = tar.top-0.5f;
-	tmp[2].x = tar.left-0.5f; tmp[2].y = tar.bottom-0.5f;
-	tmp[3].x = tar.right-0.5f; tmp[3].y = tar.bottom-0.5f;
 
 	MyVertex *test_sbs = m_vertices + vertex_test_sbs;
 	test_sbs[0].x = -0.5f; test_sbs[0].y = -0.5f;
@@ -3579,6 +3609,23 @@ HRESULT my12doomRenderer::set_movie_pos(int dimention, double offset)		// diment
 	repaint_video();
 	return S_OK;
 }
+
+HRESULT my12doomRenderer::set_aspect_mode(int mode)
+{
+	if (m_aspect_mode == mode)
+		return S_OK;
+
+	m_aspect_mode = (aspect_mode_types)mode;
+	if (m_output_mode == pageflipping)
+		terminate_render_thread();
+	m_vertex_changed = true;
+	repaint_video();
+	if (m_output_mode == pageflipping)
+		create_render_thread();
+	return S_OK;
+
+}
+
 HRESULT my12doomRenderer::set_aspect(double aspect)
 {
 	m_forced_aspect = aspect;

@@ -163,7 +163,16 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Monoscopic",				L"非立体影片");
 
 			add_localization(L"Aspect Ratio",			L"画面比例");
+			add_localization(L"Output Aspect Ratio",	L"显示长宽比");
 			add_localization(L"Default",				L"默认");
+			add_localization(L"Letterbox Cropping",		L"切除黑边");
+			add_localization(L"Aspect Ratio Mode",		L"长宽比模式");
+			add_localization(L"Aspect Ratio",			L"画面比例");
+			add_localization(L"Stretch",				L"拉伸");
+			add_localization(L"Default(Letterbox)",		L"默认(黑边)");
+			add_localization(L"Horizontal Fill",		L"水平填充");
+			add_localization(L"Vertical Fill",			L"垂直填充");
+
 
 			add_localization(L"Fullscreen Output",						L"全屏输出");
 			add_localization(L"Fullscreen Output 1",					L"全屏输出1");
