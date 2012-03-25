@@ -732,6 +732,41 @@ HRESULT my12doomRenderer::fix_nv3d_bug()
 	HRESULT hr = S_OK;
 	CComPtr<IDirect3DSurface9> m_nv3d_bugfix;
 	FAIL_RET( m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_nv3d_bugfix, NULL));
+
+
+	// NV3D acitivation
+	StereoHandle h3d;
+	NvAPI_Status res;
+	res = NvAPI_Stereo_CreateHandleFromIUnknown(m_Device, &h3d);
+	res = NvAPI_Stereo_SetNotificationMessage(h3d, (NvU64)m_hWnd, WM_NV_NOTIFY);
+	if (m_output_mode == NV3D)
+	{
+		printf("activating NV3D\n");
+		res = NvAPI_Stereo_Activate(h3d);
+	}
+
+	else
+	{
+		printf("deactivating NV3D\n");
+		res = NvAPI_Stereo_Deactivate(h3d);
+	}
+	NvU8 actived = 0;
+	res = NvAPI_Stereo_IsActivated(h3d, &actived);
+	if (actived)
+	{
+		printf("init: NV3D actived\n");
+		m_nv3d_actived = true;
+	}
+	else
+	{
+		printf("init: NV3D deactived\n");
+		m_nv3d_actived = false;
+	}
+
+	if (res == NVAPI_OK && m_nv3d_windowed)
+		m_nv3d_actived = m_output_mode == NV3D ? true : false;
+
+	res = NvAPI_Stereo_DestroyHandle(h3d);
 	return hr;
 }
 HRESULT my12doomRenderer::delete_render_targets()
@@ -1650,6 +1685,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		return E_FAIL;
 
 	static int last_render_time = timeGetTime();
+	static int last_nv3d_fix_time = timeGetTime();
 
 	HRESULT hr;
 
@@ -1659,6 +1695,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		return VFW_E_NOT_CONNECTED;
 
 	// pass 2: drawing to back buffer!
+
+	if (timeGetTime() - last_nv3d_fix_time > 1000)
+	{
+		fix_nv3d_bug();
+		last_nv3d_fix_time = timeGetTime();
+	}
+
+
 	hr = m_Device->BeginScene();
 
 	// prepare all samples in queue for rendering
@@ -3427,6 +3471,7 @@ HRESULT my12doomRenderer::NV3D_notify(WPARAM wparam)
 	else
 	{
 		m_nv3d_actived = false;
+		set_device_state(need_resize_back_buffer);
 		printf("deactived!\n");
 	}
 
@@ -3449,37 +3494,6 @@ HRESULT my12doomRenderer::set_output_mode(int mode)
 
 	m_pageflipping_start = -1;
 	set_device_state(need_resize_back_buffer);
-
-	// NV3D acitivation check
-	if (m_nv3d_enabled && m_Device)
-	{
-		StereoHandle h3d;
-		NvAPI_Status res;
-		res = NvAPI_Stereo_CreateHandleFromIUnknown(m_Device, &h3d);
-		res = NvAPI_Stereo_SetNotificationMessage(h3d, (NvU64)m_hWnd, WM_NV_NOTIFY);
-		if (m_output_mode == NV3D)
-			res = NvAPI_Stereo_Activate(h3d);
-		else
-			res = NvAPI_Stereo_Deactivate(h3d);
-		NvU8 actived = 0;
-		res = NvAPI_Stereo_IsActivated(h3d, &actived);
-		if (actived)
-		{
-			printf("init: NV3D actived\n");
-			m_nv3d_actived = true;
-		}
-		else
-		{
-			printf("init: NV3D deactived\n");
-			m_nv3d_actived = false;
-		}
-
-		if (res == NVAPI_OK && m_nv3d_windowed)
-			m_nv3d_actived = m_output_mode == NV3D ? true : false;
-
-		res = NvAPI_Stereo_DestroyHandle(h3d);
-	}
-
 
 	return S_OK;
 }
