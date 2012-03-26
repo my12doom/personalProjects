@@ -51,7 +51,7 @@ if ($printinfo)
 	else if ($usertype == 1)
 		printf("影院用户");
 	else if ($usertype == 2)
-		printf("测试用户");
+		printf("去广告用户");
 	else if ($usertype == 3)
 	{
 		printf("网吧用户");
