@@ -22,7 +22,7 @@ include "db_and_basic_func.php";
 */
 
 $type2str = array("去广告", "7天", "1月", "1年");
-$usertype2str = array("个人", "影院", "去广告", "网吧", "已到期的个人用户");
+$usertype2str = array("个人", "影院", "捐赠", "网吧", "已到期的个人用户");
 $return_button="<BR><input type='button' value='返回' onclick='history.go(-1)'/>";
 
 if (isset($_POST["op"]))
