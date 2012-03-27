@@ -781,8 +781,11 @@ HRESULT dx_player::popup_menu(HWND owner)
 #ifdef no_dual_projector
 	ModifyMenuW(video, 4, MF_BYPOSITION, ID_OUTPUT1, C(L"Fullscreen Output"));
 	DeleteMenu(video, 5, MF_BYPOSITION);
-	DeleteMenu(menu, ID_LOGOUT, MF_BYCOMMAND);
 	//DeleteMenu(video, ID_OUTPUTMODE_IZ3D, MF_BYCOMMAND);
+#endif
+
+#ifdef nologin
+	DeleteMenu(menu, ID_LOGOUT, MF_BYCOMMAND);
 #endif
 	// list monitors
 	for(int i=0; i<get_mixed_monitor_count(true, true); i++)

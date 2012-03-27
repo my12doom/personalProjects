@@ -43,7 +43,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE;no_dual_projector"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -205,7 +205,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector;nologin"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -340,6 +340,172 @@
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
+		<Configuration
+			Name="release_personal|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="true"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS"
+				RuntimeLibrary="0"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
+				OutputFile="$(OutDir)/StereoPlayer.exe"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="release_jz|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="true"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector"
+				RuntimeLibrary="0"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
+				OutputFile="$(OutDir)/StereoPlayer.exe"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
 	</Configurations>
 	<References>
 	</References>
@@ -398,6 +564,22 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="release_test|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="release_personal|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="release_jz|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"

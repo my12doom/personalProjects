@@ -54,7 +54,7 @@ typedef struct _dwindow_passkey_big
 } dwindow_passkey_big;
 const unsigned char USERTYPE_NORMAL = 0;
 const unsigned char USERTYPE_THEATER = 1;
-const unsigned char USERTYPE_TRIAL = 2;
+const unsigned char USERTYPE_JZ = 2;
 const unsigned char USERTYPE_BAR = 3;
 
 

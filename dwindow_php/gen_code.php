@@ -13,7 +13,7 @@ db_log("WWW", "OK", 0, $_SERVER['PHP_SELF']);
 if (isset($_POST["op"]) && $_POST["op"] == "gen")
 {
 	if (!isset($_POST["cardtype"]))
-		die("请选择一种卡类型");
+		die("请选择一种激活码类型");
 		
 	//card type:
 	// 0 = ad
@@ -23,7 +23,7 @@ if (isset($_POST["op"]) && $_POST["op"] == "gen")
 	
 $type = $_POST["cardtype"];
 $pattern = "0123456789ABCDEF";
-$type2str = array("去广告", "7天", "1月", "1年");
+$type2str = array("jz", "gr");
 for($t=0; $t<$_POST["number"]; $t++)
 {
 	$code = "";
@@ -33,7 +33,8 @@ for($t=0; $t<$_POST["number"]; $t++)
 		$code .= $pattern{mt_rand(0,9)};
 		$pass .= $pattern{mt_rand(0,9)};
 	}
-	printf("%s卡:%s - %s <br>\n", $type2str[$type], $code, $pass);
+	//printf("%s卡:%s - %s <br>\n", $type2str[$type], $code, $pass);
+	printf("id:%s,pw:%s,category:%s<br>\n", $code, $pass, $type2str[$type]);
 
 	$sql = sprintf("insert into cards (used, type, time, code, pass) values"
 								."(0, %d, 0, '%s', '%s')", $type, $code, $pass);
@@ -47,10 +48,8 @@ die();
 <html>
 	<form method="POST" name=form1>
 		<input type="hidden" name = "op" value="gen" />
-		<input type="radio" name="cardtype" value="0"> 去广告卡<br>
-		<input type="radio" name="cardtype" value="1"> 7天 <br>
-		<input type="radio" name="cardtype" value="2"> 1月 <br>
-		<input type="radio" name="cardtype" value="3"> 1年 <br>
+		<input type="radio" name="cardtype" value="0"> 捐赠<br>
+		<input type="radio" name="cardtype" value="1"> 个人 <br>
 		生成数量 <input type="text" name="number" value=10><br>
 		<input type="submit" value="生成！">
 	</form>

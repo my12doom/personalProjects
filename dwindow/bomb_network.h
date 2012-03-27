@@ -85,8 +85,11 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 		KillTimer(parent_window, 1);
 		KillTimer(parent_window, 2);
 		SendMessage(parent_window, DS_SHOW_MOUSE, TRUE, NULL);
-
-		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), parent_window, register_proc );
+#ifdef nologin
+		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID_PAYED), parent_window, register_proc );
+#else
+		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID_PAYED), parent_window, register_proc );
+#endif
 		TerminateProcess(GetCurrentProcess(), o);
 	}
 	else

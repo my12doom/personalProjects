@@ -14,6 +14,8 @@
 #define IDD_DIALOG2                     120
 #define IDD_COLOR                       120
 #define IDD_THEATER                     121
+#define IDD_USERID1                     122
+#define IDD_USERID_PAYED                122
 #define IDC_CHECK_SOUND1                1009
 #define IDC_CHECK_MKV1                  1010
 #define IDC_PLAY                        1013

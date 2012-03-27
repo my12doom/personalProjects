@@ -120,7 +120,11 @@ retry:
 	{
 		if (g_bar_server[0] == NULL)
 		{
+#ifdef nologin
 			int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), NULL, register_proc );
+#else
+			int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID_PAYED), NULL, register_proc );
+#endif
 			if (!is_trial_version())
 				return 0;
 		}

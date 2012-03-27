@@ -6,6 +6,17 @@
 #include "..\libchecksum\libchecksum.h"
 #include "..\my12doom_revision.h"
 
+// dwindow version
+#ifdef nologin
+#define dwindow_free
+#else
+#ifdef no_dual_projector
+#define dwindow_jz
+#else
+#define dwindow_pro
+#endif
+#endif
+
 
 // setting class
 class AutoSettingString;
@@ -271,30 +282,19 @@ bool __forceinline is_bar_version()
 	return is;
 }
 
-__forceinline bool  is_trial_version()
+__forceinline bool is_payed_version()
 {
-#ifdef no_dual_projector
-	return true;
-#endif
-	static bool last_rtn = true;
-	static int counter = 0xffffff;
-	if (counter<0xffff)
-	{
-		counter++;
-		return last_rtn;
-	}
-	counter = 0;
 	DWORD e[32];
 	dwindow_passkey_big m1;
 	BigNumberSetEqualdw(e, 65537, 32);
 	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
 
 	if (memcmp(m1.passkey, trial_m1, 32) == 0 && memcmp(m1.passkey2, trial_m2, 32) == 0)
-		return true;
+		return false;
 
 	for(int i=0; i<32; i++)
 		if (m1.passkey[i] != m1.passkey2[i])
-			return true;
+			return false;
 
 	__time64_t t = mytime();
 
@@ -303,25 +303,27 @@ __forceinline bool  is_trial_version()
 	if (m1.time_start > mytime() || mytime() > m1.time_end)
 	{
 		memset(&m1, 0, 128);
-		return true;
+		return false;
 	}
 
 	memcpy(g_passkey, &m1, 32);
-	last_rtn = (USERTYPE_TRIAL == m1.usertype);
 	memset(&m1, 0, 128);
-	return last_rtn;
+	return true;
 }
 
-__forceinline HRESULT check_passkey()
+__forceinline bool is_pro_version()
 {
 	DWORD e[32];
 	dwindow_passkey_big m1;
 	BigNumberSetEqualdw(e, 65537, 32);
 	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
-	if (memcmp(m1.passkey, trial_m1, 32) != 0 || memcmp(m1.passkey2, trial_m2, 32) != 0)
+
+	if (memcmp(m1.passkey, trial_m1, 32) == 0 && memcmp(m1.passkey2, trial_m2, 32) == 0)
+		return false;
+
 	for(int i=0; i<32; i++)
 		if (m1.passkey[i] != m1.passkey2[i])
-			return E_FAIL;
+			return false;
 
 	__time64_t t = mytime();
 
@@ -330,17 +332,87 @@ __forceinline HRESULT check_passkey()
 	if (m1.time_start > mytime() || mytime() > m1.time_end)
 	{
 		memset(&m1, 0, 128);
-		return E_FAIL;
+		return false;
+	}
+
+	memcpy(g_passkey, &m1, 32);
+	bool rtn = m1.usertype != USERTYPE_JZ;
+	memset(&m1, 0, 128);
+	return rtn;
+}
+
+
+__forceinline bool is_actived()
+{
+	DWORD e[32];
+	dwindow_passkey_big m1;
+	BigNumberSetEqualdw(e, 65537, 32);
+	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+
+	if (memcmp(m1.passkey, trial_m1, 32) != 0 && memcmp(m1.passkey2, trial_m2, 32) != 0)
+	for(int i=0; i<32; i++)
+		if (m1.passkey[i] != m1.passkey2[i])
+			return false;
+
+	__time64_t t = mytime();
+
+	tm * t2 = _localtime64(&m1.time_end);
+
+	if (m1.time_start > mytime() || mytime() > m1.time_end)
+	{
+		memset(&m1, 0, 128);
+		return false;
 	}
 
 	memcpy(g_passkey, &m1, 32);
 	memset(&m1, 0, 128);
-	return S_OK;
+	return true;
+}
+
+__forceinline bool  is_trial_version()
+{
+#ifdef nologin
+	return true;
+#else
+	return false;
+#endif
 }
 
 const LARGE_INTEGER freq;
 const BOOL helper = QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
 
+__forceinline HRESULT check_passkey()
+{
+	if (!is_actived())
+		return E_FAIL;
+
+	if (is_bar_version())
+		return S_OK;
+
+	if (is_theeater_version())
+		return S_OK;
+
+	if (is_trial_version())
+		return S_OK;
+
+#ifdef dwindow_free
+	return S_OK;
+#endif
+
+#ifdef dwindow_jz
+	if (is_payed_version())
+		return S_OK;
+#endif
+
+#ifdef dwindow_pro
+	if (is_pro_version())
+		return S_OK;
+#endif
+
+
+	return E_FAIL;
+
+}
 __forceinline void BRC()
 {	
 	mytime();

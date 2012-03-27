@@ -97,10 +97,29 @@ if ($form)
 db_log("WWW", "OK", 0, "bomber.php");
 ?>
 <html>
+	<script language=javascript>
+	function check(form)
+	{
+		if (form.username.value == "")
+		{
+			alert("用户名为空");
+		}
+		else if(form.password.value == form.password2.value)
+		{
+			form.submit();
+		}		
+		else
+		{
+			alert("密码不正确");
+		}
+	}
+	</script>
+	
 	<form method="POST" name=form1>
 		用户名       <input type="text" name="username" /> <br />
 		密码        <input type="password" name="password" /> <br />
+		重复密码        <input type="password" name="password2" /> <br />
 		<input type="hidden" name = "op" value="add" />
-		<input type="button" value="注册" onclick="this.form.op.value='add';this.form.submit()"/>
+		<input type="button" value="注册" onclick="check(this.form)"/>
 	</form>
 </html>
