@@ -55,7 +55,7 @@ if (isset($_POST["op"]))
 		printf("此用户已激活，无需再使用捐赠激活码%s",$return_button);
 		die();
 	}
-	else if ($usertype == 2 && cardtype != 0)
+	else if ($usertype == 2 && $cardtype != 0)
 	{
 		//printf("此用户已激活，暂时无法使用个人激活码。%s",$return_button);
 		//die();
