@@ -23,11 +23,19 @@ if (time() - $time > 3600*12 || $time - time() > 3600*12)
 }
 
 // check trial
-if ($rev == 2)
+
+$trial = false;
+if ($rev > 32768)
+{
+	$trial = true;
+	$rev -= 32768;
+}
+
+if ($rev == 2 || $trial)
 {
 $passkey = $com->gen_freekey(time() - (12*3600), time() + 24*7*3600);
 $passkey = $com->AES($passkey, $return_key);
-db_log("PLAYER_STARTUP_FREE", "S_OK", $rev);
+db_log("PLAYER_STARTUP_FREE", "S_OK", 0, "".$rev);
 echo "S_OK\0";
 echo $passkey;
 die("\0free");

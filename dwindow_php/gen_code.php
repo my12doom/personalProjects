@@ -13,7 +13,7 @@ db_log("WWW", "OK", 0, $_SERVER['PHP_SELF']);
 if (isset($_POST["op"]) && $_POST["op"] == "gen")
 {
 	if (!isset($_POST["cardtype"]))
-		die("请选择一种激活码类型");
+		die("请选择一种卡类型");
 		
 	//card type:
 	// 0 = ad
@@ -34,7 +34,7 @@ for($t=0; $t<$_POST["number"]; $t++)
 		$pass .= $pattern{mt_rand(0,9)};
 	}
 	//printf("%s卡:%s - %s <br>\n", $type2str[$type], $code, $pass);
-	printf("id:%s,pw:%s,category:%s<br>\n", $code, $pass, $type2str[$type]);
+	printf("%s,%s,%s<br>\n", $code, $pass, $type2str[$type]);
 
 	$sql = sprintf("insert into cards (used, type, time, code, pass) values"
 								."(0, %d, 0, '%s', '%s')", $type, $code, $pass);

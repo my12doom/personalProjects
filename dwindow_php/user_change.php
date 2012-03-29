@@ -42,33 +42,33 @@ if (isset($_POST["op"]))
 	$result = mysql_query(sprintf("select * from cards where code = '%s' and pass= '%s'",
 						$card, $password));
 	if (mysql_num_rows($result) <= 0)
-		die("无效的激活码或密码".$return_button);
+		die("无效的卡号或密码".$return_button);
 	$row = mysql_fetch_array($result);
 	if ($row["used"] != 0)
-		die("此激活码已被使用".$return_button);
+		die("此卡号已被使用".$return_button);
 	$cardtype = $row["type"];
 		
 			
 		
 	if ($usertype == 2 && $cardtype == 0)
 	{
-		printf("此用户已激活，无需再使用捐赠激活码%s",$return_button);
+		printf("此用户已激活，无需再使用捐赠卡%s",$return_button);
 		die();
 	}
 	else if ($usertype == 2 && $cardtype != 0)
 	{
-		//printf("此用户已激活，暂时无法使用个人激活码。%s",$return_button);
+		//printf("此用户已激活，暂时无法使用个人卡。%s",$return_button);
 		//die();
 	}
 	else if ($usertype !=0 && $cardtype != 0)
 	{
-		printf("个人激活码只能用于个人用户激活， 用户%s为%s用户%s",
+		printf("个人卡只能用于个人用户激活， 用户%s为%s用户%s",
 				$username,$usertype2str[$usertype],$return_button);
 		die();
 	}
 	else if ($usertype !=0 && $cardtype == 0)
 	{
-		printf("捐赠激活码只能用于未激活账户， 特殊用户请使用专用的时间激活码， 用户%s为%s用户%s",
+		printf("捐赠卡只能用于未激活账户， 特殊用户请使用专用的时间激活码， 用户%s为%s用户%s",
 				$username,$usertype2str[$usertype],$return_button);
 		die();
 	}		
@@ -174,7 +174,7 @@ die();
 	<form method="POST" name=form1>
 		<input type="hidden" name="op" value="post" />
 		用户名       <input type="text" name="username" /> <br />
-		激活码         <input type="text" name="card" /> <br />
+		卡号         <input type="text" name="card" /> <br />
 		密码         <input type="text" name="password" /> <br />
 		
 		<input type="submit" value="充值！" onclick="this.form.submit()"/>
