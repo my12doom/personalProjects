@@ -31,7 +31,7 @@ if ($rev > 32768)
 	$rev -= 32768;
 }
 
-if ($rev == 2 || $trial)
+if ($trial)
 {
 $passkey = $com->gen_freekey(time() - (12*3600), time() + 24*7*3600);
 $passkey = $com->AES($passkey, $return_key);
