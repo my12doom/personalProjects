@@ -93,6 +93,10 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		lr = _this->on_mouse_move(id, xPos, yPos);
 		break;
 
+	case WM_MOUSEWHEEL:
+		lr = _this->on_mouse_wheel(id, HIWORD(wParam), LOWORD(wParam), xPos, yPos);
+		break;
+
 	case DS_SHOW_MOUSE:
 		ShowCursor((BOOL)wParam);
 		break;

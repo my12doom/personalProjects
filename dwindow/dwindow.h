@@ -43,6 +43,7 @@ protected:
 	virtual LRESULT on_mouse_move(int id, int x, int y){return S_OK;}
 	virtual LRESULT on_nc_mouse_move(int id, int x, int y){return S_OK;}
 	virtual LRESULT on_mouse_down(int id, int button, int x, int y){return S_OK;}
+	virtual LRESULT on_mouse_wheel(int id, WORD wheel_delta, WORD button_down, int x, int y){return S_OK;}
 	virtual LRESULT on_mouse_up(int id, int button, int x, int y){return S_OK;}
 	virtual LRESULT on_double_click(int id, int button, int x, int y){return S_OK;}
 	virtual LRESULT on_key_down(int id, int key){return S_OK;}

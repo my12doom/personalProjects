@@ -504,7 +504,15 @@ HRESULT dx_player::total(int *time)
 HRESULT dx_player::set_volume(double volume)
 {
 	BRC();
+
+	if (volume > 1)
+		volume = 1;
+
+	if (volume < 0)
+		volume = 0;
+
 	m_volume = volume;
+
 	if (m_ba)
 	{
 		LONG ddb;
@@ -940,6 +948,21 @@ HRESULT dx_player::popup_menu(HWND owner)
 	return S_OK;
 }
 
+LRESULT dx_player::on_mouse_wheel(int id, WORD wheel_delta, WORD button_down, int x, int y)
+{
+	short delta = wheel_delta;
+
+	double current_volume = 1.0;
+	if (FAILED(get_volume(&current_volume)))
+		return S_OK;
+
+	current_volume += (double)delta * 0.05 / WHEEL_DELTA;
+	set_volume(current_volume);
+
+	return S_OK;
+}
+
+
 LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 {
 	if (!m_gb)
@@ -1263,8 +1286,12 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	if (uid == ID_OPENFILE)
 	{
 		wchar_t file[MAX_PATH] = L"";
-		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Video files\0"
-			L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d\0"))
+		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), 
+			L"Video files\0"
+			L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d\0"
+			L"All Files\0"
+			L"*.*\0"
+			L"\0\0"))
 		{
 			reset_and_loadfile_internal(file);
 		}

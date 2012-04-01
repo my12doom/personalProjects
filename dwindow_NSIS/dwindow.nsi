@@ -203,7 +203,7 @@ Section "Uninstall"
   
   ; Remove registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow"
-  DeleteRegKey HKLM SOFTWARE\DWindow
+  DeleteRegKey HKCU "SOFTWARE\DWindow"
 
   ; Remove files and uninstaller
   Delete $INSTDIR\codec\*.dll
