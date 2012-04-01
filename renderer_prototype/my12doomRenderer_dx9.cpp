@@ -2706,15 +2706,15 @@ HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *s
 	CComPtr<IDirect3DSurface9> right_surface;
 	HRESULT hr = m_tex_rgb_left->GetSurfaceLevel(0, &left_surface);
 	hr = m_tex_rgb_right->GetSurfaceLevel(0, &right_surface);
+	IDirect3DSurface9 *t1 = !m_swapeyes ? left_surface : right_surface;
+	IDirect3DSurface9 *t2 = m_swapeyes ? left_surface : right_surface;
 	if (dual_stream)
 	{
-		m_Device->StretchRect(s1, NULL, left_surface, NULL, D3DTEXF_LINEAR);
-		m_Device->StretchRect(s2, NULL, right_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(s1, NULL, t1, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(s2, NULL, t2, NULL, D3DTEXF_LINEAR);
 	}
 	else
 	{
-		IDirect3DSurface9 *t1 = !m_swapeyes ? left_surface : right_surface;
-		IDirect3DSurface9 *t2 = m_swapeyes ? left_surface : right_surface;
 
 		RECT rect_left = {0,0,m_lVidWidth/2, m_lVidHeight};
 		RECT rect_right = {m_lVidWidth/2,0,m_lVidWidth, m_lVidHeight};

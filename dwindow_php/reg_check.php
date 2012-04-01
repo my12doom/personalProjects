@@ -31,15 +31,6 @@ if ($rev > 32768)
 	$rev -= 32768;
 }
 
-if ($trial)
-{
-$passkey = $com->gen_freekey(time() - (12*3600), time() + 24*7*3600);
-$passkey = $com->AES($passkey, $return_key);
-db_log("PLAYER_STARTUP_FREE", "S_OK", 0, "".$rev);
-echo "S_OK\0";
-echo $passkey;
-die("\0free");
-}
 
 
 // check rev
@@ -54,13 +45,26 @@ if (mysql_num_rows($result) > 0)
 if ($rev_state == 0)
 {
 	printf("E_FAIL\0此版本(rev%d)在服务器上被标记为尚未启用，请到\nhttp://bo3d.net/download下载最新版本", $rev);
+	db_log("PlayerStartup", "E_FAIL", 0, "".$rev);
 	die("");
 }
 else if ($rev_state == 2)
 {
 	printf("E_FAIL\0此版本(rev%d)在服务器上被标记为已停用，请到\nhttp://bo3d.net/download下载最新版本", $rev);
+	db_log("PlayerStartup", "E_FAIL", 0, "".$rev);
 	die("");
 }
+
+if ($trial)
+{
+$passkey = $com->gen_freekey(time() - (12*3600), time() + 24*7*3600);
+$passkey = $com->AES($passkey, $return_key);
+db_log("PLAYER_STARTUP_FREE", "S_OK", 0, "".$rev);
+echo "S_OK\0";
+echo $passkey;
+die("\0free");
+}
+
 
 // check passkey and return
 $sql = sprintf("INSERT INTO logs (ip, date, passkey, hash, operation) values ('%s', '%s', '%s', '%s', '%s');", $ip, $date, $passkey, "", "CHECK_REGISTER");
@@ -105,7 +109,7 @@ else
 
 }
 
-db_log("PlayerStartup", $rtn, $user, $passkey);
+db_log("PlayerStartup", $rtn, $user, $passkey, "".$rev);
 echo $rtn;
 if ($newkey)echo $newkey;
 ?>
