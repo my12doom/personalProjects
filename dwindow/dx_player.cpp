@@ -2445,7 +2445,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 							|| audio_track == LOADFILE_ALL_TRACK)
 						{
 							set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
-							hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
+							if(m_useLAV)hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
 							m_gb->Render(pin);
 							handle_downmixer();
 							log_line(L"done renderering audio pin #%d", audio_num);
@@ -2503,7 +2503,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 			}
 
 			set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
-			hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
+			if(m_useLAV)hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
 
 			hr = m_gb->RenderFile(file_to_play, NULL);
 			handle_downmixer();
@@ -2552,7 +2552,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		}
 
 		set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
-		hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
+		if(m_useLAV)hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
 
 		hr = m_gb->RenderFile(file_to_play, NULL);
 		handle_downmixer();
@@ -3079,7 +3079,7 @@ HRESULT dx_player::enable_audio_track(int track)
 	if (pin_to_render)
 	{
 		set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
-		m_gb->AddFilter(m_lav, L"LAV Audio Deocder");
+		if(m_useLAV)m_gb->AddFilter(m_lav, L"LAV Audio Deocder");
 		m_gb->Render(pin_to_render);
 		handle_downmixer();
 	}
