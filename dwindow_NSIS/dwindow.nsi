@@ -7,8 +7,12 @@
 
 ;--------------------------------
 ;Include Modern UI
+!include "MUI2.nsh"
 
-  !include "MUI2.nsh"
+!define Project dwindow
+!define SHCNE_ASSOCCHANGED 0x8000000
+!define SHCNF_IDLIST 0
+!include "FileAssoc.nsi"
 
 ;--------------------------------
 ;General
@@ -174,6 +178,31 @@ Section "桌面快捷方式"
   
 SectionEnd
 
+SectionGroup /e "文件关联"
+
+Section "mkv文件"
+!insertmacro Assoc mkv "mkv" "MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
+
+Section "mkv3d文件"
+!insertmacro Assoc mkv3d "mkv3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
+
+Section "ssif文件"
+!insertmacro Assoc ssif "ssif" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
+
+Section "mpls播放列表"
+!insertmacro Assoc mpls "mpls" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
+
+
+SectionGroupEnd
+
+Section "-Refresh File Icon"
+System::Call 'Shell32::SHChangeNotify(i ${SHCNE_ASSOCCHANGED}, i ${SHCNF_IDLIST}, i 0, i 0)'
+SectionEnd
+
 ;Section "安装2345浏览器"
 ;	ExecWait '"$INSTDIR\CoralExplorer_221282.exe"'
 ;SectionEnd
@@ -183,16 +212,16 @@ SectionEnd
 ;	ExecWait '"$INSTDIR\PPTV(pplive)_forjixian_114230.exe"'
 ;SectionEnd
 
-Function .onSelChange
-  SectionGetFlags ${pptv} $0
-  IntOp $0 $0 & ${SF_SELECTED}
-  IntCmp $0 0 is0 less0 more0
-is0:
-  MessageBox MB_OK|MB_ICONQUESTION "PPTV是国内在线观看速度最好的网络电视平台，同时也与3D影音共享部分组件，去掉安装会影响3D影音部分功能使用。"
-less0:
-more0:
+;Function .onSelChange
+;  SectionGetFlags ${pptv} $0
+;  IntOp $0 $0 & ${SF_SELECTED}
+;  IntCmp $0 0 is0 less0 more0
+;is0:
+;  MessageBox MB_OK|MB_ICONQUESTION "PPTV是国内在线观看速度最好的网络电视平台，同时也与3D影音共享部分组件，去掉安装会;影响3D影音部分功能使用。"
+;less0:
+;more0:
   	
-FunctionEnd
+;FunctionEnd
 
 
 
@@ -228,5 +257,13 @@ Section "Uninstall"
   RMDir "$SMPROGRAMS\DWindow"
   RMDir "$INSTDIR\codec"
   RMDir "$INSTDIR"
+
+  ; Revese file association
+  !insertmacro UnAssoc mkv
+  !insertmacro UnAssoc mkv3d
+  !insertmacro UnAssoc ssif
+  !insertmacro UnAssoc mpls
+
+  System::Call 'Shell32::SHChangeNotify(i ${SHCNE_ASSOCCHANGED}, i ${SHCNF_IDLIST}, i 0, i 0)'
 
 SectionEnd
