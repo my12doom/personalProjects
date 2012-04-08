@@ -22,6 +22,9 @@
 #include "..\ZBuffer\stereo_test.h"
 #include "..\dwindow\global_funcs.h"
 
+
+#include "d3dx9.h"
+
 #define FAIL_RET(x) hr=x; if(FAILED(hr)){return hr;}
 #define FAIL_SLEEP_RET(x) hr=x; if(FAILED(hr)){Sleep(1); return hr;}
 #define safe_delete(x) if(x){delete x;x=NULL;}
@@ -101,6 +104,7 @@ m_right_queue(_T("right queue"))
 	typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)(UINT, IDirect3D9Ex**);
 
 	// D3D && NV3D
+	m_HD3DStereoModesCount = m_HD3Dlineoffset = 0;
 	m_render_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_pool = NULL;
 	m_last_rendered_sample1 = m_last_rendered_sample2 = m_sample2render_1 = m_sample2render_2 = NULL;
@@ -1023,7 +1027,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			m_active_pp.BackBufferCount = 1;
 			m_active_pp.Flags = D3DPRESENTFLAG_VIDEO;
 			m_active_pp.BackBufferFormat = D3DFMT_A8R8G8B8;
-			m_active_pp.MultiSampleType = D3DMULTISAMPLE_NONE;
+			m_active_pp.MultiSampleType = D3DMULTISAMPLE_2_SAMPLES;
 
 			m_style = GetWindowLongPtr(m_hWnd, GWL_STYLE);
 			m_exstyle = GetWindowLongPtr(m_hWnd, GWL_EXSTYLE);
@@ -1114,6 +1118,9 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		m_new_pp = m_active_pp;
 		m_device_state = need_reset_object;
 
+		FAIL_RET(HD3D_one_time_init());
+
+
 		set_output_mode(m_output_mode);		// just to active nv3d
 
 		{
@@ -1179,6 +1186,7 @@ HRESULT my12doomRenderer::invalidate_cpu_objects()
 
 HRESULT my12doomRenderer::invalidate_gpu_objects()
 {
+	HD3D_invalidate_objects();
 	m_uidrawer->invalidate_gpu();
 	m_red_blue.invalid();
 
@@ -1359,6 +1367,8 @@ HRESULT my12doomRenderer::test_PC_level()
 
 HRESULT my12doomRenderer::restore_gpu_objects()
 {
+	HRESULT hr;
+
 	m_red_blue.set_source(m_Device, g_code_anaglyph, sizeof(g_code_anaglyph), true, (DWORD*)m_key);
 
 	int l = timeGetTime();
@@ -1373,8 +1383,8 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 			m_pass1_height /= 2;
 	}
 
-	HRESULT hr;
 	FAIL_RET( m_Device->CreateRenderTarget(stereo_test_texture_size, stereo_test_texture_size, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &m_stereo_test_gpu, NULL));
+	FAIL_RET(HD3D_restore_objects());
 	fix_nv3d_bug();
 	if (m_stereo_test_cpu == NULL) FAIL_RET( m_Device->CreateOffscreenPlainSurface(stereo_test_texture_size, stereo_test_texture_size, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_stereo_test_cpu, NULL));
 
@@ -1840,7 +1850,26 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		adjust_temp_color(back_buffer, true);
 		draw_ui(back_buffer);
 	}
+	else if (m_output_mode == hd3d)
+	{
+		CComPtr<IDirect3DSurface9> left_surface;
+		hr = m_mask_temp_left->GetSurfaceLevel(0, &left_surface);
+		clear(left_surface);
+		draw_movie(left_surface, true);
+		draw_bmp(left_surface, true);
+		adjust_temp_color(left_surface, true);
+		draw_ui(left_surface);
 
+		CComPtr<IDirect3DSurface9> right_surface;
+		hr = m_mask_temp_right->GetSurfaceLevel(0, &right_surface);
+		clear(right_surface);
+		draw_movie(right_surface, false);
+		draw_bmp(right_surface, false);
+		adjust_temp_color(right_surface, false);
+		draw_ui(right_surface);
+
+		HD3DDrawStereo(left_surface, right_surface, back_buffer);
+	}
 	else if (m_output_mode == anaglyph)
 	{
 		CComPtr<IDirect3DSurface9> temp_surface;
@@ -3438,6 +3467,9 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 		m_new_pp.BackBufferHeight = m_d3ddm.Height;
 		m_new_pp.FullScreen_RefreshRateInHz = m_d3ddm.RefreshRate;
 
+		if (m_output_mode == hd3d && m_HD3DStereoModesCount > 0)
+			HD3DSetStereoFullscreenPresentParameters();
+
 		set_device_state(need_reset);
 		if (m_device_state < need_create)
 			handle_device_state();
@@ -4412,4 +4444,264 @@ my12doom_auto_shader::operator IDirect3DVertexShader9*()
 	if (!m_vs)
 		restore();
 	return m_vs;
+}
+
+
+
+
+// AMD HD3D functions
+HRESULT my12doomRenderer::HD3D_one_time_init()
+{
+	m_HD3Dlineoffset = 0;
+	m_HD3DStereoModesCount = 0;
+
+	HRESULT hr = m_Device->CreateOffscreenPlainSurface(10, 10, (D3DFORMAT)FOURCC_AQBS, D3DPOOL_DEFAULT, &m_HD3DCommSurface, NULL);
+	if( FAILED( hr ) )
+	{
+		mylog("CreateOffscreenPlainSurface(FOURCC_AQBS) FAILED\r\n");
+		goto amd_hd3d_fail;
+	}
+	else
+	{
+		mylog("CreateOffscreenPlainSurface(FOURCC_AQBS) OK\r\n");
+	}
+
+	// Send the command to the driver using the temporary surface
+	// TO enable stereo
+	hr = HD3DSendStereoCommand(ATI_STEREO_ENABLESTEREO, NULL, 0, 0, 0);
+	if( FAILED( hr ) )
+	{
+		mylog("SendStereoCommand(ATI_STEREO_ENABLESTEREO) FAILED\r\n");
+		m_HD3DCommSurface = NULL;
+		goto amd_hd3d_fail;
+	}
+	else
+	{
+		mylog("SendStereoCommand(ATI_STEREO_ENABLESTEREO) OK\r\n");
+	}
+
+
+	// See what stereo modes are available
+	ATIDX9GETDISPLAYMODES displayModeParams;
+	displayModeParams.dwNumModes    = 0;
+	displayModeParams.pStereoModes = NULL;
+
+	//Send stereo command to get the number of available stereo modes.
+	hr = HD3DSendStereoCommand(ATI_STEREO_GETDISPLAYMODES, (BYTE *)(&displayModeParams),
+		sizeof(ATIDX9GETDISPLAYMODES), 0, 0);  
+	if( FAILED( hr ) )
+	{
+		mylog("ATI_STEREO_GETDISPLAYMODES count FAILED\r\n");
+		m_HD3DCommSurface = NULL;
+		goto amd_hd3d_fail;
+	}
+
+	//Send stereo command to get the list of stereo modes
+	if(displayModeParams.dwNumModes)
+	{
+		displayModeParams.pStereoModes = m_HD3DStereoModes;
+
+		hr = HD3DSendStereoCommand(ATI_STEREO_GETDISPLAYMODES, (BYTE *)(&displayModeParams), 
+			sizeof(ATIDX9GETDISPLAYMODES), 0, 0);
+		if( FAILED( hr ) )
+		{
+			mylog("ATI_STEREO_GETDISPLAYMODES modes FAILED\r\n");
+
+			m_HD3DCommSurface = NULL;
+			goto amd_hd3d_fail;
+		}
+		m_HD3DStereoModesCount = displayModeParams.dwNumModes;
+	}
+
+	for(int i=0; i<m_HD3DStereoModesCount; i++)
+	{
+		D3DDISPLAYMODE mode = m_HD3DStereoModes[i];
+		mylog("Stereo Mode: %dx%d@%dfps, %dformat\r\n", mode.Width, mode.Height, mode.RefreshRate, mode.Format);
+	}
+
+	m_HD3DCommSurface = NULL;
+	return S_OK;
+
+amd_hd3d_fail:
+	m_HD3DCommSurface = NULL;
+	return S_FALSE;		// yes, always success, 
+}
+
+HRESULT my12doomRenderer::HD3D_restore_objects()
+{
+	mylog("1");
+
+	m_HD3Dlineoffset = 0;
+	HRESULT hr = m_Device->CreateOffscreenPlainSurface(10, 10, (D3DFORMAT)FOURCC_AQBS, D3DPOOL_DEFAULT, &m_HD3DCommSurface, NULL);
+	if( FAILED( hr ) )
+	{
+		mylog("FOURCC_AQBS FAIL");
+		return S_FALSE;
+	}
+
+	mylog("2");
+	//Retrieve the line offset
+	hr = HD3DSendStereoCommand(ATI_STEREO_GETLINEOFFSET, (BYTE *)(&m_HD3Dlineoffset), sizeof(DWORD), 0, 0);
+	if( FAILED( hr ) )
+	{
+		mylog("ATI_STEREO_GETLINEOFFSET FAIL=%d\r\n", m_HD3Dlineoffset);
+		return S_FALSE;
+	}
+	mylog("3");
+
+	// see if lineOffset is valid
+	mylog("lineoffset=%d\r\n", m_HD3Dlineoffset);
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::HD3D_invalidate_objects()
+{
+	mylog("m_HD3DCommSurface = NULL");
+	m_HD3DCommSurface = NULL;
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::HD3DSetStereoFullscreenPresentParameters()
+{
+	m_new_pp.MultiSampleType = D3DMULTISAMPLE_2_SAMPLES;
+	m_new_pp.FullScreen_RefreshRateInHz = 24;
+	m_new_pp.BackBufferWidth = 1920;
+	m_new_pp.BackBufferHeight = 1080;
+	m_new_pp.BackBufferFormat = D3DFMT_X8R8G8B8;
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::HD3DSendStereoCommand(ATIDX9STEREOCOMMAND stereoCommand, BYTE *pOutBuffer, 
+							 DWORD dwOutBufferSize, BYTE *pInBuffer, 
+							 DWORD dwInBufferSize)
+{
+	if (!m_HD3DCommSurface)
+		return E_FAIL;
+
+	HRESULT hr;
+	ATIDX9STEREOCOMMPACKET *pCommPacket;
+	D3DLOCKED_RECT lockedRect;
+
+	hr = m_HD3DCommSurface->LockRect(&lockedRect, 0, 0);
+	if(FAILED(hr))
+	{
+		return hr;
+	}
+	pCommPacket = (ATIDX9STEREOCOMMPACKET *)(lockedRect.pBits);
+	pCommPacket->dwSignature = 'STER';
+	pCommPacket->pResult = &hr;
+	pCommPacket->stereoCommand = stereoCommand;
+	if (pOutBuffer && !dwOutBufferSize)
+	{
+		return hr;
+	}
+	pCommPacket->pOutBuffer = pOutBuffer;
+	pCommPacket->dwOutBufferSize = dwOutBufferSize;
+	if (pInBuffer && !dwInBufferSize)
+	{
+		return hr;
+	}
+	pCommPacket->pInBuffer = pInBuffer;
+	pCommPacket->dwInBufferSize = dwInBufferSize;
+	m_HD3DCommSurface->UnlockRect();
+	return hr;
+}
+
+HRESULT my12doomRenderer::HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirect3DSurface9 *right_surface, IDirect3DSurface9 *back_buffer)
+{
+	m_Device->SetRenderTarget(0, back_buffer);
+
+	// draw left
+	HRESULT hr = m_Device->StretchRect(right_surface, NULL, back_buffer, NULL, D3DTEXF_LINEAR);
+
+	// update the quad buffer with the right render target
+	D3DVIEWPORT9 viewPort;
+	viewPort.X = 0;
+	viewPort.Y = m_HD3Dlineoffset;
+	viewPort.Width = m_active_pp.BackBufferWidth;
+	viewPort.Height = m_active_pp.BackBufferHeight;
+	viewPort.MinZ = 0;
+	viewPort.MaxZ = 1;
+	hr = m_Device->SetViewport(&viewPort);
+
+	mylog("lineoffset = %d, right_surface = %08x\r\n, hr = %08x", m_HD3Dlineoffset, right_surface, hr);
+
+
+	// set the right quad buffer as the destination for StretchRect
+	DWORD dwEye = ATI_STEREO_RIGHTEYE;
+	HD3DSendStereoCommand(ATI_STEREO_SETDSTEYE, NULL, 0, (BYTE *)&dwEye, sizeof(dwEye));
+	m_Device->StretchRect(left_surface, NULL, back_buffer, NULL, D3DTEXF_LINEAR);
+
+	// restore the destination
+	dwEye = ATI_STEREO_LEFTEYE;
+	HD3DSendStereoCommand(ATI_STEREO_SETDSTEYE, NULL, 0, (BYTE *)&dwEye, sizeof(dwEye));
+
+	// RenderPixelID();
+	struct Vertex
+	{
+		FLOAT		x, y, z, w;
+		D3DCOLOR	diffuse;
+	};
+
+	Vertex verts[2];
+
+	verts[0].x = 0;
+	verts[0].z = 0.5f;
+	verts[0].w = 1;
+	verts[1].x = 1;
+	verts[1].z = 0.5f;
+	verts[1].w = 1;
+
+	viewPort.X = 0;
+	viewPort.Width = m_active_pp.BackBufferWidth;
+	viewPort.Height = m_active_pp.BackBufferHeight;
+	viewPort.MinZ = 0;
+	viewPort.MaxZ = 1;
+
+	IDirect3DDevice9 *pd3dDevice = m_Device;
+
+	// save state
+	DWORD zEnable;
+	pd3dDevice->GetRenderState(D3DRS_ZENABLE, &zEnable);
+
+	pd3dDevice->SetFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE);
+	D3DXMATRIX identityMatrix;
+	D3DXMatrixIdentity(&identityMatrix);
+	pd3dDevice->SetTransform(D3DTS_VIEW, &identityMatrix);
+	pd3dDevice->SetTransform(D3DTS_WORLD, &identityMatrix);
+	D3DXMATRIX orthoMatrix;
+	D3DXMatrixOrthoRH(&orthoMatrix, (float)m_active_pp.BackBufferWidth, (float)m_active_pp.BackBufferHeight, 0.0, 1.0f);
+	pd3dDevice->SetTransform(D3DTS_PROJECTION, &orthoMatrix);
+	pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+	float pointSize = 1.0f;
+	//pd3dDevice->SetRenderTarget(0, pBackBufferSurface);
+	pd3dDevice->SetRenderState(D3DRS_POINTSIZE, *((DWORD*)&pointSize));
+	pd3dDevice->SetRenderState(D3DRS_POINTSCALEENABLE, FALSE);
+	pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+	pd3dDevice->SetVertexShader(NULL);
+	pd3dDevice->SetPixelShader(NULL);
+
+	// draw right eye
+	viewPort.Y = m_HD3Dlineoffset;
+	verts[0].y = (float)m_HD3Dlineoffset;
+	verts[1].y = (float)m_HD3Dlineoffset;
+	pd3dDevice->SetViewport(&viewPort);
+	verts[0].diffuse = D3DCOLOR D3DCOLOR_ARGB(255, 0, 0, 0);
+	verts[1].diffuse = D3DCOLOR D3DCOLOR_ARGB(255, 255, 255, 255);
+	pd3dDevice->DrawPrimitiveUP(D3DPT_POINTLIST, 2, verts, sizeof(Vertex));
+
+	// draw left eye
+	viewPort.Y = 0;
+	pd3dDevice->SetViewport(&viewPort);
+	verts[0].y = 0;
+	verts[1].y = 0;
+	verts[0].diffuse = D3DCOLOR D3DCOLOR_ARGB(255, 255, 255, 255);
+	verts[1].diffuse = D3DCOLOR D3DCOLOR_ARGB(255, 0, 0, 0);
+	pd3dDevice->DrawPrimitiveUP(D3DPT_POINTLIST, 2, verts, sizeof(Vertex));
+
+	// restore state
+	pd3dDevice->SetRenderState(D3DRS_ZENABLE, zEnable);
+	return S_OK;
 }

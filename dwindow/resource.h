@@ -14,7 +14,6 @@
 #define IDD_DIALOG2                     120
 #define IDD_COLOR                       120
 #define IDD_THEATER                     121
-#define IDD_USERID1                     122
 #define IDD_USERID_PAYED                122
 #define IDC_CHECK_SOUND1                1009
 #define IDC_CHECK_MKV1                  1010
@@ -179,13 +178,14 @@
 #define ID_ASPECTRATIOMODE_VERTICAL     40129
 #define ID_ASPECTRATIO_VERTICAL         40130
 #define ID_ASPECTRATIO_Stretc           40131
+#define ID_OUTPUTMODE_AMDHD3D           40132
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        122
-#define _APS_NEXT_COMMAND_VALUE         40132
+#define _APS_NEXT_COMMAND_VALUE         40133
 #define _APS_NEXT_CONTROL_VALUE         1037
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

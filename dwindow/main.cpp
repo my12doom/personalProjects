@@ -279,9 +279,114 @@ static const byte rLPS_table_64x4[64][4]=
 	{   6,   7,   8,   9},
 	{   2,   2,   2,   2}
 };
+/*
+
+int myscanf(FILE *f, int *id, int*year, int*weak, float*profit)
+{
+	*profit = 0;
+	int rtn = fscanf(f, "%d %d-%d %f", id, year, weak, profit);
+
+	if (rtn)
+		return rtn;
+
+	rtn = fscanf(f, "%d %d-%d", id, year, weak);
+
+	if (rtn)
+		return rtn;
+
+	char line[1024];
+
+	return fscanf(f, "%s", line);
+}
+
+int *id = new int[200000];
+int *year = new int[200000];
+int *weak = new int[200000];
+float *profit = new float[200000];
+char names[1024][15];
+int ids[1000];
+
+float table[500][2012-1991+1][53];
+
+int index_ids(int id)
+{
+	for(int i=0; i<500; i++)
+		if (ids[i] == id)
+			return i;
+	return 0;
+}
+*/
+
 
 int main()
-{
+{/*
+
+	FILE * f;
+
+
+	f = fopen("Z:\\names.txt", "rb");
+	int namecount = 0;
+	while (fscanf(f, "%s", names[namecount]) != EOF)
+		namecount++;
+	fclose(f);
+
+	f = fopen("Z:\\ids.txt", "rb");
+	int idcount = 0;
+	while (fscanf(f, "%d", &ids[idcount]) != EOF)
+		idcount++;
+	fclose(f);
+
+	memset(table, 0, sizeof(table));
+	f = fopen("Z:\\TRD.txt", "rb");
+	int count = 0;
+	memset(profit, 0, sizeof(float) * 200000);
+	while (myscanf(f, id+count, year+count, weak+count, profit+count) != EOF)
+	{
+		if (profit[count] != 0)
+			table[index_ids(id[count])][year[count]-1991][weak[count]] = profit[count];
+
+		count++;
+	}
+	fclose(f);
+
+	f = fopen("Z:\\out.txt", "wb");
+
+
+	fprintf(f, "股票代号");
+	for(int i=0; i<idcount; i++)
+		fprintf(f, "%d\t", ids[i]);
+	fprintf(f, "\r\n");
+
+	fprintf(f, "股票名称");
+	for(int i=0; i<idcount; i++)
+		fprintf(f, "%s\t", names[i]);
+	fprintf(f, "\r\n");
+
+	fflush(f);
+
+	for(int y=1991; y<=2012; y++)
+		for(int w=1; w<54; w++)
+		{
+			// time
+			fprintf(f, "%d-%d\t", y, w);
+
+			for(int i=0; i<idcount; i++)
+			{
+				int gpid = ids[i];
+
+				float gp_profit = 0;
+
+				gp_profit = table[i][y-1991][w];
+
+				fprintf(f, "%f\t", gp_profit);
+			}
+
+			fprintf(f, "\r\n");
+		}
+
+
+	fflush(f);
+
 	int a[123] = {0};
 	int b[234] = {0};
 	for(int i=0; i<123; i++)
@@ -295,6 +400,7 @@ int main()
 		printf("\r, %d, %d, %d, %d, ", GetTickCount(), timeGetTime(), mytime(), now1);
 		printf("%d            ", t);
 	}
+*/
 
 	WinMain(GetModuleHandle(NULL), 0, "", SW_SHOW);
 
