@@ -6,6 +6,7 @@
 #include "my12doomUI.h"
 #include "TextureAllocator.h"
 #include "..\dwindow\nvapi.h"
+#include "AtiDx9Stereo.h"
 
 struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
 #define WM_NV_NOTIFY (WM_USER+10086)
@@ -25,7 +26,8 @@ enum output_mode_types
 {
 	NV3D, masking, anaglyph, mono, pageflipping, iz3d,
 	dual_window, out_sbs, out_tb,
-	out_hsbs, out_htb, output_mode_types_max
+	out_hsbs, out_htb, 
+	out_hd3d, output_mode_types_max
 };
 
 #ifndef def_input_layout_types
@@ -418,6 +420,20 @@ protected:
 	friend class dx_player;
 	bool m_backuped;
 	int m_last_reset_time;
+
+	// AMD HD3D functions and variables
+	CComPtr <IDirect3D9> m_HD3DCommSurface;
+	int m_HD3DStereoModesCount;
+	int m_AMDlineoffset;
+	D3DDISPLAYMODE m_HD3DStereoModes[100];
+	HRESULT AMD_one_time_init();
+	HRESULT AMD_restore_objects();
+	HRESULT AMD_invalidate_objects();
+	HRESULT AMDSetStereoPresentParameters();
+	HRESULT AMDDrawStereo(IDirect3DSurface9 *left_surface, IDirect3DSurface9 *right_surface);
+	HRESULT AMDSendStereoCommand(ATIDX9STEREOCOMMAND stereoCommand, BYTE *pOutBuffer, 
+								DWORD dwOutBufferSize, BYTE *pInBuffer, 
+								DWORD dwInBufferSize);
 
 	// variables
 	void init_variables();

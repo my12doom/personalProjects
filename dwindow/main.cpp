@@ -282,6 +282,11 @@ static const byte rLPS_table_64x4[64][4]=
 
 int main()
 {
+	int a[123] = {0};
+	int b[234] = {0};
+	for(int i=0; i<123; i++)
+		b[i] = a[i];
+
 	static __int64 delta = timeGetTime()/1000 - _time64(NULL);
 	while(0)
 	{

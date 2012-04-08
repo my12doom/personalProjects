@@ -1705,6 +1705,9 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 
 	hr = m_Device->BeginScene();
+	hr = m_Device->SetTexture(0, NULL);
+	hr = m_Device->SetTexture(1, NULL);
+	hr = m_Device->SetTexture(2, NULL);
 
 	// prepare all samples in queue for rendering
 	//if(false)
@@ -2213,6 +2216,7 @@ HRESULT my12doomRenderer::clear(IDirect3DSurface9 *surface, DWORD color)
 {
 	if (!surface)
 		return E_POINTER;
+
 	m_Device->SetRenderTarget(0, surface);
 	return m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, color, 1.0f, 0L );
 }
@@ -2268,8 +2272,8 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 
 
 	// test
-	RECT rect = {0,0,stereo_test_texture_size, stereo_test_texture_size};
-	hr = m_Device->StretchRect(m_PC_level_test, NULL, surface, &rect, D3DTEXF_LINEAR);
+	//RECT rect = {0,0,stereo_test_texture_size, stereo_test_texture_size};
+	//hr = m_Device->StretchRect(m_PC_level_test, NULL, surface, &rect, D3DTEXF_LINEAR);
 
 	return S_OK;
 }
@@ -3853,7 +3857,6 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 		m_tex_gpu_RGB32->get_first_level(&rt);
 		device->SetRenderTarget(0, rt);
 
-		hr = device->BeginScene();
 		device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
 		device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 		device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
@@ -3888,7 +3891,7 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 			hr = device->SetTexture( 1, m_format == MEDIASUBTYPE_NV12 ? m_tex_gpu_NV12_UV->texture : m_tex_gpu_YV12_UV->texture);
 		hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
 
-		hr = device->EndScene();
+		//hr = device->EndScene();
 	}
 
 
@@ -3915,7 +3918,6 @@ HRESULT gpu_sample::do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShade
 	m_tex_stereo_test->get_first_level(&rt);
 	device->SetRenderTarget(0, rt);
 
-	hr = device->BeginScene();
 	device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
 	device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 	device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
@@ -3935,8 +3937,7 @@ HRESULT gpu_sample::do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShade
 	hr = device->SetPixelShader(shader_tb);
 	hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_tb, 2 );
 
-
-	hr = device->EndScene();
+	//hr = device->EndScene();
 
 	mylog("test:%x:%d\n", this, timeGetTime());
 

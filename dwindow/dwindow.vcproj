@@ -551,7 +551,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AssemblerOutput="2"
+						AssemblerOutput="4"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
