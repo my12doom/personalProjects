@@ -4564,10 +4564,66 @@ HRESULT my12doomRenderer::HD3D_invalidate_objects()
 
 HRESULT my12doomRenderer::HD3DSetStereoFullscreenPresentParameters()
 {
+	D3DDISPLAYMODE current_mode;
+	m_D3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &current_mode);
+
+	// find direct match
+	int res_x = 0;
+	int res_y = 0;
+	int refresh = 0;
+	for(int i=0; i<m_HD3DStereoModesCount; i++)
+	{
+		D3DDISPLAYMODE this_mode = m_HD3DStereoModes[i];
+		if (this_mode.Width == current_mode.Width && this_mode.Height == current_mode.Height)
+		{
+			res_x = this_mode.Width;
+			res_y = this_mode.Height;
+			break;
+		}
+	}
+	// if no match, then we choose highest mode
+	if (res_x == 0 || res_y == 0)
+	{
+		for(int i=0; i<m_HD3DStereoModesCount; i++)
+		{
+			D3DDISPLAYMODE this_mode = m_HD3DStereoModes[i];
+			if (this_mode.Width * this_mode.Height > res_x*res_y)
+			{
+				res_x = this_mode.Width;
+				res_y = this_mode.Height;
+			}
+		}
+
+	}
+
+	// find direct matched refresh rate
+	for(int i=0; i<m_HD3DStereoModesCount; i++)
+	{
+		D3DDISPLAYMODE this_mode = m_HD3DStereoModes[i];
+		if (this_mode.Width == res_x && this_mode.Height == res_y && this_mode.RefreshRate == current_mode.RefreshRate)
+		{
+			refresh = this_mode.RefreshRate;
+			break;
+		}
+	}
+
+
+	// no match ? use highest refresh rate
+	if (refresh == 0)
+	{
+		for(int i=0; i<m_HD3DStereoModesCount; i++)
+		{
+			D3DDISPLAYMODE this_mode = m_HD3DStereoModes[i];
+			if (this_mode.Width == res_x && this_mode.Height == res_y)
+				refresh = max(refresh, this_mode.RefreshRate);
+		}
+	}
+
+
 	m_new_pp.MultiSampleType = D3DMULTISAMPLE_2_SAMPLES;
-	m_new_pp.FullScreen_RefreshRateInHz = 24;
-	m_new_pp.BackBufferWidth = 1920;
-	m_new_pp.BackBufferHeight = 1080;
+	m_new_pp.FullScreen_RefreshRateInHz = refresh;
+	m_new_pp.BackBufferWidth = res_x;
+	m_new_pp.BackBufferHeight = res_y;
 	m_new_pp.BackBufferFormat = D3DFMT_X8R8G8B8;
 
 	return S_OK;

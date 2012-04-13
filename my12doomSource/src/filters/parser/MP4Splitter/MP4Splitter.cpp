@@ -107,6 +107,7 @@ CFilterApp theApp;
 
 CMP4SplitterFilter::CMP4SplitterFilter(LPUNKNOWN pUnk, HRESULT* phr)
 	: CBaseSplitterFilter(NAME("CMP4SplitterFilter"), pUnk, phr, __uuidof(this))
+	, m_3dvfix(false)
 {
 }
 
