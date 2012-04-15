@@ -873,6 +873,7 @@ HRESULT dx_player::popup_menu(HWND owner)
 	// output mode
 	CheckMenuItem(menu, ID_OUTPUTMODE_AMDHD3D,				m_output_mode == hd3d ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_NVIDIA3DVISION,		m_output_mode == NV3D ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_INTEL,				m_output_mode == intel3d ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_MONOSCOPIC2D,			m_output_mode == mono ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_ROWINTERLACE,			m_output_mode == masking && m_mask_mode == row_interlace ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_LINEINTERLACE,		m_output_mode == masking && m_mask_mode == line_interlace? MF_CHECKED:MF_UNCHECKED);
@@ -1396,6 +1397,10 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_OUTPUTMODE_NVIDIA3DVISION)
 	{
 		set_output_mode(NV3D);			
+	}
+	else if (uid == ID_OUTPUTMODE_INTEL)
+	{
+		set_output_mode(intel3d);			
 	}
 	else if (uid == ID_OUTPUTMODE_AMDHD3D)
 	{
@@ -2886,7 +2891,8 @@ HRESULT dx_player::toggle_fullscreen()
 		//show_window(2, m_full2);		// show/hide it again
 	}
 
-	else if (m_output_mode == pageflipping || m_output_mode == NV3D || m_output_mode == hd3d || g_ExclusiveMode)
+	else if (m_output_mode != intel3d &&
+		 (m_output_mode == pageflipping || m_output_mode == NV3D || m_output_mode == hd3d || g_ExclusiveMode))
 	{
 		if (m_renderer1)
 			m_renderer1->set_fullscreen(!m_renderer1->get_fullscreen());

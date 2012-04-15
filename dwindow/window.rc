@@ -249,6 +249,7 @@ BEGIN
                 END
                 MENUITEM "Nvidia 3D Vision",            ID_OUTPUTMODE_NVIDIA3DVISION
                 MENUITEM "AMD HD3D",                    ID_OUTPUTMODE_AMDHD3D
+                MENUITEM "Intel Stereoscopic",          ID_OUTPUTMODE_INTEL
                 MENUITEM "IZ3D Displayer",              ID_OUTPUTMODE_IZ3D
                 MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
                 MENUITEM "Anaglyph",                    ID_OUTPUTMODE_ANAGLYPH

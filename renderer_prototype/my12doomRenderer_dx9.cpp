@@ -1,6 +1,7 @@
 // Direct3D9 part of my12doom renderer
 
 #include "my12doomRenderer.h"
+#include <dxva.h>
 #include "PixelShaders/YV12.h"
 #include "PixelShaders/NV12.h"
 #include "PixelShaders/YUY2.h"
@@ -22,12 +23,16 @@
 #include "..\ZBuffer\stereo_test.h"
 #include "..\dwindow\global_funcs.h"
 
+#pragma comment (lib, "igfx_s3dcontrol.lib")
+#pragma comment (lib, "comsupp.lib")
+#pragma comment (lib, "dxva2.lib")
 
-#include "d3dx9.h"
-
-#define FAIL_RET(x) hr=x; if(FAILED(hr)){return hr;}
-#define FAIL_SLEEP_RET(x) hr=x; if(FAILED(hr)){Sleep(1); return hr;}
+#define FAIL_RET(x) {hr=x; if(FAILED(hr)){return hr;}}
+#define FAIL_FALSE(x) {hr=x; if(FAILED(hr)){return S_FALSE;}}
+#define FAIL_SLEEP_RET(x) {hr=x; if(FAILED(hr)){Sleep(1); return hr;}}
 #define safe_delete(x) if(x){delete x;x=NULL;}
+HRESULT myMatrixOrthoRH(D3DMATRIX *matrix, float w, float h, float zn, float zf);
+HRESULT myMatrixIdentity(D3DMATRIX *matrix);
 
 #ifndef DEBUG
 #define printf
@@ -103,7 +108,9 @@ m_right_queue(_T("right queue"))
 
 	typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)(UINT, IDirect3D9Ex**);
 
-	// D3D && NV3D
+	// D3D && NV3D && intel 3D
+	m_output_mode = mono;
+	m_intel_s3d = NULL;
 	m_HD3DStereoModesCount = m_HD3Dlineoffset = 0;
 	m_render_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_pool = NULL;
@@ -222,7 +229,6 @@ void my12doomRenderer::init_variables()
 	// input / output
 	m_input_layout = input_layout_auto;
 	m_swapeyes = false;
-	m_output_mode = mono;
 	m_mask_mode = row_interlace;
 	m_color1 = D3DCOLOR_XRGB(255, 0, 0);
 	m_color2 = D3DCOLOR_XRGB(0, 255, 255);
@@ -776,6 +782,7 @@ HRESULT my12doomRenderer::fix_nv3d_bug()
 }
 HRESULT my12doomRenderer::delete_render_targets()
 {
+	intel_delete_rendertargets();
 	m_swap1 = NULL;
 	m_swap2 = NULL;
 	m_mask_temp_left = NULL;
@@ -828,6 +835,7 @@ HRESULT my12doomRenderer::create_render_targets()
 	}
 
 
+	FAIL_RET(intel_create_rendertargets());
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_left, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_right, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, NULL, D3DFMT_L8, D3DPOOL_DEFAULT, &m_tex_mask, NULL));
@@ -1097,6 +1105,9 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		}
 		HRESULT hr;
 		CAutoLock lck(&m_frame_lock);
+
+		FAIL_RET(intel_get_caps());
+
 		if (m_D3DEx)
 		{
 			hr = m_D3DEx->CreateDeviceEx( AdapterToUse, DeviceType,
@@ -1114,6 +1125,8 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 		if (FAILED(hr))
 			return hr;
+
+		FAIL_RET(intel_d3d_init());
 
 		m_new_pp = m_active_pp;
 		m_device_state = need_reset_object;
@@ -1806,7 +1819,27 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	hr = m_Device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
 	static NvU32 l_counter = 0;
-	if (m_output_mode == NV3D
+	if (m_output_mode == intel3d)
+	{
+		CComPtr<IDirect3DSurface9> left_surface;
+		hr = m_mask_temp_left->GetSurfaceLevel(0, &left_surface);
+		clear(left_surface);
+		draw_movie(left_surface, true);
+		draw_bmp(left_surface, true);
+		adjust_temp_color(left_surface, true);
+		draw_ui(left_surface);
+
+		CComPtr<IDirect3DSurface9> right_surface;
+		hr = m_mask_temp_right->GetSurfaceLevel(0, &right_surface);
+		clear(right_surface);
+		draw_movie(right_surface, false);
+		draw_bmp(right_surface, false);
+		adjust_temp_color(right_surface, false);
+		draw_ui(right_surface);
+
+		intel_render_frame(left_surface, right_surface);
+	}
+	else if (m_output_mode == NV3D
 #ifdef explicit_nv3d
 		&& m_nv3d_enabled && m_nv3d_actived /*&& !m_active_pp.Windowed*/
 #endif
@@ -2160,7 +2193,15 @@ presant:
 	n = timeGetTime();
 
 
-	if (m_output_mode == pageflipping)
+	if (m_output_mode == intel3d && m_overlay_swap_chain)
+	{
+		RECT rect= {0, 0, min(m_intel_active_3d_mode.ulResWidth,m_active_pp.BackBufferWidth), 
+			min(m_active_pp.BackBufferHeight, m_active_pp.BackBufferHeight)};
+		hr = m_overlay_swap_chain->Present(&rect, &rect, NULL, NULL, D3DPRESENT_UPDATECOLORKEY);
+
+		//mylog("%08x\n", hr);
+	}
+	else if (m_output_mode == pageflipping)
 	{
 		if (m_pageflipping_start == -1 && m_nv3d_display)
 			NvAPI_GetVBlankCounter(m_nv3d_display, &m_nv_pageflip_counter);
@@ -2192,7 +2233,7 @@ presant:
 
 
 
-	if (m_output_mode == dual_window || m_output_mode == iz3d)
+	else if (m_output_mode == dual_window || m_output_mode == iz3d)
 	{
 		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
 		if (FAILED(hr) && hr != DDERR_WASSTILLDRAWING)
@@ -3557,6 +3598,20 @@ HRESULT my12doomRenderer::set_input_layout(int layout)
 
 HRESULT my12doomRenderer::set_output_mode(int mode)
 {
+	if (m_output_mode == mode)
+		return S_OK;
+
+	HRESULT hr;
+
+	if (mode == intel3d && m_intel_caps.ulNumEntries <= 0)
+		return E_FAIL;
+
+	if (m_output_mode != intel3d && mode == intel3d)
+		FAIL_RET(intel_switch_to_3d());
+
+	if (m_output_mode == intel3d && mode != intel3d)
+		FAIL_RET(intel_switch_to_2d());
+
 	m_output_mode = (output_mode_types)(mode % output_mode_types_max);
 
 	m_pageflipping_start = -1;
@@ -3789,6 +3844,192 @@ HRESULT my12doomRenderer::set_parallax(double parallax)
 	return S_OK;
 }
 
+HRESULT my12doomRenderer::intel_get_caps()
+{
+	HRESULT hr;
+	m_intel_s3d = CreateIGFXS3DControl();
+	if (!m_intel_s3d)
+		return E_UNEXPECTED;
+	memset(&m_intel_caps, 0 , sizeof(m_intel_caps));
+	FAIL_FALSE(m_intel_s3d->GetS3DCaps(&m_intel_caps));
+
+	if (m_intel_caps.ulNumEntries <= 0)
+		return S_FALSE;
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::intel_switch_to_2d()
+{
+	if (!m_intel_s3d || m_intel_2d_mode.ulResWidth == 0)
+		return E_UNEXPECTED;
+
+	HRESULT hr ;
+
+	FAIL_RET(m_intel_s3d->SwitchTo2D(&m_intel_2d_mode));
+
+	memset(&m_intel_2d_mode, 0, sizeof(m_intel_2d_mode));
+	memset(&m_intel_active_3d_mode, 0, sizeof(m_intel_active_3d_mode));
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::intel_switch_to_3d()
+{
+	HRESULT hr;
+	if (!m_intel_s3d)
+		return E_UNEXPECTED;
+
+	// save current mode first
+	memset(&m_intel_2d_mode, 0 , sizeof(m_intel_2d_mode));
+	D3DDISPLAYMODE current;
+	FAIL_RET(m_D3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &current));
+	m_intel_2d_mode.ulResWidth = current.Width;
+	m_intel_2d_mode.ulResHeight = current.Height;
+	m_intel_2d_mode.ulRefreshRate = current.RefreshRate;
+
+	hr = intel_get_caps();
+	if (hr != S_OK)
+		return E_FAIL;
+
+	// TODO: select modes
+	memset(&m_intel_active_3d_mode, 0, sizeof(m_intel_active_3d_mode));
+	m_intel_active_3d_mode.ulResWidth = 1280;
+	m_intel_active_3d_mode.ulResHeight = 720;
+	m_intel_active_3d_mode.ulRefreshRate = 60;
+	hr = m_intel_s3d->SwitchTo2D(&m_intel_active_3d_mode);
+	hr = m_intel_s3d->SwitchTo3D(&m_intel_active_3d_mode);
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::intel_d3d_init()
+{
+	HRESULT hr;
+
+	hr = DXVA2CreateDirect3DDeviceManager9(&m_resetToken, &m_d3d_manager);
+	hr = m_d3d_manager->ResetDevice(m_Device, m_resetToken);
+	hr = m_intel_s3d->SetDevice(m_d3d_manager);
+
+	return S_OK;
+}
+HRESULT my12doomRenderer::intel_delete_rendertargets()
+{
+	m_overlay_swap_chain = NULL;
+	m_intel_VP_right = NULL;
+	m_intel_VP_left = NULL;
+
+
+	return S_OK;
+}
+HRESULT my12doomRenderer::intel_create_rendertargets()
+{
+	if (m_output_mode != intel3d)
+		return S_FALSE;
+
+	HRESULT hr;
+
+	// swap chain
+	D3DPRESENT_PARAMETERS pp2 = m_active_pp;
+	pp2.BackBufferWidth = min(pp2.BackBufferWidth, m_intel_active_3d_mode.ulResWidth);
+	pp2.BackBufferHeight = min(pp2.BackBufferHeight, m_intel_active_3d_mode.ulResHeight);
+	pp2.SwapEffect = D3DSWAPEFFECT_OVERLAY;
+	FAIL_RET(m_Device->CreateAdditionalSwapChain(&pp2, &m_overlay_swap_chain));
+
+	// some present parameter
+	DXVA2_VideoDesc g_VideoDesc;
+	memset(&g_VideoDesc, 0, sizeof(g_VideoDesc));
+	DXVA2_ExtendedFormat format =   {           // DestFormat
+		DXVA2_SampleProgressiveFrame,           // SampleFormat
+		DXVA2_VideoChromaSubsampling_MPEG2,     // VideoChromaSubsampling
+		DXVA_NominalRange_0_255,                // NominalRange
+		DXVA2_VideoTransferMatrix_BT709,        // VideoTransferMatrix
+		DXVA2_VideoLighting_bright,             // VideoLighting
+		DXVA2_VideoPrimaries_BT709,             // VideoPrimaries
+		DXVA2_VideoTransFunc_709                // VideoTransferFunction            
+	};
+	DXVA2_AYUVSample16 color = {         
+		0x8000,          // Cr
+		0x8000,          // Cb
+		0x1000,          // Y
+		0xffff           // Alpha
+	};
+
+	// video desc
+	memcpy(&g_VideoDesc.SampleFormat, &format, sizeof(DXVA2_ExtendedFormat));
+	g_VideoDesc.SampleWidth                         = 0;
+	g_VideoDesc.SampleHeight                        = 0;    
+	g_VideoDesc.InputSampleFreq.Numerator           = 60;
+	g_VideoDesc.InputSampleFreq.Denominator         = 1;
+	g_VideoDesc.OutputFrameFreq.Numerator           = 60;
+	g_VideoDesc.OutputFrameFreq.Denominator         = 1;
+
+	// blt param
+	memset(&m_BltParams, 0, sizeof(m_BltParams));
+	m_BltParams.TargetFrame = 0;
+	memcpy(&m_BltParams.DestFormat, &format, sizeof(DXVA2_ExtendedFormat));
+	memcpy(&m_BltParams.BackgroundColor, &color, sizeof(DXVA2_AYUVSample16));  
+
+	// sample
+	m_Sample.Start = 0;
+	m_Sample.End = 1;
+	m_Sample.SampleFormat = format;
+	m_Sample.PlanarAlpha.Fraction = 0;
+	m_Sample.PlanarAlpha.Value = 1;   
+
+
+	// CreateVideoProcessor
+
+	CComPtr<IDirectXVideoProcessorService> g_dxva_service;
+	FAIL_RET(DXVA2CreateVideoService(m_Device, IID_IDirectXVideoProcessorService, (void**)&g_dxva_service));
+	FAIL_RET(m_intel_s3d->SelectLeftView());
+	FAIL_RET( g_dxva_service->CreateVideoProcessor(DXVA2_VideoProcProgressiveDevice,
+		&g_VideoDesc,
+		D3DFMT_X8R8G8B8,
+		1,
+		&m_intel_VP_left));
+
+	FAIL_RET(m_intel_s3d->SelectRightView());
+	FAIL_RET(g_dxva_service->CreateVideoProcessor(DXVA2_VideoProcProgressiveDevice,
+		&g_VideoDesc,
+		D3DFMT_X8R8G8B8,
+		1,
+		&m_intel_VP_right));
+
+	return S_OK;
+}
+HRESULT my12doomRenderer::intel_render_frame(IDirect3DSurface9 *left_surface, IDirect3DSurface9 *right_surface)
+{
+	if (!m_overlay_swap_chain)
+		return E_FAIL;
+
+	CComPtr<IDirect3DSurface9> back_buffer;
+	m_overlay_swap_chain->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer);
+
+	RECT rect = {0,0,min(m_active_pp.BackBufferWidth, m_intel_active_3d_mode.ulResWidth), min(m_active_pp.BackBufferHeight, m_intel_active_3d_mode.ulResHeight)};
+
+	m_BltParams.TargetRect = rect;
+	m_Sample.SrcRect = rect;
+	m_Sample.DstRect = rect;
+	m_Sample.SrcSurface = left_surface;
+
+
+	HRESULT hr;
+	hr = m_intel_VP_left->VideoProcessBlt(back_buffer, &m_BltParams, &m_Sample, 1, NULL);
+	if (FAILED(hr))
+		set_device_state(need_resize_back_buffer);
+
+	m_Sample.SrcSurface = right_surface;
+
+	hr = m_intel_VP_right->VideoProcessBlt(back_buffer, &m_BltParams, &m_Sample, 1, NULL);
+
+	// 	g_pd3dDevice->EndScene();
+	// 	hr = g_overlay_swap_chain->Present(&dest, &dest, NULL, NULL, D3DPRESENT_UPDATECOLORKEY);
+
+
+	return S_OK;
+}
+
+
 gpu_sample::~gpu_sample()
 {
 	safe_delete(m_tex_RGB32);
@@ -3812,7 +4053,7 @@ gpu_sample::~gpu_sample()
 }
 
 CCritSec g_gpu_lock;
-HRESULT gpu_sample::prepare_rendering()
+HRESULT gpu_sample::commit()
 {
 	//LARGE_INTEGER counter1, counter2, fre;
 	//QueryPerformanceCounter(&counter1);
@@ -3865,7 +4106,7 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 	if (m_converted)
 		return S_FALSE;
 
-	HRESULT hr = prepare_rendering();
+	HRESULT hr = commit();
 	if (FAILED(hr))
 		return hr;
 
@@ -4723,12 +4964,14 @@ HRESULT my12doomRenderer::HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirec
 	pd3dDevice->GetRenderState(D3DRS_ZENABLE, &zEnable);
 
 	pd3dDevice->SetFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE);
-	D3DXMATRIX identityMatrix;
-	D3DXMatrixIdentity(&identityMatrix);
+	D3DMATRIX identityMatrix;
+	//D3DXMatrixIdentity
+	myMatrixIdentity(&identityMatrix);
 	pd3dDevice->SetTransform(D3DTS_VIEW, &identityMatrix);
 	pd3dDevice->SetTransform(D3DTS_WORLD, &identityMatrix);
-	D3DXMATRIX orthoMatrix;
-	D3DXMatrixOrthoRH(&orthoMatrix, (float)m_active_pp.BackBufferWidth, (float)m_active_pp.BackBufferHeight, 0.0, 1.0f);
+	D3DMATRIX orthoMatrix;
+	//D3DXMatrixOrthoRH;
+	myMatrixOrthoRH(&orthoMatrix, (float)m_active_pp.BackBufferWidth, (float)m_active_pp.BackBufferHeight, 0.0, 1.0f);
 	pd3dDevice->SetTransform(D3DTS_PROJECTION, &orthoMatrix);
 	pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
 	float pointSize = 1.0f;
@@ -4759,5 +5002,36 @@ HRESULT my12doomRenderer::HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirec
 
 	// restore state
 	pd3dDevice->SetRenderState(D3DRS_ZENABLE, zEnable);
+	return S_OK;
+}
+
+
+HRESULT myMatrixIdentity(D3DMATRIX *matrix)
+{
+	if (!matrix)
+		return E_POINTER;
+
+	memset(matrix, 0 , sizeof(D3DMATRIX));
+	matrix->_11 =
+	matrix->_22 =
+	matrix->_33 =
+	matrix->_44 = 1.0f;
+
+	return S_OK;
+}
+
+HRESULT myMatrixOrthoRH(D3DMATRIX *matrix, float w, float h, float zn, float zf)
+{
+	if (!matrix)
+		return E_POINTER;
+
+
+	memset(matrix, 0 , sizeof(D3DMATRIX));
+	matrix->_11 = 2.0f / w;
+	matrix->_22 = 2.0f / h;
+	matrix->_33 = 1 / (zn-zf);
+	matrix->_43 = zn/ (zn-zf);
+	matrix->_44 = .0f;
+
 	return S_OK;
 }

@@ -183,6 +183,7 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Output Mode",					L"输出模式");
 			add_localization(L"Nvidia 3D Vision",				L"Nvidia 3D Vision");
 			add_localization(L"AMD HD3D",						L"AMD HD3D");
+			add_localization(L"Intel Stereoscopic",			L"Intel 立体显示");
 			add_localization(L"Monoscopic 2D",					L"平面(2D)");
 			add_localization(L"Interlace Mode",					L"交错模式");
 			add_localization(L"Row Interlace",					L"列交错");

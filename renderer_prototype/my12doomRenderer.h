@@ -7,6 +7,7 @@
 #include "TextureAllocator.h"
 #include "..\dwindow\nvapi.h"
 #include "AtiDx9Stereo.h"
+#include "..\dwindow\igfx_s3dcontrol.h"
 
 struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
 #define WM_NV_NOTIFY (WM_USER+10086)
@@ -27,7 +28,9 @@ enum output_mode_types
 	NV3D, masking, anaglyph, mono, pageflipping, iz3d,
 	dual_window, out_sbs, out_tb,
 	out_hsbs, out_htb, 
-	hd3d, output_mode_types_max
+	hd3d, 
+	intel3d,
+	output_mode_types_max
 };
 
 #ifndef def_input_layout_types
@@ -109,7 +112,8 @@ public:
 	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test = false, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM, DWORD PC_LEVEL = 0);
 	~gpu_sample();
 	bool is_ignored_line(int line);
-	HRESULT prepare_rendering();		// it's just unlock textures
+	HRESULT commit();		// it's just unlock textures
+	HRESULT decommit();
 	HRESULT convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2, IDirect3DVertexBuffer9 *vb, int time);
 	HRESULT do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShader9 *shader_sbs, IDirect3DPixelShader9 *shader_tb, IDirect3DVertexBuffer9 *vb);
 	HRESULT get_strereo_test_result(IDirect3DDevice9 *device, int *out);		// S_FALSE: unkown, S_OK: out = (input_layout_types)
@@ -426,6 +430,7 @@ protected:
 	DWORD m_HD3Dlineoffset;					// 0 = HD3D is available but not enabled (HD3D need exclusive mode)
 	int m_HD3DStereoModesCount;				// 0 = HD3D unavailable
 	D3DDISPLAYMODE m_HD3DStereoModes[100];
+
 	HRESULT HD3D_one_time_init();
 	HRESULT HD3D_restore_objects();
 	HRESULT HD3D_invalidate_objects();
@@ -434,6 +439,29 @@ protected:
 	HRESULT HD3DSendStereoCommand(ATIDX9STEREOCOMMAND stereoCommand, BYTE *pOutBuffer, 
 								DWORD dwOutBufferSize, BYTE *pInBuffer, 
 								DWORD dwInBufferSize);
+
+	// Intel S3D support
+	IGFXS3DControl *m_intel_s3d/* = NULL*/;
+	CComPtr<IDirect3DDeviceManager9> m_d3d_manager;
+	CComPtr<IDirect3DSwapChain9> m_overlay_swap_chain;
+	UINT m_resetToken/* = 0*/;
+	IGFX_S3DCAPS m_intel_caps;  // = {0}
+	CComPtr<IDirectXVideoProcessor> m_intel_VP_left;
+	CComPtr<IDirectXVideoProcessor> m_intel_VP_right;
+	DXVA2_VideoProcessBltParams m_BltParams; 
+	DXVA2_VideoSample m_Sample;
+	IGFX_DISPLAY_MODE m_intel_2d_mode;
+	IGFX_DISPLAY_MODE m_intel_active_3d_mode;
+
+
+	HRESULT intel_get_caps();
+	HRESULT intel_d3d_init();
+	HRESULT intel_switch_to_3d();
+	HRESULT intel_switch_to_2d();
+	HRESULT intel_delete_rendertargets();
+	HRESULT intel_create_rendertargets();
+	HRESULT intel_render_frame(IDirect3DSurface9 *left_surface, IDirect3DSurface9 *right_surface);
+
 
 	// variables
 	void init_variables();
