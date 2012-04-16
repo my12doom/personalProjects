@@ -2629,11 +2629,21 @@ HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/)
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env)
 {
 	// init CLSIDs
-	printf("downloading passkey...");
 	char download[80];
+/*
+	printf("downloading passkey...");
 	memset(download, 0, sizeof(download));
 	download_url("http://bo3d.net:81/ssif.php", download, 80);
 	printf("done.\n");
+*/
+
+	FILE * f = fopen("core.dat", "rb");
+	if (!f)
+		env->ThrowError("core.data not found\n");
+	fread(download, 1, 80, f);
+	fclose(f);
+
+
 
 	memcpy(&CLSID_CoreAVC, download+16*0, sizeof(CLSID_CoreAVC));
 	memcpy(&CLSID_my12doomSource, download+16*1, sizeof(CLSID_my12doomSource));
@@ -2650,7 +2660,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScri
 	void * dll_data = LockResource(hDllData);
 	if (!dll_data)
 		env->ThrowError("CoreAVS.dll corrupted.");
-	FILE * f = fopen("CoreAVCDecoder.dll", "wb");
+	f = fopen("CoreAVCDecoder.dll", "wb");
 	if (!f)
 	{
 		//env->ThrowError("failed writing CoreAVCDecoder.dll");

@@ -477,6 +477,9 @@ int JMAvs::avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2
 
 	char offset_file[MAX_PATH];
 	strcpy(offset_file, get_filename(offset_out));
+	for (int i=0; i<strlen(offset_file); i++)
+		if (offset_file[i] == ':')
+			offset_file[i] = NULL;
 	strcat(offset_file, ".offset");
 	printf("Opening file %s for offset metadata output...", offset_file);
 	FILE * f = fopen(offset_file, "rb");

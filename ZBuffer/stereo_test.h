@@ -96,7 +96,7 @@ HRESULT get_layout(void *src, int width, int height, int *out, int stride = -1)
 
 // 	printf("sbs:%f - %f - %f\r\n", d_avg1, d_var1, cal1);
 // 	printf("tb: %f - %f - %f\r\n", d_avg2, d_var2, cal2);
-// 	printf("times: %f.\r\n", times);
+ 	printf("times: %f.\r\n", times);
 
 
 	if (times > 31.62/2)		// 10^1.5

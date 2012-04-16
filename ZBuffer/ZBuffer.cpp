@@ -86,20 +86,18 @@ int get_delta(int x, int y, int delta)
 	int t2 = get_pixel(x, y, false);
 	int t = get_pixel(x+delta, y, true);
 
-	return clamp(t-t2);
+	return clamp(abs(t-t2));
 }
 
 double get_delta2(int x, int y, int delta, int range)
 {
 	double t = 0;
 	for(int xx= -range; xx<=range; xx++)
-		for(int yy = -range; yy<=range; yy++)
-		{
-			t+= get_delta(x+xx, y+yy, delta);
-		}
+		t+= get_delta(x+xx, y, delta);
 
-	return t/(range*range);
+	return t;
 }
+
 
 typedef struct struct_thread_parameter
 {
@@ -112,19 +110,18 @@ DWORD WINAPI core_thread(LPVOID parameter)
 {
 	thread_parameter *para = (thread_parameter*)parameter;
 	DWORD *out = para->out;
-	const int range = 40;
+	const int range = 160;
 
 	for(int y=para->left; y<para->right; y++)
 	{
 		printf("\r%d/1080", y-para->left);
 		for(int x=0; x<1920; x++)
 		{
-			double min_delta = 255;
+			double min_delta = 99999999;
 			for(int i=-range; i<=range; i++)
 			{
-				double t = get_delta(x, y, i);
-				if (x==962 && y==540)
-					printf("%02f\n", t);
+				double t = get_delta2(x, y, i, 16);
+				//if (x == 540) printf("%.1f, ", (float)t);
 				if (t<min_delta)
 				{
 					min_delta = t;
@@ -132,6 +129,7 @@ DWORD WINAPI core_thread(LPVOID parameter)
 					out[(1080-1-y)*1920+x] = RGB(c, c, c);
 				}
 			}
+			//if (x==540)printf("%d\n", y);
 		}
 	}
 
@@ -253,15 +251,16 @@ int PC3DV()
 
 int main()
 {
-	return PC3DV();
-	return CV();
+	//return PC3DV();
+	//return CV();
+	const int range = 40;
 
 	timeBeginPeriod(1);
 
 	HANDLE h_parent_process = GetCurrentProcess();
 	SetPriorityClass(h_parent_process, IDLE_PRIORITY_CLASS);			//host idle priority
 
-	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\00013sbs.bmp", IMAGE_BITMAP, 3840, 1080, LR_LOADFROMFILE);
+	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\test.bmp", IMAGE_BITMAP, 3840, 1080, LR_LOADFROMFILE);
 	GetBitmapBits(bm, 3840*1080*4, resource);
 	DeleteObject(bm);
 
@@ -273,18 +272,24 @@ int main()
 
 	int tick = timeGetTime();
 
-	for(int j=0; j<100; j++)
+	int layout = 0;
+	for(int j=0; j<1; j++)
 	{
-		int layout = 0;
 		get_layout<DWORD>(resource, 3840, 1080, &layout);
-
 	}
+
+	if (layout == side_by_side)
+		printf("sbs.");
+	else if (layout == top_bottom)
+		printf("tb.");
+	else
+		printf("unkown");
 
 	printf("test time:%dms.\n", timeGetTime()-tick);
 
 
+	DWORD *out[range*2+1] = {new DWORD[1920*1080]};
 	/*
-	DWORD *out[range*2+1];
 	for(int i=-range; i<=range; i++)
 	{
 		DWORD*& o = out[i+range];
@@ -329,10 +334,10 @@ int main()
 	}
 	*/
 
-	/*
-	HANDLE handles[4];
-	thread_parameter parameters[4];
-	for(int i=0; i<4; i++)
+	const int thread_count = 4;
+	HANDLE handles[thread_count];
+	thread_parameter parameters[thread_count];
+	for(int i=0; i<thread_count; i++)
 	{
 		thread_parameter &para = parameters[i];
 		para.left = i*270;
@@ -342,13 +347,12 @@ int main()
 		handles[i] = CreateThread(NULL, NULL, core_thread, &para, NULL, NULL);
 	}
 
-	for(int i=0; i<4; i++)
+	for(int i=0; i<thread_count; i++)
 	{
 		WaitForSingleObject(handles[i], INFINITE);
 	}
 
 	save_bitmap(out[0], L"Z:\\zbuffer.bmp", 1920, 1080);
-	*/
 
 	return 0;
 }
