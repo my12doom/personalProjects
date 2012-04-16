@@ -119,6 +119,7 @@ inline bool compare_rect(const RECT in1, const RECT in2)
 // constructor & destructor
 LOGFONTW empty_logfontw = {0};
 dx_player::dx_player(HINSTANCE hExe):
+m_log(NULL),
 m_renderer1(NULL),
 dwindow(m_screen1, m_screen2),
 m_lFontPointSize(L"FontSize", 40),
@@ -244,6 +245,7 @@ HRESULT dx_player::detect_monitors()
 		!saved_screen1_exist || !saved_screen2_exist)
 	{
 		// reset position if monitor changed.
+		log_line(L"monitor changed, resetting.\n");
 		if (g_logic_monitor_count == 1)
 			m_screen1 = m_screen2 = g_logic_monitor_rects[0];
 		else if (g_logic_monitor_count == 2)
@@ -285,6 +287,8 @@ HRESULT dx_player::init_window_size_positions()
 			width1*(1-ratio*2) + dcx, height1*(1-ratio*2) + dcy, SWP_NOZORDER);
 		SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + width2*ratio, m_screen2.top + height2*ratio,
 			width2*(1-ratio*2) + dcx, height2*(1-ratio*2) + dcy, SWP_NOZORDER);
+
+		log_line(L"reset position:%dx%d\n", width1, height1);
 	}
 	else
 	{
@@ -295,6 +299,8 @@ HRESULT dx_player::init_window_size_positions()
 			r1.right - r1.left, r1.bottom - r1.top, SWP_NOZORDER);
 		SetWindowPos(id_to_hwnd(2), NULL, r2.left, r2.top,
 			r2.right - r2.left, r2.bottom - r2.top, SWP_NOZORDER);
+
+		log_line(L"use position:%dx%d\n", width1, height1);
 
 	}
 
@@ -595,6 +601,12 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 
 LRESULT dx_player::on_display_change()
 {
+	OutputDebugStringA("DISPLAY CHANGE!\n");
+	init_done_flag = 0;
+	detect_monitors();
+	init_window_size_positions();
+	init_done_flag = 0x12345678;
+
 	return S_OK;
 }
 
@@ -1400,7 +1412,31 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uid == ID_OUTPUTMODE_INTEL)
 	{
-		set_output_mode(intel3d);			
+		HRESULT hr = set_output_mode(intel3d);
+		if (hr == E_RESOLUTION_MISSMATCH)
+		{
+			IGFX_S3DCAPS caps;
+			m_renderer1->intel_get_caps(&caps);
+
+			wchar_t msg[1024];
+			wchar_t tmp[1024];
+			wcscpy(msg, C(L"Plase switch to one of device supported 3D reslutions first:\n\n"));
+			for(int i=0; i<caps.ulNumEntries; i++)
+			{
+				wsprintfW(tmp, L"%dx%d @ %dHz\n", caps.S3DSupportedModes[i].ulResWidth,
+							caps.S3DSupportedModes[i].ulResHeight,
+							caps.S3DSupportedModes[i].ulRefreshRate);
+				wcscat(msg, tmp);
+			}
+
+			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1),
+						msg, C(L"Error"), MB_ICONINFORMATION);
+		}
+		else if (hr == E_NOINTERFACE)
+		{
+			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1),
+				C(L"No supported device found."), C(L"Error"), MB_ICONERROR);
+		}
 	}
 	else if (uid == ID_OUTPUTMODE_AMDHD3D)
 	{
@@ -2784,6 +2820,8 @@ HRESULT dx_player::set_subtitle_pos(double center_x, double bottom_y)
 HRESULT dx_player::log_line(wchar_t *format, ...)
 {
 #ifdef DEBUG
+	if (!m_log)
+		return E_POINTER;
 	wcscat(m_log, L"\r\n");
 
 	wchar_t tmp[10240];
@@ -2870,13 +2908,21 @@ HRESULT dx_player::set_output_mode(int mode)
 		toggle_fullscreen();
 	}
 
-	m_output_mode = mode;
-	m_renderer1->set_output_mode(mode);
+	HRESULT hr = m_renderer1->set_output_mode(mode);
+	if (FAILED(hr))
+	{
+		OutputDebugStringA("set_output_mode() fail\n");
+
+	}	
+	else
+	{
+		m_output_mode = mode;
+	}
 
 	if (toggle)
 		toggle_fullscreen();
 
-	return S_OK;
+	return hr;
 }
 
 HRESULT dx_player::toggle_fullscreen()

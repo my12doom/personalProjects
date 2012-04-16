@@ -9,6 +9,8 @@
 #include "AtiDx9Stereo.h"
 #include "..\dwindow\igfx_s3dcontrol.h"
 
+const HRESULT E_RESOLUTION_MISSMATCH = 0x81000001;
+
 struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
 #define WM_NV_NOTIFY (WM_USER+10086)
 #define PCLEVELTEST_TESTED 1
@@ -325,6 +327,7 @@ public:
 	double get_parallax(){return m_parallax;}
 	bool get_2dto3d(){return m_convert3d;}
 	aspect_mode_types get_aspect_mode(){return m_aspect_mode;}
+	HRESULT intel_get_caps(IGFX_S3DCAPS *caps);
 
 protected:
 

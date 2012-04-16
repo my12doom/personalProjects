@@ -977,6 +977,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			m_device_state = device_lost;
 			return hr;
 		}
+		m_d3d_manager->ResetDevice(m_Device, m_resetToken);
 		m_active_pp = m_new_pp;
 		mylog("Device->Reset: %dms.\n", timeGetTime() - l);
 		FAIL_SLEEP_RET(restore_gpu_objects());
@@ -1004,6 +1005,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 				return hr;
 			}
 			m_active_pp = m_new_pp;
+			m_d3d_manager->ResetDevice(m_Device, m_resetToken);
 			FAIL_SLEEP_RET(restore_gpu_objects());
 			
 			m_device_state = fine;
@@ -3604,7 +3606,7 @@ HRESULT my12doomRenderer::set_output_mode(int mode)
 	HRESULT hr;
 
 	if (mode == intel3d && m_intel_caps.ulNumEntries <= 0)
-		return E_FAIL;
+		return E_NOINTERFACE;
 
 	if (m_output_mode != intel3d && mode == intel3d)
 		FAIL_RET(intel_switch_to_3d());
@@ -3858,6 +3860,18 @@ HRESULT my12doomRenderer::intel_get_caps()
 	return S_OK;
 }
 
+HRESULT my12doomRenderer::intel_get_caps(IGFX_S3DCAPS *caps)
+{
+	if (!caps)
+		return E_POINTER;
+
+	HRESULT hr;
+	FAIL_RET(intel_get_caps());
+
+	memcpy(caps, &m_intel_caps, sizeof(IGFX_S3DCAPS));
+	return hr;
+}
+
 HRESULT my12doomRenderer::intel_switch_to_2d()
 {
 	if (!m_intel_s3d || m_intel_2d_mode.ulResWidth == 0)
@@ -3893,9 +3907,37 @@ HRESULT my12doomRenderer::intel_switch_to_3d()
 
 	// TODO: select modes
 	memset(&m_intel_active_3d_mode, 0, sizeof(m_intel_active_3d_mode));
-	m_intel_active_3d_mode.ulResWidth = 1280;
-	m_intel_active_3d_mode.ulResHeight = 720;
-	m_intel_active_3d_mode.ulRefreshRate = 60;
+
+	// resolution match
+	for(int i=0; i<m_intel_caps.ulNumEntries; i++)
+	{
+		if (m_intel_caps.S3DSupportedModes[i].ulResWidth == current.Width && 
+			m_intel_caps.S3DSupportedModes[i].ulResHeight == current.Height)
+		{
+			m_intel_active_3d_mode.ulResWidth = current.Width;
+			m_intel_active_3d_mode.ulResHeight = current.Height;
+			break;
+		}
+	}
+
+	// return on match fail
+	if (m_intel_active_3d_mode.ulResWidth == 0)
+		return E_RESOLUTION_MISSMATCH;
+
+	// select max refresh rate
+	for(int i=0; i<m_intel_caps.ulNumEntries; i++)
+	{
+		if (m_intel_caps.S3DSupportedModes[i].ulResWidth == current.Width && 
+			m_intel_caps.S3DSupportedModes[i].ulResHeight == current.Height)
+		{
+			m_intel_active_3d_mode.ulRefreshRate = max(m_intel_active_3d_mode.ulRefreshRate, m_intel_caps.S3DSupportedModes[i].ulRefreshRate);
+		}
+	}
+
+	// return on match fail
+	if (m_intel_active_3d_mode.ulRefreshRate == 0)
+		return E_RESOLUTION_MISSMATCH;
+
 	hr = m_intel_s3d->SwitchTo2D(&m_intel_active_3d_mode);
 	hr = m_intel_s3d->SwitchTo3D(&m_intel_active_3d_mode);
 
@@ -3908,7 +3950,6 @@ HRESULT my12doomRenderer::intel_d3d_init()
 
 	hr = DXVA2CreateDirect3DDeviceManager9(&m_resetToken, &m_d3d_manager);
 	hr = m_d3d_manager->ResetDevice(m_Device, m_resetToken);
-	hr = m_intel_s3d->SetDevice(m_d3d_manager);
 
 	return S_OK;
 }
@@ -3917,7 +3958,6 @@ HRESULT my12doomRenderer::intel_delete_rendertargets()
 	m_overlay_swap_chain = NULL;
 	m_intel_VP_right = NULL;
 	m_intel_VP_left = NULL;
-
 
 	return S_OK;
 }
@@ -3932,7 +3972,10 @@ HRESULT my12doomRenderer::intel_create_rendertargets()
 	D3DPRESENT_PARAMETERS pp2 = m_active_pp;
 	pp2.BackBufferWidth = min(pp2.BackBufferWidth, m_intel_active_3d_mode.ulResWidth);
 	pp2.BackBufferHeight = min(pp2.BackBufferHeight, m_intel_active_3d_mode.ulResHeight);
+	//pp2.BackBufferWidth = m_intel_active_3d_mode.ulResWidth;
+	//pp2.BackBufferHeight = m_intel_active_3d_mode.ulResHeight;
 	pp2.SwapEffect = D3DSWAPEFFECT_OVERLAY;
+	pp2.MultiSampleType = D3DMULTISAMPLE_NONE;
 	FAIL_RET(m_Device->CreateAdditionalSwapChain(&pp2, &m_overlay_swap_chain));
 
 	// some present parameter
@@ -3981,6 +4024,7 @@ HRESULT my12doomRenderer::intel_create_rendertargets()
 
 	CComPtr<IDirectXVideoProcessorService> g_dxva_service;
 	FAIL_RET(DXVA2CreateVideoService(m_Device, IID_IDirectXVideoProcessorService, (void**)&g_dxva_service));
+	FAIL_RET(m_intel_s3d->SetDevice(m_d3d_manager));
 	FAIL_RET(m_intel_s3d->SelectLeftView());
 	FAIL_RET( g_dxva_service->CreateVideoProcessor(DXVA2_VideoProcProgressiveDevice,
 		&g_VideoDesc,

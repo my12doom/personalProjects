@@ -151,6 +151,12 @@ HRESULT set_localization_language(localization_language language)
 		break;
 	case CHINESE:
 		{
+
+			// intel S3D
+			add_localization(L"Plase switch to one of device supported 3D reslutions first:\n\n",
+							 L"请先切换到设备支持的3D分辨率：\n\n");
+			add_localization(L"No supported device found.",			L"未找到支持的设备");
+
 			add_localization(L"Monitor",				L"显示器");
 			add_localization(L"Open File...",			L"打开文件...");
 			add_localization(L"Open BluRay3D",			L"打开蓝光3D原盘");
