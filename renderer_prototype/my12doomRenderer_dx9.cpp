@@ -115,6 +115,7 @@ m_right_queue(_T("right queue"))
 	m_render_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_pool = NULL;
 	m_last_rendered_sample1 = m_last_rendered_sample2 = m_sample2render_1 = m_sample2render_2 = NULL;
+	m_enter_counter = 0;
 	HMODULE h = LoadLibrary( L"d3d9.dll" );
 	if ( h )
 	{
@@ -866,6 +867,13 @@ HRESULT my12doomRenderer::create_render_targets()
 
 HRESULT my12doomRenderer::handle_device_state()							//handle device create/recreate/lost/reset
 {
+	if (m_device_state < need_reset)
+	{
+		HRESULT hr = m_Device->TestCooperativeLevel();
+		if (FAILED(hr))
+			set_device_state(device_lost);
+	}
+
 	if (!m_recreating_dshow_renderer && GetCurrentThreadId() == m_render_thread_id)
 	{
 		D3DSURFACE_DESC desc;
@@ -895,6 +903,10 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			return E_FAIL;
 	}
 
+	anti_reenter anti(&m_anti_reenter, &m_enter_counter);
+	if (anti.error)
+		return S_OK;
+
 	HRESULT hr;
 	if (m_device_state != fine)
 	{
@@ -909,13 +921,13 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			"create_failed",					// 
 			"device_state_max",				// not used
 		};
-		printf("handling device state(%s)\n", states[m_device_state]);
+		mylog("handling device state(%s)\n", states[m_device_state]);
 	}
 
 	if (m_device_state == fine)
 		return S_OK;
 
-	else if (m_device_state == create_failed)
+	if (m_device_state == create_failed)
 		return E_FAIL;
 
 	else if (m_device_state == need_resize_back_buffer)
@@ -929,8 +941,16 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		*/
 
 		CAutoLock lck(&m_frame_lock);
-		FAIL_RET(delete_render_targets());
-		FAIL_RET(create_render_targets());
+		if (FAILED(hr=(delete_render_targets())))
+		{
+			m_device_state = device_lost;
+			return hr;
+		}
+		if (FAILED(hr=(create_render_targets())))
+		{
+			m_device_state = device_lost;
+			return hr;
+		}
 		m_vertex_changed = true;
 		m_device_state = fine;
 
@@ -957,8 +977,16 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 	{
 		terminate_render_thread();
 		CAutoLock lck(&m_frame_lock);
-		FAIL_SLEEP_RET(invalidate_gpu_objects());
-		FAIL_SLEEP_RET(restore_gpu_objects());
+		if (FAILED(hr=(invalidate_gpu_objects())))
+		{
+			m_device_state = device_lost;
+			return hr;
+		}
+		if (FAILED(hr=(restore_gpu_objects())))
+		{
+			m_device_state = device_lost;
+			return hr;
+		}
 		m_device_state = fine;
 	}
 
@@ -980,7 +1008,11 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		m_d3d_manager->ResetDevice(m_Device, m_resetToken);
 		m_active_pp = m_new_pp;
 		mylog("Device->Reset: %dms.\n", timeGetTime() - l);
-		FAIL_SLEEP_RET(restore_gpu_objects());
+		if (FAILED(hr=(restore_gpu_objects())))
+		{
+			m_device_state = device_lost;
+			return hr;
+		}
 		mylog("restore objects: %dms.\n", timeGetTime() - l);
 		m_device_state = fine;
 
@@ -1316,7 +1348,10 @@ HRESULT mark_level_result(IDirect3DSurface9 *result, DWORD *out, DWORD flag)
 
 HRESULT my12doomRenderer::test_PC_level()
 {
+	return S_OK;
 	HRESULT hr;
+
+	CAutoLock lck(&m_frame_lock);
 
 	// YV12
 	m_PC_level_test = NULL;
@@ -3614,6 +3649,9 @@ HRESULT my12doomRenderer::set_output_mode(int mode)
 	if (m_output_mode == intel3d && mode != intel3d)
 		FAIL_RET(intel_switch_to_2d());
 
+	if (mode == hd3d)
+		FAIL_RET(HD3DMatchResolution());
+
 	m_output_mode = (output_mode_types)(mode % output_mode_types_max);
 
 	m_pageflipping_start = -1;
@@ -4914,6 +4952,43 @@ HRESULT my12doomRenderer::HD3DSetStereoFullscreenPresentParameters()
 	return S_OK;
 }
 
+
+HRESULT my12doomRenderer::HD3DMatchResolution()
+{
+	D3DDISPLAYMODE current_mode;
+	m_D3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &current_mode);
+
+	if (m_HD3DStereoModesCount <= 0)
+		return E_NOINTERFACE;
+
+	for(int i=0; i<m_HD3DStereoModesCount; i++)
+	{
+		D3DDISPLAYMODE this_mode = m_HD3DStereoModes[i];
+		if (this_mode.Width == current_mode.Width && this_mode.Height == current_mode.Height)
+			return S_OK;
+	}
+
+	return E_RESOLUTION_MISSMATCH;
+}
+
+HRESULT my12doomRenderer::HD3DGetAvailable3DModes(D3DDISPLAYMODE *modes, int *count)
+{
+	if (NULL == count)
+		return E_POINTER;
+
+	if( m_HD3DStereoModesCount <= 0 )
+	{
+		*count = 0;
+		return S_OK;
+	}
+
+	for(int i=0; i<m_HD3DStereoModesCount && i<*count; i++)
+		modes[i] = m_HD3DStereoModes[i];
+
+	*count = m_HD3DStereoModesCount;
+	return S_OK;
+}
+
 HRESULT my12doomRenderer::HD3DSendStereoCommand(ATIDX9STEREOCOMMAND stereoCommand, BYTE *pOutBuffer, 
 							 DWORD dwOutBufferSize, BYTE *pInBuffer, 
 							 DWORD dwInBufferSize)
@@ -4955,7 +5030,7 @@ HRESULT my12doomRenderer::HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirec
 	m_Device->SetRenderTarget(0, back_buffer);
 
 	// draw left
-	HRESULT hr = m_Device->StretchRect(right_surface, NULL, back_buffer, NULL, D3DTEXF_LINEAR);
+	HRESULT hr = m_Device->StretchRect(left_surface, NULL, back_buffer, NULL, D3DTEXF_LINEAR);
 
 	// update the quad buffer with the right render target
 	D3DVIEWPORT9 viewPort;
@@ -4973,7 +5048,7 @@ HRESULT my12doomRenderer::HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirec
 	// set the right quad buffer as the destination for StretchRect
 	DWORD dwEye = ATI_STEREO_RIGHTEYE;
 	HD3DSendStereoCommand(ATI_STEREO_SETDSTEYE, NULL, 0, (BYTE *)&dwEye, sizeof(dwEye));
-	m_Device->StretchRect(left_surface, NULL, back_buffer, NULL, D3DTEXF_LINEAR);
+	m_Device->StretchRect(right_surface, NULL, back_buffer, NULL, D3DTEXF_LINEAR);
 
 	// restore the destination
 	dwEye = ATI_STEREO_LEFTEYE;

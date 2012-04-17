@@ -388,6 +388,35 @@ protected:
 		device_state_max,				// not used
 	} m_device_state;					// need_create
 
+	CCritSec m_anti_reenter;
+	int m_enter_counter;// = 0
+
+	class anti_reenter
+	{
+	public:
+		bool error;
+		int *m_counter;
+		CCritSec *m_sec;
+		anti_reenter(CCritSec *sec, int *counter)
+		{
+			CAutoLock lck(sec);
+			if (*counter>0)
+				error = true;
+			else
+				error = false;
+
+			m_sec = sec;
+			m_counter = counter;
+			(*counter) ++;
+		}
+		~anti_reenter()
+		{
+			CAutoLock lck(m_sec);
+			
+			(*m_counter) --;
+		}
+	};
+
 	HRESULT create_render_targets();
 	HRESULT delete_render_targets();
 	HRESULT fix_nv3d_bug();				// do this after every CreateRenderTarget
@@ -438,6 +467,8 @@ protected:
 	HRESULT HD3D_restore_objects();
 	HRESULT HD3D_invalidate_objects();
 	HRESULT HD3DSetStereoFullscreenPresentParameters();
+	HRESULT HD3DMatchResolution();
+	HRESULT HD3DGetAvailable3DModes(D3DDISPLAYMODE *modes, IN OUT int *count);			// count: caller:buffer count, return:modes count
 	HRESULT HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirect3DSurface9 *right_surface, IDirect3DSurface9 *back_buffer);
 	HRESULT HD3DSendStereoCommand(ATIDX9STEREOCOMMAND stereoCommand, BYTE *pOutBuffer, 
 								DWORD dwOutBufferSize, BYTE *pInBuffer, 

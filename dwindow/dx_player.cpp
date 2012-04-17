@@ -1440,8 +1440,32 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uid == ID_OUTPUTMODE_AMDHD3D)
 	{
-		set_output_mode(hd3d);
-	}
+		HRESULT hr = set_output_mode(hd3d);
+		if (hr == E_RESOLUTION_MISSMATCH)
+		{
+			D3DDISPLAYMODE modes[100];
+			int count = 100;
+			m_renderer1->HD3DGetAvailable3DModes(modes, &count);
+
+			wchar_t msg[1024];
+			wchar_t tmp[1024];
+			wcscpy(msg, C(L"Plase switch to one of device supported 3D reslutions first:\n\n"));
+			for(int i=0; i<count; i++)
+			{
+				wsprintfW(tmp, L"%dx%d @ %dHz\n", modes[i].Width,
+					modes[i].Height,
+					modes[i].RefreshRate);
+				wcscat(msg, tmp);
+			}
+
+			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1),
+				msg, C(L"Error"), MB_ICONINFORMATION);
+		}
+		else if (hr == E_NOINTERFACE)
+		{
+			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1),
+				C(L"No supported device found."), C(L"Error"), MB_ICONERROR);
+		}	}
 	else if (uid == ID_OUTPUTMODE_MONOSCOPIC2D)
 	{
 		set_output_mode(mono);			
