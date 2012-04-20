@@ -554,6 +554,8 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_bmp_lanczos;
 	CComPtr <IDirect3DPixelShader9> m_ps_bmp_blur;
 
+
+
 	my12doom_auto_shader m_red_blue;
 
 	/*

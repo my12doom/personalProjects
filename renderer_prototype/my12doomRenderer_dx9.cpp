@@ -2238,12 +2238,6 @@ presant:
 
 		//mylog("%08x\n", hr);
 	}
-	else if (m_output_mode == pageflipping)
-	{
-		if (m_pageflipping_start == -1 && m_nv3d_display)
-			NvAPI_GetVBlankCounter(m_nv3d_display, &m_nv_pageflip_counter);
-		m_pageflipping_start = timeGetTime();
-	}
 
 
 // 	UINT64 timing=0;
@@ -2282,6 +2276,13 @@ presant:
 
 	else
 	{
+		if (m_output_mode == pageflipping)
+		{
+			if (m_pageflipping_start == -1 && m_nv3d_display)
+				NvAPI_GetVBlankCounter(m_nv3d_display, &m_nv_pageflip_counter);
+			m_pageflipping_start = timeGetTime();
+		}
+
 		int l2 = timeGetTime();
 		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, NULL);
 		if (timeGetTime()-l2 > 9) printf("Presant() cost %dms.\n", timeGetTime() - l2);
@@ -3970,6 +3971,12 @@ HRESULT my12doomRenderer::intel_switch_to_3d()
 		{
 			m_intel_active_3d_mode.ulRefreshRate = max(m_intel_active_3d_mode.ulRefreshRate, m_intel_caps.S3DSupportedModes[i].ulRefreshRate);
 		}
+
+		if (m_intel_caps.S3DSupportedModes[i].ulRefreshRate == current.RefreshRate)
+		{
+			m_intel_active_3d_mode.ulRefreshRate = current.RefreshRate;
+			break;
+		}
 	}
 
 	// return on match fail
@@ -3977,6 +3984,7 @@ HRESULT my12doomRenderer::intel_switch_to_3d()
 		return E_RESOLUTION_MISSMATCH;
 
 	hr = m_intel_s3d->SwitchTo2D(&m_intel_active_3d_mode);
+	//m_intel_active_3d_mode.ulRefreshRate = 24;
 	hr = m_intel_s3d->SwitchTo3D(&m_intel_active_3d_mode);
 
 	return S_OK;
