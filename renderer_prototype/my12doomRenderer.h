@@ -503,7 +503,9 @@ protected:
 	bool m_nv3d_actived;
 	bool m_nv3d_windowed;			// false if driver does not support windowed 3d vision
 	NvDisplayHandle m_nv3d_display;
+	NV_DISPLAY_DRIVER_VERSION m_nv_version;
 	DWORD m_nv_pageflip_counter;
+	StereoHandle m_nv3d_handle;
 	int m_pageflip_frames;
 
 	MyVertex m_vertices[vertex_total];

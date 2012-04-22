@@ -109,6 +109,34 @@ m_right_queue(_T("right queue"))
 	typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)(UINT, IDirect3D9Ex**);
 
 	// D3D && NV3D && intel 3D
+	m_nv3d_enabled = false;
+	m_nv3d_actived = false;
+	m_nv3d_display = NULL;
+	m_nv3d_display = 0;
+	NvAPI_Status res = NvAPI_Initialize();
+	if (NVAPI_OK == res)
+	{
+		NvU8 enabled3d;
+		res = NvAPI_Stereo_IsEnabled(&enabled3d);
+		if (res == NVAPI_OK)
+		{
+			printf("NV3D enabled.\n");
+			m_nv3d_enabled = (bool)enabled3d;
+		}
+
+		NvAPI_Stereo_SetDriverMode(NVAPI_STEREO_DRIVER_MODE_DIRECT);
+
+		res = NvAPI_EnumNvidiaDisplayHandle(0, &m_nv3d_display);
+
+		m_nv_version.version = NV_DISPLAY_DRIVER_VERSION_VER;
+		res = NvAPI_GetDisplayDriverVersion(m_nv3d_display, &m_nv_version);
+
+		if (res == NVAPI_OK && m_nv_version.drvVersion >= 27051)		// only 270.51+ supports windowed 3d vision
+			m_nv3d_windowed = true;
+		else
+			m_nv3d_windowed = false;
+	}
+	m_nv3d_handle = NULL;
 	m_output_mode = mono;
 	m_intel_s3d = NULL;
 	m_HD3DStereoModesCount = m_HD3Dlineoffset = 0;
@@ -136,31 +164,6 @@ m_right_queue(_T("right queue"))
 	else
 		m_D3D = Direct3DCreate9( D3D_SDK_VERSION );
 
-	m_nv3d_enabled = false;
-	m_nv3d_actived = false;
-	m_nv3d_display = NULL;
-	NvAPI_Status res = NvAPI_Initialize();
-	if (NVAPI_OK == res)
-	{
-		NvU8 enabled3d;
-		res = NvAPI_Stereo_IsEnabled(&enabled3d);
-		if (res == NVAPI_OK)
-		{
-			printf("NV3D enabled.\n");
-			m_nv3d_enabled = (bool)enabled3d;
-		}
-
-		res = NvAPI_EnumNvidiaDisplayHandle(0, &m_nv3d_display);
-
-		NV_DISPLAY_DRIVER_VERSION nv_version;
-		nv_version.version = NV_DISPLAY_DRIVER_VERSION_VER;
-		res = NvAPI_GetDisplayDriverVersion(m_nv3d_display, &nv_version);
-
-		if (res == NVAPI_OK && nv_version.drvVersion >= 27051)		// only 270.51+ supports windowed 3d vision
-			m_nv3d_windowed = true;
-		else
-			m_nv3d_windowed = false;
-	}
 
 	// UI
 	m_uidrawer = new ui_drawer_dwindow;
@@ -747,23 +750,23 @@ HRESULT my12doomRenderer::fix_nv3d_bug()
 
 
 	// NV3D acitivation
-	StereoHandle h3d;
 	NvAPI_Status res;
-	res = NvAPI_Stereo_CreateHandleFromIUnknown(m_Device, &h3d);
-	res = NvAPI_Stereo_SetNotificationMessage(h3d, (NvU64)m_hWnd, WM_NV_NOTIFY);
+	if (m_nv3d_handle == NULL)
+		res = NvAPI_Stereo_CreateHandleFromIUnknown(m_Device, &m_nv3d_handle);
+	res = NvAPI_Stereo_SetNotificationMessage(m_nv3d_handle, (NvU64)m_hWnd, WM_NV_NOTIFY);
 	if (m_output_mode == NV3D)
 	{
 		printf("activating NV3D\n");
-		res = NvAPI_Stereo_Activate(h3d);
+		res = NvAPI_Stereo_Activate(m_nv3d_handle);
 	}
 
 	else
 	{
 		printf("deactivating NV3D\n");
-		res = NvAPI_Stereo_Deactivate(h3d);
+		res = NvAPI_Stereo_Deactivate(m_nv3d_handle);
 	}
 	NvU8 actived = 0;
-	res = NvAPI_Stereo_IsActivated(h3d, &actived);
+	res = NvAPI_Stereo_IsActivated(m_nv3d_handle, &actived);
 	if (actived)
 	{
 		printf("init: NV3D actived\n");
@@ -778,7 +781,7 @@ HRESULT my12doomRenderer::fix_nv3d_bug()
 	if (res == NVAPI_OK && m_nv3d_windowed)
 		m_nv3d_actived = m_output_mode == NV3D ? true : false;
 
-	res = NvAPI_Stereo_DestroyHandle(h3d);
+	//res = NvAPI_Stereo_DestroyHandle(m_nv3d_handle);
 	return hr;
 }
 HRESULT my12doomRenderer::delete_render_targets()
@@ -1882,30 +1885,59 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 #endif
 		)
 	{
-		clear(back_buffer);
-		draw_movie(back_buffer, true);
-		draw_bmp(back_buffer, true);
-		adjust_temp_color(back_buffer, true);
+		//m_nv_version.drvVersion = 0;
+		if (m_nv_version.drvVersion>28500)
+		{
+			NvAPI_Stereo_SetActiveEye(m_nv3d_handle, NVAPI_STEREO_EYE_LEFT);
+		}
+
+		CComPtr<IDirect3DSurface9> left_surface;
+		CComPtr<IDirect3DSurface9> right_surface;
+		hr = m_mask_temp_left->GetSurfaceLevel(0, &left_surface);
+		hr = m_mask_temp_right->GetSurfaceLevel(0, &right_surface);
+
+		clear(left_surface);
+		draw_movie(left_surface, true);
+		draw_bmp(left_surface, true);
+		adjust_temp_color(left_surface, true);
+		draw_ui(left_surface);
 
 		// copy left to nv3d surface
 		RECT dst = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
-		hr = m_Device->StretchRect(back_buffer, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
+		if (m_nv_version.drvVersion>28500)
+		{
+			hr = m_Device->StretchRect(left_surface, NULL, back_buffer, NULL, D3DTEXF_NONE);
 
-		clear(back_buffer);
-		draw_movie(back_buffer, false);
-		draw_bmp(back_buffer, false);
-		adjust_temp_color(back_buffer, false);
+		}
+		else
+		{
+			hr = m_Device->StretchRect(left_surface, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
+		}
+
+		clear(right_surface);
+		draw_movie(right_surface, false);
+		draw_bmp(right_surface, false);
+		adjust_temp_color(right_surface, false);
+		draw_ui(right_surface);
 
 		// copy right to nv3d surface
-		dst.left += m_active_pp.BackBufferWidth;
-		dst.right += m_active_pp.BackBufferWidth;
-		hr = m_Device->StretchRect(back_buffer, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
+		if (m_nv_version.drvVersion>28500)
+		{
+			//NvAPI_Stereo_SetActiveEye(m_nv3d_handle, NVAPI_STEREO_EYE_RIGHT);
+			hr = m_Device->StretchRect(right_surface, NULL, back_buffer, NULL, D3DTEXF_NONE);
+			NvAPI_Stereo_SetActiveEye(m_nv3d_handle, NVAPI_STEREO_EYE_LEFT);
 
-		// StretchRect to backbuffer!, this is how 3D vision works
-		RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
-		hr = m_Device->StretchRect(m_nv3d_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
+		}
+		else
+		{
+			dst.left += m_active_pp.BackBufferWidth;
+			dst.right += m_active_pp.BackBufferWidth;
+			hr = m_Device->StretchRect(right_surface, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
 
-		draw_ui(back_buffer);
+			// StretchRect to backbuffer!, this is how 3D vision works
+			RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
+			hr = m_Device->StretchRect(m_nv3d_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
+		}
 	}
 
 	else if (m_output_mode == mono 
