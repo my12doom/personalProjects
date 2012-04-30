@@ -195,7 +195,16 @@ float4 anaglyph(float2 tex : TEXCOORD0) : COLOR
 	l.g = 0;
 	l.b = 0;
 	
-	return l + r;
+	return l*l.a + r*r.a;
+}
+
+float4 masking(float2 tex : TEXCOORD0) : COLOR
+{
+	float4 mask = tex2D(s0, tex);
+	float4 l = tex2D(s1, tex);
+	float4 r = tex2D(s2, tex);
+	
+	return l*(1-mask.r) + r*(mask.r);
 }
 
 float4 NV12toRGB(float2 tex : TEXCOORD0) : COLOR		//NV12

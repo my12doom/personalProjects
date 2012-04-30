@@ -433,7 +433,7 @@ protected:
 	HRESULT draw_ui(IDirect3DSurface9 *surface);
 	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left);
 #ifdef DEBUG
-	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_XRGB(255,128,0));
+	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_ARGB(0, 0, 0, 0));
 #else
 	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_XRGB(0,0,0));
 #endif
@@ -559,6 +559,7 @@ protected:
 
 
 	my12doom_auto_shader m_red_blue;
+	my12doom_auto_shader m_ps_masking;
 
 	/*
 	CComPtr<IDirect3DTexture9> m1_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width

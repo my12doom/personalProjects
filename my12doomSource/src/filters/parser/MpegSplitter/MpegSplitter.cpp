@@ -992,56 +992,58 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 		__int64 seekpos = (__int64)(1.0*rt/m_rtDuration*len);
 		__int64 minseekpos = _I64_MAX;
 
-		REFERENCE_TIME rtmax = rt - rtPreroll;
-		REFERENCE_TIME rtmin = rtmax - 5000000;
+		REFERENCE_TIME rtmax = rt + rtPreroll;
+		REFERENCE_TIME rtmin = rtmax - rtPreroll;
+
+		bool has_audio = m_pFile->m_streams[CMpegSplitterFile::audio].GetCount() > 0;
 
 		//if(m_rtStartOffset == 0)			// always try to seek Plan A
-			for(int i = 0; i < countof(m_pFile->m_streams)-1; i++) {
-				POSITION pos = m_pFile->m_streams[i].GetHeadPosition();
-				while(pos) {
-					DWORD TrackNum = m_pFile->m_streams[i].GetNext(pos);
+		for(int i = 0; i < countof(m_pFile->m_streams)-1; i++) {
+			POSITION pos = m_pFile->m_streams[i].GetHeadPosition();
+			while(pos) {
+				DWORD TrackNum = m_pFile->m_streams[i].GetNext(pos);
 
-					CBaseSplitterOutputPin* pPin = GetOutputPin(TrackNum);
-					if(pPin && pPin->IsConnected() /*&& i == CMpegSplitterFile::video*/) {
-						m_pFile->Seek(seekpos);
-						__int64 curpos = seekpos;
-						REFERENCE_TIME pdt = _I64_MIN;
+				CBaseSplitterOutputPin* pPin = GetOutputPin(TrackNum);
+				if(pPin && pPin->IsConnected() /*&& (i == CMpegSplitterFile::audio || !has_audio)*/) {
+					m_pFile->Seek(seekpos);
+					__int64 curpos = seekpos;
+					REFERENCE_TIME pdt = _I64_MIN;
 
-						for(int j = 0; j < 100; j++) {
-							REFERENCE_TIME rt = m_pFile->NextPTS(TrackNum);
-							if(rt < 0) {
-								break;
-							}
-
-							REFERENCE_TIME dt = rt - rtmax;
-							if(dt > 0 && dt == pdt) {
-								dt = 10000000i64;
-							}
-
-
-							if(rtmin <= rt && rt <= rtmax || (pdt > 0 && dt < 0 && -dt < 30000000)) {
-								minseekpos = min(minseekpos, curpos);
-								/*
-								if (rtmin <= rt && rt <= rtmax)
-									printf("time match.\n");
-								else
-									printf("cross match.\n");
-								printf("rtmin=%.2f, rt=%.2f, rtmax=%.2f, pdt=%.2f, dt=%.2f", 
-									(float)rtmin/10000000, (float)rt/10000000, (float)rtmax/10000000,
-									(float)pdt/10000000, (float)dt/10000000);
-								*/
-								printf("%dth try, seeked to %02fs\n", j, (float)rt/10000000);
-								break;
-							}
-
-							curpos -= (__int64)(1.0*dt/m_rtDuration*len);
-							m_pFile->Seek(curpos);
-
-							pdt = dt;
+					for(int j = 0; j < 100; j++) {
+						REFERENCE_TIME rt = m_pFile->NextPTS(TrackNum);
+						if(rt < 0) {
+							break;
 						}
+
+						REFERENCE_TIME dt = rt - rtmax;
+						if(dt > 0 && dt == pdt) {
+							dt = 10000000i64;
+						}
+
+
+						if(rtmin <= rt && rt <= rtmax || (pdt > 0 && dt < 0 && -dt < rtPreroll)) {
+							minseekpos = max(minseekpos, curpos);
+							/*
+							if (rtmin <= rt && rt <= rtmax)
+								printf("time match.\n");
+							else
+								printf("cross match.\n");
+							printf("rtmin=%.2f, rt=%.2f, rtmax=%.2f, pdt=%.2f, dt=%.2f", 
+								(float)rtmin/10000000, (float)rt/10000000, (float)rtmax/10000000,
+								(float)pdt/10000000, (float)dt/10000000);
+							*/
+							printf("%dth try, seeked to %02fs\n", j, (float)rt/10000000);
+							break;
+						}
+
+						curpos -= (__int64)(1.0*dt/m_rtDuration*len);
+						m_pFile->Seek(curpos);
+
+						pdt = dt;
 					}
 				}
 			}
+		}
 
 		if(minseekpos != _I64_MAX) {
 			seekpos = minseekpos;

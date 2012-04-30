@@ -6,6 +6,7 @@
 #include "PixelShaders/NV12.h"
 #include "PixelShaders/YUY2.h"
 #include "PixelShaders/anaglyph.h"
+#include "PixelShaders/masking.h"
 #include "PixelShaders/stereo_test_sbs.h"
 #include "PixelShaders/stereo_test_sbs2.h"
 #include "PixelShaders/stereo_test_tb.h"
@@ -756,25 +757,25 @@ HRESULT my12doomRenderer::fix_nv3d_bug()
 	res = NvAPI_Stereo_SetNotificationMessage(m_nv3d_handle, (NvU64)m_hWnd, WM_NV_NOTIFY);
 	if (m_output_mode == NV3D)
 	{
-		printf("activating NV3D\n");
+		mylog("activating NV3D\n");
 		res = NvAPI_Stereo_Activate(m_nv3d_handle);
 	}
 
 	else
 	{
-		printf("deactivating NV3D\n");
+		mylog("deactivating NV3D\n");
 		res = NvAPI_Stereo_Deactivate(m_nv3d_handle);
 	}
 	NvU8 actived = 0;
 	res = NvAPI_Stereo_IsActivated(m_nv3d_handle, &actived);
 	if (actived)
 	{
-		printf("init: NV3D actived\n");
+		mylog("init: NV3D actived\n");
 		m_nv3d_actived = true;
 	}
 	else
 	{
-		printf("init: NV3D deactived\n");
+		mylog("init: NV3D deactived\n");
 		m_nv3d_actived = false;
 	}
 
@@ -808,8 +809,14 @@ HRESULT my12doomRenderer::create_render_targets()
 		GetClientRect(m_hWnd, &rect);
 		m_active_pp.BackBufferWidth = rect.right - rect.left;
 		m_active_pp.BackBufferHeight = rect.bottom - rect.top;
+
+		D3DPRESENT_PARAMETERS pp = m_active_pp;
+// 		pp.SwapEffect = D3DSWAPEFFECT_OVERLAY;
+// 		pp.MultiSampleType = D3DMULTISAMPLE_NONE;
+// 		pp.BackBufferFormat = D3DFMT_X8R8G8B8;
+// 		m_new_pp.BackBufferFormat = D3DFMT_X8R8G8B8;
 		if (m_active_pp.BackBufferWidth > 0 && m_active_pp.BackBufferHeight > 0)
-			FAIL_RET(m_Device->CreateAdditionalSwapChain(&m_active_pp, &m_swap1))
+			FAIL_RET(m_Device->CreateAdditionalSwapChain(&pp, &m_swap1))
 
 		GetClientRect(m_hWnd2, &rect);
 		m_active_pp2 = m_active_pp;
@@ -1239,6 +1246,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	HD3D_invalidate_objects();
 	m_uidrawer->invalidate_gpu();
 	m_red_blue.invalid();
+	m_ps_masking.invalid();
 
 	// query
 	//m_d3d_query = NULL;
@@ -1423,6 +1431,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	HRESULT hr;
 
 	m_red_blue.set_source(m_Device, g_code_anaglyph, sizeof(g_code_anaglyph), true, (DWORD*)m_key);
+	m_ps_masking.set_source(m_Device, g_code_masking, sizeof(g_code_masking), true, (DWORD*)m_key);
 
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
@@ -1837,7 +1846,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	CComPtr<IDirect3DSurface9> back_buffer;
 	if (m_swap1) hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer);
 
-	clear(back_buffer);
+	clear(back_buffer, D3DCOLOR_ARGB(255, 0, 0, 0));
 
 	// reset texture blending stages
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
@@ -2025,47 +2034,22 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		draw_bmp(temp_surface, false);
 		adjust_temp_color(temp_surface, false);
 
-
-		// pass 3: render to backbuffer with masking
-		// black = left
+		// pass3: analyph
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		m_Device->SetRenderTarget(0, back_buffer);
-		m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
-		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );	// current = texture(mask)
-
-		m_Device->SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-		m_Device->SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_CURRENT );
-		m_Device->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SUBTRACT ); // subtract... to show only black 
-		m_Device->SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_TEMP);	  // temp = texture(left) - current(mask)
-
-		m_Device->SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-		m_Device->SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_CURRENT );
-		m_Device->SetTextureStageState( 2, D3DTSS_COLORARG0, D3DTA_TEMP );		 // arg3 = arg0...
-		m_Device->SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_MULTIPLYADD ); // Modulate then add... to show only white then add with temp(black)
-		m_Device->SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);     // current = texture(right) * current(mask) + temp
-
-
+		m_Device->SetPixelShader(m_ps_masking);
 		m_Device->SetTexture( 0, m_tex_mask );
 		m_Device->SetTexture( 1, m_mask_temp_left );
 		m_Device->SetTexture( 2, m_mask_temp_right );
-
-		// swap on need
-		int x = m_window_rect.left&1;
-		int y = m_window_rect.top&1;
-		if ( (m_mask_mode == row_interlace && x) ||
-			 (m_mask_mode == line_interlace && y) ||
-			 (m_mask_mode == checkboard_interlace && ((x+y)%2)))
-		{
-			m_Device->SetTexture( 2, m_mask_temp_left );
-			m_Device->SetTexture( 1, m_mask_temp_right );
-		}
 
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
 
 		// UI
+		m_Device->SetPixelShader(NULL);
 		draw_ui(back_buffer);
+
 	}
 
 	else if (m_output_mode == pageflipping)
@@ -2316,7 +2300,9 @@ presant:
 		}
 
 		int l2 = timeGetTime();
-		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, NULL);
+		hr = DDERR_WASSTILLDRAWING;
+		while (hr == DDERR_WASSTILLDRAWING)
+			hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, NULL);
 		if (timeGetTime()-l2 > 9) printf("Presant() cost %dms.\n", timeGetTime() - l2);
 		if (FAILED(hr))
 			set_device_state(device_lost);
@@ -3643,14 +3629,14 @@ HRESULT my12doomRenderer::NV3D_notify(WPARAM wparam)
 	if (actived)
 	{
 		m_nv3d_actived = true;
-		printf("actived!\n");
+		mylog("actived!\n");
 	}
 	else
 	{
 		m_nv3d_actived = false;
 		if (m_output_mode == NV3D)
 			set_device_state(need_resize_back_buffer);
-		printf("deactived!\n");
+		mylog("deactived!\n");
 	}
 
 

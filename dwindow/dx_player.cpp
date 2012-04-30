@@ -7,6 +7,8 @@
 #include "..\AESFile\E3DReader.h"
 #include "latency_dialog.h"
 #include "..\mySplitter\audio_downmix.h"
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
@@ -1839,6 +1841,14 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SetWindowLongPtr(m_hwnd1, GWL_STYLE, f);
 	SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exf);
 	*/
+
+	MARGINS margins = {-1};
+	HRESULT hr = DwmExtendFrameIntoClientArea(id_to_hwnd(1),&margins);
+	LONG_PTR exstyle1 = GetWindowLongPtr(m_hwnd1, GWL_EXSTYLE);
+	exstyle1 |= WS_EX_COMPOSITED;
+	SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exstyle1);
+
+
 
 
 	SetFocus(id_to_hwnd(id));
