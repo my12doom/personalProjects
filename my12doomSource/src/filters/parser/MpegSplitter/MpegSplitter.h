@@ -51,6 +51,7 @@ protected:
 	// my12doom's codes
 	CAutoPtr<TrayMenu> m_traymenu;
 	bool m_PD10;
+
 	// mvc right eye handle codes
 	bool m_for_encoding;
 	bool m_mvc_found;
@@ -66,6 +67,7 @@ protected:
 	offset_item m_offset_items[max_offset_items];
 	int m_offset_index; //=0
 	CCritSec m_offset_item_lock;
+	static const REFERENCE_TIME NEXT_IDR_FRAME = -11;
 
 	// end my12doom
 

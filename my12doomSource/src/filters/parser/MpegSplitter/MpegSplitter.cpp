@@ -741,6 +741,8 @@ HRESULT CMpegSplitterFilter::DemuxNextPacket(REFERENCE_TIME rtStartOffset)
 	} else if(m_pFile->m_type == CMpegSplitterFile::ts) {
 		CMpegSplitterFile::trhdr h;
 
+		__int64 before_any_read = m_pFile->GetPos();
+
 		if(!m_pFile->Read(h)) {
 			return S_FALSE;
 		}
@@ -763,11 +765,6 @@ HRESULT CMpegSplitterFilter::DemuxNextPacket(REFERENCE_TIME rtStartOffset)
 					return E_FAIL;
 				}
 				TrackNumber = m_pFile->AddStream(h.pid, b, h.bytes - (DWORD)(m_pFile->GetPos() - pos));
-			}
-
-			if (TrackNumber == 0x1200)
-			{
-				printf("");
 			}
 
 			if(GetOutputPin(TrackNumber) || (m_mvc_found && m_PD10 && TrackNumber == 0x1012) ) {
@@ -799,16 +796,52 @@ HRESULT CMpegSplitterFilter::DemuxNextPacket(REFERENCE_TIME rtStartOffset)
 				int nBytes = int(h.bytes - (m_pFile->GetPos() - pos));
 				m_pFile->ByteRead(p->GetData(), nBytes);
 
-				if (m_mvc_found && m_PD10 && TrackNumber == 0x1012)
+				if (m_mvc_found && rtStartOffset == NEXT_IDR_FRAME)
+				{
+					int byte_left = p->GetCount();
+					const BYTE * data = p->GetData();
+					int nal_type;
+
+
+					while (byte_left>3 && TrackNumber == 0x1011)
+					{
+						nal_type = 0x1f;
+						do
+						{
+							if (data[0] == 0 && data[1] == 0 && data[2] == 1)
+								nal_type = data[3] & 0x1f;
+
+							byte_left --;
+							data ++;
+						} while (byte_left>3 && nal_type == 0x1f);
+
+
+
+						if (nal_type == 5) // IDR
+						{
+							m_pFile->Seek(before_any_read);
+							return S_OK;
+						}
+					}
+					m_pFile->Seek(h.next);
+					return E_PENDING;
+				}
+
+				else if (m_mvc_found && m_PD10 && TrackNumber == 0x1012)
 				{
 					hr = dummy_deliver_packet(p);
 				}
 				else
+				{
 					hr = DeliverPacket(p);
-			}
+				}
+			}			
 		}
 
 		m_pFile->Seek(h.next);
+		if (m_mvc_found && rtStartOffset == NEXT_IDR_FRAME)
+			return E_PENDING;
+
 	} else if(m_pFile->m_type == CMpegSplitterFile::pva) {
 		CMpegSplitterFile::pvahdr h;
 		if(!m_pFile->Read(h)) {
@@ -992,7 +1025,7 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 		__int64 seekpos = (__int64)(1.0*rt/m_rtDuration*len);
 		__int64 minseekpos = _I64_MAX;
 
-		REFERENCE_TIME rtmax = rt + rtPreroll;
+		REFERENCE_TIME rtmax = rt/* + rtPreroll*/;
 		REFERENCE_TIME rtmin = rtmax - rtPreroll;
 
 		bool has_audio = m_pFile->m_streams[CMpegSplitterFile::audio].GetCount() > 0;
@@ -1060,6 +1093,18 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 		//printf("last try, seek delta :%02fs\n", (float)delta/10000000);
 
 		m_pFile->Seek(seekpos);
+
+// 		HRESULT hr = E_PENDING;
+// 
+// 		__int64 pos = m_pFile->GetPos();
+// 		int l = GetTickCount();
+// 
+// 		while ((hr=DemuxNextPacket(NEXT_IDR_FRAME)) == E_PENDING)
+// 			;
+// 
+// 		m_pFile->Seek(max(pos, m_pFile->GetPos() - 192*2048));
+// 
+// 		printf("seek to next frame cost %d ms, %d byte skipped\n", GetTickCount()-l, int(m_pFile->GetPos()-pos));
 	}
 }
 
