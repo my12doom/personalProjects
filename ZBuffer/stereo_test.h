@@ -31,10 +31,10 @@ HRESULT get_layout(void *src, int width, int height, int *out, int stride = -1)
 	int height2 = height / 2;
 
 	const int test_size = 64;
-	const int range = (int)(width*0.03);
-	const int range2 = (int)(width2*0.03);
-	const int range_step = max(1, range/15);
-	const int range_step2 = max(1, range2/15);
+	const int range = (int)(width*0.06);
+	const int range2 = (int)(width2*0.06);
+	const int range_step = max(1, range/30);
+	const int range_step2 = max(1, range2/30);
 
 	// SBS
 	for(int y=0; y<test_size; y++)
@@ -94,17 +94,17 @@ HRESULT get_layout(void *src, int width, int height, int *out, int stride = -1)
 	if ( (cal1 > 0.001 && cal2 > 0.001) || (cal1>cal2*10000) || (cal2>cal1*10000))
 		times = cal1 > cal2 ? cal1 / cal2 : cal2 / cal1;
 
-// 	printf("sbs:%f - %f - %f\r\n", d_avg1, d_var1, cal1);
-// 	printf("tb: %f - %f - %f\r\n", d_avg2, d_var2, cal2);
+ 	printf("sbs:%f - %f - %f\r\n", d_avg1, d_var1, cal1);
+ 	printf("tb: %f - %f - %f\r\n", d_avg2, d_var2, cal2);
  	printf("times: %f.\r\n", times);
 
 
-	if (times > 31.62/2)		// 10^1.5
+	if (times > 31.62)		// 10^1.5
 	{
 // 		printf("stereo(%s).\r\n", cal1 > cal2 ? "tb" : "sbs");
 		*out = cal1 > cal2 ? top_bottom : side_by_side;
 	}
-	else if ( 1.0 < times && times < 4.68 )
+	else if ( 1.0 < times && times < 4.68/2 )
 	{
 // 		printf("normal.\r\n");
 		*out = mono2d;

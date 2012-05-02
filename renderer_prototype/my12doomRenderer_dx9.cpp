@@ -125,7 +125,7 @@ m_right_queue(_T("right queue"))
 			m_nv3d_enabled = (bool)enabled3d;
 		}
 
-		NvAPI_Stereo_SetDriverMode(NVAPI_STEREO_DRIVER_MODE_DIRECT);
+		//NvAPI_Stereo_SetDriverMode(NVAPI_STEREO_DRIVER_MODE_DIRECT);
 
 		res = NvAPI_EnumNvidiaDisplayHandle(0, &m_nv3d_display);
 

@@ -1842,11 +1842,11 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exf);
 	*/
 
-// 	MARGINS margins = {-1};
-// 	HRESULT hr = DwmExtendFrameIntoClientArea(id_to_hwnd(1),&margins);
-// 	LONG_PTR exstyle1 = GetWindowLongPtr(m_hwnd1, GWL_EXSTYLE);
-// 	exstyle1 |= WS_EX_COMPOSITED;
-// 	SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exstyle1);
+	MARGINS margins = {-1};
+	HRESULT hr = DwmExtendFrameIntoClientArea(id_to_hwnd(1),&margins);
+	LONG_PTR exstyle1 = GetWindowLongPtr(m_hwnd1, GWL_EXSTYLE);
+	exstyle1 |= WS_EX_COMPOSITED;
+	SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exstyle1);
 
 
 
