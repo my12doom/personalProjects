@@ -138,7 +138,6 @@
 				Name="VCLinkerTool"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="lib"
-				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -175,6 +174,14 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath=".\charset.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\charset.h"
+				>
+			</File>
 			<File
 				RelativePath=".\test.cpp"
 				>

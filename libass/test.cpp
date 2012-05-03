@@ -113,7 +113,7 @@ static void blend_single(image_t * frame, ASS_Image *img)
     unsigned char *dst;
 
     src = img->bitmap;
-    dst = frame->buffer + img->dst_y * frame->stride + img->dst_x * 4;
+    dst = frame->buffer + (frame->height-img->dst_y) * frame->stride + img->dst_x * 4;
     for (y = 0; y < img->h; ++y) {
         for (x = 0; x < img->w; ++x) {
             unsigned k = ((unsigned) src[x]) * opacity / 255;
@@ -123,7 +123,7 @@ static void blend_single(image_t * frame, ASS_Image *img)
             dst[x * 4 + 2] = (k * r + (255 - k) * dst[x * 4 + 2]) / 255;
         }
         src += img->stride;
-        dst += frame->stride;
+        dst -= frame->stride;
     }
 }
 
@@ -138,8 +138,16 @@ static void blend(image_t * frame, ASS_Image *img)
     //printf("%d images blended\n", cnt);
 }
 
+#include "charset.h"
+
 int main(int argc, char *argv[])
 {
+
+	char k = 0xef;
+
+	bool a = k == 0xef;
+
+
     const int frame_w = 1920;
     const int frame_h = 1080;
 
@@ -154,9 +162,23 @@ int main(int argc, char *argv[])
     char *subfile = argv[2];
     double tm = strtod(argv[3], 0);
 
+	FILE * f = fopen(subfile, "rb");
+	fseek(f, 0, SEEK_END);
+	int file_size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	char *src = (char*)malloc(file_size);
+	char *utf8 = (char*)malloc(file_size*3);
+	fread(src, 1, file_size, f);
+	fclose(f);
+
+	int utf8_size = ConvertToUTF8(src, file_size, utf8, file_size*3);
+
     init(frame_w, frame_h);
-	char charset[128] = "UTF-8";
-    ASS_Track *track = ass_read_file(ass_library, subfile, charset);
+    ASS_Track *track = ass_read_memory(ass_library, utf8, utf8_size, NULL);
+
+	free(src);
+	free(utf8);
+
     if (!track) {
         printf("track init failed!\n");
         return 1;
