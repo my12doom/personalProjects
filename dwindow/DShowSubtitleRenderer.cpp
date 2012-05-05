@@ -80,7 +80,11 @@ HRESULT DShowSubtitleRenderer::CheckMediaTypeCB(const CMediaType *inType)
 		(subType == GUID_NULL &&inType->FormatLength()>=520))
 		m_srenderer = new CsrtRenderer(m_font, m_font_color);
 	else if (subType == MEDIASUBTYPE_ASS)
-		m_srenderer = new CAssRenderer(m_font, m_font_color);
+	{
+		//m_srenderer = new CAssRenderer(m_font, m_font_color);
+		m_srenderer = new LibassRenderer();
+		((LibassRenderer*)m_srenderer)->load_index(inType->pbFormat + format->dwOffset, inType->cbFormat - format->dwOffset);
+	}
 	else if (subType == MEDIASUBTYPE_ASS2)
 		m_srenderer = new CAss2Renderer(m_font, m_font_color);
 	else if (subType == MEDIASUBTYPE_VOBSUB)

@@ -46,43 +46,6 @@ typedef struct image_s {
 ASS_Library *ass_library;
 ASS_Renderer *ass_renderer;
 
-void msg_callback(int level, const char *fmt, va_list va, void *data)
-{
-    if (level > 6)
-        return;
-    printf("libass: ");
-    vprintf(fmt, va);
-    printf("\n");
-}
-
-
-static void init(int frame_w, int frame_h)
-{
-    ass_library = ass_library_init();
-    if (!ass_library) {
-        printf("ass_library_init failed!\n");
-        exit(1);
-    }
-
-    ass_set_message_cb(ass_library, msg_callback, NULL);
-
-	ass_set_extract_fonts(ass_library, 0);
-	ass_set_style_overrides(ass_library, NULL);
-
-
-    ass_renderer = ass_renderer_init(ass_library);
-    if (!ass_renderer) {
-        printf("ass_renderer_init failed!\n");
-        exit(1);
-    }
-
-
-    ass_set_frame_size(ass_renderer, frame_w, frame_h);
-	ass_set_font_scale(ass_renderer, 1.0);
-	ass_set_hinting(ass_renderer, ASS_HINTING_NORMAL);
-	ass_set_fonts(ass_renderer, "Arial", "Sans", 1, "Z:\\fontconfig\\fonts.conf", 1);
-}
-
 static image_t *gen_image(int width, int height)
 {
     image_t *img = (image_t*)malloc(sizeof(image_t));
@@ -173,8 +136,31 @@ int main(int argc, char *argv[])
 
 	int utf8_size = ConvertToUTF8(src, file_size, utf8, file_size*3);
 
-    init(frame_w, frame_h);
-    ASS_Track *track = ass_read_memory(ass_library, utf8, utf8_size, NULL);
+	ass_library = ass_library_init();
+	if (!ass_library) {
+		printf("ass_library_init failed!\n");
+		exit(1);
+		}
+
+	//ass_set_message_cb(ass_library, msg_callback, NULL);
+
+	//ass_set_extract_fonts(ass_library, 0);
+	//ass_set_style_overrides(ass_library, NULL);
+
+
+	ass_renderer = ass_renderer_init(ass_library);
+	if (!ass_renderer) {
+		printf("ass_renderer_init failed!\n");
+		exit(1);
+		}
+
+
+	ass_set_frame_size(ass_renderer, frame_w, frame_h);
+	ass_set_font_scale(ass_renderer, 1.0);
+	//ass_set_hinting(ass_renderer, ASS_HINTING_NORMAL);
+	ass_set_fonts(ass_renderer, "Arial", "Sans", 1, "Z:\\fonts.conf", 1);
+	
+	ASS_Track *track = ass_read_memory(ass_library, utf8, utf8_size, NULL);
 
 	free(src);
 	free(utf8);
@@ -203,6 +189,7 @@ int main(int argc, char *argv[])
 		}
 
 
+		if (i%10000 == 0)
 		printf("\r%d/%d ms rendered, %d frame output.", i, int(tm*1000), n);
 	}
 

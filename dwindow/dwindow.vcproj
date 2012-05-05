@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -66,7 +66,7 @@
 				AdditionalDependencies="nvapi.lib strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib d3dx9.lib winmm.lib dxguid.lib ddraw.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode;C:\DS_SDK_LITE\BaseClasses\Debug_Unicode;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\MTDebug;"
+				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode;C:\DS_SDK_LITE\BaseClasses\Debug_Unicode;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\MTDebug&quot;;..\libass\lib"
 				IgnoreDefaultLibraryNames="LIBCMTD"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/dwindow.pdb"
@@ -608,7 +608,15 @@
 				Name="subtitle"
 				>
 				<File
+					RelativePath="..\libass\charset.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\DShowSubtitleRenderer.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\libass_renderer.cpp"
 					>
 				</File>
 				<File
@@ -766,11 +774,19 @@
 				Name="subtitle"
 				>
 				<File
+					RelativePath="..\libass\charset.h"
+					>
+				</File>
+				<File
 					RelativePath=".\CSubtitle.h"
 					>
 				</File>
 				<File
 					RelativePath=".\DShowSubtitleRenderer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\libass_renderer.h"
 					>
 				</File>
 				<File

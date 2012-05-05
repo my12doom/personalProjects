@@ -632,7 +632,10 @@ retry:
 		{
 			delete loaded_sample;
 			if (max_retry--)
+			{
+				mylog("video upload failed, retry left: %d", max_retry);
 				goto retry;
+			}
 			else
 				return S_FALSE;
 		}
@@ -757,25 +760,25 @@ HRESULT my12doomRenderer::fix_nv3d_bug()
 	res = NvAPI_Stereo_SetNotificationMessage(m_nv3d_handle, (NvU64)m_hWnd, WM_NV_NOTIFY);
 	if (m_output_mode == NV3D)
 	{
-		mylog("activating NV3D\n");
+		//mylog("activating NV3D\n");
 		res = NvAPI_Stereo_Activate(m_nv3d_handle);
 	}
 
 	else
 	{
-		mylog("deactivating NV3D\n");
+		//mylog("deactivating NV3D\n");
 		res = NvAPI_Stereo_Deactivate(m_nv3d_handle);
 	}
 	NvU8 actived = 0;
 	res = NvAPI_Stereo_IsActivated(m_nv3d_handle, &actived);
 	if (actived)
 	{
-		mylog("init: NV3D actived\n");
+		//mylog("init: NV3D actived\n");
 		m_nv3d_actived = true;
 	}
 	else
 	{
-		mylog("init: NV3D deactived\n");
+		//mylog("init: NV3D deactived\n");
 		m_nv3d_actived = false;
 	}
 
@@ -4163,9 +4166,10 @@ gpu_sample::~gpu_sample()
 CCritSec g_gpu_lock;
 HRESULT gpu_sample::commit()
 {
-	//LARGE_INTEGER counter1, counter2, fre;
-	//QueryPerformanceCounter(&counter1);
-	//QueryPerformanceFrequency(&fre);
+// 	LARGE_INTEGER counter1, counter2, fre;
+// 	QueryPerformanceCounter(&counter1);
+// 	QueryPerformanceFrequency(&fre);
+
 	if (m_prepared_for_rendering)
 		return S_FALSE;
 
@@ -4198,9 +4202,9 @@ HRESULT gpu_sample::commit()
 		m_surf_YUY2->Unlock();
 
 	m_prepared_for_rendering = true;
-	//QueryPerformanceCounter(&counter2);
-
-	//mylog("prepare_rendering() cost %d cycle(%.3fms).\n", (int)(counter2.QuadPart - counter1.QuadPart), (double)(counter2.QuadPart-counter1.QuadPart)/fre.QuadPart);
+// 	QueryPerformanceCounter(&counter2);
+// 
+// 	mylog("prepare_rendering() cost %d cycle(%.3fms).\n", (int)(counter2.QuadPart - counter1.QuadPart), (double)(counter2.QuadPart-counter1.QuadPart)/fre.QuadPart);
 
 	return S_OK;
 }
