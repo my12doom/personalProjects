@@ -109,7 +109,38 @@ HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 	int changed = 0;
 	img = ass_render_frame(m_ass_renderer, m_track, time, &changed);
 
-	return S_OK;
+	if (!img)
+		return S_OK;
+
+	RECT rect = {0};
+	if (img)
+	{
+		rect.left = img->dst_x;
+		rect.right = rect.left + img->w;
+		rect.top = img->dst_y;
+		rect.bottom = rect.top + img->h;
+	}
+
+	while (img)
+	{
+		rect.left = min(rect.left, img->dst_x);
+		rect.top = min(rect.top, img->dst_y);
+		rect.right = max(rect.right, img->dst_x + img->w);
+		rect.bottom = max(rect.bottom, img->dst_y + img->h);
+
+		img = img->next;
+	}
+
+	out->height_pixel = rect.bottom - rect.top;
+	out->width_pixel  = rect.right - rect.left;
+	out->width = (double)out->width_pixel/1920;
+	out->height = (double)out->height_pixel/1080;
+	out->aspect = 16.0/9.0;
+	out->data = (BYTE *) malloc(out->width_pixel * out->height_pixel * 4);
+	out->left = (double)rect.left/1920;
+	out->top = (double)rect.top/1080;
+
+	return (changed >0 || last_time<0) ? S_OK : S_FALSE;
 }
 HRESULT LibassRenderer::reset()
 {
