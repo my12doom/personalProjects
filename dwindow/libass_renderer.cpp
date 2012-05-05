@@ -106,14 +106,15 @@ HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 	memset(out, 0, sizeof(rendered_subtitle));
 
 	ASS_Image *img = NULL;
+	ASS_Image *p = NULL;
 	int changed = 0;
-	img = ass_render_frame(m_ass_renderer, m_track, time, &changed);
+	p = img = ass_render_frame(m_ass_renderer, m_track, time, &changed);
 
 	if (!img)
 		return S_OK;
 
 	RECT rect = {0};
-	if (img)
+	if (p)
 	{
 		rect.left = img->dst_x;
 		rect.right = rect.left + img->w;
@@ -121,14 +122,14 @@ HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 		rect.bottom = rect.top + img->h;
 	}
 
-	while (img)
+	while (p)
 	{
 		rect.left = min(rect.left, img->dst_x);
 		rect.top = min(rect.top, img->dst_y);
 		rect.right = max(rect.right, img->dst_x + img->w);
 		rect.bottom = max(rect.bottom, img->dst_y + img->h);
 
-		img = img->next;
+		p = p->next;
 	}
 
 	out->height_pixel = rect.bottom - rect.top;
@@ -136,7 +137,7 @@ HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 	out->width = (double)out->width_pixel/1920;
 	out->height = (double)out->height_pixel/1080;
 	out->aspect = 16.0/9.0;
-	out->data = (BYTE *) malloc(out->width_pixel * out->height_pixel * 4);
+	out->data = (BYTE *) calloc(1, out->width_pixel * out->height_pixel * 4);
 	out->left = (double)rect.left/1920;
 	out->top = (double)rect.top/1080;
 
