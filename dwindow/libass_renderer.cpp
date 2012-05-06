@@ -201,9 +201,20 @@ HRESULT LibassRenderer::reset()
 		return E_FAIL;
 	}
 
+	char conf[MAX_PATH];
+	GetModuleFileNameA(NULL, conf, MAX_PATH);
+	for(int i=strlen(conf)-1; i>0; i--)
+		if (conf[i] == '\\')
+		{
+			conf[i] = NULL;
+			break;
+		}
+
+	strcat(conf, "\\fonts.conf");
+
 	ass_set_frame_size(m_ass_renderer, 1920, 1080);
 	ass_set_font_scale(m_ass_renderer, 1.0);
-	ass_set_fonts(m_ass_renderer, "Arial", "Sans", 1, "Z:\\fonts.conf", 1);
+	ass_set_fonts(m_ass_renderer, "Arial", "Sans", 1, conf, 1);
 
 	return S_OK;
 }
