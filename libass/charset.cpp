@@ -22,7 +22,7 @@ int ConvertToUTF8(char *input, int input_size, char *output, int output_size)
 		size -= 2;
 		unsigned short *data = (unsigned short *)input;
 
-		for (int i=0; i<size; i++)
+		for (int i=0; i<size/2; i++)
 		{
 			wchar_t c = swap_big_little(data[i]);
 			if (c != 0xA && c != 0xD && p<1024)
@@ -52,7 +52,7 @@ int ConvertToUTF8(char *input, int input_size, char *output, int output_size)
 		size -= 2;
 		unsigned short *data = (unsigned short *)input;
 
-		for (int i=0; i<size; i++)
+		for (int i=0; i<size/2; i++)
 		{
 			wchar_t c = data[i];
 			if (c != 0xA && c != 0xD && p<1024)

@@ -33,6 +33,7 @@ extern "C" {
 #pragma comment(lib, "libfreetype.a")
 #pragma comment(lib, "libfontconfig.a")
 #pragma comment(lib, "libexpat.a")
+#pragma comment(lib, "winmm.lib")
 
 
 HRESULT save_bitmap(DWORD *data, const wchar_t *filename, int width, int height) ;
@@ -174,20 +175,28 @@ int main(int argc, char *argv[])
 	int n = 0;
 	int changed = 0;
 	image_t *frame = gen_image(frame_w, frame_h);
+	int n2 = 0;
+	int l = GetTickCount();
+	timeBeginPeriod(1);
 	for(int i=0; i<int(tm*1000); i+=40)
 	{
 		img = ass_render_frame(ass_renderer, track, i, &changed);
 
+		if (n==0) l = GetTickCount();
 		if (changed && img)
 		{
+			int l = timeGetTime();
 			n++;
 			memset(frame->buffer, 63, frame->stride * frame->height);
-			blend(frame, img);
+			//blend(frame, img);
 			wchar_t pathname[MAX_PATH];
 			wsprintfW(pathname, L"Z:\\ass%02d.bmp", n);
-			save_bitmap((DWORD*)frame->buffer, pathname, frame_w, frame_h);
+			//save_bitmap((DWORD*)frame->buffer, pathname, frame_w, frame_h);
+
+			printf("\rrender cost %dms.\t\t\n", timeGetTime()-l);
 		}
 
+		n2 ++;
 
 		if (i%10000 == 0)
 		printf("\r%d/%d ms rendered, %d frame output.", i, int(tm*1000), n);

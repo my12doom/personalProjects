@@ -3,6 +3,12 @@
 #include <Windows.h>
 #include <streams.h>
 
+#define _r(c)  ((c)>>24)
+#define _g(c)  (((c)>>16)&0xFF)
+#define _b(c)  (((c)>>8)&0xFF)
+#define _a(c)  ((c)&0xFF)
+
+
 #pragma comment(lib, "libass.a")
 #pragma comment(lib, "libgcc.a")
 #pragma comment(lib, "libmingwex.a")
@@ -113,21 +119,24 @@ HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 	if (!img)
 		return S_OK;
 
+	if (changed == 0 && last_time>=0)
+		return S_FALSE;
+
 	RECT rect = {0};
 	if (p)
 	{
-		rect.left = img->dst_x;
-		rect.right = rect.left + img->w;
-		rect.top = img->dst_y;
-		rect.bottom = rect.top + img->h;
+		rect.left = p->dst_x;
+		rect.right = rect.left + p->w;
+		rect.top = p->dst_y;
+		rect.bottom = rect.top + p->h;
 	}
 
 	while (p)
 	{
-		rect.left = min(rect.left, img->dst_x);
-		rect.top = min(rect.top, img->dst_y);
-		rect.right = max(rect.right, img->dst_x + img->w);
-		rect.bottom = max(rect.bottom, img->dst_y + img->h);
+		rect.left = min(rect.left, p->dst_x);
+		rect.top = min(rect.top, p->dst_y);
+		rect.right = max(rect.right, p->dst_x + p->w);
+		rect.bottom = max(rect.bottom, p->dst_y + p->h);
 
 		p = p->next;
 	}
@@ -137,11 +146,43 @@ HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 	out->width = (double)out->width_pixel/1920;
 	out->height = (double)out->height_pixel/1080;
 	out->aspect = 16.0/9.0;
-	out->data = (BYTE *) calloc(1, out->width_pixel * out->height_pixel * 4);
+	out->data = (BYTE *) malloc(out->width_pixel * out->height_pixel * 4);
+	memset(out->data, 0, out->width_pixel * out->height_pixel * 4);
 	out->left = (double)rect.left/1920;
 	out->top = (double)rect.top/1080;
 
-	return (changed >0 || last_time<0) ? S_OK : S_FALSE;
+	// blending
+	while (img) 
+	{
+		int x, y;
+		unsigned char opacity = 255 - _a(img->color);
+		unsigned char a = _a(img->color);
+		unsigned char r = _r(img->color);
+		unsigned char g = _g(img->color);
+		unsigned char b = _b(img->color);
+
+		unsigned char *src;
+		unsigned char *dst;
+
+		src = img->bitmap;
+		dst = out->data + (img->dst_y - rect.top) * out->width_pixel*4 + (img->dst_x-rect.left) * 4;
+
+		for (y = 0; y < img->h; ++y) {
+			for (x = 0; x < img->w; ++x) {
+				unsigned k = ((unsigned) src[x]) * opacity / 255;
+				dst[x * 4] = (k * b + (255 - k) * dst[x * 4]) / 255;
+				dst[x * 4 + 1] = (k * g + (255 - k) * dst[x * 4 + 1]) / 255;
+				dst[x * 4 + 2] = (k * r + (255 - k) * dst[x * 4 + 2]) / 255;
+				dst[x * 4 + 3] = (k * 255 + (255 - k) * dst[x * 4 + 3]) / 255;
+			}
+			src += img->stride;
+			dst += out->width_pixel*4;
+		}
+
+		img = img->next;
+	}
+
+	return S_OK;
 }
 HRESULT LibassRenderer::reset()
 {

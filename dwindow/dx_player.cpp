@@ -3716,9 +3716,13 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	fclose(f);
 
 	const wchar_t *p_3 = pathname + wcslen(pathname) -3;
-	if ( wcsstr_nocase(pathname, L".srt") || wcsstr_nocase(pathname, L".ssa") || wcsstr_nocase(pathname, L".ass"))
+	if ( wcsstr_nocase(pathname, L".srt"))
 	{
 		m_renderer = new CsrtRenderer(NULL, 0xffffff);
+	}
+	else if (wcsstr_nocase(pathname, L".ssa") || wcsstr_nocase(pathname, L".ass"))
+	{
+		m_renderer = new LibassRenderer();
 	}
 	else if (wcsstr_nocase(pathname, L".sup"))
 	{

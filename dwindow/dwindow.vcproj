@@ -205,9 +205,10 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector;nologin"
 				RuntimeLibrary="0"
+				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
@@ -227,7 +228,7 @@
 				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release"
+				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;..\libass\lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -618,6 +619,22 @@
 				<File
 					RelativePath=".\libass_renderer.cpp"
 					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AssemblerOutput="2"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="release_mt|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AssemblerOutput="2"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\PGS\PGSParser.cpp"

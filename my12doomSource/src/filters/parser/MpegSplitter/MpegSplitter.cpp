@@ -767,6 +767,11 @@ HRESULT CMpegSplitterFilter::DemuxNextPacket(REFERENCE_TIME rtStartOffset)
 				TrackNumber = m_pFile->AddStream(h.pid, b, h.bytes - (DWORD)(m_pFile->GetPos() - pos));
 			}
 
+			if (TrackNumber == 0x1200)
+			{
+				printf("");
+			}
+
 			if(GetOutputPin(TrackNumber) || (m_mvc_found && m_PD10 && TrackNumber == 0x1012) ) {
 				CAutoPtr<Packet> p(DNew Packet());
 
@@ -1028,16 +1033,14 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 		REFERENCE_TIME rtmax = rt/* + rtPreroll*/;
 		REFERENCE_TIME rtmin = rtmax - rtPreroll;
 
-		bool has_audio = m_pFile->m_streams[CMpegSplitterFile::audio].GetCount() > 0;
-
-		//if(m_rtStartOffset == 0)			// always try to seek Plan A
+		// always try to seek Plan A
 		for(int i = 0; i < countof(m_pFile->m_streams)-1; i++) {
 			POSITION pos = m_pFile->m_streams[i].GetHeadPosition();
 			while(pos) {
 				DWORD TrackNum = m_pFile->m_streams[i].GetNext(pos);
 
 				CBaseSplitterOutputPin* pPin = GetOutputPin(TrackNum);
-				if(pPin && pPin->IsConnected() /*&& (i == CMpegSplitterFile::audio || !has_audio)*/) {
+				if(pPin && pPin->IsConnected() /*&& i == CMpegSplitterFile::video*/) {
 					m_pFile->Seek(seekpos);
 					__int64 curpos = seekpos;
 					REFERENCE_TIME pdt = _I64_MIN;
@@ -1054,8 +1057,8 @@ void CMpegSplitterFilter::DemuxSeek(REFERENCE_TIME rt)
 						}
 
 
-						if(rtmin <= rt && rt <= rtmax || (pdt > 0 && dt < 0 && -dt < rtPreroll)) {
-							minseekpos = max(minseekpos, curpos);
+						if(rtmin <= rt && rt <= rtmax || (pdt > 0 && dt < 0 && -dt < 3000000)) {
+							minseekpos = min(minseekpos, curpos);
 							/*
 							if (rtmin <= rt && rt <= rtmax)
 								printf("time match.\n");
