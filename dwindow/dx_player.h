@@ -37,6 +37,8 @@
 
 #define WM_LOADFILE (WM_USER + 5)
 #define max_playlist (50)
+#define countof(x) (sizeof(x)/sizeof(x[0]))
+
 
 class subtitle_file_handler
 {
@@ -225,6 +227,13 @@ protected:
 	AutoSetting<bool> m_forced_deinterlace;
 
 	// subtitle control
+	typedef struct rendered_subtitle2_struct : public rendered_subtitle
+	{
+		bool valid;
+		int time;
+		HRESULT hr;
+	} rendered_subtitle2;
+	rendered_subtitle2 m_subtitle_cache[1024];
 	CComPtr<IOffsetMetadata> m_offset_metadata;
 	CSubtitleRenderer *m_srenderer;
 	DShowSubtitleRenderer m_grenderer;
@@ -236,6 +245,7 @@ protected:
 	double m_subtitle_bottom_y;
 	int m_user_offset;
 	int m_internel_offset;
+	int m_last_bitmap_update;
 	bool m_subtitle_has_offset;
 	AutoSetting<int> m_subtitle_latency;
 	AutoSetting<double> m_subtitle_ratio;

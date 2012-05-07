@@ -10,6 +10,7 @@ typedef struct _rendered_subtitle
 	double width;
 	double height;
 	double aspect;
+	bool gpu_shadow;	// true = shadow should be painted by GPU
 
 	// data size in pixel
 	int width_pixel;
@@ -36,7 +37,6 @@ public:
 	virtual HRESULT add_data(BYTE *data, int size, int start, int end)=0;
 	virtual HRESULT get_subtitle(int time, rendered_subtitle *out, int last_time=-1)=0;			// get subtitle on a time point, 
 																								// if last_time != -1, return S_OK = need update, return S_FALSE = same subtitle, and out should be ignored;
-	virtual HRESULT pre_render(int time){return E_NOTIMPL;};
 	virtual HRESULT reset()=0;
 	virtual HRESULT seek()=0;															// just clear current incompleted data, to support dshow seeking.
 	virtual HRESULT set_font_color(DWORD newcolor)=0;									// color format is 8bit BGRA, use RGB() macro, for text based subtitle only

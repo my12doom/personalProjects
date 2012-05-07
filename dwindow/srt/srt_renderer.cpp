@@ -129,6 +129,7 @@ HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_ti
 		out->aspect = m_aspect;
 		out->delta = 0.001 * offset;
 		out->delta_valid = has_offset;
+		out->gpu_shadow = true;
 
 		out->left = 0.5 - out->width/2;
 		out->top = 0.95 - out->height;

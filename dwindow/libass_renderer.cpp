@@ -233,11 +233,6 @@ HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 	return S_OK;
 }
 
-HRESULT LibassRenderer::pre_render(int time)
-{
-	return S_OK;
-}
-
 HRESULT LibassRenderer::reset()
 {
 	CAutoLock lck(&g_libass_cs);

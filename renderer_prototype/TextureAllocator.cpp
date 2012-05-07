@@ -161,10 +161,13 @@ HRESULT CTextureAllocator::CreateOffscreenSurface(int width, int height, D3DFORM
 
 	return o->hr;
 }
-HRESULT CTextureAllocator::DeleteTexture(CPooledTexture *texture)
+HRESULT CTextureAllocator::DeleteTexture(CPooledTexture *texture, bool dont_pool /*=false*/)
 {
 	if (FAILED(texture->hr))
 		return S_OK;
+
+	if (dont_pool)
+		return texture->texture->Release();
 
 	if (texture->locked_rect.pBits == NULL && (texture->pool == D3DPOOL_SYSTEMMEM || texture->usage & D3DUSAGE_DYNAMIC))
 	{
@@ -186,10 +189,14 @@ HRESULT CTextureAllocator::DeleteTexture(CPooledTexture *texture)
 
 	return S_OK;
 }
-HRESULT CTextureAllocator::DeleteSurface(CPooledSurface *surface)
+HRESULT CTextureAllocator::DeleteSurface(CPooledSurface *surface, bool dont_pool /*=false*/)
 {
 	if (FAILED(surface->hr))
 		return S_OK;
+	if (dont_pool)
+		return surface->surface->Release();
+
+	surface->surface->Release();
 
 	/*
 	if (surface->locked_rect.pBits == NULL)
@@ -205,7 +212,6 @@ HRESULT CTextureAllocator::DeleteSurface(CPooledSurface *surface)
 	CAutoLock lck(&m_surface_pool_lock);
 	m_surface_pool[m_surface_count++] = *surface;
 	*/
-	surface->surface->Release();
 
 	return S_OK;
 }

@@ -1,4 +1,5 @@
 #include <math.h>
+#include <assert.h>
 #include "resource.h"
 #include "dx_player.h"
 #include "global_funcs.h"
@@ -198,6 +199,8 @@ m_aspect_mode(L"AspectRatioMode", aspect_letterbox)
 	m_hexe = hExe;
 	m_user_offset = 0;
 	m_internel_offset = 10; // offset set to 10*0.1% of width
+	m_last_bitmap_update = timeGetTime();
+	memset(m_subtitle_cache, 0, sizeof(m_subtitle_cache));
 
 	// size and position
 	init_window_size_positions();
@@ -1938,6 +1941,8 @@ HRESULT dx_player::exit_direct_show()
 
 HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn)
 {
+	// warning: thread safe
+
 	if (!m_display_subtitle || !m_renderer1)
 		return S_OK;
 
@@ -1955,15 +1960,38 @@ HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, I
 	{
 		if (S_OK == m_srenderer->set_output_aspect(m_renderer1->get_aspect()))
 			m_lastCBtime = -1;		// aspect changed
-		hr = m_srenderer->pre_render(ms_start);
+
+		rendered_subtitle2 *sub = NULL;
+		//TODO: lock this
+		for(int i=0; i<countof(m_subtitle_cache); i++)
+		{
+			if (!m_subtitle_cache[i].valid)
+			{
+				sub = m_subtitle_cache + i;
+				sub->valid = true;
+				break;
+			}
+		}
+
+		if (!sub)
+		{
+			assert(0);
+			return S_OK;		// WTF, cache full?
+		}
+
+		sub->hr = m_srenderer->get_subtitle(ms_start, sub, m_lastCBtime);
+		sub->time = ms_start;
 	}
 
-	return E_NOTIMPL == hr ? S_OK : hr;
+	m_lastCBtime = ms_start;
+	return S_OK;
 }
 
 HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn)
 {
-	if (!m_display_subtitle || !m_renderer1)
+	// warning: thread safe
+	if (!m_display_subtitle || !m_renderer1 
+		|| timeGetTime()-m_last_bitmap_update < 200)	// only update bitmap once per 200ms 
 		return S_OK;
 
 	// latency and ratio
@@ -1998,53 +2026,68 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 				m_lastCBtime = -1;		// aspect changed
 
 			int l = timeGetTime();
-			hr = m_srenderer->get_subtitle(ms_start, &sub, m_lastCBtime);
-			//log_line(L"get_subtitle() cost %d ms.\n", timeGetTime()-l);
-		}
-	}
+			char tmp[200];
+			hr = E_NOTIMPL;
 
-	// clear
-	if (m_lastCBtime == -1)
-	{
-		//m_renderer1->set_bmp(NULL, 0, 0, 0, 0, 0, 0); // FIXME: maybe we don't need to clear here?
-	}
-
-	{
-		if (S_FALSE == hr)		// same subtitle, ignore
-		{
-			return S_OK;
-		}
-		else if (S_OK == hr)	// need to update
-		{
-			// empty result, clear it
-			if( sub.width == 0 || sub.height ==0 || sub.width_pixel==0 || sub.height_pixel == 0 || sub.data == NULL)
+			// TODO: lock this
+			for(int i=0; i<countof(m_subtitle_cache); i++)
 			{
-				m_renderer1->set_bmp(NULL, 0, 0, 0, 0, 0, 0);
-			}
-
-			// draw it
-			else
-			{
-				m_subtitle_has_offset = sub.delta_valid;
-				if (sub.delta_valid)
-					hr = m_renderer1->set_bmp_offset(sub.delta + (double)m_user_offset/1920);
-
-				int l = timeGetTime();
-				hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
-					sub.height,
-					sub.left + (m_subtitle_center_x-0.5),
-					sub.top + (m_subtitle_bottom_y-0.95));
-				log_line(L"set_bmp() cost %d ms.\n", timeGetTime()-l);
-
-				free(sub.data);
-				if (FAILED(hr))
+				if (m_subtitle_cache[i].valid && m_subtitle_cache[i].time < ms_start)
 				{
-					m_lastCBtime = -1;				// failed, refresh on next frame
-					return hr;
+					if (m_subtitle_cache[i].delta)
+						free(m_subtitle_cache[i].data);
+					m_subtitle_cache[i].valid = false;
+				}
+
+				if (m_subtitle_cache[i].valid && m_subtitle_cache[i].time == ms_start)
+				{
+					hr = m_subtitle_cache[i].hr;
+					sub = m_subtitle_cache[i];
 				}
 			}
+
+			if (hr == E_NOTIMPL)
+				hr = m_srenderer->get_subtitle(ms_start, &sub, m_lastCBtime);
+			sprintf(tmp, "get_subtitle() cost %d ms.\n", timeGetTime()-l);
+			if (timeGetTime()-l>1)
+			OutputDebugStringA(tmp);
 		}
-		m_lastCBtime = ms_start;		// only do this if SetAlphaBitmap didn't fail, yes, it CAN FAIL!
+	}
+
+	if (S_FALSE == hr)		// same subtitle, ignore
+	{
+		return S_OK;
+	}
+	else if (S_OK == hr)	// need to update
+	{
+		// empty result, clear it
+		if( sub.width == 0 || sub.height ==0 || sub.width_pixel==0 || sub.height_pixel == 0 || sub.data == NULL)
+		{
+			m_renderer1->set_bmp(NULL, 0, 0, 0, 0, 0, 0);
+		}
+
+		// draw it
+		else
+		{
+			m_subtitle_has_offset = sub.delta_valid;
+			if (sub.delta_valid)
+				hr = m_renderer1->set_bmp_offset(sub.delta + (double)m_user_offset/1920);
+
+			hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
+				sub.height,
+				sub.left + (m_subtitle_center_x-0.5),
+				sub.top + (m_subtitle_bottom_y-0.95),
+				sub.gpu_shadow);
+
+			free(sub.data);
+			if (FAILED(hr))
+			{
+				m_lastCBtime = -1;				// failed, refresh on next frame
+				return hr;
+			}
+
+			m_last_bitmap_update = timeGetTime();
+		}
 	}
 
 	return S_OK;

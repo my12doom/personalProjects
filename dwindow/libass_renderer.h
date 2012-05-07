@@ -14,7 +14,6 @@ public:
 	virtual HRESULT add_data(BYTE *data, int size, int start, int end);
 	virtual HRESULT get_subtitle(int time, rendered_subtitle *out, int last_time=-1);			// get subtitle on a time point, 
 																								// if last_time != -1, return S_OK = need update, return S_FALSE = same subtitle, and out should be ignored;
-	virtual HRESULT pre_render(int time);
 	virtual HRESULT reset();
 	virtual HRESULT seek(){return S_OK;}														// to provide dshow support
 	virtual HRESULT set_font_color(DWORD newcolor){return E_NOTIMPL;};

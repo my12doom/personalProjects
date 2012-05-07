@@ -305,7 +305,7 @@ public:
 	HRESULT set_movie_pos(int dimention, double offset);		// dimention1 = x, dimention2 = y
 	HRESULT set_aspect(double aspect);
 	HRESULT set_window(HWND wnd, HWND wnd2);
-	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop);
+	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow = false);
 	HRESULT set_bmp_offset(double offset);
 	HRESULT set_parallax(double parallax);
 	HRESULT set_ui_visible(bool visible);
@@ -342,6 +342,7 @@ protected:
 	double m_bmp_offset_x /*= -0.0*/;
 	double m_bmp_offset_y /*= 0.0*/;
 	double m_bmp_offset;
+	bool m_gpu_shadow;
 	double m_source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
 	double m_forced_aspect /* = -1 */;
 	int m_pass1_width;

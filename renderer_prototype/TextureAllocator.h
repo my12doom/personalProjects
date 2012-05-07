@@ -15,6 +15,8 @@ typedef struct stuct_PooledTexture
 	D3DPOOL pool;
 	DWORD usage;
 
+	int size;	// size in byte, used for GPU memory management
+
 	HRESULT hr;
 	IDirect3DDevice9 *creator;
 }PooledTexture;
@@ -64,9 +66,9 @@ public:
 	CTextureAllocator(IDirect3DDevice9 *device);
 	~CTextureAllocator();
 	HRESULT CreateTexture(int width, int height, DWORD flag, D3DFORMAT format, D3DPOOL pool, CPooledTexture **out);
-	HRESULT DeleteTexture(CPooledTexture *texture);
+	HRESULT DeleteTexture(CPooledTexture *texture, bool dont_pool = false);
 	HRESULT CreateOffscreenSurface(int width, int height, D3DFORMAT format, D3DPOOL pool, CPooledSurface **out);
-	HRESULT DeleteSurface(CPooledSurface * surface);
+	HRESULT DeleteSurface(CPooledSurface * surface, bool dont_pool = false);
 	HRESULT DestroyPool(D3DPOOL pool2destroy);
 	HRESULT UpdateTexture(CPooledTexture *src, CPooledTexture *dst);
 protected:

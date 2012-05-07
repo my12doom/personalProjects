@@ -1570,7 +1570,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_Device->CreatePixelShader((DWORD*)g_code_iz3d_front, &m_ps_iz3d_front);
 	m_Device->CreatePixelShader((DWORD*)g_code_color_adjust, &m_ps_color_adjust);
 	m_Device->CreatePixelShader((DWORD*)g_code_lanczos, &m_ps_bmp_lanczos);
-	m_Device->CreatePixelShader((DWORD*)g_code_bmp_blur, &m_ps_bmp_blur);
+	//m_Device->CreatePixelShader((DWORD*)g_code_bmp_blur, &m_ps_bmp_blur);
 	if (m_ps_bmp_blur == NULL)
 		m_Device->CreatePixelShader((DWORD*)g_code_bmp_blur2, &m_ps_bmp_blur);
 
@@ -2488,9 +2488,12 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	hr = m_Device->SetVertexShader(m_vs_subtitle);
 
 	// draw shadow
-// 	hr = m_Device->SetPixelShader(m_ps_bmp_blur);
-// 	hr = m_Device->SetVertexShaderConstantF(0, cfg_shadow, 2);
-// 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+	if (m_gpu_shadow)
+	{
+		hr = m_Device->SetPixelShader(m_ps_bmp_blur);
+		hr = m_Device->SetVertexShaderConstantF(0, cfg_shadow, 2);
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+	}
 
 	// draw main
 	hr = m_Device->SetPixelShader(NULL);
@@ -3828,7 +3831,7 @@ HRESULT my12doomRenderer::repaint_video()
 	return S_OK;
 }
 
-HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop)
+HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow)
 {
 	if (m_tex_bmp == NULL)
 		return VFW_E_WRONG_STATE;
@@ -3844,6 +3847,7 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 	else
 	{
 		m_has_subtitle = true;
+		m_gpu_shadow = gpu_shadow;
 
 		m_bmp_fleft = fleft;
 		m_bmp_ftop = ftop;
