@@ -2,6 +2,7 @@
 #include "..\libass\charset.h"
 #include <Windows.h>
 #include <streams.h>
+#include <emmintrin.h>
 
 #define _r(c)  ((c)>>24)
 #define _g(c)  (((c)>>16)&0xFF)
@@ -152,28 +153,75 @@ HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 	out->top = (double)rect.top/1080;
 
 	// blending
+	// T(RGBA) = [T(RGBA) * (255-A)]  +  [S(L) * C(RGBA) * A] / 255
+	//__m128i k;
+// 	__m128i d1, d2;
+// 	__m128i s1;
+// 	__m128i zero = {0};
 	while (img) 
 	{
 		int x, y;
 		unsigned char opacity = 255 - _a(img->color);
-		unsigned char a = _a(img->color);
 		unsigned char r = _r(img->color);
 		unsigned char g = _g(img->color);
 		unsigned char b = _b(img->color);
 
-		unsigned char *src;
-		unsigned char *dst;
+		unsigned char *src = img->bitmap;
+		unsigned char *dst = out->data + (img->dst_y - rect.top) * out->width_pixel*4 + (img->dst_x-rect.left) * 4;
 
-		src = img->bitmap;
-		dst = out->data + (img->dst_y - rect.top) * out->width_pixel*4 + (img->dst_x-rect.left) * 4;
+// 		__m128i bb = _mm_set1_epi8(b);
+// 		__m128i gg = _mm_set1_epi8(g);
+// 
+// 		__m128i bgra = _mm_unpackhi_epi8(bb, gg);
+// 		bb = _mm_set1_epi8(r);	// used as tmp
+// 		gg = _mm_set1_epi8(255);
+// 		bb = _mm_unpackhi_epi8(bb, gg);
+// 		bgra = _mm_unpackhi_epi16(bgra, bb);	// C
+// 		bgra = _mm_unpackhi_epi8(bgra, zero);
+// 		bb = _mm_set1_epi16(opacity);			// A
+// 		bgra = _mm_mullo_epi16(bgra, bb);		// C(RGBA) * A
+// 		gg = _mm_set1_epi16(255-opacity);		// 255 - A
+		// after this, gg = 255-A, rgba = C(RGBA)*A, bb unused (still = A), 16byte, 2 pixel 
 
-		for (y = 0; y < img->h; ++y) {
-			for (x = 0; x < img->w; ++x) {
-				unsigned k = ((unsigned) src[x]) * opacity / 255;
-				dst[x * 4] = (k * b + (255 - k) * dst[x * 4]) / 255;
-				dst[x * 4 + 1] = (k * g + (255 - k) * dst[x * 4 + 1]) / 255;
-				dst[x * 4 + 2] = (k * r + (255 - k) * dst[x * 4 + 2]) / 255;
-				dst[x * 4 + 3] = (k * 255 + (255 - k) * dst[x * 4 + 3]) / 255;
+		for (y = 0; y < img->h; ++y) 
+		{
+			// 4 pixel SSE2
+// 			for (x = 0; x < img->w; x+=4)
+// 			{
+// 				s1 = _mm_loadl_epi64((__m128i*)(src+x));		// 8 byte, 8 pixel L8, only  4 pixel used, assume no over reading...
+// 				s1 = _mm_unpacklo_epi8(s1,s1);
+// 				s1 = _mm_unpacklo_epi8(s1,s1);
+// 				bb = _mm_unpackhi_epi8(s1, zero);
+// 				s1 = _mm_unpacklo_epi8(s1, zero);
+// 
+// 				// S(L) * C(RGBA) * A
+// 				bb = _mm_mullo_epi16(bb, bgra);
+// 				s1 = _mm_mullo_epi16(s1, bgra);
+// 
+// 				// load
+// 				d1 = _mm_loadu_si128((__m128i*)(dst+x*4));		// 16byte, 4 pixel ARGB
+// 				d2 = _mm_unpackhi_epi8(d1, zero);
+// 				d1 = _mm_unpacklo_epi8(d1, zero);
+// 
+// 				d2 = _mm_mullo_epi16(d2, gg);
+// 				d1 = _mm_mullo_epi16(d1, gg);
+// 
+// 				bb = _mm_add_epi16(bb, d2);
+// 				s1 = _mm_add_epi16(s1, d1);
+// 
+// 				d2 = _mm_packus_epi16(s1, bb);
+// 				_mm_storeu_si128((__m128i*)(dst+x*4), d2);
+// 			}
+			x=4;
+
+			// remains
+			for (x-=4; x < img->w; ++x) 
+			{
+				unsigned k = ((unsigned) src[x]) * opacity / 256;
+				dst[x * 4 + 0] = (k * b   + (255 - k) * dst[x * 4 + 0]) / 256;
+				dst[x * 4 + 1] = (k * g   + (255 - k) * dst[x * 4 + 1]) / 256;
+				dst[x * 4 + 2] = (k * r   + (255 - k) * dst[x * 4 + 2]) / 256;
+				dst[x * 4 + 3] = (k * 255 + (255 - k) * dst[x * 4 + 3]) / 256;
 			}
 			src += img->stride;
 			dst += out->width_pixel*4;
@@ -184,6 +232,12 @@ HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 
 	return S_OK;
 }
+
+HRESULT LibassRenderer::pre_render(int time)
+{
+	return S_OK;
+}
+
 HRESULT LibassRenderer::reset()
 {
 	CAutoLock lck(&g_libass_cs);

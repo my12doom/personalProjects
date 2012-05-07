@@ -94,9 +94,9 @@ HRESULT get_layout(void *src, int width, int height, int *out, int stride = -1)
 	if ( (cal1 > 0.001 && cal2 > 0.001) || (cal1>cal2*10000) || (cal2>cal1*10000))
 		times = cal1 > cal2 ? cal1 / cal2 : cal2 / cal1;
 
- 	printf("sbs:%f - %f - %f\r\n", d_avg1, d_var1, cal1);
- 	printf("tb: %f - %f - %f\r\n", d_avg2, d_var2, cal2);
- 	printf("times: %f.\r\n", times);
+//  	printf("sbs:%f - %f - %f\r\n", d_avg1, d_var1, cal1);
+//  	printf("tb: %f - %f - %f\r\n", d_avg2, d_var2, cal2);
+//  	printf("times: %f.\r\n", times);
 
 
 	if (times > 31.62)		// 10^1.5

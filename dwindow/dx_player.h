@@ -187,6 +187,7 @@ protected:
 
 	// filter callback function
 	HRESULT SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn);
+	HRESULT PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn);
 
 	// directshow etc. core part
 	bar_drawer m_bar_drawer;

@@ -63,6 +63,7 @@ class Imy12doomRendererCallback
 {
 public:
 	virtual HRESULT SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn) = 0;
+	virtual HRESULT PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn) = 0;
 };
 
 class my12doomRenderer;

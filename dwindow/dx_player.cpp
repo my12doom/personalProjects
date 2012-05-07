@@ -1936,6 +1936,31 @@ HRESULT dx_player::exit_direct_show()
 	return S_OK;
 }
 
+HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn)
+{
+	if (!m_display_subtitle || !m_renderer1)
+		return S_OK;
+
+	// latency and ratio
+	REFERENCE_TIME time_for_offset_metadata = TimeStart;
+	TimeStart -= m_subtitle_latency * 10000;
+	TimeStart /= m_subtitle_ratio;
+
+	int ms_start = (int)(TimeStart / 10000.0 + 0.5);
+	int ms_end = (int)(TimeEnd / 10000.0 + 0.5);
+
+	HRESULT hr = S_OK;
+	CAutoLock lck(&m_subtitle_sec);
+	if (m_srenderer)
+	{
+		if (S_OK == m_srenderer->set_output_aspect(m_renderer1->get_aspect()))
+			m_lastCBtime = -1;		// aspect changed
+		hr = m_srenderer->pre_render(ms_start);
+	}
+
+	return E_NOTIMPL == hr ? S_OK : hr;
+}
+
 HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn)
 {
 	if (!m_display_subtitle || !m_renderer1)
@@ -1971,7 +1996,10 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		{
 			if (S_OK == m_srenderer->set_output_aspect(m_renderer1->get_aspect()))
 				m_lastCBtime = -1;		// aspect changed
+
+			int l = timeGetTime();
 			hr = m_srenderer->get_subtitle(ms_start, &sub, m_lastCBtime);
+			//log_line(L"get_subtitle() cost %d ms.\n", timeGetTime()-l);
 		}
 	}
 
@@ -2001,10 +2029,12 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 				if (sub.delta_valid)
 					hr = m_renderer1->set_bmp_offset(sub.delta + (double)m_user_offset/1920);
 
+				int l = timeGetTime();
 				hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
 					sub.height,
 					sub.left + (m_subtitle_center_x-0.5),
 					sub.top + (m_subtitle_bottom_y-0.95));
+				log_line(L"set_bmp() cost %d ms.\n", timeGetTime()-l);
 
 				free(sub.data);
 				if (FAILED(hr))

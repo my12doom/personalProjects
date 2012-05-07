@@ -606,6 +606,12 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 {
 	SetThreadName(GetCurrentThreadId(), id==0?"Data thread 0":"Data thread 1");
 
+	REFERENCE_TIME start, end;
+	media_sample->GetTime(&start, &end);
+	if (m_cb && id == 0)
+		m_cb->PrerollCB(start + m_dsr0->m_thisstream, end + m_dsr0->m_thisstream, media_sample);
+
+
 	int l1 = timeGetTime();
 	int bit_per_pixel = 12;
 	if (m_dsr0->m_format == MEDIASUBTYPE_YUY2)
@@ -2482,9 +2488,9 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	hr = m_Device->SetVertexShader(m_vs_subtitle);
 
 	// draw shadow
-	hr = m_Device->SetPixelShader(m_ps_bmp_blur);
-	hr = m_Device->SetVertexShaderConstantF(0, cfg_shadow, 2);
-	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+// 	hr = m_Device->SetPixelShader(m_ps_bmp_blur);
+// 	hr = m_Device->SetVertexShaderConstantF(0, cfg_shadow, 2);
+// 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
 
 	// draw main
 	hr = m_Device->SetPixelShader(NULL);

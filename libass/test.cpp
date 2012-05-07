@@ -77,7 +77,7 @@ static void blend_single(image_t * frame, ASS_Image *img)
     unsigned char *dst;
 
     src = img->bitmap;
-    dst = frame->buffer + (frame->height-img->dst_y) * frame->stride + img->dst_x * 4;
+    dst = frame->buffer + (frame->height-1-img->dst_y) * frame->stride + img->dst_x * 4;
     for (y = 0; y < img->h; ++y) {
         for (x = 0; x < img->w; ++x) {
             unsigned k = ((unsigned) src[x]) * opacity / 255;
@@ -188,12 +188,12 @@ int main(int argc, char *argv[])
 			int l = timeGetTime();
 			n++;
 			memset(frame->buffer, 63, frame->stride * frame->height);
-			//blend(frame, img);
+			blend(frame, img);
 			wchar_t pathname[MAX_PATH];
 			wsprintfW(pathname, L"Z:\\ass%02d.bmp", n);
-			//save_bitmap((DWORD*)frame->buffer, pathname, frame_w, frame_h);
+			save_bitmap((DWORD*)frame->buffer, pathname, frame_w, frame_h);
 
-			printf("\rrender cost %dms.\t\t\n", timeGetTime()-l);
+			//printf("\rrender cost %dms.\t\t\n", timeGetTime()-l);
 		}
 
 		n2 ++;
