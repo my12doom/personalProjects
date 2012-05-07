@@ -1962,14 +1962,16 @@ HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, I
 			m_lastCBtime = -1;		// aspect changed
 
 		rendered_subtitle2 *sub = NULL;
-		//TODO: lock this
-		for(int i=0; i<countof(m_subtitle_cache); i++)
 		{
-			if (!m_subtitle_cache[i].valid)
+			CAutoLock lck(&m_subtitle_cache_sec);
+			for(int i=0; i<countof(m_subtitle_cache); i++)
 			{
-				sub = m_subtitle_cache + i;
-				sub->valid = true;
-				break;
+				if (!m_subtitle_cache[i].valid)
+				{
+					sub = m_subtitle_cache + i;
+					sub->valid = true;
+					break;
+				}
 			}
 		}
 
@@ -2025,32 +2027,28 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 			if (S_OK == m_srenderer->set_output_aspect(m_renderer1->get_aspect()))
 				m_lastCBtime = -1;		// aspect changed
 
-			int l = timeGetTime();
-			char tmp[200];
 			hr = E_NOTIMPL;
-
-			// TODO: lock this
-			for(int i=0; i<countof(m_subtitle_cache); i++)
 			{
-				if (m_subtitle_cache[i].valid && m_subtitle_cache[i].time < ms_start)
+				CAutoLock lck(&m_subtitle_cache_sec);
+				for(int i=0; i<countof(m_subtitle_cache); i++)
 				{
-					if (m_subtitle_cache[i].delta)
-						free(m_subtitle_cache[i].data);
-					m_subtitle_cache[i].valid = false;
-				}
+					if (m_subtitle_cache[i].valid && m_subtitle_cache[i].time < ms_start)
+					{
+						if (m_subtitle_cache[i].delta)
+							free(m_subtitle_cache[i].data);
+						m_subtitle_cache[i].valid = false;
+					}
 
-				if (m_subtitle_cache[i].valid && m_subtitle_cache[i].time == ms_start)
-				{
-					hr = m_subtitle_cache[i].hr;
-					sub = m_subtitle_cache[i];
+					if (m_subtitle_cache[i].valid && m_subtitle_cache[i].time == ms_start)
+					{
+						hr = m_subtitle_cache[i].hr;
+						sub = m_subtitle_cache[i];
+					}
 				}
 			}
 
 			if (hr == E_NOTIMPL)
 				hr = m_srenderer->get_subtitle(ms_start, &sub, m_lastCBtime);
-			sprintf(tmp, "get_subtitle() cost %d ms.\n", timeGetTime()-l);
-			if (timeGetTime()-l>1)
-			OutputDebugStringA(tmp);
 		}
 	}
 

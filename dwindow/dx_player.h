@@ -239,6 +239,7 @@ protected:
 	DShowSubtitleRenderer m_grenderer;
 	CAutoPtrList<subtitle_file_handler> m_external_subtitles;
 	CCritSec m_subtitle_sec;
+	CCritSec m_subtitle_cache_sec;
 	int m_lastCBtime;
 	HRESULT draw_subtitle();
 	double m_subtitle_center_x;
