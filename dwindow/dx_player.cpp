@@ -1993,7 +1993,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 {
 	// warning: thread safe
 	if (!m_display_subtitle || !m_renderer1 
-		|| timeGetTime()-m_last_bitmap_update < 200)	// only update bitmap once per 200ms 
+		/*|| timeGetTime()-m_last_bitmap_update < 200*/)	// only update bitmap once per 200ms 
 		return S_OK;
 
 	// latency and ratio
@@ -2043,6 +2043,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 					{
 						hr = m_subtitle_cache[i].hr;
 						sub = m_subtitle_cache[i];
+						m_subtitle_cache[i].valid = false;
 					}
 				}
 			}
