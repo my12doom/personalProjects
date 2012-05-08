@@ -1470,11 +1470,11 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
 	fix_nv3d_bug();
 	FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
-	FAIL_RET( m_Device->CreateTexture(2048, 1024, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
+	FAIL_RET( m_Device->CreateTexture(2048, 1536, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
 	if(m_tex_bmp_mem == NULL)
 	{
 		// only first time, so we don't need lock CritSec
-		FAIL_RET( m_Device->CreateOffscreenPlainSurface(2048, 1024, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM,	&m_tex_bmp_mem, NULL));
+		FAIL_RET( m_Device->CreateOffscreenPlainSurface(2048, 1536, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM,	&m_tex_bmp_mem, NULL));
 		m_tex_bmp_mem->LockRect(&m_bmp_locked_rect, NULL, NULL);
 		m_bmp_changed = false;
 	}
@@ -1831,7 +1831,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_tex_bmp_mem->UnlockRect();
 
 		CComPtr<IDirect3DSurface9> dst;
-		RECT src = {0,0,min(m_bmp_width+100, 2048), min(m_bmp_height+100, 1024)};
+		RECT src = {0,0,min(m_bmp_width+100, 2048), min(m_bmp_height+100, 1536)};
 
 		FAIL_RET(m_tex_bmp->GetSurfaceLevel(0, &dst));
 
@@ -2476,9 +2476,9 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	float top = pic_top + pic_height * m_bmp_ftop;
 	float height = pic_height * m_bmp_fheight;
 	float cfg_main[8] = {left*2-1, top*-2+1, width*2, height*-2,
-					0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1024};
+					0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1536};
 	float cfg_shadow[8] = {(left+0.001)*2-1, (top+0.001)*-2+1, width*2, height*-2,
-		0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1024};
+		0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1536};
 
 	if (!left_eye)
 	{
@@ -3861,14 +3861,14 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 			CAutoLock lck2(&m_bmp_lock);
 			BYTE *src = (BYTE*)data;
 			BYTE *dst = (BYTE*) m_bmp_locked_rect.pBits;
-			for(int y=0; y<min(1024,height); y++)
+			for(int y=0; y<min(1536,height); y++)
 			{
 				memset(dst, 0, m_bmp_locked_rect.Pitch);
 				memcpy(dst, src, width*4);
 				dst += m_bmp_locked_rect.Pitch;
 				src += width*4;
 			}
-			memset(dst, 0, m_bmp_locked_rect.Pitch * (1024-min(1024,height)));
+			memset(dst, 0, m_bmp_locked_rect.Pitch * (1536-min(1536,height)));
 			m_bmp_changed = true;
 		}
 
