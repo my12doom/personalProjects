@@ -169,6 +169,7 @@ m_aspect_mode(L"AspectRatioMode", aspect_letterbox)
 	select_font(false);
 	m_grenderer.set_font(m_font);
 	m_grenderer.set_font_color(m_font_color);
+	LibassRenderer::load_fonts();
 
 	// playlist
 	m_playlist_playing = m_playlist_count = 0;
@@ -3794,6 +3795,9 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	}
 	else if (wcsstr_nocase(pathname, L".ssa") || wcsstr_nocase(pathname, L".ass"))
 	{
+		if (LibassRenderer::fonts_loaded() != S_OK)
+			MessageBoxW(NULL, C(L"This is first time to load ass/ssa subtilte, font scanning may take one minute or two, the player may looks like hanged, please wait..."), C(L"Please Wait"), MB_OK);
+
 		m_renderer = new LibassRenderer();
 	}
 	else if (wcsstr_nocase(pathname, L".sup"))

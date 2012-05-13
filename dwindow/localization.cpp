@@ -217,6 +217,9 @@ HRESULT set_localization_language(localization_language language)
 				L"源码输出已设置，可能需要重新播放或音轨切换时生效");
 
 			add_localization(L"Subtitle",				L"字幕");
+			add_localization(L"This is first time to load ass/ssa subtilte, font scanning may take one minute or two, the player may looks like hanged, please wait...",
+							 L"这是第一次载入ass/ssa字幕，扫描字体可能需要几分钟，期间播放器可能无法响应操作，请稍候...");
+			add_localization(L"Please Wait",			L"请稍候");
 
 			add_localization(L"Video",					L"视频");
 			add_localization(L"Adjust Color...",					L"调整色彩...");

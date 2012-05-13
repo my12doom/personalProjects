@@ -19,6 +19,9 @@
 #pragma comment(lib, "libexpat.a")
 
 ASS_Library *g_ass_library = NULL;
+bool g_fonts_loaded = false;
+HANDLE g_fonts_loading_thread = INVALID_HANDLE_VALUE;
+static DWORD WINAPI loadFontThread(LPVOID param);
 CCritSec g_libass_cs;
 
 LibassRenderer::LibassRenderer()
@@ -264,6 +267,72 @@ HRESULT LibassRenderer::reset()
 	ass_set_frame_size(m_ass_renderer, 1920, 1080);
 	ass_set_font_scale(m_ass_renderer, 1.0);
 	ass_set_fonts(m_ass_renderer, "Arial", "Sans", 1, conf, 1);
+
+	return S_OK;
+}
+
+
+HRESULT LibassRenderer::load_fonts()
+{
+	if (g_fonts_loaded)
+		return S_OK;
+
+	if (g_fonts_loading_thread != INVALID_HANDLE_VALUE)
+		return S_FALSE;
+
+	g_fonts_loading_thread = CreateThread(NULL, NULL, loadFontThread, NULL, NULL, NULL);
+
+	return S_OK;
+}
+
+HRESULT LibassRenderer::fonts_loaded()
+{
+	if (g_fonts_loaded)
+		return S_OK;
+
+	if (g_fonts_loading_thread != INVALID_HANDLE_VALUE)
+		return S_FALSE;
+
+	return E_FAIL;
+}
+
+static DWORD WINAPI loadFontThread(LPVOID param)
+{
+	CAutoLock lck(&g_libass_cs);
+	if (NULL == g_ass_library)
+		g_ass_library = ass_library_init();
+
+	if (!g_ass_library) 
+	{
+		printf("ass_library_init() failed!\n");
+		return 1;
+	}
+
+	ASS_Renderer *ass_renderer = ass_renderer_init(g_ass_library);
+	if (!ass_renderer)
+	{
+		printf("ass_renderer_init() failed!\n");
+		return 2;
+	}
+
+	char conf[MAX_PATH];
+	GetModuleFileNameA(NULL, conf, MAX_PATH);
+	for(int i=strlen(conf)-1; i>0; i--)
+		if (conf[i] == '\\')
+		{
+			conf[i] = NULL;
+			break;
+		}
+
+	strcat(conf, "\\fonts.conf");
+
+	ass_set_frame_size(ass_renderer, 1920, 1080);
+	ass_set_font_scale(ass_renderer, 1.0);
+	ass_set_fonts(ass_renderer, "Arial", "Sans", 1, conf, 1);
+	ass_renderer_done(ass_renderer);
+
+
+	g_fonts_loaded = true;
 
 	return S_OK;
 }
