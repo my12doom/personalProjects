@@ -88,12 +88,12 @@ m_id(id)
 	m_queue_exit = false;
 	if (my12doom_queue_enable) m_queue_thread = CreateThread(NULL, NULL, queue_thread, this, NULL, NULL);
 
-	timeBeginPeriod(1);
+	//timeBeginPeriod(1);
 }
 
 my12doomRendererDShow::~my12doomRendererDShow()
 {
-	timeEndPeriod(1);
+	//timeEndPeriod(1);
 
 	m_queue_exit = true;
 	m_queue_size = my12doom_queue_size;

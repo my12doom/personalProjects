@@ -104,8 +104,183 @@ static void blend(image_t * frame, ASS_Image *img)
 
 #include "charset.h"
 
+#include <clocale>
+
+void UTF2Uni(const char* src, wchar_t *des, int count_d)
+{
+	if (src == NULL) 
+	{
+		return;
+	}
+
+	int size_s = strlen(src);
+
+	memset(des, 0, count_d * sizeof(wchar_t));
+
+	int s = 0, d = 0;
+	bool toomuchbyte = true; //set true to skip error prefix.
+
+	while (s < size_s && d < count_d)
+	{
+		unsigned char c = src[s];
+		if ((c & 0x80) == 0) 
+		{
+			des[d++] += src[s++];
+		} 
+		else if((c & 0xE0) == 0xC0)  ///< 110x-xxxx 10xx-xxxx
+		{
+			WCHAR &wideChar = des[d++];
+			wideChar  = (src[s + 0] & 0x3F) << 6;
+			wideChar |= (src[s + 1] & 0x3F);
+
+			s += 2;
+		}
+		else if((c & 0xF0) == 0xE0)  ///< 1110-xxxx 10xx-xxxx 10xx-xxxx
+		{
+			WCHAR &wideChar = des[d++];
+
+			wideChar  = (src[s + 0] & 0x1F) << 12;
+			wideChar |= (src[s + 1] & 0x3F) << 6;
+			wideChar |= (src[s + 2] & 0x3F);
+
+			s += 3;
+		} 
+		else if((c & 0xF8) == 0xF0)  ///< 1111-0xxx 10xx-xxxx 10xx-xxxx 10xx-xxxx 
+		{
+			WCHAR &wideChar = des[d++];
+
+			wideChar  = (src[s + 0] & 0x0F) << 18;
+			wideChar  = (src[s + 1] & 0x3F) << 12;
+			wideChar |= (src[s + 2] & 0x3F) << 6;
+			wideChar |= (src[s + 3] & 0x3F);
+
+			s += 4;
+		} 
+		else 
+		{
+			WCHAR &wideChar = des[d++]; ///< 1111-10xx 10xx-xxxx 10xx-xxxx 10xx-xxxx 10xx-xxxx 
+
+			wideChar  = (src[s + 0] & 0x07) << 24;
+			wideChar  = (src[s + 1] & 0x3F) << 18;
+			wideChar  = (src[s + 2] & 0x3F) << 12;
+			wideChar |= (src[s + 3] & 0x3F) << 6;
+			wideChar |= (src[s + 4] & 0x3F);
+
+			s += 5;
+		}
+	}
+}
+
+char *URIDecode(const char* input, char *out, int max_out_size)
+{
+	char tmp1[1024];
+	char tmp[1024];
+
+	int sl = strlen(input);
+	strcpy(tmp1, input);
+	
+	memset(tmp, 0, sizeof(tmp));
+	for(int i=0, j=0, last_percent=0;
+		i<sl; i++, j++)
+	{
+		if (last_percent)
+		{
+			if (tmp1[i] == '%')
+			{
+				tmp[j] = '%';
+			}
+			else
+			{
+				sscanf(tmp1+i, "%02x", &tmp[j]);
+				i++;
+			}
+
+			last_percent = 0;
+		}
+		else
+		{
+			if (tmp1[i] == '%')
+			{
+				last_percent = 1;
+				j--;
+			}
+			else
+			{
+				tmp[j] = tmp1[i];
+			}
+		}
+	}
+
+	wchar_t w[1024];
+	UTF2Uni(tmp, w, 1024);
+
+	char * local_before = setlocale( LC_ALL, ".ACP" );
+	wcstombs(out, w, max_out_size);
+	return out;
+}
+
+int matrix()
+{
+	int tbl[9] = {1,3,5,7,9,2,4,6,8};
+	RGBQUAD *color_table[9];
+	for(int i=0; i<9; i++)
+	{
+		color_table[i] = (RGBQUAD*)malloc(sizeof(RGBQUAD) * 1920 * 1080);
+
+		char tmp[MAX_PATH];
+		sprintf(tmp, "Z:\\1\\%d_调整大小.bmp", i+1);
+		HBITMAP bm = (HBITMAP)LoadImageA(0, tmp, IMAGE_BITMAP, 1920, 1080, LR_LOADFROMFILE);
+		GetBitmapBits(bm, 1920*1080*4, color_table[i]);
+		DeleteObject(bm);
+	}
+	RGBQUAD *out = (RGBQUAD*)malloc(sizeof(RGBQUAD) * 1920 * 1080);
+	FILE * f = fopen("Z:\\matrix.txt", "wb");
+	for(int y=0; y<1080; y++)
+	{
+		for(int x=0; x<1920; x++)
+		{
+			int r = tbl[(y*4+x*3+0)%9]-1;
+			int g = tbl[(y*4+x*3+1)%9]-1;
+			int b = tbl[(y*4+x*3+2)%9]-1;
+
+			RGBQUAD *o = &out[y*1920+x];
+			o->rgbRed   = color_table[r][y*1920+x].rgbRed;
+			o->rgbGreen = color_table[g][y*1920+x].rgbGreen;
+			o->rgbBlue  = color_table[b][y*1920+x].rgbBlue;
+
+			fprintf(f, "%d%d%d", r,g,b);
+		}
+		fprintf(f, "\r\n");
+	}
+
+
+	save_bitmap((DWORD*)out, L"Z:\\out.bmp", 1920, 1080);
+
+	for(int i=0; i<9; i++)
+		free(color_table[i]);
+	free(out);
+
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
+	POINT mouse;
+	//while (true)
+	{
+		GetCursorPos(&mouse);
+		printf("\r%d-%d         ", mouse.x, mouse.y);
+	}
+	
+
+	return matrix();
+
+//	char URI[] = "//mnt/sdcard/%E9%98%BF%E4%B8%BD%E4%BA%9A%E5%A8%9C%E5%90%89%E5%88%A9%E6%96%AF-%20Shake%E8%8B%B9%E6%9E%9C.3dv";
+	char URI[] = "//mnt/sdcard/HELLO!.3dv";
+	char decoded_URI[1024];
+
+	URIDecode(URI, decoded_URI, sizeof(decoded_URI));
 
 	char k = 0xef;
 

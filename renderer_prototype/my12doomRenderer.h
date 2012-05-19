@@ -104,6 +104,11 @@ public:
 	virtual CBasePin * GetPin(int n);
 	virtual HRESULT NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 	virtual HRESULT BeginFlush(void);
+	virtual HRESULT OnStartStreaming()
+	{
+		return __super::OnStartStreaming();
+	}
+
 protected:
 	friend class DRendererInputPin;
 	REFERENCE_TIME m_thisstream;

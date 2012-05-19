@@ -45,6 +45,17 @@ static void gen_field_ref_ids        (VideoParameters *p_Vid, StorablePicture *p
  *    Print out list of pictures in DPB. Used for debug purposes.
  ************************************************************************
  */
+
+void my12doom_printf(char *o)
+{
+	static int once = 1;
+	if (!once)
+		return;
+
+	printf(o);
+	once = 0;
+}
+
 void dump_dpb(DecodedPictureBuffer *p_Dpb)
 {
 #if DUMP_DPB
@@ -173,7 +184,7 @@ int getDpbSize(VideoParameters *p_Vid, seq_parameter_set_rbsp_t *active_sps)
     int size_vui;
     if ((int)active_sps->vui_seq_parameters.max_dec_frame_buffering > size)
     {
-      error ("max_dec_frame_buffering larger than MaxDpbSize", 500);
+      my12doom_printf("max_dec_frame_buffering larger than MaxDpbSize");
     }
     size_vui = imax (1, active_sps->vui_seq_parameters.max_dec_frame_buffering);
 #ifdef _DEBUG
@@ -2913,7 +2924,7 @@ int GetMaxDecFrameBuffering(VideoParameters *p_Vid)
       {
         if ((int)curr_subset_sps->sps.vui_seq_parameters.max_dec_frame_buffering > j)
         {
-          error ("max_dec_frame_buffering larger than MaxDpbSize", 500);
+          my12doom_printf("max_dec_frame_buffering larger than MaxDpbSize");
         }
         j = imax (1, curr_subset_sps->sps.vui_seq_parameters.max_dec_frame_buffering);
       }
@@ -2930,7 +2941,7 @@ int GetMaxDecFrameBuffering(VideoParameters *p_Vid)
       {
         if ((int)curr_sps->vui_seq_parameters.max_dec_frame_buffering > j)
         {
-          error ("max_dec_frame_buffering larger than MaxDpbSize", 500);
+          my12doom_printf("max_dec_frame_buffering larger than MaxDpbSize");
         }
         j = imax (1, curr_sps->vui_seq_parameters.max_dec_frame_buffering);
       }
