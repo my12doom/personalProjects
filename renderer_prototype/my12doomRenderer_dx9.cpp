@@ -1252,6 +1252,9 @@ HRESULT my12doomRenderer::invalidate_cpu_objects()
 
 HRESULT my12doomRenderer::invalidate_gpu_objects()
 {
+	// try to backup current image, may fail, doesn't matter
+	backup_rgb();
+
 	HD3D_invalidate_objects();
 	m_uidrawer->invalidate_gpu();
 	m_red_blue.invalid();
@@ -1465,9 +1468,9 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	//m_Device->CreateQuery(D3DQUERYTYPE_TIMESTAMP, &m_d3d_query);
 
 	// textures
-	FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_full, NULL));
-	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_left, NULL));
-	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
+	FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_rgb_full, NULL));
+	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_rgb_left, NULL));
+	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
 	fix_nv3d_bug();
 	FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
 	FAIL_RET( m_Device->CreateTexture(2048, 1536, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
@@ -1597,9 +1600,6 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 
 HRESULT my12doomRenderer::backup_rgb()
 {
-	if (m_dsr0->m_State == State_Running && timeGetTime() - m_last_frame_time < 333)		// don't backup or restore when running, that cause great jitter
-		return S_FALSE;
-
 	if (m_backuped)								// no repeated backup
 		return S_OK;
 
@@ -3628,7 +3628,11 @@ HRESULT my12doomRenderer::pump()
 			set_device_state(need_resize_back_buffer);
 	}
 
-	backup_rgb();
+	if (m_dsr0->m_State != State_Running || timeGetTime() - m_last_frame_time > 333)		// don't backup or restore when running, that cause great jitter
+	{
+		backup_rgb();
+		Sleep(1);
+	}
 	return handle_device_state();
 }
 

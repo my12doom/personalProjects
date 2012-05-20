@@ -286,7 +286,9 @@ HRESULT dx_player::init_window_size_positions()
 	int dcx = m_screen1.right - m_screen1.left - (result.right - result.left);
 	int dcy = m_screen1.bottom - m_screen1.top - (result.bottom - result.top);
 
-	if (compare_rect(m_saved_screen1, rect_zero) || compare_rect(m_saved_screen2, rect_zero) || compare_rect(m_saved_rect1, rect_zero))
+	if (compare_rect(m_saved_screen1, rect_zero) || compare_rect(m_saved_screen2, rect_zero) || compare_rect(m_saved_rect1, rect_zero)
+		// TODO: invalid position
+		)
 	{
 		const double ratio = 0.1;
 		SetWindowPos(id_to_hwnd(1), NULL, m_screen1.left + width1*ratio, m_screen1.top + height1*ratio,
