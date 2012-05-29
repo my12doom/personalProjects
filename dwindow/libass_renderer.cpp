@@ -24,7 +24,7 @@ HANDLE g_fonts_loading_thread = INVALID_HANDLE_VALUE;
 static DWORD WINAPI loadFontThread(LPVOID param);
 CCritSec g_libass_cs;
 
-LibassRenderer::LibassRenderer()
+LibassRendererCore::LibassRendererCore()
 {
 	m_ass_renderer = NULL;
 	m_track = NULL;
@@ -41,7 +41,7 @@ LibassRenderer::LibassRenderer()
 
 	reset();
 }
-LibassRenderer::~LibassRenderer()
+LibassRendererCore::~LibassRendererCore()
 {
 	CAutoLock lck(&g_libass_cs);
 
@@ -51,7 +51,7 @@ LibassRenderer::~LibassRenderer()
 	if (m_ass_renderer)
 		ass_renderer_done(m_ass_renderer);
 }
-HRESULT LibassRenderer::load_file(wchar_t *filename)
+HRESULT LibassRendererCore::load_file(wchar_t *filename)
 {
 	CAutoLock lck(&g_libass_cs);
 	if (!g_ass_library || !m_ass_renderer)
@@ -78,7 +78,7 @@ HRESULT LibassRenderer::load_file(wchar_t *filename)
 
 	return m_track ? S_OK : E_FAIL;
 }
-HRESULT LibassRenderer::load_index(void *data, int size)
+HRESULT LibassRendererCore::load_index(void *data, int size)
 {
 	CAutoLock lck(&g_libass_cs);
 	if (!g_ass_library || !m_ass_renderer)
@@ -93,7 +93,7 @@ HRESULT LibassRenderer::load_index(void *data, int size)
 
 	return S_OK;
 }
-HRESULT LibassRenderer::add_data(BYTE *data, int size, int start, int end)
+HRESULT LibassRendererCore::add_data(BYTE *data, int size, int start, int end)
 {
 	CAutoLock lck(&g_libass_cs);
 	if (!g_ass_library || !m_ass_renderer || !m_track)
@@ -103,7 +103,7 @@ HRESULT LibassRenderer::add_data(BYTE *data, int size, int start, int end)
 
 	return S_OK;
 }
-HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_time/*=-1*/)			// get subtitle on a time point, 
+HRESULT LibassRendererCore::get_subtitle(int time, rendered_subtitle *out, int last_time/*=-1*/)			// get subtitle on a time point, 
 																									// if last_time != -1, return S_OK = need update, return S_FALSE = same subtitle, and out should be ignored;
 {
 	if (NULL == out)
@@ -236,7 +236,7 @@ HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_
 	return S_OK;
 }
 
-HRESULT LibassRenderer::reset()
+HRESULT LibassRendererCore::reset()
 {
 	CAutoLock lck(&g_libass_cs);
 
@@ -272,7 +272,7 @@ HRESULT LibassRenderer::reset()
 }
 
 
-HRESULT LibassRenderer::load_fonts()
+HRESULT LibassRendererCore::load_fonts()
 {
 	if (g_fonts_loaded)
 		return S_OK;
@@ -285,7 +285,7 @@ HRESULT LibassRenderer::load_fonts()
 	return S_OK;
 }
 
-HRESULT LibassRenderer::fonts_loaded()
+HRESULT LibassRendererCore::fonts_loaded()
 {
 	if (g_fonts_loaded)
 		return S_OK;

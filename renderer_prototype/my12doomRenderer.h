@@ -151,6 +151,11 @@ public:
 	CPooledSurface *m_surf_YUY2;
 	CPooledSurface *m_surf_YV12;
 	CPooledSurface *m_surf_NV12;
+
+	CPooledSurface *m_surf_gpu_YUY2;
+	CPooledSurface *m_surf_gpu_YV12;
+	CPooledSurface *m_surf_gpu_NV12;
+
 	bool m_StretchRect;								// StretchRect level correct
 
 	CPooledTexture *m_tex_stereo_test;

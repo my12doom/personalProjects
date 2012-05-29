@@ -4175,6 +4175,10 @@ gpu_sample::~gpu_sample()
 	safe_delete(m_surf_YV12);
 	safe_delete(m_surf_NV12);
 	safe_delete(m_surf_YUY2);
+
+	safe_delete(m_surf_gpu_YV12);
+	safe_delete(m_surf_gpu_NV12);
+	safe_delete(m_surf_gpu_YUY2);
 }
 
 CCritSec g_gpu_lock;
@@ -4221,6 +4225,11 @@ HRESULT gpu_sample::commit()
 // 	mylog("prepare_rendering() cost %d cycle(%.3fms).\n", (int)(counter2.QuadPart - counter1.QuadPart), (double)(counter2.QuadPart-counter1.QuadPart)/fre.QuadPart);
 
 	return S_OK;
+}
+
+HRESULT gpu_sample::decommit()
+{
+	return E_NOTIMPL;
 }
 
 HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2,
@@ -4467,6 +4476,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	m_tex_RGB32 = m_tex_YUY2 = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
 	m_tex_gpu_RGB32 = m_tex_gpu_YUY2 = m_tex_gpu_Y = m_tex_gpu_YV12_UV = m_tex_gpu_NV12_UV = NULL;
 	m_surf_YV12 = m_surf_NV12 = m_surf_YUY2 = NULL;
+	m_surf_gpu_YV12 = m_surf_gpu_NV12 = m_surf_gpu_YUY2 = NULL;
 	m_tex_stereo_test = m_tex_stereo_test_cpu = NULL;
 	m_width = width;
 	m_height = height;

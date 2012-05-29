@@ -320,7 +320,7 @@ int index_ids(int id)
 
 DWORD WINAPI DIE(LPVOID param)
 {
-	*(char*)param = 123;
+	//*(char*)param = 123;
 	return 0;
 }
 

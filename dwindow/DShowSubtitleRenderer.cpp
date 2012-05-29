@@ -81,11 +81,11 @@ HRESULT DShowSubtitleRenderer::CheckMediaTypeCB(const CMediaType *inType)
 		m_srenderer = new CsrtRenderer(m_font, m_font_color);
 	else if (subType == MEDIASUBTYPE_ASS || subType == MEDIASUBTYPE_ASS2)
 	{
-		if (LibassRenderer::fonts_loaded() != S_OK)
+		if (LibassRendererCore::fonts_loaded() != S_OK)
 			MessageBoxW(NULL, C(L"This is first time to load ass/ssa subtilte, font scanning may take one minute or two, the player may looks like hanged, please wait..."), C(L"Please Wait"), MB_OK);
 
-		m_srenderer = new LibassRenderer();
-		((LibassRenderer*)m_srenderer)->load_index(inType->pbFormat + format->dwOffset, inType->cbFormat - format->dwOffset);
+		m_srenderer = new LibassRendererCore();
+		((LibassRendererCore*)m_srenderer)->load_index(inType->pbFormat + format->dwOffset, inType->cbFormat - format->dwOffset);
 	}
 	else if (subType == MEDIASUBTYPE_VOBSUB)
 	{
