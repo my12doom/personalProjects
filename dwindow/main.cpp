@@ -10,6 +10,7 @@
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
 int on_command(HWND hWnd, int uid);
 int init_dialog(HWND hWnd);
+LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo);
 
 INT_PTR CALLBACK register_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
 {
@@ -317,6 +318,11 @@ int index_ids(int id)
 }
 */
 
+DWORD WINAPI DIE(LPVOID param)
+{
+	*(char*)param = 123;
+	return 0;
+}
 
 int main()
 {/*
@@ -402,30 +408,88 @@ int main()
 	}
 */
 
-	WinMain(GetModuleHandle(NULL), 0, "", SW_SHOW);
 
 
 	__try 
 	{
+		char * x = NULL;
+		*x = 256;
 	}
 	__except(EXCEPTION_EXECUTE_HANDLER) 
 	{
-		long			StackIndex				= 0;
-
-		ADDR			block[63];
-		memset(block,0,sizeof(block));
 
 
-		USHORT frames = CaptureStackBackTrace(3,59,(void**)block,NULL);
+	}
+	SetUnhandledExceptionFilter(my_handler);
+	//my_handler(NULL);
+	CreateThread(NULL, NULL, DIE, NULL, NULL, NULL);
+	WinMain(GetModuleHandle(NULL), 0, "", SW_SHOW);
+}
 
-		for (int i = 0; i < frames ; i++)
+#include <Tlhelp32.h>
+
+MODULEENTRY32W *me32 = NULL;
+int me32_count = 0;
+void format_addr(char *out, ADDR addr)
+{
+	USES_CONVERSION;
+	sprintf(out, "(Unkown)0x%08x", addr);
+	
+	for(int i=0; i<me32_count; i++)
+	{
+		if (ADDR(me32[i].modBaseAddr) <= addr && addr <= ADDR(me32[i].modBaseAddr) + ADDR(me32[i].modBaseSize))
 		{
-			ADDR			InstructionPtr = (ADDR)block[i];
-
-			printf("0x%08x\n", block[i]);
-			StackIndex++;
+			sprintf(out, "(%s)+0x%08x", W2A(me32[i].szModule), int(addr - ADDR(me32[i].modBaseAddr)));
 		}
 	}
+}
+
+LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
+{
+	printf("EXCEPTION CODE: %08x\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
+
+	if (me32 == NULL)
+		me32 = (MODULEENTRY32W*)malloc(1024*sizeof(MODULEENTRY32W)); 
+
+	HANDLE hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, 0);
+	me32[0].dwSize = sizeof( MODULEENTRY32W);
+	int i = 0;
+	if (Module32FirstW(hThreadSnap, &me32[i++]))
+	{
+		do 
+		{
+			//wprintf_s(L"%s \t\t(%08x)\n", me32[i-1].szModule, me32[i-1].modBaseAddr);
+
+
+			me32[i].dwSize = sizeof(MODULEENTRY32W);
+		} while(Module32NextW(hThreadSnap, &me32[i++]));
+	}
+
+	me32_count = i-1;
+
+
+
+	long			StackIndex				= 0;
+	ADDR			block[63];
+	memset(block,0,sizeof(block));
+	USHORT frames = CaptureStackBackTrace(0,59,(void**)block,NULL);
+
+
+	for (int i = 0; i < frames ; i++)
+	{
+		ADDR			InstructionPtr = (ADDR)block[i];
+
+		char tmp[1024];
+		format_addr(tmp, InstructionPtr);
+		printf("%s\n", tmp);
+		StackIndex++;
+	}
+
+	fflush(stdout);
+
+	TerminateThread(GetCurrentThread(), -1);
+
+	return EXCEPTION_CONTINUE_EXECUTION;
 }
 
 

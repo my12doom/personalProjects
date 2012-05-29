@@ -3,6 +3,8 @@
 #include "pixelshaders\UI.h"
 #include "..\dwindow\global_funcs.h"
 
+my_quad quad[200];
+
 inline void p2pquad(my_quad &quad)
 {
 	quad.vertexes[0].x -= 0.5;
@@ -316,7 +318,6 @@ HRESULT ui_drawer_dwindow::init_gpu(int width, int height, IDirect3DDevice9 *dev
 
 
 	m_vertex = NULL;
-	my_quad quad[200];
 	for(int i=0; i<50; i++)
 	{
 		quad[i] = convert.tovertex(current_time[i/10][i%10]);
@@ -529,7 +530,8 @@ HRESULT ui_drawer_dwindow::draw_nonmovie_bg(IDirect3DSurface9 *surface, bool lef
 	hr = m_Device->SetTexture(0, m_ui_logo_gpu);
 	hr = m_Device->SetStreamSource( 0, m_vertex, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags );
-	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, (!left_eye ? TESTBUTTON : TESTBUTTON2)*4, 2 );
+	//hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, (!left_eye ? TESTBUTTON : TESTBUTTON2)*4, 2 );
+	hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, quad+ (!left_eye ? TESTBUTTON : TESTBUTTON2), sizeof(MyVertex));
 	return S_OK;
 }
 

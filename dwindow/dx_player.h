@@ -242,8 +242,8 @@ protected:
 	CCritSec m_subtitle_cache_sec;
 	int m_lastCBtime;
 	HRESULT draw_subtitle();
-	double m_subtitle_center_x;
-	double m_subtitle_bottom_y;
+	AutoSetting<double> m_subtitle_center_x;
+	AutoSetting<double> m_subtitle_bottom_y;
 	int m_user_offset;
 	int m_internel_offset;
 	int m_last_bitmap_update;

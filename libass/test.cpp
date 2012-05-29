@@ -264,6 +264,44 @@ int matrix()
 	return 0;
 }
 
+int interlace_RGB()
+{
+	RGBQUAD *src = (RGBQUAD*)malloc(sizeof(RGBQUAD) * 800 * 480);
+
+	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\waterdrop.bmp", IMAGE_BITMAP, 800, 480, LR_LOADFROMFILE);
+	GetBitmapBits(bm, 800*480*4, src);
+	DeleteObject(bm);
+
+
+	RGBQUAD *out = (RGBQUAD*)malloc(sizeof(RGBQUAD) * 800 * 480);
+	for(int y=0; y<480; y++)
+	{
+		for(int x=0; x<400; x++)
+		{
+			RGBQUAD *s1 = &src[y*800+x];
+			RGBQUAD *s2 = &src[y*800+x+400];
+
+			RGBQUAD *o = &out[y*800+x*2];
+			o->rgbRed   = s1->rgbRed;
+			o->rgbGreen = s2->rgbGreen;
+			o->rgbBlue  = s1->rgbBlue;
+
+			o++;
+			o->rgbRed   = s2->rgbRed;
+			o->rgbGreen = s1->rgbGreen;
+			o->rgbBlue = s2->rgbBlue;
+		}
+	}
+
+
+	save_bitmap((DWORD*)out, L"Z:\\out.bmp", 800, 480);
+
+	free(src);
+	free(out);
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	POINT mouse;
@@ -274,6 +312,7 @@ int main(int argc, char *argv[])
 	}
 	
 
+	return interlace_RGB();
 	return matrix();
 
 //	char URI[] = "//mnt/sdcard/%E9%98%BF%E4%B8%BD%E4%BA%9A%E5%A8%9C%E5%90%89%E5%88%A9%E6%96%AF-%20Shake%E8%8B%B9%E6%9E%9C.3dv";

@@ -2043,7 +2043,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		draw_bmp(temp_surface, false);
 		adjust_temp_color(temp_surface, false);
 
-		// pass3: analyph
+		// pass3: mask!
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		m_Device->SetRenderTarget(0, back_buffer);
 		m_Device->SetPixelShader(m_ps_masking);
