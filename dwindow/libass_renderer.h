@@ -3,6 +3,8 @@ extern "C" {
 #include <ass/ass.h>
 };
 #include "CSubtitle.h"
+#include <streams.h>
+#include "srt\srt_renderer.h"
 
 class LibassRendererCore: public CSubtitleRenderer
 {
@@ -31,6 +33,9 @@ protected:
 	ASS_Track *m_track;
 };
 
+// because fontconf need to scan fonts first, so we created this wrap class
+// all command is cached if LibassRendererCore is scanning fonts
+// return dummy pictures if scanning fonts
 class LibassRenderer: public CSubtitleRenderer
 {
 public:
@@ -45,11 +50,20 @@ public:
 																								// if last_time != -1, return S_OK = need update, return S_FALSE = same subtitle, and out should be ignored;
 	virtual HRESULT reset();
 	virtual HRESULT seek(){return S_OK;}														// to provide dshow support
-	virtual HRESULT set_font_color(DWORD newcolor){return E_NOTIMPL;};
-	virtual HRESULT set_font(HFONT newfont){return E_NOTIMPL;};									// for text based subtitles, the main program will try show_dlg=false first, if the SubtitleRenderer is not text based, it should return E_NOT_IMPL.
+	virtual HRESULT set_font_color(DWORD newcolor);
+	virtual HRESULT set_font(HFONT newfont);													// for text based subtitles, the main program will try show_dlg=false first, if the SubtitleRenderer is not text based, it should return E_NOT_IMPL.
 
 protected:
 
-	LibassRendererCore *m_ass_renderer;
-	void *m_command_queue;
+	static DWORD WINAPI loading_thread(LPVOID param);
+	HRESULT send_command(int command_type, void *data, int size);		// commands are stored in command queue if loading fonts, otherwise executed directly
+	HRESULT execute_command(int command_type, void *data, int size);
+
+	HANDLE m_thread;
+	CCritSec m_cs;
+	LibassRendererCore *m_core;
+	CAssRenderer *m_fallback;
+	void *m_commands;
+	bool *m_exit_flag;
+	bool m_loading_done_flag;
 };

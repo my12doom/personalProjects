@@ -3799,10 +3799,10 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	}
 	else if (wcsstr_nocase(pathname, L".ssa") || wcsstr_nocase(pathname, L".ass"))
 	{
-		if (LibassRendererCore::fonts_loaded() != S_OK)
-			MessageBoxW(NULL, C(L"This is first time to load ass/ssa subtilte, font scanning may take one minute or two, the player may looks like hanged, please wait..."), C(L"Please Wait"), MB_OK);
+// 		if (LibassRendererCore::fonts_loaded() != S_OK)
+// 			MessageBoxW(NULL, C(L"This is first time to load ass/ssa subtilte, font scanning may take one minute or two, the player may looks like hanged, please wait..."), C(L"Please Wait"), MB_OK);
 
-		m_renderer = new LibassRendererCore();
+		m_renderer = new LibassRenderer();
 	}
 	else if (wcsstr_nocase(pathname, L".sup"))
 	{

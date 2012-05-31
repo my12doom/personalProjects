@@ -380,6 +380,9 @@ int srt_parser::direct_add_subtitle(wchar_t *line, int start, int end)
 		wcscpy(l, r+1);
 		l = wcsstr(line, L"<");
 		r = wcsstr(line, L">");
+
+		if (l>=r)
+			break;
 	}
 
 	// find duplicate

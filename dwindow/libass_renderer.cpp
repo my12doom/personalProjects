@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <streams.h>
 #include <emmintrin.h>
+#include <assert.h>
 
 #define _r(c)  ((c)>>24)
 #define _g(c)  (((c)>>16)&0xFF)
@@ -335,4 +336,189 @@ static DWORD WINAPI loadFontThread(LPVOID param)
 	g_fonts_loaded = true;
 
 	return S_OK;
+}
+
+
+/// WRAP classes
+
+typedef struct command_struct
+{
+	int command_type;
+	void *data;
+	int size;
+	command_struct *next;
+} command;
+
+enum command_types
+{
+	command_loadfile,
+	command_loadindex,
+	command_adddata,
+	command_reset,
+	command_nothing,
+};
+
+LibassRenderer::LibassRenderer()
+{
+	m_core = NULL;
+	m_commands = NULL;
+	m_fallback = new CAssRenderer(NULL, RGB(255,255,255));
+	m_exit_flag = (bool*)malloc(sizeof(bool));
+	*m_exit_flag = false;
+	m_loading_done_flag = false;
+
+	m_thread = CreateThread(NULL, NULL, loading_thread, this, NULL, NULL);
+}
+
+LibassRenderer::~LibassRenderer()
+{
+	delete m_fallback;
+
+	{
+		CAutoLock lck(&m_cs);
+		if (!m_loading_done_flag)
+			*m_exit_flag = true;
+	}
+
+	delete m_core;
+}
+
+HRESULT LibassRenderer::load_file(wchar_t *filename)												//maybe you don't need this?
+{
+	void *p = malloc(wcslen(filename)*2+2);
+	memcpy(p, filename, wcslen(filename)*2+2);
+	m_fallback->load_file(filename);
+	return send_command(command_loadfile, p, wcslen(filename)*2+2);
+}
+
+HRESULT LibassRenderer::load_index(void *data, int size)
+{
+	void *p = malloc(size);
+	memcpy(p, data, size);
+	return send_command(command_loadindex, p, size);
+}
+HRESULT LibassRenderer::add_data(BYTE *data, int size, int start, int end)
+{
+	int *p = (int*)malloc(size + sizeof(int) * 2);
+	p[0] = start;
+	p[1] = end;
+
+	memcpy(p+2, data, size);
+	m_fallback->add_data(data, size, start, end);
+	return send_command(command_adddata, p, size + sizeof(int) * 2);
+}
+HRESULT LibassRenderer::get_subtitle(int time, rendered_subtitle *out, int last_time/*=-1*/)			// get subtitle on a time point, 
+																									// if last_time != -1, return S_OK = need update, return S_FALSE = same subtitle, and out should be ignored;
+{
+	CAutoLock lck(&m_cs);
+	if (!m_core)
+		return m_fallback->get_subtitle(time, out, last_time);
+
+	return m_core->get_subtitle(time, out, last_time);
+}
+HRESULT LibassRenderer::reset()
+{
+	m_fallback->reset();
+
+	return send_command(command_reset, NULL, 0);
+}
+
+
+HRESULT LibassRenderer::send_command(int command_type, void *data, int size)
+{
+	CAutoLock lck(&m_cs);
+
+	if (m_core)
+		return execute_command(command_type, data, size);
+
+	command *p = (command*)m_commands;
+	if (m_commands == NULL)
+	{
+		m_commands = malloc(sizeof(command));
+		p = (command*)m_commands;
+	}
+	else
+	{
+		while (p->next)
+			p = p->next;
+
+		p->next = (command*)malloc(sizeof(command));
+		p = p->next;
+	}
+
+	p->command_type = command_type;
+	p->data = data;
+	p->size = size;
+	p->next = NULL;
+
+	return S_OK;
+}
+
+HRESULT LibassRenderer::execute_command(int command_type, void *data, int size)
+{
+	HRESULT hr = E_UNEXPECTED;
+	switch(command_type)
+	{
+	case command_loadfile:
+		hr = m_core->load_file((wchar_t*)data);
+		break;
+	case command_loadindex:
+		hr = m_core->load_index(data, size);
+		break;
+	case command_adddata:
+		hr = m_core->add_data(((BYTE*)data)+2*sizeof(int), size-sizeof(int)*2, ((int*)data)[0], ((int*)data)[1]);
+		break;
+	case command_reset:
+		hr = m_core->reset();
+		break;
+	case command_nothing:
+		hr = S_OK;
+		break;
+	default:
+		assert(0);
+	}
+
+	return hr;
+}
+
+DWORD WINAPI LibassRenderer::loading_thread(LPVOID param)
+{
+	LibassRenderer *_this = (LibassRenderer *) param;
+	bool *exit_flag = _this->m_exit_flag;
+
+	LibassRendererCore *core = new LibassRendererCore();
+
+	if (!*exit_flag)
+	{
+		CAutoLock (&_this->m_cs);
+		_this->m_core = core;
+		command *p = (command*)_this->m_commands;
+		while (p)
+		{
+			_this->execute_command(p->command_type, p->data, p->size);
+			command *p2 = p;
+			
+			p = p->next;
+			if (p2->data)
+				free(p2->data);
+			free(p2);
+		}
+		_this->m_loading_done_flag = true;
+	}
+
+	free(exit_flag);
+
+	return 0;
+}
+
+HRESULT LibassRenderer::set_font(HFONT newfont)
+{
+	m_fallback->set_font(newfont);
+	return E_NOTIMPL;
+}
+
+HRESULT LibassRenderer::set_font_color(DWORD newcolor)
+{
+	m_fallback->set_font_color(newcolor);
+	return E_NOTIMPL;
 }

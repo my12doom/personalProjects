@@ -33,6 +33,7 @@ typedef struct _rendered_subtitle
 class CSubtitleRenderer
 {
 public:
+	virtual ~CSubtitleRenderer(){};
 	virtual HRESULT load_file(wchar_t *filename)=0;	//maybe you don't need this?
 	virtual HRESULT add_data(BYTE *data, int size, int start, int end)=0;
 	virtual HRESULT get_subtitle(int time, rendered_subtitle *out, int last_time=-1)=0;			// get subtitle on a time point, 

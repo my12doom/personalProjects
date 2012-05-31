@@ -895,6 +895,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 	if (!m_recreating_dshow_renderer && GetCurrentThreadId() == m_render_thread_id)
 	{
+		// warning : thread safe problem here
 		D3DSURFACE_DESC desc;
 		memset(&desc, 0, sizeof(desc));
 		if (m_tex_rgb_left) m_tex_rgb_left->GetLevelDesc(0, &desc);

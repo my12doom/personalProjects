@@ -21,6 +21,8 @@ protected:
 	srt_parser m_srt;
 	wchar_t m_last_found[1024];
 
+	HRESULT render(const wchar_t *text, rendered_subtitle *out, bool has_offset, int offset);
+
 	// font
 	double m_aspect;		// default = 16/9
 	HFONT m_font;
@@ -31,14 +33,5 @@ class CAssRenderer : public CsrtRenderer
 {
 public:
 	CAssRenderer(HFONT font, DWORD fontcolor): CsrtRenderer(font, fontcolor){}
-	virtual HRESULT load_file(wchar_t *filename){return E_NOTIMPL;}						// no support for plain text .ass and .ass2 file for now
-	virtual HRESULT add_data(BYTE *data, int size, int start, int end);					// override this function to provide dshow support, which remove leading tags
-};
-
-class CAss2Renderer : public CsrtRenderer
-{
-public:
-	CAss2Renderer(HFONT font, DWORD fontcolor): CsrtRenderer(font, fontcolor){}
-	virtual HRESULT load_file(wchar_t *filename){return E_NOTIMPL;}						// no support for plain text .ass and .ass2 file for now
 	virtual HRESULT add_data(BYTE *data, int size, int start, int end);					// override this function to provide dshow support, which remove leading tags
 };
