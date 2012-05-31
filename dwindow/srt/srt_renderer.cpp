@@ -230,7 +230,7 @@ HRESULT CAssRenderer::add_data(BYTE *data, int size, int start, int end)
 	wcs_replace(p2, L"\\N", L"\n");
 
 	wcscat(p2, L"\n");
-	wcscat(p2, C(L"(Font Loading)"));
+	wcscat(p2, C(L"(Fonts Loading)"));
 
 	HRESULT hr = m_srt.direct_add_subtitle(p2, start, end);
 

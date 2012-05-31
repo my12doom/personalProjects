@@ -315,6 +315,10 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Dual projector and IZ3D mode is only available in registered version.", L"双投影与IZ3D功能仅在付费版可用");
 			add_localization(L"External audio track support is only available in registered version.", L"载入外部音轨功能仅在付费版可用");
 
+
+			// ass fonts
+			add_localization(L"(Fonts Loading)", L"（字体正在载入中）");
+
 		}
 		break;
 	}

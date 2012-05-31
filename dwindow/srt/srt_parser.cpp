@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <Windows.h>
 #include "srt_parser.h"
+#include "..\global_funcs.h"
 
 bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *replacer);
 
@@ -103,6 +104,7 @@ srt_parser::srt_parser()
 	m_last_type = 0;
 	m_index_pos = 0;
 	m_text_pos = 0;
+	m_ass = false;
 }
 
 srt_parser::~srt_parser()
@@ -362,6 +364,13 @@ int srt_parser::get_subtitle(int start, int end, wchar_t *out, bool *has_offset 
 
 int srt_parser::direct_add_subtitle(wchar_t *line, int start, int end)
 {
+	// add warning if ass
+	if (m_ass)
+	{
+		wcscat(line, L"\n");
+		wcscat(line, C(L"(Fonts Loading)"));
+	}
+
 	// find offset tag <offset=xx>
 	bool has_offset = false;
 	int offset = 0;
@@ -375,14 +384,11 @@ int srt_parser::direct_add_subtitle(wchar_t *line, int start, int end)
 	// remove <XXX> in the line
 	wchar_t *l = wcsstr(line, L"<");
 	wchar_t *r = wcsstr(line, L">");
-	while (l && r)
+	while (l && r && r > l)
 	{
 		wcscpy(l, r+1);
 		l = wcsstr(line, L"<");
 		r = wcsstr(line, L">");
-
-		if (l>=r)
-			break;
 	}
 
 	// find duplicate
