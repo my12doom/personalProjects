@@ -272,8 +272,45 @@ HRESULT dx_player::detect_monitors()
 	return S_OK;
 }
 
+inline void NormalizeRect(RECT *rect)
+{
+	RECT normal = {min(rect->left, rect->right), min(rect->top, rect->bottom), max(rect->left, rect->right), max(rect->top, rect->bottom)};
+	*rect = normal;
+}
+
+bool dx_player::rect_visible(RECT rect)
+{
+	::detect_monitors();
+	NormalizeRect(&rect);
+	bool rtn = false;
+	for(int i=0; i<get_mixed_monitor_count(); i++)
+	{
+		LONG *p = (LONG*)&rect;
+		RECT r;
+		get_mixed_monitor_by_id(i, &r, NULL);
+		for(int j=0; j<4; j++)
+		{
+			LONG x = p[j];
+			LONG y = p[(j+1)%4];
+			if (r.left <= x && x <= r.right &&
+				r.top <= y && y <= r.bottom)
+				rtn = true;
+		}
+	}
+
+	return rtn;
+}
+
 HRESULT dx_player::init_window_size_positions()
 {
+	// normalize
+	NormalizeRect(&m_screen1);
+	NormalizeRect(&m_screen2);
+	NormalizeRect(&m_saved_screen1);
+	NormalizeRect(&m_saved_screen2);
+	NormalizeRect(&m_saved_rect1);
+	NormalizeRect(&m_saved_rect2);
+
 	// window size & pos
 	int width1 = m_screen1.right - m_screen1.left;
 	int height1 = m_screen1.bottom - m_screen1.top;
@@ -289,7 +326,7 @@ HRESULT dx_player::init_window_size_positions()
 	int dcy = m_screen1.bottom - m_screen1.top - (result.bottom - result.top);
 
 	if (compare_rect(m_saved_screen1, rect_zero) || compare_rect(m_saved_screen2, rect_zero) || compare_rect(m_saved_rect1, rect_zero)
-		// TODO: invalid position
+		|| !rect_visible(m_saved_screen1) || !rect_visible(m_saved_screen2) || !rect_visible(m_saved_rect1) || !rect_visible(m_saved_rect2)
 		)
 	{
 		const double ratio = 0.1;
@@ -2285,8 +2322,10 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 	reset();
 	start_loading();
 	HRESULT hr;
+	hr = load_file(L"Z:\\left.mkv");
+	hr = load_file(L"Z:\\right.mkv");
 	//hr = load_file(L"Z:\\00001.m2ts");
-	hr = load_file(pathname);
+	//hr = load_file(pathname);
 	//hr = load_file(L"http://127.0.0.1/C%3A/TDDOWNLOAD/ding540%20(1)%20(1).mkv");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\haa\\00002.haa");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00005n.m2ts");

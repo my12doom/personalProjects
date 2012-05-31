@@ -126,6 +126,7 @@ protected:
 	HRESULT detect_monitors();
 	HRESULT set_output_monitor(int out_id, int monitor_id);
 	HRESULT init_window_size_positions();
+	bool rect_visible(RECT rect);
 
 	// image control vars
 	HINSTANCE m_hexe;
@@ -174,7 +175,7 @@ protected:
 	LRESULT on_paint(int id, HDC hdc);
 	LRESULT on_timer(int id);
 	LRESULT on_size(int id, int type, int x, int y);
-	LRESULT on_init_dialog(int id, WPARAM wParam, LPARAM lParam);		// buged
+	LRESULT on_init_dialog(int id, WPARAM wParam, LPARAM lParam);
 	LRESULT on_dropfile(int id, int count, wchar_t **filenames);
 	LRESULT on_idle_time();	// S_FALSE = Sleep(1)
 	// end window handler
