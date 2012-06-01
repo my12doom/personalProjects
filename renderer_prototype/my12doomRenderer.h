@@ -572,6 +572,8 @@ protected:
 
 	my12doom_auto_shader m_red_blue;
 	my12doom_auto_shader m_ps_masking;
+	my12doom_auto_shader m_lanczosX;
+	my12doom_auto_shader m_lanczosY;
 
 	/*
 	CComPtr<IDirect3DTexture9> m1_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
@@ -600,6 +602,8 @@ protected:
 	CComPtr<IDirect3DTexture9> m_mask_temp_left;			// two temp texture, you may need it in some case
 	CComPtr<IDirect3DTexture9> m_mask_temp_right;
 
+	CComPtr<IDirect3DTexture9> m_tex_bmp2;
+	CComPtr<IDirect3DTexture9> m_tex_bmp1;
 	CComPtr<IDirect3DTexture9> m_tex_bmp;
 	CComPtr<IDirect3DSurface9> m_tex_bmp_mem;
 	D3DLOCKED_RECT m_bmp_locked_rect;

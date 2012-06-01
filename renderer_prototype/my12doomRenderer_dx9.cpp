@@ -18,6 +18,8 @@
 #include "PixelShaders/lanczos.h"
 #include "PixelShaders/blur.h"
 #include "PixelShaders/blur2.h"
+#include "PixelShaders/LanczosX.h"
+#include "PixelShaders/LanczosY.h"
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
@@ -1260,6 +1262,8 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_uidrawer->invalidate_gpu();
 	m_red_blue.invalid();
 	m_ps_masking.invalid();
+	m_lanczosX.invalid();
+	m_lanczosY.invalid();
 
 	// query
 	//m_d3d_query = NULL;
@@ -1286,6 +1290,8 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_tex_rgb_right = NULL;
 	m_tex_rgb_full = NULL;
 	m_tex_bmp = NULL;
+	m_tex_bmp1 = NULL;
+	m_tex_bmp2 = NULL;
 
 	// source textures
 	/*
@@ -1445,6 +1451,8 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 
 	m_red_blue.set_source(m_Device, g_code_anaglyph, sizeof(g_code_anaglyph), true, (DWORD*)m_key);
 	m_ps_masking.set_source(m_Device, g_code_masking, sizeof(g_code_masking), true, (DWORD*)m_key);
+	m_lanczosX.set_source(m_Device, g_code_lanczosX, sizeof(g_code_lanczosX), true, (DWORD*)m_key);
+	m_lanczosY.set_source(m_Device, g_code_lanczosY, sizeof(g_code_lanczosY), true, (DWORD*)m_key);
 
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
@@ -1474,7 +1482,9 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
 	fix_nv3d_bug();
 	FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
-	FAIL_RET( m_Device->CreateTexture(2048, 1536, 0, use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
+	FAIL_RET( m_Device->CreateTexture(2048, 1536, 0, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
+	FAIL_RET( m_Device->CreateTexture(2048, 1536, 0, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp1, NULL));
+	FAIL_RET( m_Device->CreateTexture(2048, 1536, 0, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp2, NULL));
 	if(m_tex_bmp_mem == NULL)
 	{
 		// only first time, so we don't need lock CritSec
@@ -2424,19 +2434,9 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	HRESULT hr = E_FAIL;
 
 
-	m_Device->SetRenderTarget(0, surface);
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	float mip_lod = -1.0f;
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetTexture( 0, m_tex_bmp );
-	hr = m_Device->SetStreamSource( 0, m_vertex_subtitle, 0, sizeof(MyVertex) );
-	hr = m_Device->SetFVF( FVF_Flags_subtitle );
-
 
 	// movie picture position
 	float active_aspect = get_active_aspect();
@@ -2471,15 +2471,126 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	float pic_top = (float)tar.top / m_active_pp.BackBufferHeight;
 	float pic_height = (float)(tar.bottom - tar.top) / m_active_pp.BackBufferHeight;
 
-	// config subtitle position
 	float left = pic_left + pic_width * m_bmp_fleft;
 	float width = pic_width * m_bmp_fwidth;
 	float top = pic_top + pic_height * m_bmp_ftop;
 	float height = pic_height * m_bmp_fheight;
+
+	// lanczos resize test
+	int width_in_pixel = width * m_active_pp.BackBufferWidth;
+	int height_in_pixel = height * m_active_pp.BackBufferHeight;
+
+	// pass1, X filter
+	CComPtr<IDirect3DSurface9> rt1;
+	m_tex_bmp1->GetSurfaceLevel(0, &rt1);
+	m_Device->SetRenderTarget(0, rt1);
+	clear(rt1, D3DCOLOR_ARGB(0,0,0,0));
+	MyVertex vertex[4];	
+	vertex[0].x = (float)0;
+	vertex[0].y = (float)0;
+	vertex[1].x = (float)width_in_pixel;
+	vertex[1].y = (float)0;
+	vertex[2].x = (float)0;
+	vertex[2].y = (float)m_bmp_height;
+	vertex[3].x = (float)width_in_pixel;
+	vertex[3].y = (float)m_bmp_height;
+	for(int i=0;i <4; i++)
+	{
+		vertex[i].x -= 0.5f;
+		vertex[i].y -= 0.5f;
+		vertex[i].z = 1.0f;
+		vertex[i].w = 1.0f;
+	}
+
+	vertex[0].tu = (float)0 / 2048;
+	vertex[0].tv = (float)0 / 1536;
+	vertex[1].tu = (float)m_bmp_width / 2048;
+	vertex[1].tv = (float)0 / 1536;
+	vertex[2].tu = (float)0 / 2048;
+	vertex[2].tv = (float)m_bmp_height / 1536;
+	vertex[3].tu = (float)m_bmp_width / 2048;
+	vertex[3].tv = (float)m_bmp_height / 1536;
+
+	float ps[4] = {(float)width_in_pixel/m_bmp_width, 2048, 1536, 0};
+	ps[0] = ps[0] > 0 ? ps[0] : -ps[0];
+	ps[0] = ps[0] > 1 ? 1 : ps[0];
+	m_Device->SetPixelShaderConstantF(0, ps, 1);
+	m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+	if (width*m_active_pp.BackBufferWidth != m_bmp_width && (IDirect3DPixelShader9*)m_lanczosX)
+	{
+		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+		m_Device->SetPixelShader(m_lanczosX);
+	}
+	hr = m_Device->SetTexture( 0, m_tex_bmp );
+	hr = m_Device->SetFVF( FVF_Flags );
+	hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
+
+	// pass2, Y filter
+	CComPtr<IDirect3DSurface9> rt2;
+	m_tex_bmp2->GetSurfaceLevel(0, &rt2);
+	m_Device->SetRenderTarget(0, rt2);
+	clear(rt2, D3DCOLOR_ARGB(0,0,0,0));
+	vertex[0].x = (float)0;
+	vertex[0].y = (float)0;
+	vertex[1].x = (float)width_in_pixel;
+	vertex[1].y = (float)0;
+	vertex[2].x = (float)0;
+	vertex[2].y = (float)height_in_pixel;
+	vertex[3].x = (float)width_in_pixel;
+	vertex[3].y = (float)height_in_pixel;
+	for(int i=0;i <4; i++)
+	{
+		vertex[i].x -= 0.5f;
+		vertex[i].y -= 0.5f;
+		vertex[i].z = 1.0f;
+		vertex[i].w = 1.0f;
+	}
+
+	vertex[0].tu = (float)0 / 2048;
+	vertex[0].tv = (float)0 / 1536;
+	vertex[1].tu = (float)width_in_pixel / 2048;
+	vertex[1].tv = (float)0 / 1536;
+	vertex[2].tu = (float)0 / 2048;
+	vertex[2].tv = (float)m_bmp_height / 1536;
+	vertex[3].tu = (float)width_in_pixel / 2048;
+	vertex[3].tv = (float)m_bmp_height / 1536;
+
+	ps[0] = (float)height_in_pixel/m_bmp_height;
+	ps[0] = ps[0] > 0 ? ps[0] : -ps[0];
+	ps[0] = ps[0] > 1 ? 1 : ps[0];
+	m_Device->SetPixelShaderConstantF(0, ps, 1);
+	m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	if (width*m_active_pp.BackBufferWidth != m_bmp_width && (IDirect3DPixelShader9*)m_lanczosY)
+	{
+		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+		m_Device->SetPixelShader(m_lanczosY);
+	}
+	hr = m_Device->SetTexture( 0, m_tex_bmp1 );
+	hr = m_Device->SetFVF( FVF_Flags );
+	hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
+
+	// config subtitle position
 	float cfg_main[8] = {left*2-1, top*-2+1, width*2, height*-2,
-					0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1536};
+		0, 0, (float)width_in_pixel/2048, (float)height_in_pixel/1536};
 	float cfg_shadow[8] = {(left+0.001)*2-1, (top+0.001)*-2+1, width*2, height*-2,
-		0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1536};
+		0, 0, (float)width_in_pixel/2048, (float)height_in_pixel/1536};
+
+	// final drawing
+	m_Device->SetRenderTarget(0, surface);
+	float mip_lod = -1.0f;
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+	hr = m_Device->SetTexture( 0, m_tex_bmp2 );
+	hr = m_Device->SetStreamSource( 0, m_vertex_subtitle, 0, sizeof(MyVertex) );
+	hr = m_Device->SetFVF( FVF_Flags_subtitle );
+
 
 	if (!left_eye)
 	{
@@ -2504,6 +2615,11 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	// reset shader
 	hr = m_Device->SetVertexShader(NULL);
 	hr = m_Device->SetPixelShader(NULL);
+
+	CComPtr<IDirect3DSurface9> src;
+	m_tex_bmp->GetSurfaceLevel(0, &src);
+	RECT test = {0,0,width_in_pixel, height_in_pixel};
+	hr = m_Device->StretchRect(rt2, &test, surface, &test, D3DTEXF_LINEAR);
 
 	return S_OK;
 }

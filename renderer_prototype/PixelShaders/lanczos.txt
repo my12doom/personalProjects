@@ -31,6 +31,7 @@ float4 lanczosX(float2 tex : TEXCOORD0) : COLOR
   float2 pixcoord  =  tex/ps;
   float2 fract     = frac(pixcoord);
   float2 coord0    = tex-(fract)*ps;
+  coord0.y = tex.y;
   
   
   float total_weight = 0;
@@ -59,6 +60,7 @@ float4 lanczosY(float2 tex : TEXCOORD0) : COLOR
   float2 pixcoord  =  tex/ps;
   float2 fract     = frac(pixcoord);
   float2 coord0    = tex-(fract)*ps;
+  coord0.x = tex.x;
   
   
   float total_weight = 0;
