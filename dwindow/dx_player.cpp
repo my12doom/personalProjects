@@ -2322,10 +2322,10 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 	reset();
 	start_loading();
 	HRESULT hr;
-	hr = load_file(L"Z:\\left.mkv");
-	hr = load_file(L"Z:\\right.mkv");
+// 	hr = load_file(L"Z:\\left.mkv");
+// 	hr = load_file(L"Z:\\right.mkv");
 	//hr = load_file(L"Z:\\00001.m2ts");
-	//hr = load_file(pathname);
+	hr = load_file(pathname);
 	//hr = load_file(L"http://127.0.0.1/C%3A/TDDOWNLOAD/ding540%20(1)%20(1).mkv");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\haa\\00002.haa");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00005n.m2ts");
