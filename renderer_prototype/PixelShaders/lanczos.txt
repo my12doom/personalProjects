@@ -1,0 +1,78 @@
+static const float     halfpi     = 1.5707963267948966192313216916398;
+static const float         pi     = 3.1415926535897932384626433832795;
+sampler s0 : register(s0);
+float4 p0 : register(c0);
+float a = 4.0;
+#define rate (p0[0])
+#define TEXTURE_WIDTH p0[1]
+#define TEXTURE_HEIGHT p0[2]
+#define lobe 4
+
+float tap(float x)
+{
+	x *= rate;
+	
+ 	if (abs(x) >= lobe)
+ 		return 0;
+ 		
+ 	if (abs(x) <= 0.00001f)
+ 		return pi*pi;
+	
+	return lobe*sin(pi*x)*sin(pi*x/lobe)/x/x;
+}
+
+float4 lanczosX(float2 tex : TEXCOORD0) : COLOR
+{
+  float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
+	
+  float2 dx = {ps.x,0.0};
+  float2 dy = {0.0,ps.y};
+  
+  float2 pixcoord  =  tex/ps;
+  float2 fract     = frac(pixcoord);
+  float2 coord0    = tex-(fract)*ps;
+  
+  
+  float total_weight = 0;
+  float4 total_color = 0;
+  for (int x=-lobe; x<=lobe; x++)
+  {
+	float xx = fract.x - x;
+	float yy = fract.y;
+	float weight =  tap(xx)*tap(yy);
+	
+	float4 color = tex2D(s0, coord0 + x*dx);
+	total_weight += weight;
+	total_color += weight * color;
+  }
+  
+  return total_color/total_weight;  
+}
+
+float4 lanczosY(float2 tex : TEXCOORD0) : COLOR
+{
+  float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
+	
+  float2 dx = {ps.x,0.0};
+  float2 dy = {0.0,ps.y};
+  
+  float2 pixcoord  =  tex/ps;
+  float2 fract     = frac(pixcoord);
+  float2 coord0    = tex-(fract)*ps;
+  
+  
+  float total_weight = 0;
+  float4 total_color = 0;
+  for (int y=-lobe; y<=lobe; y++)
+  {
+	float xx = fract.x;
+	float yy = fract.y - y;
+	float weight =  tap(xx)*tap(yy);
+	
+	total_weight += weight;
+	float4 color = tex2D(s0, coord0 + y*dy);
+	total_color += weight * color;
+  }
+  
+  return total_color/total_weight;  
+}

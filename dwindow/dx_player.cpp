@@ -2901,7 +2901,6 @@ HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
 	// Save Filter State and Stop
 	int time = 0;
 	tell(&time);
-	time += 10;
 	OAFilterState state_before, state;
 	m_mc->GetState(INFINITE, &state_before);
 	if (state_before != State_Stopped)

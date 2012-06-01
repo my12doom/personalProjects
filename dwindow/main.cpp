@@ -95,6 +95,7 @@ extern HRESULT show_theater_controller(HINSTANCE inst, HWND owner, dx_player *p)
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
+	SetUnhandledExceptionFilter(my_handler);
 	int argc = 1;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 
@@ -420,9 +421,8 @@ int main()
 
 
 	}
-	SetUnhandledExceptionFilter(my_handler);
 	//my_handler(NULL);
-	CreateThread(NULL, NULL, DIE, NULL, NULL, NULL);
+// 	CreateThread(NULL, NULL, DIE, NULL, NULL, NULL);
 	WinMain(GetModuleHandle(NULL), 0, "", SW_SHOW);
 }
 
@@ -439,7 +439,7 @@ void format_addr(char *out, ADDR addr)
 	{
 		if (ADDR(me32[i].modBaseAddr) <= addr && addr <= ADDR(me32[i].modBaseAddr) + ADDR(me32[i].modBaseSize))
 		{
-			sprintf(out, "(%s)+0x%08x", W2A(me32[i].szModule), int(addr - ADDR(me32[i].modBaseAddr)));
+			sprintf(out, "0x%08x(%s+0x%08x)", addr, W2A(me32[i].szModule), int(addr - ADDR(me32[i].modBaseAddr)));
 		}
 	}
 }
@@ -487,9 +487,10 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 
 	fflush(stdout);
 
-	TerminateThread(GetCurrentThread(), -1);
+	//TerminateThread(GetCurrentThread(), -1);
+	DebugBreak();
 
-	return EXCEPTION_CONTINUE_EXECUTION;
+	return EXCEPTION_CONTINUE_SEARCH;
 }
 
 
@@ -587,3 +588,5 @@ int on_command(HWND hWnd, int uid)
 
 	return 0;
 }
+
+

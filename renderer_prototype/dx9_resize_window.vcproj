@@ -173,11 +173,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="d3d9.lib d3dx9.lib dxguid.lib strmbasd.lib strmiids.lib winmm.lib"
+				AdditionalDependencies="d3d9.lib d3dx9.lib dxguid.lib strmbase.lib strmiids.lib winmm.lib"
 				OutputFile=".\Debug/dx9_resize_window.exe"
 				LinkIncremental="0"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode"
+				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode;D:\DS_SDK_LITE\BaseClasses\Release_Unicode"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/dx9_resize_window.pdb"
 				SubSystem="2"
@@ -245,6 +245,20 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\PixelShaders\lanczos.txt"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Compiling lanczos of lanczos.txt"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosX.h lanczosX yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosY.h lanczosY yes ps_3_0&#x0D;&#x0A;"
+						Outputs="Lanczos.h"
 					/>
 				</FileConfiguration>
 			</File>
