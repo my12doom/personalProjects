@@ -57,6 +57,13 @@ enum aspect_mode_types
 	aspect_mode_types_max,
 };
 
+typedef struct
+{
+	float left;
+	float top;
+	float right;
+	float bottom;
+} RECTF;
 
 
 class Imy12doomRendererCallback
@@ -444,6 +451,10 @@ protected:
 	HRESULT draw_bmp(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_ui(IDirect3DSurface9 *surface);
 	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left);
+	// assume dst has D3DUSAGE_RENDERTARGET Flag
+	// assume src is first level of a texture
+	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECT *src_rect = NULL, RECT *dst_rect = NULL);
+	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECTF *src_rect = NULL, RECTF *dst_rect = NULL);
 #ifdef DEBUG
 	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_ARGB(0, 0, 0, 0));
 #else
@@ -575,20 +586,6 @@ protected:
 	my12doom_auto_shader m_lanczosX;
 	my12doom_auto_shader m_lanczosY;
 
-	/*
-	CComPtr<IDirect3DTexture9> m1_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
-	CComPtr<IDirect3DTexture9> m1_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
-	CComPtr<IDirect3DTexture9> m1_tex_Y;							// Y plane of YV12/NV12, in L8
-	CComPtr<IDirect3DTexture9> m1_tex_YV12_UV;					// UV plane of YV12, in L8, double height
-	CComPtr<IDirect3DTexture9> m1_tex_NV12_UV;					// UV plane of NV12, in A8L8
-
-	CComPtr<IDirect3DTexture9> m2_tex_RGB32;						// RGB32 planes, in A8R8G8B8, full width
-	CComPtr<IDirect3DTexture9> m2_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
-	CComPtr<IDirect3DTexture9> m2_tex_Y;							// Y plane of YV12/NV12, in L8
-	CComPtr<IDirect3DTexture9> m2_tex_YV12_UV;					// UV plane of YV12, in L8, double height
-	CComPtr<IDirect3DTexture9> m2_tex_NV12_UV;					// UV plane of NV12, in A8L8
-	*/
-
 	// TV - PC level test surfaces
 	CComPtr<IDirect3DSurface9> m_PC_level_test;
 
@@ -602,8 +599,6 @@ protected:
 	CComPtr<IDirect3DTexture9> m_mask_temp_left;			// two temp texture, you may need it in some case
 	CComPtr<IDirect3DTexture9> m_mask_temp_right;
 
-	CComPtr<IDirect3DTexture9> m_tex_bmp2;
-	CComPtr<IDirect3DTexture9> m_tex_bmp1;
 	CComPtr<IDirect3DTexture9> m_tex_bmp;
 	CComPtr<IDirect3DSurface9> m_tex_bmp_mem;
 	D3DLOCKED_RECT m_bmp_locked_rect;

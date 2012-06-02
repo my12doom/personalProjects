@@ -74,9 +74,5 @@ protected:
 	RECT m_screen1;
 	RECT m_screen2;
 	bool m_show_mouse;
-
-	/*
-	bool m_show_ui;
-	*/
 };
 

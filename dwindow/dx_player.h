@@ -130,7 +130,6 @@ protected:
 
 	// image control vars
 	HINSTANCE m_hexe;
-	//AutoSetting<bool> m_always_show_right/*(L"AlwaysShowRight", false)*/;
 	AutoSetting<double> m_aspect;/*(L"AlwaysShowRight", false)*/;
 	AutoSetting<DWORD> m_aspect_mode;
 
@@ -145,8 +144,6 @@ protected:
 
 	// helper function and vars
 	HRESULT CrackPD10(IBaseFilter *filter);
-	HRESULT calculate_movie_rect(RECT *source, RECT *client, RECT *letterbox, bool ui);
-	HRESULT paint_letterbox(int id, RECT letterbox);
 	bool m_select_font_active;
 	static DWORD WINAPI select_font_thread(LPVOID lpParame);
 	HRESULT reset_and_loadfile_internal(const wchar_t *pathname);
@@ -170,8 +167,6 @@ protected:
 	LRESULT on_mouse_up(int id, int button, int x, int y);
 	LRESULT on_double_click(int id, int button, int x, int y);
 	LRESULT on_key_down(int id, int key);
-	//LRESULT on_close(int id);
-	//LRESULT on_display_change();
 	LRESULT on_paint(int id, HDC hdc);
 	LRESULT on_timer(int id);
 	LRESULT on_size(int id, int type, int x, int y);
