@@ -257,7 +257,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling lanczos of lanczos.txt"
-						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosX.h lanczosX yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosY.h lanczosY yes ps_3_0&#x0D;&#x0A;"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosX.h lanczosX yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosY.h lanczosY yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\Lanczos.h lanczos yes ps_3_0&#x0D;&#x0A;"
 						Outputs="Lanczos.h"
 					/>
 				</FileConfiguration>
