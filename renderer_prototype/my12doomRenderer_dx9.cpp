@@ -2396,8 +2396,106 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 
 	return S_OK;
 }
+
+HRESULT my12doomRenderer::draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye)
+{
+	if (!surface)
+		return E_POINTER;
+
+	if (!m_has_subtitle)
+		return S_FALSE;
+
+	HRESULT hr = E_FAIL;
+
+
+	m_Device->SetRenderTarget(0, surface);
+	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	float mip_lod = -1.0f;
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
+	hr = m_Device->SetTexture( 0, m_tex_bmp );
+	hr = m_Device->SetStreamSource( 0, m_vertex_subtitle, 0, sizeof(MyVertex) );
+	hr = m_Device->SetFVF( FVF_Flags_subtitle );
+
+
+	// movie picture position
+	float active_aspect = get_active_aspect();
+	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+	if (m_output_mode == out_sbs)
+		tar.right /= 2;
+	else if (m_output_mode == out_tb)
+		tar.bottom /= 2;
+
+	int delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
+	int delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
+	if (delta_w > 0)
+	{
+		tar.left += delta_w/2;
+		tar.right -= delta_w/2;
+	}
+	else if (delta_h > 0)
+	{
+		tar.top += delta_h/2;
+		tar.bottom -= delta_h/2;
+	}
+
+	int tar_width = tar.right-tar.left;
+	int tar_height = tar.bottom - tar.top;
+	tar.left += (LONG)(tar_width * m_bmp_offset_x);
+	tar.right += (LONG)(tar_width * m_bmp_offset_x);
+	tar.top += (LONG)(tar_height * m_bmp_offset_y);
+	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
+
+	float pic_left = (float)tar.left / m_active_pp.BackBufferWidth;
+	float pic_width = (float)(tar.right - tar.left) / m_active_pp.BackBufferWidth;
+	float pic_top = (float)tar.top / m_active_pp.BackBufferHeight;
+	float pic_height = (float)(tar.bottom - tar.top) / m_active_pp.BackBufferHeight;
+
+	// config subtitle position
+	float left = pic_left + pic_width * m_bmp_fleft;
+	float width = pic_width * m_bmp_fwidth;
+	float top = pic_top + pic_height * m_bmp_ftop;
+	float height = pic_height * m_bmp_fheight;
+	float cfg_main[8] = {left*2-1, top*-2+1, width*2, height*-2,
+		0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1536};
+	float cfg_shadow[8] = {(left+0.001)*2-1, (top+0.001)*-2+1, width*2, height*-2,
+		0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1536};
+
+	if (!left_eye)
+	{
+		cfg_main[0] -= m_bmp_offset*pic_width * 2;
+		cfg_shadow[0] -= m_bmp_offset*pic_width * 2;
+	}
+	hr = m_Device->SetVertexShader(m_vs_subtitle);
+
+	// draw shadow
+	if (m_gpu_shadow)
+	{
+		hr = m_Device->SetPixelShader(m_ps_bmp_blur);
+		hr = m_Device->SetVertexShaderConstantF(0, cfg_shadow, 2);
+		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+	}
+
+	// draw main
+	hr = m_Device->SetPixelShader(NULL);
+	hr = m_Device->SetVertexShaderConstantF(0, cfg_main, 2);
+	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
+
+	// reset shader
+	hr = m_Device->SetVertexShader(NULL);
+	hr = m_Device->SetPixelShader(NULL);
+
+	return S_OK;
+}
+
 HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 {
+	return draw_bmp_mip(surface, left_eye);
+
 	if (!surface)
 		return E_POINTER;
 
@@ -2477,7 +2575,7 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	RECTF resize_d = {frac(left_in_pixel), frac(top_in_pixel),
 					  frac(left_in_pixel)+width_in_pixel,
 					  frac(top_in_pixel)+height_in_pixel};
-	resize_surface(bmp_surf, rt1, false, &resize_s, &resize_d);
+	resize_surface(bmp_surf, rt1, true, &resize_s, &resize_d);
 
 	// final drawing
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );

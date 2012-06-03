@@ -449,6 +449,7 @@ protected:
 	HRESULT render_nolock(bool forced = false);
 	HRESULT draw_movie(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_bmp(IDirect3DSurface9 *surface, bool left_eye);
+	HRESULT draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_ui(IDirect3DSurface9 *surface);
 	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left);
 	// assume dst has D3DUSAGE_RENDERTARGET Flag
