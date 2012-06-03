@@ -10,7 +10,7 @@ float a = 4.0;
 #define rate_y (p0[1])
 #define TEXTURE_WIDTH p0[2]
 #define TEXTURE_HEIGHT p0[3]
-#define lobe 2
+#define lobe 4
 
 
 float tap(float x)

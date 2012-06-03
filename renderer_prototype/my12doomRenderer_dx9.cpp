@@ -1271,6 +1271,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_ps_masking.invalid();
 	m_lanczosX.invalid();
 	m_lanczosY.invalid();
+	m_lanczos.invalid();
 
 	// query
 	//m_d3d_query = NULL;
@@ -1458,6 +1459,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_ps_masking.set_source(m_Device, g_code_masking, sizeof(g_code_masking), true, (DWORD*)m_key);
 	m_lanczosX.set_source(m_Device, g_code_lanczosX, sizeof(g_code_lanczosX), true, (DWORD*)m_key);
 	m_lanczosY.set_source(m_Device, g_code_lanczosY, sizeof(g_code_lanczosY), true, (DWORD*)m_key);
+	m_lanczos.set_source(m_Device, g_code_lanczos, sizeof(g_code_lanczos), true, (DWORD*)m_key);
 
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
@@ -2452,7 +2454,7 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	float top = pic_top + pic_height * m_bmp_ftop;
 	float height = pic_height * m_bmp_fheight;
 
-	// lanczos resize test
+	// lanczos resize
 	float left_in_pixel = left * m_active_pp.BackBufferWidth;
 	float top_in_pixel = top * m_active_pp.BackBufferHeight;
 	float right_in_pixel = (left+width) * m_active_pp.BackBufferWidth;
@@ -2475,130 +2477,13 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	RECTF resize_d = {frac(left_in_pixel), frac(top_in_pixel),
 					  frac(left_in_pixel)+width_in_pixel,
 					  frac(top_in_pixel)+height_in_pixel};
-	resize_surface(bmp_surf, rt1, &resize_s, &resize_d);
-
-	// pass1, X filter
-// 	m_Device->SetRenderTarget(0, rt1);
-// 	clear(rt1, D3DCOLOR_ARGB(0,0,0,0));
-// 	MyVertex vertex[4];	
-// 	vertex[0].x = (float)0;
-// 	vertex[0].y = (float)0;
-// 	vertex[1].x = (float)width_in_pixel;
-// 	vertex[1].y = (float)0;
-// 	vertex[2].x = (float)0;
-// 	vertex[2].y = (float)m_bmp_height;
-// 	vertex[3].x = (float)width_in_pixel;
-// 	vertex[3].y = (float)m_bmp_height;
-// 	for(int i=0;i <4; i++)
-// 	{
-// 		vertex[i].x -= 0.5f;
-// 		vertex[i].y -= 0.5f;
-// 		vertex[i].z = 1.0f;
-// 		vertex[i].w = 1.0f;
-// 	}
-// 
-// 	vertex[0].tu = (float)0 / BIG_TEXTURE_SIZE;
-// 	vertex[0].tv = (float)0 / BIG_TEXTURE_SIZE;
-// 	vertex[1].tu = (float)(m_bmp_width-0.5) / BIG_TEXTURE_SIZE;
-// 	vertex[1].tv = (float)0 / BIG_TEXTURE_SIZE;
-// 	vertex[2].tu = (float)0 / BIG_TEXTURE_SIZE;
-// 	vertex[2].tv = (float)(m_bmp_height-0.5) / BIG_TEXTURE_SIZE;
-// 	vertex[3].tu = (float)(m_bmp_width-0.5) / BIG_TEXTURE_SIZE;
-// 	vertex[3].tv = (float)(m_bmp_height-0.5) / BIG_TEXTURE_SIZE;
-// 
-// 	float ps[4] = {(float)width_in_pixel/m_bmp_width, BIG_TEXTURE_SIZE, BIG_TEXTURE_SIZE, 0};
-// 	ps[0] = ps[0] > 0 ? ps[0] : -ps[0];
-// 	ps[0] = ps[0] > 1 ? 1 : ps[0];
-// 	m_Device->SetPixelShaderConstantF(0, ps, 1);
-// 	m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-// 	m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-// 	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-// 	if (width_in_pixel != m_bmp_width && (IDirect3DPixelShader9*)m_lanczosX)
-// 	{
-// 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-// 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-// 		m_Device->SetPixelShader(m_lanczosX);
-// 	}
-// 	hr = m_Device->SetTexture( 0, m_tex_bmp );
-// 	hr = m_Device->SetFVF( FVF_Flags );
-// 	hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
-// 
-// 	// pass2, Y filter
-// 	CComPtr<IDirect3DSurface9> rt2;
-// 	tmp2->get_first_level(&rt2);
-// 	m_Device->SetRenderTarget(0, rt2);
-// 	clear(rt2, D3DCOLOR_ARGB(0,0,0,0));
-// 	vertex[0].x = (float)0;
-// 	vertex[0].y = (float)0;
-// 	vertex[1].x = (float)width_in_pixel;
-// 	vertex[1].y = (float)0;
-// 	vertex[2].x = (float)0;
-// 	vertex[2].y = (float)height_in_pixel;
-// 	vertex[3].x = (float)width_in_pixel;
-// 	vertex[3].y = (float)height_in_pixel;
-// 	for(int i=0;i <4; i++)
-// 	{
-// 		vertex[i].x -= 0.5f;
-// 		vertex[i].y -= 0.5f;
-// 		vertex[i].z = 1.0f;
-// 		vertex[i].w = 1.0f;
-// 	}
-// 
-// 	vertex[0].tu = (float)0 / BIG_TEXTURE_SIZE;
-// 	vertex[0].tv = (float)0 / BIG_TEXTURE_SIZE;
-// 	vertex[1].tu = (float)width_in_pixel / BIG_TEXTURE_SIZE;
-// 	vertex[1].tv = (float)0 / BIG_TEXTURE_SIZE;
-// 	vertex[2].tu = (float)0 / BIG_TEXTURE_SIZE;
-// 	vertex[2].tv = (float)m_bmp_height / BIG_TEXTURE_SIZE;
-// 	vertex[3].tu = (float)width_in_pixel / BIG_TEXTURE_SIZE;
-// 	vertex[3].tv = (float)m_bmp_height / BIG_TEXTURE_SIZE;
-// 
-// 	ps[0] = (float)height_in_pixel/m_bmp_height;
-// 	ps[0] = ps[0] > 0 ? ps[0] : -ps[0];
-// 	ps[0] = ps[0] > 1 ? 1 : ps[0];
-// 	m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-// 	m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-// 	if (height_in_pixel != m_bmp_height && (IDirect3DPixelShader9*)m_lanczosY)
-// 	{
-// 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-// 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-// 		m_Device->SetPixelShader(m_lanczosY);
-// 		m_Device->SetPixelShaderConstantF(0, ps, 1);
-// 	}
-// 	hr = m_Device->SetTexture( 0, tmp1->texture );
-// 	hr = m_Device->SetFVF( FVF_Flags );
-// 	hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
-
-	// config subtitle position
-	float cfg_main[8] = {left*2-1, top*-2+1, width*2, height*-2,
-		0, 0, (float)width_in_pixel/BIG_TEXTURE_SIZE, (float)height_in_pixel/BIG_TEXTURE_SIZE};
-	float cfg_shadow[8] = {(left+0.001)*2-1, (top+0.001)*-2+1, width*2, height*-2,
-		0, 0, (float)width_in_pixel/BIG_TEXTURE_SIZE, (float)height_in_pixel/BIG_TEXTURE_SIZE};
+	resize_surface(bmp_surf, rt1, false, &resize_s, &resize_d);
 
 	// final drawing
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 	m_Device->SetRenderTarget(0, surface);
-
-	if (!left_eye)
-	{
-		cfg_main[0] -= m_bmp_offset*pic_width * 2;
-		cfg_shadow[0] -= m_bmp_offset*pic_width * 2;
-	}
-	hr = m_Device->SetVertexShader(m_vs_subtitle);
-
-	// draw shadow
-	if (m_gpu_shadow)
-	{
-		hr = m_Device->SetPixelShader(m_ps_bmp_blur);
-		hr = m_Device->SetVertexShaderConstantF(0, cfg_shadow, 2);
-// 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
-	}
-
-	hr = m_Device->SetPixelShader(NULL);
-	hr = m_Device->SetVertexShaderConstantF(0, cfg_main, 2);
-// 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_bmp, 2 );
 
 	// reset shader
 	hr = m_Device->SetVertexShader(NULL);
@@ -2649,21 +2534,21 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	// draw shadow
 	if (m_gpu_shadow)
 	{
+		// draw shadow
 		for(int i=0; i<4; i++)
 		{
 			vertex[i].x += floor(0.001*pic_width * m_active_pp.BackBufferWidth+0.5);
 			vertex[i].y += floor(0.001*pic_height * m_active_pp.BackBufferHeight+0.5);
 		}
-		// draw shadow
 		hr = m_Device->SetPixelShader(m_ps_bmp_blur);
 		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
 
+		// draw main
 		for(int i=0; i<4; i++)
 		{
 			vertex[i].x -= floor(0.001*pic_width * m_active_pp.BackBufferWidth+0.5);
 			vertex[i].y -= floor(0.001*pic_height * m_active_pp.BackBufferHeight+0.5);
 		}
-		// draw main
 		hr = m_Device->SetPixelShader(NULL);
 		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
 	}
@@ -2806,11 +2691,11 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 		s.bottom = (float)src_rect->bottom;
 	}
 
-	return resize_surface(src,dst,&s,&d);
+	return resize_surface(src, dst, false, &s, &d);
 }
 
 
-HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECTF *src_rect /* = NULL */, RECTF *dst_rect /* = NULL */)
+HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, bool one_pass, RECTF *src_rect /* = NULL */, RECTF *dst_rect /* = NULL */)
 {
 	if (!src || !dst)
 		return E_POINTER;
@@ -2854,99 +2739,149 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 	float width_d = d.right - d.left;
 	float height_d = d.bottom - d.top;
 
-	// pass1, X filter
-	CComPtr<IDirect3DSurface9> rt1;
-	tmp1->get_first_level(&rt1);
-	m_Device->SetRenderTarget(0, rt1);
-	clear(rt1, D3DCOLOR_ARGB(0,0,0,0));
-	MyVertex vertex[4];	
-	vertex[0].x = (float)0;
-	vertex[0].y = (float)0;
-	vertex[1].x = (float)width_d;
-	vertex[1].y = (float)0;
-	vertex[2].x = (float)0;
-	vertex[2].y = (float)height_s;
-	vertex[3].x = (float)width_d;
-	vertex[3].y = (float)height_s;
-	for(int i=0;i <4; i++)
+	if (!one_pass)
 	{
-		vertex[i].x -= 0.5f;
-		vertex[i].y -= 0.5f;
-		vertex[i].z = 1.0f;
-		vertex[i].w = 1.0f;
+		// pass1, X filter
+		CComPtr<IDirect3DSurface9> rt1;
+		tmp1->get_first_level(&rt1);
+		m_Device->SetRenderTarget(0, rt1);
+		clear(rt1, D3DCOLOR_ARGB(0,0,0,0));
+		MyVertex vertex[4];	
+		vertex[0].x = (float)0;
+		vertex[0].y = (float)0;
+		vertex[1].x = (float)width_d;
+		vertex[1].y = (float)0;
+		vertex[2].x = (float)0;
+		vertex[2].y = (float)height_s;
+		vertex[3].x = (float)width_d;
+		vertex[3].y = (float)height_s;
+		for(int i=0;i <4; i++)
+		{
+			vertex[i].x -= 0.5f;
+			vertex[i].y -= 0.5f;
+			vertex[i].z = 1.0f;
+			vertex[i].w = 1.0f;
+		}
+
+		vertex[0].tu = (float)0 / desc.Width;
+		vertex[0].tv = (float)0 / desc.Height;
+		vertex[1].tu = (float)(width_s) / desc.Width;
+		vertex[1].tv = (float)0 / desc.Height;
+		vertex[2].tu = (float)0 / desc.Width;
+		vertex[2].tv = (float)(height_s) / desc.Height;
+		vertex[3].tu = (float)(width_s) / desc.Width;
+		vertex[3].tv = (float)(height_s) / desc.Height;
+
+		float ps[4] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height};
+		ps[0] = ps[0] > 1 ? 1 : ps[0];
+		ps[1] = ps[1] > 1 ? 1 : ps[1];
+		m_Device->SetPixelShaderConstantF(0, ps, 1);
+		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+		if (width_s != width_d && (IDirect3DPixelShader9*)m_lanczosX)
+		{
+			m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+			m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+			m_Device->SetPixelShader(m_lanczosX);
+		}
+		hr = m_Device->SetTexture( 0, tex );
+		hr = m_Device->SetFVF( FVF_Flags );
+		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
+
+		// pass2, Y filter
+		m_Device->SetRenderTarget(0, dst);
+		//m_Device->Clear(0L, (D3DRECT*)dst_rect, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0,0,0,0), 1.0f, 0L );
+		clear(dst, D3DCOLOR_ARGB(0,0,0,0));
+		vertex[0].x = (float)d.left;
+		vertex[0].y = (float)d.top;
+		vertex[1].x = (float)d.right;
+		vertex[1].y = (float)d.top;
+		vertex[2].x = (float)d.left;
+		vertex[2].y = (float)d.bottom;
+		vertex[3].x = (float)d.right;
+		vertex[3].y = (float)d.bottom;
+		for(int i=0;i <4; i++)
+		{
+			vertex[i].x -= 0.5f;
+			vertex[i].y -= 0.5f;
+			vertex[i].z = 1.0f;
+			vertex[i].w = 1.0f;
+		}
+
+		vertex[0].tu = (float)0 / BIG_TEXTURE_SIZE;
+		vertex[0].tv = (float)0 / BIG_TEXTURE_SIZE;
+		vertex[1].tu = (float)width_d / BIG_TEXTURE_SIZE;
+		vertex[1].tv = (float)0 / BIG_TEXTURE_SIZE;
+		vertex[2].tu = (float)0 / BIG_TEXTURE_SIZE;
+		vertex[2].tv = (float)height_s / BIG_TEXTURE_SIZE;
+		vertex[3].tu = (float)width_d / BIG_TEXTURE_SIZE;
+		vertex[3].tv = (float)height_s / BIG_TEXTURE_SIZE;
+
+		ps[0] = (float)height_d/height_s;
+		ps[0] = ps[0] > 0 ? ps[0] : -ps[0];
+		ps[0] = ps[0] > 1 ? 1 : ps[0];
+		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		if (height_s != height_d && (IDirect3DPixelShader9*)m_lanczosY)
+		{
+			m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+			m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+			m_Device->SetPixelShader(m_lanczosY);
+		}
+		hr = m_Device->SetTexture( 0, tmp1->texture );
+		hr = m_Device->SetFVF( FVF_Flags );
+		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
 	}
-
-	vertex[0].tu = (float)0 / desc.Width;
-	vertex[0].tv = (float)0 / desc.Height;
-	vertex[1].tu = (float)(width_s) / desc.Width;
-	vertex[1].tv = (float)0 / desc.Height;
-	vertex[2].tu = (float)0 / desc.Width;
-	vertex[2].tv = (float)(height_s) / desc.Height;
-	vertex[3].tu = (float)(width_s) / desc.Width;
-	vertex[3].tv = (float)(height_s) / desc.Height;
-
-	float ps[4] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height};
-	ps[0] = ps[0] > 1 ? 1 : ps[0];
-	ps[1] = ps[1] > 1 ? 1 : ps[1];
-	m_Device->SetPixelShaderConstantF(0, ps, 1);
-	m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-	m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-	if (width_s != width_d && (IDirect3DPixelShader9*)m_lanczosX)
+	else
 	{
-		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-		m_Device->SetPixelShader(m_lanczosX);
+		// pass0, 2D filter, rather slow, a little better quality
+		m_Device->SetRenderTarget(0, dst);
+		clear(dst, D3DCOLOR_ARGB(0,0,0,0));
+		MyVertex vertex[4];
+		vertex[0].x = (float)d.left;
+		vertex[0].y = (float)d.top;
+		vertex[1].x = (float)d.right;
+		vertex[1].y = (float)d.top;
+		vertex[2].x = (float)d.left;
+		vertex[2].y = (float)d.bottom;
+		vertex[3].x = (float)d.right;
+		vertex[3].y = (float)d.bottom;
+		for(int i=0;i <4; i++)
+		{
+			vertex[i].x -= 0.5f;
+			vertex[i].y -= 0.5f;
+			vertex[i].z = 1.0f;
+			vertex[i].w = 1.0f;
+		}
+
+		vertex[0].tu = (float)s.left / BIG_TEXTURE_SIZE;
+		vertex[0].tv = (float)s.top / BIG_TEXTURE_SIZE;
+		vertex[1].tu = (float)s.right / BIG_TEXTURE_SIZE;
+		vertex[1].tv = (float)s.top / BIG_TEXTURE_SIZE;
+		vertex[2].tu = (float)s.left / BIG_TEXTURE_SIZE;
+		vertex[2].tv = (float)s.bottom / BIG_TEXTURE_SIZE;
+		vertex[3].tu = (float)s.right / BIG_TEXTURE_SIZE;
+		vertex[3].tv = (float)s.bottom / BIG_TEXTURE_SIZE;
+
+		float ps[4] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height};
+		ps[0] = ps[0] > 1 ? 1 : ps[0];
+		ps[1] = ps[1] > 1 ? 1 : ps[1];
+		m_Device->SetPixelShaderConstantF(0, ps, 1);
+		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+		if (height_s != height_d && (IDirect3DPixelShader9*)m_lanczos)
+		{
+			m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+			m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+			m_Device->SetPixelShader(m_lanczos);
+		}
+		hr = m_Device->SetTexture( 0, tex );
+		hr = m_Device->SetFVF( FVF_Flags );
+		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
 	}
-	hr = m_Device->SetTexture( 0, tex );
-	hr = m_Device->SetFVF( FVF_Flags );
-	hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
-
-	// pass2, Y filter
-	m_Device->SetRenderTarget(0, dst);
-	//m_Device->Clear(0L, (D3DRECT*)dst_rect, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0,0,0,0), 1.0f, 0L );
-	clear(dst, D3DCOLOR_ARGB(0,0,0,0));
-	vertex[0].x = (float)d.left;
-	vertex[0].y = (float)d.top;
-	vertex[1].x = (float)d.right;
-	vertex[1].y = (float)d.top;
-	vertex[2].x = (float)d.left;
-	vertex[2].y = (float)d.bottom;
-	vertex[3].x = (float)d.right;
-	vertex[3].y = (float)d.bottom;
-	for(int i=0;i <4; i++)
-	{
-		vertex[i].x -= 0.5f;
-		vertex[i].y -= 0.5f;
-		vertex[i].z = 1.0f;
-		vertex[i].w = 1.0f;
-	}
-
-	vertex[0].tu = (float)0 / BIG_TEXTURE_SIZE;
-	vertex[0].tv = (float)0 / BIG_TEXTURE_SIZE;
-	vertex[1].tu = (float)width_d / BIG_TEXTURE_SIZE;
-	vertex[1].tv = (float)0 / BIG_TEXTURE_SIZE;
-	vertex[2].tu = (float)0 / BIG_TEXTURE_SIZE;
-	vertex[2].tv = (float)height_s / BIG_TEXTURE_SIZE;
-	vertex[3].tu = (float)width_d / BIG_TEXTURE_SIZE;
-	vertex[3].tv = (float)height_s / BIG_TEXTURE_SIZE;
-
-	ps[0] = (float)height_d/height_s;
-	ps[0] = ps[0] > 0 ? ps[0] : -ps[0];
-	ps[0] = ps[0] > 1 ? 1 : ps[0];
-	m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-	m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-	if (height_s != height_d && (IDirect3DPixelShader9*)m_lanczosY)
-	{
-		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-		m_Device->SetPixelShader(m_lanczosY);
-	}
-	hr = m_Device->SetTexture( 0, tmp1->texture );
-	hr = m_Device->SetFVF( FVF_Flags );
-	hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
-
-	safe_delete(tmp1);
+safe_delete(tmp1);
 
 	return S_OK;
 }

@@ -454,7 +454,7 @@ protected:
 	// assume dst has D3DUSAGE_RENDERTARGET Flag
 	// assume src is first level of a texture
 	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECT *src_rect = NULL, RECT *dst_rect = NULL);
-	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECTF *src_rect = NULL, RECTF *dst_rect = NULL);
+	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, bool one_pass = true, RECTF *src_rect = NULL, RECTF *dst_rect = NULL);
 #ifdef DEBUG
 	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_ARGB(0, 0, 0, 0));
 #else
@@ -585,6 +585,7 @@ protected:
 	my12doom_auto_shader m_ps_masking;
 	my12doom_auto_shader m_lanczosX;
 	my12doom_auto_shader m_lanczosY;
+	my12doom_auto_shader m_lanczos;
 
 	// TV - PC level test surfaces
 	CComPtr<IDirect3DSurface9> m_PC_level_test;

@@ -2095,6 +2095,9 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		}
 	}
 
+	if (hr == S_FALSE && ms_start <= 0)
+		hr = m_srenderer->get_subtitle(ms_start, &sub, m_lastCBtime);
+
 	if (S_FALSE == hr)		// same subtitle, ignore
 	{
 		return S_OK;
@@ -2857,7 +2860,9 @@ HRESULT dx_player::draw_subtitle()
 	REFERENCE_TIME t = (REFERENCE_TIME)m_lastCBtime * 10000;
 	m_lastCBtime = -1;
 
-	return SampleCB(t, t, NULL);
+	HRESULT hr =  SampleCB(t, t, NULL);
+	m_lastCBtime = t / 10000;
+	return hr;
 }
 
 HRESULT dx_player::set_subtitle_offset(int offset)
