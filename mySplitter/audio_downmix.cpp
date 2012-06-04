@@ -1,4 +1,5 @@
 #include "audio_downmix.h"
+#include <stdio.h>
 
 CDWindowAudioDownmix::CDWindowAudioDownmix(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
 CTransformFilter(tszName, punk, CLSID_DWindowAudioDownmix)
@@ -38,6 +39,16 @@ HRESULT CDWindowAudioDownmix::CheckInputType(const CMediaType *mtIn)
 
 	memcpy(&m_in_fmt, mtIn->pbFormat, min(mtIn->cbFormat, sizeof(WAVEFORMATEX)));
 	m_in_subtype = mtIn->subtype;
+
+	printf("wFormatTag = %04x\n", m_in_fmt.wFormatTag);
+
+	if (m_in_fmt.wFormatTag == WAVE_FORMAT_EXTENSIBLE)
+	{
+		WAVEFORMATEXTENSIBLE *wext = (WAVEFORMATEXTENSIBLE*)mtIn->pbFormat;
+		printf("WAVE_FORMAT_EXTENSIBLE:\n");
+		if (wext->SubFormat != MEDIASUBTYPE_PCM && wext->SubFormat != MEDIASUBTYPE_IEEE_FLOAT)
+			return VFW_E_INVALID_MEDIA_TYPE;
+	}
 
 	m_out_fmt.wFormatTag = WAVE_FORMAT_PCM;
 	m_out_fmt.nChannels = 2;
@@ -126,7 +137,7 @@ inline void CDWindowAudioDownmix::mix_a_sample_PCM(void* in, void *out)
 	dst[1] = (short) ((R*0.2929 + C*0.2071 + BR*0.2929 + LFE*0.2071));
 }
 
-inline void CDWindowAudioDownmix::mix_a_sample_PCM2(void* in, void *out)
+inline void CDWindowAudioDownmix::copy_a_sample_PCM(void* in, void *out)
 {
 	short * src = (short*)in;
 	short *dst = (short*)out;
@@ -137,9 +148,6 @@ inline void CDWindowAudioDownmix::mix_a_sample_PCM2(void* in, void *out)
 
 inline void CDWindowAudioDownmix::mix_a_sample_PCM_24bit(void* in, void *out)
 {
-	BYTE test[18];
-	memcpy(test, in, 18);
-
 	short L = (*(short*)((BYTE*)in+1+0*3));
 	short R = (*(short*)((BYTE*)in+1+1*3));
 	short C = (*(short*)((BYTE*)in+1+2*3));
@@ -152,14 +160,14 @@ inline void CDWindowAudioDownmix::mix_a_sample_PCM_24bit(void* in, void *out)
 	dst[1] = (short) ((R*0.2929 + C*0.2071 + BR*0.2929 + LFE*0.2071));
 }
 
-inline void CDWindowAudioDownmix::mix_a_sample_PCM2_24bit(void* in, void *out)
+inline void CDWindowAudioDownmix::copy_a_sample_PCM_24bit(void* in, void *out)
 {
 	short *dst = (short*)out;
 	dst[0] = (*(short*)((BYTE*)in+1+0*3));
 	dst[1] = (*(short*)((BYTE*)in+1+1*3));
 }
 
-inline void CDWindowAudioDownmix::mix_a_sample_PCM2_8bit(void* in, void *out)
+inline void CDWindowAudioDownmix::copy_a_sample_PCM_8bit(void* in, void *out)
 {
 	BYTE * src = (BYTE*)in;
 	short *dst = (short*)out;
@@ -192,7 +200,7 @@ inline void CDWindowAudioDownmix::mix_a_sample_FLOAT(void* in, void *out)
 	dst[1] = (signed short) (32767*(R*0.2929 + C*0.2071 + BR*0.2929 + LFE*0.2071));
 }
 
-inline void CDWindowAudioDownmix::mix_a_sample_FLOAT2(void* in, void *out)
+inline void CDWindowAudioDownmix::copy_a_sample_FLOAT(void* in, void *out)
 {
 	float * src = (float*)in;
 	signed short *dst = (signed short*)out;
@@ -229,7 +237,7 @@ HRESULT CDWindowAudioDownmix::Transform(IMediaSample *pIn, IMediaSample *pOut)
 		}
 		else
 		{
-			do_convert(src, dst, mix_a_sample_FLOAT2);
+			do_convert(src, dst, copy_a_sample_FLOAT);
 		}
 	}
 	else
@@ -249,30 +257,29 @@ HRESULT CDWindowAudioDownmix::Transform(IMediaSample *pIn, IMediaSample *pOut)
 		{
 			if (m_in_fmt.wBitsPerSample == 16)
 			{
-				do_convert(src, dst, mix_a_sample_PCM2);
+				do_convert(src, dst, copy_a_sample_PCM);
 			}
 			else if (m_in_fmt.wBitsPerSample == 24)
 			{
-				do_convert(src, dst, mix_a_sample_PCM2_24bit);
+				do_convert(src, dst, copy_a_sample_PCM_24bit);
 			}
 			else if (m_in_fmt.wBitsPerSample == 8)
 			{
-				do_convert(src, dst, mix_a_sample_PCM2_8bit);
+				do_convert(src, dst, copy_a_sample_PCM_8bit);
 			}
 		}
 	}
 		
 
 	REFERENCE_TIME TimeStart, TimeEnd;
-	pIn->GetTime(&TimeStart, &TimeEnd);
 	LONGLONG MediaStart, MediaEnd;
-	pIn->GetMediaTime(&MediaStart,&MediaEnd);
-	pOut->SetTime(&TimeStart, &TimeEnd);
-	pOut->SetMediaTime(&MediaStart,&MediaEnd);
+	if (SUCCEEDED(pIn->GetMediaTime(&MediaStart,&MediaEnd)))
+		pOut->SetMediaTime(&MediaStart,&MediaEnd);
+	if (SUCCEEDED(pIn->GetTime(&TimeStart, &TimeEnd)))
+		pOut->SetTime(&TimeStart, &TimeEnd);
 	pOut->SetSyncPoint(pIn->IsSyncPoint() == S_OK);
 	pOut->SetPreroll(pIn->IsPreroll() == S_OK);
 	pOut->SetDiscontinuity(pIn->IsDiscontinuity() == S_OK);
-
 
 	return S_OK;
 }

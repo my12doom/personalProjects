@@ -30,10 +30,10 @@ protected:
 	WAVEFORMATEX m_in_fmt;
 
 	inline void mix_a_sample_PCM(void* in, void *out);
-	inline void mix_a_sample_PCM2(void* in, void *out);				// just copy
+	inline void copy_a_sample_PCM(void* in, void *out);				// just copy
 	inline void mix_a_sample_PCM_24bit(void* in, void *out);
-	inline void mix_a_sample_PCM2_24bit(void* in, void *out);		// just copy up 16bit
-	inline void mix_a_sample_PCM2_8bit(void* in, void *out);		// just copy up 16bit
+	inline void copy_a_sample_PCM_24bit(void* in, void *out);		// just copy up 16bit
+	inline void copy_a_sample_PCM_8bit(void* in, void *out);		// just copy up 16bit
 	inline void mix_a_sample_FLOAT(void* in, void *out);
-	inline void mix_a_sample_FLOAT2(void* in, void *out);	// just convert first 2 channel
+	inline void copy_a_sample_FLOAT(void* in, void *out);	// just convert first 2 channel
 };
