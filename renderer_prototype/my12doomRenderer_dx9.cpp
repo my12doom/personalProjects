@@ -47,6 +47,9 @@ int lockrect_texture = 0;
 __int64 lockrect_texture_cycle = 0;
 const int BIG_TEXTURE_SIZE = 2048;
 AutoSetting<BOOL> GPUIdle(L"GPUIdle", true, REG_DWORD);
+AutoSetting<int> MovieResizing(L"MovieResizing", 0, REG_DWORD);
+AutoSetting<int> SubtitleResizing(L"SubtitleResizing", 0, REG_DWORD);
+
 
 typedef struct tagTHREADNAME_INFO {
 	DWORD dwType; // must be 0x1000
@@ -2361,8 +2364,8 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	else
 		m_tex_rgb_right->GetSurfaceLevel(0, &src);
 
-	if (GetKeyState(VK_CONTROL) < 0)
-		return resize_surface(src, surface, true, NULL, &target);
+	if (MovieResizing == 0)
+		return resize_surface(src, surface, GetKeyState(VK_CONTROL)<0, NULL, &target);
 
 	HRESULT hr = E_FAIL;
 
@@ -2489,7 +2492,7 @@ HRESULT my12doomRenderer::draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye
 
 HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 {
-	if (GetKeyState(VK_CONTROL) >= 0)
+	if (SubtitleResizing == 0)
  		return draw_bmp_mip(surface, left_eye);
 
 	if (!surface)
@@ -2571,7 +2574,7 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	RECTF resize_d = {frac(left_in_pixel), frac(top_in_pixel),
 					  frac(left_in_pixel)+width_in_pixel,
 					  frac(top_in_pixel)+height_in_pixel};
-	resize_surface(bmp_surf, rt1, true, &resize_s, &resize_d);
+	resize_surface(bmp_surf, rt1, false, &resize_s, &resize_d);
 
 	// final drawing
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
@@ -2910,13 +2913,15 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 		vertex[3].tu = (float)width_d / BIG_TEXTURE_SIZE;
 		vertex[3].tv = (float)height_s / BIG_TEXTURE_SIZE;
 
-		ps[0] = (float)height_d/height_s;
-		ps[0] = ps[0] > 0 ? ps[0] : -ps[0];
-		ps[0] = ps[0] > 1 ? 1 : ps[0];
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		if (height_s != height_d && (IDirect3DPixelShader9*)m_lanczosY)
 		{
+			ps[0] = (float)height_d/height_s;
+			ps[0] = ps[0] > 0 ? ps[0] : -ps[0];
+			ps[0] = ps[0] > 1 ? 1 : ps[0];
+			ps[2] = ps[3] = BIG_TEXTURE_SIZE;
+			m_Device->SetPixelShaderConstantF(0, ps, 1);
 			m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 			m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 			m_Device->SetPixelShader(m_lanczosY);
@@ -2956,22 +2961,26 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 		vertex[3].tu = (float)s.right / desc.Width;
 		vertex[3].tv = (float)s.bottom / desc.Height;
 
-		float ps[4] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height};
-		ps[0] = ps[0] > 1 ? 1 : ps[0];
-		ps[1] = ps[1] > 1 ? 1 : ps[1];
-		m_Device->SetPixelShaderConstantF(0, ps, 1);
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-		if (height_s != height_d && (IDirect3DPixelShader9*)m_lanczos)
+		if ((height_s != height_d || width_s != width_d)
+			&& (IDirect3DPixelShader9*)m_lanczos)
 		{
 			m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 			m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+			float ps[4] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height};
+			ps[0] = ps[0] > 1 ? 1 : ps[0];
+			ps[1] = ps[1] > 1 ? 1 : ps[1];
+			m_Device->SetPixelShaderConstantF(0, ps, 1);
 			m_Device->SetPixelShader(m_lanczos);
 		}
+		else
+			hr = m_Device->SetPixelShader(NULL);
 		hr = m_Device->SetTexture( 0, tex );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
+		hr = m_Device->SetPixelShader(NULL);
 	}
 safe_delete(tmp1);
 

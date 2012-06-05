@@ -11,9 +11,9 @@ float a = 4.0;
 #define TEXTURE_WIDTH p0[2]
 #define TEXTURE_HEIGHT p0[3]
 #define lobe 4
+#define tap lanczos_kernerl
 
-
-float tap(float x)
+float lanczos_kernerl(float x)
 {	
  	if (abs(x) >= lobe)
  		return 0;
@@ -23,6 +23,16 @@ float tap(float x)
 	
 	return lobe*sin(pi*x)*sin(pi*x/lobe)/x/x;
 }
+
+
+float4 PaddedTex2D(sampler s, float2 tex)
+{
+	tex.x = clamp(tex.x, 0, 1);
+	tex.y = clamp(tex.y, 0, 1);
+	
+	return tex2D(s, tex);
+}
+
 
 float4 lanczosX(float2 tex : TEXCOORD0) : COLOR
 {
@@ -46,7 +56,7 @@ float4 lanczosX(float2 tex : TEXCOORD0) : COLOR
 	float yy = fract.y;
 	float weight =  tap(xx*rate_x)*tap(yy);
 	
-	float4 color = tex2D(s0, coord0 + x*dx);
+	float4 color = PaddedTex2D(s0, coord0 + x*dx);
 	total_weight += weight;
 	total_color += weight * color;
   }
@@ -77,19 +87,11 @@ float4 lanczosY(float2 tex : TEXCOORD0) : COLOR
 	float weight =  tap(xx)*tap(yy*rate_y);
 	
 	total_weight += weight;
-	float4 color = tex2D(s0, coord0 + y*dy);
+	float4 color = PaddedTex2D(s0, coord0 + y*dy);
 	total_color += weight * color;
   }
   
   return total_color/total_weight;  
-}
-
-float4 PaddedTex2D(sampler s, float2 tex)
-{
-	tex.x = clamp(tex.x, 0, 1);
-	tex.y = clamp(tex.y, 0, 1);
-	
-	return tex2D(s, tex);
 }
 
 float4 lanczos(float2 tex : TEXCOORD0) : COLOR
