@@ -35,6 +35,12 @@ enum output_mode_types
 	output_mode_types_max
 };
 
+enum resampling_method
+{
+	bilinear_mipmap_minus_one,
+	lanczos,
+};
+
 #ifndef def_input_layout_types
 #define def_input_layout_types
 enum input_layout_types
@@ -447,9 +453,12 @@ protected:
 	HRESULT restore_gpu_objects();
 	HRESULT restore_cpu_objects();
 	HRESULT render_nolock(bool forced = false);
+	HRESULT draw_movie_mip(IDirect3DSurface9 *surface, bool left_eye);
+	HRESULT draw_movie_lanczos(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_movie(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_bmp(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye);
+	HRESULT draw_bmp_lanczos(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_ui(IDirect3DSurface9 *surface);
 	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left);
 	// assume dst has D3DUSAGE_RENDERTARGET Flag

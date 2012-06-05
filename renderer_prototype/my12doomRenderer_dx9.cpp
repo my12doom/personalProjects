@@ -23,6 +23,7 @@
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
+#include <assert.h>
 #include "..\ZBuffer\stereo_test.h"
 #include "..\dwindow\global_funcs.h"
 
@@ -47,8 +48,8 @@ int lockrect_texture = 0;
 __int64 lockrect_texture_cycle = 0;
 const int BIG_TEXTURE_SIZE = 2048;
 AutoSetting<BOOL> GPUIdle(L"GPUIdle", true, REG_DWORD);
-AutoSetting<int> MovieResizing(L"MovieResizing", 0, REG_DWORD);
-AutoSetting<int> SubtitleResizing(L"SubtitleResizing", 0, REG_DWORD);
+AutoSetting<int> MovieResizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD);
+AutoSetting<int> SubtitleResizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD);
 
 
 typedef struct tagTHREADNAME_INFO {
@@ -2344,18 +2345,9 @@ HRESULT my12doomRenderer::clear(IDirect3DSurface9 *surface, DWORD color)
 	return m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, color, 1.0f, 0L );
 }
 
-HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
+HRESULT my12doomRenderer::draw_movie_lanczos(IDirect3DSurface9 *surface, bool left_eye)
 {
-	if (!surface)
-		return E_POINTER;
-
-	if (!m_dsr0->is_connected() && m_uidrawer)
-	{
-		m_last_reset_time = timeGetTime();
-		return m_uidrawer->draw_nonmovie_bg(surface, left_eye);
-	}
-
-	// lanczos test
+	// assume draw_movie() handles pointer and not connected issues, so no more check
 	MyVertex *p = m_vertices + (left_eye ? vertex_pass2_main : vertex_pass2_main_r);
 	RECTF target = {p[0].x+0.5, p[0].y+0.5, p[3].x+0.5, p[3].y+0.5};
 	CComPtr<IDirect3DSurface9> src;
@@ -2364,9 +2356,12 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	else
 		m_tex_rgb_right->GetSurfaceLevel(0, &src);
 
-	if (MovieResizing == 0)
-		return resize_surface(src, surface, GetKeyState(VK_CONTROL)<0, NULL, &target);
+	return resize_surface(src, surface, GetKeyState(VK_CONTROL)<0, NULL, &target);
+}
 
+HRESULT my12doomRenderer::draw_movie_mip(IDirect3DSurface9 *surface, bool left_eye)
+{
+	// assume draw_movie() handles pointer and not connected issues, so no more check
 	HRESULT hr = E_FAIL;
 
 	float mip_lod = -1.0f;
@@ -2387,24 +2382,194 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	hr = m_Device->SetFVF( FVF_Flags );
 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, left_eye ? vertex_pass2_main : vertex_pass2_main_r, 2 );
 
+	return S_OK;
+}
 
-	// test
-	//RECT rect = {0,0,stereo_test_texture_size, stereo_test_texture_size};
-	//hr = m_Device->StretchRect(m_PC_level_test, NULL, surface, &rect, D3DTEXF_LINEAR);
+HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
+{
+	if (!surface)
+		return E_POINTER;
+
+	if (!m_dsr0->is_connected() && m_uidrawer)
+	{
+		m_last_reset_time = timeGetTime();
+		return m_uidrawer->draw_nonmovie_bg(surface, left_eye);
+	}
+
+	switch((int)MovieResizing)
+	{
+	case bilinear_mipmap_minus_one:
+		return draw_movie_mip(surface, left_eye);
+	case lanczos:
+		return draw_movie_lanczos(surface, left_eye);
+	}
+
+	assert(0);
+	return E_UNEXPECTED;
+}
+
+HRESULT my12doomRenderer::draw_bmp_lanczos(IDirect3DSurface9 *surface, bool left_eye)
+{
+	// assume draw_movie() handles pointer and not connected issues, so no more check
+	HRESULT hr = E_FAIL;
+
+	CAutoLock lck(&m_pool_lock);
+	CPooledTexture *tmp1 = NULL;
+	hr = m_pool->CreateTexture(BIG_TEXTURE_SIZE, BIG_TEXTURE_SIZE, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tmp1);
+	if (FAILED(hr))
+	{
+		safe_delete(tmp1);
+		return hr;
+	}
+
+	// movie picture position
+	float active_aspect = get_active_aspect();
+	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+	if (m_output_mode == out_sbs)
+		tar.right /= 2;
+	else if (m_output_mode == out_tb)
+		tar.bottom /= 2;
+
+	int delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
+	int delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
+	if (delta_w > 0)
+	{
+		tar.left += delta_w/2;
+		tar.right -= delta_w/2;
+	}
+	else if (delta_h > 0)
+	{
+		tar.top += delta_h/2;
+		tar.bottom -= delta_h/2;
+	}
+
+	int tar_width = tar.right-tar.left;
+	int tar_height = tar.bottom - tar.top;
+	tar.left += (LONG)(tar_width * m_bmp_offset_x);
+	tar.right += (LONG)(tar_width * m_bmp_offset_x);
+	tar.top += (LONG)(tar_height * m_bmp_offset_y);
+	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
+
+	float pic_left = (float)tar.left / m_active_pp.BackBufferWidth;
+	float pic_width = (float)(tar.right - tar.left) / m_active_pp.BackBufferWidth;
+	float pic_top = (float)tar.top / m_active_pp.BackBufferHeight;
+	float pic_height = (float)(tar.bottom - tar.top) / m_active_pp.BackBufferHeight;
+
+	float left = pic_left + pic_width * m_bmp_fleft;
+	float width = pic_width * m_bmp_fwidth;
+	float top = pic_top + pic_height * m_bmp_ftop;
+	float height = pic_height * m_bmp_fheight;
+
+	// lanczos resize
+	float left_in_pixel = left * m_active_pp.BackBufferWidth;
+	float top_in_pixel = top * m_active_pp.BackBufferHeight;
+	float right_in_pixel = (left+width) * m_active_pp.BackBufferWidth;
+	float bottom_in_pixel = (top+height) * m_active_pp.BackBufferHeight;
+	float width_in_pixel = right_in_pixel - left_in_pixel;
+	float height_in_pixel = bottom_in_pixel - top_in_pixel;
+
+	static int last_top = 0;
+	static int last_bottom = 0;
+	if (top_in_pixel != last_top || bottom_in_pixel != last_bottom)
+		mylog("top,bottom:%d,%d\n", int(top * m_active_pp.BackBufferHeight * 100), int((top+height) * m_active_pp.BackBufferHeight * 100));
+	last_top = top_in_pixel;
+	last_bottom = bottom_in_pixel;
+
+	CComPtr<IDirect3DSurface9> bmp_surf;
+	m_tex_bmp->GetSurfaceLevel(0, &bmp_surf);
+	CComPtr<IDirect3DSurface9> rt1;
+	tmp1->get_first_level(&rt1);
+	RECTF resize_s = {0,0,m_bmp_width, m_bmp_height};
+	RECTF resize_d = {frac(left_in_pixel), frac(top_in_pixel),
+		frac(left_in_pixel)+width_in_pixel,
+		frac(top_in_pixel)+height_in_pixel};
+	resize_surface(bmp_surf, rt1, false, &resize_s, &resize_d);
+
+	// final drawing
+	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	m_Device->SetRenderTarget(0, surface);
+
+	// reset shader
+	hr = m_Device->SetVertexShader(NULL);
+	hr = m_Device->SetPixelShader(NULL);
+
+	MyVertex vertex[4];	
+	vertex[0].x = (float)floor(left_in_pixel);
+	vertex[0].y = (float)floor(top_in_pixel);
+	vertex[1].x = (float)ceil(right_in_pixel);
+	vertex[1].y = (float)floor(top_in_pixel);
+	vertex[2].x = (float)floor(left_in_pixel);
+	vertex[2].y = (float)ceil(bottom_in_pixel);
+	vertex[3].x = (float)ceil(right_in_pixel);
+	vertex[3].y = (float)ceil(bottom_in_pixel);
+
+	for(int i=0;i <4; i++)
+	{
+		vertex[i].x -= 0.5f;
+		vertex[i].y -= 0.5f;
+		vertex[i].z = 1.0f;
+		vertex[i].w = 1.0f;
+	}
+
+	vertex[0].tu = (float)floor(resize_d.left) / BIG_TEXTURE_SIZE;
+	vertex[0].tv = (float)floor(resize_d.top) / BIG_TEXTURE_SIZE;
+	vertex[1].tu = (float)ceil(resize_d.right) / BIG_TEXTURE_SIZE;
+	vertex[1].tv = (float)floor(resize_d.top) / BIG_TEXTURE_SIZE;
+	vertex[2].tu = (float)floor(resize_d.left) / BIG_TEXTURE_SIZE;
+	vertex[2].tv = (float)ceil(resize_d.bottom) / BIG_TEXTURE_SIZE;
+	vertex[3].tu = (float)ceil(resize_d.right) / BIG_TEXTURE_SIZE;
+	vertex[3].tv = (float)ceil(resize_d.bottom) / BIG_TEXTURE_SIZE;
+
+	m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+	hr = m_Device->SetTexture( 0, tmp1->texture);
+	hr = m_Device->SetFVF( FVF_Flags );
+
+	if (!left_eye)
+	{
+		for(int i=0; i<4; i++)
+			vertex[i].x -= floor(m_bmp_offset*pic_width * m_active_pp.BackBufferWidth+0.5);
+	}
+
+	if (m_gpu_shadow)
+	{
+		// draw shadow
+		for(int i=0; i<4; i++)
+		{
+			vertex[i].x += floor(0.001*pic_width * m_active_pp.BackBufferWidth+0.5);
+			vertex[i].y += floor(0.001*pic_height * m_active_pp.BackBufferHeight+0.5);
+		}
+		hr = m_Device->SetPixelShader(m_ps_bmp_blur);
+		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
+
+		// draw main
+		for(int i=0; i<4; i++)
+		{
+			vertex[i].x -= floor(0.001*pic_width * m_active_pp.BackBufferWidth+0.5);
+			vertex[i].y -= floor(0.001*pic_height * m_active_pp.BackBufferHeight+0.5);
+		}
+		hr = m_Device->SetPixelShader(NULL);
+		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
+	}
+	else
+	{
+		// draw main
+		hr = m_Device->SetPixelShader(NULL);
+		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
+	}
+
+	safe_delete(tmp1);
 
 	return S_OK;
 }
 
 HRESULT my12doomRenderer::draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye)
 {
-	if (!surface)
-		return E_POINTER;
-
-	if (!m_has_subtitle)
-		return S_FALSE;
-
+	// assume draw_movie() handles pointer and not connected issues, so no more check
 	HRESULT hr = E_FAIL;
-
 
 	m_Device->SetRenderTarget(0, surface);
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
@@ -2492,171 +2657,22 @@ HRESULT my12doomRenderer::draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye
 
 HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 {
-	if (SubtitleResizing == 0)
- 		return draw_bmp_mip(surface, left_eye);
-
 	if (!surface)
 		return E_POINTER;
 
 	if (!m_has_subtitle)
 		return S_FALSE;
 
-	HRESULT hr = E_FAIL;
-
-	CAutoLock lck(&m_pool_lock);
-	CPooledTexture *tmp1 = NULL;
-	hr = m_pool->CreateTexture(BIG_TEXTURE_SIZE, BIG_TEXTURE_SIZE, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tmp1);
-	if (FAILED(hr))
+	switch((int)SubtitleResizing)
 	{
-		safe_delete(tmp1);
-		return hr;
+	case bilinear_mipmap_minus_one:
+		return draw_bmp_mip(surface, left_eye);
+	case lanczos:
+		return draw_bmp_lanczos(surface, left_eye);
 	}
 
-
-	// movie picture position
-	float active_aspect = get_active_aspect();
-	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
-	if (m_output_mode == out_sbs)
-		tar.right /= 2;
-	else if (m_output_mode == out_tb)
-		tar.bottom /= 2;
-
-	int delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
-	int delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
-	if (delta_w > 0)
-	{
-		tar.left += delta_w/2;
-		tar.right -= delta_w/2;
-	}
-	else if (delta_h > 0)
-	{
-		tar.top += delta_h/2;
-		tar.bottom -= delta_h/2;
-	}
-
-	int tar_width = tar.right-tar.left;
-	int tar_height = tar.bottom - tar.top;
-	tar.left += (LONG)(tar_width * m_bmp_offset_x);
-	tar.right += (LONG)(tar_width * m_bmp_offset_x);
-	tar.top += (LONG)(tar_height * m_bmp_offset_y);
-	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
-
-	float pic_left = (float)tar.left / m_active_pp.BackBufferWidth;
-	float pic_width = (float)(tar.right - tar.left) / m_active_pp.BackBufferWidth;
-	float pic_top = (float)tar.top / m_active_pp.BackBufferHeight;
-	float pic_height = (float)(tar.bottom - tar.top) / m_active_pp.BackBufferHeight;
-
-	float left = pic_left + pic_width * m_bmp_fleft;
-	float width = pic_width * m_bmp_fwidth;
-	float top = pic_top + pic_height * m_bmp_ftop;
-	float height = pic_height * m_bmp_fheight;
-
-	// lanczos resize
-	float left_in_pixel = left * m_active_pp.BackBufferWidth;
-	float top_in_pixel = top * m_active_pp.BackBufferHeight;
-	float right_in_pixel = (left+width) * m_active_pp.BackBufferWidth;
-	float bottom_in_pixel = (top+height) * m_active_pp.BackBufferHeight;
-	float width_in_pixel = right_in_pixel - left_in_pixel;
-	float height_in_pixel = bottom_in_pixel - top_in_pixel;
-
-	static int last_top = 0;
-	static int last_bottom = 0;
-	if (top_in_pixel != last_top || bottom_in_pixel != last_bottom)
-		mylog("top,bottom:%d,%d\n", int(top * m_active_pp.BackBufferHeight * 100), int((top+height) * m_active_pp.BackBufferHeight * 100));
-	last_top = top_in_pixel;
-	last_bottom = bottom_in_pixel;
-
-	CComPtr<IDirect3DSurface9> bmp_surf;
-	m_tex_bmp->GetSurfaceLevel(0, &bmp_surf);
-	CComPtr<IDirect3DSurface9> rt1;
-	tmp1->get_first_level(&rt1);
-	RECTF resize_s = {0,0,m_bmp_width, m_bmp_height};
-	RECTF resize_d = {frac(left_in_pixel), frac(top_in_pixel),
-					  frac(left_in_pixel)+width_in_pixel,
-					  frac(top_in_pixel)+height_in_pixel};
-	resize_surface(bmp_surf, rt1, false, &resize_s, &resize_d);
-
-	// final drawing
-	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	m_Device->SetRenderTarget(0, surface);
-
-	// reset shader
-	hr = m_Device->SetVertexShader(NULL);
-	hr = m_Device->SetPixelShader(NULL);
-
-
-	MyVertex vertex[4];	
-	vertex[0].x = (float)floor(left_in_pixel);
-	vertex[0].y = (float)floor(top_in_pixel);
-	vertex[1].x = (float)ceil(right_in_pixel);
-	vertex[1].y = (float)floor(top_in_pixel);
-	vertex[2].x = (float)floor(left_in_pixel);
-	vertex[2].y = (float)ceil(bottom_in_pixel);
-	vertex[3].x = (float)ceil(right_in_pixel);
-	vertex[3].y = (float)ceil(bottom_in_pixel);
-
-
-	for(int i=0;i <4; i++)
-	{
-		vertex[i].x -= 0.5f;
-		vertex[i].y -= 0.5f;
-		vertex[i].z = 1.0f;
-		vertex[i].w = 1.0f;
-	}
-
-	vertex[0].tu = (float)floor(resize_d.left) / BIG_TEXTURE_SIZE;
-	vertex[0].tv = (float)floor(resize_d.top) / BIG_TEXTURE_SIZE;
-	vertex[1].tu = (float)ceil(resize_d.right) / BIG_TEXTURE_SIZE;
-	vertex[1].tv = (float)floor(resize_d.top) / BIG_TEXTURE_SIZE;
-	vertex[2].tu = (float)floor(resize_d.left) / BIG_TEXTURE_SIZE;
-	vertex[2].tv = (float)ceil(resize_d.bottom) / BIG_TEXTURE_SIZE;
-	vertex[3].tu = (float)ceil(resize_d.right) / BIG_TEXTURE_SIZE;
-	vertex[3].tv = (float)ceil(resize_d.bottom) / BIG_TEXTURE_SIZE;
-
-	m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-	m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-	hr = m_Device->SetTexture( 0, tmp1->texture);
-	hr = m_Device->SetFVF( FVF_Flags );
-
-	if (!left_eye)
-	{
-		for(int i=0; i<4; i++)
-			vertex[i].x -= floor(m_bmp_offset*pic_width * m_active_pp.BackBufferWidth+0.5);
-	}
-
-	if (m_gpu_shadow)
-	{
-		// draw shadow
-		for(int i=0; i<4; i++)
-		{
-			vertex[i].x += floor(0.001*pic_width * m_active_pp.BackBufferWidth+0.5);
-			vertex[i].y += floor(0.001*pic_height * m_active_pp.BackBufferHeight+0.5);
-		}
-		hr = m_Device->SetPixelShader(m_ps_bmp_blur);
-		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
-
-		// draw main
-		for(int i=0; i<4; i++)
-		{
-			vertex[i].x -= floor(0.001*pic_width * m_active_pp.BackBufferWidth+0.5);
-			vertex[i].y -= floor(0.001*pic_height * m_active_pp.BackBufferHeight+0.5);
-		}
-		hr = m_Device->SetPixelShader(NULL);
-		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
-	}
-	else
-	{
-		// draw main
-		hr = m_Device->SetPixelShader(NULL);
-		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
-	}
-
-	safe_delete(tmp1);
-
-	return S_OK;
+	assert(0);
+	return E_UNEXPECTED;
 }
 HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 {

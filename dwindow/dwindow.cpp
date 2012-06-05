@@ -279,7 +279,7 @@ HRESULT dwindow::set_fullscreen(int id, bool full, bool nosave)
 		SetWindowLongPtr(m_hwnd1, GWL_STYLE, f);
 		SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exf);
 
-		SetWindowPos(m_hwnd1, NULL, m_screen1.left, m_screen1.top,
+		SetWindowPos(m_hwnd1, HWND_TOPMOST, m_screen1.left, m_screen1.top,
 					m_screen1.right - m_screen1.left, m_screen1.bottom - m_screen1.top,
 					SWP_NOOWNERZORDER);
 
@@ -290,7 +290,7 @@ HRESULT dwindow::set_fullscreen(int id, bool full, bool nosave)
 		SetWindowLongPtr(m_hwnd1, GWL_STYLE, m_style1);
 		SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, m_exstyle1);
 
-		SetWindowPos(m_hwnd1, NULL, m_normal1.left, m_normal1.top,
+		SetWindowPos(m_hwnd1, HWND_NOTOPMOST, m_normal1.left, m_normal1.top,
 					m_normal1.right - m_normal1.left, m_normal1.bottom - m_normal1.top,
 					SWP_NOOWNERZORDER);
 	}
@@ -310,7 +310,7 @@ HRESULT dwindow::set_fullscreen(int id, bool full, bool nosave)
 		SetWindowLongPtr(m_hwnd2, GWL_STYLE, f);
 		SetWindowLongPtr(m_hwnd2, GWL_EXSTYLE, exf);
 
-		SetWindowPos(m_hwnd2, NULL, m_screen2.left, m_screen2.top,
+		SetWindowPos(m_hwnd2, HWND_TOPMOST, m_screen2.left, m_screen2.top,
 			m_screen2.right - m_screen2.left, m_screen2.bottom - m_screen2.top,
 			SWP_NOOWNERZORDER);
 
@@ -321,7 +321,7 @@ HRESULT dwindow::set_fullscreen(int id, bool full, bool nosave)
 		SetWindowLongPtr(m_hwnd2, GWL_STYLE, m_style2);
 		SetWindowLongPtr(m_hwnd2, GWL_EXSTYLE, m_exstyle2);
 
-		SetWindowPos(m_hwnd2, NULL, m_normal2.left, m_normal2.top,
+		SetWindowPos(m_hwnd2, HWND_NOTOPMOST, m_normal2.left, m_normal2.top,
 			m_normal2.right - m_normal2.left, m_normal2.bottom - m_normal2.top,
 			SWP_NOOWNERZORDER);
 	}
