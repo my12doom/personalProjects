@@ -85,6 +85,11 @@ STDAPI DllRegisterServer()
 
 	RegisterSourceFilter(CLSID_AsyncReader, MEDIASUBTYPE_MP4, chkbytes, NULL);
 
+	DeleteRegKey(_T("Media Type\\Extensions\\"), _T(".3dv"));
+
+	SetRegKeyValue(_T("Media Type\\Extensions\\"), _T(".3dv"), _T("3DV Source Filter"), CStringFromGUID(__uuidof(CMP4SourceFilter)));
+
+
 	return AMovieDllRegisterServer2(TRUE);
 }
 

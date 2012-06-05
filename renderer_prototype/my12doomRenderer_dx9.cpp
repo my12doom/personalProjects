@@ -29,6 +29,7 @@
 #pragma comment (lib, "igfx_s3dcontrol.lib")
 #pragma comment (lib, "comsupp.lib")
 #pragma comment (lib, "dxva2.lib")
+#pragma comment (lib, "nvapi.lib")
 
 #define FAIL_RET(x) {hr=x; if(FAILED(hr)){return hr;}}
 #define FAIL_FALSE(x) {hr=x; if(FAILED(hr)){return S_FALSE;}}
@@ -1489,7 +1490,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
 	fix_nv3d_bug();
 	FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
-	FAIL_RET( m_Device->CreateTexture(BIG_TEXTURE_SIZE, BIG_TEXTURE_SIZE, 0, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
+	FAIL_RET( m_Device->CreateTexture(BIG_TEXTURE_SIZE, BIG_TEXTURE_SIZE, 0, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
 	if(m_tex_bmp_mem == NULL)
 	{
 		// only first time, so we don't need lock CritSec
@@ -2351,25 +2352,19 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 		return m_uidrawer->draw_nonmovie_bg(surface, left_eye);
 	}
 
-	D3DSURFACE_DESC desc;
-	surface->GetDesc(&desc);
-	bool main = false;
-	if (desc.Width == m_active_pp.BackBufferWidth  && desc.Height == m_active_pp.BackBufferHeight)
-		main = true;
+	// lanczos test
+	MyVertex *p = m_vertices + (left_eye ? vertex_pass2_main : vertex_pass2_main_r);
+	RECTF target = {p[0].x+0.5, p[0].y+0.5, p[3].x+0.5, p[3].y+0.5};
+	CComPtr<IDirect3DSurface9> src;
+	if (left_eye)
+		m_tex_rgb_left->GetSurfaceLevel(0, &src);
+	else
+		m_tex_rgb_right->GetSurfaceLevel(0, &src);
+
+	if (GetKeyState(VK_CONTROL) < 0)
+		return resize_surface(src, surface, true, NULL, &target);
 
 	HRESULT hr = E_FAIL;
-	// use mipmap only for small backbuffer
-	int width = m_lVidWidth;
-	int height = m_lVidHeight;
-	if (get_active_input_layout() == side_by_side)
-		width /= 2;
-	else if (get_active_input_layout() == top_bottom)
-		height /= 2;
-
-	if (m_active_pp.BackBufferWidth * 3 < width || m_active_pp.BackBufferHeight * 3 < height)
-		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
-	else
-		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
 
 	float mip_lod = -1.0f;
 	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
@@ -2461,9 +2456,9 @@ HRESULT my12doomRenderer::draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye
 	float top = pic_top + pic_height * m_bmp_ftop;
 	float height = pic_height * m_bmp_fheight;
 	float cfg_main[8] = {left*2-1, top*-2+1, width*2, height*-2,
-		0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1536};
+		0, 0, (float)m_bmp_width/BIG_TEXTURE_SIZE, (float)m_bmp_height/BIG_TEXTURE_SIZE};
 	float cfg_shadow[8] = {(left+0.001)*2-1, (top+0.001)*-2+1, width*2, height*-2,
-		0, 0, (float)m_bmp_width/2048, (float)m_bmp_height/1536};
+		0, 0, (float)m_bmp_width/BIG_TEXTURE_SIZE, (float)m_bmp_height/BIG_TEXTURE_SIZE};
 
 	if (!left_eye)
 	{
@@ -2494,7 +2489,8 @@ HRESULT my12doomRenderer::draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye
 
 HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 {
-	return draw_bmp_mip(surface, left_eye);
+	if (GetKeyState(VK_CONTROL) >= 0)
+ 		return draw_bmp_mip(surface, left_eye);
 
 	if (!surface)
 		return E_POINTER;
@@ -2628,8 +2624,6 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 			vertex[i].x -= floor(m_bmp_offset*pic_width * m_active_pp.BackBufferWidth+0.5);
 	}
 
-
-	// draw shadow
 	if (m_gpu_shadow)
 	{
 		// draw shadow
@@ -2953,14 +2947,14 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 			vertex[i].w = 1.0f;
 		}
 
-		vertex[0].tu = (float)s.left / BIG_TEXTURE_SIZE;
-		vertex[0].tv = (float)s.top / BIG_TEXTURE_SIZE;
-		vertex[1].tu = (float)s.right / BIG_TEXTURE_SIZE;
-		vertex[1].tv = (float)s.top / BIG_TEXTURE_SIZE;
-		vertex[2].tu = (float)s.left / BIG_TEXTURE_SIZE;
-		vertex[2].tv = (float)s.bottom / BIG_TEXTURE_SIZE;
-		vertex[3].tu = (float)s.right / BIG_TEXTURE_SIZE;
-		vertex[3].tv = (float)s.bottom / BIG_TEXTURE_SIZE;
+		vertex[0].tu = (float)s.left / desc.Width;
+		vertex[0].tv = (float)s.top / desc.Height;
+		vertex[1].tu = (float)s.right / desc.Width;
+		vertex[1].tv = (float)s.top / desc.Height;
+		vertex[2].tu = (float)s.left / desc.Width;
+		vertex[2].tv = (float)s.bottom / desc.Height;
+		vertex[3].tu = (float)s.right / desc.Width;
+		vertex[3].tv = (float)s.bottom / desc.Height;
 
 		float ps[4] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height};
 		ps[0] = ps[0] > 1 ? 1 : ps[0];

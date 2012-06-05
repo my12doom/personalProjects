@@ -84,6 +84,14 @@ float4 lanczosY(float2 tex : TEXCOORD0) : COLOR
   return total_color/total_weight;  
 }
 
+float4 PaddedTex2D(sampler s, float2 tex)
+{
+	tex.x = clamp(tex.x, 0, 1);
+	tex.y = clamp(tex.y, 0, 1);
+	
+	return tex2D(s, tex);
+}
+
 float4 lanczos(float2 tex : TEXCOORD0) : COLOR
 {
   float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
@@ -91,9 +99,10 @@ float4 lanczos(float2 tex : TEXCOORD0) : COLOR
   float2 dx = {ps.x,0.0};
   float2 dy = {0.0,ps.y};
   
-  float2 pixcoord  =  tex/ps;
+  float2 pixcoord  = {tex.x/ps.x, tex.y/ps.y};
   float2 fract     = frac(pixcoord);
-  float2 coord0    = tex-(fract)*ps;
+  float2 coord0    = tex-float2(fract.x*ps.x, fract.y*ps.y);
+  coord0 -= ps/2;
   
   
   float total_weight = 0;
@@ -106,7 +115,7 @@ float4 lanczos(float2 tex : TEXCOORD0) : COLOR
 	float weight =  tap(xx*rate_x)*tap(yy*rate_y);
 	
 	total_weight += weight;
-	float4 color = tex2D(s0, coord0 + x*dx + y*dy);
+	float4 color = PaddedTex2D(s0, coord0 + x*dx + y*dy);
 	total_color += weight * color;
   }
   

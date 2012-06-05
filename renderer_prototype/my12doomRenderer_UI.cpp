@@ -1,7 +1,6 @@
 #include "..\dwindow\resource.h"
 #include "my12doomRenderer.h"
 #include "pixelshaders\UI.h"
-#include "..\dwindow\global_funcs.h"
 
 my_quad quad[200];
 
@@ -379,7 +378,16 @@ HRESULT ui_drawer_dwindow::init_cpu(int width, int height, IDirect3DDevice9 *dev
 	hr = m_ui_tex_cpu->LockRect(0, &d3dlr, 0, NULL);
 	BYTE *dst = (BYTE*)d3dlr.pBits;
 	wchar_t raw[MAX_PATH];
-	wcscpy(raw, g_apppath);
+	wchar_t apppath[MAX_PATH];
+	GetModuleFileNameW(NULL, apppath, MAX_PATH);
+	for(int i=wcslen(apppath)-1; i>0; i--)
+		if (apppath[i] == L'\\')
+		{
+			apppath[i] = NULL;
+			break;
+		}
+	wcscat(apppath, L"\\");
+	wcscpy(raw, apppath);
 	wcscat(raw, L"alpha.raw");
 	FILE * f = _wfopen(raw, L"rb");
 	if(!f)
@@ -395,7 +403,7 @@ HRESULT ui_drawer_dwindow::init_cpu(int width, int height, IDirect3DDevice9 *dev
 	// m_ui_logo_cpu
 	hr = m_ui_logo_cpu->LockRect(0, &d3dlr, 0, NULL);
 	dst = (BYTE*)d3dlr.pBits;
-	wcscpy(raw, g_apppath);
+	wcscpy(raw, apppath);
 	wcscat(raw, L"logo.raw");
 	f = _wfopen(raw, L"rb");
 	if(!f)
