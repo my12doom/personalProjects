@@ -27,11 +27,18 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 
 	case WM_TIMER:
 		{
+			// full screen button
+			if (player->m_full1)
+				SetWindowTextW(GetDlgItem(hDlg, IDC_FULL), L"2");
+			else
+				SetWindowTextW(GetDlgItem(hDlg, IDC_FULL), L"1");	
+
 			int total = 0;
 			player->total(&total);
 			int current = 0;
 			player->tell(&current);
 
+			// play button
 			if (player->is_playing())
 				SetWindowTextW(GetDlgItem(hDlg, IDC_PLAY), L";");
 			else
