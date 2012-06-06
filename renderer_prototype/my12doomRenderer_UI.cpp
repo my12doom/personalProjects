@@ -446,6 +446,7 @@ HRESULT ui_drawer_dwindow::draw_ui(IDirect3DSurface9 * surface, REFERENCE_TIME c
 
 	HRESULT hr = E_FAIL;
 
+	hr = m_Device->SetPixelShader(NULL);
 	m_Device->SetRenderTarget(0, surface);
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);

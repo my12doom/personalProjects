@@ -2356,7 +2356,7 @@ HRESULT my12doomRenderer::draw_movie_lanczos(IDirect3DSurface9 *surface, bool le
 	else
 		m_tex_rgb_right->GetSurfaceLevel(0, &src);
 
-	return resize_surface(src, surface, GetKeyState(VK_CONTROL)<0, NULL, &target);
+	return resize_surface(src, surface, false, NULL, &target);
 }
 
 HRESULT my12doomRenderer::draw_movie_mip(IDirect3DSurface9 *surface, bool left_eye)
