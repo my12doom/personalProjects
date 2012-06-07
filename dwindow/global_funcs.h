@@ -138,6 +138,7 @@ public:
 		m_value = default_value;
 		m_reg_type = reg_type;
 		load_setting(key, &m_value, sizeof(ValueType));
+		save_setting(m_key, &m_value, sizeof(ValueType), m_reg_type);
 	}
 	~AutoSetting()
 	{
