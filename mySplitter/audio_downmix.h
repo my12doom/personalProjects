@@ -28,12 +28,18 @@ protected:
 	GUID m_in_subtype;
 	WAVEFORMATEX m_out_fmt;
 	WAVEFORMATEX m_in_fmt;
+	double m_db;		// current gain, in db
 
-	inline void mix_a_sample_PCM(void* in, void *out);
-	inline void copy_a_sample_PCM(void* in, void *out);				// just copy
-	inline void mix_a_sample_PCM_24bit(void* in, void *out);
-	inline void copy_a_sample_PCM_24bit(void* in, void *out);		// just copy up 16bit
-	inline void copy_a_sample_PCM_8bit(void* in, void *out);		// just copy up 16bit
-	inline void mix_a_sample_FLOAT(void* in, void *out);
-	inline void copy_a_sample_FLOAT(void* in, void *out);	// just convert first 2 channel
+	inline double peak_PCM(void *in, int count);
+	inline double peak_PCM8bit(void *in, int count);
+	inline double peak_PCM24bit(void *in, int count);
+	inline double peak_float(void *in, int count);
+
+	inline void mix_a_sample_PCM(void* in, void *out, double rate);
+	inline void copy_a_sample_PCM(void* in, void *out, double rate);				// just copy
+	inline void mix_a_sample_PCM_24bit(void* in, void *out, double rate);
+	inline void copy_a_sample_PCM_24bit(void* in, void *out, double rate);		// just copy up 16bit
+	inline void copy_a_sample_PCM_8bit(void* in, void *out, double rate);		// just copy up 16bit
+	inline void mix_a_sample_FLOAT(void* in, void *out, double rate);
+	inline void copy_a_sample_FLOAT(void* in, void *out, double rate);	// just convert first 2 channel
 };

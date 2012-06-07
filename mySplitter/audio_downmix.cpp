@@ -1,8 +1,10 @@
 #include "audio_downmix.h"
 #include <stdio.h>
+#include <math.h>
 
 CDWindowAudioDownmix::CDWindowAudioDownmix(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr) :
-CTransformFilter(tszName, punk, CLSID_DWindowAudioDownmix)
+CTransformFilter(tszName, punk, CLSID_DWindowAudioDownmix),
+m_db(0)
 {
 } 
 
@@ -122,7 +124,7 @@ HRESULT CDWindowAudioDownmix::DecideBufferSize(IMemAllocator *pAlloc,ALLOCATOR_P
 	return NOERROR;
 }
 
-inline void CDWindowAudioDownmix::mix_a_sample_PCM(void* in, void *out)
+inline void CDWindowAudioDownmix::mix_a_sample_PCM(void* in, void *out, double rate)
 {
 	short* src = (short*)in;
 	short L = src[0];
@@ -133,20 +135,20 @@ inline void CDWindowAudioDownmix::mix_a_sample_PCM(void* in, void *out)
 	short BR = src[5];
 
 	short *dst = (short*)out;
-	dst[0] = (short) ((L*0.2929 + C*0.2071 + BL*0.2929 + LFE*0.2071));
-	dst[1] = (short) ((R*0.2929 + C*0.2071 + BR*0.2929 + LFE*0.2071));
+	dst[0] = (short) ((L*0.2929 + C*0.2071 + BL*0.2929 + LFE*0.2071)*rate);
+	dst[1] = (short) ((R*0.2929 + C*0.2071 + BR*0.2929 + LFE*0.2071)*rate);
 }
 
-inline void CDWindowAudioDownmix::copy_a_sample_PCM(void* in, void *out)
+inline void CDWindowAudioDownmix::copy_a_sample_PCM(void* in, void *out, double rate)
 {
 	short * src = (short*)in;
 	short *dst = (short*)out;
 
-	dst[0] = src[0];
-	dst[1] = src[1];
+	dst[0] = (short)(src[0]*rate);
+	dst[1] = (short)(src[1]*rate);
 }
 
-inline void CDWindowAudioDownmix::mix_a_sample_PCM_24bit(void* in, void *out)
+inline void CDWindowAudioDownmix::mix_a_sample_PCM_24bit(void* in, void *out, double rate)
 {
 	short L = (*(short*)((BYTE*)in+1+0*3));
 	short R = (*(short*)((BYTE*)in+1+1*3));
@@ -156,24 +158,24 @@ inline void CDWindowAudioDownmix::mix_a_sample_PCM_24bit(void* in, void *out)
 	short BR = (*(short*)((BYTE*)in+1+5*3));
 
 	short *dst = (short*)out;
-	dst[0] = (short) ((L*0.2929 + C*0.2071 + BL*0.2929 + LFE*0.2071));
-	dst[1] = (short) ((R*0.2929 + C*0.2071 + BR*0.2929 + LFE*0.2071));
+	dst[0] = (short) ((L*0.2929 + C*0.2071 + BL*0.2929 + LFE*0.2071)*rate);
+	dst[1] = (short) ((R*0.2929 + C*0.2071 + BR*0.2929 + LFE*0.2071)*rate);
 }
 
-inline void CDWindowAudioDownmix::copy_a_sample_PCM_24bit(void* in, void *out)
+inline void CDWindowAudioDownmix::copy_a_sample_PCM_24bit(void* in, void *out, double rate)
 {
 	short *dst = (short*)out;
-	dst[0] = (*(short*)((BYTE*)in+1+0*3));
-	dst[1] = (*(short*)((BYTE*)in+1+1*3));
+	dst[0] = (short)((*(short*)((BYTE*)in+1+0*3))*rate);
+	dst[1] = (short)((*(short*)((BYTE*)in+1+1*3))*rate);
 }
 
-inline void CDWindowAudioDownmix::copy_a_sample_PCM_8bit(void* in, void *out)
+inline void CDWindowAudioDownmix::copy_a_sample_PCM_8bit(void* in, void *out, double rate)
 {
 	BYTE * src = (BYTE*)in;
 	short *dst = (short*)out;
 
-	dst[0] = (((int)src[0])-128) * 256;
-	dst[1] = (((int)src[1])-128) * 256;
+	dst[0] = (short)((((int)src[0])-128) * 256 * rate);
+	dst[1] = (short)((((int)src[1])-128) * 256 * rate);
 }
 
 inline float clip_float(float in)
@@ -185,7 +187,7 @@ inline float clip_float(float in)
 	return in;
 }
 
-inline void CDWindowAudioDownmix::mix_a_sample_FLOAT(void* in, void *out)
+inline void CDWindowAudioDownmix::mix_a_sample_FLOAT(void* in, void *out, double rate)
 {
 	float * src = (float*)in;
 	float L = clip_float(src[0]);
@@ -196,24 +198,60 @@ inline void CDWindowAudioDownmix::mix_a_sample_FLOAT(void* in, void *out)
 	float BR = clip_float(src[5]);
 
 	signed short *dst = (signed short*)out;
-	dst[0] = (signed short) (32767*(L*0.2929 + C*0.2071 + BL*0.2929 + LFE*0.2071));
-	dst[1] = (signed short) (32767*(R*0.2929 + C*0.2071 + BR*0.2929 + LFE*0.2071));
+	dst[0] = (signed short) (32767*(L*0.2929 + C*0.2071 + BL*0.2929 + LFE*0.2071)*rate);
+	dst[1] = (signed short) (32767*(R*0.2929 + C*0.2071 + BR*0.2929 + LFE*0.2071)*rate);
 }
 
-inline void CDWindowAudioDownmix::copy_a_sample_FLOAT(void* in, void *out)
+inline void CDWindowAudioDownmix::copy_a_sample_FLOAT(void* in, void *out, double rate)
 {
 	float * src = (float*)in;
 	signed short *dst = (signed short*)out;
 
-	dst[0] = (signed short) (clip_float(src[0]) * 32767);
-	dst[1] = (signed short) (clip_float(src[1]) * 32767);
+	dst[0] = (signed short) (clip_float(src[0]) * 32767*rate);
+	dst[1] = (signed short) (clip_float(src[1]) * 32767*rate);
+}
+
+inline double CDWindowAudioDownmix::peak_PCM(void *in, int count)
+{
+	short peak = 0;
+	short *p = (short*)in;
+	for(int i=0; i<count; i++)
+		peak = max(peak, abs(p[i]));
+	return (double)peak/32768;
+}
+inline double CDWindowAudioDownmix::peak_PCM8bit(void *in, int count)
+{
+	char peak = 0;
+	unsigned char *p = (unsigned char*)in;
+	for(int i=0; i<count; i++)
+		peak = max(peak, abs(p[i]-128));
+	return (double)peak/128;
+}
+inline double CDWindowAudioDownmix::peak_PCM24bit(void *in, int count)
+{
+	short peak = 0;
+	BYTE *p = (BYTE*)in;
+	for(int i=0; i<count; i++)
+	{
+		short t = (*(short*)((BYTE*)p+1+i*3));
+		peak = max(peak, abs(t));
+	}
+	return (double)peak/32768;
+}
+inline double CDWindowAudioDownmix::peak_float(void *in, int count)
+{
+	float peak = 0;
+	float *p = (float*)in;
+	for(int i=0; i<count; i++)
+		peak = max(peak, abs(p[i]));
+	return peak;
 }
 
 
-#define do_convert(src, dst, func) \
+#define do_convert(src, dst, func, rate) \
 	for(int i=0; i<sample_count; i++)\
 	{\
-		func(src, dst);\
+		func(src, dst, rate);\
 		src += m_in_fmt.nBlockAlign;\
 		dst += m_out_fmt.nBlockAlign;\
 	}\
@@ -229,15 +267,49 @@ HRESULT CDWindowAudioDownmix::Transform(IMediaSample *pIn, IMediaSample *pOut)
 	int sample_count = pIn->GetActualDataLength() / m_in_fmt.nBlockAlign;
 	pOut->SetActualDataLength(sample_count * m_out_fmt.nBlockAlign);
 
+	// scan peak
+	double peak = 0;
+	if (m_in_subtype == MEDIASUBTYPE_IEEE_FLOAT)
+		peak = peak_float(src, sample_count*m_in_fmt.nChannels);
+	else
+	{
+		if (m_in_fmt.wBitsPerSample == 16)
+			peak = peak_PCM(src, sample_count*m_in_fmt.nChannels);
+		else if (m_in_fmt.wBitsPerSample == 8)
+			peak = peak_PCM8bit(src, sample_count*m_in_fmt.nChannels);
+		else if (m_in_fmt.wBitsPerSample == 24)
+			peak = peak_PCM24bit(src, sample_count*m_in_fmt.nChannels);
+		else
+			return E_UNEXPECTED;
+	}
+
+	// calculate next gain
+	double peak_db = log10(peak)*20;
+	double length = (double)sample_count / m_in_fmt.nSamplesPerSec;
+	if (m_db + peak_db < -6)		// -6db, amp it
+		m_db += 1 * length;
+	else 
+		m_db = m_db;				// do nothing
+
+	if (m_db + peak_db > 0)			// avoid clipping
+		m_db = -peak_db;
+
+	if (m_db > 24)					// max amp:24db, ~ 1600%
+		m_db = 24;
+
+
+	// downmix & apply gain
+	double rate = pow(10, m_db/20);
+
 	if (m_in_subtype == MEDIASUBTYPE_IEEE_FLOAT)
 	{
 		if (m_in_fmt.nChannels >= 6)
 		{
-			do_convert(src, dst, mix_a_sample_FLOAT);
+			do_convert(src, dst, mix_a_sample_FLOAT, rate);
 		}
 		else
 		{
-			do_convert(src, dst, copy_a_sample_FLOAT);
+			do_convert(src, dst, copy_a_sample_FLOAT, rate);
 		}
 	}
 	else
@@ -246,26 +318,26 @@ HRESULT CDWindowAudioDownmix::Transform(IMediaSample *pIn, IMediaSample *pOut)
 		{
 			if (m_in_fmt.wBitsPerSample == 16)
 			{
-				do_convert(src, dst, mix_a_sample_PCM);
+				do_convert(src, dst, mix_a_sample_PCM, rate);
 			}
 			else if (m_in_fmt.wBitsPerSample == 24)
 			{
-				do_convert(src, dst, mix_a_sample_PCM_24bit);
+				do_convert(src, dst, mix_a_sample_PCM_24bit, rate);
 			}
 		}
 		else
 		{
 			if (m_in_fmt.wBitsPerSample == 16)
 			{
-				do_convert(src, dst, copy_a_sample_PCM);
+				do_convert(src, dst, copy_a_sample_PCM, rate);
 			}
 			else if (m_in_fmt.wBitsPerSample == 24)
 			{
-				do_convert(src, dst, copy_a_sample_PCM_24bit);
+				do_convert(src, dst, copy_a_sample_PCM_24bit, rate);
 			}
 			else if (m_in_fmt.wBitsPerSample == 8)
 			{
-				do_convert(src, dst, copy_a_sample_PCM_8bit);
+				do_convert(src, dst, copy_a_sample_PCM_8bit, rate);
 			}
 		}
 	}
