@@ -144,7 +144,7 @@ m_saved_screen1(L"Screen1", rect_zero),
 m_saved_screen2(L"Screen2", rect_zero),
 m_saved_rect1(L"Window1", rect_zero),
 m_saved_rect2(L"Window2", rect_zero),
-m_useLAV(L"LAV", true),
+m_useLAV(L"ForceLAV", false),
 m_downmix(L"Downmix", false),
 m_forced_deinterlace(L"ForcedDeinterlace", false),
 m_saturation(L"Saturation", 0.5),
@@ -2357,6 +2357,31 @@ LRESULT dx_player::on_idle_time()
 	return S_FALSE;
 }
 
+HRESULT dx_player::render_audio_pin(IPin *pin)
+{
+	HRESULT hr = E_FAIL;
+	set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
+	if(m_useLAV)
+	{
+		hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
+		hr = m_gb->Render(pin);
+	}
+	else
+	{
+		hr = m_gb->Render(pin);
+
+		if (FAILED(hr))
+		{
+			hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
+			hr = m_gb->Render(pin);
+		}
+	}
+
+	handle_downmixer();
+
+	return hr;
+}
+
 HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = false */, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
 {
 	wchar_t file_to_play[MAX_PATH];
@@ -2580,10 +2605,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 						if ( (audio_track>=0 && (LOADFILE_TRACK_NUMBER(audio_num) & audio_track ))
 							|| audio_track == LOADFILE_ALL_TRACK)
 						{
-							set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
-							if(m_useLAV)hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
-							m_gb->Render(pin);
-							handle_downmixer();
+							render_audio_pin(pin);
 							log_line(L"done renderering audio pin #%d", audio_num);
 						}
 						audio_num ++;
@@ -3226,10 +3248,7 @@ HRESULT dx_player::enable_audio_track(int track)
 	HRESULT hr = S_OK;
 	if (pin_to_render)
 	{
-		set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
-		if(m_useLAV)m_gb->AddFilter(m_lav, L"LAV Audio Deocder");
-		m_gb->Render(pin_to_render);
-		handle_downmixer();
+		render_audio_pin(pin_to_render);
 	}
 	else
 		hr = VFW_E_NOT_FOUND;

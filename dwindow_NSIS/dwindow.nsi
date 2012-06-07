@@ -143,6 +143,8 @@ Section "3D影音主程序(required)"
   File "detoured.dll"
   File "alpha.raw"
   File "logo.raw"
+  File "Fonts.conf"
+  File "dxva2.dll"
   ;File "CoralExplorer_221282.exe"
   SetOutPath $INSTDIR\codec
   File "codec\*"
@@ -178,26 +180,26 @@ Section "桌面快捷方式"
   
 SectionEnd
 
-SectionGroup /e "文件关联"
+;SectionGroup /e "文件关联"
 
-Section "mkv文件"
-!insertmacro Assoc mkv "mkv" "MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
-SectionEnd
+;Section "mkv文件"
+;!insertmacro Assoc mkv "mkv" "MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+;SectionEnd
 
-Section "mkv3d文件"
-!insertmacro Assoc mkv3d "mkv3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
-SectionEnd
+;Section "mkv3d文件"
+;!insertmacro Assoc mkv3d "mkv3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+;SectionEnd
 
-Section "ssif文件"
-!insertmacro Assoc ssif "ssif" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
-SectionEnd
+;Section "ssif文件"
+;!insertmacro Assoc ssif "ssif" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+;SectionEnd
 
-Section "mpls播放列表"
-!insertmacro Assoc mpls "mpls" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
-SectionEnd
+;Section "mpls播放列表"
+;!insertmacro Assoc mpls "mpls" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+;SectionEnd
 
 
-SectionGroupEnd
+;SectionGroupEnd
 
 Section "-Refresh File Icon"
 System::Call 'Shell32::SHChangeNotify(i ${SHCNE_ASSOCCHANGED}, i ${SHCNF_IDLIST}, i 0, i 0)'
@@ -248,6 +250,8 @@ Section "Uninstall"
   Delete $INSTDIR\alpha.raw
   Delete $INSTDIR\logo.raw
   Delete $INSTDIR\*.exe
+  Delete $INSTDIR\fonts.conf
+  Delete $INSTDIR\dxva2.dll
 
   ; Remove shortcuts, if any
   Delete "$SMPROGRAMS\DWindow\*.*"
