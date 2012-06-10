@@ -13,6 +13,8 @@ LONG_PTR g_OldVolumeProc = 0;
 LONG_PTR g_OldProgressProc = 0;
 bool is_draging = false;
 
+char the_passkey_and_signature[128+128+128] = "my12doom here!";
+
 // overrided slider proc
 LRESULT CALLBACK VolumeProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
 LRESULT CALLBACK ProgressProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
