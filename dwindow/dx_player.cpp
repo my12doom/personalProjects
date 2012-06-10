@@ -122,7 +122,6 @@ inline bool compare_rect(const RECT in1, const RECT in2)
 // constructor & destructor
 LOGFONTW empty_logfontw = {0};
 dx_player::dx_player(HINSTANCE hExe):
-m_log(NULL),
 m_renderer1(NULL),
 dwindow(m_screen1, m_screen2),
 m_lFontPointSize(L"FontSize", 40),
@@ -184,6 +183,7 @@ m_subtitle_bottom_y(L"SubtitleY", 0.95)
 	m_srenderer = NULL;
 
 	// vars
+	m_log = NULL;
 	m_dragging = -1;
 	m_reset_and_load = false;
 	m_file_loaded = false;

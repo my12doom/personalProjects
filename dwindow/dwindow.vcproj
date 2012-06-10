@@ -538,6 +538,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Iplayer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\latency_dialog.cpp"
 				>
 			</File>

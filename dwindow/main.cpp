@@ -90,7 +90,7 @@ INT_PTR CALLBACK select_monitor_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 	return TRUE; // Handled message
 }
 
-extern HRESULT show_theater_controller(HINSTANCE inst, HWND owner, dx_player *p);
+extern HRESULT dwindow_dll_go(HINSTANCE inst, HWND owner, Iplayer *p);
 
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
@@ -173,7 +173,7 @@ retry:
 		SetFocus(test->m_hwnd1);
 	}
 	if (is_theeater_version())
-		show_theater_controller(hinstance, NULL, test);
+		dwindow_dll_go(hinstance, NULL, test);
 	else
 	while (!test->is_closed())
 		Sleep(100);

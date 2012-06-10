@@ -11,6 +11,7 @@
 #include "bar.h"
 
 // other
+#include "Iplayer.h"
 #include "global_funcs.h"
 #include "CSubtitle.h"
 #include "srt\srt_parser.h"
@@ -26,16 +27,6 @@
 #include <atlcoll.h>
 
 // some definition
-#define LOADFILE_NO_TRACK -1
-#define LOADFILE_ALL_TRACK -2
-#define LOADFILE_TRACK_NUMBER(x) (0x01 << x)
-#define LOADFILE_FIRST_TRACK LOADFILE_TRACK_NUMBER(0)
-
-#define FILTER_MODE_FAIL 0
-#define FILTER_MODE_MONO 1
-#define FILTER_MODE_STEREO 2
-
-#define WM_LOADFILE (WM_USER + 5)
 #define max_playlist (50)
 #define countof(x) (sizeof(x)/sizeof(x[0]))
 
@@ -50,14 +41,13 @@ public:
 	~subtitle_file_handler();
 };
 
-class dx_player : protected Imy12doomRendererCallback, public dwindow, protected IColorAdjustCB
+class dx_player : protected Imy12doomRendererCallback, public dwindow, protected IColorAdjustCB, public Iplayer
 {
 public:
 	dx_player(HINSTANCE hExe);
 	~dx_player();
 
 	// load functions
-	bool m_reset_load_done;
 	HRESULT reset();								// unload all video and subtitle files
 	HRESULT start_loading();
 	HRESULT reset_and_loadfile(const wchar_t *pathname, bool stop);
@@ -90,19 +80,20 @@ public:
 	HRESULT show_mouse(bool show)
 	{
 		GetCursorPos(&m_mouse);
-		return __super::show_mouse(show || m_theater_owner);
+		return dwindow::show_mouse(show || m_theater_owner);
 	}
 	bool is_closed();
 	HRESULT toggle_fullscreen();
 	HRESULT set_output_mode(int mode);
 	HRESULT set_theater(HWND owner){m_theater_owner = owner; return S_OK;}
 	HRESULT popup_menu(HWND owner);
+	bool is_fullsceen(int window_id){return window_id==1?m_full1:m_full2;}
+	HWND get_window(int window_id){return window_id==1?m_hwnd1:m_hwnd2;}
+
 	POINT m_mouse;
 
 	// error reporting vars and functions
 	HRESULT log_line(wchar_t *format, ...);
-	wchar_t *m_log;
-	bool m_file_loaded /*= false*/;
 
 protected:
 

@@ -1,11 +1,11 @@
 #include <Windows.h>
 #include <CommCtrl.h>
 #include "resource.h"
-#include "dx_player.h"
+#include "Iplayer.h"
 
 #define SB_RBUTTON 16
 
-dx_player * player = NULL;
+Iplayer * player = NULL;
 HWND control = NULL;
 HWND hProgress;// = GetDlgItem(hDlg, IDC_PROGRESS);
 HWND hVolume;// = GetDlgItem(hDlg, IDC_VOLUME);
@@ -28,7 +28,7 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 	case WM_TIMER:
 		{
 			// full screen button
-			if (player->m_full1)
+			if (player->is_fullsceen(1))
 				SetWindowTextW(GetDlgItem(hDlg, IDC_FULL), L"2");
 			else
 				SetWindowTextW(GetDlgItem(hDlg, IDC_FULL), L"1");	
@@ -102,8 +102,8 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 			int id = LOWORD(wParam);
 			if (id == IDC_FULL)
 			{
-				if (IsIconic(player->m_hwnd1)) SendMessageW(player->m_hwnd1, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
-				if (IsIconic(player->m_hwnd2)) SendMessageW(player->m_hwnd2, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
+// 				if (IsIconic(player->m_hwnd1)) SendMessageW(player->m_hwnd1, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
+// 				if (IsIconic(player->m_hwnd2)) SendMessageW(player->m_hwnd2, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
 
 				player->toggle_fullscreen();
 			}
@@ -130,7 +130,7 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 
 			else
 			{
-				PostMessage(player->m_hwnd1, msg, wParam, lParam);
+				PostMessage(player->get_window(1), msg, wParam, lParam);
 			}
 		}
 		break;
@@ -217,12 +217,18 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 	return TRUE; // Handled message
 }
 
-HRESULT show_theater_controller(HINSTANCE inst, HWND owner, dx_player *p)
+
+HRESULT dwindow_dll_go(HINSTANCE inst, HWND owner, Iplayer *p)
 {
 	player = p;
 
 	int o = DialogBox(inst, MAKEINTRESOURCE(IDD_THEATER), owner, threater_countrol_proc);
 
+	return S_OK;
+}
+
+HRESULT dwindow_dll_init(char *passkey_big, int rev)
+{
 	return S_OK;
 }
 
