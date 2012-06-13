@@ -5,9 +5,14 @@
 #include <stdio.h>
 #include "resource.h"
 #include <commctrl.h>
+#include "MediaInfoDLL.h"
+#include "global_funcs.h"
+using namespace MediaInfoDLL;
 
-HTREEITEM InsertTreeviewItem(const HWND hTv, const wchar_t *text,
-							 HTREEITEM htiParent);
+
+HRESULT FillTree(HWND root, const wchar_t *filename);
+HTREEITEM InsertTreeviewItem(const HWND hTv, const wchar_t *text, HTREEITEM htiParent);
+void DoEvents();
 
 
 class MediaInfoWindow
@@ -28,17 +33,9 @@ protected:
 	HWND tree;
 };
 
-HRESULT show_media_info(const wchar_t *filename)
-{
-	new MediaInfoWindow(filename);
-
-	return S_OK;
-}
-
 MediaInfoWindow::MediaInfoWindow(const wchar_t *filename)
 {
 	// generate a random string
-	srand((unsigned int)time(NULL));
 	for(int i=0; i<50; i++)
 		m_classname[i] = L'a' + rand()%25;
 	m_classname[50] = NULL;
@@ -95,10 +92,10 @@ DWORD MediaInfoWindow::pump()
 		return -2;
 
 	SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR)this);
-	SendMessage(hwnd, WM_INITDIALOG, 0, 0);
 
 	ShowWindow(hwnd, SW_SHOW);
 	UpdateWindow(hwnd);
+	SendMessage(hwnd, WM_INITDIALOG, 0, 0);
 
 	MSG msg;
 	memset(&msg,0,sizeof(msg));
@@ -136,9 +133,6 @@ LRESULT MediaInfoWindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 	LRESULT lr = S_FALSE;
 	const int IDC_TREE = 200;
 
-	int xPos = GET_X_LPARAM(lParam);
-	int yPos = GET_Y_LPARAM(lParam);
-
 	switch (message)
 	{
 	case WM_INITDIALOG:
@@ -150,48 +144,25 @@ LRESULT MediaInfoWindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 				style,
 				0,
 				0,
-				40,
-				30,
+				400,
+				600,
 				hWnd,
 				(HMENU) IDC_TREE,
 				GetModuleHandle(NULL),
 				NULL);
-			//add some items to the the tree view common control
-			HTREEITEM file=InsertTreeviewItem(tree, m_filename,TVI_ROOT);
 
-			//sub items of first item
-			HTREEITEM video = InsertTreeviewItem(tree, L"Video", file);
-			InsertTreeviewItem(tree, L"Video1", video);
-			InsertTreeviewItem(tree, L"Video2", video);
-			InsertTreeviewItem(tree, L"Video3", video);
+			FillTree(tree, m_filename);
+			SetWindowTextW(hWnd, m_filename);
 
-			//sub items of first item
-			HTREEITEM audio = InsertTreeviewItem(tree, L"Audio", file);
-			InsertTreeviewItem(tree, L"Audio1", audio);
-			InsertTreeviewItem(tree, L"Audio2", audio);
-			InsertTreeviewItem(tree, L"Audio3", audio);
-
-			//sub items of first item
-			HTREEITEM subtitle = InsertTreeviewItem(tree, L"Subtitle", file);
-			InsertTreeviewItem(tree, L"Subtitle1", subtitle);
-			InsertTreeviewItem(tree, L"Subtitle2", subtitle);
-			InsertTreeviewItem(tree, L"Subtitle3", subtitle);
-
-
-			SendMessage(tree, TVM_EXPAND, TVE_EXPAND, (LPARAM)file);
-			SendMessage(tree, TVM_EXPAND, TVE_EXPAND, (LPARAM)video);
-			SendMessage(tree, TVM_EXPAND, TVE_EXPAND, (LPARAM)audio);
-			SendMessage(tree, TVM_EXPAND, TVE_EXPAND, (LPARAM)subtitle);
+			SendMessage(hWnd, WM_SIZE, 0, 0);
 		}
 		break;
 
 	case WM_SIZE:
 		{
-			MoveWindow(tree, 0, 0, xPos, yPos, TRUE);
-
-			char tmp[200];
-			sprintf(tmp, "%dx%d\n", xPos, yPos);
-			OutputDebugStringA(tmp);
+			RECT rect;
+			GetClientRect(hWnd, &rect);
+			MoveWindow(tree, 0, 0, rect.right, rect.bottom, TRUE);
 		}
 		break;
 
@@ -233,4 +204,112 @@ HTREEITEM InsertTreeviewItem(const HWND hTv, const wchar_t *text,
 
 	return reinterpret_cast<HTREEITEM>(SendMessageW(hTv,TVM_INSERTITEM,0,
 		reinterpret_cast<LPARAM>(&tvis)));
+}
+
+bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *replacer);
+
+
+HRESULT FillTree(HWND root, const wchar_t *filename)
+{
+	HTREEITEM file = InsertTreeviewItem(root, filename, TVI_ROOT);
+	InsertTreeviewItem(root, C(L"Reading Infomation ...."), file);
+	SendMessage(root, TVM_EXPAND, TVE_EXPAND, (LPARAM)file);
+	DoEvents();
+
+	MediaInfo MI;
+	MI.Open(filename);
+	MI.Option(_T("Complete"));
+	MI.Option(_T("Inform"));
+
+	String str = MI.Inform().c_str();
+	MI.Close();
+	wchar_t *p = (wchar_t*)str.c_str();
+	wchar_t *p2 = wcsstr(p, L"\n");
+	wchar_t tmp[1024];
+	bool next_is_a_header = true;
+	
+	TreeView_DeleteAllItems (root);
+	file = InsertTreeviewItem(root, filename, TVI_ROOT);
+	HTREEITEM insert_position = file;
+	HTREEITEM headers[4096] = {0};
+	int headers_count = 0;
+
+	while (true)
+	{
+		if (p2)
+		{
+			p2[0] = NULL;
+			p2 ++;
+		}
+		
+		wcscpy(tmp, p);
+		wcstrim(tmp);
+		wcstrim(tmp, L'\n');
+		wcstrim(tmp, L'\r');
+		wcs_replace(tmp, L"  ", L" ");
+
+		if (tmp[0] == NULL || tmp[0] == L'\n' || tmp[0] == L'\r')
+		{
+			next_is_a_header = true;
+		}		
+		else if (next_is_a_header)
+		{
+			next_is_a_header = false;
+			
+			headers[headers_count++] = insert_position = InsertTreeviewItem(root, tmp, file);
+		}
+		else
+		{
+			InsertTreeviewItem(root, tmp, insert_position);
+		}
+
+
+		if (!p2)
+			break;
+
+		p = p2;
+		p2 = wcsstr(p2, L"\n");
+	}
+
+	//add some items to the the tree view common control
+	SendMessage(root, TVM_EXPAND, TVE_EXPAND, (LPARAM)file);
+	for (int i=0; i<headers_count; i++)
+		SendMessage(root, TVM_EXPAND, TVE_EXPAND, (LPARAM)headers[i]);
+
+	TreeView_SelectItem (root, file, NULL);
+
+	return S_OK;
+}
+
+HRESULT show_media_info(const wchar_t *filename)
+{
+	new MediaInfoWindow(filename);
+
+	return S_OK;
+}
+
+
+void DoEvents()
+{
+	MSG msg;
+	BOOL result;
+
+	while ( ::PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE ) )
+	{
+		result = ::GetMessage(&msg, NULL, 0, 0);
+		if (result == 0) // WM_QUIT
+		{                
+			::PostQuitMessage(msg.wParam);
+			break;
+		}
+		else if (result == -1)
+		{
+			// Handle errors/exit application, etc.
+		}
+		else 
+		{
+			::TranslateMessage(&msg);
+			:: DispatchMessage(&msg);
+		}
+	}
 }

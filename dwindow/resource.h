@@ -15,7 +15,6 @@
 #define IDD_COLOR                       120
 #define IDD_THEATER                     121
 #define IDD_USERID_PAYED                122
-#define IDD_MediaInfo                   123
 #define IDC_CHECK_SOUND1                1009
 #define IDC_CHECK_MKV1                  1010
 #define IDC_PLAY                        1013
@@ -48,7 +47,6 @@
 #define IDC_HUE                         1036
 #define IDC_TOTAL                       1036
 #define IDC_CON2                        1037
-#define IDC_TREE1                       1037
 #define IDC_SAT2                        1038
 #define IDC_HUE2                        1039
 #define ID_OPENFILE_SUBTITLE            40001
@@ -183,13 +181,15 @@
 #define ID_OUTPUTMODE_AMDHD3D           40132
 #define ID_OUTPUTMODE_INTELSTEREODRIVER 40133
 #define ID_OUTPUTMODE_INTEL             40134
+#define ID_ENGLISH_FILEINFOMATION       40135
+#define ID_MEDIAINFO                    40136
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        124
-#define _APS_NEXT_COMMAND_VALUE         40135
+#define _APS_NEXT_COMMAND_VALUE         40137
 #define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

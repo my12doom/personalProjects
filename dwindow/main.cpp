@@ -96,8 +96,6 @@ extern HRESULT dwindow_dll_go(HINSTANCE inst, HWND owner, Iplayer *p);
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
-	show_media_info( L"Z:\\avs.avi");
-
 	SetUnhandledExceptionFilter(my_handler);
 	int argc = 1;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);

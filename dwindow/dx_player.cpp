@@ -10,6 +10,7 @@
 #include "..\mySplitter\audio_downmix.h"
 #include <dwmapi.h>
 #pragma comment(lib, "dwmapi.lib")
+#include "MediaInfo.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
@@ -1368,6 +1369,19 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Logged out, the program will exit now, restart the program to login."), L"...", MB_OK);
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
+	}
+
+	// Media Info
+	else if (uid == ID_MEDIAINFO)
+	{
+		// TODO: add a member variable to save loaded file name
+		if (m_file_loaded)
+		{
+			wchar_t tmp[1024];
+			GetWindowTextW(m_hwnd1, tmp, 1024);
+			show_media_info(tmp);
+		}
+
 	}
 
 	// LAV Audio Decoder
