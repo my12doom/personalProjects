@@ -5,6 +5,7 @@
 #include "..\AESFile\rijndael.h"
 #include "resource.h"
 #include "vobsub_parser.h"
+#include "MediaInfo.h"
 
 // main window
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
@@ -95,6 +96,8 @@ extern HRESULT dwindow_dll_go(HINSTANCE inst, HWND owner, Iplayer *p);
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
+	show_media_info( L"Z:\\avs.avi");
+
 	SetUnhandledExceptionFilter(my_handler);
 	int argc = 1;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -161,7 +164,6 @@ retry:
 
 	dx_player *test = new dx_player(hinstance);
 	BringWindowToTop(test->m_hwnd1);
-
 
 	if (argc>1)
 	{

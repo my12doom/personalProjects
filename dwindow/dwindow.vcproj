@@ -594,6 +594,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\MediaInfo.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\lrtb\mySink.cpp"
 				>
 			</File>
@@ -777,6 +781,10 @@
 			</File>
 			<File
 				RelativePath=".\latency_dialog.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MediaInfo.h"
 				>
 			</File>
 			<File

@@ -15,6 +15,7 @@
 #define IDD_COLOR                       120
 #define IDD_THEATER                     121
 #define IDD_USERID_PAYED                122
+#define IDD_MediaInfo                   123
 #define IDC_CHECK_SOUND1                1009
 #define IDC_CHECK_MKV1                  1010
 #define IDC_PLAY                        1013
@@ -47,6 +48,7 @@
 #define IDC_HUE                         1036
 #define IDC_TOTAL                       1036
 #define IDC_CON2                        1037
+#define IDC_TREE1                       1037
 #define IDC_SAT2                        1038
 #define IDC_HUE2                        1039
 #define ID_OPENFILE_SUBTITLE            40001
@@ -186,9 +188,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        122
+#define _APS_NEXT_RESOURCE_VALUE        124
 #define _APS_NEXT_COMMAND_VALUE         40135
-#define _APS_NEXT_CONTROL_VALUE         1037
+#define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
