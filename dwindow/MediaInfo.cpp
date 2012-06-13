@@ -18,7 +18,7 @@ void DoEvents();
 class MediaInfoWindow
 {
 public:
-	MediaInfoWindow(const wchar_t *filename);
+	MediaInfoWindow(const wchar_t *filename, HWND parent);
 
 protected:
 	~MediaInfoWindow() {}			// this class will suicide after window closed, so, don't delete
@@ -29,12 +29,15 @@ protected:
 
 	wchar_t m_filename[MAX_PATH];
 	wchar_t m_classname[100];		// just a random class name
+	HWND m_parent;
 
 	HWND tree;
 };
 
-MediaInfoWindow::MediaInfoWindow(const wchar_t *filename)
+MediaInfoWindow::MediaInfoWindow(const wchar_t *filename, HWND parent)
 {
+	m_parent = parent;
+
 	// generate a random string
 	for(int i=0; i<50; i++)
 		m_classname[i] = L'a' + rand()%25;
@@ -83,7 +86,7 @@ DWORD MediaInfoWindow::pump()
 		CW_USEDEFAULT,       // default vertical position 
 		400,       // default width 
 		600,       // default height 
-		(HWND) NULL,         // no owner window 
+		(HWND) m_parent,         // no owner window 
 		(HMENU) NULL,        // use class menu 
 		hinstance,           // handle to application instance 
 		(LPVOID) NULL);      // no window-creation data 
@@ -281,9 +284,9 @@ HRESULT FillTree(HWND root, const wchar_t *filename)
 	return S_OK;
 }
 
-HRESULT show_media_info(const wchar_t *filename)
+HRESULT show_media_info(const wchar_t *filename, HWND parent)
 {
-	new MediaInfoWindow(filename);
+	new MediaInfoWindow(filename, parent);
 
 	return S_OK;
 }

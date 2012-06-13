@@ -1379,7 +1379,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		{
 			wchar_t tmp[1024];
 			GetWindowTextW(m_hwnd1, tmp, 1024);
-			show_media_info(tmp);
+			show_media_info(tmp, m_theater_owner ? m_theater_owner : id_to_hwnd(1));
 		}
 
 	}
@@ -2753,8 +2753,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		{
 			m_srenderer = m_grenderer.GetSubtitleRenderer();
 			m_file_loaded = true;
-			set_window_text(1, file_to_play);
-			set_window_text(2, file_to_play);
+			SetWindowTextW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), file_to_play);
+			SetWindowTextW(m_theater_owner ? m_theater_owner : id_to_hwnd(2), file_to_play);
 		}
 	}
 
