@@ -12,6 +12,7 @@ int n_localization_element_count;
 const int increase_step = 8;	// 2^8 = 256, increase when
 localization_element *localization_table = NULL;
 HRESULT hr_init_localization = set_localization_language(g_active_language);
+void dump();
 
 HRESULT add_localization(const wchar_t *English, const wchar_t *Localized)
 {
@@ -319,8 +320,46 @@ HRESULT set_localization_language(localization_language language)
 			// ass fonts
 			add_localization(L"(Fonts Loading)", L"（字体正在载入中）");
 
+			// Media Info
+			add_localization(L"Media Infomation...", L"文件信息...");
+			add_localization(L"MediaInfoLanguageFile", L"language\\MediaInfoCN");
+			add_localization(L"Reading Infomation ....", L"正在读取信息");
+
 		}
 		break;
 	}
+
+	dump();
+
 	return S_OK;
+}
+
+bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *replacer);
+
+void dump()
+{
+	char bom[2] = {0xff, 0xfe};
+	wchar_t tmp[10240];
+
+	FILE *f = fopen("Z:\\lang.txt", "wb");
+	if (f)
+	{
+		fwrite(bom, 1, 2, f);
+		fwprintf(f, L"中文\r\n");
+
+		for(int i=0; i<n_localization_element_count; i++)
+		{
+			wcscpy(tmp, localization_table[i].english);
+			wcs_replace(tmp, L"\\", L"\\\\");
+			wcs_replace(tmp, L"\t", L"\\t");
+			wcs_replace(tmp, L"\n", L"\\n");
+			fwprintf(f, L"%s\r\n", tmp);
+
+			wcscpy(tmp, localization_table[i].localized);
+			wcs_replace(tmp, L"\n", L"\\n");		
+			fwprintf(f, L"%s\r\n", tmp);
+		}
+
+		fclose(f);
+	}
 }

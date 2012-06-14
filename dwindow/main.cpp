@@ -93,9 +93,57 @@ INT_PTR CALLBACK select_monitor_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 
 extern HRESULT dwindow_dll_go(HINSTANCE inst, HWND owner, Iplayer *p);
 
+DWORD WINAPI pre_read_thread(LPVOID k)
+{
+	wchar_t *p = (wchar_t*)k;
+
+	wchar_t *tmp = new wchar_t[102400];
+	wcscpy(tmp, p);
+	wcscat(tmp, L"*.*");
+
+	WIN32_FIND_DATAW find_data;
+	HANDLE find_handle = FindFirstFileW(tmp, &find_data);
+
+	if (find_handle != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
+
+			wcscpy(tmp, p);
+			wcscat(tmp, find_data.cFileName);
+			OutputDebugStringW(tmp);
+			OutputDebugStringW(L"\r\n");
+
+			if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)!=0
+				&& wcscmp(L".",find_data.cFileName ) !=0
+				&& wcscmp(L"..", find_data.cFileName) !=0)
+			{
+				wcscat(tmp, L"\\");
+				pre_read_thread(tmp);
+			}
+			else
+			{
+				FILE * f = _wfopen(tmp, L"rb");
+				if (f)
+				{
+					while (fread(tmp, 1, 102400, f))
+						;
+					fclose(f);
+				}
+			}
+
+		}
+		while( FindNextFile(find_handle, &find_data ) );
+	}
+
+	return 0;
+}
+
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
+	CreateThread(NULL, NULL, pre_read_thread, g_apppath, NULL, NULL);
+
 	SetUnhandledExceptionFilter(my_handler);
 	int argc = 1;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);

@@ -303,13 +303,13 @@ BEGIN
         MENUITEM "Fullscreen\t(Alt+Enter)",     ID_FULLSCREEN
         MENUITEM "Swap Left/Right\t(Tab)",      ID_SWAPEYES
         MENUITEM SEPARATOR
+        MENUITEM "Media Infomation...",         ID_MEDIAINFO
         POPUP "Language"
         BEGIN
             MENUITEM "English",                     ID_LANGUAGE_ENGLISH
             MENUITEM "ÖÐÎÄ",                          ID_LANGUAGE_CHINESE
         END
         MENUITEM "Logout...",                   ID_LOGOUT
-        MENUITEM "Media Infomation...",         ID_MEDIAINFO
         MENUITEM "Exit",                        ID_EXIT
     END
 END

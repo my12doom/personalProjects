@@ -208,7 +208,8 @@ protected:
 
 
 // localization
-typedef enum{ENGLISH, CHINESE} localization_language;
+enum{ENGLISH, CHINESE};
+typedef DWORD localization_language;
 extern AutoSetting<localization_language> g_active_language;
 const wchar_t *C(const wchar_t *English);
 HRESULT add_localization(const wchar_t *English, const wchar_t *Localized = NULL);

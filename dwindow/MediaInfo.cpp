@@ -220,10 +220,36 @@ HRESULT FillTree(HWND root, const wchar_t *filename)
 	DoEvents();
 
 	MediaInfo MI;
+
+	// language
+	wchar_t path[MAX_PATH];
+	wcscpy(path, g_apppath);
+	wcscat(path, C(L"MediaInfoLanguageFile"));
+
+	FILE *f = _wfopen(path, L"rb");
+	if (f)
+	{
+		wchar_t lang[102400] = L"";
+		char tmp[1024];
+		wchar_t tmp2[1024];
+		USES_CONVERSION;
+		while (fscanf(f, "%s", tmp, 1024, f) != EOF)
+		{
+			MultiByteToWideChar(CP_UTF8, 0, tmp, 1024, tmp2, 1024);
+
+			if (wcsstr(tmp2, L";"))
+			{
+				wcscat(lang, tmp2);
+				wcscat(lang, L"\n");
+			}
+		}
+		fclose(f);
+		MI.Option(_T("Language"), W2T(lang));
+	}
+
 	MI.Open(filename);
 	MI.Option(_T("Complete"));
 	MI.Option(_T("Inform"));
-
 	String str = MI.Inform().c_str();
 	MI.Close();
 	wchar_t *p = (wchar_t*)str.c_str();
@@ -279,7 +305,7 @@ HRESULT FillTree(HWND root, const wchar_t *filename)
 	for (int i=0; i<headers_count; i++)
 		SendMessage(root, TVM_EXPAND, TVE_EXPAND, (LPARAM)headers[i]);
 
-	TreeView_SelectItem (root, file, NULL);
+	TreeView_SelectItem (root, file);
 
 	return S_OK;
 }
