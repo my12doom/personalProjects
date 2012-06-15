@@ -325,6 +325,10 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"MediaInfoLanguageFile", L"language\\MediaInfoCN");
 			add_localization(L"Reading Infomation ....", L"正在读取信息");
 
+			add_localization(L"Display Orientation", L"显示器方向");
+			add_localization(L"Horizontal", L"横向");
+			add_localization(L"Vertical", L"纵向");
+
 		}
 		break;
 	}

@@ -209,6 +209,9 @@ m_right_queue(_T("right queue"))
 
 void my12doomRenderer::init_variables()
 {
+	// Display Orientation
+	m_display_orientation = horizontal;
+
 	// PC level test
 	m_PC_level = 0;
 	m_last_reset_time = timeGetTime();
@@ -2405,7 +2408,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	}
 
 	assert(0);
-	return E_UNEXPECTED;
+	return draw_movie_mip(surface, left_eye);
 }
 
 HRESULT my12doomRenderer::draw_bmp_lanczos(IDirect3DSurface9 *surface, bool left_eye)
@@ -2425,6 +2428,12 @@ HRESULT my12doomRenderer::draw_bmp_lanczos(IDirect3DSurface9 *surface, bool left
 	// movie picture position
 	float active_aspect = get_active_aspect();
 	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+	if (m_display_orientation == vertical)
+	{
+		tar.right %= tar.bottom;
+		tar.bottom %= tar.right;
+		tar.right %= tar.bottom;
+	}
 	if (m_output_mode == out_sbs)
 		tar.right /= 2;
 	else if (m_output_mode == out_tb)
@@ -2657,6 +2666,9 @@ HRESULT my12doomRenderer::draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye
 
 HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 {
+	if (m_display_orientation != horizontal)
+		return E_NOTIMPL;
+
 	if (!surface)
 		return E_POINTER;
 
@@ -3693,6 +3705,13 @@ HRESULT my12doomRenderer::calculate_vertex()
 	// pass2-3 coordinate
 	// main window coordinate
 	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+	if (m_display_orientation == vertical)
+	{
+		tar.right ^= tar.bottom;
+		tar.bottom ^= tar.right;
+		tar.right ^= tar.bottom;
+	}
+
 	if (m_output_mode == out_sbs)
 		tar.right /= 2;
 	else if (m_output_mode == out_tb)
@@ -3759,10 +3778,21 @@ HRESULT my12doomRenderer::calculate_vertex()
 	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
 
 	MyVertex *pass2_main = m_vertices + vertex_pass2_main;
-	pass2_main[0].x = tar.left-0.5f; pass2_main[0].y = tar.top-0.5f;
-	pass2_main[1].x = tar.right-0.5f; pass2_main[1].y = tar.top-0.5f;
-	pass2_main[2].x = tar.left-0.5f; pass2_main[2].y = tar.bottom-0.5f;
-	pass2_main[3].x = tar.right-0.5f; pass2_main[3].y = tar.bottom-0.5f;
+
+	if (m_display_orientation == horizontal)
+	{
+		pass2_main[0].x = tar.left-0.5f; pass2_main[0].y = tar.top-0.5f;
+		pass2_main[1].x = tar.right-0.5f; pass2_main[1].y = tar.top-0.5f;
+		pass2_main[2].x = tar.left-0.5f; pass2_main[2].y = tar.bottom-0.5f;
+		pass2_main[3].x = tar.right-0.5f; pass2_main[3].y = tar.bottom-0.5f;
+	}
+	else
+	{
+		pass2_main[0].x = tar.top-0.5f; pass2_main[0].y = (float)m_active_pp.BackBufferHeight - tar.left-0.5f;
+		pass2_main[1].x = tar.top-0.5f; pass2_main[1].y = (float)m_active_pp.BackBufferHeight - tar.right-0.5f;
+		pass2_main[2].x = tar.bottom-0.5f; pass2_main[2].y = (float)m_active_pp.BackBufferHeight - tar.left-0.5f;
+		pass2_main[3].x = tar.bottom-0.5f; pass2_main[3].y = (float)m_active_pp.BackBufferHeight - tar.right-0.5f;
+	}
 
 	MyVertex *pass2_main_r = m_vertices + vertex_pass2_main_r;
 	memcpy(pass2_main_r, pass2_main, sizeof(MyVertex) * 4);

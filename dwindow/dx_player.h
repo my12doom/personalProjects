@@ -213,6 +213,7 @@ protected:
 	AutoSetting<DWORD> m_anaglygh_left_color;	   /* = RED */
 	AutoSetting<DWORD> m_anaglygh_right_color;	   /* = CYAN */
 	AutoSetting<bool> m_forced_deinterlace;
+	AutoSetting<DWORD> m_display_orientation;
 
 	// subtitle control
 	typedef struct rendered_subtitle2_struct : public rendered_subtitle

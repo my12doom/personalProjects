@@ -277,6 +277,11 @@ BEGIN
             BEGIN
                 MENUITEM "2",                           ID_OUTPUT2
             END
+            POPUP "Display Orientation"
+            BEGIN
+                MENUITEM "Horizontal",                  ID_DISPLAYORIENTATION_HORIZONTAL
+                MENUITEM "Vertical",                    ID_DISPLAYORIENTATION_VERTICAL
+            END
             MENUITEM "Adjust Color...",             ID_VIDEO_ADJUSTCOLOR
             MENUITEM "Use CUDA Accelaration",       ID_CUDA
             MENUITEM "Forced Deinterlace",          ID_VIDEO_DEINTERLACE

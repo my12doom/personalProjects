@@ -35,6 +35,12 @@ enum output_mode_types
 	output_mode_types_max
 };
 
+enum display_orientation
+{
+	horizontal,
+	vertical,
+};
+
 enum resampling_method
 {
 	bilinear_mipmap_minus_one,
@@ -335,7 +341,7 @@ public:
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
 	HRESULT set_2dto3d(bool convert){m_convert3d = convert;}
 	HRESULT set_aspect_mode(int mode);
-
+	HRESULT set_display_orientation(int orientation){m_display_orientation = (display_orientation)orientation; m_vertex_changed = true; return S_OK;}
 
 	// settings GET function
 	DWORD get_mask_color(int id);
@@ -352,9 +358,11 @@ public:
 	bool get_2dto3d(){return m_convert3d;}
 	aspect_mode_types get_aspect_mode(){return m_aspect_mode;}
 	HRESULT intel_get_caps(IGFX_S3DCAPS *caps);
+	int get_display_orientation(){return m_display_orientation;}
 
 protected:
 
+	display_orientation m_display_orientation;
 	double m_parallax;
 	bool m_showui;
 	bool m_has_subtitle;

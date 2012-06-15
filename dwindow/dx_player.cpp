@@ -160,7 +160,8 @@ m_trial_shown(L"Trial", false),
 m_LogFont(L"LogFont", empty_logfontw),
 m_aspect_mode(L"AspectRatioMode", aspect_letterbox),
 m_subtitle_center_x(L"SubtitleX", 0.5),
-m_subtitle_bottom_y(L"SubtitleY", 0.95)
+m_subtitle_bottom_y(L"SubtitleY", 0.95),
+m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD)
 {
 	detect_monitors();
 
@@ -947,6 +948,10 @@ HRESULT dx_player::popup_menu(HWND owner)
 	CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
 
+	// Display Orientation
+	CheckMenuItem(menu, ID_DISPLAYORIENTATION_VERTICAL,		m_display_orientation == vertical ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_DISPLAYORIENTATION_HORIZONTAL,	m_display_orientation == horizontal ? MF_CHECKED:MF_UNCHECKED);
+
 	// Aspect Ratio
 	if (m_aspect == -1) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
 	if (m_aspect == 2.35) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
@@ -1369,6 +1374,21 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Logged out, the program will exit now, restart the program to login."), L"...", MB_OK);
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
+	}
+
+	// Display Orientation
+	else if (uid == ID_DISPLAYORIENTATION_HORIZONTAL)
+	{
+		m_display_orientation = horizontal;
+		if (m_renderer1)
+			m_renderer1->set_display_orientation(m_display_orientation);			
+	}
+
+	else if (uid == ID_DISPLAYORIENTATION_VERTICAL)
+	{
+		m_display_orientation = vertical;
+		if (m_renderer1)
+			m_renderer1->set_display_orientation(m_display_orientation);
 	}
 
 	// Media Info
@@ -1980,6 +2000,7 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->m_luminance2 = m_luminance2;
 	m_renderer1->m_hue2 = m_hue2;
 	m_renderer1->m_contrast2 = m_contrast2;
+	m_renderer1->set_display_orientation(m_display_orientation);
 
 	m_file_loaded = false;
 	
