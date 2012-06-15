@@ -13,7 +13,8 @@ if (!strpos($RSA_decoded, "R"))
 }
 else
 {
-	die("E_FAIL:".$result);
+	db_log("BAD_REG_CHECK", $result, $RSA_decoded);
+	die("FAIL:".$result);
 }
 
 // check time
@@ -104,7 +105,10 @@ else
 	$bar_user = $row["bar_max_users"];
 	$theater = $row["usertype"];
 	$expire = $row["expire"];
-	$newkey = $com->genkey4($passkey, time() - (12*3600), min($expire, time() + 24*7*3600), $bar_user, $theater);
+	if ($user == "3dvstar")
+		$newkey = $com->genkey4($passkey, time() - (12*3600), $expire, $bar_user, $theater);
+	else
+		$newkey = $com->genkey4($passkey, time() - (12*3600), min($expire, time() + 24*7*3600), $bar_user, $theater);
 	$newkey = $com->AES($newkey, $return_key);
 
 }

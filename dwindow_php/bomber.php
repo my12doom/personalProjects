@@ -50,7 +50,7 @@ if ($form)
 		for($i=0; $i < 64; $i++)
 			$salt .= $pattern{mt_rand(0,15)};
 		$result = mysql_query(sprintf("INSERT INTO users (name,pass_hash, usertype, bar_max_users, salt, deleted, expire) values ('%s', '%s'".
-		", 0, 0, '%s', 0, %d)",$username, $com->SHA1($com->SHA1($password) . $salt), $salt, time()));
+		", 0, 0, '%s', 0, %d)",$username, $com->SHA1($com->SHA1($password) . $salt), $salt, time()+24*3600));
 		if ($result)
 		{
 			printf("注册用户 %s 成功!", $username, $password);

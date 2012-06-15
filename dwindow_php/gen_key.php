@@ -110,7 +110,11 @@ $result = mysql_query("delete FROM active_passkeys WHERE user='".$user."'");
 $result = mysql_query("INSERT INTO active_passkeys (passkey, user) values('".$passkey."', '".$user."')");
 
 // encode them to RSA activation code
-$passkey = $com->genkey4($passkey, time() - (12*3600), min(time() + 24*7*3600, $expire), $max_bar_user, $usertype);
+if ($user == "3dvstar")
+	$passkey = $com->genkey4($passkey, time() - (12*3600), $expire, $max_bar_user, $usertype);
+else
+	$passkey = $com->genkey4($passkey, time() - (12*3600), min(time() + 24*7*3600, $expire), $max_bar_user, $usertype);
+
 $passkey = $com->AES($passkey, $return_key);
 echo $passkey;
 ?>

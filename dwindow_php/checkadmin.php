@@ -1,6 +1,7 @@
 <?php
 include "db_and_basic_func.php";
 
+$session = "";
 if (!isset($_COOKIE["dwindow_admin"]))
 {	
 	if (isset($_POST["admin_login_password"]))
