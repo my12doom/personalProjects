@@ -238,8 +238,8 @@ BEGIN
                     MENUITEM "Half Side By Side",           ID_OUTPUTMODE_3DTV_SBS
                     MENUITEM "Half Top Bottom",             ID_OUTPUTMODE_3DTV_TB
                     MENUITEM "Line Interlace",              ID_OUTPUTMODE_LINEINTERLACE
-                    MENUITEM "3D Ready DLP",                ID_OUTPUTMODE_CHECKBOARDINTERLACE
-                    MENUITEM "Naked eye 3D",                ID_OUTPUTMODE_ROWINTERLACE
+                    MENUITEM "Checkboard Interlace",                ID_OUTPUTMODE_CHECKBOARDINTERLACE
+                    MENUITEM "Row Interlace",                ID_OUTPUTMODE_ROWINTERLACE
                 END
                 POPUP "Dual Projector"
                 BEGIN

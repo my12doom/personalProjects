@@ -1,7 +1,7 @@
 #include "sq2sbs.h"
 #include "resource.h"
 #include "..\mysplitter\asm.h"
-#include "vld.h"
+// #include "vld.h"
 
 CLSID CLSID_PD10_DECODER;
 CLSID CLSID_PD10_DEMUXER;

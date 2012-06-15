@@ -161,7 +161,8 @@ m_LogFont(L"LogFont", empty_logfontw),
 m_aspect_mode(L"AspectRatioMode", aspect_letterbox),
 m_subtitle_center_x(L"SubtitleX", 0.5),
 m_subtitle_bottom_y(L"SubtitleY", 0.95),
-m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD)
+m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD),
+m_revert(L"SwapEyes", false, REG_DWORD)
 {
 	detect_monitors();
 
@@ -194,7 +195,6 @@ m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD)
 	m_log[0] = NULL;
 	m_mouse.x = m_mouse.y = -10;
 	m_bar_drawer.load_resource(hExe);
-	m_revert = false;
 	m_mirror1 = 0;
 	m_mirror2 = 0;
 	m_letterbox_delta = 0.0;

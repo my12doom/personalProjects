@@ -1859,7 +1859,7 @@ _continue:
 
 			CComPtr<IPin> convertor_o;
 			hr = GetUnconnectedPin(convertor, PINDIR_OUTPUT, &convertor_o);
-			hr = gb->Render(convertor_o);
+			if (_enable_video) hr = gb->Render(convertor_o);
 
 			// debug print switcher's pin connection
 			CComPtr<IEnumPins> ep;
@@ -1896,6 +1896,24 @@ _continue:
 
 				pin = NULL;
 			}
+
+			// enum all splitter's Pins and try rendering unconnected ones
+			ep = NULL;
+			source_base->EnumPins(&ep);
+			for(pin = NULL; ep->Next(1, &pin, NULL) == S_OK; pin = NULL)
+			{
+				USES_CONVERSION;
+
+				PIN_INFO pi;
+				pin->QueryPinInfo(&pi);
+				CComPtr<IBaseFilter> f;
+				f.Attach(pi.pFilter);
+
+				printf("Rendering %08x(%s)...", pin.p, W2A(pi.achName));
+				hr = gb->Render(pin);
+				printf("%08x\n", hr);
+			}
+
 
       if (!get_sample.IsConnected()) { // Ignore arbitary errors, run with what we got
         CheckHresult(env, hr, "couldn't open file ", filename);
@@ -2492,7 +2510,7 @@ AVSValue __cdecl Create_DirectShowSource(AVSValue args, void*, IScriptEnvironmen
 	const char* filename = args[0][0].AsString();
 	const int _avg_time_per_frame = args[1].Defined() ? int(10000000 / args[1].AsFloat() + 0.5) : 0;
 
-	const bool audio    = args[3].AsBool(false);
+	const bool audio    = args[3].AsBool(true);
 	const bool video    = args[4].AsBool(true);
 
 	if (!(audio || video))

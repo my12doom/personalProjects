@@ -204,10 +204,11 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Half Side By Side",				L"左右半宽");
 			add_localization(L"Half Top Bottom",				L"上下半高");
 			add_localization(L"Line Interlace",					L"被动偏振");
-			add_localization(L"Naked eye 3D",					L"裸眼3D");
+			add_localization(L"Row Interlace",					L"裸眼3D");
 			add_localization(L"Anaglyph",						L"有色眼镜");
 			add_localization(L"IZ3D Displayer",					L"IZ3D 显示器");
 			add_localization(L"Gerneral 120Hz Glasses",			L"普通120Hz眼镜");
+			add_localization(L"Checkboard Interlace", L"棋盘交错");
 
 			add_localization(L"Audio",					L"音频");
 			add_localization(L"Use LAV Audio Decoder",		L"使用内置音频解码器");

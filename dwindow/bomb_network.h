@@ -30,7 +30,7 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 	}
 	HWND parent_window = (HWND)lpParame;
 
-	Sleep(60*1000);
+// 	Sleep(60*1000);
 
 
 	dwindow_message_uncrypt message;
