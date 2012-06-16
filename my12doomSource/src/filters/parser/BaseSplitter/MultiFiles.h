@@ -26,6 +26,7 @@
 #include <atlcoll.h>
 #include "../../../DSUtil/DSUtil.h"
 #include "../../../../../AESFile/E3DReader.h"
+#include "InternetFile.h"
 
 class CMultiFiles : public CObject
 {
@@ -87,6 +88,7 @@ public:
 
 protected:
 	file_reader m_E3DReader;
+	InternetFile m_internet;
 
 	REFERENCE_TIME*				m_pCurrentPTSOffset;
 	CAtlArray<CString>			m_strFiles;

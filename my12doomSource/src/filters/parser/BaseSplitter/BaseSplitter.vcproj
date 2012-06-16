@@ -272,6 +272,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\InternetFile.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\MultiFiles.cpp"
 				>
 			</File>
@@ -338,6 +342,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\..\AESFile\E3DReader.h"
+				>
+			</File>
+			<File
+				RelativePath=".\InternetFile.h"
 				>
 			</File>
 			<File

@@ -68,7 +68,10 @@ BOOL CMultiFiles::OpenFiles(CAtlList<CHdmvClipInfo::PlaylistItem>& files, UINT n
 
 		llSize.QuadPart = 0;
 //		GetFileSizeEx (m_hFile, &llSize);
-		m_E3DReader.GetFileSizeEx (&llSize);
+		if (m_internet.IsReady())
+			m_internet.GetFileSizeEx(&llSize);
+		else
+			m_E3DReader.GetFileSizeEx (&llSize);
 		m_llTotalLength += llSize.QuadPart;
 		m_FilesSize.Add (llSize.QuadPart);
 		m_rtPtsOffsets.Add (rtDur);
@@ -92,7 +95,10 @@ ULONGLONG CMultiFiles::Seek(LONGLONG lOff, UINT nFrom)
 	if (m_strFiles.GetCount() == 1) {
 		llOff.QuadPart = lOff;
 		//SetFilePointerEx (m_hFile, llOff, &llNewPos, nFrom);
-		m_E3DReader.SetFilePointerEx (llOff, &llNewPos, nFrom);
+		if (m_internet.IsReady())
+			m_internet.SetFilePointerEx (llOff, &llNewPos, nFrom);
+		else
+			m_E3DReader.SetFilePointerEx (llOff, &llNewPos, nFrom);
 
 		return llNewPos.QuadPart;
 	} else {
@@ -108,7 +114,10 @@ ULONGLONG CMultiFiles::Seek(LONGLONG lOff, UINT nFrom)
 		OpenPart (nNewPart);
 		llOff.QuadPart = lAbsolutePos - llSum;
 		//SetFilePointerEx (m_hFile, llOff, &llNewPos, FILE_BEGIN);
-		m_E3DReader.SetFilePointerEx (llOff, &llNewPos, FILE_BEGIN);
+		if (m_internet.IsReady())
+			m_internet.SetFilePointerEx (llOff, &llNewPos, FILE_BEGIN);
+		else
+			m_E3DReader.SetFilePointerEx (llOff, &llNewPos, FILE_BEGIN);
 
 		return llSum + llNewPos.QuadPart;
 	}
@@ -124,7 +133,10 @@ ULONGLONG CMultiFiles::GetAbsolutePosition(LONGLONG lOff, UINT nFrom)
 			return lOff;
 		case current :
 			//SetFilePointerEx (m_hFile, llNoMove, &llCurPos, FILE_CURRENT);
-			m_E3DReader.SetFilePointerEx (llNoMove, &llCurPos, FILE_CURRENT);
+			if (m_internet.IsReady())
+				m_internet.SetFilePointerEx (llNoMove, &llCurPos, FILE_CURRENT);
+			else
+				m_E3DReader.SetFilePointerEx (llNoMove, &llCurPos, FILE_CURRENT);
 			return llCurPos.QuadPart + lOff;
 		case end :
 			return m_llTotalLength - lOff;
@@ -138,7 +150,10 @@ ULONGLONG CMultiFiles::GetLength()
 	if (m_strFiles.GetCount() == 1) {
 		LARGE_INTEGER	llSize;
 		//GetFileSizeEx (m_hFile, &llSize);
-		m_E3DReader.GetFileSizeEx(&llSize);
+		if (m_internet.IsReady())
+			m_internet.GetFileSizeEx(&llSize);
+		else
+			m_E3DReader.GetFileSizeEx(&llSize);
 		return llSize.QuadPart;
 	} else {
 		return m_llTotalLength;
@@ -150,7 +165,9 @@ UINT CMultiFiles::Read(void* lpBuf, UINT nCount)
 	DWORD		dwRead;
 	do {
 		//if (!ReadFile(m_hFile, lpBuf, nCount, &dwRead, NULL)) {
-		if (!m_E3DReader.ReadFile(lpBuf, nCount, &dwRead, NULL)) {
+		BOOL rtn = m_internet.IsReady() ? m_internet.ReadFile(lpBuf, nCount, &dwRead, NULL) : 
+											m_E3DReader.ReadFile(lpBuf, nCount, &dwRead, NULL);
+		if (!rtn) {
 			break;
 		}
 
@@ -184,6 +201,16 @@ BOOL CMultiFiles::OpenPart(int nPart)
 		ClosePart();
 
 		fn			= m_strFiles.GetAt(nPart);
+
+		if (m_internet.Open(fn, 1024))
+		{
+			m_nCurPart	= nPart;
+			if (m_pCurrentPTSOffset != NULL) {
+				*m_pCurrentPTSOffset = m_rtPtsOffsets[nPart];
+			}
+			return TRUE;
+		}
+
 		m_hFile		= CreateFile (fn, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 
 		if (m_hFile != INVALID_HANDLE_VALUE) {
@@ -216,6 +243,12 @@ BOOL CMultiFiles::OpenPart(int nPart)
 
 void CMultiFiles::ClosePart()
 {
+	if (m_internet.IsReady())
+	{
+		m_internet.Close();
+		return;
+	}
+
 	if (m_hFile != INVALID_HANDLE_VALUE) {
 		CloseHandle (m_hFile);
 		m_hFile		= INVALID_HANDLE_VALUE;
