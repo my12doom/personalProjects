@@ -602,6 +602,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\open_double_file.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\private_filter.cpp"
 				>
 			</File>
@@ -789,6 +793,10 @@
 			</File>
 			<File
 				RelativePath="..\lrtb\mySink.h"
+				>
+			</File>
+			<File
+				RelativePath=".\open_double_file.h"
 				>
 			</File>
 			<File

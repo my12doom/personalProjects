@@ -11,6 +11,7 @@
 #include <dwmapi.h>
 #pragma comment(lib, "dwmapi.lib")
 #include "MediaInfo.h"
+#include "open_double_file.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
@@ -832,7 +833,7 @@ HRESULT dx_player::popup_menu(HWND owner)
 	HMENU menu = LoadMenu(m_hexe, MAKEINTRESOURCE(IDR_MENU1));
 	menu = GetSubMenu(menu, 0);
 	localize_menu(menu);
-	HMENU video = GetSubMenu(menu, 4);
+	HMENU video = GetSubMenu(menu, 5);
 
 	// output selection menu
 	::detect_monitors();
@@ -892,7 +893,7 @@ HRESULT dx_player::popup_menu(HWND owner)
 	ModifyMenuW(menu, ID_PLAY, MF_BYCOMMAND| flag, ID_PLAY, paused ? C(L"Play\t(Space)") : C(L"Pause\t(Space)"));
 
 	// find BD drives
-	HMENU sub_open_BD = GetSubMenu(menu, 1);
+	HMENU sub_open_BD = GetSubMenu(menu, 2);
 	bool drive_found = false;
 	for(int i=L'Z'; i>L'B'; i--)
 	{
@@ -966,7 +967,7 @@ HRESULT dx_player::popup_menu(HWND owner)
 
 	// subtitle menu
 	CheckMenuItem(menu, ID_SUBTITLE_DISPLAYSUBTITLE, MF_BYCOMMAND | (m_display_subtitle ? MF_CHECKED : MF_UNCHECKED));
-	HMENU sub_subtitle = GetSubMenu(menu, 6);
+	HMENU sub_subtitle = GetSubMenu(menu, 7);
 	{
 		CAutoLock lck(&m_subtitle_sec);
 		if (!m_srenderer || FAILED(m_srenderer->set_font_color(m_font_color)))
@@ -987,7 +988,7 @@ HRESULT dx_player::popup_menu(HWND owner)
 	CheckMenuItem(menu, ID_AUDIO_DOWNMIX, MF_BYCOMMAND | (m_downmix ? MF_CHECKED : MF_UNCHECKED));
 
 	// audio tracks
-	HMENU sub_audio = GetSubMenu(menu, 5);
+	HMENU sub_audio = GetSubMenu(menu, 6);
 	list_audio_track(sub_audio);
 
 	// subtitle tracks
@@ -1362,6 +1363,15 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		{
 			reset_and_loadfile_internal(file);
 		}
+
+	}
+	else if (uid == ID_OPEN_DOUBLEFILE)
+	{
+		wchar_t left[MAX_PATH];
+		wchar_t right[MAX_PATH];
+
+		if (SUCCEEDED(open_double_file(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(1), left, right)))
+			reset_and_loadfile_internal(left, right);
 	}
 
 	else if (uid == ID_LOGOUT)
@@ -2265,7 +2275,7 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, bool stop)
 	return S_OK;
 }
 
-HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
+HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname, const wchar_t*pathname2)
 {
 	reset();
 	start_loading();
@@ -2274,6 +2284,7 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname)
 // 	hr = load_file(L"Z:\\right.mkv");
 	//hr = load_file(L"Z:\\00001.m2ts");
 	hr = load_file(pathname);
+	if(pathname2) hr = load_file(pathname2);
 	//hr = load_file(L"http://127.0.0.1/C%3A/TDDOWNLOAD/ding540%20(1)%20(1).mkv");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\haa\\00002.haa");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00005n.m2ts");

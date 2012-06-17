@@ -137,7 +137,7 @@ protected:
 	HRESULT CrackPD10(IBaseFilter *filter);
 	bool m_select_font_active;
 	static DWORD WINAPI select_font_thread(LPVOID lpParame);
-	HRESULT reset_and_loadfile_internal(const wchar_t *pathname);
+	HRESULT reset_and_loadfile_internal(const wchar_t *pathname, const wchar_t*pathname2 = NULL);
 	HRESULT render_audio_pin(IPin *pin);
 	bool m_reset_and_load;
 	bool m_stop_after_load;

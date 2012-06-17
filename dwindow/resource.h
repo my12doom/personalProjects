@@ -15,6 +15,7 @@
 #define IDD_COLOR                       120
 #define IDD_THEATER                     121
 #define IDD_USERID_PAYED                122
+#define IDD_DOUBLEFILE                  124
 #define IDC_CHECK_SOUND1                1009
 #define IDC_CHECK_MKV1                  1010
 #define IDC_PLAY                        1013
@@ -27,9 +28,11 @@
 #define IDC_SPIN2                       1023
 #define IDC_RESET                       1024
 #define IDC_BUTTON1                     1025
+#define IDC_BROWSE_LEFT                 1025
 #define IDC_SLIDER1                     1026
 #define IDC_LUM                         1026
 #define IDC_PROGRESS                    1026
+#define IDC_BROWSE_RIGHT                1026
 #define IDC_LUM2                        1027
 #define IDC_CHECK1                      1030
 #define IDC_PREVIEW                     1030
@@ -48,7 +51,9 @@
 #define IDC_TOTAL                       1036
 #define IDC_CON2                        1037
 #define IDC_SAT2                        1038
+#define IDC_LEFT                        1038
 #define IDC_HUE2                        1039
+#define IDC_RIGHT                       1039
 #define ID_OPENFILE_SUBTITLE            40001
 #define ID_MAIN_OPENBDFOLDER            40002
 #define ID_MAIN_AUDIO                   40003
@@ -186,14 +191,16 @@
 #define ID_VIDEO_DISPLAYORIENTATION     40137
 #define ID_DISPLAYORIENTATION_HORIZONTAL 40138
 #define ID_DISPLAYORIENTATION_VERTICAL  40139
+#define ID_ENGLISH_OPENLEFTANDRIGHTFILE 40140
+#define ID_OPEN_DOUBLEFILE              40141
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        124
-#define _APS_NEXT_COMMAND_VALUE         40140
-#define _APS_NEXT_CONTROL_VALUE         1038
+#define _APS_NEXT_RESOURCE_VALUE        125
+#define _APS_NEXT_COMMAND_VALUE         40142
+#define _APS_NEXT_CONTROL_VALUE         1040
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

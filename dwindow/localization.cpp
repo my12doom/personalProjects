@@ -330,6 +330,12 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Horizontal", L"横向");
 			add_localization(L"Vertical", L"纵向");
 
+
+			// Open Double File
+			add_localization(L"Open Left And Right File...", L"打开左右分离文件...");
+			add_localization(L"Left File:", L"左眼文件");
+			add_localization(L"Right File:", L"右眼文件");
+
 		}
 		break;
 	}

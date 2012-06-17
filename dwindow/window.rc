@@ -142,6 +142,21 @@ BEGIN
     LTEXT           "Password",IDC_STATIC,7,57,112,13
 END
 
+IDD_DOUBLEFILE DIALOGEX 0, 0, 373, 100
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Open Left And Right File..."
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,266,77,50,14
+    PUSHBUTTON      "取消",IDCANCEL,316,77,50,14
+    EDITTEXT        IDC_LEFT,70,23,262,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BROWSE_LEFT,337,24,22,13
+    LTEXT           "Left File:",IDC_STATIC,15,26,53,10
+    EDITTEXT        IDC_RIGHT,70,46,262,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BROWSE_RIGHT,337,47,22,13
+    LTEXT           "Right File:",IDC_STATIC,15,49,53,10
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -214,6 +229,7 @@ BEGIN
     POPUP "English"
     BEGIN
         MENUITEM "Open File...",                ID_OPENFILE
+        MENUITEM "Open Left And Right File...", ID_OPEN_DOUBLEFILE
         POPUP "Open BluRay3D"
         BEGIN
             MENUITEM "No BD Drive Found",           ID_OPENBLURAY3D_NONE
@@ -238,8 +254,8 @@ BEGIN
                     MENUITEM "Half Side By Side",           ID_OUTPUTMODE_3DTV_SBS
                     MENUITEM "Half Top Bottom",             ID_OUTPUTMODE_3DTV_TB
                     MENUITEM "Line Interlace",              ID_OUTPUTMODE_LINEINTERLACE
-                    MENUITEM "Checkboard Interlace",                ID_OUTPUTMODE_CHECKBOARDINTERLACE
-                    MENUITEM "Row Interlace",                ID_OUTPUTMODE_ROWINTERLACE
+                    MENUITEM "Checkboard Interlace",        ID_OUTPUTMODE_CHECKBOARDINTERLACE
+                    MENUITEM "Row Interlace",               ID_OUTPUTMODE_ROWINTERLACE
                 END
                 POPUP "Dual Projector"
                 BEGIN
@@ -366,6 +382,14 @@ BEGIN
         RIGHTMARGIN, 309
         TOPMARGIN, 7
         BOTTOMMARGIN, 114
+    END
+
+    IDD_DOUBLEFILE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 366
+        TOPMARGIN, 14
+        BOTTOMMARGIN, 91
     END
 END
 #endif    // APSTUDIO_INVOKED
