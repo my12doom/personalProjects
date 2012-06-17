@@ -328,6 +328,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 		aspect_x = width;
 		aspect_y = abs(height);
 		m_frame_length = vihIn->AvgTimePerFrame;
+		m_first_PTS = 0;
 		deinterlace = false;
 
 
@@ -359,6 +360,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 		aspect_x = vihIn->dwPictAspectRatioX;
 		aspect_y = vihIn->dwPictAspectRatioY;
 		m_frame_length = vihIn->AvgTimePerFrame;
+		m_first_PTS = 0;
 
 		//AMINTERLACE_IsInterlaced
 		// 0x21
@@ -473,10 +475,15 @@ HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 
 	int l1 = timeGetTime();
 	bool should_render = true;
-	REFERENCE_TIME start, end;
+	REFERENCE_TIME start=0, end=0;
 	media_sample->GetTime(&start, &end);
 	if (m_cb && id == 0)
 		m_cb->SampleCB(start + m_dsr0->m_thisstream, end + m_dsr0->m_thisstream, media_sample);
+	if (id == 0)
+	{
+		m_first_PTS = m_first_PTS != 0 ? m_first_PTS : start;
+		m_frame_length = m_frame_length != 0 ? m_frame_length :(start - m_first_PTS) ;
+	}
 
 	int l2 = timeGetTime();
 	if (!m_dsr1->is_connected() &&!m_remux_mode)
@@ -637,6 +644,8 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 		bit_per_pixel = 32;
 
 	bool should_render = false;
+
+	mylog("%s : %dms\n", id==0?"left":"right", (int)(start/10000));
 
 	bool dual_stream = m_remux_mode || (m_dsr0->is_connected() && m_dsr1->is_connected() );
 	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;

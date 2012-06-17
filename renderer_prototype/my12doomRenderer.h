@@ -302,6 +302,7 @@ public:
 	AESCryptor m_AES;
 	unsigned char m_key[32];
 	REFERENCE_TIME m_frame_length;
+	REFERENCE_TIME m_first_PTS;
 	bool m_deinterlace;
 	bool m_forced_deinterlace;
 	bool m_remux_mode;
