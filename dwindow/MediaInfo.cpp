@@ -10,7 +10,6 @@
 using namespace MediaInfoDLL;
 
 
-HRESULT FillTree(HWND root, const wchar_t *filename);
 HTREEITEM InsertTreeviewItem(const HWND hTv, const wchar_t *text, HTREEITEM htiParent);
 void DoEvents();
 
@@ -21,17 +20,20 @@ public:
 	MediaInfoWindow(const wchar_t *filename, HWND parent);
 
 protected:
-	~MediaInfoWindow() {}			// this class will suicide after window closed, so, don't delete
+	~MediaInfoWindow() {free(m_msg);}			// this class will suicide after window closed, so, don't delete
 	static LRESULT CALLBACK DummyMainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	LRESULT MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	static DWORD WINAPI pump_thread(LPVOID lpParame){return ((MediaInfoWindow*)lpParame)->pump();}
 	DWORD pump();
+	HRESULT FillTree(HWND root, const wchar_t *filename);
 
-	wchar_t m_filename[MAX_PATH];
+	wchar_t m_filename[MAX_PATH*10];
 	wchar_t m_classname[100];		// just a random class name
+	wchar_t *m_msg;
 	HWND m_parent;
 
 	HWND tree;
+	HWND copy_button;
 };
 
 MediaInfoWindow::MediaInfoWindow(const wchar_t *filename, HWND parent)
@@ -45,6 +47,10 @@ MediaInfoWindow::MediaInfoWindow(const wchar_t *filename, HWND parent)
 
 	// store filename
 	wcscpy(m_filename, filename);
+
+	// alloc message space
+	m_msg = (wchar_t*)malloc(1024*1024);		// 1M ought to be enough for everybody
+	m_msg[0] = NULL;
 
 	// GOGOGO
 	CreateThread(NULL, NULL, pump_thread, this, NULL, NULL);
@@ -135,29 +141,50 @@ LRESULT MediaInfoWindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 {
 	LRESULT lr = S_FALSE;
 	const int IDC_TREE = 200;
+	const int IDC_COPY = 201;
 
 	switch (message)
 	{
+	case WM_COMMAND:
+		{
+		size_t size = sizeof(wchar_t)*(1+wcslen(m_msg));
+		OutputDebugStringW(m_msg);
+		HGLOBAL hResult = GlobalAlloc(GMEM_MOVEABLE, size); 
+		LPTSTR lptstrCopy = (LPTSTR)GlobalLock(hResult); 
+		memcpy(lptstrCopy, m_msg, size); 
+		GlobalUnlock(hResult);
+		OpenClipboard(hWnd);
+		EmptyClipboard();
+		if (SetClipboardData( CF_UNICODETEXT, hResult ) == NULL )
+			GlobalFree(hResult);		//Free buffer if clipboard didn't take it.
+		CloseClipboard();
+		}
+		break;
+
 	case WM_INITDIALOG:
 		{
-			DWORD style = WS_CHILD | WS_VISIBLE | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT;
+			DWORD style = WS_CHILD | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT;
 			tree = CreateWindowEx(0,
 				WC_TREEVIEW,
 				0,
 				style,
 				0,
-				0,
+				100,
 				400,
-				600,
+				500,
 				hWnd,
 				(HMENU) IDC_TREE,
 				GetModuleHandle(NULL),
 				NULL);
 
-			FillTree(tree, m_filename);
-			SetWindowTextW(hWnd, m_filename);
+
+			style = BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE;
+			copy_button = CreateWindowW(L"Button", C(L"Copy To Clipboard"), style, 0, 0, 200, 100, hWnd, NULL, GetModuleHandle(NULL), NULL);
 
 			SendMessage(hWnd, WM_SIZE, 0, 0);
+
+			FillTree(tree, m_filename);
+			SetWindowTextW(hWnd, m_filename);
 		}
 		break;
 
@@ -165,7 +192,12 @@ LRESULT MediaInfoWindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 		{
 			RECT rect;
 			GetClientRect(hWnd, &rect);
-			MoveWindow(tree, 0, 0, rect.right, rect.bottom, TRUE);
+			MoveWindow(tree, 0, 0, rect.right, rect.bottom-50, TRUE);
+			MoveWindow(copy_button, 0, rect.bottom-50, rect.right, 50, TRUE);
+			SetWindowTextW(copy_button, C(L"Copy To Clipboard"));
+			ShowWindow(tree, SW_SHOW);
+			ShowWindow(copy_button, SW_SHOW);
+			BringWindowToTop(copy_button);
 		}
 		break;
 
@@ -212,7 +244,7 @@ HTREEITEM InsertTreeviewItem(const HWND hTv, const wchar_t *text,
 bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *replacer);
 
 
-HRESULT FillTree(HWND root, const wchar_t *filename)
+HRESULT MediaInfoWindow::FillTree(HWND root, const wchar_t *filename)
 {
 	HTREEITEM file = InsertTreeviewItem(root, filename, TVI_ROOT);
 	InsertTreeviewItem(root, C(L"Reading Infomation ...."), file);
@@ -222,6 +254,7 @@ HRESULT FillTree(HWND root, const wchar_t *filename)
 	MediaInfo MI;
 
 	// language
+
 	wchar_t path[MAX_PATH];
 	wcscpy(path, g_apppath);
 	wcscat(path, C(L"MediaInfoLanguageFile"));
@@ -246,6 +279,10 @@ HRESULT FillTree(HWND root, const wchar_t *filename)
 		fclose(f);
 		MI.Option(_T("Language"), W2T(lang));
 	}
+	else
+	{
+		MI.Option(_T("Language"));
+	}
 
 	MI.Open(filename);
 	MI.Option(_T("Complete"));
@@ -257,11 +294,16 @@ HRESULT FillTree(HWND root, const wchar_t *filename)
 	wchar_t tmp[1024];
 	bool next_is_a_header = true;
 	
-	TreeView_DeleteAllItems (root);
+	//TreeView_DeleteAllItems (root);
+	TreeView_DeleteItem(root, file);
 	file = InsertTreeviewItem(root, filename, TVI_ROOT);
+	wcscat(m_msg, filename);
+	wcscat(m_msg, L"\r\n");
 	HTREEITEM insert_position = file;
 	HTREEITEM headers[4096] = {0};
 	int headers_count = 0;
+
+	wchar_t tbl[3][20]={L"\t", L"\t\t", L"\t\t\t"};
 
 	while (true)
 	{
@@ -286,10 +328,17 @@ HRESULT FillTree(HWND root, const wchar_t *filename)
 			next_is_a_header = false;
 			
 			headers[headers_count++] = insert_position = InsertTreeviewItem(root, tmp, file);
+
+			wcscat(m_msg, tbl[0]);
+			wcscat(m_msg, tmp);
+			wcscat(m_msg, L"\r\n");
 		}
 		else
 		{
 			InsertTreeviewItem(root, tmp, insert_position);
+			wcscat(m_msg, tbl[1]);
+			wcscat(m_msg, tmp);
+			wcscat(m_msg, L"\r\n");
 		}
 
 

@@ -336,6 +336,8 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Left File:", L"左眼文件");
 			add_localization(L"Right File:", L"右眼文件");
 
+			// Copy To Clipboard
+			add_localization(L"Copy To Clipboard", L"复制到剪贴板");
 		}
 		break;
 	}

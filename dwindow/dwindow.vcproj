@@ -542,10 +542,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\latency_dialog.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\localization.cpp"
 				>
 			</File>
@@ -594,15 +590,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\MediaInfo.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\lrtb\mySink.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\open_double_file.cpp"
 				>
 			</File>
 			<File
@@ -611,10 +599,6 @@
 			</File>
 			<File
 				RelativePath="..\ZBuffer\stereo_test.h"
-				>
-			</File>
-			<File
-				RelativePath=".\theater.cpp"
 				>
 			</File>
 			<Filter
@@ -745,6 +729,26 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="GUI"
+				>
+				<File
+					RelativePath=".\latency_dialog.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\MediaInfo.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\open_double_file.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\theater.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -784,19 +788,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\latency_dialog.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MediaInfo.h"
-				>
-			</File>
-			<File
 				RelativePath="..\lrtb\mySink.h"
-				>
-			</File>
-			<File
-				RelativePath=".\open_double_file.h"
 				>
 			</File>
 			<File
@@ -896,6 +888,22 @@
 				</File>
 				<File
 					RelativePath="..\AESFile\RIJNDAEL.H"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="GUI"
+				>
+				<File
+					RelativePath=".\latency_dialog.h"
+					>
+				</File>
+				<File
+					RelativePath=".\MediaInfo.h"
+					>
+				</File>
+				<File
+					RelativePath=".\open_double_file.h"
 					>
 				</File>
 			</Filter>

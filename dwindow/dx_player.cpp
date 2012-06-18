@@ -2284,7 +2284,16 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname, const wc
 // 	hr = load_file(L"Z:\\right.mkv");
 	//hr = load_file(L"Z:\\00001.m2ts");
 	hr = load_file(pathname);
-	if(pathname2) hr = load_file(pathname2);
+	if(pathname2)
+	{
+		hr = load_file(pathname2);
+		CComPtr<IPin> pin;
+		GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &pin);
+		if (!pin)
+			GetUnconnectedPin(m_renderer1->m_dshow_renderer2, PINDIR_INPUT, &pin);
+		if (pin)
+			hr = VFW_E_NOT_CONNECTED;
+	}
 	//hr = load_file(L"http://127.0.0.1/C%3A/TDDOWNLOAD/ding540%20(1)%20(1).mkv");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\haa\\00002.haa");
 	//hr = load_file(L"D:\\Users\\my12doom\\Desktop\\test\\00005n.m2ts");
@@ -2292,6 +2301,7 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname, const wc
 	//hr = load_file(L"K:\\BDMV\\STREAM\\00001.m2ts");
 	//hr = load_file(L"K:\\BDMV\\STREAM\\00002.m2ts");
 	//hr = load_file(L"D:\\Users\\my12doom\\Documents\\00002.m2ts");
+
 	if (FAILED(hr))
 		goto fail;
 	hr = end_loading();
@@ -2640,7 +2650,13 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 							log_line(L"renderering video pin #%d", video_num);
 							//debug_list_filters();
-							hr = m_gb->Render(pin);
+							//hr = m_gb->Render(pin);
+							CComPtr<IPin> renderer_input;
+							GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer_input);
+							if (!renderer_input)
+								GetUnconnectedPin(m_renderer1->m_dshow_renderer2, PINDIR_INPUT, &renderer_input);
+
+							hr = m_gb->Connect(pin, renderer_input);
 							log_line(L"done renderering video pin #%d", video_num);
 						}
 						video_num ++;

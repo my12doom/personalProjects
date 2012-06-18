@@ -86,7 +86,7 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 		KillTimer(parent_window, 2);
 		SendMessage(parent_window, DS_SHOW_MOUSE, TRUE, NULL);
 #ifdef nologin
-		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID_PAYED), parent_window, register_proc );
+		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), parent_window, register_proc );
 #else
 		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID_PAYED), parent_window, register_proc );
 #endif
@@ -114,7 +114,8 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 
 			memcpy(&g_passkey_big, new_key, 128);
 
-			save_passkey();
+			if (SUCCEEDED(check_passkey()))
+				save_passkey();
 		}
 	}
 
