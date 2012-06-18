@@ -291,8 +291,8 @@ HRESULT CDWindowAudioDownmix::Transform(IMediaSample *pIn, IMediaSample *pOut)
 	else 
 		m_db = m_db;				// do nothing
 
-	if (m_db + peak_db > 0)			// avoid clipping
-		m_db = -peak_db;
+	if (m_db + peak_db > -0.5)			// avoid clipping
+		m_db = -peak_db - 0.5;
 
 	if (m_db > 24)					// max amp:24db, ~ 1600%
 		m_db = 24;
