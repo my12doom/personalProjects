@@ -12,6 +12,7 @@
 #pragma comment(lib, "dwmapi.lib")
 #include "MediaInfo.h"
 #include "open_double_file.h"
+#include "AboudWindow.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
@@ -1384,6 +1385,11 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Logged out, the program will exit now, restart the program to login."), L"...", MB_OK);
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
+	}
+
+	else if (uid == ID_ABOUT)
+	{
+		ShowAbout(m_theater_owner ? m_theater_owner : id_to_hwnd(1));
 	}
 
 	// Display Orientation

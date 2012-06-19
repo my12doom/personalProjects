@@ -733,6 +733,10 @@
 				Name="GUI"
 				>
 				<File
+					RelativePath=".\AboutWindow.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\latency_dialog.cpp"
 					>
 				</File>
@@ -894,6 +898,10 @@
 			<Filter
 				Name="GUI"
 				>
+				<File
+					RelativePath=".\AboudWindow.h"
+					>
+				</File>
 				<File
 					RelativePath=".\latency_dialog.h"
 					>

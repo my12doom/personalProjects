@@ -338,6 +338,16 @@ HRESULT set_localization_language(localization_language language)
 
 			// Copy To Clipboard
 			add_localization(L"Copy To Clipboard", L"复制到剪贴板");
+
+			// localization
+			add_localization(L"About...", L"关于...");
+			add_localization(L"About DWindow", L"关于3D影音");
+			add_localization(L"DWindow %s version\r\nrevision %d\r\nBuild Time:%s", L"3D影音%s版\r\n内部版本号：%d\r\n编译日期：%s");
+			add_localization(L"Free", L"免费");
+			add_localization(L"Donate", L"捐赠");
+			add_localization(L"Personal", L"个人");
+			add_localization(L"Professional", L"专业");
+			add_localization(L"(Debug)", L"(调试)");
 		}
 		break;
 	}
