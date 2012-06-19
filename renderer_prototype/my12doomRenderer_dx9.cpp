@@ -36,6 +36,7 @@
 #define FAIL_FALSE(x) {hr=x; if(FAILED(hr)){return S_FALSE;}}
 #define FAIL_SLEEP_RET(x) {hr=x; if(FAILED(hr)){Sleep(1); return hr;}}
 #define safe_delete(x) if(x){delete x;x=NULL;}
+#define safe_decommit(x) if((x))(x)->decommit()
 HRESULT myMatrixOrthoRH(D3DMATRIX *matrix, float w, float h, float zn, float zf);
 HRESULT myMatrixIdentity(D3DMATRIX *matrix);
 
@@ -645,7 +646,7 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 
 	bool should_render = false;
 
-	mylog("%s : %dms\n", id==0?"left":"right", (int)(start/10000));
+	//mylog("%s : %dms\n", id==0?"left":"right", (int)(start/10000));
 
 	bool dual_stream = m_remux_mode || (m_dsr0->is_connected() && m_dsr1->is_connected() );
 	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
@@ -1245,6 +1246,27 @@ HRESULT my12doomRenderer::reset()
 	set_device_state(need_reset_object);
 	init_variables();
 
+	// what invalidate_gpu_objects() don't do
+	gpu_sample *sample = NULL;
+	while (sample = m_left_queue.RemoveHead())
+		delete sample;
+	while (sample = m_right_queue.RemoveHead())
+		delete sample;
+	m_dsr0->drop_packets();
+	m_dsr1->drop_packets();
+	{
+		CAutoLock lck(&m_packet_lock);
+		safe_delete(m_sample2render_1);
+		safe_delete(m_sample2render_2);
+	}
+
+	{
+		CAutoLock rendered_lock(&m_rendered_packet_lock);
+		safe_delete(m_last_rendered_sample1);
+		safe_delete(m_last_rendered_sample2);
+	}
+
+
 	return S_OK;
 }
 HRESULT my12doomRenderer::create_render_thread()
@@ -1316,47 +1338,42 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_tex_rgb_full = NULL;
 	m_tex_bmp = NULL;
 
-	// source textures
-	/*
-	m1_tex_RGB32 = NULL;						// RGB32 planes, in A8R8G8B8, full width
-	m1_tex_YUY2 = NULL;						// YUY2 planes, in A8R8G8B8, half width
-	m1_tex_Y = NULL;							// Y plane of YV12/NV12, in L8
-	m1_tex_YV12_UV = NULL;					// UV plane of YV12, in L8, double height
-	m1_tex_NV12_UV = NULL;					// UV plane of NV12, in A8L8
-	m2_tex_RGB32 = NULL;						// RGB32 planes, in A8R8G8B8, full width
-	m2_tex_YUY2 = NULL;						// YUY2 planes, in A8R8G8B8, half width
-	m2_tex_Y = NULL;							// Y plane of YV12/NV12, in L8
-	m2_tex_YV12_UV = NULL;					// UV plane of YV12, in L8, double height
-	m2_tex_NV12_UV = NULL;					// UV plane of NV12, in A8L8
-	*/
-
 	// pending samples
 	{
 		CAutoLock lck(&m_queue_lock);
 		gpu_sample *sample = NULL;
-		while (sample = m_left_queue.RemoveHead())
-			delete sample;
-		while (sample = m_right_queue.RemoveHead())
-			delete sample;
+
+		for(POSITION pos = m_left_queue.GetHeadPosition();
+			pos; pos = m_left_queue.Next(pos))
+		{
+			sample = m_left_queue.Get(pos);
+			safe_decommit(sample);
+		}
+
+		for(POSITION pos = m_right_queue.GetHeadPosition();
+			pos; pos = m_right_queue.Next(pos))
+		{
+			sample = m_right_queue.Get(pos);
+			safe_decommit(sample);
+		}
+
 	}
 	{
 		CAutoLock lck(&m_packet_lock);
-		safe_delete(m_sample2render_1);
-		safe_delete(m_sample2render_2);
+		safe_decommit(m_sample2render_1);
+		safe_decommit(m_sample2render_2);
 	}
 
 	{
 		CAutoLock rendered_lock(&m_rendered_packet_lock);
-		safe_delete(m_last_rendered_sample1);
-		safe_delete(m_last_rendered_sample2);
+		safe_decommit(m_last_rendered_sample1);
+		safe_decommit(m_last_rendered_sample2);
 	}
 
 	{
 		CAutoLock lck(&m_pool_lock);
 		if (m_pool) m_pool->DestroyPool(D3DPOOL_DEFAULT);
 	}
-	m_dsr0->drop_packets();
-	m_dsr1->drop_packets();
 
 	// surfaces
 	m_deinterlace_surface = NULL;
@@ -4641,6 +4658,31 @@ HRESULT gpu_sample::commit()
 	if (m_tex_NV12_UV) 
 		m_tex_NV12_UV->Unlock();
 
+	HRESULT hr = S_OK;
+
+	JIF( m_allocator->CreateTexture(m_width, m_height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_gpu_RGB32));
+
+	if (m_format == MEDIASUBTYPE_YUY2)
+	{
+		JIF( m_allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_gpu_YUY2));
+	}
+
+	else if (m_format == MEDIASUBTYPE_RGB32)
+	{
+	}
+
+	else if (m_format == MEDIASUBTYPE_NV12)
+	{
+		JIF( m_allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
+		JIF( m_allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_gpu_NV12_UV));
+	}
+
+	else if (m_format == MEDIASUBTYPE_YV12)
+	{
+		JIF( m_allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
+		JIF( m_allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_YV12_UV));
+	}
+
 	m_allocator->UpdateTexture(m_tex_RGB32, m_tex_gpu_RGB32);
 	m_allocator->UpdateTexture(m_tex_YUY2, m_tex_gpu_YUY2);
 	m_allocator->UpdateTexture(m_tex_Y, m_tex_gpu_Y);
@@ -4660,11 +4702,30 @@ HRESULT gpu_sample::commit()
 // 	mylog("prepare_rendering() cost %d cycle(%.3fms).\n", (int)(counter2.QuadPart - counter1.QuadPart), (double)(counter2.QuadPart-counter1.QuadPart)/fre.QuadPart);
 
 	return S_OK;
+
+clearup:
+	decommit();
+	MessageBoxW(NULL, L"commit() fail", L"", MB_OK);
+	return E_FAIL;
 }
 
 HRESULT gpu_sample::decommit()
 {
-	return E_NOTIMPL;
+	if (!m_prepared_for_rendering)
+		return S_FALSE;
+
+	safe_delete(m_tex_gpu_RGB32);
+	safe_delete(m_tex_gpu_YUY2);
+	safe_delete(m_tex_gpu_Y);
+	safe_delete(m_tex_gpu_YV12_UV);
+	safe_delete(m_tex_gpu_NV12_UV);
+	safe_delete(m_tex_stereo_test);
+	safe_delete(m_surf_gpu_YV12);
+	safe_delete(m_surf_gpu_NV12);
+	safe_delete(m_surf_gpu_YUY2);
+
+	m_converted = m_prepared_for_rendering = false;
+	return S_OK;
 }
 
 HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2,
@@ -4688,11 +4749,11 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 		CComPtr<IDirect3DSurface9> rgb_surf;
 		m_tex_gpu_RGB32->get_first_level(&rgb_surf);
 		if (m_surf_YV12)
-			device->StretchRect(m_surf_YV12->surface, NULL, rgb_surf, NULL, D3DTEXF_LINEAR);
+			hr = device->StretchRect(m_surf_YV12->surface, NULL, rgb_surf, NULL, D3DTEXF_LINEAR);
 		if (m_surf_NV12)
-			device->StretchRect(m_surf_NV12->surface, NULL, rgb_surf, NULL, D3DTEXF_LINEAR);
+			hr = device->StretchRect(m_surf_NV12->surface, NULL, rgb_surf, NULL, D3DTEXF_LINEAR);
 		if (m_surf_YUY2)
-			device->StretchRect(m_surf_YUY2->surface, NULL, rgb_surf, NULL, D3DTEXF_LINEAR);
+			hr = device->StretchRect(m_surf_YUY2->surface, NULL, rgb_surf, NULL, D3DTEXF_LINEAR);
 	}
 	else
 	{
@@ -4733,13 +4794,11 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 		if (m_format == MEDIASUBTYPE_YV12 || m_format == MEDIASUBTYPE_NV12)
 			hr = device->SetTexture( 1, m_format == MEDIASUBTYPE_NV12 ? m_tex_gpu_NV12_UV->texture : m_tex_gpu_YV12_UV->texture);
 		hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
-
-		//hr = device->EndScene();
 	}
 
-
-	m_converted = true;
-	return S_OK;
+	if (SUCCEEDED(hr))
+		m_converted = true;
+	return hr;
 }
 
 HRESULT gpu_sample::do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShader9 *shader_sbs, IDirect3DPixelShader9 *shader_tb, IDirect3DVertexBuffer9 *vb)
@@ -4947,8 +5006,6 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 
 	int l = timeGetTime();
-	// texture creation
-	JIF( allocator->CreateTexture(m_width, m_height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_gpu_RGB32));
 
 	m_ready = true;
 	//return;
@@ -4964,7 +5021,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 		else
 		{
 			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8,pool,	&m_tex_YUY2));
-			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_gpu_YUY2));
+// 			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_gpu_YUY2));
 		}
 	}
 
@@ -4984,8 +5041,8 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 		{
 			JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,pool,	&m_tex_Y));
 			JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,pool,	&m_tex_NV12_UV));
-			JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
-			JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_gpu_NV12_UV));
+// 			JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
+// 			JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_gpu_NV12_UV));
 		}
 	}
 
@@ -5000,8 +5057,8 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 		{
 			JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,pool,	&m_tex_Y));
 			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,pool,	&m_tex_YV12_UV));
-			JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
-			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_YV12_UV));
+// 			JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
+// 			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_YV12_UV));
 		}
 	}
 

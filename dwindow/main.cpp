@@ -144,7 +144,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	CreateThread(NULL, NULL, pre_read_thread, g_apppath, NULL, NULL);
 
-	SetUnhandledExceptionFilter(my_handler);
+// 	SetUnhandledExceptionFilter(my_handler);
 	int argc = 1;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 
