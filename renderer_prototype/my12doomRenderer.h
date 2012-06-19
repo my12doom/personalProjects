@@ -489,8 +489,6 @@ protected:
 	HRESULT calculate_vertex();
 	HRESULT generate_mask();
 	HRESULT set_device_state(device_state new_state);
-	HRESULT backup_rgb();
-	HRESULT restore_rgb();
 	HRESULT test_PC_level();		// test hardware YUV-RGB conversion level
 	DWORD m_PC_level;				// 0
 
@@ -611,8 +609,6 @@ protected:
 	CComPtr<IDirect3DTexture9> m_tex_rgb_left;				// source texture, converted to RGB32
 	CComPtr<IDirect3DTexture9> m_tex_rgb_right;
 	CComPtr<IDirect3DSurface9> m_deinterlace_surface;		// surface for deinterlace
-	CComPtr<IDirect3DSurface9> m_surface_rgb_backup_full;	// back up converted RGB32 texture when stop, to restore after device lost or reset
-	CComPtr<IDirect3DTexture9> m_tex_rgb_full;
 	RECT m_window_rect;
 	CComPtr<IDirect3DTexture9> m_tex_mask;					// mask txture
 	CComPtr<IDirect3DTexture9> m_mask_temp_left;			// two temp texture, you may need it in some case

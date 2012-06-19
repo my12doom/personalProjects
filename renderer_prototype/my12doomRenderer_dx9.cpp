@@ -264,10 +264,6 @@ void my12doomRenderer::init_variables()
 	m_hue1 =
 	m_contrast1 = 0.5;
 
-
-	// clear rgb backup
-	m_surface_rgb_backup_full = NULL;
-
 	// ui & bitmap
 	m_has_subtitle = false;
 	m_volume = 0;
@@ -1303,9 +1299,6 @@ HRESULT my12doomRenderer::invalidate_cpu_objects()
 
 HRESULT my12doomRenderer::invalidate_gpu_objects()
 {
-	// try to backup current image, may fail, doesn't matter
-	backup_rgb();
-
 	HD3D_invalidate_objects();
 	m_uidrawer->invalidate_gpu();
 	m_red_blue.invalid();
@@ -1337,7 +1330,6 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	// textures
 	m_tex_rgb_left = NULL;
 	m_tex_rgb_right = NULL;
-	m_tex_rgb_full = NULL;
 	m_tex_bmp = NULL;
 
 	// pending samples
@@ -1520,7 +1512,6 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	//m_Device->CreateQuery(D3DQUERYTYPE_TIMESTAMP, &m_d3d_query);
 
 	// textures
-	FAIL_RET( m_Device->CreateTexture(m_lVidWidth, m_lVidHeight, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_rgb_full, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_rgb_left, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_pass1_width, m_pass1_height, 1, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_rgb_right, NULL));
 	fix_nv3d_bug();
@@ -1612,161 +1603,25 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	//free(tester);
 	free(anaglyph);
 
-	// load and start thread
-	restore_rgb();
+	// thread
 	create_render_thread();
+
+	// restore image if possible
+	{
+		CAutoLock lck(&m_packet_lock);
+		CAutoLock rendered_lock(&m_rendered_packet_lock);
+		safe_delete(m_last_rendered_sample1);
+		safe_delete(m_last_rendered_sample2);
+
+		m_sample2render_1 = m_last_rendered_sample1;
+		m_sample2render_2 = m_last_rendered_sample2;
+	}
+
 	return S_OK;
 }
 
-HRESULT my12doomRenderer::backup_rgb()
-{
-	if (m_backuped)								// no repeated backup
-		return S_OK;
-
-	HRESULT hr = S_OK;
-
-	mylog("backup_rgb() start\n");
-
-	CAutoLock lck(&m_frame_lock);
-	if (!m_tex_rgb_left || ! m_tex_rgb_right)
-		return E_FAIL;
-
-	D3DSURFACE_DESC desc;
-	FAIL_RET(m_tex_rgb_left->GetLevelDesc(0, &desc));
-	CComPtr<IDirect3DSurface9> left_surface;
-	CComPtr<IDirect3DSurface9> right_surface;
-	if (m_swapeyes)								// swap back
-	{
-		FAIL_RET(m_tex_rgb_left->GetSurfaceLevel(0, &right_surface));
-		FAIL_RET(m_tex_rgb_right->GetSurfaceLevel(0, &left_surface));
-	}
-	else
-	{
-		FAIL_RET(m_tex_rgb_left->GetSurfaceLevel(0, &left_surface));
-		FAIL_RET(m_tex_rgb_right->GetSurfaceLevel(0, &right_surface));
-	}
-
-	input_layout_types input = get_active_input_layout();
-	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
-	CComPtr<IDirect3DSurface9> full_surface;
-	m_Device->CreateRenderTarget(dual_stream ? m_lVidWidth*2 : m_lVidWidth, m_lVidHeight, desc.Format, D3DMULTISAMPLE_NONE, 0, FALSE, &full_surface, NULL);
-	fix_nv3d_bug();
-	clear(full_surface);
-
-	if (dual_stream)
-	{
-		RECT dst = {0, 0, m_lVidWidth, m_lVidHeight};
-		hr = m_Device->StretchRect(left_surface, NULL, full_surface, &dst, D3DTEXF_NONE);
-		dst.left += m_lVidWidth;
-		dst.right += m_lVidWidth;
-		hr = m_Device->StretchRect(right_surface, NULL, full_surface, &dst, D3DTEXF_NONE);
-	}
-	else if (input == side_by_side)
-	{
-		RECT dst = {0, 0, m_lVidWidth/2, m_lVidHeight};
-		hr = m_Device->StretchRect(left_surface, NULL, full_surface, &dst, D3DTEXF_NONE);
-		dst.left += m_lVidWidth/2;
-		dst.right += m_lVidWidth/2;
-		hr = m_Device->StretchRect(right_surface, NULL, full_surface, &dst, D3DTEXF_NONE);
-	}
-	else if (input == top_bottom)
-	{
-		RECT dst = {0, 0, m_lVidWidth, m_lVidHeight/2};
-		hr = m_Device->StretchRect(left_surface, NULL, full_surface, &dst, D3DTEXF_NONE);
-		dst.top += m_lVidHeight/2;
-		dst.bottom += m_lVidHeight/2;
-		hr = m_Device->StretchRect(right_surface, NULL, full_surface, &dst, D3DTEXF_NONE);
-	}
-	else if (input == mono2d)
-	{
-		hr = m_Device->StretchRect(left_surface, NULL, full_surface, NULL, D3DTEXF_NONE);
-	}
-
-	m_surface_rgb_backup_full = NULL;
-	FAIL_RET(m_Device->CreateOffscreenPlainSurface(dual_stream ? m_lVidWidth*2 : m_lVidWidth, m_lVidHeight, desc.Format, D3DPOOL_SYSTEMMEM, &m_surface_rgb_backup_full, NULL));
-	FAIL_RET(m_Device->GetRenderTargetData(full_surface, m_surface_rgb_backup_full));
-
-	//mylog("backup_rgb() ok\n");
-	m_backuped = true;
-	return S_OK;
-}
 
 #define JIF(x) {if(FAILED(hr=x))goto clearup;}
-
-HRESULT my12doomRenderer::restore_rgb()
-{
-	if (m_dsr0->m_State == State_Running&& timeGetTime() - m_last_frame_time < 333)		// don't backup or restore when running, that cause great jitter
-		return S_FALSE;
-
-	mylog("restore_rgb() start\n");
-	CAutoLock lck(&m_frame_lock);
-	HRESULT hr = S_OK;
-	CComPtr<IDirect3DSurface9> live_surface_left;
-	CComPtr<IDirect3DSurface9> live_surface_right;
-	if (!m_tex_rgb_left || ! m_tex_rgb_right || !m_surface_rgb_backup_full)
-		goto clearup;
-
-	D3DSURFACE_DESC desc_backup, desc_live;
-	m_surface_rgb_backup_full->GetDesc(&desc_backup);
-	if(FAILED(m_tex_rgb_left->GetLevelDesc(0, &desc_live)))
-		goto clearup;
-	if (desc_live.Format != desc_backup.Format)
-		goto clearup;
-
-	if (m_swapeyes)
-	{
-		if(FAILED(m_tex_rgb_left->GetSurfaceLevel(0, &live_surface_right)))
-			goto clearup;
-		if(FAILED(m_tex_rgb_right->GetSurfaceLevel(0, &live_surface_left)))
-			goto clearup;
-	}
-	else
-	{
-		if(FAILED(m_tex_rgb_left->GetSurfaceLevel(0, &live_surface_left)))
-			goto clearup;
-		if(FAILED(m_tex_rgb_right->GetSurfaceLevel(0, &live_surface_right)))
-			goto clearup;
-	}
-
-	input_layout_types input = get_active_input_layout();
-	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
-
-	if (dual_stream)
-	{
-		RECT src = {0, 0, m_lVidWidth, m_lVidHeight};
-		JIF(hr = m_Device->UpdateSurface(m_surface_rgb_backup_full, &src, live_surface_left, NULL));
-		src.left += m_lVidWidth;
-		src.right += m_lVidWidth;
-		JIF(hr = m_Device->UpdateSurface(m_surface_rgb_backup_full, &src, live_surface_right, NULL));
-	}
-	else if (input == side_by_side)
-	{
-		RECT src = {0, 0, m_lVidWidth/2, m_lVidHeight};
-		JIF(hr = m_Device->UpdateSurface(m_surface_rgb_backup_full, &src, live_surface_left, NULL));
-		src.left += m_lVidWidth/2;
-		src.right += m_lVidWidth/2;
-		JIF(hr = m_Device->UpdateSurface(m_surface_rgb_backup_full, &src, live_surface_right, NULL));
-	}
-	else if (input == top_bottom)
-	{
-		RECT src = {0, 0, m_lVidWidth, m_lVidHeight/2};
-		JIF(hr = m_Device->UpdateSurface(m_surface_rgb_backup_full, &src, live_surface_left, NULL));
-		src.top += m_lVidHeight/2;
-		src.bottom += m_lVidHeight/2;
-		JIF(hr = m_Device->UpdateSurface(m_surface_rgb_backup_full, &src, live_surface_right, NULL));
-	}
-	else if (input == mono2d)
-	{
-		JIF(hr = m_Device->UpdateSurface(m_surface_rgb_backup_full, NULL, live_surface_left, NULL));
-		JIF(hr = m_Device->UpdateSurface(m_surface_rgb_backup_full, NULL, live_surface_right, NULL));
-	}
-
-	mylog("restore_rgb : OK.\n");
-	return hr;
-clearup:
-	mylog("restore_rgb : fail.\n");
-	return S_OK;
-}
 
 HRESULT my12doomRenderer::render_nolock(bool forced)
 {
@@ -3163,7 +3018,6 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 
 	int l = timeGetTime();
 
-
 	gpu_sample *sample1 = m_sample2render_1;
 	gpu_sample *sample2 = m_sample2render_2;
 	if (!sample1)
@@ -3789,11 +3643,6 @@ HRESULT my12doomRenderer::pump()
 			set_device_state(need_resize_back_buffer);
 	}
 
-	if (m_dsr0->m_State != State_Running || timeGetTime() - m_last_frame_time > 333)		// don't backup or restore when running, that cause great jitter
-	{
-		backup_rgb();
-		Sleep(1);
-	}
 	return handle_device_state();
 }
 
@@ -3893,7 +3742,6 @@ HRESULT my12doomRenderer::set_swap_eyes(bool swap)
 
 	if (m_output_mode == pageflipping)
 		terminate_render_thread();
-	restore_rgb();
 	repaint_video();
 	if (m_output_mode == pageflipping)
 		create_render_thread();
