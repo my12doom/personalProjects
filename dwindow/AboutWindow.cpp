@@ -37,7 +37,6 @@ INT_PTR CALLBACK about_window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 			}
 			wsprintfW(build_time, L"%d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second);
 
-			// get activation expire time
 
 #ifdef dwindow_free
 wchar_t version[200] = L"Free";
@@ -61,6 +60,7 @@ wcscat(version, C(L"(Debug)"));
 			wsprintfW(text, C(L"DWindow %s version\r\nrevision %d\r\nBuild Time:%s\r\n"),
 				version, my12doom_rev, build_time);
 
+			// get activation expire time
 			if (SUCCEEDED(check_passkey()) && !is_trial_version() && false)
 			{
 				wchar_t tmp[MAX_PATH];

@@ -1008,6 +1008,8 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 				m_pool->DestroyPool(D3DPOOL_DEFAULT);
 		}
 
+		render_nolock(true);
+
 		/*
 		terminate_render_thread();
 		m_swap1 = NULL;
@@ -3154,16 +3156,136 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 // dx9 helper functions
 HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 {
-	m_packet_lock.Lock();
+
+	CAutoLock lck(&m_packet_lock);
 	if (!m_sample2render_1 && !m_sample2render_2)
-	{
-		m_packet_lock.Unlock();
 		return S_FALSE;
-	}
 
 	int l = timeGetTime();
 
-	HRESULT hr = load_image_convert(m_sample2render_1, m_sample2render_2);
+
+	gpu_sample *sample1 = m_sample2render_1;
+	gpu_sample *sample2 = m_sample2render_2;
+	if (!sample1)
+		return E_POINTER;
+
+	bool dual_stream = sample1 && sample2;
+	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
+	bool need_detect = !dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect;
+	CLSID format = sample1->m_format;
+	bool topdown = sample1->m_topdown;
+
+	// try convert to RGB32 first
+	HRESULT hr;
+	CComPtr<IDirect3DSurface9> s1;
+	CComPtr<IDirect3DSurface9> s2;
+	CComPtr<IDirect3DSurface9> s3;
+	if (sample1)
+	{
+		FAIL_RET(sample1->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time));
+		if (need_detect) sample1->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
+		sample1->m_tex_gpu_RGB32->get_first_level(&s1);
+		if (sample1->m_tex_stereo_test)
+			sample1->m_tex_stereo_test->get_first_level(&s3);
+	}
+	if (sample2)
+	{
+		FAIL_RET(sample2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time));
+		sample2->m_tex_gpu_RGB32->get_first_level(&s2);
+	}
+
+
+	CAutoLock rendered_lock(&m_rendered_packet_lock);
+	safe_delete(m_last_rendered_sample1);
+	safe_delete(m_last_rendered_sample2);
+	m_last_rendered_sample1 = m_sample2render_1;
+	m_last_rendered_sample2 = m_sample2render_2;
+	m_sample2render_1 = NULL;
+	m_sample2render_2 = NULL;
+	
+
+
+
+	CComPtr<IDirect3DSurface9> left_surface;
+	CComPtr<IDirect3DSurface9> right_surface;
+	hr = m_tex_rgb_left->GetSurfaceLevel(0, &left_surface);
+	hr = m_tex_rgb_right->GetSurfaceLevel(0, &right_surface);
+	IDirect3DSurface9 *t1 = !m_swapeyes ? left_surface : right_surface;
+	IDirect3DSurface9 *t2 = m_swapeyes ? left_surface : right_surface;
+	if (dual_stream)
+	{
+		m_Device->StretchRect(s1, NULL, t1, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(s2, NULL, t2, NULL, D3DTEXF_LINEAR);
+	}
+	else
+	{
+
+		RECT rect_left = {0,0,m_lVidWidth/2, m_lVidHeight};
+		RECT rect_right = {m_lVidWidth/2,0,m_lVidWidth, m_lVidHeight};
+		RECT rect_top = {0,0,m_lVidWidth, m_lVidHeight/2};
+		RECT rect_bottom = {0,m_lVidHeight/2,m_lVidWidth, m_lVidHeight};
+
+		if (input == side_by_side)
+		{
+			hr = m_Device->StretchRect(s1, &rect_left, t1, NULL, D3DTEXF_LINEAR);
+			hr = m_Device->StretchRect(s1, &rect_right, t2, NULL, D3DTEXF_LINEAR);
+		}
+		else if (input == top_bottom)
+		{
+			hr = m_Device->StretchRect(s1, &rect_top, t1, NULL, D3DTEXF_LINEAR);
+			hr = m_Device->StretchRect(s1, &rect_bottom, t2, NULL, D3DTEXF_LINEAR);
+		}
+		else if (input == mono2d)
+		{
+			hr = m_Device->StretchRect(s1, NULL, t1, NULL, D3DTEXF_LINEAR);
+			hr = m_Device->StretchRect(s1, NULL, t2, NULL, D3DTEXF_LINEAR);
+		}
+	}
+
+	m_backuped = false;
+
+	// deinterlace on needed
+	// we are using Blending method for now, it's very simple ,just StretchRect to a half height surface and StretchRect back, with BiLinear resizing
+	if (m_forced_deinterlace)
+	{
+		m_Device->StretchRect(left_surface, NULL, m_deinterlace_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(m_deinterlace_surface, NULL, left_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(right_surface, NULL, m_deinterlace_surface, NULL, D3DTEXF_LINEAR);
+		m_Device->StretchRect(m_deinterlace_surface, NULL, right_surface, NULL, D3DTEXF_LINEAR);
+	}
+
+	// stereo test
+
+	if (need_detect)
+	{
+		int this_frame_type = 0;
+		if (S_OK == m_last_rendered_sample1->get_strereo_test_result(m_Device, &this_frame_type))
+		{
+			if (this_frame_type == side_by_side)
+				m_sbs ++;
+			else if (this_frame_type == top_bottom)
+				m_tb ++;
+			else if (this_frame_type == mono2d)
+				m_normal ++;
+		}
+
+		input_layout_types next_layout = m_layout_detected;
+		if (m_normal - m_sbs > 5)
+			next_layout = mono2d;
+		if (m_sbs - m_normal > 5)
+			next_layout = side_by_side;
+		if (m_tb - max(m_sbs,m_normal) > 5)
+			next_layout = top_bottom;
+
+		if (m_normal - m_sbs > 500 || m_sbs - m_normal > 500 || m_tb - max(m_sbs,m_normal) > 500)
+			m_no_more_detect = true;
+
+		if (next_layout != m_layout_detected)
+		{
+			m_layout_detected = next_layout;
+			set_device_state(need_reset_object);
+		}
+	}
 
 	static int n = timeGetTime();
 	//printf("load and convert time:%dms, presant delta: %dms(%.02f circle)\n", timeGetTime()-l, timeGetTime()-n, (double)(timeGetTime()-n) / (1000/60));
@@ -3236,419 +3358,6 @@ IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format f
 		return NULL;
 
 	return texture->texture;
-}
-
-HRESULT my12doomRenderer::load_image_convert(gpu_sample * sample1, gpu_sample *sample2)
-{
-	if (!sample1)
-		return E_POINTER;
-
-	bool dual_stream = sample1 && sample2;
-	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
-	bool need_detect = !dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect;
-	CLSID format = sample1->m_format;
-	bool topdown = sample1->m_topdown;
-
-	CAutoLock rendered_lock(&m_rendered_packet_lock);
-	safe_delete(m_last_rendered_sample1);
-	safe_delete(m_last_rendered_sample2);
-	m_last_rendered_sample1 = m_sample2render_1;
-	m_last_rendered_sample2 = m_sample2render_2;
-	m_sample2render_1 = NULL;
-	m_sample2render_2 = NULL;
-	m_packet_lock.Unlock();	//release queue lock!
-
-
-	CComPtr<IDirect3DSurface9> s1;
-	CComPtr<IDirect3DSurface9> s2;
-	CComPtr<IDirect3DSurface9> s3;
-	if (m_last_rendered_sample1)
-	{
-		m_last_rendered_sample1->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
-		if (need_detect) m_last_rendered_sample1->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
-		m_last_rendered_sample1->m_tex_gpu_RGB32->get_first_level(&s1);
-		if (m_last_rendered_sample1->m_tex_stereo_test)
-			m_last_rendered_sample1->m_tex_stereo_test->get_first_level(&s3);
-	}
-	if (m_last_rendered_sample2)
-	{
-		m_last_rendered_sample2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
-		m_last_rendered_sample2->m_tex_gpu_RGB32->get_first_level(&s2);
-	}
-
-
-
-	CComPtr<IDirect3DSurface9> left_surface;
-	CComPtr<IDirect3DSurface9> right_surface;
-	HRESULT hr = m_tex_rgb_left->GetSurfaceLevel(0, &left_surface);
-	hr = m_tex_rgb_right->GetSurfaceLevel(0, &right_surface);
-	IDirect3DSurface9 *t1 = !m_swapeyes ? left_surface : right_surface;
-	IDirect3DSurface9 *t2 = m_swapeyes ? left_surface : right_surface;
-	if (dual_stream)
-	{
-		m_Device->StretchRect(s1, NULL, t1, NULL, D3DTEXF_LINEAR);
-		m_Device->StretchRect(s2, NULL, t2, NULL, D3DTEXF_LINEAR);
-	}
-	else
-	{
-
-		RECT rect_left = {0,0,m_lVidWidth/2, m_lVidHeight};
-		RECT rect_right = {m_lVidWidth/2,0,m_lVidWidth, m_lVidHeight};
-		RECT rect_top = {0,0,m_lVidWidth, m_lVidHeight/2};
-		RECT rect_bottom = {0,m_lVidHeight/2,m_lVidWidth, m_lVidHeight};
-
-		if (input == side_by_side)
-		{
-			hr = m_Device->StretchRect(s1, &rect_left, t1, NULL, D3DTEXF_LINEAR);
-			hr = m_Device->StretchRect(s1, &rect_right, t2, NULL, D3DTEXF_LINEAR);
-		}
-		else if (input == top_bottom)
-		{
-			hr = m_Device->StretchRect(s1, &rect_top, t1, NULL, D3DTEXF_LINEAR);
-			hr = m_Device->StretchRect(s1, &rect_bottom, t2, NULL, D3DTEXF_LINEAR);
-		}
-		else if (input == mono2d)
-		{
-			hr = m_Device->StretchRect(s1, NULL, t1, NULL, D3DTEXF_LINEAR);
-			hr = m_Device->StretchRect(s1, NULL, t2, NULL, D3DTEXF_LINEAR);
-		}
-	}
-
-	// decomment this line to see stereo test image
-	//hr = m_Device->StretchRect(s3, NULL, left_surface, NULL, D3DTEXF_LINEAR);
-
-	m_backuped = false;
-
-	// deinterlace on needed
-	// we are using Blending method for now, it's very simple ,just StretchRect to a half height surface and StretchRect back, with BiLinear resizing
-	if (m_forced_deinterlace)
-	{
-		m_Device->StretchRect(left_surface, NULL, m_deinterlace_surface, NULL, D3DTEXF_LINEAR);
-		m_Device->StretchRect(m_deinterlace_surface, NULL, left_surface, NULL, D3DTEXF_LINEAR);
-		m_Device->StretchRect(right_surface, NULL, m_deinterlace_surface, NULL, D3DTEXF_LINEAR);
-		m_Device->StretchRect(m_deinterlace_surface, NULL, right_surface, NULL, D3DTEXF_LINEAR);
-	}
-
-	// stereo test
-
-	if (need_detect)
-	{
-		int this_frame_type = 0;
-		if (S_OK == m_last_rendered_sample1->get_strereo_test_result(m_Device, &this_frame_type))
-		{
-			if (this_frame_type == side_by_side)
-				m_sbs ++;
-			else if (this_frame_type == top_bottom)
-				m_tb ++;
-			else if (this_frame_type == mono2d)
-				m_normal ++;
-		}
-
-		input_layout_types next_layout = m_layout_detected;
-		if (m_normal - m_sbs > 5)
-			next_layout = mono2d;
-		if (m_sbs - m_normal > 5)
-			next_layout = side_by_side;
-		if (m_tb - max(m_sbs,m_normal) > 5)
-			next_layout = top_bottom;
-
-		if (m_normal - m_sbs > 500 || m_sbs - m_normal > 500 || m_tb - max(m_sbs,m_normal) > 500)
-			m_no_more_detect = true;
-
-		if (next_layout != m_layout_detected)
-		{
-			m_layout_detected = next_layout;
-			set_device_state(need_reset_object);
-		}
-	}
-
-	/*
-	IDirect3DTexture9* sample1_tex_RGB32 = helper_get_texture(sample1, helper_sample_format_rgb32);						// RGB32 planes, in A8R8G8B8, full width
-	IDirect3DTexture9* sample1_tex_YUY2 = helper_get_texture(sample1, helper_sample_format_yuy2);						// YUY2 planes, in A8R8G8B8, half width
-	IDirect3DTexture9* sample1_tex_Y = helper_get_texture(sample1, helper_sample_format_y);								// Y plane of YV12/NV12, in L8
-	IDirect3DTexture9* sample1_tex_YV12_UV = helper_get_texture(sample1, helper_sample_format_yv12);					// UV plane of YV12, in L8, double height
-	IDirect3DTexture9* sample1_tex_NV12_UV = helper_get_texture(sample1, helper_sample_format_nv12);					// UV plane of NV12, in A8L8
-
-	IDirect3DTexture9* sample2_tex_RGB32 = helper_get_texture(sample2, helper_sample_format_rgb32);						// RGB32 planes, in A8R8G8B8, full width
-	IDirect3DTexture9* sample2_tex_YUY2 = helper_get_texture(sample2, helper_sample_format_yuy2);						// YUY2 planes, in A8R8G8B8, half width
-	IDirect3DTexture9* sample2_tex_Y = helper_get_texture(sample2, helper_sample_format_y);								// Y plane of YV12/NV12, in L8
-	IDirect3DTexture9* sample2_tex_YV12_UV = helper_get_texture(sample2, helper_sample_format_yv12);					// UV plane of YV12, in L8, double height
-	IDirect3DTexture9* sample2_tex_NV12_UV = helper_get_texture(sample2, helper_sample_format_nv12);					// UV plane of NV12, in A8L8
-
-
-
-	m_sample2render_1 = NULL;
-	m_sample2render_2 = NULL;
-	m_packet_lock.Unlock();	//release queue lock!
-
-	CAutoLock lck(&m_frame_lock);
-
-	int l1 = timeGetTime();
-	LARGE_INTEGER li, l2;
-	QueryPerformanceCounter(&li);
-	if (m_last_rendered_sample1) m_last_rendered_sample1->prepare_rendering();
-	if (m_last_rendered_sample2) m_last_rendered_sample2->prepare_rendering();
-	QueryPerformanceCounter(&l2);
-
-	//printf("prepare_rendering() = %d cycles.\n", (int)(l2.QuadPart - li.QuadPart));
-
-	IDirect3DTexture9* sample1_tex_RGB32_gpu = sample1_tex_RGB32;
-	IDirect3DTexture9* sample1_tex_YUY2_gpu = sample1_tex_YUY2;
-	IDirect3DTexture9* sample1_tex_Y_gpu = sample1_tex_Y;
-	IDirect3DTexture9* sample1_tex_YV12_gpu = sample1_tex_YV12_UV;
-	IDirect3DTexture9* sample1_tex_NV12_gpu = sample1_tex_NV12_UV;
-
-	IDirect3DTexture9* sample2_tex_RGB32_gpu = sample2_tex_RGB32;
-	IDirect3DTexture9* sample2_tex_YUY2_gpu = sample2_tex_YUY2;
-	IDirect3DTexture9* sample2_tex_Y_gpu = sample2_tex_Y;
-	IDirect3DTexture9* sample2_tex_YV12_gpu = sample2_tex_YV12_UV;
-	IDirect3DTexture9* sample2_tex_NV12_gpu = sample2_tex_NV12_UV;
-
-	//mylog("prepare_rendering = %dms\n", timeGetTime()-l1);
-	QueryPerformanceCounter(&l2);
-
-	//printf("prepare_rendering() + UpdateTexture()  = %d cycles.\n", (int)(l2.QuadPart - li.QuadPart));
-
-	// pass 1: render full resolution to two seperate texture
-	HRESULT hr = m_Device->BeginScene();
-	m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
-	m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-	m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
-	hr = m_Device->SetPixelShader(NULL);
-	if (format == MEDIASUBTYPE_YV12) hr = m_Device->SetPixelShader(m_ps_yv12);
-	if (format == MEDIASUBTYPE_NV12) hr = m_Device->SetPixelShader(m_ps_nv12);
-	if (format == MEDIASUBTYPE_YUY2) hr = m_Device->SetPixelShader(m_ps_yuy2);
-	float rect_data[4] = {m_lVidWidth, m_lVidHeight, m_lVidWidth/2, m_lVidHeight};
-	hr = m_Device->SetPixelShaderConstantF(0, rect_data, 1);
-	hr = m_Device->SetRenderState(D3DRS_LIGHTING, FALSE);
-	hr = m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-	CComPtr<IDirect3DSurface9> left_surface;
-	CComPtr<IDirect3DSurface9> right_surface;
-	hr = m_tex_rgb_left->GetSurfaceLevel(0, &left_surface);
-	hr = m_tex_rgb_right->GetSurfaceLevel(0, &right_surface);
-
-
-	// drawing
-	hr = m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE);
-	hr = m_Device->SetTextureStageState( 2, D3DTSS_COLOROP,   D3DTOP_DISABLE);
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-	hr = m_Device->SetSamplerState( 1, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-	hr = m_Device->SetSamplerState( 2, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
-	hr = m_Device->SetFVF( FVF_Flags );
-
-	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
-	if (dual_stream)
-	{
-		// left sample
-		if (format == MEDIASUBTYPE_RGB32)
-			hr = m_Device->SetTexture(0, sample1_tex_RGB32_gpu);
-		else
-		{
-			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample1_tex_YUY2_gpu : sample1_tex_Y_gpu );
-			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample1_tex_NV12_gpu : sample1_tex_YV12_gpu);
-		}
-		hr = m_Device->SetRenderTarget(0, m_swapeyes ? right_surface : left_surface);
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
-
-
-		// right sample
-		if (format == MEDIASUBTYPE_RGB32)
-			hr = m_Device->SetTexture(0, sample2_tex_RGB32_gpu);
-		else
-		{
-			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample2_tex_YUY2_gpu : sample2_tex_Y_gpu );
-			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample2_tex_NV12_gpu : sample2_tex_YV12_gpu);
-		}
-		hr = m_Device->SetRenderTarget(0, m_swapeyes ? left_surface : right_surface);
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
-	}
-	else
-	{
-		if (format == MEDIASUBTYPE_RGB32)
-			hr = m_Device->SetTexture(0, sample1_tex_RGB32_gpu);
-		else
-		{
-
-			hr = m_Device->SetTexture( 0, format == MEDIASUBTYPE_YUY2 ? sample1_tex_YUY2_gpu : sample1_tex_Y_gpu );
-			hr = m_Device->SetTexture( 1, format == MEDIASUBTYPE_NV12 ? sample1_tex_NV12_gpu : sample1_tex_YV12_gpu);
-		}
-
-		hr = m_Device->SetRenderTarget(0, m_swapeyes ? right_surface : left_surface);
-
-		if (input == side_by_side)
-			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_left, 2 );
-		else if (input == top_bottom)
-			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_top, 2 );
-		else if (input == mono2d)
-		{
-			if (m_convert3d)
-				hr = m_Device->StretchRect(m_swapeyes ? right_surface : left_surface, NULL, m_swapeyes ? left_surface : right_surface, NULL, D3DTEXF_NONE);
-			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
-		}
-
-		hr = m_Device->SetRenderTarget(0, m_swapeyes ? left_surface : right_surface);
-
-		if (input == side_by_side)
-			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_right, 2 );
-		else if (input == top_bottom)
-			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_bottom, 2 );
-		else if (input == mono2d)
-		{
-			if (!m_convert3d)
-				hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
-		}
-	}
-
-	m_backuped = false;
-
-	// deinterlace on needed
-	// we are using Blending method for now, it's very simple ,just StretchRect to a half height surface and StretchRect back, with BiLinear resizing
-	if (m_forced_deinterlace)
-	{
-		m_Device->StretchRect(left_surface, NULL, m_deinterlace_surface, NULL, D3DTEXF_LINEAR);
-		m_Device->StretchRect(m_deinterlace_surface, NULL, left_surface, NULL, D3DTEXF_LINEAR);
-		m_Device->StretchRect(right_surface, NULL, m_deinterlace_surface, NULL, D3DTEXF_LINEAR);
-		m_Device->StretchRect(m_deinterlace_surface, NULL, right_surface, NULL, D3DTEXF_LINEAR);
-	}
-
-	// repack it up...
-	// no need to handle swap eyes
-	if (!dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect)
-	{
-		CComPtr<IDirect3DSurface9> target_surface;
-		m_tex_rgb_full->GetSurfaceLevel(0, &target_surface);
-		{
-			if (input == side_by_side)
-			{
-				RECT tar = {0, 0, m_lVidWidth/2, m_lVidHeight};
-				hr = m_Device->StretchRect(left_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
-				tar.left += m_lVidWidth/2;
-				tar.right += m_lVidWidth/2;
-				hr = m_Device->StretchRect(right_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
-			}
-			else if (input == top_bottom)
-			{
-				RECT tar = {0, 0, m_lVidWidth, m_lVidHeight/2};
-				hr = m_Device->StretchRect(left_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
-				tar.top += m_lVidHeight/2;
-				tar.bottom += m_lVidHeight/2;
-				hr = m_Device->StretchRect(right_surface, NULL, target_surface, &tar, D3DTEXF_NONE);
-			}
-			else if (input == mono2d)
-			{
-				hr = m_Device->StretchRect(left_surface, NULL, target_surface, NULL, D3DTEXF_NONE);
-			}
-		}
-
-		hr = m_Device->SetRenderTarget(0, m_stereo_test_gpu);
-		hr = m_Device->Clear(0, NULL, D3DCLEAR_TARGET,  D3DCOLOR_XRGB(0,0,0), 1.0f, 0L);
-		hr = m_Device->SetTexture(0, m_tex_rgb_full);
-
-		hr = m_Device->SetPixelShader(m_ps_test_sbs);
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_sbs, 2 );
-		hr = m_Device->SetPixelShader(m_ps_test_tb);
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_tb, 2 );
-
-
-		hr = m_Device->EndScene();
-
-		hr = m_Device->GetRenderTargetData(m_stereo_test_gpu, m_stereo_test_cpu);
-		//hr = m_Device->StretchRect(m_stereo_test_gpu, NULL, left_surface, NULL, D3DTEXF_LINEAR);		//if you want to see debug image, decomment this line
-
-		D3DLOCKED_RECT locked;
-		m_stereo_test_cpu->LockRect(&locked, NULL, NULL);
-
-		lockrect_surface ++;
-
-		BYTE* src = (BYTE*)locked.pBits;
-		double average1 = 0;
-		double average2 = 0;
-		double delta1 = 0;
-		double delta2 = 0;
-		for(int y=0; y<stereo_test_texture_size; y++)
-			for(int x=0; x<stereo_test_texture_size; x++)
-			{
-				double &average = x<stereo_test_texture_size/2 ?average1:average2;
-				average += src[2];
-				src += 4;
-			}
-
-		average1 /= stereo_test_texture_size/2*stereo_test_texture_size;
-		average2 /= stereo_test_texture_size/2*stereo_test_texture_size;
-
-		src = (BYTE*)locked.pBits;
-		for(int y=0; y<stereo_test_texture_size; y++)
-			for(int x=0; x<stereo_test_texture_size; x++)
-			{
-				double &average = x<stereo_test_texture_size/2 ?average1:average2;
-				double &tdelta = x<stereo_test_texture_size/2 ? delta1 : delta2;
-
-				int delta = abs(src[2] - average);
-				tdelta += delta * delta;
-				src += 4;
-			}
-		delta1 = sqrt((double)delta1)/(stereo_test_texture_size/2*stereo_test_texture_size-1);
-		delta2 = sqrt((double)delta2)/(stereo_test_texture_size/2*stereo_test_texture_size-1);
-                      
-		double times = 0;
-		double var1 = average1 * delta1;
-		double var2 = average2 * delta2;
-		if ( (var1 > 0.001 && var2 > 0.001) || (var1>var2*10000) || (var2>var1*10000))
-			times = var1 > var2 ? var1 / var2 : var2 / var1;
-
-		printf("%f - %f, %f - %f, %f - %f, %f\r\n", average1, average2, delta1, delta2, var1, var2, times);
-
-		if (times > 31.62/2)		// 10^1.5
-		{
-			mylog("stereo(%s).\r\n", var1 > var2 ? "tb" : "sbs");
-			(var1 > var2 ? m_tb : m_sbs) ++ ;
-		}
-		else if ( 1.0 < times && times < 4.68 
-		//&& 1.0 < times2 && times2 < 1.8
-			)
-		{
-			m_normal ++;
-			mylog("normal.\r\n");
-		}
-		else
-		{
-			mylog("unkown.\r\n");
-		}
-		m_stereo_test_cpu->UnlockRect();
-
-		input_layout_types next_layout = m_layout_detected;
-		if (m_normal - m_sbs > 5)
-			next_layout = mono2d;
-		if (m_sbs - m_normal > 5)
-			next_layout = side_by_side;
-		if (m_tb - max(m_sbs,m_normal) > 5)
-			next_layout = top_bottom;
-
-		if (m_normal - m_sbs > 500 || m_sbs - m_normal > 500 || m_tb - max(m_sbs,m_normal) > 500)
-			m_no_more_detect = true;
-
-		if (next_layout != m_layout_detected)
-		{
-			m_layout_detected = next_layout;
-			set_device_state(need_reset_object);
-		}
-
-	}
-	*/
-
-	//safe_delete(m_last_rendered_sample1);
-	//safe_delete(m_last_rendered_sample2);
-
-	return S_OK;
 }
 
 HRESULT my12doomRenderer::calculate_vertex()
@@ -4658,6 +4367,13 @@ HRESULT gpu_sample::commit()
 	if (m_tex_NV12_UV) 
 		m_tex_NV12_UV->Unlock();
 
+	if (m_surf_YV12)
+		m_surf_YV12->Unlock();
+	if (m_surf_NV12)
+		m_surf_NV12->Unlock();
+	if (m_surf_YUY2)
+		m_surf_YUY2->Unlock();
+
 	HRESULT hr = S_OK;
 
 	JIF( m_allocator->CreateTexture(m_width, m_height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_gpu_RGB32));
@@ -4665,10 +4381,6 @@ HRESULT gpu_sample::commit()
 	if (m_format == MEDIASUBTYPE_YUY2)
 	{
 		JIF( m_allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_gpu_YUY2));
-	}
-
-	else if (m_format == MEDIASUBTYPE_RGB32)
-	{
 	}
 
 	else if (m_format == MEDIASUBTYPE_NV12)
@@ -4683,18 +4395,12 @@ HRESULT gpu_sample::commit()
 		JIF( m_allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_YV12_UV));
 	}
 
-	m_allocator->UpdateTexture(m_tex_RGB32, m_tex_gpu_RGB32);
-	m_allocator->UpdateTexture(m_tex_YUY2, m_tex_gpu_YUY2);
-	m_allocator->UpdateTexture(m_tex_Y, m_tex_gpu_Y);
-	m_allocator->UpdateTexture(m_tex_YV12_UV, m_tex_gpu_YV12_UV);
-	m_allocator->UpdateTexture(m_tex_NV12_UV, m_tex_gpu_NV12_UV);
+	if (m_tex_RGB32) JIF(m_allocator->UpdateTexture(m_tex_RGB32, m_tex_gpu_RGB32));
+	if (m_tex_YUY2) JIF(m_allocator->UpdateTexture(m_tex_YUY2, m_tex_gpu_YUY2));
+	if (m_tex_Y) JIF(m_allocator->UpdateTexture(m_tex_Y, m_tex_gpu_Y));
+	if (m_tex_YV12_UV) JIF(m_allocator->UpdateTexture(m_tex_YV12_UV, m_tex_gpu_YV12_UV));
+	if (m_tex_NV12_UV) JIF(m_allocator->UpdateTexture(m_tex_NV12_UV, m_tex_gpu_NV12_UV));
 
-	if (m_surf_YV12)
-		m_surf_YV12->Unlock();
-	if (m_surf_NV12)
-		m_surf_NV12->Unlock();
-	if (m_surf_YUY2)
-		m_surf_YUY2->Unlock();
 
 	m_prepared_for_rendering = true;
 // 	QueryPerformanceCounter(&counter2);
@@ -4705,7 +4411,7 @@ HRESULT gpu_sample::commit()
 
 clearup:
 	decommit();
-	MessageBoxW(NULL, L"commit() fail", L"", MB_OK);
+	mylog("%08x commit() fail", this);
 	return E_FAIL;
 }
 

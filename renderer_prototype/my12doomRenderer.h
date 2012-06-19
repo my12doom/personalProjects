@@ -486,7 +486,6 @@ protected:
 
 	// dx9 helper functions
 	HRESULT load_image(int id = -1, bool forced = false);		// -1 = both dshow renderer
-	HRESULT load_image_convert(gpu_sample * sample1, gpu_sample *sample2);
 	HRESULT calculate_vertex();
 	HRESULT generate_mask();
 	HRESULT set_device_state(device_state new_state);
