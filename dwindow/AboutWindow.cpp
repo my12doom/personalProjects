@@ -1,7 +1,9 @@
 #include "AboudWindow.h"
 #include "global_funcs.h"
+#include "Hyperlink.h"
 #include "..\my12doom_revision.h"
 
+CHyperlink hyperlink;
 INT_PTR CALLBACK about_window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
 {
 	switch( msg ) 
@@ -13,6 +15,9 @@ INT_PTR CALLBACK about_window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 	case WM_INITDIALOG:
 		{
 			localize_window(hDlg);
+
+			hyperlink.create(IDC_BO3D, hDlg);
+
 
 			// generate build date time
 			wchar_t build_time[200];
@@ -53,8 +58,25 @@ wcscat(version, C(L"(Debug)"));
 #endif
 
 			wchar_t * text = (wchar_t*)malloc(1024*1024);
-			wsprintfW(text, C(L"DWindow %s version\r\nrevision %d\r\nBuild Time:%s"),
+			wsprintfW(text, C(L"DWindow %s version\r\nrevision %d\r\nBuild Time:%s\r\n"),
 				version, my12doom_rev, build_time);
+
+			if (SUCCEEDED(check_passkey()) && !is_trial_version() && false)
+			{
+				wchar_t tmp[MAX_PATH];
+				DWORD e[32];
+				dwindow_passkey_big m1;
+				BigNumberSetEqualdw(e, 65537, 32);
+				RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+
+				struct tm* tm = _localtime64(&m1.time_end);
+
+				wsprintfW(tmp, C(L"Activated until %d-%02d-%02d %02d:%02d:%02d"),
+					tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+					tm->tm_hour, tm->tm_min, tm->tm_sec);
+				wcscat(text, tmp);
+				memset(&m1, 0, sizeof(m1));
+			}
 
 			SetDlgItemTextW(hDlg, IDC_ABOUTTEXT, text);
 			free(text);

@@ -737,6 +737,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\Hyperlink.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\latency_dialog.cpp"
 					>
 				</File>
@@ -900,6 +904,10 @@
 				>
 				<File
 					RelativePath=".\AboudWindow.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Hyperlink.h"
 					>
 				</File>
 				<File

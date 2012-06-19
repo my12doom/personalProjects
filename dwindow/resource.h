@@ -58,6 +58,7 @@
 #define IDC_RIGHT                       1039
 #define IDC_DWINDOW                     1040
 #define IDC_ABOUTTEXT                   1041
+#define IDC_BO3D                        1042
 #define ID_OPENFILE_SUBTITLE            40001
 #define ID_MAIN_OPENBDFOLDER            40002
 #define ID_MAIN_AUDIO                   40003
@@ -206,7 +207,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        126
 #define _APS_NEXT_COMMAND_VALUE         40144
-#define _APS_NEXT_CONTROL_VALUE         1042
+#define _APS_NEXT_CONTROL_VALUE         1043
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
