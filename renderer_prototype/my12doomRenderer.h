@@ -186,6 +186,7 @@ public:
 	D3DPOOL m_pool;
 	DWORD m_interlace_flags;
 	int m_fn;
+	CCritSec m_sample_lock;
 };
 
 class my12doom_auto_shader
@@ -485,6 +486,7 @@ protected:
 	static DWORD WINAPI test_thread(LPVOID param);
 
 	// dx9 helper functions
+	HRESULT reload_image();
 	HRESULT load_image(int id = -1, bool forced = false);		// -1 = both dshow renderer
 	HRESULT calculate_vertex();
 	HRESULT generate_mask();

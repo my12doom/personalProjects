@@ -1607,16 +1607,41 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	create_render_thread();
 
 	// restore image if possible
+	if (m_dsr0->m_State == State_Running && timeGetTime() - m_last_frame_time < 333)
 	{
-		CAutoLock lck(&m_packet_lock);
-		CAutoLock rendered_lock(&m_rendered_packet_lock);
-		safe_delete(m_last_rendered_sample1);
-		safe_delete(m_last_rendered_sample2);
+		// still running, no need to reload image
+	}
+	else
+	{
+		// restore image
+		// this loop is a bug workaround
+		for(int i=0; i<5; i++)
+		{
+			reload_image();
+			render_nolock(true);
+		}
+	}
+}
 
+
+HRESULT my12doomRenderer::reload_image()
+{
+	CAutoLock lck(&m_packet_lock);
+	CAutoLock rendered_lock(&m_rendered_packet_lock);
+
+	if (!m_sample2render_1)
+	{
+		safe_delete(m_sample2render_1);
+		safe_delete(m_sample2render_2);
 		m_sample2render_1 = m_last_rendered_sample1;
 		m_sample2render_2 = m_last_rendered_sample2;
-	}
 
+		safe_decommit(m_sample2render_1);
+		safe_decommit(m_sample2render_2);
+
+		m_last_rendered_sample1 = NULL;
+		m_last_rendered_sample2 = NULL;
+	}
 	return S_OK;
 }
 
@@ -1625,6 +1650,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 
 HRESULT my12doomRenderer::render_nolock(bool forced)
 {
+	HRESULT hr;
 	// device state check and restore
 	if (FAILED(handle_device_state()))
 		return E_FAIL;
@@ -1635,7 +1661,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		test_PC_level();
 
 	// image loading and idle check
-	if (load_image() != S_OK && !forced)	// no more rendering except pageflipping mode
+	m_Device->BeginScene();
+	hr = load_image();
+	m_Device->EndScene();
+
+	if (FAILED(hr))
+		return hr;
+
+	if (hr != S_OK && !forced)	// no more rendering except pageflipping mode
 		return S_FALSE;
 
 	if (!m_Device)
@@ -1643,8 +1676,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	static int last_render_time = timeGetTime();
 	static int last_nv3d_fix_time = timeGetTime();
-
-	HRESULT hr;
 
 	CAutoLock lck(&m_frame_lock);
 
@@ -3020,8 +3051,6 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 
 	gpu_sample *sample1 = m_sample2render_1;
 	gpu_sample *sample2 = m_sample2render_2;
-	if (!sample1)
-		return E_POINTER;
 
 	bool dual_stream = sample1 && sample2;
 	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
@@ -3740,6 +3769,8 @@ HRESULT my12doomRenderer::set_swap_eyes(bool swap)
 {
 	m_swapeyes = swap;
 
+	reload_image();
+
 	if (m_output_mode == pageflipping)
 		terminate_render_thread();
 	repaint_video();
@@ -4196,6 +4227,7 @@ HRESULT gpu_sample::commit()
 // 	LARGE_INTEGER counter1, counter2, fre;
 // 	QueryPerformanceCounter(&counter1);
 // 	QueryPerformanceFrequency(&fre);
+	CAutoLock lck(&m_sample_lock);
 
 	if (m_prepared_for_rendering)
 		return S_FALSE;
@@ -4249,7 +4281,6 @@ HRESULT gpu_sample::commit()
 	if (m_tex_YV12_UV) JIF(m_allocator->UpdateTexture(m_tex_YV12_UV, m_tex_gpu_YV12_UV));
 	if (m_tex_NV12_UV) JIF(m_allocator->UpdateTexture(m_tex_NV12_UV, m_tex_gpu_NV12_UV));
 
-
 	m_prepared_for_rendering = true;
 // 	QueryPerformanceCounter(&counter2);
 // 
@@ -4265,6 +4296,7 @@ clearup:
 
 HRESULT gpu_sample::decommit()
 {
+	CAutoLock lck(&m_sample_lock);
 	if (!m_prepared_for_rendering)
 		return S_FALSE;
 
@@ -4285,6 +4317,7 @@ HRESULT gpu_sample::decommit()
 HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2,
 									 IDirect3DVertexBuffer9 *vb, int time)
 {
+	CAutoLock lck(&m_sample_lock);
 	if (!m_ready)
 		return VFW_E_WRONG_STATE;
 

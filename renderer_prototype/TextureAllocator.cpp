@@ -253,23 +253,18 @@ HRESULT CTextureAllocator::DestroyPool(D3DPOOL pool2destroy)
 		}
 	}
 
-	/*
-	for(int i=0; i<m_pool_count; i++)
-		m_pool[i].texture->Release();
-
-	m_pool_count = 0;
-	*/
-
 	return S_OK;
 }
 
 HRESULT CTextureAllocator::UpdateTexture(CPooledTexture *src, CPooledTexture *dst)
 {
-	if (!src || !dst)
+	if (!src || !dst || !src->texture || !dst->texture)
 		return E_POINTER;
 
 	if (src->pool != D3DPOOL_SYSTEMMEM || dst->pool != D3DPOOL_DEFAULT)
 		return E_INVALIDARG;
+
+	src->texture->AddDirtyRect(NULL);
 
 	return m_device->UpdateTexture(src->texture, dst->texture);
 }
