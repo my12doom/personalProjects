@@ -1,7 +1,6 @@
 // Direct3D9 part of my12doom renderer
 
 #include "my12doomRenderer.h"
-#include <dxva.h>
 #include "PixelShaders/YV12.h"
 #include "PixelShaders/NV12.h"
 #include "PixelShaders/YUY2.h"
@@ -4069,8 +4068,10 @@ HRESULT my12doomRenderer::intel_d3d_init()
 {
 	HRESULT hr;
 
-	hr = DXVA2CreateDirect3DDeviceManager9(&m_resetToken, &m_d3d_manager);
-	hr = m_d3d_manager->ResetDevice(m_Device, m_resetToken);
+	hr = myDXVA2CreateDirect3DDeviceManager9(&m_resetToken, &m_d3d_manager);
+
+	if (m_d3d_manager)
+		hr = m_d3d_manager->ResetDevice(m_Device, m_resetToken);
 
 	return S_OK;
 }
@@ -4144,7 +4145,7 @@ HRESULT my12doomRenderer::intel_create_rendertargets()
 	// CreateVideoProcessor
 
 	CComPtr<IDirectXVideoProcessorService> g_dxva_service;
-	FAIL_RET(DXVA2CreateVideoService(m_Device, IID_IDirectXVideoProcessorService, (void**)&g_dxva_service));
+	FAIL_RET(myDXVA2CreateVideoService(m_Device, IID_IDirectXVideoProcessorService, (void**)&g_dxva_service));
 	FAIL_RET(m_intel_s3d->SetDevice(m_d3d_manager));
 	FAIL_RET(m_intel_s3d->SelectLeftView());
 	FAIL_RET( g_dxva_service->CreateVideoProcessor(DXVA2_VideoProcProgressiveDevice,

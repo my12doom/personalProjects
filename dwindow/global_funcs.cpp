@@ -1440,3 +1440,41 @@ localization_language get_system_default_lang()
 	else
 		return ENGLISH;
 }
+
+HMODULE hDXVA2 = LoadLibrary( L"dxva2.dll" );
+
+typedef HRESULT (WINAPI *lpDXVA2CreateDirect3DDeviceManager9)(UINT * token,IDirect3DDeviceManager9** manager);
+typedef HRESULT (WINAPI *lpDXVA2CreateVideoService)(IDirect3DDevice9* pDD, REFIID riid, void** ppService);
+
+lpDXVA2CreateDirect3DDeviceManager9 mineDXVA2CreateDirect3DDeviceManager9;
+lpDXVA2CreateVideoService mineDXVA2CreateVideoService;
+HRESULT loadDXVA2()
+{
+	if (!hDXVA2)
+		return E_NOINTERFACE;
+
+	mineDXVA2CreateDirect3DDeviceManager9 = (lpDXVA2CreateDirect3DDeviceManager9)GetProcAddress(hDXVA2, "DXVA2CreateDirect3DDeviceManager9");
+
+	mineDXVA2CreateVideoService = (lpDXVA2CreateVideoService)GetProcAddress(hDXVA2, "DXVA2CreateVideoService");
+
+	return S_OK;
+}
+
+HRESULT myDXVA2CreateDirect3DDeviceManager9(UINT* pResetToken, IDirect3DDeviceManager9** ppDeviceManager)
+{
+	loadDXVA2();
+
+	if (!mineDXVA2CreateDirect3DDeviceManager9)
+		return E_NOINTERFACE;
+
+	return mineDXVA2CreateDirect3DDeviceManager9(pResetToken, ppDeviceManager);
+}
+HRESULT myDXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppService)
+{
+	loadDXVA2();
+
+	if (!mineDXVA2CreateVideoService)
+		return E_NOINTERFACE;
+
+	return mineDXVA2CreateVideoService(pDD, riid, ppService);
+}

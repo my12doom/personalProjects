@@ -5,6 +5,8 @@
 #include <dshow.h>
 #include "..\libchecksum\libchecksum.h"
 #include "..\my12doom_revision.h"
+#include <dxva.h>
+#include <dxva2api.h>
 
 // dwindow version
 #ifdef nologin
@@ -105,6 +107,8 @@ int wcsexplode(const wchar_t *string_to_explode, const wchar_t *delimeter, wchar
 int wcstrim(wchar_t *str, wchar_t char_ = L' ' );
 int get_mixed_monitor_count(bool horizontal = false, bool vertical = false);
 int get_mixed_monitor_by_id(int id, RECT *rect, wchar_t *descriptor, bool horizontal = false, bool vertical = false);
+HRESULT myDXVA2CreateDirect3DDeviceManager9(UINT* pResetToken, IDirect3DDeviceManager9** ppDeviceManager);
+HRESULT myDXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppService);
 
 
 // CoreMVC
