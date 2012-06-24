@@ -1469,6 +1469,7 @@ HRESULT myDXVA2CreateDirect3DDeviceManager9(UINT* pResetToken, IDirect3DDeviceMa
 
 	return mineDXVA2CreateDirect3DDeviceManager9(pResetToken, ppDeviceManager);
 }
+
 HRESULT myDXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppService)
 {
 	loadDXVA2();
@@ -1477,4 +1478,9 @@ HRESULT myDXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppS
 		return E_NOINTERFACE;
 
 	return mineDXVA2CreateVideoService(pDD, riid, ppService);
+}
+
+extern "C" HRESULT WINAPI DXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppService)
+{
+	return myDXVA2CreateVideoService(pDD, riid, ppService);
 }

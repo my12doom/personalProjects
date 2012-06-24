@@ -28,7 +28,7 @@
 
 #pragma comment (lib, "igfx_s3dcontrol.lib")
 #pragma comment (lib, "comsupp.lib")
-#pragma comment (lib, "dxva2.lib")
+// #pragma comment (lib, "dxva2.lib")
 #pragma comment (lib, "nvapi.lib")
 
 #define FAIL_RET(x) {hr=x; if(FAILED(hr)){return hr;}}

@@ -144,10 +144,12 @@ Section "3DÓ°ÒôÖ÷³ÌÐò(required)"
   File "alpha.raw"
   File "logo.raw"
   File "Fonts.conf"
-  File "dxva2.dll"
+  File "MediaInfo.dll"
   ;File "CoralExplorer_221282.exe"
   SetOutPath $INSTDIR\codec
   File "codec\*"
+  SetOutPath $INSTDIR\Language
+  File "Language\*"
   SetOutPath $INSTDIR
 
   ; Write the installation path into the registry
@@ -260,6 +262,7 @@ Section "Uninstall"
   ; Remove directories used
   RMDir "$SMPROGRAMS\DWindow"
   RMDir "$INSTDIR\codec"
+  RMDir "$INSTDIR\Language"
   RMDir "$INSTDIR"
 
   ; Revese file association
