@@ -1,4 +1,4 @@
-call revision.bat
+call revision_silent.bat
 
 #build
 set dev2003="C:\Program Files\Microsoft Visual Studio .NET 2003\Common7\IDE\devenv"
