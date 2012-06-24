@@ -36,18 +36,18 @@ float4 PaddedTex2D(sampler s, float2 tex)
 
 float4 lanczosX(float2 tex : TEXCOORD0) : COLOR
 {
+  // assume Y coordinate is pixel perfect
+  // so we only calculate X pixels
   float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
 	
   float2 dx = {ps.x,0.0};
-  float2 dy = {0.0,ps.y};
+  float2 dy = {0.0,ps.y};  
   
-  float2 pixcoord  =  tex/ps;
-  float2 fract     = frac(pixcoord);
-  float2 coord0    = tex-(fract)*ps;
-  coord0.y = tex.y;
-  coord0.x -= 0.5/TEXTURE_WIDTH;
+  float pixcoord = ((tex.x - 0.5/TEXTURE_WIDTH) * TEXTURE_WIDTH + 0.5);
+  float2 coord0 = {floor(pixcoord)/TEXTURE_WIDTH + 0.5/TEXTURE_WIDTH, tex.y };
   
-  
+  float2 fract = {frac(pixcoord),0};
+    
   float total_weight = 0;
   float4 total_color = 0;
   for (int x=-lobe; x<=lobe; x++)
@@ -66,32 +66,32 @@ float4 lanczosX(float2 tex : TEXCOORD0) : COLOR
 
 float4 lanczosY(float2 tex : TEXCOORD0) : COLOR
 {
+  // assume Y coordinate is pixel perfect
+  // so we only calculate X pixels
   float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
 	
   float2 dx = {ps.x,0.0};
-  float2 dy = {0.0,ps.y};
+  float2 dy = {0.0,ps.y};  
   
-  float2 pixcoord  =  tex/ps;
-  float2 fract     = frac(pixcoord);
-  float2 coord0    = tex-(fract)*ps;
-  coord0.x = tex.x;
-  coord0.y -= 0.5/TEXTURE_HEIGHT;
+  float pixcoord = ((tex.y - 0.5/TEXTURE_HEIGHT) * TEXTURE_HEIGHT + 0.5);
+  float2 coord0 = {tex.x, floor(pixcoord)/TEXTURE_HEIGHT + 0.5/TEXTURE_HEIGHT };
   
-  
+  float2 fract = {0, frac(pixcoord)};
+    
   float total_weight = 0;
   float4 total_color = 0;
   for (int y=-lobe; y<=lobe; y++)
   {
 	float xx = fract.x;
 	float yy = fract.y - y;
-	float weight =  tap(xx)*tap(yy*rate_y);
+	float weight =  tap(xx)*tap(yy*rate_x);
 	
-	total_weight += weight;
 	float4 color = PaddedTex2D(s0, coord0 + y*dy);
+	total_weight += weight;
 	total_color += weight * color;
   }
   
-  return total_color/total_weight;  
+  return total_color/total_weight;
 }
 
 float4 lanczos(float2 tex : TEXCOORD0) : COLOR
