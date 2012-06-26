@@ -1696,7 +1696,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	hr = m_Device->SetTexture(2, NULL);
 
 	// prepare all samples in queue for rendering
-	//if(false)
+	if(false)
 	{
 		bool dual_stream = m_dsr0->is_connected() && m_dsr1->is_connected();
 		input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
@@ -2301,6 +2301,11 @@ HRESULT my12doomRenderer::draw_movie_mip(IDirect3DSurface9 *surface, bool left_e
 	return S_OK;
 }
 
+HRESULT my12doomRenderer::draw_movie_bilinear(IDirect3DSurface9 *surface, bool left_eye)
+{
+	return E_NOTIMPL;
+}
+
 HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 {
 	if (!surface)
@@ -2318,6 +2323,8 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 		return draw_movie_mip(surface, left_eye);
 	case lanczos:
 		return draw_movie_lanczos(surface, left_eye);
+	case bilinear_no_mipmap:
+		return draw_movie_bilinear(surface, left_eye);
 	}
 
 	assert(0);
@@ -2488,6 +2495,12 @@ HRESULT my12doomRenderer::draw_bmp_lanczos(IDirect3DSurface9 *surface, bool left
 	return S_OK;
 }
 
+HRESULT my12doomRenderer::draw_bmp_bilinear(IDirect3DSurface9 *surface, bool left_eye)
+{
+	return E_NOTIMPL;
+}
+
+
 HRESULT my12doomRenderer::draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye)
 {
 	// assume draw_movie() handles pointer and not connected issues, so no more check
@@ -2594,6 +2607,8 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 		return draw_bmp_mip(surface, left_eye);
 	case lanczos:
 		return draw_bmp_lanczos(surface, left_eye);
+	case bilinear_no_mipmap:
+		return draw_bmp_bilinear(surface, left_eye);
 	}
 
 	assert(0);
