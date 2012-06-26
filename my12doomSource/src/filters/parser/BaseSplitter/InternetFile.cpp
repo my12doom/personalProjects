@@ -126,7 +126,7 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 
 	m_cur += *nRead;
 
-	return succ;
+	return *nRead > 0 ? succ : FALSE;
 }
 
 BOOL InternetFile::GetFileSizeEx(PLARGE_INTEGER lpFileSize)
