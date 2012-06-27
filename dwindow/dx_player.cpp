@@ -169,6 +169,8 @@ m_revert(L"SwapEyes", false, REG_DWORD)
 	detect_monitors();
 
 	// Enable away mode and prevent the sleep idle time-out.
+	// for win7 / vista this is enough
+	// for XP we'll use a timer calls SystemParametersInfo
 	SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_AWAYMODE_REQUIRED);
 
 	// font init
@@ -1122,6 +1124,19 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 LRESULT dx_player::on_timer(int id)
 {
+	UINT fSaverActive = 0;
+	if(SystemParametersInfo(SPI_GETSCREENSAVEACTIVE, 0, (PVOID)&fSaverActive, 0)) {
+		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, 0, 0, SPIF_SENDWININICHANGE); // this might not be needed at all...
+		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, fSaverActive, 0, SPIF_SENDWININICHANGE);
+	}
+
+	fSaverActive = 0;
+	if(SystemParametersInfo(SPI_GETPOWEROFFACTIVE, 0, (PVOID)&fSaverActive, 0)) {
+		SystemParametersInfo(SPI_SETPOWEROFFACTIVE, 0, 0, SPIF_SENDWININICHANGE); // this might not be needed at all...
+		SystemParametersInfo(SPI_SETPOWEROFFACTIVE, fSaverActive, 0, SPIF_SENDWININICHANGE);
+	}
+
+
 	if (m_renderer1)
 	{
 #ifndef no_dual_projector
