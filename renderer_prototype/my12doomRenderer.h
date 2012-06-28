@@ -165,16 +165,16 @@ public:
 	input_layout_types m_cpu_tested_result;
 
 	CPooledTexture *m_tex_RGB32;					// RGB32 planes, in A8R8G8B8, full width
-	CPooledTexture *m_tex_YUY2;						// YUY2 planes, in A8R8G8B8, half width
 	CPooledTexture *m_tex_Y;						// Y plane of YV12/NV12, in L8
 	CPooledTexture *m_tex_YV12_UV;					// UV plane of YV12, in L8, double height
 	CPooledTexture *m_tex_NV12_UV;					// UV plane of NV12, in A8L8
+	CPooledTexture *m_tex_YUY2_UV;						// YUY2 planes, in A8R8G8B8, half width
 
 	CPooledTexture *m_tex_gpu_RGB32;				// GPU RGB32 planes, in A8R8G8B8, full width
-	CPooledTexture *m_tex_gpu_YUY2;					// GPU YUY2 planes, in A8R8G8B8, half width
 	CPooledTexture *m_tex_gpu_Y;					// GPU Y plane of YV12/NV12, in L8
 	CPooledTexture *m_tex_gpu_YV12_UV;				// GPU UV plane of YV12, in L8, double height
 	CPooledTexture *m_tex_gpu_NV12_UV;				// GPU UV plane of NV12, in A8L8
+	CPooledTexture *m_tex_gpu_YUY2_UV;					// GPU YUY2 planes, in A8R8G8B8, half width
 
 	CPooledSurface *m_surf_YUY2;
 	CPooledSurface *m_surf_YV12;

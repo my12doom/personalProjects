@@ -700,6 +700,10 @@
 					RelativePath="..\renderer_prototype\TextureAllocator.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\renderer_prototype\unpack_YUY2.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="E3D"
@@ -880,6 +884,10 @@
 				</File>
 				<File
 					RelativePath="..\renderer_prototype\TextureAllocator.h"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\unpack_YUY2.h"
 					>
 				</File>
 			</Filter>
