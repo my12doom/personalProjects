@@ -168,11 +168,6 @@ m_revert(L"SwapEyes", false, REG_DWORD)
 {
 	detect_monitors();
 
-	// Enable away mode and prevent the sleep idle time-out.
-	// for win7 / vista this is enough
-	// for XP we'll use a timer calls SystemParametersInfo
-	SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_AWAYMODE_REQUIRED);
-
 	// font init
 	select_font(false);
 	m_grenderer.set_font(m_font);
@@ -222,7 +217,7 @@ m_revert(L"SwapEyes", false, REG_DWORD)
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);
 	SendMessage(m_hwnd2, WM_INITDIALOG, 0, 0);
 
-	// set timer for ui drawing
+	// set timer for ui drawing and states updating
 	reset_timer(2, 125);
 
 	// init dshow
@@ -411,9 +406,6 @@ dx_player::~dx_player()
 	CAutoLock lock(&m_draw_sec);
 	exit_direct_show();
 	delete m_renderer1;
-
-	// Clear EXECUTION_STATE flags to disable away mode and allow the system to idle to sleep normally.
-	SetThreadExecutionState(ES_CONTINUOUS);
 }
 
 HRESULT dx_player::reset()
@@ -1124,19 +1116,6 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 LRESULT dx_player::on_timer(int id)
 {
-	UINT fSaverActive = 0;
-	if(SystemParametersInfo(SPI_GETSCREENSAVEACTIVE, 0, (PVOID)&fSaverActive, 0)) {
-		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, 0, 0, SPIF_SENDWININICHANGE); // this might not be needed at all...
-		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, fSaverActive, 0, SPIF_SENDWININICHANGE);
-	}
-
-	fSaverActive = 0;
-	if(SystemParametersInfo(SPI_GETPOWEROFFACTIVE, 0, (PVOID)&fSaverActive, 0)) {
-		SystemParametersInfo(SPI_SETPOWEROFFACTIVE, 0, 0, SPIF_SENDWININICHANGE); // this might not be needed at all...
-		SystemParametersInfo(SPI_SETPOWEROFFACTIVE, fSaverActive, 0, SPIF_SENDWININICHANGE);
-	}
-
-
 	if (m_renderer1)
 	{
 #ifndef no_dual_projector
@@ -1242,7 +1221,23 @@ LRESULT dx_player::on_timer(int id)
 	}
 
 	if (id == 2)
+	{
+		// prevent screensaver activate, monitor sleep/turn off after playback
+		SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
+		UINT fSaverActive = 0;
+		if(SystemParametersInfo(SPI_GETSCREENSAVEACTIVE, 0, (PVOID)&fSaverActive, 0)) {
+			SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, 0, 0, SPIF_SENDWININICHANGE); // this might not be needed at all...
+			SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, fSaverActive, 0, SPIF_SENDWININICHANGE);
+		}
+
+		fSaverActive = 0;
+		if(SystemParametersInfo(SPI_GETPOWEROFFACTIVE, 0, (PVOID)&fSaverActive, 0)) {
+			SystemParametersInfo(SPI_SETPOWEROFFACTIVE, 0, 0, SPIF_SENDWININICHANGE); // this might not be needed at all...
+			SystemParametersInfo(SPI_SETPOWEROFFACTIVE, fSaverActive, 0, SPIF_SENDWININICHANGE);
+		}
+
 		draw_ui();
+	}
 	return S_OK;
 }
 

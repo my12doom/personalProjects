@@ -3024,23 +3024,6 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 		else
 		{
 			_this->render_nolock(true);
-			//Sleep(33+(rand()%18));
-			//Sleep(40+(rand()%24));
-			//Sleep(50);
-			//Sleep(33);
-
-			/*
-			LARGE_INTEGER start, current, frequency;
-			QueryPerformanceFrequency(&frequency);
-			QueryPerformanceCounter(&start);
-
-			do 
-			{
-				QueryPerformanceCounter(&current);
-				Sleep(0);
-			} while (current.QuadPart - start.QuadPart < (frequency.QuadPart/29.15));
-			*/
-
 		}
 	}
 	
