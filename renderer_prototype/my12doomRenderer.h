@@ -43,22 +43,30 @@ enum display_orientation
 
 enum resampling_method
 {
-	bilinear_mipmap_minus_one,
-	lanczos,
-	bilinear_no_mipmap,
+	bilinear_mipmap_minus_one = 0,
+	lanczos = 1,
+	bilinear_no_mipmap = 2,
+	lanczos_onepass = 3,
+	bilinear_mipmap = 4,
 };
 
 #ifndef def_input_layout_types
 #define def_input_layout_types
 enum input_layout_types
 {
-	side_by_side, top_bottom, mono2d, input_layout_types_max, input_layout_auto
+	side_by_side, 
+	top_bottom, mono2d, 
+	input_layout_types_max, 
+	input_layout_auto
 };
 #endif
 
 enum mask_mode_types
 {
-	row_interlace, line_interlace, checkboard_interlace, mask_mode_types_max
+	row_interlace, 
+	line_interlace, 
+	checkboard_interlace,
+	mask_mode_types_max,
 };
 
 enum aspect_mode_types
@@ -464,20 +472,16 @@ protected:
 	HRESULT restore_gpu_objects();
 	HRESULT restore_cpu_objects();
 	HRESULT render_nolock(bool forced = false);
-	HRESULT draw_movie_mip(IDirect3DSurface9 *surface, bool left_eye);
-	HRESULT draw_movie_lanczos(IDirect3DSurface9 *surface, bool left_eye);
-	HRESULT draw_movie_bilinear(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_movie(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_bmp(IDirect3DSurface9 *surface, bool left_eye);
-	HRESULT draw_bmp_mip(IDirect3DSurface9 *surface, bool left_eye);
-	HRESULT draw_bmp_lanczos(IDirect3DSurface9 *surface, bool left_eye);
-	HRESULT draw_bmp_bilinear(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_ui(IDirect3DSurface9 *surface);
 	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left);
 	// assume dst has D3DUSAGE_RENDERTARGET Flag
 	// assume src is first level of a texture
-	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECT *src_rect = NULL, RECT *dst_rect = NULL);
-	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, bool one_pass = true, RECTF *src_rect = NULL, RECTF *dst_rect = NULL);
+	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECT *src_rect = NULL, RECT *dst_rect = NULL,
+							resampling_method method = bilinear_mipmap_minus_one);
+	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECTF *src_rect = NULL, RECTF *dst_rect = NULL, 
+							resampling_method method = bilinear_mipmap_minus_one);
 #ifdef DEBUG
 	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_ARGB(0, 0, 0, 0));
 #else
@@ -498,7 +502,6 @@ protected:
 	DWORD m_PC_level;				// 0
 
 	friend class dx_player;
-	bool m_backuped;
 	int m_last_reset_time;
 
 	// AMD HD3D functions and variables
@@ -611,8 +614,8 @@ protected:
 	// TV - PC level test surfaces
 	CComPtr<IDirect3DSurface9> m_PC_level_test;
 
-	CComPtr<IDirect3DTexture9> m_tex_rgb_left;				// source texture, converted to RGB32
-	CComPtr<IDirect3DTexture9> m_tex_rgb_right;
+// 	CComPtr<IDirect3DTexture9> m_tex_rgb_left;				// source texture, converted to RGB32
+// 	CComPtr<IDirect3DTexture9> m_tex_rgb_right;
 	CComPtr<IDirect3DSurface9> m_deinterlace_surface;		// surface for deinterlace
 	RECT m_window_rect;
 	CComPtr<IDirect3DTexture9> m_tex_mask;					// mask txture
