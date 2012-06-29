@@ -187,7 +187,7 @@ float4 anaglyph(float2 tex : TEXCOORD0) : COLOR
 	l.g = 0;
 	l.b = 0;
 	
-	return l*l.a + r*r.a;
+	return l + r;
 }
 
 float4 masking(float2 tex : TEXCOORD0) : COLOR
