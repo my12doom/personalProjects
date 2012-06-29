@@ -15,11 +15,9 @@
 #include "PixelShaders/iz3d_back.h"
 #include "PixelShaders/iz3d_front.h"
 #include "PixelShaders/color_adjust.h"
-#include "PixelShaders/lanczos.h"
 #include "PixelShaders/blur.h"
 #include "PixelShaders/blur2.h"
-#include "PixelShaders/LanczosX.h"
-#include "PixelShaders/LanczosY.h"
+#include "PixelShaders/lanczosAll.h"
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
@@ -27,6 +25,14 @@
 #include "..\ZBuffer\stereo_test.h"
 #include "..\dwindow\global_funcs.h"
 
+enum helper_sample_format
+{
+	helper_sample_format_rgb32,
+	helper_sample_format_y,
+	helper_sample_format_yv12,
+	helper_sample_format_nv12,
+	helper_sample_format_yuy2,
+};
 
 #pragma comment (lib, "igfx_s3dcontrol.lib")
 #pragma comment (lib, "comsupp.lib")
@@ -40,6 +46,7 @@
 #define safe_decommit(x) if((x))(x)->decommit()
 HRESULT myMatrixOrthoRH(D3DMATRIX *matrix, float w, float h, float zn, float zf);
 HRESULT myMatrixIdentity(D3DMATRIX *matrix);
+IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format format);
 
 #ifndef DEBUG
 #define printf
@@ -52,6 +59,8 @@ const int BIG_TEXTURE_SIZE = 2048;
 AutoSetting<BOOL> GPUIdle(L"GPUIdle", true, REG_DWORD);
 AutoSetting<int> MovieResizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD);
 AutoSetting<int> SubtitleResizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD);
+
+
 
 typedef struct tagTHREADNAME_INFO {
 	DWORD dwType; // must be 0x1000
@@ -1282,8 +1291,12 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_red_blue.invalid();
 	m_ps_masking.invalid();
 	m_lanczosX.invalid();
+	m_lanczosX_NV12.invalid();
+	m_lanczosX_YV12.invalid();
 	m_lanczosY.invalid();
 	m_lanczos.invalid();
+	m_lanczos_NV12.invalid();
+	m_lanczos_YV12.invalid();
 
 	// query
 	//m_d3d_query = NULL;
@@ -1462,8 +1475,12 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_red_blue.set_source(m_Device, g_code_anaglyph, sizeof(g_code_anaglyph), true, (DWORD*)m_key);
 	m_ps_masking.set_source(m_Device, g_code_masking, sizeof(g_code_masking), true, (DWORD*)m_key);
 	m_lanczosX.set_source(m_Device, g_code_lanczosX, sizeof(g_code_lanczosX), true, (DWORD*)m_key);
+	m_lanczosX_NV12.set_source(m_Device, g_code_lanczosX_NV12, sizeof(g_code_lanczosX_NV12), true, (DWORD*)m_key);
+	m_lanczosX_YV12.set_source(m_Device, g_code_lanczosX_YV12, sizeof(g_code_lanczosX_YV12), true, (DWORD*)m_key);
 	m_lanczosY.set_source(m_Device, g_code_lanczosY, sizeof(g_code_lanczosY), true, (DWORD*)m_key);
 	m_lanczos.set_source(m_Device, g_code_lanczos, sizeof(g_code_lanczos), true, (DWORD*)m_key);
+	m_lanczos_NV12.set_source(m_Device, g_code_lanczos_NV12, sizeof(g_code_lanczos_NV12), true, (DWORD*)m_key);
+	m_lanczos_YV12.set_source(m_Device, g_code_lanczos_YV12, sizeof(g_code_lanczos_YV12), true, (DWORD*)m_key);
 
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
@@ -1669,13 +1686,13 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		for(POSITION pos_left = m_left_queue.GetHeadPosition(); pos_left; pos_left = m_left_queue.Next(pos_left))
 		{
 			gpu_sample *left_sample = m_left_queue.Get(pos_left);
-			left_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
+// 			left_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
 			if (need_detect) left_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
 		}
 		for(POSITION pos_right = m_right_queue.GetHeadPosition(); pos_right; pos_right = m_right_queue.Next(pos_right))
 		{
 			gpu_sample *right_sample = m_right_queue.Get(pos_right);
-			right_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
+// 			right_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
 			if (need_detect) right_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
 		}
 	}
@@ -2222,6 +2239,9 @@ HRESULT my12doomRenderer::clear(IDirect3DSurface9 *surface, DWORD color)
 
 HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 {
+	left_eye = left_eye ^ m_swapeyes;
+
+	HRESULT hr;
 	if (!surface)
 		return E_POINTER;
 
@@ -2234,9 +2254,15 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	CComPtr<IDirect3DSurface9> src;
 
 	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
+	CAutoLock rendered_lock(&m_rendered_packet_lock);
 	gpu_sample *sample = dual_stream ? (left_eye ? m_last_rendered_sample1 : m_last_rendered_sample2) : m_last_rendered_sample1;
 
-	if (sample && sample->m_tex_gpu_RGB32)
+	if (!sample)
+		return S_FALSE;
+
+	FAIL_RET(sample->commit());
+
+	if (sample->m_tex_gpu_RGB32)
 		sample->m_tex_gpu_RGB32->get_first_level(&src);
 
 	if (!src)
@@ -2271,7 +2297,8 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 		}
 	}
 
-	return resize_surface(src, surface, &src_rect, &target, (resampling_method)(int)MovieResizing);
+	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	return resize_surface(NULL, sample, surface, &src_rect, &target, (resampling_method)(int)MovieResizing);
 }
 
 HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
@@ -2340,7 +2367,8 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	CComPtr<IDirect3DSurface9> src;
 	m_tex_bmp->GetSurfaceLevel(0, &src);
 
-	return resize_surface(src, surface, &src_rect, &dst_rect, (resampling_method)(int)SubtitleResizing);
+	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	return resize_surface(src, NULL, surface, &src_rect, &dst_rect, (resampling_method)(int)SubtitleResizing);
 }
 HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 {
@@ -2443,9 +2471,9 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 	return hr;
 }
 
-HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECT *src_rect /* = NULL */, RECT *dst_rect /* = NULL */, resampling_method method /* = bilinear_mipmap_minus_one */)
+HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECT *src_rect /* = NULL */, RECT *dst_rect /* = NULL */, resampling_method method /* = bilinear_mipmap_minus_one */)
 {
-	if (!src || !dst)
+	if ((!src && !src2) || !dst)
 		return E_POINTER;
 
 	// RECT caculate;
@@ -2460,8 +2488,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 		d.bottom = (float)dst_rect->bottom;
 	}
 
-	src->GetDesc(&desc);
-	RECTF s = {0,0,(float)desc.Width, (float)desc.Height};
+	RECTF s = {0};
 	if (src_rect)
 	{
 		s.left = (float)src_rect->left;
@@ -2469,20 +2496,34 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 		s.top = (float)src_rect->top;
 		s.bottom = (float)src_rect->bottom;
 	}
+	else if (src)
+	{
+		src->GetDesc(&desc);
+		s.right = desc.Width;
+		s.bottom = desc.Height;
+	}
+	else if (src2)
+	{
+		s.right = src2->m_width;
+		s.bottom = src2->m_height;
+	}
 
-	return resize_surface(src, dst, &s, &d, method);
+	return resize_surface(src, src2, dst, &s, &d, method);
 }
 
 
-HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECTF *src_rect /* = NULL */, RECTF *dst_rect /* = NULL */, resampling_method method /* = bilinear_mipmap_minus_one */)
+HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECTF *src_rect /* = NULL */, RECTF *dst_rect /* = NULL */, resampling_method method /* = bilinear_mipmap_minus_one */)
 {
-	if (!src || !dst)
+	if ((!src && !src2) || !dst)
 		return E_POINTER;
 
 	CComPtr<IDirect3DTexture9> tex;
-	src->GetContainer(IID_IDirect3DTexture9, (void**)&tex);
-	if (!tex)
-		return E_INVALIDARG;
+	if (src)
+	{
+		src->GetContainer(IID_IDirect3DTexture9, (void**)&tex);
+		if (!tex)
+			return E_INVALIDARG;
+	}
 
 	// RECT caculate;
 	D3DSURFACE_DESC desc;
@@ -2491,14 +2532,39 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 	if (dst_rect)
 		d = *dst_rect;
 
-	src->GetDesc(&desc);
-	RECTF s = {0,0,(float)desc.Width, (float)desc.Height};
+	RECTF s = {0};
 	if (src_rect)
-		s = *src_rect;
+	{
+		s.left = (float)src_rect->left;
+		s.right = (float)src_rect->right;
+		s.top = (float)src_rect->top;
+		s.bottom = (float)src_rect->bottom;
+	}
+	else if (src)
+	{
+		src->GetDesc(&desc);
+		s.right = desc.Width;
+		s.bottom = desc.Height;
+	}
+	else if (src2)
+	{
+		s.right = src2->m_width;
+		s.bottom = src2->m_height;
+	}
 
+	if (src)
+	{
+		src->GetDesc(&desc);
+	}
 
-	HRESULT hr = E_FAIL;
+	else if (src2)
+	{
+		desc.Width = src2->m_width;
+		desc.Height = src2->m_height;
+	}
+
 	// basic vertex calculation
+	HRESULT hr = E_FAIL;
 	float width_s = s.right - s.left;
 	float height_s = s.bottom - s.top;
 	float width_d = d.right - d.left;
@@ -2529,9 +2595,48 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 	direct_vertex[2].tv = (float)s.bottom / desc.Height;
 	direct_vertex[3].tu = (float)s.right / desc.Width;
 	direct_vertex[3].tv = (float)s.bottom / desc.Height;
-	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+
+	// render state
+	BOOL alpha_blend = TRUE;
+	m_Device->GetRenderState(D3DRS_ALPHABLENDENABLE, (DWORD*)&alpha_blend);
+	m_Device->SetPixelShader(NULL);
+	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, alpha_blend );
+
+	// texture and shader
+	hr = m_Device->SetTexture( 0, tex );
+	IDirect3DPixelShader9 *shader_yuv = NULL;
+	GUID format = MEDIASUBTYPE_None;
+	if (src2)
+	{
+		format = src2->m_format;
+		if (format == MEDIASUBTYPE_NV12)
+		{
+			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_y));
+			m_Device->SetTexture(1, helper_get_texture(src2, helper_sample_format_nv12));
+			shader_yuv = m_ps_nv12;
+		}
+
+		if (format == MEDIASUBTYPE_YUY2)
+		{
+			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_y));
+			m_Device->SetTexture(1, helper_get_texture(src2, helper_sample_format_yuy2));
+			shader_yuv = m_ps_nv12;
+		}
+
+		if (format == MEDIASUBTYPE_YV12)
+		{
+			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_y));
+			m_Device->SetTexture(1, helper_get_texture(src2, helper_sample_format_yv12));
+			shader_yuv = m_ps_yv12;
+		}
+
+		if (format == MEDIASUBTYPE_RGB32)
+		{
+			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_rgb32));
+			shader_yuv = NULL;
+		}
+	}
+	hr = m_Device->SetPixelShader(shader_yuv);
 
 	if (method == lanczos)
 	{
@@ -2566,27 +2671,40 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 			vertex[i].w = 1.0f;
 		}
 
-		vertex[0].tu = (float)0 / desc.Width;
-		vertex[0].tv = (float)0 / desc.Height;
-		vertex[1].tu = (float)(width_s) / desc.Width;
-		vertex[1].tv = (float)0 / desc.Height;
-		vertex[2].tu = (float)0 / desc.Width;
-		vertex[2].tv = (float)(height_s) / desc.Height;
-		vertex[3].tu = (float)(width_s) / desc.Width;
-		vertex[3].tv = (float)(height_s) / desc.Height;
+		vertex[0].tu = (float)s.left / desc.Width;
+		vertex[0].tv = (float)s.top / desc.Height;
+		vertex[1].tu = (float)s.right / desc.Width;
+		vertex[1].tv = (float)s.top / desc.Height;
+		vertex[2].tu = (float)s.left / desc.Width;
+		vertex[2].tv = (float)s.bottom / desc.Height;
+		vertex[3].tu = (float)s.right / desc.Width;
+		vertex[3].tv = (float)s.bottom / desc.Height;
 
 		float ps[4] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height};
 		ps[0] = ps[0] > 1 ? 1 : ps[0];
 		ps[1] = ps[1] > 1 ? 1 : ps[1];
 		m_Device->SetPixelShaderConstantF(0, ps, 1);
 
+
+		// shader
+		IDirect3DPixelShader9 * lanczos_shader = m_lanczosX;
+		if (format == MEDIASUBTYPE_YV12)
+			lanczos_shader = m_lanczosX_YV12;
+		else if (format == MEDIASUBTYPE_NV12 || format == MEDIASUBTYPE_YUY2)
+			lanczos_shader = m_lanczosX_NV12;
+		else if (format == MEDIASUBTYPE_RGB32)
+			lanczos_shader = m_lanczosX;
+		if (width_s != width_d)
+			m_Device->SetPixelShader(lanczos_shader);
+		else
+			m_Device->SetPixelShader(shader_yuv);
+
+
+		// render state and render
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-		if (width_s != width_d)
-			m_Device->SetPixelShader(m_lanczosX);
-		hr = m_Device->SetTexture( 0, tex );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
 
@@ -2619,7 +2737,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, alpha_blend );
 		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 		ps[1] = (float)height_d/height_s;
@@ -2629,6 +2747,9 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 		m_Device->SetPixelShaderConstantF(0, ps, 1);
 		if (height_s != height_d)
 			m_Device->SetPixelShader(m_lanczosY);
+		else
+			m_Device->SetPixelShader(NULL);
+
 		hr = m_Device->SetTexture( 0, tmp1->texture );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
@@ -2641,12 +2762,14 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 		// pass0, 2D filter, rather slow, a little better quality
 		m_Device->SetRenderTarget(0, dst);
 
-		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-		m_Device->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		// shader
+		IDirect3DPixelShader9 * lanczos_shader = m_lanczos;
+		if (format == MEDIASUBTYPE_YV12)
+			lanczos_shader = m_lanczos_YV12;
+		else if (format == MEDIASUBTYPE_NV12 || format == MEDIASUBTYPE_YUY2)
+			lanczos_shader = m_lanczos_NV12;
+		else if (format == MEDIASUBTYPE_RGB32)
+			lanczos_shader = m_lanczos;
 		if ((height_s != height_d || width_s != width_d)
 			&& (IDirect3DPixelShader9*)m_lanczos)
 		{
@@ -2656,30 +2779,45 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, IDirect3DSurfac
 			ps[0] = ps[0] > 1 ? 1 : ps[0];
 			ps[1] = ps[1] > 1 ? 1 : ps[1];
 			m_Device->SetPixelShaderConstantF(0, ps, 1);
-			m_Device->SetPixelShader(m_lanczos);
+			m_Device->SetPixelShader(lanczos_shader);
 		}
 		else
-			hr = m_Device->SetPixelShader(NULL);
-		hr = m_Device->SetTexture( 0, tex );
+			hr = m_Device->SetPixelShader(shader_yuv);
+
+		// render state and go
+		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, alpha_blend );
+		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, direct_vertex, sizeof(MyVertex));
 		hr = m_Device->SetPixelShader(NULL);
 	}
 	else if (method == bilinear_mipmap_minus_one || method == bilinear_mipmap || method == bilinear_no_mipmap)
 	{
+		if (src2 && format != MEDIASUBTYPE_RGB32 && method != bilinear_no_mipmap)
+		{
+			// nearly all D3D9 cards doesn't support D3DUSAGE_AUTOGENMIPMAP
+			// so if we need to use MIPMAP, then we need convert to RGB32 first;
+			src2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, NULL, g_VertexBuffer, m_last_reset_time);
+			m_Device->SetTexture(0, src2->m_tex_gpu_RGB32->texture);
+			shader_yuv = NULL;
+		}
+
 		float mip_lod = (method == bilinear_mipmap_minus_one) ?  -1.0f : 0.0f;
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, (method == bilinear_no_mipmap) ? D3DTEXF_NONE : D3DTEXF_LINEAR );
 
-
 		m_Device->SetRenderTarget(0, dst);
 		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-		m_Device->SetTexture( 0, tex );
 		m_Device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
 		m_Device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 		m_Device->SetSamplerState(0, D3DSAMP_BORDERCOLOR, 0);					// set to border mode, to remove a single half-line
+		hr = m_Device->SetPixelShader(shader_yuv);
 		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, direct_vertex, sizeof(MyVertex));
@@ -2797,23 +2935,15 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 	CLSID format = sample1->m_format;
 	bool topdown = sample1->m_topdown;
 
-	// try convert to RGB32 first
-	HRESULT hr;
-	CComPtr<IDirect3DSurface9> s1;
-	CComPtr<IDirect3DSurface9> s2;
-	CComPtr<IDirect3DSurface9> s3;
+	HRESULT hr = S_OK;
 	if (sample1)
 	{
-		FAIL_RET(sample1->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time));
+// 		FAIL_RET(sample1->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time));
 		if (need_detect) sample1->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
-		sample1->m_tex_gpu_RGB32->get_first_level(&s1);
-		if (sample1->m_tex_stereo_test)
-			sample1->m_tex_stereo_test->get_first_level(&s3);
 	}
 	if (sample2)
 	{
-		FAIL_RET(sample2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time));
-		sample2->m_tex_gpu_RGB32->get_first_level(&s2);
+// 		FAIL_RET(sample2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time));
 	}
 
 
@@ -2897,38 +3027,6 @@ double my12doomRenderer::get_active_aspect()
 	}
 
 	return m_source_aspect;
-}
-
-enum helper_sample_format
-{
-	helper_sample_format_rgb32,
-	helper_sample_format_yuy2,
-	helper_sample_format_y,
-	helper_sample_format_yv12,
-	helper_sample_format_nv12,
-};
-IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format format)
-{
-	if (!sample)
-		return NULL;
-
-	CPooledTexture *texture = NULL;
-	if (format == helper_sample_format_rgb32) texture = sample->m_tex_RGB32;
-	if (format == helper_sample_format_yuy2) texture = sample->m_tex_YUY2_UV;
-	if (format == helper_sample_format_y) texture = sample->m_tex_Y;
-	if (format == helper_sample_format_yv12) texture = sample->m_tex_YV12_UV;
-	if (format == helper_sample_format_nv12) texture = sample->m_tex_NV12_UV;
-
-	if (format == helper_sample_format_rgb32) texture = sample->m_tex_gpu_RGB32;
-	if (format == helper_sample_format_yuy2) texture = sample->m_tex_gpu_YUY2_UV;
-	if (format == helper_sample_format_y) texture = sample->m_tex_gpu_Y;
-	if (format == helper_sample_format_yv12) texture = sample->m_tex_gpu_YV12_UV;
-	if (format == helper_sample_format_nv12) texture = sample->m_tex_gpu_NV12_UV;
-
-	if (!texture)
-		return NULL;
-
-	return texture->texture;
 }
 
 HRESULT my12doomRenderer::calculate_vertex()
@@ -4088,36 +4186,36 @@ HRESULT gpu_sample::do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShade
 	if (m_tex_stereo_test)
 		return S_FALSE;
 
-	HRESULT hr;
-	if (FAILED( hr = m_allocator->CreateTexture(stereo_test_texture_size, stereo_test_texture_size, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_stereo_test)))
-		return hr;
-
-	CComPtr<IDirect3DSurface9> rt;
-	m_tex_stereo_test->get_first_level(&rt);
-	device->SetRenderTarget(0, rt);
-
-	device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
-	device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-	device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
-	hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
-	hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-	CComPtr<IDirect3DSurface9> left_surface;
-	CComPtr<IDirect3DSurface9> right_surface;
-
-	// drawing
-	hr = device->SetStreamSource( 0, vb, 0, sizeof(MyVertex) );
-	hr = device->SetFVF( FVF_Flags );
-
-
-	hr = device->SetTexture( 0, m_tex_gpu_RGB32->texture );
-	hr = device->SetPixelShader(shader_sbs);
-	hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_sbs, 2 );
-	hr = device->SetPixelShader(shader_tb);
-	hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_tb, 2 );
-
-	//hr = device->EndScene();
-
-	mylog("test:%x:%d\n", this, timeGetTime());
+// 	HRESULT hr;
+// 	if (FAILED( hr = m_allocator->CreateTexture(stereo_test_texture_size, stereo_test_texture_size, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_stereo_test)))
+// 		return hr;
+// 
+// 	CComPtr<IDirect3DSurface9> rt;
+// 	m_tex_stereo_test->get_first_level(&rt);
+// 	device->SetRenderTarget(0, rt);
+// 
+// 	device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+// 	device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+// 	device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+// 	hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
+// 	hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+// 	CComPtr<IDirect3DSurface9> left_surface;
+// 	CComPtr<IDirect3DSurface9> right_surface;
+// 
+// 	// drawing
+// 	hr = device->SetStreamSource( 0, vb, 0, sizeof(MyVertex) );
+// 	hr = device->SetFVF( FVF_Flags );
+// 
+// 
+// 	hr = device->SetTexture( 0, m_tex_gpu_RGB32->texture );
+// 	hr = device->SetPixelShader(shader_sbs);
+// 	hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_sbs, 2 );
+// 	hr = device->SetPixelShader(shader_tb);
+// 	hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_test_tb, 2 );
+// 
+// 	//hr = device->EndScene();
+// 
+// 	mylog("test:%x:%d\n", this, timeGetTime());
 
 	return S_OK;
 }
@@ -4957,4 +5055,23 @@ HRESULT myMatrixOrthoRH(D3DMATRIX *matrix, float w, float h, float zn, float zf)
 	matrix->_44 = .0f;
 
 	return S_OK;
+}
+
+IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format format)
+{
+	if (!sample)
+		return NULL;
+
+	CPooledTexture *texture = NULL;
+
+	if (format == helper_sample_format_rgb32) texture = sample->m_tex_gpu_RGB32;
+	if (format == helper_sample_format_y) texture = sample->m_tex_gpu_Y;
+	if (format == helper_sample_format_yv12) texture = sample->m_tex_gpu_YV12_UV;
+	if (format == helper_sample_format_nv12) texture = sample->m_tex_gpu_NV12_UV;
+	if (format == helper_sample_format_yuy2) texture = sample->m_tex_gpu_YUY2_UV;
+
+	if (!texture)
+		return NULL;
+
+	return texture->texture;
 }

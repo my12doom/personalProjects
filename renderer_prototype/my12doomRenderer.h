@@ -478,9 +478,9 @@ protected:
 	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left);
 	// assume dst has D3DUSAGE_RENDERTARGET Flag
 	// assume src is first level of a texture
-	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECT *src_rect = NULL, RECT *dst_rect = NULL,
+	HRESULT resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECT *src_rect = NULL, RECT *dst_rect = NULL,
 							resampling_method method = bilinear_mipmap_minus_one);
-	HRESULT resize_surface(IDirect3DSurface9 *src, IDirect3DSurface9 *dst, RECTF *src_rect = NULL, RECTF *dst_rect = NULL, 
+	HRESULT resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECTF *src_rect = NULL, RECTF *dst_rect = NULL, 
 							resampling_method method = bilinear_mipmap_minus_one);
 #ifdef DEBUG
 	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_ARGB(0, 0, 0, 0));
@@ -608,8 +608,12 @@ protected:
 	my12doom_auto_shader m_red_blue;
 	my12doom_auto_shader m_ps_masking;
 	my12doom_auto_shader m_lanczosX;
+	my12doom_auto_shader m_lanczosX_YV12;
+	my12doom_auto_shader m_lanczosX_NV12;
 	my12doom_auto_shader m_lanczosY;
 	my12doom_auto_shader m_lanczos;
+	my12doom_auto_shader m_lanczos_YV12;
+	my12doom_auto_shader m_lanczos_NV12;
 
 	// TV - PC level test surfaces
 	CComPtr<IDirect3DSurface9> m_PC_level_test;

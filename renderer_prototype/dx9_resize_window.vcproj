@@ -257,10 +257,14 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling lanczos of lanczos.txt"
-						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosX.h lanczosX yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosY.h lanczosY yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\Lanczos.h lanczos yes ps_3_0&#x0D;&#x0A;"
+						CommandLine="$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosX.h lanczosX yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosX_YV12.h lanczosX_YV12 yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosX_NV12.h lanczosX_NV12 yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\LanczosY.h lanczosY yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\Lanczos.h lanczos yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\Lanczos_YV12.h lanczos_YV12 yes ps_3_0&#x0D;&#x0A;$(IntDir)\PixelShaderCompiler.exe .\PixelShaders\lanczos.txt .\PixelShaders\Lanczos_NV12.h lanczos_NV12 yes ps_3_0&#x0D;&#x0A;"
 						Outputs="Lanczos.h"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\PixelShaders\LanczosALL.h"
+				>
 			</File>
 			<File
 				RelativePath=".\my12doomRenderer_dshow.cpp"

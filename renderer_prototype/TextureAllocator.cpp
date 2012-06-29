@@ -98,7 +98,7 @@ HRESULT CTextureAllocator::CreateTexture(int width, int height, DWORD usage, D3D
 	o->usage = usage;
 	o->format = format;
 	o->creator = m_device;
-	o->hr = m_device->CreateTexture(width, height, 1, usage, format, pool, &o->texture, NULL);
+	o->hr = m_device->CreateTexture(width, height, (usage & D3DUSAGE_AUTOGENMIPMAP) ? 0 : 1, usage, format, pool, &o->texture, NULL);
 	if (FAILED(o->hr))
 		return o->hr;
 	if (pool == D3DPOOL_SYSTEMMEM || usage & D3DUSAGE_DYNAMIC)
