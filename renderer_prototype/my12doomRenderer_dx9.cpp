@@ -2633,6 +2633,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		if (format == MEDIASUBTYPE_RGB32)
 		{
 			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_rgb32));
+			m_Device->SetTexture(1, NULL);
 			shader_yuv = NULL;
 		}
 	}
@@ -2797,11 +2798,11 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 	}
 	else if (method == bilinear_mipmap_minus_one || method == bilinear_mipmap || method == bilinear_no_mipmap)
 	{
-		if (src2 && format != MEDIASUBTYPE_RGB32 && method != bilinear_no_mipmap)
+		if (src2 && method != bilinear_no_mipmap)
 		{
 			// nearly all D3D9 cards doesn't support D3DUSAGE_AUTOGENMIPMAP
 			// so if we need to use MIPMAP, then we need convert to RGB32 first;
-			src2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, NULL, g_VertexBuffer, m_last_reset_time);
+			FAIL_RET(src2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, NULL, g_VertexBuffer, m_last_reset_time));
 			m_Device->SetTexture(0, src2->m_tex_gpu_RGB32->texture);
 			shader_yuv = NULL;
 		}
