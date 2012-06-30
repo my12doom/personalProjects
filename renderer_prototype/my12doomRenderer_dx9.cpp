@@ -646,7 +646,7 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 	int bit_per_pixel = 12;
 	if (m_dsr0->m_format == MEDIASUBTYPE_YUY2)
 		bit_per_pixel = 16;
-	else if (m_dsr0->m_format == MEDIASUBTYPE_RGB32)
+	else if (m_dsr0->m_format == MEDIASUBTYPE_RGB32 || m_dsr0->m_format == MEDIASUBTYPE_ARGB32)
 		bit_per_pixel = 32;
 
 	bool should_render = false;
@@ -2590,7 +2590,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			shader_yuv = m_ps_yv12;
 		}
 
-		if (format == MEDIASUBTYPE_RGB32)
+		if (format == MEDIASUBTYPE_RGB32 || format == MEDIASUBTYPE_ARGB32)
 		{
 			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_rgb32));
 			m_Device->SetTexture(1, NULL);
@@ -2653,7 +2653,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			lanczos_shader = m_lanczosX_YV12;
 		else if (format == MEDIASUBTYPE_NV12 || format == MEDIASUBTYPE_YUY2)
 			lanczos_shader = m_lanczosX_NV12;
-		else if (format == MEDIASUBTYPE_RGB32)
+		else if (format == MEDIASUBTYPE_RGB32 || format == MEDIASUBTYPE_ARGB32)
 			lanczos_shader = m_lanczosX;
 		if (width_s != width_d)
 			m_Device->SetPixelShader(lanczos_shader);
@@ -2729,7 +2729,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			lanczos_shader = m_lanczos_YV12;
 		else if (format == MEDIASUBTYPE_NV12 || format == MEDIASUBTYPE_YUY2)
 			lanczos_shader = m_lanczos_NV12;
-		else if (format == MEDIASUBTYPE_RGB32)
+		else if (format == MEDIASUBTYPE_RGB32 || format == MEDIASUBTYPE_ARGB32)
 			lanczos_shader = m_lanczos;
 		if ((height_s != height_d || width_s != width_d)
 			&& (IDirect3DPixelShader9*)m_lanczos)
@@ -4243,7 +4243,7 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 	if (FAILED(hr))
 		return hr;
 
-	if (m_format == MEDIASUBTYPE_RGB32)
+	if (m_format == MEDIASUBTYPE_RGB32 || m_format == MEDIASUBTYPE_ARGB32)
 		return S_FALSE;
 
 	if (m_StretchRect)
@@ -4538,7 +4538,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 		}
 	}
 
-	else if (m_format == MEDIASUBTYPE_RGB32)
+	else if (m_format == MEDIASUBTYPE_RGB32 || m_format == MEDIASUBTYPE_ARGB32)
 	{
 		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_A8R8G8B8,pool,	&m_tex_RGB32));
 	}
@@ -4581,7 +4581,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	BYTE * src;
 	BYTE * dst;
 	memory_sample->GetPointer(&src);
-	if (m_format == MEDIASUBTYPE_RGB32)
+	if (m_format == MEDIASUBTYPE_RGB32 || m_format == MEDIASUBTYPE_ARGB32)
 	{
 		for(int i=0; i<m_height; i++)
 		{
