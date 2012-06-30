@@ -2014,7 +2014,7 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_callback(this);
 	m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
 	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
-	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
+	m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_offset/1920);
 	m_renderer1->set_aspect(m_aspect);
 	m_renderer1->set_aspect_mode(m_aspect_mode);
 	m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
@@ -2115,7 +2115,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		if (SUCCEEDED(hr))
 			movie_has_offset_metadata = true;
 	}
-	if (!m_subtitle_has_offset) m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
+	if (!m_subtitle_has_offset) m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_offset/1920);
 
 	int ms_start = (int)(TimeStart / 10000.0 + 0.5);
 	int ms_end = (int)(TimeEnd / 10000.0 + 0.5);
@@ -2176,7 +2176,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		{
 			m_subtitle_has_offset = sub.delta_valid;
 			if (sub.delta_valid)
-				hr = m_renderer1->set_bmp_offset(sub.delta + (double)m_user_offset/1920);
+				hr = m_renderer1->set_bmp_parallax(sub.delta + (double)m_user_offset/1920);
 
 			hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
 				sub.height,
@@ -2968,7 +2968,7 @@ HRESULT dx_player::draw_subtitle()
 HRESULT dx_player::set_subtitle_offset(int offset)
 {
 	m_user_offset = offset;
-	m_renderer1->set_bmp_offset((double)m_internel_offset/1000 + (double)m_user_offset/1920);
+	m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_offset/1920);
 	draw_subtitle();
 	return S_OK;
 }

@@ -252,8 +252,8 @@ void my12doomRenderer::init_variables()
 	m_cb = NULL;
 
 	// aspect and offset
-	m_bmp_offset_x = 0.0;
-	m_bmp_offset_y = 0.0;
+	m_movie_offset_x = 0.0;
+	m_movie_offset_y = 0.0;
 	m_source_aspect = 1.0;
 	m_forced_aspect = -1;
 	m_aspect_mode = aspect_letterbox;
@@ -276,7 +276,7 @@ void my12doomRenderer::init_variables()
 	// ui & bitmap
 	m_has_subtitle = false;
 	m_volume = 0;
-	m_bmp_offset = 0;
+	m_bmp_parallax = 0;
 	m_bmp_width = 0;
 	m_bmp_height = 0;
 	m_total_time = 0;
@@ -2268,9 +2268,13 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	if (!src)
 		return S_FALSE;
 
-	MyVertex *p = m_vertices + (left_eye ? vertex_pass2_main : vertex_pass2_main_r);
+// 	MyVertex *p = m_vertices + (left_eye ? vertex_pass2_main : vertex_pass2_main_r);
 	RECT src_rect = {0,0,m_lVidWidth, m_lVidHeight};
-	RECT target = {p[0].x+0.5, p[0].y+0.5, p[3].x+0.5, p[3].y+0.5};
+// 	RECT target = {p[0].x+0.5, p[0].y+0.5, p[3].x+0.5, p[3].y+0.5};
+
+	// movie picture position
+	RECT target = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+	calculate_movie_position(&target);
 
 	if (!dual_stream)
 	{
@@ -2316,53 +2320,9 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	HRESULT hr = E_FAIL;
 
 	// movie picture position
-	float active_aspect = get_active_aspect();
-	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
-	if (m_output_mode == out_sbs)
-		tar.right /= 2;
-	else if (m_output_mode == out_tb)
-		tar.bottom /= 2;
-
-	int delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
-	int delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
-	if (delta_w > 0)
-	{
-		tar.left += delta_w/2;
-		tar.right -= delta_w/2;
-	}
-	else if (delta_h > 0)
-	{
-		tar.top += delta_h/2;
-		tar.bottom -= delta_h/2;
-	}
-
-	int tar_width = tar.right-tar.left;
-	int tar_height = tar.bottom - tar.top;
-	tar.left += (LONG)(tar_width * m_bmp_offset_x);
-	tar.right += (LONG)(tar_width * m_bmp_offset_x);
-	tar.top += (LONG)(tar_height * m_bmp_offset_y);
-	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
-
-	float pic_left = (float)tar.left / m_active_pp.BackBufferWidth;
-	float pic_width = (float)(tar.right - tar.left) / m_active_pp.BackBufferWidth;
-	float pic_top = (float)tar.top / m_active_pp.BackBufferHeight;
-	float pic_height = (float)(tar.bottom - tar.top) / m_active_pp.BackBufferHeight;
-
-	float left = pic_left + pic_width * m_bmp_fleft;
-	float width = pic_width * m_bmp_fwidth;
-	float top = pic_top + pic_height * m_bmp_ftop;
-	float height = pic_height * m_bmp_fheight;
-
-	// lanczos resize
-	float left_in_pixel = left * m_active_pp.BackBufferWidth;
-	float top_in_pixel = top * m_active_pp.BackBufferHeight;
-	float right_in_pixel = (left+width) * m_active_pp.BackBufferWidth;
-	float bottom_in_pixel = (top+height) * m_active_pp.BackBufferHeight;
-	float width_in_pixel = right_in_pixel - left_in_pixel;
-	float height_in_pixel = bottom_in_pixel - top_in_pixel;
-
-	RECTF src_rect = {0,0,m_bmp_width, m_bmp_height};
-	RECTF dst_rect = {left_in_pixel, top_in_pixel, left_in_pixel + width_in_pixel, top_in_pixel + height_in_pixel};
+	RECT src_rect = {0,0,m_bmp_width, m_bmp_height};
+	RECT dst_rect = {0};
+	calculate_subtitle_position(&dst_rect, left_eye);
 
 	CComPtr<IDirect3DSurface9> src;
 	m_tex_bmp->GetSurfaceLevel(0, &src);
@@ -3177,10 +3137,10 @@ HRESULT my12doomRenderer::calculate_vertex()
 
 	int tar_width = tar.right-tar.left;
 	int tar_height = tar.bottom - tar.top;
-	tar.left += (LONG)(tar_width * m_bmp_offset_x);
-	tar.right += (LONG)(tar_width * m_bmp_offset_x);
-	tar.top += (LONG)(tar_height * m_bmp_offset_y);
-	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
+	tar.left += (LONG)(tar_width * m_movie_offset_x);
+	tar.right += (LONG)(tar_width * m_movie_offset_x);
+	tar.top += (LONG)(tar_height * m_movie_offset_y);
+	tar.bottom += (LONG)(tar_height * m_movie_offset_y);
 
 	MyVertex *pass2_main = m_vertices + vertex_pass2_main;
 
@@ -3284,10 +3244,10 @@ HRESULT my12doomRenderer::calculate_vertex()
 	tar_height = tar.bottom - tar.top;
 
 	// movie position offset
-	tar.left += (LONG)(tar_width * m_bmp_offset_x);
-	tar.right += (LONG)(tar_width * m_bmp_offset_x);
-	tar.top += (LONG)(tar_height * m_bmp_offset_y);
-	tar.bottom += (LONG)(tar_height * m_bmp_offset_y);
+	tar.left += (LONG)(tar_width * m_movie_offset_x);
+	tar.right += (LONG)(tar_width * m_movie_offset_x);
+	tar.top += (LONG)(tar_height * m_movie_offset_y);
+	tar.bottom += (LONG)(tar_height * m_movie_offset_y);
 
 	MyVertex *test_sbs = m_vertices + vertex_test_sbs;
 	test_sbs[0].x = -0.5f; test_sbs[0].y = -0.5f;
@@ -3323,6 +3283,171 @@ HRESULT my12doomRenderer::calculate_vertex()
 	m_vertex_changed = false;
 	return S_OK;
 }
+
+HRESULT my12doomRenderer::calculate_movie_position(RECT *position)
+{
+	if (!position)
+		return E_POINTER;
+
+	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+
+	// swap width and height for vertical orientation
+	if (m_display_orientation == vertical)
+	{
+		tar.right ^= tar.bottom;
+		tar.bottom ^= tar.right;
+		tar.right ^= tar.bottom;
+	}
+
+	// half width/height for sbs/tb output mode
+	if (m_output_mode == out_sbs)
+		tar.right /= 2;
+	else if (m_output_mode == out_tb)
+		tar.bottom /= 2;
+
+	double active_aspect = get_active_aspect();
+	int delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
+	int delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
+	if (delta_w > 0)
+	{
+		// letterbox left and right (default), or vertical fill(vertical is already full)
+		if (m_aspect_mode == aspect_letterbox || m_aspect_mode == aspect_vertical_fill)
+		{
+			tar.left += delta_w/2;
+			tar.right -= delta_w/2;
+		}
+		else if (m_aspect_mode == aspect_horizontal_fill)
+		{
+			// extent horizontally, top and bottom cut
+			// (delta_h < 0)
+			tar.top += delta_h/2;
+			tar.bottom -= delta_h/2;
+		}
+		else	// stretch mode, do nothing
+		{
+		}
+	}
+	else if (delta_h > 0)
+	{
+		// letterbox top and bottome (default)
+		if (m_aspect_mode == aspect_letterbox || m_aspect_mode == aspect_horizontal_fill)
+		{
+			tar.top += delta_h/2;
+			tar.bottom -= delta_h/2;
+		}
+		else if (m_aspect_mode == aspect_vertical_fill)
+		{
+			// extent vertically, top and bottom cut
+			// (delta_w < 0)
+			tar.left += delta_w/2;
+			tar.right -= delta_w/2;
+		}
+		else	// stretch mode, do nothing
+		{
+		}
+	}
+
+	// offsets
+	int tar_width = tar.right-tar.left;
+	int tar_height = tar.bottom - tar.top;
+	tar.left += (LONG)(tar_width * m_movie_offset_x);
+	tar.right += (LONG)(tar_width * m_movie_offset_x);
+	tar.top += (LONG)(tar_height * m_movie_offset_y);
+	tar.bottom += (LONG)(tar_height * m_movie_offset_y);
+
+	*position = tar;
+	return S_OK;
+
+// 	MyVertex *pass2_main = m_vertices + vertex_pass2_main;
+// 
+// 	if (m_display_orientation == horizontal)
+// 	{
+// 		pass2_main[0].x = tar.left-0.5f; pass2_main[0].y = tar.top-0.5f;
+// 		pass2_main[1].x = tar.right-0.5f; pass2_main[1].y = tar.top-0.5f;
+// 		pass2_main[2].x = tar.left-0.5f; pass2_main[2].y = tar.bottom-0.5f;
+// 		pass2_main[3].x = tar.right-0.5f; pass2_main[3].y = tar.bottom-0.5f;
+// 	}
+// 	else
+// 	{
+// 		pass2_main[0].x = tar.top-0.5f; pass2_main[0].y = (float)m_active_pp.BackBufferHeight - tar.left-0.5f;
+// 		pass2_main[1].x = tar.top-0.5f; pass2_main[1].y = (float)m_active_pp.BackBufferHeight - tar.right-0.5f;
+// 		pass2_main[2].x = tar.bottom-0.5f; pass2_main[2].y = (float)m_active_pp.BackBufferHeight - tar.left-0.5f;
+// 		pass2_main[3].x = tar.bottom-0.5f; pass2_main[3].y = (float)m_active_pp.BackBufferHeight - tar.right-0.5f;
+// 	}
+
+// 	MyVertex *pass2_main_r = m_vertices + vertex_pass2_main_r;
+// 	memcpy(pass2_main_r, pass2_main, sizeof(MyVertex) * 4);
+// 
+// 	if (m_parallax > 0)
+// 	{
+// 		// cut right edge of right eye and left edge of left eye
+// 		pass2_main[0].tu += m_parallax;
+// 		pass2_main[2].tu += m_parallax;
+// 		pass2_main_r[1].tu -= m_parallax;
+// 		pass2_main_r[3].tu -= m_parallax;
+// 
+// 	}
+// 	else if (m_parallax < 0)
+// 	{
+// 		// cut left edge of right eye and right edge of left eye
+// 		pass2_main_r[0].tu += abs(m_parallax);
+// 		pass2_main_r[2].tu += abs(m_parallax);
+// 		pass2_main[1].tu -= abs(m_parallax);
+// 		pass2_main[3].tu -= abs(m_parallax);
+// 	}
+
+// 	MyVertex *bmp = m_vertices + vertex_bmp;
+// 	tar_width = tar.right-tar.left;
+// 	tar_height = tar.bottom - tar.top;
+// 	bmp[0] = pass2_main[0];
+// 	bmp[1] = pass2_main[1];
+// 	bmp[2] = pass2_main[2];
+// 	bmp[3] = pass2_main[3];
+// 	//bmp[0].x += m_bmp_fleft * tar_width; bmp[0].y += m_bmp_ftop * tar_height;
+// 	//bmp[1] = bmp[0]; bmp[1].x += m_bmp_fwidth * tar_width;
+// 	//bmp[3] = bmp[1]; bmp[3].y += m_bmp_fheight* tar_height;
+// 	//bmp[2] = bmp[3]; bmp[2].x -= m_bmp_fwidth * tar_width;
+// 
+// 	bmp[0].x = 0; bmp[0].y = 0;
+// 	bmp[1].x = 1; bmp[1].y = 0;
+// 	bmp[2].x = 0; bmp[2].y = 1;
+// 	bmp[3].x = 1; bmp[3].y = 1;
+// 
+// 	//bmp[0].tu = 0; bmp[0].tv = 0;
+// 	//bmp[1].tu = (m_bmp_width-1)/BIG_TEXTURE_SIZE.0f; bmp[1].tv = 0;
+// 	//bmp[2].tu = 0; bmp[2].tv = (m_bmp_height-1)/1024.0f;
+// 	//bmp[3].tu = (m_bmp_width-1)/BIG_TEXTURE_SIZE.0f; bmp[3].tv = (m_bmp_height-1)/1024.0f;
+// 	bmp[0].tu = 0; bmp[0].tv = 0;
+// 	bmp[1].tu = 1; bmp[1].tv = 0;
+// 	bmp[2].tu = 0; bmp[2].tv = 1;
+// 	bmp[3].tu = 1; bmp[3].tv = 1;
+}
+
+HRESULT my12doomRenderer::calculate_subtitle_position(RECT *postion, bool left_eye)
+{
+	if (!postion)
+		return E_POINTER;
+
+	RECT tar;
+	calculate_movie_position(&tar);
+
+	int pic_width = tar.right - tar.left;
+	int pic_height = tar.bottom - tar.top;
+
+	int left = tar.left + pic_width * (m_bmp_fleft - left_eye ? 0 :m_bmp_parallax);
+	int width = pic_width * m_bmp_fwidth;
+	int top = tar.top + pic_height * m_bmp_ftop;
+	int height = pic_height * m_bmp_fheight;
+
+	postion->left = left;
+	postion->right = left + width;
+	postion->top = top;
+	postion->bottom = top + height;
+
+	return E_NOTIMPL;
+}
+
+
 HRESULT my12doomRenderer::generate_mask()
 {
 	HRESULT hr;
@@ -3592,9 +3717,9 @@ bool my12doomRenderer::get_fullscreen()
 HRESULT my12doomRenderer::set_movie_pos(int dimention, double offset)		// dimention1 = x, dimention2 = y
 {
 	if (dimention == 1)
-		m_bmp_offset_x = offset;
+		m_movie_offset_x = offset;
 	else if (dimention == 2)
-		m_bmp_offset_y = offset;
+		m_movie_offset_y = offset;
 	else
 		return E_INVALIDARG;
 
@@ -3633,9 +3758,9 @@ HRESULT my12doomRenderer::set_aspect(double aspect)
 double my12doomRenderer::get_offset(int dimention)
 {
 	if (dimention == 1)
-		return m_bmp_offset_x;
+		return m_movie_offset_x;
 	else if (dimention == 2)
-		return m_bmp_offset_y;
+		return m_movie_offset_y;
 	else
 		return 0.0;
 }
@@ -3723,11 +3848,11 @@ HRESULT my12doomRenderer::set_ui_visible(bool visible)
 	return S_OK;
 }
 
-HRESULT my12doomRenderer::set_bmp_offset(double offset)
+HRESULT my12doomRenderer::set_bmp_parallax(double offset)
 {
-	if (m_bmp_offset != offset)
+	if (m_bmp_parallax != offset)
 	{
-		m_bmp_offset = offset;
+		m_bmp_parallax = offset;
 		m_vertex_changed = true;
 		repaint_video();
 	}
@@ -4148,8 +4273,21 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 		hr = device->SetPixelShaderConstantF(0, rect_data, 2);
 		hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
 		hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-		CComPtr<IDirect3DSurface9> left_surface;
-		CComPtr<IDirect3DSurface9> right_surface;
+
+		// vertex
+		MyVertex vertex[4];
+		vertex[0].x = 0; vertex[0].y = 0; vertex[0].tu = 0; vertex[0].tv = 0;
+		vertex[1].x = m_width; vertex[1].y = 0; vertex[1].tu = 1; vertex[1].tv = 0;
+		vertex[2].x = 0; vertex[2].y = m_height; vertex[2].tu = 0; vertex[2].tv = 1;
+		vertex[3].x = m_width; vertex[3].y = m_height; vertex[3].tu = 1; vertex[3].tv = 1;
+		for(int i=0; i<4; i++)
+		{
+			vertex[i].z = 1;
+			vertex[i].w = 1;
+			vertex[i].x -= 0.5;
+			vertex[i].y -= 0.5;
+		}
+
 
 		// drawing
 		hr = device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
@@ -4168,7 +4306,7 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 
 		hr = device->SetTexture( 0, m_tex_gpu_Y->texture );
  		hr = device->SetTexture( 1, m_format == MEDIASUBTYPE_NV12 ? m_tex_gpu_NV12_UV->texture : (m_format == MEDIASUBTYPE_YUY2 ? m_tex_gpu_YUY2_UV->texture :m_tex_gpu_YV12_UV->texture));
-		hr = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass1_whole, 2 );
+		hr = device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex) );
 	}
 
 	if (SUCCEEDED(hr))

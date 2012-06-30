@@ -346,7 +346,7 @@ public:
 	HRESULT set_aspect(double aspect);
 	HRESULT set_window(HWND wnd, HWND wnd2);
 	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow = false);
-	HRESULT set_bmp_offset(double offset);
+	HRESULT set_bmp_parallax(double offset);
 	HRESULT set_parallax(double parallax);
 	HRESULT set_ui_visible(bool visible);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
@@ -364,7 +364,7 @@ public:
 	double get_offset(int dimention);
 	double get_aspect();
 	bool is_connected(int id){return (id?m_dsr1:m_dsr0)->is_connected();}
-	double get_bmp_offset(){return m_bmp_offset;}
+	double get_bmp_parallax(){return m_bmp_parallax;}
 	double get_parallax(){return m_parallax;}
 	bool get_2dto3d(){return m_convert3d;}
 	aspect_mode_types get_aspect_mode(){return m_aspect_mode;}
@@ -381,9 +381,9 @@ protected:
 	int m_last_ui_draw;
 	int m_bmp_width, m_bmp_height;
 	float m_bmp_fleft, m_bmp_ftop, m_bmp_fwidth, m_bmp_fheight;
-	double m_bmp_offset_x /*= -0.0*/;
-	double m_bmp_offset_y /*= 0.0*/;
-	double m_bmp_offset;
+	double m_movie_offset_x /*= -0.0*/;
+	double m_movie_offset_y /*= 0.0*/;
+	double m_bmp_parallax;
 	bool m_gpu_shadow;
 	double m_source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
 	double m_forced_aspect /* = -1 */;
@@ -500,6 +500,9 @@ protected:
 	HRESULT set_device_state(device_state new_state);
 	HRESULT test_PC_level();		// test hardware YUV-RGB conversion level
 	DWORD m_PC_level;				// 0
+	HRESULT calculate_movie_position(RECT *position);
+	HRESULT calculate_subtitle_position(RECT *postion, bool left_eye);
+
 
 	friend class dx_player;
 	int m_last_reset_time;
