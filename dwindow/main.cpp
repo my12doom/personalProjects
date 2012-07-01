@@ -457,6 +457,19 @@ int main()
 	}
 */
 
+// 	char *data = new char[512*512];
+// 	memset(data, 0, 512*512);
+// 	FILE * f = fopen("Z:\\chroma.yuv", "wb");
+// 	FILE * s = fopen("Z:\\testUV.bmp", "rb");
+// 
+// 	fwrite(data, 512, 512, f);
+// 	fseek(s, 58, SEEK_SET);
+// 	fread(data, 256, 256, s);
+// 	fwrite(data, 256, 256, f);
+// 	fwrite(data, 256, 256, f);
+// 	fclose(f);
+// 	fclose(s);
+
 
 
 	__try 

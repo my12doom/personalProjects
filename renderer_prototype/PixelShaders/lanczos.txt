@@ -11,6 +11,11 @@ float4 p1 : register(c1);
 #define rate_y (p0[1])
 #define TEXTURE_WIDTH p0[2]
 #define TEXTURE_HEIGHT p0[3]
+#define TEXTURE_WIDTH_UV p1[0]
+#define TEXTURE_HEIGHT_UV p1[1]
+#define rate_x_UV (p1[2])
+#define rate_y_UV (p1[3])
+
 #define lobe 4
 #define tap lanczos_kernerl
 float a = 4.0;
@@ -55,15 +60,15 @@ float4 PaddedTex2D(sampler s, float2 tex)
 }
 
 
-float4 lanczosXCore(sampler s, float2 tex, float2 ps)
+float4 lanczosXCore(sampler s, float2 tex, float2 ps, float rate)
 {
   // assume Y coordinate is pixel perfect
   // so we only calculate X pixels	
   float2 dx = {ps.x,0.0};
   float2 dy = {0.0,ps.y};  
   
-  float pixcoord = ((tex.x - 0.5/TEXTURE_WIDTH) * TEXTURE_WIDTH + 0.5);
-  float2 coord0 = {floor(pixcoord)/TEXTURE_WIDTH + 0.5/TEXTURE_WIDTH, tex.y };
+  float pixcoord = ((tex.x - ps.x/2) / ps.x + 0.5);
+  float2 coord0 = {floor(pixcoord)*ps.x + ps.x/2, tex.y };
   
   float2 fract = {frac(pixcoord),0};
     
@@ -73,7 +78,7 @@ float4 lanczosXCore(sampler s, float2 tex, float2 ps)
   {
 	float xx = fract.x - x;
 	float yy = fract.y;
-	float weight =  tap(xx*rate_x)*tap(yy);
+	float weight =  tap(xx*rate)*tap(yy);
 	
 	float4 color = PaddedTex2D(s, coord0 + x*dx);
 	total_weight += weight;
@@ -86,20 +91,20 @@ float4 lanczosXCore(sampler s, float2 tex, float2 ps)
 float4 lanczosX(float2 tex : TEXCOORD0) : COLOR
 {
 	float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
-	return lanczosXCore(s0, tex, ps);
+	return lanczosXCore(s0, tex, ps, rate_x);
 }
 
 float4 lanczosX_YV12(float2 tex : TEXCOORD0) : COLOR
 {
 	float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};	
-	float Y = lanczosXCore(s0, tex, ps)[0];
+	float Y = lanczosXCore(s0, tex, ps, rate_x)[0];
 	
 	ps.x *= 2;
 	float2 tex_V = {tex.x, tex.y/2};
 	float2 tex_U = {tex.x, tex.y/2+0.5};
 	
-	float V = lanczosXCore(s1, tex_V, ps)[0];
-	float U = lanczosXCore(s1, tex_U, ps)[0];
+	float V = lanczosXCore(s1, tex_V, ps, rate_x_UV)[0];
+	float U = lanczosXCore(s1, tex_U, ps, rate_x_UV)[0];
 	
 	return yuv2rgb(float4(Y,U,V,1));
 }
@@ -107,10 +112,10 @@ float4 lanczosX_YV12(float2 tex : TEXCOORD0) : COLOR
 float4 lanczosX_NV12(float2 tex : TEXCOORD0) : COLOR
 {
 	float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
-	float Y = lanczosXCore(s0, tex, ps)[0];
+	float Y = lanczosXCore(s0, tex, ps, rate_x)[0];
 	
-	ps *= 2;	
-	float4 UV = lanczosXCore(s1, tex, ps);
+	ps *= 2;
+	float4 UV = lanczosXCore(s1, tex, ps, rate_x_UV);
 	
 	return yuv2rgb(float4(Y,UV[0],UV[3],1));
 }
@@ -135,7 +140,7 @@ float4 lanczosY(float2 tex : TEXCOORD0) : COLOR
   {
 	float xx = fract.x;
 	float yy = fract.y - y;
-	float weight =  tap(xx)*tap(yy*rate_x);
+	float weight =  tap(xx)*tap(yy*rate_y);
 	
 	float4 color = PaddedTex2D(s0, coord0 + y*dy);
 	total_weight += weight;
@@ -145,7 +150,7 @@ float4 lanczosY(float2 tex : TEXCOORD0) : COLOR
   return total_color/total_weight;
 }
 
-float4 lanczosCore(sampler s, float2 tex, float2 ps)
+float4 lanczosCore(sampler s, float2 tex, float2 ps, float2 rates)
 {
   float2 dx = {ps.x,0.0};
   float2 dy = {0.0,ps.y};
@@ -163,7 +168,7 @@ float4 lanczosCore(sampler s, float2 tex, float2 ps)
   {
 	float xx = fract.x - x;
 	float yy = fract.y - y;
-	float weight =  tap(xx*rate_x)*tap(yy*rate_y);
+	float weight =  tap(xx*rates.x)*tap(yy*rates.y);
 	
 	total_weight += weight;
 	float4 color = PaddedTex2D(s, coord0 + x*dx + y*dy);
@@ -176,31 +181,36 @@ float4 lanczosCore(sampler s, float2 tex, float2 ps)
 float4 lanczos(float2 tex : TEXCOORD0) : COLOR
 {
 	float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
-	return lanczosCore(s0, tex, ps);
+	float2 rates = {rate_x, rate_y};
+	return lanczosCore(s0, tex, ps, rates);
 }
 
 float4 lanczos_YV12(float2 tex : TEXCOORD0) : COLOR
 {
+	float2 rates = {rate_x, rate_y};
 	float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};	
-	float Y = lanczosCore(s0, tex, ps)[0];
+	float Y = lanczosCore(s0, tex, ps, rates)[0];
 	
 	ps.x *= 2;
+	rates = clamp(rates*2, 0, 1);
 	float2 tex_V = {tex.x, tex.y/2};
 	float2 tex_U = {tex.x, tex.y/2+0.5};
 	
-	float V = lanczosCore(s1, tex_V, ps)[0];
-	float U = lanczosCore(s1, tex_U, ps)[0];
+	float V = lanczosCore(s1, tex_V, ps, rates)[0];
+	float U = lanczosCore(s1, tex_U, ps, rates)[0];
 	
 	return yuv2rgb(float4(Y,U,V,1));
 }
 
 float4 lanczos_NV12(float2 tex : TEXCOORD0) : COLOR
 {
+	float2 rates = {rate_x, rate_y};
 	float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
-	float Y = lanczosXCore(s0, tex, ps)[0];
+	float Y = lanczosXCore(s0, tex, ps, rates)[0];
 	
 	ps *= 2;	
-	float4 UV = lanczosCore(s1, tex, ps);
+	rates = clamp(rates*2, 0, 1);
+	float4 UV = lanczosCore(s1, tex, ps, rates);
 	
 	return yuv2rgb(float4(Y,UV[0],UV[3],1));
 }

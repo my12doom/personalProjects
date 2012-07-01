@@ -2328,6 +2328,8 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	m_tex_bmp->GetSurfaceLevel(0, &src);
 
 	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 	return resize_surface(src, NULL, surface, &src_rect, &dst_rect, (resampling_method)(int)SubtitleResizing);
 }
 HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
@@ -2641,10 +2643,13 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		vertex[3].tu = (float)s.right / desc.Width;
 		vertex[3].tv = (float)s.bottom / desc.Height;
 
-		float ps[4] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height};
+		float ps[8] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height,
+						desc.Width/2, desc.Height, abs((float)width_d/(width_s/2)), abs((float)height_d/(height_s/2))};
 		ps[0] = ps[0] > 1 ? 1 : ps[0];
 		ps[1] = ps[1] > 1 ? 1 : ps[1];
-		m_Device->SetPixelShaderConstantF(0, ps, 1);
+		ps[6] = ps[6] > 1 ? 1 : ps[6];
+		ps[7] = ps[7] > 1 ? 1 : ps[7];
+		m_Device->SetPixelShaderConstantF(0, ps, 2);
 
 
 		// shader
@@ -2659,7 +2664,6 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			m_Device->SetPixelShader(lanczos_shader);
 		else
 			m_Device->SetPixelShader(shader_yuv);
-
 
 		// render state and render
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
@@ -2699,8 +2703,6 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, alpha_blend );
-		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 		ps[1] = (float)height_d/height_s;
 		ps[1] = ps[1] > 0 ? ps[1] : -ps[1];
 		ps[1] = ps[1] > 1 ? 1 : ps[1];
@@ -2750,8 +2752,6 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, alpha_blend );
-		m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, direct_vertex, sizeof(MyVertex));
 		hr = m_Device->SetPixelShader(NULL);
@@ -3434,7 +3434,7 @@ HRESULT my12doomRenderer::calculate_subtitle_position(RECT *postion, bool left_e
 	int pic_width = tar.right - tar.left;
 	int pic_height = tar.bottom - tar.top;
 
-	int left = tar.left + pic_width * (m_bmp_fleft - left_eye ? 0 :m_bmp_parallax);
+	int left = tar.left + pic_width * (m_bmp_fleft - (left_eye ? 0 :m_bmp_parallax));
 	int width = pic_width * m_bmp_fwidth;
 	int top = tar.top + pic_height * m_bmp_ftop;
 	int height = pic_height * m_bmp_fheight;
