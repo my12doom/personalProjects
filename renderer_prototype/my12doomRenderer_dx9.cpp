@@ -160,6 +160,9 @@ m_right_queue(_T("right queue"))
 			m_nv3d_windowed = true;
 		else
 			m_nv3d_windowed = false;
+
+		// disable new 3d vision interface for now
+		m_nv_version.drvVersion = min(m_nv_version.drvVersion, 28500);
 	}
 	m_nv3d_handle = NULL;
 	m_output_mode = mono;

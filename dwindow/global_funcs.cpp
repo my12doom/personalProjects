@@ -276,21 +276,21 @@ bool open_file_dlg(wchar_t *pathname, HWND hDlg, wchar_t *filter/* = NULL*/)
 			break;
 		}
 
-		OPENFILENAMEW ofn = { sizeof(OPENFILENAMEW), hDlg , NULL,
-			filter, NULL,
-			0, 1, strFileName, MAX_PATH, NULL, 0, strPath,
-			C(L"Open File"),
-			OFN_FILEMUSTEXIST|OFN_HIDEREADONLY|OFN_ENABLESIZING, 0, 0,
-			L".mp4", 0, NULL, NULL };
+	OPENFILENAMEW ofn = { sizeof(OPENFILENAMEW), hDlg , NULL,
+		filter, NULL,
+		0, 1, strFileName, MAX_PATH, NULL, 0, strPath,
+		C(L"Open File"),
+		OFN_FILEMUSTEXIST|OFN_HIDEREADONLY|OFN_ENABLESIZING, 0, 0,
+		L".mp4", 0, NULL, NULL };
 
-		int o = GetOpenFileNameW( &ofn );
-		if (o)
-		{
-			wcsncpy(pathname, strFileName, MAX_PATH);
-			return true;
-		}
+	int o = GetOpenFileNameW( &ofn );
+	if (o)
+	{
+		wcsncpy(pathname, strFileName, MAX_PATH);
+		return true;
+	}
 
-		return false;
+	return false;
 }
 
 bool select_color(DWORD *color, HWND parent)
