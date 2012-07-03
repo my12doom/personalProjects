@@ -1,0 +1,19 @@
+static const float     halfpi     = 1.5707963267948966192313216916398;
+static const float         pi     = 3.1415926535897932384626433832795;
+sampler s0 : register(s0);
+float4 p0 : register(c0);
+
+float4 hittest(float2 tex : TEXCOORD0) : COLOR
+{
+	float4 c = tex2D(s0, tex);
+	
+	if (c.a > 0)
+	{
+		c = p0;
+		c.a = 1;
+	}
+	else
+		c.a = 0;
+
+	return c;
+}

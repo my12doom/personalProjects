@@ -164,7 +164,9 @@ m_aspect_mode(L"AspectRatioMode", aspect_letterbox),
 m_subtitle_center_x(L"SubtitleX", 0.5),
 m_subtitle_bottom_y(L"SubtitleY", 0.95),
 m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD),
-m_revert(L"SwapEyes", false, REG_DWORD)
+m_swap_eyes(L"SwapEyes", false, REG_DWORD),
+m_movie_pos_x(L"MoviePosX", 0),
+m_movie_pos_y(L"MoviePosY", 0)
 {
 	detect_monitors();
 
@@ -196,12 +198,11 @@ m_revert(L"SwapEyes", false, REG_DWORD)
 	m_bar_drawer.load_resource(hExe);
 	m_mirror1 = 0;
 	m_mirror2 = 0;
-	m_letterbox_delta = 0.0;
 	m_parallax = 0;
 // 	m_subtitle_center_x = 0.5;
 // 	m_subtitle_bottom_y = 0.95;
 	m_hexe = hExe;
-	m_user_offset = 0;
+	m_user_subtitle_parallax = 0;
 	m_internel_offset = 10; // offset set to 10*0.1% of width
 	m_last_bitmap_update = timeGetTime();
 	memset(m_subtitle_cache, 0, sizeof(m_subtitle_cache));
@@ -601,7 +602,6 @@ bool dx_player::is_playing()
 
 	return is;
 }
-
 bool dx_player::is_closed()
 {
 	return !is_visible(1) && !is_visible(2);
@@ -694,21 +694,21 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case VK_TAB:
-		set_revert(!m_revert);
+		set_swap_eyes(!m_swap_eyes);
 		break;
 
 	case VK_NUMPAD7:									// image up
-		set_letterbox(m_letterbox_delta - 0.005);
+		set_movie_pos(m_movie_pos_x, m_movie_pos_y - 0.005);
 		break;
 
 	case VK_NUMPAD1:
-		set_letterbox(m_letterbox_delta + 0.005);		// down
+		set_movie_pos(m_movie_pos_x, m_movie_pos_y + 0.005);		// down
 		break;
 
 	case VK_NUMPAD5:									// reset position
-		set_letterbox(0);
+		set_movie_pos(0, 0);
 		set_subtitle_pos(0.5, 0.95);
-		set_subtitle_offset(0);
+		set_subtitle_parallax(0);
 		m_parallax = 0;
 		if (m_renderer1) m_renderer1->set_parallax(m_parallax);
 		break;
@@ -730,11 +730,11 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case VK_NUMPAD9:
-		set_subtitle_offset(m_user_offset + 1);
+		set_subtitle_parallax(m_user_subtitle_parallax + 1);
 		break;
 		
 	case VK_NUMPAD3:
-		set_subtitle_offset(m_user_offset - 1);
+		set_subtitle_parallax(m_user_subtitle_parallax - 1);
 		break;
 
 	case VK_MULTIPLY:
@@ -996,7 +996,7 @@ HRESULT dx_player::popup_menu(HWND owner)
 		CheckMenuItem(menu, ID_LANGUAGE_CHINESE, MF_CHECKED | MF_BYCOMMAND);
 
 	// swap
-	CheckMenuItem(menu, ID_SWAPEYES, m_revert ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_SWAPEYES, m_swap_eyes ? MF_CHECKED:MF_UNCHECKED);
 
 	// CUDA
 	CheckMenuItem(menu, ID_CUDA, g_CUDA ? MF_CHECKED:MF_UNCHECKED);
@@ -1717,7 +1717,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// swap eyes
 	else if (uid == ID_SWAPEYES)
 	{
-		set_revert(!m_revert);
+		set_swap_eyes(!m_swap_eyes);
 	}
 
 	/*
@@ -2014,7 +2014,7 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_callback(this);
 	m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
 	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
-	m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_offset/1920);
+	m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_subtitle_parallax/1920);
 	m_renderer1->set_aspect(m_aspect);
 	m_renderer1->set_aspect_mode(m_aspect_mode);
 	m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
@@ -2115,7 +2115,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		if (SUCCEEDED(hr))
 			movie_has_offset_metadata = true;
 	}
-	if (!m_subtitle_has_offset) m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_offset/1920);
+	if (!m_subtitle_has_offset) m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_subtitle_parallax/1920);
 
 	int ms_start = (int)(TimeStart / 10000.0 + 0.5);
 	int ms_end = (int)(TimeEnd / 10000.0 + 0.5);
@@ -2176,7 +2176,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		{
 			m_subtitle_has_offset = sub.delta_valid;
 			if (sub.delta_valid)
-				hr = m_renderer1->set_bmp_parallax(sub.delta + (double)m_user_offset/1920);
+				hr = m_renderer1->set_bmp_parallax(sub.delta + (double)m_user_subtitle_parallax/1920);
 
 			hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
 				sub.height,
@@ -2225,24 +2225,25 @@ HRESULT dx_player::on_dshow_event()
 	return S_OK;
 }
 
-HRESULT dx_player::set_revert(bool revert)
+HRESULT dx_player::set_swap_eyes(bool swap_eyes)
 {
-	m_revert = revert;
+	m_swap_eyes = swap_eyes;
 
 	if (m_renderer1)
 	{
-		m_renderer1->set_swap_eyes(m_revert);
+		m_renderer1->set_swap_eyes(m_swap_eyes);
 	}
 
 	return S_OK;
 }
 
-HRESULT dx_player::set_letterbox(double delta)
+HRESULT dx_player::set_movie_pos(double x, double y)
 {
-	m_letterbox_delta = delta;
+	m_movie_pos_x = x;
+	m_movie_pos_y = y;
 
 	if (m_renderer1)
-		m_renderer1->set_movie_pos(2, m_letterbox_delta);
+		m_renderer1->set_movie_pos(2, m_movie_pos_y);
 
 	return S_OK;
 }
@@ -2939,11 +2940,13 @@ HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME 
 		return E_POINTER;
 
 	// find duplication
+	int j = 0;
 	for(POSITION i = m_external_subtitles.GetHeadPosition(); i; m_external_subtitles.GetNext(i))
 	{
 		CAutoPtr<subtitle_file_handler> &tmp = m_external_subtitles.GetAt(i);
 		if (wcscmp(pathname, tmp->m_pathname) == 0)
-			return S_FALSE;
+			return enable_subtitle_track(j);
+		j++;
 	}
 
 	CAutoPtr<subtitle_file_handler> tmp;
@@ -2965,10 +2968,10 @@ HRESULT dx_player::draw_subtitle()
 	return hr;
 }
 
-HRESULT dx_player::set_subtitle_offset(int offset)
+HRESULT dx_player::set_subtitle_parallax(int parallax)
 {
-	m_user_offset = offset;
-	m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_offset/1920);
+	m_user_subtitle_parallax = parallax;
+	m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_subtitle_parallax/1920);
 	draw_subtitle();
 	return S_OK;
 }

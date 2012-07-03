@@ -58,11 +58,11 @@ public:
 
 	// subtitle control functions
 	HRESULT set_subtitle_pos(double center_x, double bottom_y);
-	HRESULT set_subtitle_offset(int offset);
+	HRESULT set_subtitle_parallax(int parallax);
 
 	// image control functions
-	HRESULT set_revert(bool revert);
-	HRESULT set_letterbox(double delta);	// 1.0 = top, -1.0 = bottom, 0 = center
+	HRESULT set_swap_eyes(bool swap_eyes);
+	HRESULT set_movie_pos(double x, double y);	// 1.0 = top, -1.0 = bottom, 0 = center
 
 	// playlist
 	HRESULT play_next_file();
@@ -77,6 +77,7 @@ public:
 	HRESULT set_volume(double volume);			// 0 - 1.0 = 0% - 100%, linear
 	HRESULT get_volume(double *volume);
 	bool is_playing();
+	HRESULT execute_command_adv(wchar_t *command, wchar_t *out, const wchar_t **args, int args_count);
 	HRESULT show_mouse(bool show)
 	{
 		GetCursorPos(&m_mouse);
@@ -89,6 +90,7 @@ public:
 	HRESULT popup_menu(HWND owner);
 	bool is_fullsceen(int window_id){return window_id==1?m_full1:m_full2;}
 	HWND get_window(int window_id){return window_id==1?m_hwnd1:m_hwnd2;}
+
 
 	POINT m_mouse;
 
@@ -126,8 +128,9 @@ protected:
 
 	int m_mirror1;
 	int m_mirror2;			// 0x0:no mirror, 0x1 mirror horizontal, 0x2 mirror vertical, 0x3(0x3=0x1|0x2) mirror both
-	AutoSetting<bool> m_revert;
-	double m_letterbox_delta;
+	AutoSetting<bool> m_swap_eyes;
+	AutoSetting<double> m_movie_pos_y;
+	AutoSetting<double> m_movie_pos_x;
 	double m_parallax;
 	bool m_is_remux_file;
 
@@ -233,7 +236,7 @@ protected:
 	HRESULT draw_subtitle();
 	AutoSetting<double> m_subtitle_center_x;
 	AutoSetting<double> m_subtitle_bottom_y;
-	int m_user_offset;
+	int m_user_subtitle_parallax;
 	int m_internel_offset;
 	int m_last_bitmap_update;
 	bool m_subtitle_has_offset;

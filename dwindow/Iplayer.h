@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include "ICommand.h"
 
 // some definition
 #define LOADFILE_NO_TRACK -1
@@ -8,7 +9,7 @@
 #define WM_LOADFILE (WM_USER + 5)
 
 
-class Iplayer
+class Iplayer : public ICommandReciever
 {
 public:
 	// load functions
@@ -23,11 +24,11 @@ public:
 
 	// subtitle control functions
 	virtual HRESULT set_subtitle_pos(double center_x, double bottom_y) PURE;
-	virtual HRESULT set_subtitle_offset(int offset) PURE;
+	virtual HRESULT set_subtitle_parallax(int offset) PURE;
 
 	// image control functions
-	virtual HRESULT set_revert(bool revert) PURE;
-	virtual HRESULT set_letterbox(double delta) PURE;	// 1.0 = top, -1.0 = bottom, 0 = center
+	virtual HRESULT set_swap_eyes(bool revert) PURE;
+	virtual HRESULT set_movie_pos(double x, double y) PURE;	// 1.0 = top, -1.0 = bottom, 0 = center
 
 	// playlist
 	virtual HRESULT play_next_file() PURE;
