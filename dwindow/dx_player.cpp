@@ -671,6 +671,13 @@ LRESULT dx_player::on_key_down(int id, int key)
 		pause();
 		break;
 
+	case '3':
+		m_renderer1->set_mask_parameter(m_renderer1->get_mask_parameter()+1);
+		break;
+	case '4':
+		m_renderer1->set_mask_parameter(m_renderer1->get_mask_parameter()-1);
+		break;
+
 	case VK_LEFT:
 		{
 			int t;

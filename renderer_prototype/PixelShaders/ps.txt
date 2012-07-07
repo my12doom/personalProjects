@@ -196,7 +196,7 @@ float4 masking(float2 tex : TEXCOORD0) : COLOR
 	float4 l = tex2D(s1, tex);
 	float4 r = tex2D(s2, tex);
 	
-	return l*(1-mask.r) + r*(mask.r);
+	return l*(1-mask) + r*mask;
 }
 
 float4 NV12toRGB(float2 tex : TEXCOORD0) : COLOR		//NV12

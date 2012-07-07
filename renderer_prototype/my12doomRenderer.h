@@ -66,6 +66,8 @@ enum mask_mode_types
 	row_interlace, 
 	line_interlace, 
 	checkboard_interlace,
+	subpixel_row_interlace,
+	subpixel_45_interlace,
 	mask_mode_types_max,
 };
 
@@ -339,6 +341,7 @@ public:
 	HRESULT set_input_layout(int layout);
 	HRESULT set_output_mode(int mode);
 	HRESULT set_mask_mode(int mode);
+	HRESULT set_mask_parameter(int parameter);
 	HRESULT set_mask_color(int id, DWORD color);
 	HRESULT set_swap_eyes(bool swap);
 	HRESULT set_fullscreen(bool full);
@@ -360,6 +363,7 @@ public:
 	input_layout_types get_input_layout();
 	output_mode_types get_output_mode();
 	mask_mode_types get_mask_mode();
+	int get_mask_parameter();
 	bool get_fullscreen();
 	double get_offset(int dimention);
 	double get_aspect();
@@ -567,6 +571,7 @@ protected:
 	bool m_convert3d;			// = false
 	aspect_mode_types m_aspect_mode;
 	mask_mode_types m_mask_mode;
+	int m_mask_parameter;
 	HWND m_hWnd;
 	HWND m_hWnd2;
 	CComPtr<IDirect3D9>		m_D3D;

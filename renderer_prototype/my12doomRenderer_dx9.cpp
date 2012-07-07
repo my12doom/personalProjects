@@ -265,6 +265,7 @@ void my12doomRenderer::init_variables()
 	m_input_layout = input_layout_auto;
 	m_swapeyes = false;
 	m_mask_mode = row_interlace;
+	m_mask_parameter = 0;
 	m_color1 = D3DCOLOR_XRGB(255, 0, 0);
 	m_color2 = D3DCOLOR_XRGB(0, 255, 255);
 	m_normal = m_sbs = m_tb = 0;
@@ -3504,6 +3505,38 @@ HRESULT my12doomRenderer::generate_mask()
 			dst += locked.Pitch;
 		}
 	}
+	else if (m_mask_mode == subpixel_row_interlace)
+	{
+		D3DCOLOR one_line[BIG_TEXTURE_SIZE];
+		for(DWORD i=0; i<BIG_TEXTURE_SIZE; i++)
+			one_line[i] = i%2 == 0 ? D3DCOLOR_ARGB(255,255,0,255) : D3DCOLOR_ARGB(255,0,255,0);
+
+		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
+		{
+			memcpy(dst, one_line, m_active_pp.BackBufferWidth*4);
+			dst += locked.Pitch;
+		}
+	}
+	else if (m_mask_mode == subpixel_45_interlace)
+	{
+		D3DCOLOR one_line[6][BIG_TEXTURE_SIZE];
+		for(DWORD i=0; i<BIG_TEXTURE_SIZE; i++)
+		{
+			one_line[0][i] = i%2 == 0 ? D3DCOLOR_ARGB(255,255,255,255) : D3DCOLOR_ARGB(255,0,0,0);
+			one_line[1][i] = i%2 == 0 ? D3DCOLOR_ARGB(255,255,255,0) : D3DCOLOR_ARGB(255,0,0,255);
+			one_line[2][i] = i%2 == 0 ? D3DCOLOR_ARGB(255,255,0,0) : D3DCOLOR_ARGB(255,0,255,255);
+			one_line[3][i] = i%2 == 0 ? D3DCOLOR_ARGB(255,0,0,0) : D3DCOLOR_ARGB(255,255,255,255);
+			one_line[4][i] = i%2 == 0 ? D3DCOLOR_ARGB(255,0,0,255) : D3DCOLOR_ARGB(255,255,255,0);
+			one_line[5][i] = i%2 == 0 ? D3DCOLOR_ARGB(255,0,255,255) : D3DCOLOR_ARGB(255,255,0,0);
+		}
+
+		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
+		{
+			memcpy(dst, one_line[(i+m_mask_parameter)%6], m_active_pp.BackBufferWidth*4);
+			dst += locked.Pitch;
+		}
+	}
+
 	FAIL_RET(mask_cpu->UnlockRect(0));
 	FAIL_RET(m_Device->UpdateTexture(mask_cpu, m_tex_mask));
 
@@ -3657,6 +3690,14 @@ HRESULT my12doomRenderer::set_mask_mode(int mode)
 	return S_OK;
 }
 
+HRESULT my12doomRenderer::set_mask_parameter(int parameter)
+{
+	m_mask_parameter = parameter;
+	generate_mask();
+	repaint_video();
+	return S_OK;
+}
+
 HRESULT my12doomRenderer::set_mask_color(int id, DWORD color)
 {
 	if (id == 1)
@@ -3706,6 +3747,10 @@ output_mode_types my12doomRenderer::get_output_mode()
 mask_mode_types my12doomRenderer::get_mask_mode()
 {
 	return m_mask_mode;
+}
+int my12doomRenderer::get_mask_parameter()
+{
+	return m_mask_parameter;
 }
 
 bool my12doomRenderer::get_swap_eyes()
