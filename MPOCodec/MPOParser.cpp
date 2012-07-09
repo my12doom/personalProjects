@@ -14,7 +14,7 @@ MpoParser::~MpoParser()
 		safe_delete(m_datas[i]);
 }
 
-int MpoParser::parseFile(wchar_t *path)
+int MpoParser::parseFile(const wchar_t *path)
 {
 	static const unsigned short MARKER_SOI = 0xFFD8;
 	static const unsigned short MARKER_APP1 = 0xFFE1;

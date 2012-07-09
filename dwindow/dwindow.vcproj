@@ -761,6 +761,22 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="ImageSource"
+				>
+				<File
+					RelativePath="..\MPOCodec\3DPParser.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\ImageSource.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\MPOCodec\MPOParser.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -936,6 +952,22 @@
 				</File>
 				<File
 					RelativePath=".\private_filter.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="ImageSource"
+				>
+				<File
+					RelativePath="..\MPOCodec\3DPParser.h"
+					>
+				</File>
+				<File
+					RelativePath=".\ImageSource.h"
+					>
+				</File>
+				<File
+					RelativePath="..\MPOCodec\MPOParser.h"
 					>
 				</File>
 			</Filter>

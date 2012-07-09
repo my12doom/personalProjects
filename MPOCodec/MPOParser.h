@@ -10,7 +10,7 @@ public:
 	// returns 0 on error, n on success
 	// other member variables are valid on success, undefined on error
 	// don't delete or free any variables, they'll be handled by deconstructor
-	int parseFile(wchar_t *path);
+	int parseFile(const wchar_t *path);
 	MpoParser();
 	~MpoParser();
 

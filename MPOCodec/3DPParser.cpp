@@ -28,7 +28,7 @@ _3DPParser::~_3DPParser()
 	for(int i=0; i<2; i++)
 		safe_delete(m_datas[i]);
 }
-int _3DPParser::parseFile(wchar_t *path)
+int _3DPParser::parseFile(const wchar_t *path)
 {
 	for(int i=0; i<2; i++)
 		safe_delete(m_datas[i]);

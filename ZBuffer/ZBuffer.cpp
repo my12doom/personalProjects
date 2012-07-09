@@ -260,7 +260,7 @@ int main()
 	HANDLE h_parent_process = GetCurrentProcess();
 	SetPriorityClass(h_parent_process, IDLE_PRIORITY_CLASS);			//host idle priority
 
-	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\000134_reverse.bmp", IMAGE_BITMAP, 3840, 1080, LR_LOADFROMFILE);
+	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\test.bmp", IMAGE_BITMAP, 3840, 1080, LR_LOADFROMFILE);
 	GetBitmapBits(bm, 3840*1080*4, resource);
 	DeleteObject(bm);
 
@@ -272,7 +272,7 @@ int main()
 
 	int tick = timeGetTime();
 
-	int layout = 0;
+	int layout = input_layout_auto;
 	for(int j=0; j<100; j++)
 	{
 		get_layout<DWORD>(resource, 3840, 1080, &layout);
