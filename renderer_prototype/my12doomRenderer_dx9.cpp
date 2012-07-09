@@ -4055,8 +4055,6 @@ HRESULT my12doomRenderer::intel_create_rendertargets()
 	D3DPRESENT_PARAMETERS pp2 = m_active_pp;
 	pp2.BackBufferWidth = min(pp2.BackBufferWidth, m_intel_active_3d_mode.ulResWidth);
 	pp2.BackBufferHeight = min(pp2.BackBufferHeight, m_intel_active_3d_mode.ulResHeight);
-	//pp2.BackBufferWidth = m_intel_active_3d_mode.ulResWidth;
-	//pp2.BackBufferHeight = m_intel_active_3d_mode.ulResHeight;
 	pp2.SwapEffect = D3DSWAPEFFECT_OVERLAY;
 	pp2.MultiSampleType = D3DMULTISAMPLE_NONE;
 	FAIL_RET(m_Device->CreateAdditionalSwapChain(&pp2, &m_overlay_swap_chain));

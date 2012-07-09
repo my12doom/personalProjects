@@ -133,7 +133,7 @@ int MpoParser::parseFile(const wchar_t *path)
 	}
 
 	fclose(r);
-	return 0;
+	return m_NumberOfImages;
 }
 
 unsigned short MpoParser::read2(FILE *f, bool isLittleEndian)

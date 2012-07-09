@@ -18,8 +18,8 @@ int main()
 	FILE *f1 = fopen("z:\\l1.jpg", "wb");
 	FILE *f2 = fopen("z:\\l2.jpg", "wb");
 
-	fwrite(parser.m_datas[0], 1, parser.m_sizes[0], f1);
-	fwrite(parser.m_datas[1], 1, parser.m_sizes[1], f2);
+	fwrite(parser2.m_datas[0], 1, parser2.m_sizes[0], f1);
+	fwrite(parser2.m_datas[1], 1, parser2.m_sizes[1], f2);
 
 	fclose(f1);
 	fclose(f2);

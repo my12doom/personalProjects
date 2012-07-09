@@ -66,4 +66,6 @@ protected:
 	char *m_data;
 	int m_frame_number;
 	CCritSec m_cSharedState;            // Lock on m_rtSampleTime
+
+	void UpdateFromSeek();
 };

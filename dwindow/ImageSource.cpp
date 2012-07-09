@@ -10,21 +10,20 @@ CCritSec g_ILLock;
 
 #define FPS 1
 #define LENGTH 10
-
+#define safe_delete(x) {if(x) delete[]x; x=NULL;}
 // my12doomSource
 my12doomImageSource::my12doomImageSource(LPUNKNOWN lpunk, HRESULT *phr)
 :CSource(NAME("my12doom Image Source"), lpunk, CLSID_my12doomImageSource)
 {
 	m_curfile[0] = NULL;
-	m_decoded_data = NULL
+	m_decoded_data = NULL;
 	ASSERT(phr);
+
+	*phr = S_OK;
 }
 my12doomImageSource::~my12doomImageSource()
 {
-
-
-	if (m_decoded_data)
-		delete [] m_decoded_data;
+	safe_delete(m_decoded_data);
 }
 
 STDMETHODIMP my12doomImageSource::NonDelegatingQueryInterface(REFIID riid, void ** ppv)
@@ -63,17 +62,25 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 	void *data2 = NULL;
 	int size1 = 0;
 	int size2 = 0;
+	ILenum type = IL_TYPE_UNKNOWN;
 	bool need_delete = false;
+
 
 	if (2 == mpo.parseFile(pszFileName))
 	{
 		data1 = mpo.m_datas[0];
 		data2 = mpo.m_datas[1];
+		size1 = mpo.m_sizes[0];
+		size2 = mpo.m_sizes[1];
+		type = IL_JPG;
 	}
 	else if (2 == _3dp.parseFile(pszFileName))
 	{
 		data1 = _3dp.m_datas[0];
 		data2 = _3dp.m_datas[1];
+		size1 = _3dp.m_sizes[0];
+		size2 = _3dp.m_sizes[1];
+		type = IL_JPG;
 	}
 	else
 	{
@@ -86,6 +93,7 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 			data1 = new char[size1];
 			need_delete = true;
 			fread(data1, 1, size1, f);
+			fclose(f);
 		}
 	}
 
@@ -97,10 +105,12 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 	ilInit();
 
 	// first file / single file
-	ILboolean result = ilLoadL(IL_TYPE_UNKNOWN, data1, size1 );
+	ILboolean result = ilLoadL(type, data1, size1 );
 	if (!result)
 	{
 		ILenum err = ilGetError() ;
+		printf( "the error %d\n", err );
+		printf( "string is %s\n", ilGetString( err ) );
 		if (need_delete) delete [] data1;
 		return VFW_E_INVALID_FILE_FORMAT;
 	}
@@ -110,37 +120,40 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 	int width = ilGetInteger(IL_IMAGE_WIDTH);
 	m_height = ilGetInteger(IL_IMAGE_HEIGHT);
 	m_width = size2>0? width*2 : width;
-	m_decoded_data = new char[decoded_size];
-	assert(decoded_size > width * m_height *4);
+	m_decoded_data = new char[decoded_size*2];
+	assert(decoded_size >= width * m_height *4);
 	char *data = (char*)ilGetData();
 	char *dst = m_decoded_data;
 	for(int y=0; y<m_height; y++)
 	{
-		memcpy(dst, data, width);
-		dst += m_width;
-		data += width;
+		memcpy(dst, data, width*4);
+		dst += m_width*4;
+		data += width*4;
 	}
 
 	// second file
-	result = ilLoadL(IL_TYPE_UNKNOWN, data2, size2 );
-	if (!result)
+	if (size2 > 0)
 	{
-		ILenum err = ilGetError() ;
-		if (need_delete) delete [] data1;
-		delete [] m_decoded_data;
-		return VFW_E_INVALID_FILE_FORMAT;
-	}
-	decoded_size = ilGetInteger(IL_IMAGE_SIZE_OF_DATA);
-	int width2 = ilGetInteger(IL_IMAGE_WIDTH);
-	int height2 = ilGetInteger(IL_IMAGE_HEIGHT);
-	ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE);
-	data = (char*)ilGetData();
-	dst = m_decoded_data + width;
-	for(int y=0; y<height2; y++)
-	{
-		memcpy(dst, data, min(width, width2));
-		dst += m_width;
-		data += width2;
+		result = ilLoadL(type, data2, size2 );
+		if (!result)
+		{
+			ILenum err = ilGetError() ;
+			if (need_delete) delete [] data1;
+			safe_delete(m_decoded_data);
+			return VFW_E_INVALID_FILE_FORMAT;
+		}
+		decoded_size = ilGetInteger(IL_IMAGE_SIZE_OF_DATA);
+		int width2 = ilGetInteger(IL_IMAGE_WIDTH);
+		int height2 = ilGetInteger(IL_IMAGE_HEIGHT);
+		ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE);
+		data = (char*)ilGetData();
+		dst = m_decoded_data + width*4;
+		for(int y=0; y<height2; y++)
+		{
+			memcpy(dst, data, min(width, width2)*4);
+			dst += m_width*4;
+			data += width2*4;
+		}
 	}
 
 	HRESULT hr = E_FAIL;
@@ -203,6 +216,7 @@ HRESULT my12doomImageStream::FillBuffer(IMediaSample *pms)
 
 	BYTE *buf = NULL;
 	pms->GetPointer(&buf);
+	memcpy(buf, m_data, m_width * m_height * 4);
 
 	REFERENCE_TIME rtStart, rtStop;
 	rtStart = (REFERENCE_TIME)(m_frame_number+1) * FPS * 10000000;
@@ -296,7 +310,7 @@ HRESULT my12doomImageStream::GetMediaType(int iPosition, CMediaType *pmt)
 
 	pvi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	pvi->bmiHeader.biWidth = m_width;
-	pvi->bmiHeader.biHeight = m_height;
+	pvi->bmiHeader.biHeight = -m_height;
 	pvi->bmiHeader.biPlanes = 1;
 	pvi->bmiHeader.biBitCount = 24;
 	pvi->bmiHeader.biCompression = 0;
@@ -328,8 +342,7 @@ HRESULT my12doomImageStream::ChangeStart()
 {
 	{
 		CAutoLock lock(CSourceSeeking::m_pLock);
-		m_stream_start = m_rtStart;
-		m_frame_number = m_rtStart * m_stream->packet_count / m_stream->length / 10000 ;
+		m_frame_number = m_rtStart / 10000000 ;
 
 		// seek to key frame for video
 	}
@@ -340,14 +353,6 @@ flush:
 }
 HRESULT my12doomImageStream::ChangeStop()
 {
-	{
-		CAutoLock lock(CSourceSeeking::m_pLock);
-		if ((REFERENCE_TIME)(m_frame_number+1) * m_stream->length * 10000 / m_stream->packet_count < m_rtStop)
-		{
-			return S_OK;
-		}
-	}
-
 	// We're already past the new stop time. Flush the graph.
 	UpdateFromSeek();
 	return S_OK;
@@ -369,7 +374,6 @@ void my12doomImageStream::UpdateFromSeek()
 		// Shut down the thread and stop pushing data.
 		Stop();
 		DeliverEndFlush();
-		m_need_I_frame = true;
 		// Restart the thread and start pushing data again.
 		Pause();
 	}

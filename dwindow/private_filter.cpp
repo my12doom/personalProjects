@@ -1,4 +1,5 @@
 #include "private_filter.h"
+#include "ImageSource.h"
 #include <atlbase.h>
 
 typedef HRESULT (__stdcall *pDllGetClassObject) (REFCLSID rclsid, REFIID riid, LPVOID*ppv);
@@ -41,6 +42,17 @@ HRESULT GetFileSource(const wchar_t *filename, CLSID *out)
 
 HRESULT myCreateInstance(CLSID clsid, IID iid, void**out)
 {
+	if (clsid == CLSID_my12doomImageSource)
+	{
+		HRESULT hr;
+		my12doomImageSource *s = (my12doomImageSource *)my12doomImageSource::CreateInstance(NULL, &hr);
+
+		if (FAILED(hr))
+			return hr;
+
+		return s->QueryInterface(iid, out);
+	}
+
 	LPOLESTR strCLSID = NULL;
 	wchar_t filename[MAX_PATH];
 	wchar_t tmp[MAX_PATH];
