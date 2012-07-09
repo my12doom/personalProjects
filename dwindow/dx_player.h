@@ -8,7 +8,6 @@
 #include "streams.h"
 #include "..\renderer_prototype\my12doomRenderer.h"
 #include "dwindow.h"
-#include "bar.h"
 
 // other
 #include "Iplayer.h"
@@ -183,7 +182,6 @@ protected:
 	HRESULT PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn);
 
 	// directshow etc. core part
-	bar_drawer m_bar_drawer;
 	CCritSec m_draw_sec;
 	CCritSec m_seek_sec;
 	bool m_show_ui;

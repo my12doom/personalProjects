@@ -518,14 +518,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\bar.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\color_adjust.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\global_funcs.cpp"
 				>
 			</File>
@@ -579,10 +571,6 @@
 			</File>
 			<File
 				RelativePath="..\lrtb\mySink.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\private_filter.cpp"
 				>
 			</File>
 			<File
@@ -753,6 +741,10 @@
 				Name="dx_player"
 				>
 				<File
+					RelativePath=".\color_adjust.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\dwindow.cpp"
 					>
 				</File>
@@ -764,6 +756,10 @@
 					RelativePath=".\dx_player_command.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\private_filter.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -772,19 +768,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\bar.h"
-				>
-			</File>
-			<File
 				RelativePath=".\bomb_function.h"
 				>
 			</File>
 			<File
 				RelativePath=".\bomb_network.h"
-				>
-			</File>
-			<File
-				RelativePath=".\color_adjust.h"
 				>
 			</File>
 			<File
@@ -797,10 +785,6 @@
 			</File>
 			<File
 				RelativePath="..\lrtb\mySink.h"
-				>
-			</File>
-			<File
-				RelativePath=".\private_filter.h"
 				>
 			</File>
 			<File
@@ -931,6 +915,10 @@
 				Name="dx_player"
 				>
 				<File
+					RelativePath=".\color_adjust.h"
+					>
+				</File>
+				<File
 					RelativePath=".\dwindow.h"
 					>
 				</File>
@@ -944,6 +932,10 @@
 				</File>
 				<File
 					RelativePath=".\Iplayer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\private_filter.h"
 					>
 				</File>
 			</Filter>

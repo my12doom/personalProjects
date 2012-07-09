@@ -195,7 +195,6 @@ m_movie_pos_y(L"MoviePosY", 0)
 	m_log = (wchar_t*)malloc(100000);
 	m_log[0] = NULL;
 	m_mouse.x = m_mouse.y = -10;
-	m_bar_drawer.load_resource(hExe);
 	m_mirror1 = 0;
 	m_mirror2 = 0;
 	m_parallax = 0;
@@ -776,7 +775,7 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 	RECT r;
 	double v;
 	GetClientRect(id_to_hwnd(id), &r);
-	m_bar_drawer.total_width = r.right - r.left;
+	int total_width = r.right - r.left;
 	int height = r.bottom - r.top;
 	int hit_x = x;
 	int hit_y = y;
@@ -794,14 +793,14 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 
 	if (m_output_mode == out_sbs)
 	{
-		m_bar_drawer.total_width /= 2;
-		hit_x %= m_bar_drawer.total_width;
+		total_width /= 2;
+		hit_x %= total_width;
 	}
 
 	if (m_output_mode == out_hsbs)
 	{
 		hit_x *= 2;
-		hit_x %= m_bar_drawer.total_width;
+		hit_x %= total_width;
 	}
 
 	int type = -1;
@@ -1043,7 +1042,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 	RECT r;
 	GetClientRect(id_to_hwnd(id), &r);
-	m_bar_drawer.total_width = r.right - r.left;
+	int total_width = r.right - r.left;
 	int height = r.bottom - r.top;
 	if (m_output_mode == out_tb)
 	{
@@ -1060,14 +1059,14 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 
 	if (m_output_mode == out_sbs)
 	{
-		m_bar_drawer.total_width /= 2;
-		x %= m_bar_drawer.total_width;
+		total_width /= 2;
+		x %= total_width;
 	}
 
 	if (m_output_mode == out_hsbs)
 	{
 		x *= 2;
-		x %= m_bar_drawer.total_width;
+		x %= total_width;
 	}
 
 	if ( (button == VK_RBUTTON || (!m_file_loaded && m_renderer1 && m_renderer1->hittest(x, y, NULL) == hit_logo) && 
@@ -1151,8 +1150,8 @@ LRESULT dx_player::on_timer(int id)
 		ScreenToClient(id_to_hwnd(1), &mouse1);
 		ScreenToClient(id_to_hwnd(2), &mouse2);
 
-		m_bar_drawer.total_width = client1.right - client1.left;
-		if (m_bar_drawer.total_width == 0)
+		int total_width = client1.right - client1.left;
+		if (total_width == 0)
 			test1 = -1;
 		else
 		{
@@ -1173,21 +1172,21 @@ LRESULT dx_player::on_timer(int id)
 
 			if (m_output_mode == out_sbs)
 			{
-				m_bar_drawer.total_width /= 2;
-				hit_x %= m_bar_drawer.total_width;
+				total_width /= 2;
+				hit_x %= total_width;
 			}
 
 			if (m_output_mode == out_hsbs)
 			{
 				hit_x *= 2;
-				hit_x %= m_bar_drawer.total_width;
+				hit_x %= total_width;
 			}
 
 			if (m_renderer1) test1 = m_renderer1->hittest(hit_x, hit_y, NULL);
 		}
 
-		m_bar_drawer.total_width = client2.right - client2.left;
-		if (m_bar_drawer.total_width == 0)
+		total_width = client2.right - client2.left;
+		if (total_width == 0)
 			test2 = -1;
 		else
 		{
@@ -1208,14 +1207,14 @@ LRESULT dx_player::on_timer(int id)
 
 			if (m_output_mode == out_sbs)
 			{
-				m_bar_drawer.total_width /= 2;
-				hit_x %= m_bar_drawer.total_width;
+				total_width /= 2;
+				hit_x %= total_width;
 			}
 
 			if (m_output_mode == out_hsbs)
 			{
 				hit_x *= 2;
-				hit_x %= m_bar_drawer.total_width;
+				hit_x %= total_width;
 			}
 
 			if(m_renderer1) test2 = m_renderer1->hittest(hit_x, hit_y, NULL);
