@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // dllmain.cpp : Implements DLL exports and COM class factory
-//
+// 
 // THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 // ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 // THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
@@ -21,188 +21,67 @@
 
 #include "EVRPresenter.h"
 
-#include <new>
-#include <shlwapi.h>
-
 #include <initguid.h>
 #include "EVRPresenterUuid.h"
 
+HMODULE g_hModule;                  // DLL module handle
 
-HRESULT RegisterObject(
-    HMODULE hModule,
-    const GUID& guid,
-    const TCHAR *pszDescription,
-    const TCHAR *pszThreadingModel
-    );
-
-HRESULT UnregisterObject(const GUID& guid);
-
+DEFINE_CLASSFACTORY_SERVER_LOCK;    // Defines the static member variable for the class factory lock.
 
 // Friendly name for COM registration.
-wchar_t const g_sFriendlyName[] = L"EVR Custom Presenter";
+WCHAR* g_sFriendlyName =  L"EVR Custom Presenter";
 
+// g_ClassFactories: Array of class factory data.
+// Defines a look-up table of CLSIDs and corresponding creation functions.
 
-// Module Ref count
-long g_cRefModule = 0;
-
-// Handle to the DLL's module
-HMODULE g_hModule = NULL;
-
-void DllAddRef()
+ClassFactoryData g_ClassFactories[] =
 {
-    InterlockedIncrement(&g_cRefModule);
-}
-
-void DllRelease()
-{
-    InterlockedDecrement(&g_cRefModule);
-}
-
-
-//
-// IClassFactory implementation
-//
-
-typedef HRESULT (*PFNCREATEINSTANCE)(REFIID riid, void **ppvObject);
-struct CLASS_OBJECT_INIT
-{
-    const CLSID *pClsid;
-    PFNCREATEINSTANCE pfnCreate;
+    {   &CLSID_CustomEVRPresenter, EVRCustomPresenter::CreateInstance }
 };
+      
+const DWORD g_numClassFactories = ARRAY_SIZE(g_ClassFactories);
 
-// Classes supported by this module:
-const CLASS_OBJECT_INIT c_rgClassObjectInit[] =
+// DllMain: Entry-point for the DLL.
+BOOL APIENTRY DllMain( HANDLE hModule, 
+                       DWORD  ul_reason_for_call, 
+                       LPVOID lpReserved
+                     )
 {
-    { &CLSID_CustomEVRPresenter, EvrPresenter_CreateInstance },
-};
-
-class CClassFactory : public IClassFactory
-{
-public:
-
-    static HRESULT CreateInstance(
-        REFCLSID clsid,                                 // The CLSID of the object to create (from DllGetClassObject)
-        const CLASS_OBJECT_INIT *pClassObjectInits,     // Array of class factory data.
-        size_t cClassObjectInits,                       // Number of elements in the array.
-        REFIID riid,                                    // The IID of the interface to retrieve (from DllGetClassObject)
-        void **ppv                                      // Receives a pointer to the interface.
-        )
+    switch (ul_reason_for_call)
     {
-        *ppv = NULL;
+    case DLL_PROCESS_ATTACH:
+        g_hModule = (HMODULE)hModule;
+        TRACE_INIT();
+        break;
 
-        HRESULT hr = CLASS_E_CLASSNOTAVAILABLE;
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+        break;
 
-        for (size_t i = 0; i < cClassObjectInits; i++)
-        {
-            if (clsid == *pClassObjectInits[i].pClsid)
-            {
-                IClassFactory *pClassFactory = new (std::nothrow) CClassFactory(pClassObjectInits[i].pfnCreate);
-
-                if (pClassFactory)
-                {
-                    hr = pClassFactory->QueryInterface(riid, ppv);
-                    pClassFactory->Release();
-                }
-                else
-                {
-                    hr = E_OUTOFMEMORY;
-                }
-                break; // match found
-            }
-        }
-        return hr;
-    }
-
-    // IUnknown methods
-    IFACEMETHODIMP QueryInterface(REFIID riid, void ** ppv)
-    {
-        static const QITAB qit[] =
-        {
-            QITABENT(CClassFactory, IClassFactory),
-            { 0 }
-        };
-        return QISearch(this, qit, riid, ppv);
-    }
-
-    IFACEMETHODIMP_(ULONG) AddRef()
-    {
-        return InterlockedIncrement(&m_cRef);
-    }
-
-    IFACEMETHODIMP_(ULONG) Release()
-    {
-        long cRef = InterlockedDecrement(&m_cRef);
-        if (cRef == 0)
-        {
-            delete this;
-        }
-        return cRef;
-    }
-
-    // IClassFactory methods
-
-    IFACEMETHODIMP CreateInstance(IUnknown *punkOuter, REFIID riid, void **ppv)
-    {
-        return punkOuter ? CLASS_E_NOAGGREGATION : m_pfnCreate(riid, ppv);
-    }
-
-    IFACEMETHODIMP LockServer(BOOL fLock)
-    {
-        if (fLock)
-        {
-            DllAddRef();
-        }
-        else
-        {
-            DllRelease();
-        }
-        return S_OK;
-    }
-
-private:
-
-    CClassFactory(PFNCREATEINSTANCE pfnCreate) : m_cRef(1), m_pfnCreate(pfnCreate)
-    {
-        DllAddRef();
-    }
-
-    ~CClassFactory()
-    {
-        DllRelease();
-    }
-
-    long m_cRef;
-    PFNCREATEINSTANCE m_pfnCreate;
-};
-
-//
-// Standard DLL functions
-//
-
-STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
-{
-    if (dwReason == DLL_PROCESS_ATTACH)
-    {
-        g_hModule = (HMODULE)hInstance;
-        DisableThreadLibraryCalls(hInstance);
+    case DLL_PROCESS_DETACH:
+        TRACE_CLOSE();
+        break;
     }
     return TRUE;
 }
 
 STDAPI DllCanUnloadNow()
 {
-    return (g_cRefModule == 0) ? S_OK : S_FALSE;
+    if (!ClassFactory::IsLocked())
+    {
+        return S_OK;
+    }
+    else
+    {
+        return S_FALSE;
+    }
 }
 
-STDAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void **ppv)
-{
-    return CClassFactory::CreateInstance(clsid, c_rgClassObjectInit, ARRAYSIZE(c_rgClassObjectInit), riid, ppv);
-}
 
 STDAPI DllRegisterServer()
 {
     HRESULT hr;
-
+    
     // Register the MFT's CLSID as a COM object.
     hr = RegisterObject(g_hModule, CLSID_CustomEVRPresenter, g_sFriendlyName, TEXT("Both"));
 
@@ -217,146 +96,38 @@ STDAPI DllUnregisterServer()
     return S_OK;
 }
 
-
-
-
-// Converts a CLSID into a string with the form "CLSID\{clsid}"
-HRESULT CreateObjectKeyName(const GUID& guid, TCHAR *sName, DWORD cchMax)
+STDAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void** ppv)
 {
-    // convert CLSID uuid to string
-    OLECHAR szCLSID[CHARS_IN_GUID];
-    HRESULT hr = StringFromGUID2(guid, szCLSID, CHARS_IN_GUID);
-    if (SUCCEEDED(hr))
+    ClassFactory *pFactory = NULL;
+
+    HRESULT hr = CLASS_E_CLASSNOTAVAILABLE; // Default to failure
+
+    // Find an entry in our look-up table for the specified CLSID.
+    for (DWORD index = 0; index < g_numClassFactories; index++)
     {
-        // Create a string of the form "CLSID\{clsid}"
-        hr = StringCchPrintf(sName, cchMax, TEXT("Software\\Classes\\CLSID\\%ls"), szCLSID);
-    }
-    return hr;
-}
-
-// Creates a registry key (if needed) and sets the default value of the key
-HRESULT CreateRegKeyAndValue(
-    HKEY hKey,
-    PCWSTR pszSubKeyName,
-    PCWSTR pszValueName,
-    PCWSTR pszData,
-    PHKEY phkResult
-    )
-{
-    *phkResult = NULL;
-
-    LONG lRet = RegCreateKeyEx(
-        hKey, pszSubKeyName,
-        0,  NULL, REG_OPTION_NON_VOLATILE,
-        KEY_ALL_ACCESS, NULL, phkResult, NULL);
-
-    if (lRet == ERROR_SUCCESS)
-    {
-        lRet = RegSetValueExW(
-            (*phkResult),
-            pszValueName, 0, REG_SZ,
-            (LPBYTE) pszData,
-            ((DWORD) wcslen(pszData) + 1) * sizeof(WCHAR)
-            );
-
-        if (lRet != ERROR_SUCCESS)
+        if (*g_ClassFactories[index].pclsid == clsid)
         {
-            RegCloseKey(*phkResult);
+            // Found an entry. Create a new class factory object.
+            pFactory = new ClassFactory(g_ClassFactories[index].pfnCreate);
+            if (pFactory)
+            {
+                hr = S_OK;
+            }
+            else
+            {
+                hr = E_OUTOFMEMORY;
+            }
+            break;
         }
     }
 
-    return HRESULT_FROM_WIN32(lRet);
-}
-
-// Creates the registry entries for a COM object.
-
-HRESULT RegisterObject(
-    HMODULE hModule,
-    const GUID& guid,
-    const TCHAR *pszDescription,
-    const TCHAR *pszThreadingModel
-    )
-{
-    HKEY hKey = NULL;
-    HKEY hSubkey = NULL;
-
-    TCHAR achTemp[MAX_PATH];
-
-    // Create the name of the key from the object's CLSID
-    HRESULT hr = CreateObjectKeyName(guid, achTemp, MAX_PATH);
-
-    // Create the new key.
     if (SUCCEEDED(hr))
     {
-        hr = CreateRegKeyAndValue(
-            HKEY_LOCAL_MACHINE,
-            achTemp,
-            NULL,
-            pszDescription,
-            &hKey
-            );
+        hr = pFactory->QueryInterface(riid, ppv);
     }
-
-    if (SUCCEEDED(hr))
-    {
-        (void)GetModuleFileName(hModule, achTemp, MAX_PATH);
-
-        hr = HRESULT_FROM_WIN32(GetLastError());
-    }
-
-    // Create the "InprocServer32" subkey
-    if (SUCCEEDED(hr))
-    {
-        hr = CreateRegKeyAndValue(
-            hKey,
-            L"InProcServer32",
-            NULL,
-            achTemp,
-            &hSubkey
-            );
-
-        RegCloseKey(hSubkey);
-    }
-
-    // Add a new value to the subkey, for "ThreadingModel" = <threading model>
-    if (SUCCEEDED(hr))
-    {
-        hr = CreateRegKeyAndValue(
-            hKey,
-            L"InProcServer32",
-            L"ThreadingModel",
-            pszThreadingModel,
-            &hSubkey
-            );
-
-        RegCloseKey(hSubkey);
-    }
-
-    // close hkeys
-
-    RegCloseKey(hKey);
+    SAFE_RELEASE(pFactory);
 
     return hr;
 }
-
-// Deletes the registry entries for a COM object.
-
-HRESULT UnregisterObject(const GUID& guid)
-{
-    TCHAR achTemp[MAX_PATH];
-
-    HRESULT hr = CreateObjectKeyName(guid, achTemp, MAX_PATH);
-
-    if (SUCCEEDED(hr))
-    {
-        // Delete the key recursively.
-        LONG lRes = RegDeleteTree(HKEY_LOCAL_MACHINE, achTemp);
-
-        hr = HRESULT_FROM_WIN32(lRes);
-    }
-
-    return hr;
-}
-
 
 

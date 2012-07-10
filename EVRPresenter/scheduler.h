@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // Scheduler.h: Schedules when video frames are presented.
-//
+// 
 // THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 // ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 // THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
@@ -28,12 +28,12 @@ struct SchedulerCallback;
 //
 // General design:
 // The scheduler generally receives samples before their presentation time. It
-// puts the samples on a queue and presents them in FIFO order on a worker
+// puts the samples on a queue and presents them in FIFO order on a worker 
 // thread. The scheduler communicates with the worker thread by posting thread
 // messages.
 //
 // The caller has the option of presenting samples immediately (for example,
-// for repaints).
+// for repaints). 
 //-----------------------------------------------------------------------------
 
 class Scheduler
@@ -64,7 +64,7 @@ public:
     // ThreadProc for the scheduler thread.
     static DWORD WINAPI SchedulerThreadProc(LPVOID lpParameter);
 
-private:
+private: 
     // non-static version of SchedulerThreadProc.
     DWORD SchedulerThreadProcPrivate();
 
@@ -90,7 +90,7 @@ private:
 //-----------------------------------------------------------------------------
 // SchedulerCallback
 //
-// Defines the callback method to present samples.
+// Defines the callback method to present samples. 
 //-----------------------------------------------------------------------------
 
 struct SchedulerCallback

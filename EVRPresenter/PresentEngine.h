@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // PresentEngine.h: Defines the D3DPresentEngine object.
-//
+// 
 // THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 // ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 // THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
@@ -42,15 +42,15 @@ public:
     virtual ~D3DPresentEngine();
 
     // GetService: Returns the IDirect3DDeviceManager9 interface.
-    // (The signature is identical to IMFGetService::GetService but
+    // (The signature is identical to IMFGetService::GetService but 
     // this object does not derive from IUnknown.)
     virtual HRESULT GetService(REFGUID guidService, REFIID riid, void** ppv);
     virtual HRESULT CheckFormat(D3DFORMAT format);
 
     // Video window / destination rectangle:
-    // This object implements a sub-set of the functions defined by the
-    // IMFVideoDisplayControl interface. However, some of the method signatures
-    // are different. The presenter's implementation of IMFVideoDisplayControl
+    // This object implements a sub-set of the functions defined by the 
+    // IMFVideoDisplayControl interface. However, some of the method signatures 
+    // are different. The presenter's implementation of IMFVideoDisplayControl 
     // calls these methods.
     HRESULT SetVideoWindow(HWND hwnd);
     HWND    GetVideoWindow() const { return m_hwnd; }
@@ -61,7 +61,7 @@ public:
     void    ReleaseResources();
 
     HRESULT CheckDeviceState(DeviceState *pState);
-    HRESULT PresentSample(IMFSample* pSample, LONGLONG llTarget);
+    HRESULT PresentSample(IMFSample* pSample, LONGLONG llTarget); 
 
     UINT    RefreshRate() const { return m_DisplayMode.RefreshRate; }
 
@@ -86,7 +86,7 @@ protected:
     RECT                        m_rcDestRect;           // Destination rectangle.
     D3DDISPLAYMODE              m_DisplayMode;          // Adapter's display mode.
 
-    CRITICAL_SECTION            m_ObjectLock;           // Thread lock for the D3D device.
+    CritSec                     m_ObjectLock;           // Thread lock for the D3D device.
 
     // COM interfaces
     IDirect3D9Ex                *m_pD3D9;

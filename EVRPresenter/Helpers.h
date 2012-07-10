@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // Helpers.cpp : Miscellaneous helpers.
-//
+// 
 // THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 // ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 // THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
@@ -20,7 +20,7 @@
 // Manages a list of allocated samples.
 //-----------------------------------------------------------------------------
 
-class SamplePool
+class SamplePool 
 {
 public:
     SamplePool();
@@ -28,13 +28,13 @@ public:
 
     HRESULT Initialize(VideoSampleList& samples);
     HRESULT Clear();
-
+   
     HRESULT GetSample(IMFSample **ppSample);    // Does not block.
-    HRESULT ReturnSample(IMFSample *pSample);
+    HRESULT ReturnSample(IMFSample *pSample);   
     BOOL    AreSamplesPending();
 
 private:
-    CRITICAL_SECTION            m_lock;
+    CritSec                     m_lock;
 
     VideoSampleList             m_VideoSampleQueue;         // Available queue
 
@@ -49,7 +49,7 @@ private:
 //
 // T: COM interface type.
 //
-// This class is used by the scheduler.
+// This class is used by the scheduler. 
 //
 // Note: This class uses a critical section to protect the state of the queue.
 // With a little work, the scheduler could probably use a lock-free queue.
@@ -59,69 +59,40 @@ template <class T>
 class ThreadSafeQueue
 {
 public:
-
-    ThreadSafeQueue()
-    {
-        InitializeCriticalSection(&m_lock);
-    }
-    virtual ~ThreadSafeQueue()
-    {
-        DeleteCriticalSection(&m_lock);
-    }
-
-
     HRESULT Queue(T *p)
     {
-        EnterCriticalSection(&m_lock);
-
-        HRESULT hr = m_list.InsertBack(p);
-
-        LeaveCriticalSection(&m_lock);
-        return hr;
+        AutoLock lock(m_lock);
+        return m_list.InsertBack(p);
     }
 
     HRESULT Dequeue(T **pp)
     {
-        EnterCriticalSection(&m_lock);
-
-        HRESULT hr = S_OK;
+        AutoLock lock(m_lock);
 
         if (m_list.IsEmpty())
         {
             *pp = NULL;
-            hr = S_FALSE;
-        }
-        else
-        {
-            hr = m_list.RemoveFront(pp);
+            return S_FALSE;
         }
 
-        LeaveCriticalSection(&m_lock);
-        return hr;
+        return m_list.RemoveFront(pp);
     }
 
     HRESULT PutBack(T *p)
     {
-        EnterCriticalSection(&m_lock);
-
-        HRESULT hr =  m_list.InsertFront(p);
-
-        LeaveCriticalSection(&m_lock);
-        return hr;
+        AutoLock lock(m_lock);
+        return m_list.InsertFront(p);
     }
 
-    void Clear()
+    void Clear() 
     {
-        EnterCriticalSection(&m_lock);
-
+        AutoLock lock(m_lock);
         m_list.Clear();
-
-        LeaveCriticalSection(&m_lock);
     }
 
 
 private:
-    CRITICAL_SECTION    m_lock;
-    ComPtrList<T>       m_list;
+    CritSec         m_lock; 
+    ComPtrList<T>   m_list;
 };
 

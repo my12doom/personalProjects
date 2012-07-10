@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // Presenter.h : Defines the presenter object.
-//
+// 
 // THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 // ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 // THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
@@ -40,7 +40,7 @@ enum FRAMESTEP_STATE
     FRAMESTEP_WAITING_START,    // Frame stepping, but the clock is not started.
     FRAMESTEP_PENDING,          // Clock is started. Waiting for samples.
     FRAMESTEP_SCHEDULED,        // Submitted a sample for rendering.
-    FRAMESTEP_COMPLETE          // Sample was rendered.
+    FRAMESTEP_COMPLETE          // Sample was rendered. 
 
     // State transitions:
 
@@ -54,93 +54,15 @@ enum FRAMESTEP_STATE
 };
 
 
-
-//////////////////////////////////////////////////////////////////////////
-//  AsyncCallback [template]
-//
-//  Description:
-//  Helper class that routes IMFAsyncCallback::Invoke calls to a class
-//  method on the parent class.
-//
-//  Usage:
-//  Add this class as a member variable. In the parent class constructor,
-//  initialize the AsyncCallback class like this:
-//      m_cb(this, &CYourClass::OnInvoke)
-//  where
-//      m_cb       = AsyncCallback object
-//      CYourClass = parent class
-//      OnInvoke   = Method in the parent class to receive Invoke calls.
-//
-//  The parent's OnInvoke method (you can name it anything you like) must
-//  have a signature that matches the InvokeFn typedef below.
-//////////////////////////////////////////////////////////////////////////
-
-// T: Type of the parent object
-template<class T>
-class AsyncCallback : public IMFAsyncCallback
-{
-public:
-    typedef HRESULT (T::*InvokeFn)(IMFAsyncResult *pAsyncResult);
-
-    AsyncCallback(T *pParent, InvokeFn fn) : m_pParent(pParent), m_pInvokeFn(fn)
-    {
-    }
-
-    // IUnknown
-    STDMETHODIMP QueryInterface(REFIID iid, void** ppv)
-    {
-        if (!ppv)
-        {
-            return E_POINTER;
-        }
-        if (iid == __uuidof(IUnknown))
-        {
-            *ppv = static_cast<IUnknown*>(static_cast<IMFAsyncCallback*>(this));
-        }
-        else if (iid == __uuidof(IMFAsyncCallback))
-        {
-            *ppv = static_cast<IMFAsyncCallback*>(this);
-        }
-        else
-        {
-            *ppv = NULL;
-            return E_NOINTERFACE;
-        }
-        AddRef();
-        return S_OK;
-    }
-    STDMETHODIMP_(ULONG) AddRef() {
-        // Delegate to parent class.
-        return m_pParent->AddRef();
-    }
-    STDMETHODIMP_(ULONG) Release() {
-        // Delegate to parent class.
-        return m_pParent->Release();
-    }
-
-
-    // IMFAsyncCallback methods
-    STDMETHODIMP GetParameters(DWORD*, DWORD*)
-    {
-        // Implementation of this method is optional.
-        return E_NOTIMPL;
-    }
-
-    STDMETHODIMP Invoke(IMFAsyncResult* pAsyncResult)
-    {
-        return (m_pParent->*m_pInvokeFn)(pAsyncResult);
-    }
-
-    T *m_pParent;
-    InvokeFn m_pInvokeFn;
-};
-
 //-----------------------------------------------------------------------------
 //  EVRCustomPresenter class
 //  Description: Implements the custom presenter.
 //-----------------------------------------------------------------------------
 
-class EVRCustomPresenter :
+class EVRCustomPresenter : 
+    BaseObject,  
+    RefCountedObject, 
+    // COM interfaces:
     public IMFVideoDeviceID,
     public IMFVideoPresenter, // Inherits IMFClockStateSink
     public IMFRateSupport,
@@ -150,7 +72,7 @@ class EVRCustomPresenter :
 {
 
 public:
-    static HRESULT CreateInstance(REFIID iid, void **ppv);
+    static HRESULT CreateInstance(IUnknown *pUnkOuter, REFIID iid, void **ppv);
 
     // IUnknown methods
     STDMETHOD(QueryInterface)(REFIID riid, void ** ppv);
@@ -205,10 +127,10 @@ protected:
     EVRCustomPresenter(HRESULT& hr);
     virtual ~EVRCustomPresenter();
 
-    // CheckShutdown:
+    // CheckShutdown: 
     //     Returns MF_E_SHUTDOWN if the presenter is shutdown.
     //     Call this at the start of any methods that should fail after shutdown.
-    HRESULT CheckShutdown() const 
+    inline HRESULT CheckShutdown() const 
     {
         if (m_RenderState == RENDER_STATE_SHUTDOWN)
         {
@@ -258,7 +180,7 @@ protected:
     HRESULT CheckEndOfStream();
 
     // Managing samples
-    void    ProcessOutputLoop();
+    void    ProcessOutputLoop();   
     HRESULT ProcessOutput();
     HRESULT DeliverSample(IMFSample *pSample, BOOL bRepaint);
     HRESULT TrackSample(IMFSample *pSample);
@@ -279,7 +201,7 @@ protected:
 
 protected:
 
-    // FrameStep: Holds information related to frame-stepping.
+    // FrameStep: Holds information related to frame-stepping. 
     // Note: The purpose of this structure is simply to organize the data in one variable.
     struct FrameStep
     {
@@ -295,12 +217,11 @@ protected:
 
 
 protected:
-    long                        m_nRefCount;            // reference count
 
     RENDER_STATE                m_RenderState;          // Rendering state.
     FrameStep                   m_FrameStep;            // Frame-stepping information.
 
-    CRITICAL_SECTION            m_ObjectLock;           // Serializes our public methods.
+    CritSec                     m_ObjectLock;           // Serializes our public methods.  
 
     // Samples and scheduling
     Scheduler                   m_scheduler;            // Manages scheduling of samples.
@@ -326,7 +247,3 @@ protected:
     IMFMediaType                *m_pMediaType;           // Output media type
 };
 
-inline HRESULT EvrPresenter_CreateInstance(REFIID riid, void **ppv)
-{
-    return EVRCustomPresenter::CreateInstance(riid, ppv);
-}

@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // Scheduler.cpp: Schedules when video frames are presented.
-//
+// 
 // THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 // ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 // THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
@@ -13,16 +13,6 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "EVRPresenter.h"
-
-const MFTIME ONE_SECOND = 10000000; // One second.
-const LONG   ONE_MSEC = 1000;       // One millisecond
-
-// Convert 100-nanosecond units to milliseconds.
-
-inline LONG MFTimeToMsec(const LONGLONG& time)
-{
-    return (LONG)(time / (ONE_SECOND / ONE_MSEC));
-}
 
 // ScheduleEvent
 // Messages for the scheduler thread.
@@ -39,16 +29,16 @@ const DWORD SCHEDULER_TIMEOUT = 5000;
 // Constructor
 //-----------------------------------------------------------------------------
 
-Scheduler::Scheduler() :
+Scheduler::Scheduler() : 
     m_pCB(NULL),
-    m_pClock(NULL),
+    m_pClock(NULL), 
     m_dwThreadID(0),
     m_hSchedulerThread(NULL),
     m_hThreadReadyEvent(NULL),
     m_hFlushEvent(NULL),
     m_fRate(1.0f),
-    m_LastSampleTime(0),
-    m_PerFrameInterval(0),
+    m_LastSampleTime(0), 
+    m_PerFrameInterval(0), 
     m_PerFrame_1_4th(0)
 {
 }
@@ -60,7 +50,7 @@ Scheduler::Scheduler() :
 
 Scheduler::~Scheduler()
 {
-    SafeRelease(&m_pClock);
+    SAFE_RELEASE(m_pClock);
 }
 
 
@@ -110,24 +100,21 @@ HRESULT Scheduler::StartScheduler(IMFClock *pClock)
     m_hThreadReadyEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (m_hThreadReadyEvent == NULL)
     {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        goto done;
+        CHECK_HR(hr = HRESULT_FROM_WIN32(GetLastError()));
     }
 
     // Create an event to wait for flush commands to complete.
     m_hFlushEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (m_hFlushEvent == NULL)
     {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        goto done;
+        CHECK_HR(hr = HRESULT_FROM_WIN32(GetLastError()));
     }
 
     // Create the scheduler thread.
     m_hSchedulerThread = CreateThread(NULL, 0, SchedulerThreadProc, (LPVOID)this, 0, &dwID);
     if (m_hSchedulerThread == NULL)
     {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        goto done;
+        CHECK_HR(hr = HRESULT_FROM_WIN32(GetLastError()));
     }
 
     HANDLE hObjects[] = { m_hThreadReadyEvent, m_hSchedulerThread };
@@ -140,20 +127,20 @@ HRESULT Scheduler::StartScheduler(IMFClock *pClock)
         // The thread terminated early for some reason. This is an error condition.
         CloseHandle(m_hSchedulerThread);
         m_hSchedulerThread = NULL;
-        
-        hr = E_UNEXPECTED;
-        goto done;
+        CHECK_HR(hr = E_UNEXPECTED);
     }
 
     m_dwThreadID = dwID;
 
 done:
+
     // Regardless success/failure, we are done using the "thread ready" event.
     if (m_hThreadReadyEvent)
     {
         CloseHandle(m_hThreadReadyEvent);
         m_hThreadReadyEvent = NULL;
     }
+
     return hr;
 }
 
@@ -173,7 +160,7 @@ HRESULT Scheduler::StopScheduler()
 
     // Ask the scheduler thread to exit.
     PostThreadMessage(m_dwThreadID, eTerminate, 0, 0);
-
+    
     // Wait for the thread to exit.
     WaitForSingleObject(m_hSchedulerThread, INFINITE);
 
@@ -199,12 +186,19 @@ HRESULT Scheduler::StopScheduler()
 //
 // Flushes all samples that are queued for presentation.
 //
-// Note: This method is synchronous; ie., it waits for the flush operation to
+// Note: This method is synchronous; ie., it waits for the flush operation to 
 // complete on the worker thread.
 //-----------------------------------------------------------------------------
 
 HRESULT Scheduler::Flush()
 {
+    TRACE((L"Scheduler::Flush\n"));
+
+    if (m_hSchedulerThread == NULL)
+    {
+        TRACE((L"No scheduler thread!\n"));
+    }
+
     if (m_hSchedulerThread)
     {
         // Ask the scheduler thread to flush.
@@ -214,7 +208,9 @@ HRESULT Scheduler::Flush()
         // OR for the thread to terminate.
         HANDLE objects[] = { m_hFlushEvent, m_hSchedulerThread };
 
-        WaitForMultipleObjects(ARRAYSIZE(objects), objects, FALSE, SCHEDULER_TIMEOUT);
+        WaitForMultipleObjects(ARRAY_SIZE(objects), objects, FALSE, SCHEDULER_TIMEOUT); 
+
+        TRACE((L"Scheduler::Flush completed.\n"));
     }
 
     return S_OK;
@@ -268,6 +264,8 @@ HRESULT Scheduler::ScheduleSample(IMFSample *pSample, BOOL bPresentNow)
         }
     }
 
+    LOG_MSG_IF_FAILED(L"Scheduler::ScheduleSample failed", hr);
+
     return hr;
 }
 
@@ -289,14 +287,14 @@ HRESULT Scheduler::ProcessSamplesInQueue(LONG *plNextSleep)
     // Process samples until the queue is empty or until the wait time > 0.
 
     // Note: Dequeue returns S_FALSE when the queue is empty.
-    while (m_ScheduledSamples.Dequeue(&pSample) == S_OK)
+    while (m_ScheduledSamples.Dequeue(&pSample) == S_OK) 
     {
         // Process the next sample in the queue. If the sample is not ready
         // for presentation. the value returned in lWait is > 0, which
         // means the scheduler should sleep for that amount of time.
 
         hr = ProcessSample(pSample, &lWait);
-        SafeRelease(&pSample);
+        SAFE_RELEASE(pSample);
 
         if (FAILED(hr))
         {
@@ -328,7 +326,7 @@ HRESULT Scheduler::ProcessSamplesInQueue(LONG *plNextSleep)
 //
 // plNextSleep: Receives the length of time the scheduler thread should sleep.
 //-----------------------------------------------------------------------------
-
+ 
 
 HRESULT Scheduler::ProcessSample(IMFSample *pSample, LONG *plNextSleep)
 {
@@ -346,27 +344,26 @@ HRESULT Scheduler::ProcessSample(IMFSample *pSample, LONG *plNextSleep)
         // Get the sample's time stamp. It is valid for a sample to
         // have no time stamp.
         hr = pSample->GetSampleTime(&hnsPresentationTime);
-
-        // Get the clock time. (But if the sample does not have a time stamp,
+    
+        // Get the clock time. (But if the sample does not have a time stamp, 
         // we don't need the clock time.)
         if (SUCCEEDED(hr))
         {
             hr = m_pClock->GetCorrelatedTime(0, &hnsTimeNow, &hnsSystemTime);
         }
 
-        // Calculate the time until the sample's presentation time.
+        // Calculate the time until the sample's presentation time. 
         // A negative value means the sample is late.
-        LONGLONG hnsDelta = hnsPresentationTime - hnsTimeNow;
+        LONGLONG hnsDelta = hnsPresentationTime - hnsTimeNow;   
         if (m_fRate < 0)
         {
-            // For reverse playback, the clock runs backward. Therefore, the
-            // delta is reversed.
+            // For reverse playback, the clock runs backward. Therefore the delta is reversed.
             hnsDelta = - hnsDelta;
         }
 
         if (hnsDelta < - m_PerFrame_1_4th)
         {
-            // This sample is late.
+            // This sample is late. 
             bPresentNow = TRUE;
         }
         else if (hnsDelta > (3 * m_PerFrame_1_4th))
@@ -401,7 +398,7 @@ HRESULT Scheduler::ProcessSample(IMFSample *pSample, LONG *plNextSleep)
 
 //-----------------------------------------------------------------------------
 // SchedulerThreadProc (static method)
-//
+// 
 // ThreadProc for the scheduler thread.
 //-----------------------------------------------------------------------------
 
@@ -417,7 +414,7 @@ DWORD WINAPI Scheduler::SchedulerThreadProc(LPVOID lpParameter)
 
 //-----------------------------------------------------------------------------
 // SchedulerThreadProcPrivate
-//
+// 
 // Non-static version of the ThreadProc.
 //-----------------------------------------------------------------------------
 
@@ -454,9 +451,10 @@ DWORD Scheduler::SchedulerThreadProcPrivate()
         {
             BOOL bProcessSamples = TRUE;
 
-            switch (msg.message)
+            switch (msg.message) 
             {
             case eTerminate:
+                TRACE((L"eTerminate\n"));
                 bExitThread = TRUE;
                 break;
 
@@ -476,14 +474,15 @@ DWORD Scheduler::SchedulerThreadProcPrivate()
                     {
                         bExitThread = TRUE;
                     }
-                    bProcessSamples = (lWait != INFINITE);
+                    bProcessSamples = (lWait != INFINITE); 
                 }
                 break;
-            } // switch
+            } // switch  
 
         } // while PeekMessage
-
+    
     }  // while (!bExitThread)
 
+    TRACE((L"Exit scheduler thread.\n"));
     return (SUCCEEDED(hr) ? 0 : 1);
 }
