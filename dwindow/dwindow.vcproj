@@ -710,40 +710,8 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="GUI"
-				>
-				<File
-					RelativePath=".\AboutWindow.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\Hyperlink.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\latency_dialog.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\MediaInfo.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\open_double_file.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\theater.cpp"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="dx_player"
 				>
-				<File
-					RelativePath=".\color_adjust.cpp"
-					>
-				</File>
 				<File
 					RelativePath=".\dwindow.cpp"
 					>
@@ -760,6 +728,38 @@
 					RelativePath=".\private_filter.cpp"
 					>
 				</File>
+				<Filter
+					Name="GUI"
+					>
+					<File
+						RelativePath=".\AboutWindow.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\color_adjust.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\Hyperlink.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\latency_dialog.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\MediaInfo.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\open_double_file.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\theater.cpp"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="ImageSource"
@@ -904,36 +904,8 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="GUI"
-				>
-				<File
-					RelativePath=".\AboudWindow.h"
-					>
-				</File>
-				<File
-					RelativePath=".\Hyperlink.h"
-					>
-				</File>
-				<File
-					RelativePath=".\latency_dialog.h"
-					>
-				</File>
-				<File
-					RelativePath=".\MediaInfo.h"
-					>
-				</File>
-				<File
-					RelativePath=".\open_double_file.h"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="dx_player"
 				>
-				<File
-					RelativePath=".\color_adjust.h"
-					>
-				</File>
 				<File
 					RelativePath=".\dwindow.h"
 					>
@@ -954,6 +926,34 @@
 					RelativePath=".\private_filter.h"
 					>
 				</File>
+				<Filter
+					Name="GUI"
+					>
+					<File
+						RelativePath=".\AboudWindow.h"
+						>
+					</File>
+					<File
+						RelativePath=".\color_adjust.h"
+						>
+					</File>
+					<File
+						RelativePath=".\Hyperlink.h"
+						>
+					</File>
+					<File
+						RelativePath=".\latency_dialog.h"
+						>
+					</File>
+					<File
+						RelativePath=".\MediaInfo.h"
+						>
+					</File>
+					<File
+						RelativePath=".\open_double_file.h"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="ImageSource"
