@@ -20,6 +20,7 @@ DEFINE_GUID(CLSID_ffdshowDXVA,
 
 
 CComPtr<IGraphBuilder> gb;
+CComPtr<IMFVideoDisplayControl> display_controll;
 
 INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
 {
@@ -47,9 +48,8 @@ INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 
 
 
-			CComPtr<IMFVideoDisplayControl> display_controll;
-			RECT client;
-			GetClientRect(hDlg, &client);
+			RECT client = {0,0,1920,1080};
+// 			GetClientRect(hDlg, &client);
 			evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
 			display_controll->SetVideoWindow(hDlg);
 			display_controll->SetVideoPosition(NULL, &client);
@@ -64,9 +64,20 @@ INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 		}
 		break;
 
+
+
 	case WM_CLOSE:
 		EndDialog(hDlg, -1);
 		break;
+
+	case WM_SIZE:
+		{
+// 			RECT client = {0,0,1920,1080};
+// 			GetClientRect(hDlg, &client);
+// 			display_controll->SetVideoPosition(NULL, &client);
+		}
+		break;
+
 
 	default:
 		return FALSE;

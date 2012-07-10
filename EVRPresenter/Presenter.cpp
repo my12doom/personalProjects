@@ -1435,7 +1435,7 @@ HRESULT EVRCustomPresenter::CreateOptimalVideoType(IMFMediaType* pProposedType, 
     CHECK_HR(hr = mtOptimal.SetYUVMatrix(MFVideoTransferMatrix_BT709));
     CHECK_HR(hr = mtOptimal.SetTransferFunction(MFVideoTransFunc_709));
     CHECK_HR(hr = mtOptimal.SetVideoPrimaries(MFVideoPrimaries_BT709));
-    CHECK_HR(hr = mtOptimal.SetVideoNominalRange(MFNominalRange_16_235));
+    CHECK_HR(hr = mtOptimal.SetVideoNominalRange(MFNominalRange_0_255));
     CHECK_HR(hr = mtOptimal.SetVideoLighting(MFVideoLighting_dim));
 
     // Set the target rect dimensions. 

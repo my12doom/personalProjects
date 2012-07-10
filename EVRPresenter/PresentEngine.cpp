@@ -252,7 +252,7 @@ HRESULT D3DPresentEngine::CreateVideoSamples(
     for (int i = 0; i < PRESENTER_BUFFER_COUNT; i++)
     {
         // Create a new swap chain.
-        CHECK_HR(hr = m_pDevice->CreateRenderTarget(pp.BackBufferWidth, pp.BackBufferHeight, pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &pSurface, NULL));
+        CHECK_HR(hr = m_pDevice->CreateRenderTarget(1920, 1080, pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &pSurface, NULL));
         
         // Create the video sample from the swap chain.
         CHECK_HR(hr = CreateD3DSample(pSurface, &pVideoSample));
@@ -401,7 +401,7 @@ HRESULT D3DPresentEngine::PresentSample(IMFSample* pSample, LONGLONG llTarget)
 
 		CHECK_HR(hr = m_pDevice->StretchRect(pSurface, NULL, back_buffer, NULL, D3DTEXF_LINEAR));
 
-		CHECK_HR(hr = m_pDevice->Present(NULL, &m_rcDestRect, m_hwnd, NULL));
+		CHECK_HR(hr = m_pDevice->Present(NULL, NULL, NULL, NULL));
 
         // Store this pointer in case we need to repaint the surface.
         CopyComPointer(m_pSurfaceRepaint, pSurface);
@@ -506,10 +506,10 @@ HRESULT D3DPresentEngine::CreateD3DDevice()
 
     pp.BackBufferWidth = 1920;
     pp.BackBufferHeight = 1080;
-    pp.Windowed = FALSE;
+    pp.Windowed = TRUE;
     pp.SwapEffect = D3DSWAPEFFECT_COPY;
     pp.BackBufferFormat = D3DFMT_X8R8G8B8;
-    pp.hDeviceWindow = hwnd;
+    pp.hDeviceWindow = m_hwnd;
     pp.Flags = D3DPRESENTFLAG_VIDEO;
     pp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
 	pp.FullScreen_RefreshRateInHz = pp.Windowed ? 0 : 60;
@@ -734,19 +734,19 @@ HRESULT D3DPresentEngine::UpdateDestRect()
     }
 
 
-    RECT rcView;
-    GetClientRect(m_hwnd, &rcView);
-
-    // Clip the destination rectangle to the window's client area.
-    if (m_rcDestRect.right > rcView.right)
-    {
-        m_rcDestRect.right = rcView.right;
-    }
-
-    if (m_rcDestRect.bottom > rcView.bottom)
-    {
-        m_rcDestRect.bottom = rcView.bottom;
-    }
+//     RECT rcView;
+//     GetClientRect(m_hwnd, &rcView);
+// 
+//     // Clip the destination rectangle to the window's client area.
+//     if (m_rcDestRect.right > rcView.right)
+//     {
+//         m_rcDestRect.right = rcView.right;
+//     }
+// 
+//     if (m_rcDestRect.bottom > rcView.bottom)
+//     {
+//         m_rcDestRect.bottom = rcView.bottom;
+//     }
 
     return S_OK;
 }
