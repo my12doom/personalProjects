@@ -69,7 +69,8 @@ protected:
     HRESULT InitializeD3D();
     HRESULT GetSwapChainPresentParameters(IMFMediaType *pType, D3DPRESENT_PARAMETERS* pPP);
     HRESULT CreateD3DDevice();
-    HRESULT CreateD3DSample(IDirect3DSwapChain9 *pSwapChain, IMFSample **ppVideoSample);
+//     HRESULT CreateD3DSample(IDirect3DSwapChain9 *pSwapChain, IMFSample **ppVideoSample);
+	HRESULT CreateD3DSample(IDirect3DSurface9 *pSurface, IMFSample **ppVideoSample);
     HRESULT UpdateDestRect();
 
     // A derived class can override these handlers to allocate any additional D3D resources.
@@ -81,6 +82,7 @@ protected:
 
 protected:
     UINT                        m_DeviceResetToken;     // Reset token for the D3D device manager.
+	HANDLE						m_DeviceHandle;
 
     HWND                        m_hwnd;                 // Application-provided destination window.
     RECT                        m_rcDestRect;           // Destination rectangle.

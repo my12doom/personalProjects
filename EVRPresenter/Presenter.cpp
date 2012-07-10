@@ -147,7 +147,7 @@ HRESULT EVRCustomPresenter::GetService(REFGUID guidService, REFIID riid, LPVOID 
     CheckPointer(ppvObject, E_POINTER);
 
     // The only service GUID that we support is MR_VIDEO_RENDER_SERVICE.
-    if (guidService != MR_VIDEO_RENDER_SERVICE)
+    if (guidService != MR_VIDEO_RENDER_SERVICE && guidService != MR_VIDEO_ACCELERATION_SERVICE)
     {
         return MF_E_UNSUPPORTED_SERVICE;
     }
@@ -1409,6 +1409,7 @@ HRESULT EVRCustomPresenter::CreateOptimalVideoType(IMFMediaType* pProposedType, 
 
     // Helper object to manipulate the optimal type.
     VideoType mtOptimal;
+	mtOptimal.CreateEmptyType();
 
     // Clone the proposed type.
     CHECK_HR(hr = mtOptimal.CopyFrom(pProposedType));
