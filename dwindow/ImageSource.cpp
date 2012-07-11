@@ -156,6 +156,16 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 		}
 	}
 
+	// swap color order: from BGR to RGB
+	RGBQUAD *p = (RGBQUAD *)m_decoded_data;
+	for(int i=0; i<m_width*m_height; i++)
+	{
+		p[i].rgbBlue ^= p[i].rgbRed;
+		p[i].rgbRed ^= p[i].rgbBlue;
+		p[i].rgbBlue ^= p[i].rgbRed;
+		p[i].rgbReserved = 0xff;
+	}
+
 	HRESULT hr = E_FAIL;
 	m_paStreams[0] = new my12doomImageStream(&hr, this, L"Image Out", m_decoded_data, m_width, m_height);
 	if(m_paStreams[0] == NULL)
@@ -342,7 +352,7 @@ HRESULT my12doomImageStream::ChangeStart()
 {
 	{
 		CAutoLock lock(CSourceSeeking::m_pLock);
-		m_frame_number = m_rtStart / 10000000 ;
+		m_frame_number = (int)(m_rtStart / 10000000 );
 
 		// seek to key frame for video
 	}
