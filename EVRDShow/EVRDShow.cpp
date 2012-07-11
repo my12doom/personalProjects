@@ -49,7 +49,7 @@ INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 
 
 			RECT client = {0,0,1920,1080};
-// 			GetClientRect(hDlg, &client);
+ 			GetClientRect(hDlg, &client);
 			evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
 			display_controll->SetVideoWindow(hDlg);
 			display_controll->SetVideoPosition(NULL, &client);
@@ -59,7 +59,7 @@ INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 // 			gb->AddFilter(ff, L"ff DXVA");
 
 
-			gb->RenderFile(L"D:\\my12doom_test\\mkvass.mkv", NULL);
+			gb->RenderFile(L"Z:\\mkvass.mkv", NULL);
 			mc->Run();
 		}
 		break;
