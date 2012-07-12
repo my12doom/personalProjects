@@ -1,11 +1,16 @@
 #include <streams.h>
+#include "IStereoLayout.h"
 
 // {472EF052-2D21-4742-977C-C02097E5C08E}
 DEFINE_GUID(CLSID_my12doomImageSource, 
 			0x472ef052, 0x2d21, 0x4742, 0x97, 0x7c, 0xc0, 0x20, 0x97, 0xe5, 0xc0, 0x8e);
 
 // don't use this class for GIF images, only first frame is decoded
-class my12doomImageSource : public CSource, public IFileSourceFilter
+// warning: this filter accept Load() only once.
+// once loaded, it reject any further Load() calls.
+// to load more images, create a new instance
+
+class my12doomImageSource : public CSource, public IFileSourceFilter, public IStereoLayout
 {
 public:
 	// IUnkown
@@ -16,10 +21,14 @@ public:
 	// IFileSourceFilter
 	HRESULT STDMETHODCALLTYPE Load(LPCOLESTR pszFileName, __in_opt const AM_MEDIA_TYPE *pmt);
 	HRESULT STDMETHODCALLTYPE GetCurFile(__out LPOLESTR *ppszFileName, __out_opt AM_MEDIA_TYPE *pmt);
+
+	// IStereoLayout
+	HRESULT GetLayout(DWORD *out);
 protected:
 	WCHAR m_curfile[MAX_PATH];
 	int m_width;
 	int m_height;
+	DWORD m_layout;
 	char *m_decoded_data;
 private:
 	my12doomImageSource(LPUNKNOWN lpunk, HRESULT *phr);

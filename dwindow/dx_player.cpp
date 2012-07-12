@@ -2037,6 +2037,7 @@ HRESULT dx_player::exit_direct_show()
 	m_file_loaded = false;
 	
 	m_offset_metadata = NULL;
+	m_stereo_layout = NULL;
 	m_downmixer = NULL;
 	m_lav = NULL;
 	m_ba = NULL;
@@ -2556,6 +2557,10 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 			CComQIPtr<IOffsetMetadata, &IID_IOffsetMetadata> offset(source_base);
 			if (offset)
 				m_offset_metadata = offset;
+
+			CComQIPtr<IStereoLayout, &IID_IStereoLayout> stereo_layout(source_base);
+			if (stereo_layout)
+				m_stereo_layout = stereo_layout;
 		}
 		else
 		{

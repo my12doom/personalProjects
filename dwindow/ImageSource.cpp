@@ -1,5 +1,5 @@
-#include <InitGuid.h>
 #include <assert.h>
+#include <InitGuid.h>
 #include "ImageSource.h"
 #include "../MPOCodec/MPOParser.h"
 #include "../MPOCodec/3DPParser.h"
@@ -11,9 +11,11 @@ CCritSec g_ILLock;
 #define FPS 1
 #define LENGTH 10
 #define safe_delete(x) {if(x) delete[]x; x=NULL;}
+
 // my12doomSource
 my12doomImageSource::my12doomImageSource(LPUNKNOWN lpunk, HRESULT *phr)
-:CSource(NAME("my12doom Image Source"), lpunk, CLSID_my12doomImageSource)
+:CSource(NAME("my12doom Image Source"), lpunk, CLSID_my12doomImageSource),
+m_layout(IStereoLayout_Unknown)
 {
 	m_curfile[0] = NULL;
 	m_decoded_data = NULL;
@@ -31,6 +33,9 @@ STDMETHODIMP my12doomImageSource::NonDelegatingQueryInterface(REFIID riid, void 
 	if (riid == IID_IFileSourceFilter) 
 		return GetInterface((IFileSourceFilter *) this, ppv);
 
+	if (riid == IID_IStereoLayout) 
+		return GetInterface((IStereoLayout *) this, ppv);
+
 	return __super::NonDelegatingQueryInterface(riid, ppv);
 }
 
@@ -45,6 +50,15 @@ CUnknown * WINAPI my12doomImageSource::CreateInstance(LPUNKNOWN lpunk, HRESULT *
 			*phr = E_OUTOFMEMORY;
 	}
 	return punk;
+}
+
+HRESULT my12doomImageSource::GetLayout(DWORD *out)
+{
+	if (NULL == out)
+		return E_POINTER;
+
+	*out = m_layout | IStereoLayout_StillImage;
+	return S_OK;
 }
 
 STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_MEDIA_TYPE *pmt)
@@ -64,8 +78,7 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 	int size2 = 0;
 	ILenum type = IL_TYPE_UNKNOWN;
 	bool need_delete = false;
-
-
+	
 	if (2 == mpo.parseFile(pszFileName))
 	{
 		data1 = mpo.m_datas[0];
@@ -73,6 +86,7 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 		size1 = mpo.m_sizes[0];
 		size2 = mpo.m_sizes[1];
 		type = IL_JPG;
+		m_layout = IStereoLayout_SideBySide;
 	}
 	else if (2 == _3dp.parseFile(pszFileName))
 	{
@@ -81,6 +95,7 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 		size1 = _3dp.m_sizes[0];
 		size2 = _3dp.m_sizes[1];
 		type = IL_JPG;
+		m_layout = IStereoLayout_SideBySide;
 	}
 	else
 	{
@@ -103,6 +118,8 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 
 	CAutoLock lck(&g_ILLock);
 	ilInit();
+	ilOriginFunc(IL_ORIGIN_UPPER_LEFT);
+	ilEnable(IL_ORIGIN_SET);
 
 	// first file / single file
 	ILboolean result = ilLoadL(type, data1, size1 );
@@ -353,11 +370,8 @@ HRESULT my12doomImageStream::ChangeStart()
 	{
 		CAutoLock lock(CSourceSeeking::m_pLock);
 		m_frame_number = (int)(m_rtStart / 10000000 );
-
-		// seek to key frame for video
 	}
 
-flush:
 	UpdateFromSeek();
 	return S_OK;
 }

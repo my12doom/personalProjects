@@ -5,89 +5,18 @@
 #include "..\AESFile\rijndael.h"
 #include "my12doomUI.h"
 #include "TextureAllocator.h"
+#include "my12doomRendererTypes.h"
 #include "..\dwindow\nvapi.h"
 #include "AtiDx9Stereo.h"
 #include "..\dwindow\igfx_s3dcontrol.h"
+#include "my12doomAutoShader.h"
 
-const HRESULT E_RESOLUTION_MISSMATCH = 0x81000001;
 
-struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
-#define WM_NV_NOTIFY (WM_USER+10086)
-#define PCLEVELTEST_TESTED 1
-#define PCLEVELTEST_YV12 2
-#define PCLEVELTEST_NV12 4
-#define PCLEVELTEST_YUY2 8
-
-const int fade_in_out_time = 500;
 void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName);
 
 // this renderer must have a valid first window, if not, connection will fail.
 // setting window to invalid window during 
 // you can enter dual projector mode without a second window, but you won't get second image until you set a second window
-
-enum output_mode_types
-{
-	NV3D, masking, anaglyph, mono, pageflipping, iz3d,
-	dual_window, out_sbs, out_tb,
-	out_hsbs, out_htb, 
-	hd3d, 
-	intel3d,
-	output_mode_types_max
-};
-
-enum display_orientation
-{
-	horizontal,
-	vertical,
-};
-
-enum resampling_method
-{
-	bilinear_mipmap_minus_one = 0,
-	lanczos = 1,
-	bilinear_no_mipmap = 2,
-	lanczos_onepass = 3,
-	bilinear_mipmap = 4,
-};
-
-#ifndef def_input_layout_types
-#define def_input_layout_types
-enum input_layout_types
-{
-	side_by_side, 
-	top_bottom, mono2d, 
-	input_layout_types_max, 
-	input_layout_auto
-};
-#endif
-
-enum mask_mode_types
-{
-	row_interlace, 
-	line_interlace, 
-	checkboard_interlace,
-	subpixel_row_interlace,
-	subpixel_45_interlace,
-	mask_mode_types_max,
-};
-
-enum aspect_mode_types
-{
-	aspect_letterbox,
-	aspect_stretch,
-	aspect_horizontal_fill,
-	aspect_vertical_fill,
-	aspect_mode_types_max,
-};
-
-typedef struct
-{
-	float left;
-	float top;
-	float right;
-	float bottom;
-} RECTF;
-
 
 class Imy12doomRendererCallback
 {
@@ -119,12 +48,6 @@ protected:
 };
 
 
-typedef struct _dummy_packet
-{
-	REFERENCE_TIME start;
-	REFERENCE_TIME end;
-} dummy_packet;
-#define my12doom_queue_size 16
 
 class DBaseVideoRenderer: public CBaseVideoRenderer
 {
@@ -149,20 +72,31 @@ class gpu_sample
 public:
 	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test = false, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM, DWORD PC_LEVEL = 0);
 	~gpu_sample();
-	bool is_ignored_line(int line);
 	HRESULT commit();		// it's just unlock textures
 	HRESULT decommit();
 	HRESULT convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2, IDirect3DVertexBuffer9 *vb, int time);
 	HRESULT do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShader9 *shader_sbs, IDirect3DPixelShader9 *shader_tb, IDirect3DVertexBuffer9 *vb);
 	HRESULT get_strereo_test_result(IDirect3DDevice9 *device, int *out);		// S_FALSE: unkown, S_OK: out = (input_layout_types)
 
-	CTextureAllocator *m_allocator;
 	bool m_ready;
-	bool m_prepared_for_rendering;
-	bool m_converted;
-	CLSID m_format;
+	int m_width;
+	int m_height;
 	REFERENCE_TIME m_start;
 	REFERENCE_TIME m_end;
+	int m_fn;
+	CLSID m_format;
+	bool m_topdown;
+
+	CPooledTexture *m_tex_gpu_RGB32;				// GPU RGB32 planes, in A8R8G8B8, full width
+	CPooledTexture *m_tex_gpu_Y;					// GPU Y plane of YV12/NV12, in L8
+	CPooledTexture *m_tex_gpu_YV12_UV;				// GPU UV plane of YV12, in L8, double height
+	CPooledTexture *m_tex_gpu_NV12_UV;				// GPU UV plane of NV12, in A8L8
+	CPooledTexture *m_tex_gpu_YUY2_UV;					// GPU YUY2 planes, in A8R8G8B8, half width
+protected:
+	bool is_ignored_line(int line);
+	CTextureAllocator *m_allocator;
+	bool m_prepared_for_rendering;
+	bool m_converted;
 	bool m_cpu_stereo_tested;
 	input_layout_types m_cpu_tested_result;
 
@@ -172,11 +106,6 @@ public:
 	CPooledTexture *m_tex_NV12_UV;					// UV plane of NV12, in A8L8
 	CPooledTexture *m_tex_YUY2_UV;						// YUY2 planes, in A8R8G8B8, half width
 
-	CPooledTexture *m_tex_gpu_RGB32;				// GPU RGB32 planes, in A8R8G8B8, full width
-	CPooledTexture *m_tex_gpu_Y;					// GPU Y plane of YV12/NV12, in L8
-	CPooledTexture *m_tex_gpu_YV12_UV;				// GPU UV plane of YV12, in L8, double height
-	CPooledTexture *m_tex_gpu_NV12_UV;				// GPU UV plane of NV12, in A8L8
-	CPooledTexture *m_tex_gpu_YUY2_UV;					// GPU YUY2 planes, in A8R8G8B8, half width
 
 	CPooledSurface *m_surf_YUY2;
 	CPooledSurface *m_surf_YV12;
@@ -191,37 +120,12 @@ public:
 	CPooledTexture *m_tex_stereo_test;
 	CPooledTexture *m_tex_stereo_test_cpu;
 
-	int m_width;
-	int m_height;
-	bool m_topdown;
 	D3DPOOL m_pool;
 	DWORD m_interlace_flags;
-	int m_fn;
 	CCritSec m_sample_lock;
+
 };
 
-class my12doom_auto_shader
-{
-public:
-	my12doom_auto_shader();
-	HRESULT set_source(IDirect3DDevice9 *device, const DWORD *data, int datasize, bool is_ps, DWORD *aes_key);
-	~my12doom_auto_shader();
-
-	HRESULT invalid();
-	HRESULT restore();
-	operator IDirect3DPixelShader9*();
-	operator IDirect3DVertexShader9*();
-
-protected:
-	DWORD *m_data;
-	int m_datasize;
-	DWORD *m_key;
-	bool m_has_key;
-	bool m_is_ps;
-	CComPtr<IDirect3DPixelShader9> m_ps;
-	CComPtr<IDirect3DVertexShader9> m_vs;
-	IDirect3DDevice9 *m_device;
-};
 
 class my12doomRendererDShow : public DBaseVideoRenderer
 {
@@ -274,35 +178,7 @@ protected:
 
 
 
-enum vertex_types
-{
-	vertex_pass1_types_count = 5,
-	vertex_point_per_type = 4,
 
-	vertex_pass1_whole = 0,
-	vertex_pass1_left = 4,
-	vertex_pass1_right = 8,
-	vertex_pass1_top = 12,
-	vertex_pass1_bottom = 16,
-
-	vertex_pass2_main = 20,
-	vertex_pass2_second = 24,
-	vertex_pass3 = 28,
-
-	vertex_bmp = 32,
-	vertex_bmp2 = 36,
-
-	vertex_ui = 40,
-
-	vertex_test_sbs = 44,
-	vertex_test_tb = 48,
-	vertex_pass2_main_r = 52,
-
-
-	vertex_total = 56,
-};
-
-#define stereo_test_texture_size 64
 
 class my12doomRenderer
 {

@@ -19,6 +19,7 @@
 #include "vobsub_renderer.h"
 #include "DShowSubtitleRenderer.h"
 #include "..\my12doomSource\src\filters\parser\MpegSplitter\IOffsetMetadata.h"
+#include "IStereoLayout.h"
 #include "color_adjust.h"
 
 #define _AFX
@@ -124,7 +125,6 @@ protected:
 	HINSTANCE m_hexe;
 	AutoSetting<double> m_aspect;/*(L"AlwaysShowRight", false)*/;
 	AutoSetting<DWORD> m_aspect_mode;
-
 	int m_mirror1;
 	int m_mirror2;			// 0x0:no mirror, 0x1 mirror horizontal, 0x2 mirror vertical, 0x3(0x3=0x1|0x2) mirror both
 	AutoSetting<bool> m_swap_eyes;
@@ -132,8 +132,8 @@ protected:
 	AutoSetting<double> m_movie_pos_x;
 	double m_parallax;
 	bool m_is_remux_file;
+	CComPtr<IStereoLayout> m_stereo_layout;
 
-	int init_done_flag;
 
 	// helper function and vars
 	HRESULT CrackPD10(IBaseFilter *filter);
@@ -145,6 +145,7 @@ protected:
 	bool m_stop_after_load;
 	HRESULT m_reset_load_hr;
 	wchar_t m_file_to_load[MAX_PATH];
+	int init_done_flag;
 
 
 	// window handler

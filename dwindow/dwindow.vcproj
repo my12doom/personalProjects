@@ -653,6 +653,10 @@
 				Name="Renderer"
 				>
 				<File
+					RelativePath="..\renderer_prototype\my12doomAutoShader.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\renderer_prototype\my12doomRenderer_dshow.cpp"
 					>
 				</File>
@@ -800,6 +804,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\IStereoLayout.h"
+				>
+			</File>
+			<File
 				RelativePath="..\lrtb\mySink.h"
 				>
 			</File>
@@ -871,7 +879,15 @@
 				Name="Renderer"
 				>
 				<File
+					RelativePath="..\renderer_prototype\my12doomAutoShader.h"
+					>
+				</File>
+				<File
 					RelativePath="..\renderer_prototype\my12doomRenderer.h"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\my12doomRendererTypes.h"
 					>
 				</File>
 				<File
