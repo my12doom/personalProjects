@@ -176,7 +176,7 @@ public:
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
 	HRESULT set_2dto3d(bool convert){m_convert3d = convert;}
 	HRESULT set_aspect_mode(int mode);
-	HRESULT set_display_orientation(int orientation){m_display_orientation = (display_orientation)orientation; m_vertex_changed = true; return S_OK;}
+	HRESULT set_display_orientation(int orientation){m_display_orientation = (display_orientation)orientation; return S_OK;}
 
 	// settings GET function
 	DWORD get_mask_color(int id);
@@ -320,7 +320,6 @@ protected:
 	// dx9 helper functions
 	HRESULT reload_image();
 	HRESULT load_image(int id = -1, bool forced = false);		// -1 = both dshow renderer
-	HRESULT calculate_vertex();
 	HRESULT generate_mask();
 	HRESULT set_device_state(device_state new_state);
 	HRESULT test_PC_level();		// test hardware YUV-RGB conversion level
@@ -382,9 +381,6 @@ protected:
 	DWORD m_nv_pageflip_counter;
 	StereoHandle m_nv3d_handle;
 	int m_pageflip_frames;
-
-	MyVertex m_vertices[vertex_total];
-	MyVertex_subtitle m_vertices_subtitle[vertex_total];
 	int m_pageflipping_start;
 	bool m_swapeyes;
 	output_mode_types m_output_mode;
@@ -413,10 +409,6 @@ protected:
 	int m_device_threadid;
 	CTextureAllocator *m_pool;
 
-	CComPtr<IDirect3DVertexBuffer9> g_VertexBuffer;
-	CComPtr<IDirect3DVertexBuffer9> m_vertex_subtitle;
-	bool m_vertex_changed;
-	CComPtr <IDirect3DVertexShader9> m_vs_subtitle;
 	CComPtr <IDirect3DPixelShader9> m_ps_yv12;
 	CComPtr <IDirect3DPixelShader9> m_ps_nv12;
 	CComPtr <IDirect3DPixelShader9> m_ps_yuy2;

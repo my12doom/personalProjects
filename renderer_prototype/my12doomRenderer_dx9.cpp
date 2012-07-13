@@ -672,9 +672,9 @@ retry:
 	{
 		CAutoLock frame_lock(&m_frame_lock);
 		int l = timeGetTime();
-		loaded_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
+		loaded_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, NULL, m_last_reset_time);
 		int l2 = timeGetTime();
-		if (need_detect) loaded_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
+		if (need_detect) loaded_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, NULL);
 		mylog("queue size:%d, convert_to_RGB32(): %dms, stereo_test:%dms\n", m_left_queue.GetCount(), l2-l, timeGetTime()-l2);
 	}
 
@@ -969,7 +969,6 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			m_device_state = device_lost;
 			return hr;
 		}
-		m_vertex_changed = true;
 		m_device_state = fine;
 
 		// clear DEFAULT pool
@@ -1301,7 +1300,6 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_ps_anaglyph = NULL;
 	m_ps_iz3d_back = NULL;
 	m_ps_iz3d_front = NULL;
-	m_vs_subtitle = NULL;
 	m_ps_color_adjust = NULL;
 	m_ps_bmp_lanczos = NULL;
 	m_ps_bmp_blur = NULL;
@@ -1350,10 +1348,6 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_deinterlace_surface = NULL;
 	m_stereo_test_gpu = NULL;
 	m_PC_level_test = NULL;
-
-	// vertex buffers
-	g_VertexBuffer = NULL;
-	m_vertex_subtitle = NULL;
 
 	// swap chains
 	delete_render_targets();
@@ -1505,11 +1499,6 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 
 	FAIL_RET(create_render_targets());
 
-	// vertex
-	FAIL_RET(m_Device->CreateVertexBuffer( sizeof(m_vertices), D3DUSAGE_WRITEONLY, FVF_Flags, D3DPOOL_DEFAULT, &g_VertexBuffer, NULL ));
-	FAIL_RET(m_Device->CreateVertexBuffer( sizeof(m_vertices), D3DUSAGE_WRITEONLY, FVF_Flags_subtitle, D3DPOOL_DEFAULT, &m_vertex_subtitle, NULL ));
-	m_vertex_changed = true;
-
 	// pixel shader
 	unsigned char *yv12 = (unsigned char *)malloc(sizeof(g_code_YV12toRGB));
 	unsigned char *nv12 = (unsigned char *)malloc(sizeof(g_code_NV12toRGB));
@@ -1557,8 +1546,6 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	//m_Device->CreatePixelShader((DWORD*)g_code_bmp_blur, &m_ps_bmp_blur);
 	if (m_ps_bmp_blur == NULL)
 		m_Device->CreatePixelShader((DWORD*)g_code_bmp_blur2, &m_ps_bmp_blur);
-
-	m_Device->CreateVertexShader((DWORD*)g_code_vs_subtitle, &m_vs_subtitle);
 
 	// for pixel shader 2.0 cards
 	if (m_ps_test_tb2 != NULL && m_ps_test_tb == NULL)
@@ -1672,13 +1659,13 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		{
 			gpu_sample *left_sample = m_left_queue.Get(pos_left);
 // 			left_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
-			if (need_detect) left_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
+			if (need_detect) left_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, NULL);
 		}
 		for(POSITION pos_right = m_right_queue.GetHeadPosition(); pos_right; pos_right = m_right_queue.Next(pos_right))
 		{
 			gpu_sample *right_sample = m_right_queue.Get(pos_right);
 // 			right_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
-			if (need_detect) right_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
+			if (need_detect) right_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, NULL);
 		}
 	}
 
@@ -1741,6 +1728,23 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 	hr = m_Device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+
+	// vertex
+	MyVertex whole_backbuffer_vertex[4];
+	whole_backbuffer_vertex[0].x = -0.5f; whole_backbuffer_vertex[0].y = -0.5f;
+	whole_backbuffer_vertex[1].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[1].y = -0.5f;
+	whole_backbuffer_vertex[2].x = -0.5f; whole_backbuffer_vertex[2].y = m_active_pp.BackBufferHeight-0.5f;
+	whole_backbuffer_vertex[3].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[3].y = m_active_pp.BackBufferHeight-0.5f;
+	for(int i=0; i<4; i++)
+		whole_backbuffer_vertex[i].z = whole_backbuffer_vertex[i].w = 1;
+	whole_backbuffer_vertex[0].tu = 0;
+	whole_backbuffer_vertex[0].tv = 0;
+	whole_backbuffer_vertex[1].tu = 1;
+	whole_backbuffer_vertex[1].tv = 0;
+	whole_backbuffer_vertex[2].tu = 0;
+	whole_backbuffer_vertex[2].tv = 1;
+	whole_backbuffer_vertex[3].tu = 1;
+	whole_backbuffer_vertex[3].tv = 1;
 
 	static NvU32 l_counter = 0;
 	if (m_output_mode == intel3d)
@@ -1884,9 +1888,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			|| m_remux_mode)
 			m_Device->SetPixelShader(m_red_blue);
 
-		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
 
 		// UI
 		m_Device->SetPixelShader(NULL);
@@ -1917,9 +1920,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_Device->SetTexture( 1, m_mask_temp_left );
 		m_Device->SetTexture( 2, m_mask_temp_right );
 
-		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
 
 		// UI
 		m_Device->SetPixelShader(NULL);
@@ -1988,9 +1990,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_Device->SetTexture( 1, m_mask_temp_right );
 		m_Device->SetPixelShader(m_ps_iz3d_back);
 
-		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
 
 		// set render target to swap chain2
 		if (m_swap2)
@@ -2003,9 +2004,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			hr = m_Device->SetRenderTarget(0, back_buffer2);
 			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 			m_Device->SetPixelShader(m_ps_iz3d_front);
-			hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 			hr = m_Device->SetFVF( FVF_Flags );
-			hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+			hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
 		}
 
 		// UI
@@ -2121,6 +2121,7 @@ presant:
 	n = timeGetTime();
 
 
+	// presenting...
 	if (m_output_mode == intel3d && m_overlay_swap_chain)
 	{
 		RECT rect= {0, 0, min(m_intel_active_3d_mode.ulResWidth,m_active_pp.BackBufferWidth), 
@@ -2129,29 +2130,6 @@ presant:
 
 		//mylog("%08x\n", hr);
 	}
-
-
-// 	UINT64 timing=0;
-// 	if (m_d3d_query)
-// 	{
-// 		m_d3d_query->Issue(D3DISSUE_END);
-// 		// Force the driver to execute the commands from the command buffer.
-// 		// Empty the command buffer and wait until the GPU is idle.
-// 		//while( == S_FALSE);
-// 		LARGE_INTEGER l1, l2;
-// 		QueryPerformanceCounter(&l1);
-// 		hr = m_d3d_query->GetData( &timing, 
-// 			sizeof(timing), D3DGETDATA_FLUSH );
-// 		if (timing)
-// 			printf("GPUIdle:%d.\n", (int)timing);
-// 
-// 		QueryPerformanceCounter(&l2);
-// 
-// 		//printf("Query time: %d cycle.\n", l2.QuadPart - l1.QuadPart);
-// 
-// 	}
-
-
 
 
 
@@ -2192,11 +2170,6 @@ presant:
 	//	printf("LockRect: surface, texture, total, cycle = %d, %d, %d, %d.\n", lockrect_surface, lockrect_texture, lockrect_surface+lockrect_texture, (int)lockrect_texture_cycle);
 	lockrect_texture_cycle = lockrect_surface = lockrect_texture = 0;
 
-
-
-
-
-	FAIL_RET(calculate_vertex());
 	if (bmp_lock != NULL)
 	{
 		int l = timeGetTime();
@@ -2411,6 +2384,13 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 		// copying
 		hr = m_Device->StretchRect(surface_to_adjust, NULL, surface_of_tex_src, NULL, D3DTEXF_LINEAR);		//we are using linear filter here, to cover possible coordinate error		
 
+		// vertex
+		MyVertex whole_backbuffer_vertex[4];
+		whole_backbuffer_vertex[0].x = -0.5f; whole_backbuffer_vertex[0].y = -0.5f;
+		whole_backbuffer_vertex[1].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[1].y = -0.5f;
+		whole_backbuffer_vertex[2].x = -0.5f; whole_backbuffer_vertex[2].y = m_active_pp.BackBufferHeight-0.5f;
+		whole_backbuffer_vertex[3].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[3].y = m_active_pp.BackBufferHeight-0.5f;
+
 		// rendering
 		CComPtr<IDirect3DPixelShader9> ps;
 		hr = m_Device->GetPixelShader(&ps);
@@ -2423,9 +2403,8 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 		float ps_parameter2[4] = {saturation2, m_luminance2, m_hue2, m_contrast2};
 		hr = m_Device->SetPixelShaderConstantF(0, left?ps_parameter:ps_parameter2, 1);
 
-		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
-		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, vertex_pass3, 2 );
+		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
 		hr = m_Device->SetPixelShader(ps);
 
 		// copying back
@@ -2767,7 +2746,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		{
 			// nearly all D3D9 cards doesn't support D3DUSAGE_AUTOGENMIPMAP
 			// so if we need to use MIPMAP, then we need convert to RGB32 first;
-			FAIL_RET(src2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, NULL, g_VertexBuffer, m_last_reset_time));
+			FAIL_RET(src2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, NULL, NULL, m_last_reset_time));
 			m_Device->SetTexture(0, src2->m_tex_gpu_RGB32->texture);
 			shader_yuv = NULL;
 		}
@@ -2784,7 +2763,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		m_Device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 		m_Device->SetSamplerState(0, D3DSAMP_BORDERCOLOR, 0);					// set to border mode, to remove a single half-line
 		hr = m_Device->SetPixelShader(shader_yuv);
-		hr = m_Device->SetStreamSource( 0, g_VertexBuffer, 0, sizeof(MyVertex) );
+		hr = m_Device->SetStreamSource( 0, NULL, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, direct_vertex, sizeof(MyVertex));
 	}
@@ -2905,7 +2884,7 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 	if (sample1)
 	{
 // 		FAIL_RET(sample1->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time));
-		if (need_detect) sample1->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, g_VertexBuffer);
+		if (need_detect) sample1->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, NULL);
 	}
 	if (sample2)
 	{
@@ -2995,300 +2974,6 @@ double my12doomRenderer::get_active_aspect()
 	return m_source_aspect;
 }
 
-HRESULT my12doomRenderer::calculate_vertex()
-{
-	int l = timeGetTime();
-	if (!m_vertex_changed)
-		return S_FALSE;
-
-	double active_aspect = get_active_aspect();
-
-	CAutoLock lck(&m_frame_lock);
-
-	// w,color
-	for(int i=0; i<sizeof(m_vertices) / sizeof(MyVertex); i++)
-	{
-		//m_vertices[i].diffuse = m_color1;
-		//m_vertices[i].specular = m_color2;
-		m_vertices[i].w = 1.0f;
-		m_vertices[i].z = 1.0f;
-	}
-	// texture coordinate
-	// pass1 whole
-	m_vertices[0].tu = 0.0f; m_vertices[0].tv = 0.0f;
-	m_vertices[1].tu = 1.0f; m_vertices[1].tv = 0.0f;
-	m_vertices[2].tu = 0.0f; m_vertices[2].tv = 1.0f;
-	m_vertices[3].tu = 1.0f; m_vertices[3].tv = 1.0f;
-
-	// pass1 left
-	m_vertices[4].tu = 0.0f; m_vertices[4].tv = 0.0f;
-	m_vertices[5].tu = 0.5f; m_vertices[5].tv = 0.0f;
-	m_vertices[6].tu = 0.0f; m_vertices[6].tv = 1.0f;
-	m_vertices[7].tu = 0.5f; m_vertices[7].tv = 1.0f;
-
-	// pass1 right
-	m_vertices[8].tu = 0.5f; m_vertices[8].tv = 0.0f;
-	m_vertices[9].tu = 1.0f; m_vertices[9].tv = 0.0f;
-	m_vertices[10].tu = 0.5f; m_vertices[10].tv = 1.0f;
-	m_vertices[11].tu = 1.0f; m_vertices[11].tv = 1.0f;
-
-	// pass1 top
-	m_vertices[12].tu = 0.0f; m_vertices[12].tv = 0.0f;
-	m_vertices[13].tu = 1.0f; m_vertices[13].tv = 0.0f;
-	m_vertices[14].tu = 0.0f; m_vertices[14].tv = 0.5f;
-	m_vertices[15].tu = 1.0f; m_vertices[15].tv = 0.5f;
-
-	// pass1 bottom
-	m_vertices[16].tu = 0.0f; m_vertices[16].tv = 0.5f;
-	m_vertices[17].tu = 1.0f; m_vertices[17].tv = 0.5f;
-	m_vertices[18].tu = 0.0f; m_vertices[18].tv = 1.0f;
-	m_vertices[19].tu = 1.0f; m_vertices[19].tv = 1.0f;
-
-	// pass2 whole texture, fixed aspect output for main back buffer
-	m_vertices[20].tu = 0.0f; m_vertices[20].tv = 0.0f;
-	m_vertices[21].tu = 1.0f; m_vertices[21].tv = 0.0f;
-	m_vertices[22].tu = 0.0f; m_vertices[22].tv = 1.0f;
-	m_vertices[23].tu = 1.0f; m_vertices[23].tv = 1.0f;
-
-	// pass2 whole texture, fixed aspect output for second back buffer
-	m_vertices[24].tu = 0.0f; m_vertices[24].tv = 0.0f;
-	m_vertices[25].tu = 1.0f; m_vertices[25].tv = 0.0f;
-	m_vertices[26].tu = 0.0f; m_vertices[26].tv = 1.0f;
-	m_vertices[27].tu = 1.0f; m_vertices[27].tv = 1.0f;
-
-	// pass3 whole texture, whole back buffer output
-	m_vertices[28].tu = 0.0f; m_vertices[28].tv = 0.0f;
-	m_vertices[29].tu = 1.0f; m_vertices[29].tv = 0.0f;
-	m_vertices[30].tu = 0.0f; m_vertices[30].tv = 1.0f;
-	m_vertices[31].tu = 1.0f; m_vertices[31].tv = 1.0f;
-
-	// pass1 coordinate
-	for(int i=0; i<vertex_pass1_types_count; i++)
-	{
-		MyVertex * tmp = m_vertices + vertex_pass1_whole + vertex_point_per_type * i ;
-		tmp[0].x = -0.5f; tmp[0].y = -0.5f;
-		tmp[1].x = m_lVidWidth-0.5f; tmp[1].y = -0.5f;
-		tmp[2].x = -0.5f; tmp[2].y = m_lVidHeight-0.5f;
-		tmp[3].x =  m_lVidWidth-0.5f; tmp[3].y =m_lVidHeight-0.5f;
-	}
-
-	// pass2-3 coordinate
-	// main window coordinate
-	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
-	if (m_display_orientation == vertical)
-	{
-		tar.right ^= tar.bottom;
-		tar.bottom ^= tar.right;
-		tar.right ^= tar.bottom;
-	}
-
-	if (m_output_mode == out_sbs)
-		tar.right /= 2;
-	else if (m_output_mode == out_tb)
-		tar.bottom /= 2;
-
-	// ui zone
-	MyVertex *ui = m_vertices + vertex_ui;
-	ui[0].x = -0.5f; ui[0].y = tar.bottom-30-0.5f;
-	ui[1].x = tar.right-0.5f; ui[1].y = ui[0].y;
-	ui[2].x = ui[0].x; ui[2].y = ui[0].y + 30;
-	ui[3].x = ui[1].x; ui[3].y = ui[1].y + 30;
-	ui[0].tu = 0; ui[0].tv = (1024-30)/1024.0f;
-	ui[1].tu = (float)(tar.right-1)/BIG_TEXTURE_SIZE; ui[1].tv = ui[0].tv;
-	ui[2].tu = 0; ui[2].tv = ui[0].tv + (30-1)/1024.0f;
-	ui[3].tu = ui[1].tu; ui[3].tv = ui[1].tv + (30-1)/1024.0f;
-
-	int delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
-	int delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
-	if (delta_w > 0)
-	{
-		// letterbox left and right (default), or vertical fill(vertical is already full)
-		if (m_aspect_mode == aspect_letterbox || m_aspect_mode == aspect_vertical_fill)
-		{
-			tar.left += delta_w/2;
-			tar.right -= delta_w/2;
-		}
-		else if (m_aspect_mode == aspect_horizontal_fill)
-		{
-			// extent horizontally, top and bottom cut
-			// (delta_h < 0)
-			tar.top += delta_h/2;
-			tar.bottom -= delta_h/2;
-		}
-		else	// stretch mode, do nothing
-		{
-		}
-	}
-	else if (delta_h > 0)
-	{
-		// letterbox top and bottome (default)
-		if (m_aspect_mode == aspect_letterbox || m_aspect_mode == aspect_horizontal_fill)
-		{
-			tar.top += delta_h/2;
-			tar.bottom -= delta_h/2;
-		}
-		else if (m_aspect_mode == aspect_vertical_fill)
-		{
-			// extent vertically, top and bottom cut
-			// (delta_w < 0)
-			tar.left += delta_w/2;
-			tar.right -= delta_w/2;
-		}
-		else	// stretch mode, do nothing
-		{
-		}
-	}
-
-
-	int tar_width = tar.right-tar.left;
-	int tar_height = tar.bottom - tar.top;
-	tar.left += (LONG)(tar_width * m_movie_offset_x);
-	tar.right += (LONG)(tar_width * m_movie_offset_x);
-	tar.top += (LONG)(tar_height * m_movie_offset_y);
-	tar.bottom += (LONG)(tar_height * m_movie_offset_y);
-
-	MyVertex *pass2_main = m_vertices + vertex_pass2_main;
-
-	if (m_display_orientation == horizontal)
-	{
-		pass2_main[0].x = tar.left-0.5f; pass2_main[0].y = tar.top-0.5f;
-		pass2_main[1].x = tar.right-0.5f; pass2_main[1].y = tar.top-0.5f;
-		pass2_main[2].x = tar.left-0.5f; pass2_main[2].y = tar.bottom-0.5f;
-		pass2_main[3].x = tar.right-0.5f; pass2_main[3].y = tar.bottom-0.5f;
-	}
-	else
-	{
-		pass2_main[0].x = tar.top-0.5f; pass2_main[0].y = (float)m_active_pp.BackBufferHeight - tar.left-0.5f;
-		pass2_main[1].x = tar.top-0.5f; pass2_main[1].y = (float)m_active_pp.BackBufferHeight - tar.right-0.5f;
-		pass2_main[2].x = tar.bottom-0.5f; pass2_main[2].y = (float)m_active_pp.BackBufferHeight - tar.left-0.5f;
-		pass2_main[3].x = tar.bottom-0.5f; pass2_main[3].y = (float)m_active_pp.BackBufferHeight - tar.right-0.5f;
-	}
-
-	MyVertex *pass2_main_r = m_vertices + vertex_pass2_main_r;
-	memcpy(pass2_main_r, pass2_main, sizeof(MyVertex) * 4);
-
-	if (m_parallax > 0)
-	{
-		// cut right edge of right eye and left edge of left eye
-		pass2_main[0].tu += m_parallax;
-		pass2_main[2].tu += m_parallax;
-		pass2_main_r[1].tu -= m_parallax;
-		pass2_main_r[3].tu -= m_parallax;
-
-	}
-	else if (m_parallax < 0)
-	{
-		// cut left edge of right eye and right edge of left eye
-		pass2_main_r[0].tu += abs(m_parallax);
-		pass2_main_r[2].tu += abs(m_parallax);
-		pass2_main[1].tu -= abs(m_parallax);
-		pass2_main[3].tu -= abs(m_parallax);
-	}
-
-	MyVertex *bmp = m_vertices + vertex_bmp;
-	tar_width = tar.right-tar.left;
-	tar_height = tar.bottom - tar.top;
-	bmp[0] = pass2_main[0];
-	bmp[1] = pass2_main[1];
-	bmp[2] = pass2_main[2];
-	bmp[3] = pass2_main[3];
-	//bmp[0].x += m_bmp_fleft * tar_width; bmp[0].y += m_bmp_ftop * tar_height;
-	//bmp[1] = bmp[0]; bmp[1].x += m_bmp_fwidth * tar_width;
-	//bmp[3] = bmp[1]; bmp[3].y += m_bmp_fheight* tar_height;
-	//bmp[2] = bmp[3]; bmp[2].x -= m_bmp_fwidth * tar_width;
-
-	bmp[0].x = 0; bmp[0].y = 0;
-	bmp[1].x = 1; bmp[1].y = 0;
-	bmp[2].x = 0; bmp[2].y = 1;
-	bmp[3].x = 1; bmp[3].y = 1;
-
-	//bmp[0].tu = 0; bmp[0].tv = 0;
-	//bmp[1].tu = (m_bmp_width-1)/BIG_TEXTURE_SIZE.0f; bmp[1].tv = 0;
-	//bmp[2].tu = 0; bmp[2].tv = (m_bmp_height-1)/1024.0f;
-	//bmp[3].tu = (m_bmp_width-1)/BIG_TEXTURE_SIZE.0f; bmp[3].tv = (m_bmp_height-1)/1024.0f;
-	bmp[0].tu = 0; bmp[0].tv = 0;
-	bmp[1].tu = 1; bmp[1].tv = 0;
-	bmp[2].tu = 0; bmp[2].tv = 1;
-	bmp[3].tu = 1; bmp[3].tv = 1;
-
-	MyVertex *bmp2 = m_vertices + vertex_bmp2;
-	for(int i=0; i<4; i++)
-	{
-		bmp2[i] = bmp[i];
-		//bmp2[i].x -= tar_width * (m_bmp_offset);
-	}
-
-	MyVertex *pass3 = m_vertices + vertex_pass3;
-	pass3[0].x = -0.5f; pass3[0].y = -0.5f;
-	pass3[1].x = m_active_pp.BackBufferWidth-0.5f; pass3[1].y = -0.5f;
-	pass3[2].x = -0.5f; pass3[2].y = m_active_pp.BackBufferHeight-0.5f;
-	pass3[3].x = m_active_pp.BackBufferWidth-0.5f; pass3[3].y = m_active_pp.BackBufferHeight-0.5f;
-
-	// second window coordinate
-	// not used
-	tar.left = tar.top = 0;
-	tar.right = m_active_pp2.BackBufferWidth;
-	tar.bottom = m_active_pp2.BackBufferHeight;
-	delta_w = (int)(tar.right - tar.bottom * active_aspect + 0.5);
-	delta_h = (int)(tar.bottom - tar.right  / active_aspect + 0.5);
-	if (delta_w > 0)
-	{
-		// letterbox at left and right
-
-		tar.left += delta_w/2;
-		tar.right -= delta_w/2;
-	}
-	else if (delta_h > 0)
-	{
-		// letterbox at top and bottom
-		tar.top += delta_h/2;
-		tar.bottom -= delta_h/2;
-	}
-
-	tar_width = tar.right-tar.left;
-	tar_height = tar.bottom - tar.top;
-
-	// movie position offset
-	tar.left += (LONG)(tar_width * m_movie_offset_x);
-	tar.right += (LONG)(tar_width * m_movie_offset_x);
-	tar.top += (LONG)(tar_height * m_movie_offset_y);
-	tar.bottom += (LONG)(tar_height * m_movie_offset_y);
-
-	MyVertex *test_sbs = m_vertices + vertex_test_sbs;
-	test_sbs[0].x = -0.5f; test_sbs[0].y = -0.5f;
-	test_sbs[1].x = stereo_test_texture_size/2-0.5f; test_sbs[1].y = -0.5f;
-	test_sbs[2].x = -0.5f; test_sbs[2].y = test_sbs[0].y + stereo_test_texture_size;
-	test_sbs[3].x = stereo_test_texture_size/2-0.5f; test_sbs[3].y = test_sbs[1].y + stereo_test_texture_size;
-	test_sbs[0].tu = 0; test_sbs[0].tv = 0;
-	test_sbs[1].tu = 1.0f; test_sbs[1].tv = 0;
-	test_sbs[2].tu = 0; test_sbs[2].tv = 1.0f;
-	test_sbs[3].tu = 1.0f; test_sbs[3].tv = 1.0f;
-
-	MyVertex *test_tb = m_vertices + vertex_test_tb;
-	for(int i=0; i<4; i++)
-	{
-		test_tb[i] = test_sbs[i];
-		test_tb[i].x += stereo_test_texture_size/2;
-	}
-
-	if (!g_VertexBuffer)
-		return S_FALSE;
-
-	int l2 = timeGetTime();
-
-	void *pVertices = NULL;
-	g_VertexBuffer->Lock( 0, sizeof(m_vertices), (void**)&pVertices, NULL );
-	memcpy( pVertices, m_vertices, sizeof(m_vertices) );
-	g_VertexBuffer->Unlock();
-	m_vertex_subtitle->Lock( 0, sizeof(m_vertices), (void**)&pVertices, NULL );
-	memcpy( pVertices, m_vertices, sizeof(m_vertices) );
-	m_vertex_subtitle->Unlock();
-
-	mylog("calculate_vertex(): calculate = %dms, Lock()=%dms.\n", l2-l, timeGetTime()-l2);
-	m_vertex_changed = false;
-	return S_OK;
-}
-
 HRESULT my12doomRenderer::calculate_movie_position(RECT *position)
 {
 	if (!position)
@@ -3362,70 +3047,6 @@ HRESULT my12doomRenderer::calculate_movie_position(RECT *position)
 
 	*position = tar;
 	return S_OK;
-
-// 	MyVertex *pass2_main = m_vertices + vertex_pass2_main;
-// 
-// 	if (m_display_orientation == horizontal)
-// 	{
-// 		pass2_main[0].x = tar.left-0.5f; pass2_main[0].y = tar.top-0.5f;
-// 		pass2_main[1].x = tar.right-0.5f; pass2_main[1].y = tar.top-0.5f;
-// 		pass2_main[2].x = tar.left-0.5f; pass2_main[2].y = tar.bottom-0.5f;
-// 		pass2_main[3].x = tar.right-0.5f; pass2_main[3].y = tar.bottom-0.5f;
-// 	}
-// 	else
-// 	{
-// 		pass2_main[0].x = tar.top-0.5f; pass2_main[0].y = (float)m_active_pp.BackBufferHeight - tar.left-0.5f;
-// 		pass2_main[1].x = tar.top-0.5f; pass2_main[1].y = (float)m_active_pp.BackBufferHeight - tar.right-0.5f;
-// 		pass2_main[2].x = tar.bottom-0.5f; pass2_main[2].y = (float)m_active_pp.BackBufferHeight - tar.left-0.5f;
-// 		pass2_main[3].x = tar.bottom-0.5f; pass2_main[3].y = (float)m_active_pp.BackBufferHeight - tar.right-0.5f;
-// 	}
-
-// 	MyVertex *pass2_main_r = m_vertices + vertex_pass2_main_r;
-// 	memcpy(pass2_main_r, pass2_main, sizeof(MyVertex) * 4);
-// 
-// 	if (m_parallax > 0)
-// 	{
-// 		// cut right edge of right eye and left edge of left eye
-// 		pass2_main[0].tu += m_parallax;
-// 		pass2_main[2].tu += m_parallax;
-// 		pass2_main_r[1].tu -= m_parallax;
-// 		pass2_main_r[3].tu -= m_parallax;
-// 
-// 	}
-// 	else if (m_parallax < 0)
-// 	{
-// 		// cut left edge of right eye and right edge of left eye
-// 		pass2_main_r[0].tu += abs(m_parallax);
-// 		pass2_main_r[2].tu += abs(m_parallax);
-// 		pass2_main[1].tu -= abs(m_parallax);
-// 		pass2_main[3].tu -= abs(m_parallax);
-// 	}
-
-// 	MyVertex *bmp = m_vertices + vertex_bmp;
-// 	tar_width = tar.right-tar.left;
-// 	tar_height = tar.bottom - tar.top;
-// 	bmp[0] = pass2_main[0];
-// 	bmp[1] = pass2_main[1];
-// 	bmp[2] = pass2_main[2];
-// 	bmp[3] = pass2_main[3];
-// 	//bmp[0].x += m_bmp_fleft * tar_width; bmp[0].y += m_bmp_ftop * tar_height;
-// 	//bmp[1] = bmp[0]; bmp[1].x += m_bmp_fwidth * tar_width;
-// 	//bmp[3] = bmp[1]; bmp[3].y += m_bmp_fheight* tar_height;
-// 	//bmp[2] = bmp[3]; bmp[2].x -= m_bmp_fwidth * tar_width;
-// 
-// 	bmp[0].x = 0; bmp[0].y = 0;
-// 	bmp[1].x = 1; bmp[1].y = 0;
-// 	bmp[2].x = 0; bmp[2].y = 1;
-// 	bmp[3].x = 1; bmp[3].y = 1;
-// 
-// 	//bmp[0].tu = 0; bmp[0].tv = 0;
-// 	//bmp[1].tu = (m_bmp_width-1)/BIG_TEXTURE_SIZE.0f; bmp[1].tv = 0;
-// 	//bmp[2].tu = 0; bmp[2].tv = (m_bmp_height-1)/1024.0f;
-// 	//bmp[3].tu = (m_bmp_width-1)/BIG_TEXTURE_SIZE.0f; bmp[3].tv = (m_bmp_height-1)/1024.0f;
-// 	bmp[0].tu = 0; bmp[0].tv = 0;
-// 	bmp[1].tu = 1; bmp[1].tv = 0;
-// 	bmp[2].tu = 0; bmp[2].tv = 1;
-// 	bmp[3].tu = 1; bmp[3].tv = 1;
 }
 
 HRESULT my12doomRenderer::calculate_subtitle_position(RECT *postion, bool left_eye)
@@ -3772,7 +3393,6 @@ HRESULT my12doomRenderer::set_movie_pos(int dimention, double offset)		// diment
 	else
 		return E_INVALIDARG;
 
-	m_vertex_changed = true;
 	repaint_video();
 	return S_OK;
 }
@@ -3785,7 +3405,6 @@ HRESULT my12doomRenderer::set_aspect_mode(int mode)
 	m_aspect_mode = (aspect_mode_types)mode;
 	if (m_output_mode == pageflipping)
 		terminate_render_thread();
-	m_vertex_changed = true;
 	repaint_video();
 	if (m_output_mode == pageflipping)
 		create_render_thread();
@@ -3796,7 +3415,6 @@ HRESULT my12doomRenderer::set_aspect_mode(int mode)
 HRESULT my12doomRenderer::set_aspect(double aspect)
 {
 	m_forced_aspect = aspect;
-	m_vertex_changed = true;
 	if (m_output_mode == pageflipping)
 		terminate_render_thread();
 	repaint_video();
@@ -3902,7 +3520,6 @@ HRESULT my12doomRenderer::set_bmp_parallax(double offset)
 	if (m_bmp_parallax != offset)
 	{
 		m_bmp_parallax = offset;
-		m_vertex_changed = true;
 		repaint_video();
 	}
 
@@ -3914,7 +3531,6 @@ HRESULT my12doomRenderer::set_parallax(double parallax)
 	if (m_parallax != parallax)
 	{
 		m_parallax = parallax;
-		m_vertex_changed = true;
 		repaint_video();
 	}
 

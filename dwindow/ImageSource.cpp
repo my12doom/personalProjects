@@ -8,7 +8,7 @@
 
 CCritSec g_ILLock;
 
-#define FPS 1
+#define FPS 24
 #define LENGTH 10
 #define safe_delete(x) {if(x) delete[]x; x=NULL;}
 
@@ -219,6 +219,7 @@ m_height(height),
 m_data((char*)data),
 m_frame_number(0)
 {
+	m_rtDuration = (LENGTH * 10000 * 1000);
 
 }
 
@@ -333,7 +334,7 @@ HRESULT my12doomImageStream::GetMediaType(int iPosition, CMediaType *pmt)
 	memset(pvi, 0, sizeof(VIDEOINFO));
 	pvi->dwBitRate = 0;
 	pvi->dwBitErrorRate = 0;
-	pvi->AvgTimePerFrame = 10000000;
+	pvi->AvgTimePerFrame = 10000000 / FPS;
 
 	pvi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	pvi->bmiHeader.biWidth = m_width;
@@ -369,7 +370,7 @@ HRESULT my12doomImageStream::ChangeStart()
 {
 	{
 		CAutoLock lock(CSourceSeeking::m_pLock);
-		m_frame_number = (int)(m_rtStart / 10000000 );
+		m_frame_number = (int)(m_rtStart * FPS / 10000000 );
 	}
 
 	UpdateFromSeek();

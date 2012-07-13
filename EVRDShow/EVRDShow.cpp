@@ -56,7 +56,7 @@ INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 
 
 
-// 			gb->AddFilter(ff, L"ff DXVA");
+ 			gb->AddFilter(ff, L"ff DXVA");
 
 
 			gb->RenderFile(L"Z:\\mkvass.mkv", NULL);
