@@ -1,8 +1,10 @@
 #pragma once
 
-// constants
+// constants and macro functions
 
 const HRESULT E_RESOLUTION_MISSMATCH = 0x81000001;
+const DWORD FVF_Flags = D3DFVF_XYZRHW | D3DFVF_TEX1;
+const DWORD FVF_Flags_subtitle = D3DFVF_XYZW | D3DFVF_TEX1;
 struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doomRenderer;
 #define WM_NV_NOTIFY (WM_USER+10086)
 #define PCLEVELTEST_TESTED 1
@@ -12,6 +14,16 @@ struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_my12doom
 const int fade_in_out_time = 500;
 #define my12doom_queue_size 16
 #define stereo_test_texture_size 64
+#define FAIL_RET(x) {hr=x; if(FAILED(hr)){return hr;}}
+#define FAIL_FALSE(x) {hr=x; if(FAILED(hr)){return S_FALSE;}}
+#define FAIL_SLEEP_RET(x) {hr=x; if(FAILED(hr)){Sleep(1); return hr;}}
+#define safe_delete(x) if(x){delete x;x=NULL;}
+#define safe_decommit(x) if((x))(x)->decommit()
+#define JIF(x) {if(FAILED(hr=x))goto clearup;}
+
+#ifndef DEBUG
+#define printf
+#endif
 
 // structures
 
@@ -29,7 +41,22 @@ typedef struct _dummy_packet
 	REFERENCE_TIME end;
 } dummy_packet;
 
-
+struct MyVertex
+{
+	float x , y, z;
+	float w;
+	float tu, tv;
+};
+struct MyVertex_subtitle
+{
+	float x , y, z;
+	float w;
+	float tu, tv;
+};
+typedef struct _my_quad 
+{
+	MyVertex vertexes[4];
+} my_quad;
 
 // enums
 

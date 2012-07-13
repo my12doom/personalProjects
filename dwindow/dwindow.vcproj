@@ -653,6 +653,10 @@
 				Name="Renderer"
 				>
 				<File
+					RelativePath="..\renderer_prototype\gpu_sample.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\renderer_prototype\my12doomAutoShader.cpp"
 					>
 				</File>
@@ -878,6 +882,10 @@
 			<Filter
 				Name="Renderer"
 				>
+				<File
+					RelativePath="..\renderer_prototype\gpu_sample.h"
+					>
+				</File>
 				<File
 					RelativePath="..\renderer_prototype\my12doomAutoShader.h"
 					>
