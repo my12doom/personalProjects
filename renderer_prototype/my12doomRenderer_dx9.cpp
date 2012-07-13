@@ -2253,14 +2253,13 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 	if (!src)
 		return S_FALSE;
 
-// 	MyVertex *p = m_vertices + (left_eye ? vertex_pass2_main : vertex_pass2_main_r);
-	RECT src_rect = {0,0,m_lVidWidth, m_lVidHeight};
-// 	RECT target = {p[0].x+0.5, p[0].y+0.5, p[3].x+0.5, p[3].y+0.5};
 
 	// movie picture position
 	RECT target = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
 	calculate_movie_position(&target);
 
+	// source rect calculation
+	RECT src_rect = {0,0,m_lVidWidth, m_lVidHeight};
 	if (!dual_stream)
 	{
 		input_layout_types layout = get_active_input_layout();
@@ -2286,6 +2285,27 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 		}
 	}
 
+	// parallax adjustments
+	if (m_parallax > 0)
+	{
+		// cut right edge of right eye and left edge of left eye
+		if (left_eye)
+			src_rect.left += abs(m_parallax) * m_lVidWidth;
+		else
+			src_rect.right -= abs(m_parallax) * m_lVidWidth;
+
+	}
+	else if (m_parallax < 0)
+	{
+		// cut left edge of right eye and right edge of left eye
+		if (left_eye)
+			src_rect.right -= abs(m_parallax) * m_lVidWidth;
+		else
+			src_rect.left += abs(m_parallax) * m_lVidWidth;
+	}
+
+
+	// render
 	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 	return resize_surface(NULL, sample, surface, &src_rect, &target, (resampling_method)(int)MovieResizing);
 }
