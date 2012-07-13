@@ -439,8 +439,6 @@ protected:
 	// TV - PC level test surfaces
 	CComPtr<IDirect3DSurface9> m_PC_level_test;
 
-// 	CComPtr<IDirect3DTexture9> m_tex_rgb_left;				// source texture, converted to RGB32
-// 	CComPtr<IDirect3DTexture9> m_tex_rgb_right;
 	CComPtr<IDirect3DSurface9> m_deinterlace_surface;		// surface for deinterlace
 	RECT m_window_rect;
 	CComPtr<IDirect3DTexture9> m_tex_mask;					// mask txture

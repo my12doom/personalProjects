@@ -50,33 +50,6 @@ IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format f
 HRESULT myMatrixOrthoRH(D3DMATRIX *matrix, float w, float h, float zn, float zf);
 HRESULT myMatrixIdentity(D3DMATRIX *matrix);
 
-typedef struct tagTHREADNAME_INFO {
-	DWORD dwType; // must be 0x1000
-	LPCSTR szName; // pointer to name (in user addr space)
-	DWORD dwThreadID; // thread ID (-1=caller thread)
-	DWORD dwFlags; // reserved for future use, must be zero
-} THREADNAME_INFO;
-void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName)
-{
-	THREADNAME_INFO info;
-	info.dwType = 0x1000;
-	info.szName = szThreadName;
-	info.dwThreadID = dwThreadID;
-	info.dwFlags = 0;
-
-	__try {
-		RaiseException( 0x406D1388, 0, sizeof(info)/sizeof(DWORD), (ULONG_PTR*)&info );
-	}
-	__except(EXCEPTION_CONTINUE_EXECUTION) {
-	}
-}
-
-float frac(float f)
-{
-	double tmp;
-	return modf(f, &tmp);
-}
-
 HRESULT mylog(wchar_t *format, ...)
 {
 #ifdef DEBUG
@@ -950,14 +923,6 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 	else if (m_device_state == need_resize_back_buffer)
 	{
-		/*
-		terminate_render_thread();
-		CAutoLock lck(&m_frame_lock);
-		FAIL_SLEEP_RET(invalidate_objects());
-		FAIL_SLEEP_RET(restore_objects());
-		m_device_state = fine;
-		*/
-
 		CAutoLock lck(&m_frame_lock);
 		if (FAILED(hr=(delete_render_targets())))
 		{
@@ -979,18 +944,6 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		}
 
 		render_nolock(true);
-
-		/*
-		terminate_render_thread();
-		m_swap1 = NULL;
-		m_swap2 = NULL;
-		m_tex_mask = NULL;
-		create_swap_chains();
-		FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_DYNAMIC, D3DFMT_L8, D3DPOOL_DEFAULT, &m_tex_mask, NULL));
-		calculate_vertex();
-		m_device_state = fine;		
-		create_render_thread();
-		*/
 	}
 	else if (m_device_state == need_reset_object)
 	{
@@ -1564,20 +1517,9 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	create_render_thread();
 
 	// restore image if possible
-	if (m_dsr0->m_State == State_Running && timeGetTime() - m_last_frame_time < 333)
-	{
-		// still running, no need to reload image
-	}
-	else
-	{
-		// restore image
-		// this loop is a bug workaround
-		for(int i=0; i<5; i++)
-		{
-			reload_image();
-			render_nolock(true);
-		}
-	}
+	reload_image();
+
+	return S_OK;
 }
 
 
@@ -4172,4 +4114,32 @@ IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format f
 		return NULL;
 
 	return texture->texture;
+}
+
+void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName)
+{
+	typedef struct tagTHREADNAME_INFO {
+		DWORD dwType; // must be 0x1000
+		LPCSTR szName; // pointer to name (in user addr space)
+		DWORD dwThreadID; // thread ID (-1=caller thread)
+		DWORD dwFlags; // reserved for future use, must be zero
+	} THREADNAME_INFO;
+
+	THREADNAME_INFO info;
+	info.dwType = 0x1000;
+	info.szName = szThreadName;
+	info.dwThreadID = dwThreadID;
+	info.dwFlags = 0;
+
+	__try {
+		RaiseException( 0x406D1388, 0, sizeof(info)/sizeof(DWORD), (ULONG_PTR*)&info );
+	}
+	__except(EXCEPTION_CONTINUE_EXECUTION) {
+	}
+}
+
+float frac(float f)
+{
+	double tmp;
+	return modf(f, &tmp);
 }
