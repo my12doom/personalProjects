@@ -1990,7 +1990,7 @@ HRESULT dx_player::init_direct_show()
 	JIF(m_gb->QueryInterface(IID_IMediaSeeking,  (void **)&m_ms));
 	JIF(m_gb->QueryInterface(IID_IBasicAudio,  (void **)&m_ba));
 
-	myCreateInstance(CLSID_LAVAudio, IID_IBaseFilter, (void**)&m_lav);
+	myCreateInstance(CLSID_FFDSHOWAUDIO, IID_IBaseFilter, (void**)&m_lav);
 	CDWindowAudioDownmix *mixer = new CDWindowAudioDownmix(L"Downmixer", NULL, &hr);
 	mixer->QueryInterface(IID_IBaseFilter, (void**)&m_downmixer);
 
@@ -2441,6 +2441,8 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 {
 	HRESULT hr = E_FAIL;
 	set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
+	set_ff_audio_bitstreaming(m_lav, m_bitstreaming);
+	set_ff_audio_formats(m_lav);
 	if(m_useLAV)
 	{
 		hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");

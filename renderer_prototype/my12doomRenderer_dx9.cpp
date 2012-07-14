@@ -2189,7 +2189,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
 			break;
 		case top_bottom:
 			if (left_eye)
-				src_rect.bottom/2;
+				src_rect.bottom/=2;
 			else
 				src_rect.top = m_lVidHeight/2;
 			break;
@@ -2871,6 +2871,7 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 		if (next_layout != m_layout_detected)
 		{
 			m_layout_detected = next_layout;
+			if (false)
 			set_device_state(need_reset_object);
 		}
 	}
@@ -3213,8 +3214,11 @@ HRESULT my12doomRenderer::NV3D_notify(WPARAM wparam)
 HRESULT my12doomRenderer::set_input_layout(int layout)
 {
 	m_input_layout = (input_layout_types)layout;
-	set_device_state(need_reset_object);
-	handle_device_state();
+	if(false)
+	{
+		set_device_state(need_reset_object);
+		handle_device_state();
+	}
 	repaint_video();
 	return S_OK;
 }

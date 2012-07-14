@@ -8,6 +8,7 @@
 #include <initguid.h>
 #include "LAVAudioSettings.h"
 
+
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "detours/detoured.lib")
 #pragma comment(lib, "detours/detours.lib")
@@ -662,6 +663,79 @@ HRESULT set_lav_audio_bitstreaming(IBaseFilter *filter, bool active)
 	return hr;
 }
 
+HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active)
+{
+	if (filter == NULL)
+		return E_POINTER;
+
+	CComQIPtr<IffdshowBaseW, &IID_IffdshowBaseW> cfg(filter);
+
+	if (NULL == cfg)
+		return E_NOINTERFACE;
+
+	HRESULT hr = S_OK;
+	int enable = active ? 1 : 0;
+	hr = cfg->putParam(IDFF_aoutAC3EncodeMode, enable);
+	hr = cfg->putParam(IDFF_aoutpassthroughAC3, enable);
+	hr = cfg->putParam(IDFF_aoutpassthroughDTS, enable);
+	hr = cfg->putParam(IDFF_aoutpassthroughTRUEHD, enable);
+	hr = cfg->putParam(IDFF_aoutpassthroughDTSHD, enable);
+	hr = cfg->putParam(IDFF_aoutpassthroughEAC3, enable);
+	hr = cfg->putParam(IDFF_aoutAC3EncodeMode, enable);
+
+	return hr;
+}
+
+HRESULT set_ff_output_channel(IBaseFilter *filter, int channel)
+{
+	if (filter == NULL)
+		return E_POINTER;
+
+	CComQIPtr<IffdshowBaseW, &IID_IffdshowBaseW> cfg(filter);
+
+	if (NULL == cfg)
+		return E_NOINTERFACE;
+
+	HRESULT hr = S_OK;
+	if (channel == 0)
+		return hr = cfg->putParam(IDFF_isMixer, 0);
+
+	hr = cfg->putParam(IDFF_isMixer, 1);
+	switch (channel)
+	{
+
+	}
+
+	return hr;
+}
+
+HRESULT set_ff_audio_formats(IBaseFilter *filter)
+{
+	if (filter == NULL)
+		return E_POINTER;
+
+	CComQIPtr<IffdshowBaseW, &IID_IffdshowBaseW> cfg(filter);
+
+	if (NULL == cfg)
+		return E_NOINTERFACE;
+
+	HRESULT hr = S_OK;
+	hr = cfg->putParam(IDFF_mp3, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_mp2, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_ac3, IDFF_MOVIE_LIBA52);
+	hr = cfg->putParam(IDFF_eac3, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_truehd, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_mlp, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_dts, IDFF_MOVIE_LIBDTS);
+	hr = cfg->putParam(IDFF_aac, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_vorbis, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_amr, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_flac, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_tta, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_ra, IDFF_MOVIE_NONE);
+
+	return hr;
+}
 bool isUselessFilter(IBaseFilter *filter)
 {
 	bool has_output = false;

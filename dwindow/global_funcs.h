@@ -8,6 +8,14 @@
 #include <dxva.h>
 #include <dxva2api.h>
 
+// ffdshow
+#include <streams.h>
+#include "stdint.h"
+#include "IffdshowDecAudio.h"
+#include "IffdshowDecVideo.h"
+#include "IffdshowBase.h"
+#include "ffdshow_constants.h"
+
 // dwindow version
 #ifdef nologin
 #define dwindow_free
@@ -85,6 +93,9 @@ bool select_color(DWORD *color, HWND parent);
 bool browse_folder(wchar_t *out, HWND owner = NULL);
 HRESULT RemoveDownstream(CComPtr<IPin> &input_pin);
 HRESULT set_lav_audio_bitstreaming(IBaseFilter *filter, bool active);
+HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active);
+HRESULT set_ff_audio_formats(IBaseFilter *filter);
+HRESULT set_ff_output_channel(IBaseFilter *filter, int channel);
 HRESULT find_main_movie(const wchar_t *folder, wchar_t *out);
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
 HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
