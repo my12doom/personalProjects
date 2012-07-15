@@ -668,14 +668,13 @@ HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active)
 	if (filter == NULL)
 		return E_POINTER;
 
-	CComQIPtr<IffdshowBaseW, &IID_IffdshowBaseW> cfg(filter);
-
+	CComQIPtr<IffdshowBaseA, &IID_IffdshowBaseA> cfg(filter);
 	if (NULL == cfg)
 		return E_NOINTERFACE;
 
 	HRESULT hr = S_OK;
 	int enable = active ? 1 : 0;
-	hr = cfg->putParam(IDFF_aoutAC3EncodeMode, enable);
+	//hr = cfg->putParam(IDFF_aoutAC3EncodeMode, enable);
 	hr = cfg->putParam(IDFF_aoutpassthroughAC3, enable);
 	hr = cfg->putParam(IDFF_aoutpassthroughDTS, enable);
 	hr = cfg->putParam(IDFF_aoutpassthroughTRUEHD, enable);
@@ -697,13 +696,38 @@ HRESULT set_ff_output_channel(IBaseFilter *filter, int channel)
 		return E_NOINTERFACE;
 
 	HRESULT hr = S_OK;
-	if (channel == 0)
+	if (channel == 0 || channel > 8)
 		return hr = cfg->putParam(IDFF_isMixer, 0);
+
+	/*
+	0:mono		:0
+	1:headphone	:17
+	2:stereo	:1
+	3:3.0		:2
+	4:4.1		:12
+	5:5.0		:6
+	6:5,1		:13
+	7:7.1		:24
+	8:off		:
+	*/
 
 	hr = cfg->putParam(IDFF_isMixer, 1);
 	switch (channel)
 	{
-
+	case 1:
+		return hr = cfg->putParam(IDFF_mixerOut, 0);
+	case 2:
+		return hr = cfg->putParam(IDFF_mixerOut, 1);
+	case 3:
+	case 4:
+		return hr = cfg->putParam(IDFF_mixerOut, 2);
+	case 5:
+		return hr = cfg->putParam(IDFF_mixerOut, 6);
+	case 6:
+		return hr = cfg->putParam(IDFF_mixerOut, 13);
+	case 7:
+	case 8:
+		return hr = cfg->putParam(IDFF_mixerOut, 24);
 	}
 
 	return hr;
@@ -732,6 +756,7 @@ HRESULT set_ff_audio_formats(IBaseFilter *filter)
 	hr = cfg->putParam(IDFF_amr, IDFF_MOVIE_LAVC);
 	hr = cfg->putParam(IDFF_flac, IDFF_MOVIE_LAVC);
 	hr = cfg->putParam(IDFF_tta, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_lpcm, IDFF_MOVIE_LAVC);
 	hr = cfg->putParam(IDFF_ra, IDFF_MOVIE_NONE);
 
 	return hr;

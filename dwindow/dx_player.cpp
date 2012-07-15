@@ -166,7 +166,8 @@ m_subtitle_bottom_y(L"SubtitleY", 0.95),
 m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD),
 m_swap_eyes(L"SwapEyes", false, REG_DWORD),
 m_movie_pos_x(L"MoviePosX", 0),
-m_movie_pos_y(L"MoviePosY", 0)
+m_movie_pos_y(L"MoviePosY", 0),
+m_simple_audio_switching(L"SimpleAudioSwitching", false)
 {
 	detect_monitors();
 
@@ -1446,22 +1447,24 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_AUDIO_DOWNMIX)
 	{
 		m_downmix = !m_downmix;
-		handle_downmixer();
+		//handle_downmixer();
+
+		set_ff_output_channel(m_lav, m_downmix ? 2 : 0);
+		if (!m_simple_audio_switching)
+			enable_audio_track(-1);
 	}
 
 	// Bitstreaming
 	else if (uid == ID_AUDIO_BITSTREAM)
 	{
 		m_bitstreaming = !m_bitstreaming;
-		CComPtr<IEnumFilters> ep;
-		CComPtr<IBaseFilter> filter;
-		m_gb->EnumFilters(&ep);
+		set_ff_audio_bitstreaming(m_lav, m_bitstreaming);
+		set_ff_audio_formats(m_lav);
+		if (!m_simple_audio_switching)
+			enable_audio_track(-1);
 
-		while (ep->Next(1, &filter, NULL) == S_OK)
-		{
-			set_lav_audio_bitstreaming(filter, m_bitstreaming);
-			filter = NULL;
-		}
+		debug_list_filters();
+
 		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Bitstreaming setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
 	}
 
@@ -2035,6 +2038,8 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_display_orientation(m_display_orientation);
 
 	m_file_loaded = false;
+	m_active_audio_track = 0;
+	m_active_subtitle_track = 0;
 	
 	m_offset_metadata = NULL;
 	m_stereo_layout = NULL;
@@ -2441,8 +2446,8 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 {
 	HRESULT hr = E_FAIL;
 	set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
-	set_ff_audio_bitstreaming(m_lav, m_bitstreaming);
 	set_ff_audio_formats(m_lav);
+
 	if(m_useLAV)
 	{
 		hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
@@ -2459,6 +2464,8 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 		}
 	}
 
+	set_ff_audio_bitstreaming(m_lav, m_bitstreaming);
+	set_ff_output_channel(m_lav, m_downmix ? 2 : 6);
 	handle_downmixer();
 
 	return hr;
@@ -3133,6 +3140,9 @@ HRESULT dx_player::toggle_fullscreen()
 
 HRESULT dx_player::enable_audio_track(int track)
 {
+	if (track < 0)
+		track = m_active_audio_track;
+
 	CComPtr<IEnumFilters> ef;
 
 	// Save Filter State
@@ -3355,10 +3365,14 @@ HRESULT dx_player::enable_audio_track(int track)
 	else if (state_before == State_Paused)
 		m_mc->Pause();
 
+	m_active_audio_track = track;
 	return hr;
 }
 HRESULT dx_player::enable_subtitle_track(int track)
 {
+	if (track < 0)
+		track = m_active_subtitle_track;
+
 	CComPtr<IEnumFilters> ef;
 	CComPtr<IEnumPins> ep;
 	CComPtr<IBaseFilter> filter;
@@ -3532,6 +3546,7 @@ HRESULT dx_player::enable_subtitle_track(int track)
 		m_srenderer->set_font(m_font);
 		m_srenderer->set_font_color(m_font_color);
 	}
+	m_active_audio_track = track;
 	m_display_subtitle = true;
 	draw_subtitle();
 	return S_OK;
@@ -3539,6 +3554,8 @@ HRESULT dx_player::enable_subtitle_track(int track)
 
 HRESULT dx_player::handle_downmixer()
 {
+	return E_UNEXPECTED;
+
 	// search audio renderer
 retry:
 	CComPtr<IEnumFilters> ef;
