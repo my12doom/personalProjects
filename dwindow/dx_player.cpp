@@ -1463,9 +1463,8 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		if (!m_simple_audio_switching)
 			enable_audio_track(-1);
 
-		debug_list_filters();
-
-		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Bitstreaming setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
+		if (m_file_loaded && m_simple_audio_switching)
+			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Bitstreaming setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
 	}
 
 	// CUDA
@@ -1728,53 +1727,6 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		set_swap_eyes(!m_swap_eyes);
 	}
-
-	/*
-	else if (uid == ID_ANAGLYPH_CUSTOMCOLOR)
-	{
-		m_output_mode = anaglyph;
-		if (m_renderer1)
-		{
-			m_renderer1->set_output_mode(m_output_mode);
-			m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
-			m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
-		}
-	}
-
-
-	else if (uid == ID_OUTPUTMODE_ANAGLYPHCOLOR)
-	{
-		DWORD tmp = m_anaglygh_left_color;
-		if (select_color(&tmp, id_to_hwnd(id)))
-		{
-			m_anaglygh_left_color = tmp;
-
-			m_output_mode = anaglyph;
-
-			if (m_renderer1)
-			{
-				m_renderer1->set_output_mode(m_output_mode);
-				m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
-			}
-		}
-	}
-	else if (uid == ID_OUTPUTMODE_ANAGLYPHCOLORRIGHTEYE)
-	{
-		DWORD tmp = m_anaglygh_right_color;
-		if (select_color(&tmp, id_to_hwnd(id)))
-		{
-			m_anaglygh_right_color = tmp;
-
-			m_output_mode = anaglyph;
-
-			if (m_renderer1)
-			{
-				m_renderer1->set_output_mode(m_output_mode);
-				m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
-			}
-		}
-	}
-	*/
 
 	else if (uid == ID_LOADAUDIOTRACK)
 	{
@@ -2471,6 +2423,94 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 	return hr;
 }
 
+HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
+{
+	HRESULT hr = S_OK;
+
+
+	if (m_is_remux_file)
+	{
+		log_line(L"adding pd10 decoder");
+		CComPtr<IBaseFilter> pd10;
+		hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10);
+		hr = m_gb->AddFilter(pd10, L"PD10 Decoder");
+
+		hr = CrackPD10(pd10);
+		goto connecting;
+	}
+
+	if( NULL == pin || 
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('v4pm')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('V4PM')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('XVID')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('xvid')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('divx')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('DIVX')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('05XD')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('05xd')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('3VID')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('4VID')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('5VID')) )
+	{
+		log_line(L"adding xvid decoder");
+		make_xvid_support_mp4v();
+		CComPtr<IBaseFilter> xvid;
+		hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
+		hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
+	}
+
+	if( NULL == pin ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1cva')) || 
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1CVA')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('CVMA')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462h')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462H')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462x')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462X')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1VCC')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1vcc')))
+	{
+		log_line(L"adding coremvc decoder");
+		coremvc_hooker mvc_hooker;
+		CComPtr<IBaseFilter> coremvc;
+		hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
+		hr = ActiveCoreMVC(coremvc);
+		hr = m_gb->AddFilter(coremvc, L"CoreMVC");
+
+		FILTER_INFO fi;
+		fi.pGraph = NULL;
+		if (coremvc) coremvc->QueryFilterInfo(&fi);
+		if (fi.pGraph)
+			fi.pGraph->Release();
+		else
+			log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
+
+		log_line(L"CoreMVC hr = 0x%08x", hr);
+	}
+
+	if ( NULL == pin ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG2_VIDEO) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG1Payload)  )
+	{
+		log_line(L"adding pd10 decoder");
+		CComPtr<IBaseFilter> pd10;
+		hr = myCreateInstance(CLSID_FFDSHOW, IID_IBaseFilter, (void**)&pd10);
+		hr = set_ff_video_formats(pd10);
+		hr = m_gb->AddFilter(pd10, L"FFDSHOW Decoder");
+	}
+
+connecting:
+
+	CComPtr<IPin> renderer_input;
+	GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer_input);
+	if (!renderer_input)
+		GetUnconnectedPin(m_renderer1->m_dshow_renderer2, PINDIR_INPUT, &renderer_input);
+
+	hr = m_gb->Connect(pin, renderer_input);
+
+	return S_OK;
+}
+
 HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = false */, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
 {
 	wchar_t file_to_play[MAX_PATH];
@@ -2617,83 +2657,9 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 						if ( (video_track>=0 && (LOADFILE_TRACK_NUMBER(video_num) & video_track ))
 							|| video_track == LOADFILE_ALL_TRACK)
 						{
-							CLSID CLSID_mp4v = FOURCCMap('v4pm');
-							if (m_is_remux_file)
-							{
-								log_line(L"adding pd10 decoder");
-								CComPtr<IBaseFilter> pd10;
-								hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10);
-								hr = m_gb->AddFilter(pd10, L"PD10 Decoder");
-
-								if (FAILED(hr = CrackPD10(pd10)))
-									return hr;
-							}
-
-							else if(S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('v4pm')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('V4PM')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('XVID')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('xvid')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('divx')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('DIVX')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('05XD')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('05xd')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('3VID')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('4VID')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('5VID')) )
-							{
-								log_line(L"adding xvid decoder");
-								make_xvid_support_mp4v();
-								CComPtr<IBaseFilter> xvid;
-								hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
-								hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
-							}
-
-							else if(S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1cva')) || 
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1CVA')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('CVMA')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462h')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462H')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462x')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('462X')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1VCC')) ||
-							   S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1vcc')))
-							{
-								log_line(L"adding coremvc decoder");
-								coremvc_hooker mvc_hooker;
-								CComPtr<IBaseFilter> coremvc;
-								hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
-								hr = ActiveCoreMVC(coremvc);
-								hr = m_gb->AddFilter(coremvc, L"CoreMVC");
-
-								FILTER_INFO fi;
-								fi.pGraph = NULL;
-								if (coremvc) coremvc->QueryFilterInfo(&fi);
-								if (fi.pGraph)
-									fi.pGraph->Release();
-								else
-									log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
-
-								log_line(L"CoreMVC hr = 0x%08x", hr);
-							}
-
-							else if (S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG2_VIDEO) ||
-								S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG1Payload)  )
-							{
-								log_line(L"adding pd10 decoder");
-								CComPtr<IBaseFilter> pd10;
-								hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10);
-								hr = m_gb->AddFilter(pd10, L"PD10 Decoder");
-							}
 
 							log_line(L"renderering video pin #%d", video_num);
-							//debug_list_filters();
-							//hr = m_gb->Render(pin);
-							CComPtr<IPin> renderer_input;
-							GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer_input);
-							if (!renderer_input)
-								GetUnconnectedPin(m_renderer1->m_dshow_renderer2, PINDIR_INPUT, &renderer_input);
-
-							hr = m_gb->Connect(pin, renderer_input);
+							hr = render_video_pin(pin);
 							log_line(L"done renderering video pin #%d", video_num);
 						}
 						video_num ++;
@@ -2704,7 +2670,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 						if ( (audio_track>=0 && (LOADFILE_TRACK_NUMBER(audio_num) & audio_track ))
 							|| audio_track == LOADFILE_ALL_TRACK)
 						{
-							render_audio_pin(pin);
+							hr = render_audio_pin(pin);
 							log_line(L"done renderering audio pin #%d", audio_num);
 						}
 						audio_num ++;
@@ -2735,32 +2701,9 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 			log_line(L"private filters failed, trying system filters. (%s)", file_to_play);
 
-			CComPtr<IBaseFilter> pd10;
-			hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10);
-			hr = m_gb->AddFilter(pd10, L"PD10 Deocder");
-
-			CComPtr<IBaseFilter> xvid;
-			hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
-			hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
-
-			{
-				CComPtr<IBaseFilter> coremvc;
-				coremvc_hooker mvc_hooker;
-
-				hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
-				hr = ActiveCoreMVC(coremvc);
-				hr = m_gb->AddFilter(coremvc, L"CoreMVC");
-				FILTER_INFO fi;
-				fi.pGraph = NULL;
-				if (coremvc) coremvc->QueryFilterInfo(&fi);
-				if (fi.pGraph)
-					fi.pGraph->Release();
-				else
-					log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
-			}
-
-			set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
-			if(m_useLAV)hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
+			// this just add decoders
+			hr = render_video_pin(NULL);
+			hr = render_audio_pin(NULL);
 
 			hr = m_gb->RenderFile(file_to_play, NULL);
 			handle_downmixer();
@@ -2782,34 +2725,11 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 			return hr;
 		}
 
-		log_line(L"private filters failed, trying system filters. (%s)", file_to_play);
+		log_line(L"no matching private filters, trying system filters. (%s)", file_to_play);
 
-		CComPtr<IBaseFilter> pd10;
-		hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10);
-		hr = m_gb->AddFilter(pd10, L"PD10 Deocder");
-
-		CComPtr<IBaseFilter> xvid;
-		hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
-		hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
-
-		{
-			CComPtr<IBaseFilter> coremvc;
-			coremvc_hooker mvc_hooker;
-
-			hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
-			hr = ActiveCoreMVC(coremvc);
-			hr = m_gb->AddFilter(coremvc, L"CoreMVC");
-			FILTER_INFO fi;
-			fi.pGraph = NULL;
-			if (coremvc) coremvc->QueryFilterInfo(&fi);
-			if (fi.pGraph)
-				fi.pGraph->Release();
-			else
-				log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
-		}
-
-		set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
-		if(m_useLAV)hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
+		// this just add decoders
+		hr = render_video_pin(NULL);
+		hr = render_audio_pin(NULL);
 
 		hr = m_gb->RenderFile(file_to_play, NULL);
 		handle_downmixer();

@@ -96,6 +96,7 @@ HRESULT RemoveDownstream(CComPtr<IPin> &input_pin);
 HRESULT set_lav_audio_bitstreaming(IBaseFilter *filter, bool active);
 HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active);
 HRESULT set_ff_audio_formats(IBaseFilter *filter);
+HRESULT set_ff_video_formats(IBaseFilter *filter);
 HRESULT set_ff_output_channel(IBaseFilter *filter, int channel);
 HRESULT find_main_movie(const wchar_t *folder, wchar_t *out);
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);

@@ -126,7 +126,7 @@ HRESULT CsrtRenderer::render(const wchar_t *text, rendered_subtitle *out, bool h
 
 	HFONT hOldFont = (HFONT) SelectObject(hdcBmp, m_font);
 
-	RECT rect = {0,0,1920,1920/m_aspect};
+	RECT rect = {0,0,1920,int(1920/m_aspect)};
 	DrawTextW(hdcBmp, text, (int)wcslen(text), &rect, DT_CENTER | DT_CALCRECT | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL);
 	out->pixel_type = out->pixel_type_RGB;
 	out->height_pixel = rect.bottom - rect.top;

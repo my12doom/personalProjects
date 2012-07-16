@@ -48,7 +48,7 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 
 			if (!is_draging && player->m_file_loaded)
 			{
-				SendMessage(hProgress, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)1000*((double)current/total));
+				SendMessage(hProgress, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(1000*((double)current/total)));
 				wchar_t tmp[200];
 				format_time_noms(total, tmp);
 					SetDlgItemTextW(hDlg, IDC_TOTAL, tmp);

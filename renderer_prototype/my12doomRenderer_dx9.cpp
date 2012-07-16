@@ -834,10 +834,6 @@ HRESULT my12doomRenderer::create_render_targets()
 
 	if (m_swap1)
 	{
-		CComPtr<IDirect3DSurface9> surface;
-		m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &surface);
-		D3DSURFACE_DESC desc;
-
 		RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
 		if (m_output_mode == out_sbs)
 			tar.right /= 2;

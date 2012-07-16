@@ -123,7 +123,7 @@ INT_PTR CALLBACK color_adjust_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 	case WM_HSCROLL:
 		{
 			HWND slider = (HWND)lParam;
-			WORD value = SendMessage(slider, TBM_GETPOS, 0, 0);//HIWORD(wParam);
+			WORD value = (WORD)SendMessage(slider, TBM_GETPOS, 0, 0);;
 			int type = slider2type(hDlg, slider);
 			if (type != -1 && g_cb && ((LOWORD(wParam) == SB_THUMBTRACK) || (LOWORD(wParam) == SB_PAGEDOWN || (LOWORD(wParam) == SB_PAGEUP))))
 			{

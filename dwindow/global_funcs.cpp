@@ -86,7 +86,7 @@ int find_phy_monitors()
 	if (!d3d)
 		return 0;
 
-	int i = 0;
+	unsigned int i = 0;
 	for(i=0; i<min(16, d3d->GetAdapterCount()); i++)
 	{
 		d3d->GetAdapterIdentifier(i, NULL, g_phy_ids+i);
@@ -163,7 +163,6 @@ int get_mixed_monitor_count(bool horizontal /* = false */, bool vertical /* = fa
 
 int get_mixed_monitor_by_id(int id, RECT *rect, wchar_t *descriptor, bool horizontal /* = false */, bool vertical /* = false */)
 {
-	RECT found[48];
 	int counter = 0;
 
 	if (id < 0)
@@ -761,6 +760,49 @@ HRESULT set_ff_audio_formats(IBaseFilter *filter)
 
 	return hr;
 }
+
+HRESULT set_ff_video_formats(IBaseFilter *filter)
+{
+	if (filter == NULL)
+		return E_POINTER;
+
+	CComQIPtr<IffdshowBaseW, &IID_IffdshowBaseW> cfg(filter);
+
+	if (NULL == cfg)
+		return E_NOINTERFACE;
+
+	HRESULT hr = S_OK;
+
+	hr = cfg->putParam(IDFF_h264, IDFF_MOVIE_LAVC);		// this is mainly for non-private files, use whatever I can
+	hr = cfg->putParam(IDFF_xvid, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_dx50, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_mp41, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_mp42, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_mp43, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_mp4v, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_div3, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_div3, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_h263, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_flv1, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_theo, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_vp3, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_vp5, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_vp6, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_vp6f, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_vp8, IDFF_MOVIE_LAVC);
+
+	hr = cfg->putParam(IDFF_mpg1, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_mpg2, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_mpegAVI, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_em2v, IDFF_MOVIE_LAVC);
+	//hr = cfg->putParam(IDFF_vcr1, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_h261, IDFF_MOVIE_LAVC);
+
+
+	return hr;
+}
+
+
 bool isUselessFilter(IBaseFilter *filter)
 {
 	bool has_output = false;

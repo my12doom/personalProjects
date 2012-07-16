@@ -60,7 +60,7 @@ public:
 		int width = abs(x1 - x2);
 		int height = abs(y1 - y2);
 
-		out.vertexes[0].x = min(x1,x2); out.vertexes[0].y = min(y1,y2);
+		out.vertexes[0].x = (float)min(x1,x2); out.vertexes[0].y = (float)min(y1,y2);
 		out.vertexes[0].z = 1.0f, out.vertexes[0].w = 1.0f;
 		out.vertexes[0].tu = out.vertexes[0].tv = 0;
 		out.vertexes[3] = out.vertexes[2] = out.vertexes[1] = out.vertexes[0];
@@ -103,7 +103,7 @@ public:
 		else if (in.anchor & BOTTOM)
 			y = m_height;
 
-		out.vertexes[0].x = x, out.vertexes[0].y = y;
+		out.vertexes[0].x = (float)x, out.vertexes[0].y = (float)y;
 		out.vertexes[0].z = 1.0f, out.vertexes[0].w = 1.0f;
 		out.vertexes[3] = out.vertexes[2] = out.vertexes[1] = out.vertexes[0];
 		if (in.anchor & LEFT)

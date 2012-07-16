@@ -140,7 +140,8 @@ protected:
 	bool m_select_font_active;
 	static DWORD WINAPI select_font_thread(LPVOID lpParame);
 	HRESULT reset_and_loadfile_internal(const wchar_t *pathname, const wchar_t*pathname2 = NULL);
-	HRESULT render_audio_pin(IPin *pin);
+	HRESULT render_audio_pin(IPin *pin = NULL);		// render audio pin, if pin=NULL, add all possible decoder
+	HRESULT render_video_pin(IPin *pin = NULL);		// render video pin, if pin=NULL, add all possible decoder
 	bool m_reset_and_load;
 	bool m_stop_after_load;
 	HRESULT m_reset_load_hr;

@@ -40,7 +40,7 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 	message.client_time = _time64(NULL);
 	memcpy(message.passkey, g_passkey, 32);
 	memset(message.requested_hash, 0, 20);
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 	for(int i=0; i<32; i++)
 		message.random_AES_key[i] = rand() & 0xff;
 
