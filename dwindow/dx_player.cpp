@@ -2397,6 +2397,11 @@ LRESULT dx_player::on_idle_time()
 HRESULT dx_player::render_audio_pin(IPin *pin)
 {
 	HRESULT hr = E_FAIL;
+
+	CComPtr<IBaseFilter> rm_audio;
+	myCreateInstance(CLSID_RMAudioDecoder, IID_IBaseFilter, (void**)&rm_audio);
+	m_gb->AddFilter(rm_audio, L"RM Audio Decoder");
+
 	set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
 	set_ff_audio_formats(m_lav);
 
@@ -2497,6 +2502,13 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		hr = myCreateInstance(CLSID_FFDSHOW, IID_IBaseFilter, (void**)&pd10);
 		hr = set_ff_video_formats(pd10);
 		hr = m_gb->AddFilter(pd10, L"FFDSHOW Decoder");
+	}
+
+	// RM Video
+	{
+		CComPtr<IBaseFilter> rm_video;
+		myCreateInstance(CLSID_RMVideoDecoder, IID_IBaseFilter, (void**)&rm_video);
+		m_gb->AddFilter(rm_video, L"RM Video Decoder");
 	}
 
 connecting:
