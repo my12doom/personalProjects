@@ -35,6 +35,8 @@ typedef struct
 	float bottom;
 } RECTF;
 
+typedef POINTF VECTORF;
+
 typedef struct _dummy_packet
 {
 	REFERENCE_TIME start;

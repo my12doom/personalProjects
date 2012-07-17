@@ -175,7 +175,7 @@ protected:
 	AutoSetting<bool> m_simple_audio_switching;		// true: call enable_audio_track() to reconnect filter after audio setting changed,  false: no call
 	int m_active_audio_track;
 	int m_active_subtitle_track;
-	HRESULT enable_audio_track(int track);
+	HRESULT enable_audio_track(int track);			// special track: -1: disable all, -2: reconnect current
 	HRESULT enable_subtitle_track(int track);
 	HRESULT handle_downmixer();
 	HRESULT list_tracks(int *count, IPin **pins, CLSID majortype, wchar_t *match);

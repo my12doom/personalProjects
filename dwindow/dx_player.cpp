@@ -1451,7 +1451,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 		set_ff_output_channel(m_lav, m_downmix ? 2 : 0);
 		if (!m_simple_audio_switching)
-			enable_audio_track(-1);
+			enable_audio_track(-2);
 	}
 
 	// Bitstreaming
@@ -1461,7 +1461,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		set_ff_audio_bitstreaming(m_lav, m_bitstreaming);
 		set_ff_audio_formats(m_lav);
 		if (!m_simple_audio_switching)
-			enable_audio_track(-1);
+			enable_audio_track(-2);
 
 		if (m_file_loaded && m_simple_audio_switching)
 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Bitstreaming setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
@@ -1496,7 +1496,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		m_input_layout = input_layout_auto;
 		if (m_renderer1)
-			m_renderer1->set_input_layout(m_input_layout);			
+			m_renderer1->set_input_layout(m_input_layout);
 	}
 
 	else if (uid == ID_INPUTLAYOUT_SIDEBYSIDE)
@@ -1523,7 +1523,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// output mode
 	else if (uid == ID_OUTPUTMODE_NVIDIA3DVISION)
 	{
-		set_output_mode(NV3D);			
+		set_output_mode(NV3D);
 	}
 	else if (uid == ID_OUTPUTMODE_INTEL)
 	{
@@ -2563,6 +2563,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	// check private source and whether is MVC content
 	CLSID source_clsid;
 	hr = GetFileSource(file_to_play, &source_clsid);
+	bool matched_private_filter = SUCCEEDED(hr);
 
 	// E3D keys
 	if (source_clsid == CLSID_E3DSource)
@@ -2602,7 +2603,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		}
 	}
 
-	if (SUCCEEDED(hr))
+	if (matched_private_filter)
 	{
 		log_line(L"loading with private filter");
 		// private file types
@@ -2640,8 +2641,9 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 			m_gb->ConnectDirect(reader_o, source_i, NULL);
 		}
 
-		log_line(L"renderer ing pins");
+
 		// then render pins
+		log_line(L"renderer ing pins");
 		CComPtr<IPin> pin;
 		CComPtr<IEnumPins> pEnum;
 		int audio_num = 0, video_num = 0;
@@ -2702,34 +2704,11 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 			}
 			pin = NULL;
 		}
-
-		// if it doesn't work....
-		if (video_num == 0 && audio_num == 0)
-		{
-			log_line(L"failed rendering \"%s\" (error = 0x%08x).", file_to_play, hr);
-			if (m_is_remux_file)
-				return E_FAIL;
-
-
-			log_line(L"private filters failed, trying system filters. (%s)", file_to_play);
-
-			// this just add decoders
-			hr = render_video_pin(NULL);
-			hr = render_audio_pin(NULL);
-
-			hr = m_gb->RenderFile(file_to_play, NULL);
-			handle_downmixer();
-		}
-		else
-		{
-			log_line(L"private filter OK");
-			hr = S_OK;
-		}
 	}
 
 
 	// normal file, just render it.
-	else
+	if (!matched_private_filter || (video_track==0 && audio_track==0))
 	{
 		if (m_is_remux_file)
 		{
@@ -3072,7 +3051,7 @@ HRESULT dx_player::toggle_fullscreen()
 
 HRESULT dx_player::enable_audio_track(int track)
 {
-	if (track < 0)
+	if (track < -1)
 		track = m_active_audio_track;
 
 	CComPtr<IEnumFilters> ef;

@@ -1462,10 +1462,12 @@ DWORD WINAPI ad_thread(LPVOID lpParame)
 
 DWORD WINAPI killer_thread2(LPVOID time)
 {
+	int sleep = 0;
 #ifdef no_dual_projector
 	char url[512+1];
 	if (strstr(g_ad_address, "http") == g_ad_address)
 	{
+		sleep = *(DWORD*)time;
 		sprintf(url, "explorer.exe \"%s\"", g_ad_address);
 
 		if (!is_payed_version())
@@ -1476,7 +1478,7 @@ DWORD WINAPI killer_thread2(LPVOID time)
 		// no ad / invalid ad
 	}
 #endif
-	Sleep(*(DWORD*)time);
+	Sleep(sleep);
 	TerminateProcess(GetCurrentProcess(), 0);
 	return 0;
 }

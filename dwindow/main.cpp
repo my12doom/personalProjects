@@ -232,10 +232,10 @@ retry:
 	save_passkey();
 
 
-	CreateThread(NULL, NULL, killer_thread2, new DWORD(3000), NULL, NULL);
+	HANDLE killer = CreateThread(NULL, NULL, killer_thread2, new DWORD(3000), NULL, NULL);
 	bar_logout();
 	delete test;
-	Sleep(3000);
+	WaitForSingleObject(killer, 3000);
 	return 0;
 }
 
@@ -262,216 +262,9 @@ int test()
 	return 0;
 }
 
-static const byte rLPS_table_64x4[64][4]=
-{
-	{ 128, 176, 208, 240},
-	{ 128, 167, 197, 227},
-	{ 128, 158, 187, 216},
-	{ 123, 150, 178, 205},
-	{ 116, 142, 169, 195},
-	{ 111, 135, 160, 185},
-	{ 105, 128, 152, 175},
-	{ 100, 122, 144, 166},
-	{  95, 116, 137, 158},
-	{  90, 110, 130, 150},
-	{  85, 104, 123, 142},
-	{  81,  99, 117, 135},
-	{  77,  94, 111, 128},
-	{  73,  89, 105, 122},
-	{  69,  85, 100, 116},
-	{  66,  80,  95, 110},
-	{  62,  76,  90, 104},
-	{  59,  72,  86,  99},
-	{  56,  69,  81,  94},
-	{  53,  65,  77,  89},
-	{  51,  62,  73,  85},
-	{  48,  59,  69,  80},
-	{  46,  56,  66,  76},
-	{  43,  53,  63,  72},
-	{  41,  50,  59,  69},
-	{  39,  48,  56,  65},
-	{  37,  45,  54,  62},
-	{  35,  43,  51,  59},
-	{  33,  41,  48,  56},
-	{  32,  39,  46,  53},
-	{  30,  37,  43,  50},
-	{  29,  35,  41,  48},
-	{  27,  33,  39,  45},
-	{  26,  31,  37,  43},
-	{  24,  30,  35,  41},
-	{  23,  28,  33,  39},
-	{  22,  27,  32,  37},
-	{  21,  26,  30,  35},
-	{  20,  24,  29,  33},
-	{  19,  23,  27,  31},
-	{  18,  22,  26,  30},
-	{  17,  21,  25,  28},
-	{  16,  20,  23,  27},
-	{  15,  19,  22,  25},
-	{  14,  18,  21,  24},
-	{  14,  17,  20,  23},
-	{  13,  16,  19,  22},
-	{  12,  15,  18,  21},
-	{  12,  14,  17,  20},
-	{  11,  14,  16,  19},
-	{  11,  13,  15,  18},
-	{  10,  12,  15,  17},
-	{  10,  12,  14,  16},
-	{   9,  11,  13,  15},
-	{   9,  11,  12,  14},
-	{   8,  10,  12,  14},
-	{   8,   9,  11,  13},
-	{   7,   9,  11,  12},
-	{   7,   9,  10,  12},
-	{   7,   8,  10,  11},
-	{   6,   8,   9,  11},
-	{   6,   7,   9,  10},
-	{   6,   7,   8,   9},
-	{   2,   2,   2,   2}
-};
-/*
-
-int myscanf(FILE *f, int *id, int*year, int*weak, float*profit)
-{
-	*profit = 0;
-	int rtn = fscanf(f, "%d %d-%d %f", id, year, weak, profit);
-
-	if (rtn)
-		return rtn;
-
-	rtn = fscanf(f, "%d %d-%d", id, year, weak);
-
-	if (rtn)
-		return rtn;
-
-	char line[1024];
-
-	return fscanf(f, "%s", line);
-}
-
-int *id = new int[200000];
-int *year = new int[200000];
-int *weak = new int[200000];
-float *profit = new float[200000];
-char names[1024][15];
-int ids[1000];
-
-float table[500][2012-1991+1][53];
-
-int index_ids(int id)
-{
-	for(int i=0; i<500; i++)
-		if (ids[i] == id)
-			return i;
-	return 0;
-}
-*/
-
-DWORD WINAPI DIE(LPVOID param)
-{
-	//*(char*)param = 123;
-	return 0;
-}
 
 int main()
-{/*
-
-	FILE * f;
-
-
-	f = fopen("Z:\\names.txt", "rb");
-	int namecount = 0;
-	while (fscanf(f, "%s", names[namecount]) != EOF)
-		namecount++;
-	fclose(f);
-
-	f = fopen("Z:\\ids.txt", "rb");
-	int idcount = 0;
-	while (fscanf(f, "%d", &ids[idcount]) != EOF)
-		idcount++;
-	fclose(f);
-
-	memset(table, 0, sizeof(table));
-	f = fopen("Z:\\TRD.txt", "rb");
-	int count = 0;
-	memset(profit, 0, sizeof(float) * 200000);
-	while (myscanf(f, id+count, year+count, weak+count, profit+count) != EOF)
-	{
-		if (profit[count] != 0)
-			table[index_ids(id[count])][year[count]-1991][weak[count]] = profit[count];
-
-		count++;
-	}
-	fclose(f);
-
-	f = fopen("Z:\\out.txt", "wb");
-
-
-	fprintf(f, "股票代号");
-	for(int i=0; i<idcount; i++)
-		fprintf(f, "%d\t", ids[i]);
-	fprintf(f, "\r\n");
-
-	fprintf(f, "股票名称");
-	for(int i=0; i<idcount; i++)
-		fprintf(f, "%s\t", names[i]);
-	fprintf(f, "\r\n");
-
-	fflush(f);
-
-	for(int y=1991; y<=2012; y++)
-		for(int w=1; w<54; w++)
-		{
-			// time
-			fprintf(f, "%d-%d\t", y, w);
-
-			for(int i=0; i<idcount; i++)
-			{
-				int gpid = ids[i];
-
-				float gp_profit = 0;
-
-				gp_profit = table[i][y-1991][w];
-
-				fprintf(f, "%f\t", gp_profit);
-			}
-
-			fprintf(f, "\r\n");
-		}
-
-
-	fflush(f);
-
-	int a[123] = {0};
-	int b[234] = {0};
-	for(int i=0; i<123; i++)
-		b[i] = a[i];
-
-	static __int64 delta = timeGetTime()/1000 - _time64(NULL);
-	while(0)
-	{
-		int now1 = timeGetTime()/1000 - _time64(NULL) - delta;
-		__int64 t = _time64(NULL);
-		printf("\r, %d, %d, %d, %d, ", GetTickCount(), timeGetTime(), mytime(), now1);
-		printf("%d            ", t);
-	}
-*/
-
-// 	char *data = new char[512*512];
-// 	memset(data, 0, 512*512);
-// 	FILE * f = fopen("Z:\\chroma.yuv", "wb");
-// 	FILE * s = fopen("Z:\\testUV.bmp", "rb");
-// 
-// 	fwrite(data, 512, 512, f);
-// 	fseek(s, 58, SEEK_SET);
-// 	fread(data, 256, 256, s);
-// 	fwrite(data, 256, 256, f);
-// 	fwrite(data, 256, 256, f);
-// 	fclose(f);
-// 	fclose(s);
-
-
-
+{
 	__try 
 	{
 		char * x = NULL;
@@ -482,8 +275,6 @@ int main()
 
 
 	}
-	//my_handler(NULL);
-// 	CreateThread(NULL, NULL, DIE, NULL, NULL, NULL);
 	WinMain(GetModuleHandle(NULL), 0, "", SW_SHOW);
 }
 
