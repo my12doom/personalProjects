@@ -195,8 +195,8 @@ protected:
 	int m_dragging;	// = 0
 	AutoSetting<double> m_volume;	// = 1.0
 	AutoSetting<bool> m_bitstreaming;	// = 1.0
-	AutoSetting<bool> m_useLAV;		// = true
-	AutoSetting<bool> m_downmix;	// = false
+	AutoSetting<bool> m_useInternalAudioDecoder;		// = true
+	AutoSetting<int> m_channel;	// = false
 	HRESULT show_ui(bool show);
 	HRESULT draw_ui();
 

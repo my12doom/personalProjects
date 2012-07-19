@@ -146,8 +146,8 @@ m_saved_screen1(L"Screen1", rect_zero),
 m_saved_screen2(L"Screen2", rect_zero),
 m_saved_rect1(L"Window1", rect_zero),
 m_saved_rect2(L"Window2", rect_zero),
-m_useLAV(L"ForceLAV", false),
-m_downmix(L"Downmix", false),
+m_useInternalAudioDecoder(L"InternalAudioDecoder", true),
+m_channel(L"AudioChannel", 2),
 m_forced_deinterlace(L"ForcedDeinterlace", false),
 m_saturation(L"Saturation", 0.5),
 m_luminance(L"Luminance", 0.5),
@@ -985,9 +985,9 @@ HRESULT dx_player::popup_menu(HWND owner)
 	}
 
 	// LAV Audio Decoder and downmixing
-	CheckMenuItem(menu, ID_AUDIO_USELAV, MF_BYCOMMAND | (m_useLAV ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_AUDIO_BITSTREAM, MF_BYCOMMAND | (m_useLAV && m_bitstreaming ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_AUDIO_DOWNMIX, MF_BYCOMMAND | (m_downmix ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_AUDIO_USELAV, MF_BYCOMMAND | (m_useInternalAudioDecoder ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_AUDIO_BITSTREAM, MF_BYCOMMAND | (m_useInternalAudioDecoder && m_bitstreaming ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_AUDIO_DOWNMIX, MF_BYCOMMAND | (m_channel == 2 ? MF_CHECKED : MF_UNCHECKED));
 
 	// audio tracks
 	HMENU sub_audio = GetSubMenu(menu, 6);
@@ -1440,16 +1440,16 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// LAV Audio Decoder
 	else if (uid == ID_AUDIO_USELAV)
 	{
-		m_useLAV = !m_useLAV;
+		m_useInternalAudioDecoder = !m_useInternalAudioDecoder;
 		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Audio Decoder setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
 	}
 
 	else if (uid == ID_AUDIO_DOWNMIX)
 	{
-		m_downmix = !m_downmix;
+		m_channel = m_channel == 2 ? 6 : 2;
 		//handle_downmixer();
 
-		set_ff_output_channel(m_lav, m_downmix ? 2 : 0);
+		set_ff_output_channel(m_lav, m_channel);
 		if (!m_simple_audio_switching)
 			enable_audio_track(-2);
 	}
@@ -2405,7 +2405,7 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 	set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
 	set_ff_audio_formats(m_lav);
 
-	if(m_useLAV)
+	if(m_useInternalAudioDecoder)
 	{
 		hr = m_gb->AddFilter(m_lav, L"LAV Audio Decoder");
 		hr = m_gb->Render(pin);
@@ -2422,7 +2422,7 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 	}
 
 	set_ff_audio_bitstreaming(m_lav, m_bitstreaming);
-	set_ff_output_channel(m_lav, m_downmix ? 2 : 6);
+	set_ff_output_channel(m_lav, m_channel);
 	handle_downmixer();
 
 	return hr;
@@ -3502,9 +3502,9 @@ retry:
 	CLSID clsid;
 	up_filter->GetClassID(&clsid);
 
-	if (m_downmix && clsid==CLSID_DWindowAudioDownmix)
+	if (m_channel && clsid==CLSID_DWindowAudioDownmix)
 		return S_OK;
-	if (!m_downmix && clsid!=CLSID_DWindowAudioDownmix)
+	if (!m_channel && clsid!=CLSID_DWindowAudioDownmix)
 		return S_OK;
 
 	// Save Filter State
@@ -3522,7 +3522,7 @@ retry:
 	m_gb->Disconnect(input);
 	m_gb->Disconnect(connectedto);
 
-	if (!m_downmix)
+	if (!m_channel)
 	{
 		CComPtr<IPin> input2;
 		GetConnectedPin(up_filter, PINDIR_INPUT, &input2);

@@ -1,8 +1,8 @@
 call revision_silent.bat
 
 #build
-set dev2003="C:\Program Files\Microsoft Visual Studio .NET 2003\Common7\IDE\devenv"
-set dev2008="C:\Program Files\Microsoft Visual Studio 9.0\Common7\IDE\devenv"
+set dev2003="C:\Program Files (x86)\Microsoft Visual Studio .NET 2003\Common7\IDE\devenv"
+set dev2008="C:\Program Files (x86)\Microsoft Visual Studio 9.0\Common7\IDE\devenv"
 E:
 cd\
 cd E:\private_projects

@@ -145,6 +145,7 @@ Section "3DÓ°ÒôÖ÷³ÌÐò(required)"
   File "logo.raw"
   File "Fonts.conf"
   File "MediaInfo.dll"
+  File "DevIL.dll"
   ;File "CoralExplorer_221282.exe"
   SetOutPath $INSTDIR\codec
   File "codec\*"
@@ -252,6 +253,7 @@ Section "Uninstall"
   Delete $INSTDIR\alpha.raw
   Delete $INSTDIR\logo.raw
   Delete $INSTDIR\*.exe
+  Delete $INSTDIR\*.dll
   Delete $INSTDIR\fonts.conf
   Delete $INSTDIR\dxva2.dll
 
