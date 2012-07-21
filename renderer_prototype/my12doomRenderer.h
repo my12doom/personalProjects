@@ -325,7 +325,7 @@ protected:
 	HRESULT test_PC_level();		// test hardware YUV-RGB conversion level
 	DWORD m_PC_level;				// 0
 	HRESULT calculate_movie_position(RECT *position);
-	HRESULT calculate_subtitle_position(RECT *postion, bool left_eye);
+	HRESULT calculate_subtitle_position(RECTF *postion, bool left_eye);
 
 
 	friend class dx_player;

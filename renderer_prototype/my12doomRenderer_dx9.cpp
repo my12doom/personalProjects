@@ -2236,8 +2236,8 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 	HRESULT hr = E_FAIL;
 
 	// movie picture position
-	RECT src_rect = {0,0,m_bmp_width, m_bmp_height};
-	RECT dst_rect = {0};
+	RECTF src_rect = {0,0,m_bmp_width, m_bmp_height};
+	RECTF dst_rect = {0};
 	calculate_subtitle_position(&dst_rect, left_eye);
 
 	CComPtr<IDirect3DSurface9> src;
@@ -2988,7 +2988,7 @@ HRESULT my12doomRenderer::calculate_movie_position(RECT *position)
 	return S_OK;
 }
 
-HRESULT my12doomRenderer::calculate_subtitle_position(RECT *postion, bool left_eye)
+HRESULT my12doomRenderer::calculate_subtitle_position(RECTF *postion, bool left_eye)
 {
 	if (!postion)
 		return E_POINTER;
@@ -2999,10 +2999,10 @@ HRESULT my12doomRenderer::calculate_subtitle_position(RECT *postion, bool left_e
 	int pic_width = tar.right - tar.left;
 	int pic_height = tar.bottom - tar.top;
 
-	int left = tar.left + pic_width * (m_bmp_fleft - (left_eye ? 0 :m_bmp_parallax));
-	int width = pic_width * m_bmp_fwidth;
-	int top = tar.top + pic_height * m_bmp_ftop;
-	int height = pic_height * m_bmp_fheight;
+	float left = tar.left + pic_width * (m_bmp_fleft - (left_eye ? 0 :m_bmp_parallax));
+	float width = pic_width * m_bmp_fwidth;
+	float top = tar.top + pic_height * m_bmp_ftop;
+	float height = pic_height * m_bmp_fheight;
 
 	postion->left = left;
 	postion->right = left + width;
