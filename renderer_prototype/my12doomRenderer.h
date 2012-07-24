@@ -177,6 +177,7 @@ public:
 	HRESULT set_2dto3d(bool convert){m_convert3d = convert;}
 	HRESULT set_aspect_mode(int mode);
 	HRESULT set_display_orientation(int orientation){m_display_orientation = (display_orientation)orientation; return S_OK;}
+	HRESULT set_vsync(bool on);
 
 	// settings GET function
 	DWORD get_mask_color(int id);
@@ -186,7 +187,7 @@ public:
 	mask_mode_types get_mask_mode();
 	int get_mask_parameter();
 	bool get_fullscreen();
-	double get_offset(int dimention);
+	double get_movie_pos(int dimention);
 	double get_aspect();
 	bool is_connected(int id){return (id?m_dsr1:m_dsr0)->is_connected();}
 	double get_bmp_parallax(){return m_bmp_parallax;}
@@ -195,6 +196,7 @@ public:
 	aspect_mode_types get_aspect_mode(){return m_aspect_mode;}
 	HRESULT intel_get_caps(IGFX_S3DCAPS *caps);
 	int get_display_orientation(){return m_display_orientation;}
+	bool get_vsync(){return m_vertical_sync;}
 
 protected:
 
@@ -217,6 +219,7 @@ protected:
 	Imy12doomRendererCallback *m_cb;
 	bool m_revert_RGB32;
 	REFERENCE_TIME m_last_frame_time;
+	bool m_vertical_sync;
 
 protected:
 	friend class my12doomRendererDShow;

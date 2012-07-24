@@ -179,6 +179,9 @@ m_right_queue(_T("right queue"))
 
 void my12doomRenderer::init_variables()
 {
+	// Vertical Sync
+	m_vertical_sync = true;
+
 	// Display Orientation
 	m_display_orientation = horizontal;
 
@@ -1033,7 +1036,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			ZeroMemory( &m_active_pp, sizeof(m_active_pp) );
 			m_active_pp.Windowed               = TRUE;
 			m_active_pp.SwapEffect             = D3DSWAPEFFECT_DISCARD;
-			m_active_pp.PresentationInterval   = D3DPRESENT_INTERVAL_ONE;
+			m_active_pp.PresentationInterval   = m_vertical_sync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 			m_active_pp.BackBufferCount = 1;
 			m_active_pp.Flags = D3DPRESENTFLAG_VIDEO;
 			m_active_pp.BackBufferFormat = D3DFMT_A8R8G8B8;
@@ -3354,6 +3357,22 @@ HRESULT my12doomRenderer::set_aspect_mode(int mode)
 
 }
 
+HRESULT my12doomRenderer::set_vsync(bool on)
+{
+	on = m_output_mode == pageflipping ? true : false;
+	
+	if (m_vertical_sync != on)
+	{
+		m_vertical_sync = on;
+
+		m_new_pp.PresentationInterval   = m_vertical_sync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+
+		set_device_state(need_reset);
+	}
+
+	return S_OK;
+}
+
 HRESULT my12doomRenderer::set_aspect(double aspect)
 {
 	m_forced_aspect = aspect;
@@ -3364,7 +3383,7 @@ HRESULT my12doomRenderer::set_aspect(double aspect)
 		create_render_thread();
 	return S_OK;
 }
-double my12doomRenderer::get_offset(int dimention)
+double my12doomRenderer::get_movie_pos(int dimention)
 {
 	if (dimention == 1)
 		return m_movie_offset_x;

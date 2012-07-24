@@ -473,6 +473,9 @@ HRESULT dx_player::play()
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
 
+	if (m_renderer1)
+		m_renderer1->set_vsync(true);
+
 	return m_mc->Run();
 }
 HRESULT dx_player::pause()
@@ -485,9 +488,17 @@ HRESULT dx_player::pause()
 	OAFilterState fs;
 	m_mc->GetState(INFINITE, &fs);
 	if(fs == State_Running)
+	{
+		if (m_renderer1)
+			m_renderer1->set_vsync(false);
 		return m_mc->Pause();
+	}
 	else
+	{
+		if (m_renderer1)
+			m_renderer1->set_vsync(true);
 		return m_mc->Run();
+	}
 }
 HRESULT dx_player::stop()
 {
@@ -496,6 +507,8 @@ HRESULT dx_player::stop()
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
 
+	if (m_renderer1)
+		m_renderer1->set_vsync(false);
 	return m_mc->Stop();
 }
 HRESULT dx_player::seek(int time)
@@ -1988,6 +2001,7 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->m_hue2 = m_hue2;
 	m_renderer1->m_contrast2 = m_contrast2;
 	m_renderer1->set_display_orientation(m_display_orientation);
+	m_renderer1->set_vsync(true);
 
 	m_file_loaded = false;
 	m_active_audio_track = 0;
@@ -2444,26 +2458,6 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		goto connecting;
 	}
 
-	if( NULL == pin || 
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('v4pm')) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('V4PM')) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('XVID')) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('xvid')) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('divx')) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('DIVX')) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('05XD')) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('05xd')) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('3VID')) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('4VID')) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('5VID')) )
-	{
-		log_line(L"adding xvid decoder");
-		make_xvid_support_mp4v();
-		CComPtr<IBaseFilter> xvid;
-		hr = myCreateInstance(CLSID_XvidDecoder, IID_IBaseFilter, (void**)&xvid);
-		hr = m_gb->AddFilter(xvid, L"Xvid Deocder");
-	}
-
 	if( NULL == pin ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1cva')) || 
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1CVA')) ||
@@ -2495,13 +2489,25 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 
 	if ( NULL == pin ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG2_VIDEO) ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG1Payload)  )
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, MEDIASUBTYPE_MPEG1Payload)||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('v4pm')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('V4PM')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('XVID')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('xvid')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('divx')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('DIVX')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('05XD')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('05xd')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('3VID')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('4VID')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('5VID')) )
+
 	{
-		log_line(L"adding pd10 decoder");
+		log_line(L"adding ffdshow video decoder");
 		CComPtr<IBaseFilter> pd10;
 		hr = myCreateInstance(CLSID_FFDSHOW, IID_IBaseFilter, (void**)&pd10);
 		hr = set_ff_video_formats(pd10);
-		hr = m_gb->AddFilter(pd10, L"FFDSHOW Decoder");
+		hr = m_gb->AddFilter(pd10, L"ffdshow Video Decoder");
 	}
 
 	// RM Video
