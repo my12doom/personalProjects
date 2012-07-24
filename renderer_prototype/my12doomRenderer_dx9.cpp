@@ -3359,7 +3359,7 @@ HRESULT my12doomRenderer::set_aspect_mode(int mode)
 
 HRESULT my12doomRenderer::set_vsync(bool on)
 {
-	on = m_output_mode == pageflipping ? true : false;
+	on = m_output_mode == pageflipping ? true : on;
 	
 	if (m_vertical_sync != on)
 	{
