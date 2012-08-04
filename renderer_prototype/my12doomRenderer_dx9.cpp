@@ -624,7 +624,7 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 	int max_retry = 5;
 	{
 retry:
-		//CAutoLock lck(&m_pool_lock);
+		CAutoLock lck(&m_pool_lock);
 		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, need_detect, m_remux_mode, D3DPOOL_SYSTEMMEM, m_PC_level);
 
 //		if ( (m_dsr0->m_format == MEDIASUBTYPE_RGB32 && (!loaded_sample->m_tex_RGB32 || loaded_sample->m_tex_RGB32->creator != m_Device)) ||
@@ -1061,6 +1061,34 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			CAutoLock lck(&m_frame_lock);
 			invalidate_gpu_objects();
 			invalidate_cpu_objects();
+
+			// what invalidate_gpu_objects() don't do
+			gpu_sample *sample = NULL;
+			while (sample = m_left_queue.RemoveHead())
+				delete sample;
+			while (sample = m_right_queue.RemoveHead())
+				delete sample;
+			m_dsr0->drop_packets();
+			m_dsr1->drop_packets();
+			{
+				CAutoLock lck(&m_packet_lock);
+				safe_delete(m_sample2render_1);
+				safe_delete(m_sample2render_2);
+			}
+
+			{
+				CAutoLock rendered_lock(&m_rendered_packet_lock);
+				safe_delete(m_last_rendered_sample1);
+				safe_delete(m_last_rendered_sample2);
+			}
+
+			{
+				CAutoLock lck(&m_pool_lock);
+				if (m_pool) delete m_pool;
+				m_pool = new CTextureAllocator(m_Device);
+			}
+
+
 			if(m_uidrawer)
 			{
 				delete m_uidrawer;
@@ -1115,11 +1143,12 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 		if (m_D3DEx)
 		{
-			hr = m_D3DEx->CreateDeviceEx( AdapterToUse, DeviceType,
+			FAIL_RET(m_D3DEx->CreateDeviceEx( AdapterToUse, DeviceType,
 				m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
-				&m_active_pp, NULL, &m_DeviceEx );
+				&m_active_pp, NULL, &m_DeviceEx ));
 
 			m_DeviceEx->QueryInterface(IID_IDirect3DDevice9, (void**)&m_Device);
+			m_DeviceEx = NULL;
 		}
 		else
 		{
@@ -2351,8 +2380,8 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 		// copying back
 		hr = m_Device->StretchRect(surface_of_tex_rt, NULL, surface_to_adjust, NULL, D3DTEXF_LINEAR);
 
-		m_pool->DeleteTexture(tex_src);
-		m_pool->DeleteTexture(tex_rt);
+		delete tex_src;
+		delete tex_rt;
 	}
 
 	return hr;
@@ -3607,6 +3636,7 @@ HRESULT my12doomRenderer::intel_d3d_init()
 {
 	HRESULT hr;
 
+	m_d3d_manager = NULL;
 	hr = myDXVA2CreateDirect3DDeviceManager9(&m_resetToken, &m_d3d_manager);
 
 	if (m_d3d_manager)

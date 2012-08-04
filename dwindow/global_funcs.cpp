@@ -23,7 +23,7 @@ char *g_server_address = "http://bo3d.net:80/";
 #endif
 
 // public variables
-AutoSetting<localization_language> g_active_language(L"Language", get_system_default_lang());
+AutoSetting<localization_language> g_active_language(L"Language", get_system_default_lang(), REG_DWORD);
 AutoSettingString g_bar_server(L"BarServer", L"");
 char g_passkey[32];
 char g_passkey_big[128];

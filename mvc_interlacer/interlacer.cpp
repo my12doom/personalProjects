@@ -447,12 +447,12 @@ int main(int argc, char * argv[])
 		}
 
 		//if (n>36000 && n<37000)
-		if (n>=284*2)
+// 		if (n>=284*2)
 		{
 			if (is_idr)
 				idr_found = true;
 
-			if (idr_found)
+// 			if (idr_found)
 			{
 				memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_left);
 				out_data_count += delimeter_size_left;
@@ -461,7 +461,7 @@ int main(int argc, char * argv[])
 
 		int delimeter_size_right = 0;// read_a_delimeter(&right);
 		//if (n>36000 && n<37000 && idr_found)
-		if (n>=283 && idr_found)
+// 		if (n>=283 && idr_found)
 		{
 			memcpy(out_buffer+out_data_count, delimeter_buffer, delimeter_size_right);
 			out_data_count += delimeter_size_right;
