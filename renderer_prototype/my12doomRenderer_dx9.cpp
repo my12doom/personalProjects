@@ -2360,6 +2360,10 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 		whole_backbuffer_vertex[1].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[1].y = -0.5f;
 		whole_backbuffer_vertex[2].x = -0.5f; whole_backbuffer_vertex[2].y = m_active_pp.BackBufferHeight-0.5f;
 		whole_backbuffer_vertex[3].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[3].y = m_active_pp.BackBufferHeight-0.5f;
+		whole_backbuffer_vertex[0].tu = 0; whole_backbuffer_vertex[0].tv = 0;
+		whole_backbuffer_vertex[1].tu = 1; whole_backbuffer_vertex[1].tv = 0;
+		whole_backbuffer_vertex[2].tu = 0; whole_backbuffer_vertex[2].tv = 1;
+		whole_backbuffer_vertex[3].tu = 1; whole_backbuffer_vertex[3].tv = 1;
 
 		// rendering
 		CComPtr<IDirect3DPixelShader9> ps;
