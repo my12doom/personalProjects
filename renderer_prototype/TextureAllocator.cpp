@@ -86,6 +86,11 @@ HRESULT CTextureAllocator::CreateTexture(int width, int height, DWORD usage, D3D
 				//for(int j=i; j<m_pool_count; j++)
 				//	m_pool[j] = m_pool[j+1];
 
+				if (t.creator != m_device)
+				{
+					printf("wtf...v2\n");
+				}
+
 				return S_OK;
 			}
 		}
@@ -163,6 +168,12 @@ HRESULT CTextureAllocator::CreateOffscreenSurface(int width, int height, D3DFORM
 }
 HRESULT CTextureAllocator::DeleteTexture(CPooledTexture *texture, bool dont_pool /*=false*/)
 {
+	if (texture->m_allocator != this || texture->creator != m_device)
+	{
+		printf("wtf\n");
+		dont_pool = true;
+	}
+
 	if (FAILED(texture->hr))
 		return S_OK;
 
@@ -258,6 +269,12 @@ HRESULT CTextureAllocator::DestroyPool(D3DPOOL pool2destroy)
 
 HRESULT CTextureAllocator::UpdateTexture(CPooledTexture *src, CPooledTexture *dst)
 {
+	if (src->m_allocator != this)
+	{
+		printf("wtf\n");
+	}
+
+
 	if (!src || !dst || !src->texture || !dst->texture)
 		return E_POINTER;
 

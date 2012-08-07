@@ -19,6 +19,7 @@ typedef struct stuct_PooledTexture
 
 	HRESULT hr;
 	IDirect3DDevice9 *creator;
+	CTextureAllocator *m_allocator;
 }PooledTexture;
 
 typedef struct stuct_PooledSurface
@@ -45,7 +46,6 @@ public:
 	HRESULT Unlock();
 
 protected:
-	CTextureAllocator *m_allocator;
 };
 
 class CPooledSurface : public PooledSurface

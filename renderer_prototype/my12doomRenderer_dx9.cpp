@@ -1059,6 +1059,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		{
 			terminate_render_thread();
 			CAutoLock lck(&m_frame_lock);
+			CAutoLock lck2(&m_pool_lock);
 			invalidate_gpu_objects();
 			invalidate_cpu_objects();
 
@@ -1082,11 +1083,6 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 				safe_delete(m_last_rendered_sample2);
 			}
 
-			{
-				CAutoLock lck(&m_pool_lock);
-				if (m_pool) delete m_pool;
-				m_pool = new CTextureAllocator(m_Device);
-			}
 
 
 			if(m_uidrawer)
@@ -3400,7 +3396,7 @@ HRESULT my12doomRenderer::set_vsync(bool on)
 
 		m_new_pp.PresentationInterval   = m_vertical_sync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
-		set_device_state(need_reset);
+		set_device_state(need_create);
 	}
 
 	return S_OK;
