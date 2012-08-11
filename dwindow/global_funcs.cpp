@@ -555,48 +555,48 @@ HRESULT write_property(IPropertyBag *bag, const wchar_t *property_to_write)
 	return hr;
 }
 // hook
-static bool coremvc_hooked = false;
-static DWORD (WINAPI *TrueGetModuleFileNameA)(HMODULE hModule, LPSTR lpFilename, DWORD nSize) = GetModuleFileNameA;
-DWORD WINAPI MineGetModuleFileNameA(HMODULE hModule, LPSTR lpFilename, DWORD nSize)
-{
-	DWORD rtn = TrueGetModuleFileNameA(hModule, lpFilename, nSize);
-	if (hModule == NULL)
-		strcat(lpFilename, ".StereoPlayer.exe.MVCToAVI.exe");
-	return rtn;
-}
+// static bool coremvc_hooked = false;
+// static DWORD (WINAPI *TrueGetModuleFileNameA)(HMODULE hModule, LPSTR lpFilename, DWORD nSize) = GetModuleFileNameA;
+// DWORD WINAPI MineGetModuleFileNameA(HMODULE hModule, LPSTR lpFilename, DWORD nSize)
+// {
+// 	DWORD rtn = TrueGetModuleFileNameA(hModule, lpFilename, nSize);
+// 	if (hModule == NULL)
+// 		strcat(lpFilename, ".StereoPlayer.exe.MVCToAVI.exe");
+// 	return rtn;
+//}
 
 HRESULT beforeCreateCoreMVC()
 {
-	if (!coremvc_hooked)
-	{
-		// apihook
-		DetourRestoreAfterWith();
-		DetourTransactionBegin();
-
-		int id = GetCurrentThreadId();
-		DetourUpdateThread(GetCurrentThread());
-		DetourAttach(&(PVOID&)TrueGetModuleFileNameA, MineGetModuleFileNameA);
-		LONG error = DetourTransactionCommit();
-		coremvc_hooked = true;
-	}
+// 	if (!coremvc_hooked)
+// 	{
+// 		// apihook
+// 		DetourRestoreAfterWith();
+// 		DetourTransactionBegin();
+// 
+// 		int id = GetCurrentThreadId();
+// 		DetourUpdateThread(GetCurrentThread());
+// 		DetourAttach(&(PVOID&)TrueGetModuleFileNameA, MineGetModuleFileNameA);
+// 		LONG error = DetourTransactionCommit();
+// 		coremvc_hooked = true;
+// 	}
 
 	return S_OK;
 }
 
 HRESULT afterCreateCoreMVC()
 {
-	if (coremvc_hooked)
-	{
-		// apihook
-		DetourRestoreAfterWith();
-		DetourTransactionBegin();
-
-		int id = GetCurrentThreadId();
-		DetourUpdateThread(GetCurrentThread());
-		DetourDetach(&(PVOID&)TrueGetModuleFileNameA, MineGetModuleFileNameA);
-		LONG error = DetourTransactionCommit();
-		coremvc_hooked = false;
-	}
+// 	if (coremvc_hooked)
+// 	{
+// 		// apihook
+// 		DetourRestoreAfterWith();
+// 		DetourTransactionBegin();
+// 
+// 		int id = GetCurrentThreadId();
+// 		DetourUpdateThread(GetCurrentThread());
+// 		DetourDetach(&(PVOID&)TrueGetModuleFileNameA, MineGetModuleFileNameA);
+// 		LONG error = DetourTransactionCommit();
+// 		coremvc_hooked = false;
+// 	}
 
 	return S_OK;
 }

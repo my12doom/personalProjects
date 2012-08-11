@@ -93,8 +93,9 @@ enum input_layout_types
 {
 	side_by_side, 
 	top_bottom, mono2d, 
+	frame_sequence,
 	input_layout_types_max, 
-	input_layout_auto
+	input_layout_auto = 0x10000,
 };
 #endif
 

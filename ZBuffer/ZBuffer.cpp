@@ -2,11 +2,16 @@
 #include <Windows.h>
 #include "stereo_test.h"
 #include <assert.h>
+#include <emmintrin.h>
 
 #pragma comment(lib, "winmm.lib")
 
 HRESULT save_bitmap(DWORD *data, const wchar_t *filename, int width, int height); 
 int main();
+int SAD16x16(void *pdata1, void *pdata2, int stride);		// assume same stride
+int gen_mask(BYTE *out, BYTE *in, BYTE center_color, int stride);
+int SAD16x16(void *pdata1, void *pdata2, void *mask, int stride);		// assume same stride
+
 
 HRESULT save_bitmap(DWORD *data, const wchar_t *filename, int width, int height) 
 {
@@ -53,7 +58,11 @@ HRESULT save_bitmap(DWORD *data, const wchar_t *filename, int width, int height)
 	return S_OK;
 }
 
+BYTE *YData = new BYTE[3840*1080];
+BYTE *YDataPadded = new BYTE[(3840+32) * (1080+32)];
 DWORD *resource = new DWORD[3840*1080];
+DWORD *padded = new DWORD[(3840+32) * (1080+32)];
+
 int get_pixel(int x, int y, bool left)
 {
 	if (x<0 || x>=1920 || y<0 || y>=1080)
@@ -111,23 +120,42 @@ DWORD WINAPI core_thread(LPVOID parameter)
 	thread_parameter *para = (thread_parameter*)parameter;
 	DWORD *out = para->out;
 	const int range = 160;
+	DWORD *mask = new DWORD[(3840+32) * (1080+32)];
 
 	for(int y=para->left; y<para->right; y++)
 	{
 		printf("\r%d/1080", y-para->left);
 		for(int x=0; x<1920; x++)
 		{
-			double min_delta = 99999999;
+			int min_delta = 0xffff;
+			int offset = -99999;
+			BYTE *p1 = YDataPadded + (3840+32) * (y-8) + x - 8;
+			min_delta = min(min_delta, gen_mask((BYTE*)mask, (BYTE*)p1, YDataPadded [(3840+32) * y + x], (3840+32))*10 );
+			for(int j=-0; j<=0; j+=5)
 			for(int i=-range; i<=range; i++)
 			{
-				double t = get_delta2(x, y, i, 16);
+				BYTE *p2 = YDataPadded + (3840+32) * (y-8+j) + x + 1920 - 8 + i;
+
+				int t = SAD16x16(p1, p2, mask, (3840+32));
 				//if (x == 540) printf("%.1f, ", (float)t);
 				if (t<min_delta)
 				{
 					min_delta = t;
-					int c = (i+range)*255/(2*range);
-					out[(1080-1-y)*1920+x] = RGB(c, c, c);
+					offset = i;
 				}
+			}
+			if (offset != -99999)
+			{
+				int c = min((offset+range)*255/(2*range)+1, 255);
+				//c = min_delta;
+				out[(1080-1-y)*1920+x] = RGB(0, 0, c);
+			}
+			else
+			{
+				int x1 = max(0, min(x, 1920));
+				int y1 = max(0, min(y, 1080));
+				out[(1080-1-y)*1920+x] = out[(1080-1-y1)*1920+x1];
+				//out[(1080-1-y)*1920+x] = RGB(255, 255, 255);
 			}
 			//if (x==540)printf("%d\n", y);
 		}
@@ -260,9 +288,57 @@ int main()
 	HANDLE h_parent_process = GetCurrentProcess();
 	SetPriorityClass(h_parent_process, IDLE_PRIORITY_CLASS);			//host idle priority
 
-	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\test.bmp", IMAGE_BITMAP, 3840, 1080, LR_LOADFROMFILE);
+	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\00136.bmp", IMAGE_BITMAP, 3840, 1080, LR_LOADFROMFILE);
 	GetBitmapBits(bm, 3840*1080*4, resource);
 	DeleteObject(bm);
+	memset(padded, 0, sizeof(DWORD) * (3840+32) * (1080+32));
+
+	FILE * f = fopen("Z:\\Y.raw", "rb");
+	fread(YData, 1, 3840*1080, f);
+	fclose(f);
+	memset(YDataPadded, 0, (3840+32)*(1080+32));
+
+
+
+	padded += (3840+32)*16;
+
+	for(int y=0; y<1080; y++)
+	{
+		memcpy(padded+(3840+32)*(y+16)+16, resource + 3840*y, 3840*sizeof(DWORD));
+		memcpy(YDataPadded+(3840+32)*(y+16)+16, YData + 3840*y, 3840*sizeof(BYTE));
+	}
+
+	YDataPadded += (3840+32)*16;
+
+	save_bitmap(padded, L"Z:\\padded.bmp", 3840+32, 1080+32);
+
+	BYTE tmp[256];
+	BYTE tmp1[256];
+	BYTE tmp2[256];
+	for(int x = 0; x<16; x++)
+		for(int y=0; y<16; y++)
+	{
+		tmp1[x+16*y] = tmp[x+16*y] = (x*5+6*y + x * y) &0xff;
+		tmp1[x+16*y] = tmp1[x+16*y] == 255 ? 254 : tmp1[x+16*y]+1;
+	}
+
+	gen_mask(tmp2, tmp, 50, 16);
+	int sad = SAD16x16(tmp, tmp1, tmp2, 16);
+
+
+
+	resource[0] = 0xffffffff;
+	int o = 0;
+	timeBeginPeriod(1);
+	int l = timeGetTime();
+	for(int i=0; i<1000000; i++)
+		o += SAD16x16(resource, resource + 1920, i) *2+3;
+
+	printf("SAD16x16() = %d, time = %dms", o, timeGetTime() - l);
+
+	timeEndPeriod(1);
+
+// 	Sleep(5000);
 
 	//FILE * f = fopen("E:\\JM18\\bin\\test_dec.yuv", "rb");
 	//fread(resource, 1, 1920*1080*1.5, f);
@@ -356,3 +432,101 @@ int main()
 
 	return 0;
 }
+
+
+int SAD16x16(void *pdata1, void *pdata2, int stride)		// assume same stride
+{
+	char *p1 = (char*)pdata1;
+	char *p2 = (char*)pdata2;
+
+	__m128i a,b,c;
+	__m128i t2;
+
+	t2 = _mm_setzero_si128();
+
+	for(int i=0; i<16; i++)
+	{
+		a = _mm_loadu_si128((__m128i*)p1);
+		b = _mm_loadu_si128((__m128i*)p2);
+
+		a = _mm_sad_epu8(a, b);
+		t2 = _mm_add_epi64(t2, a);
+
+		p1 += stride;
+		p2 += stride;
+	}
+
+	__int64 *p = (__int64*) &t2;
+	return p[0] + p[1];
+}
+
+int SAD16x16(void *pdata1, void *pdata2, void *mask, int stride)		// assume same stride
+{
+	char *p1 = (char*)pdata1;
+	char *p2 = (char*)pdata2;
+	char *p3 = (char*)mask;
+
+	__m128i a,b,c;
+	__m128i t2;
+
+	t2 = _mm_setzero_si128();
+
+	for(int i=0; i<16; i++)
+	{
+		a = _mm_loadu_si128((__m128i*)p1);
+		b = _mm_loadu_si128((__m128i*)p2);
+		c = _mm_loadu_si128((__m128i*)p3);
+
+		a = _mm_and_si128(a, c);
+		b = _mm_and_si128(b, c);
+
+		a = _mm_sad_epu8(a, b);
+		t2 = _mm_add_epi64(t2, a);
+
+		p1 += stride;
+		p2 += stride;
+		p3 += stride;
+	}
+
+	__int64 *p = (__int64*) &t2;
+	return p[0] + p[1];
+}
+
+int gen_mask(BYTE *out, BYTE *in, BYTE center_color, int stride)
+{
+	int c = 0;
+	for(int i=0; i<16; i++)
+	{
+		for(int x=0; x<16; x++)
+		{
+			bool a = abs (in[x] - center_color) < 10;
+			c += a ? 1 : 0;
+			out[x] = a ? 255 : 0;
+		}
+
+		in += stride;
+		out += stride;
+	}
+
+	return c;
+}
+
+// int SAD16x16(void *pdata1, void *pdata2, int stride)		// assume same stride
+// {
+// 	BYTE *p1 = (BYTE*)pdata1;
+// 	BYTE *p2 = (BYTE*)pdata2;
+// 
+// 	int o = 0;
+// 
+// 	for(int i=0; i<16; i++)
+// 	{
+// 		for(int x=0; x<16; x++)
+// 			o += abs(p1[x]-p2[x]);
+// 
+// 
+// 		p1 += stride;
+// 		p2 += stride;
+// 	}
+// 
+// 	return o;
+// }

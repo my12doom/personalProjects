@@ -1156,6 +1156,8 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		if (FAILED(hr))
 			return hr;
 
+		mylog("new device: 0x%08x\n", m_Device.p);
+
 		FAIL_RET(intel_d3d_init());
 
 		m_new_pp = m_active_pp;
@@ -1170,6 +1172,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			CAutoLock lck(&m_pool_lock);
 			if (m_pool) delete m_pool;
 			m_pool = new CTextureAllocator(m_Device);
+			mylog("new pool: 0x%08x\n", m_pool);
 		}
 
 		FAIL_SLEEP_RET(restore_gpu_objects());
@@ -3396,7 +3399,7 @@ HRESULT my12doomRenderer::set_vsync(bool on)
 
 		m_new_pp.PresentationInterval   = m_vertical_sync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
-		set_device_state(need_create);
+		set_device_state(need_reset);
 	}
 
 	return S_OK;

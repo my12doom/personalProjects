@@ -399,8 +399,8 @@ __forceinline bool  is_trial_version()
 #endif
 }
 
-const LARGE_INTEGER freq;
-const BOOL helper = QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+//const LARGE_INTEGER freq;
+//const BOOL helper = QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
 
 __forceinline HRESULT check_passkey()
 {

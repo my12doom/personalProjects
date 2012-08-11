@@ -369,9 +369,9 @@ HRESULT gpu_sample::get_strereo_test_result(IDirect3DDevice9 *device, int *out)
 
 bool gpu_sample::is_ignored_line(int line)
 {
-	if (line == 1 || line == 136 || line == 272 || line == 408 || line == 544 || line == 680 || line == 816 || line == 952)
-		return true;
-	return false;
+// 	if (line == 0 || line == 136 || line == 272 || line == 408 || line == 544 || line == 680 || line == 816 || line == 952)
+// 		return true;
+	return line*1080/1088 == (line+1) * 1080 / 1088;
 }
 
 gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format,

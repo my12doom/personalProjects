@@ -169,6 +169,7 @@ m_movie_pos_x(L"MoviePosX", 0),
 m_movie_pos_y(L"MoviePosY", 0),
 m_simple_audio_switching(L"SimpleAudioSwitching", false)
 {
+	m_log = NULL;
 	detect_monitors();
 
 	// font init
@@ -188,7 +189,6 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	m_srenderer = NULL;
 
 	// vars
-	m_log = NULL;
 	m_dragging = -1;
 	m_reset_and_load = false;
 	m_file_loaded = false;
@@ -2565,6 +2565,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 	// Legacy Remux file
 	m_renderer1->m_remux_mode = m_is_remux_file = verify_file(file_to_play) == 2;
+	//m_renderer1->m_remux_mode = true;
 
 	// check private source and whether is MVC content
 	CLSID source_clsid;
