@@ -1575,8 +1575,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 {
 	HRESULT hr;
 	// device state check and restore
-	if (FAILED(handle_device_state()))
-		return E_FAIL;
+// 	if (FAILED(handle_device_state()))
+// 		return E_FAIL;
 
 	//if (m_d3d_query) m_d3d_query->Issue(D3DISSUE_BEGIN);
 
@@ -1601,6 +1601,9 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	static int last_nv3d_fix_time = timeGetTime();
 
 	CAutoLock lck(&m_frame_lock);
+	// device state check again
+	if (FAILED(handle_device_state()))
+		return E_FAIL;
 
 	// pass 2: drawing to back buffer!
 
@@ -3325,12 +3328,7 @@ HRESULT my12doomRenderer::set_swap_eyes(bool swap)
 	m_swapeyes = swap;
 
 	reload_image();
-
-	if (m_output_mode == pageflipping)
-		terminate_render_thread();
 	repaint_video();
-	if (m_output_mode == pageflipping)
-		create_render_thread();
 	return S_OK;
 }
 
@@ -3380,11 +3378,7 @@ HRESULT my12doomRenderer::set_aspect_mode(int mode)
 		return S_OK;
 
 	m_aspect_mode = (aspect_mode_types)mode;
-	if (m_output_mode == pageflipping)
-		terminate_render_thread();
 	repaint_video();
-	if (m_output_mode == pageflipping)
-		create_render_thread();
 	return S_OK;
 
 }
@@ -3408,11 +3402,7 @@ HRESULT my12doomRenderer::set_vsync(bool on)
 HRESULT my12doomRenderer::set_aspect(double aspect)
 {
 	m_forced_aspect = aspect;
-	if (m_output_mode == pageflipping)
-		terminate_render_thread();
 	repaint_video();
-	if (m_output_mode == pageflipping)
-		create_render_thread();
 	return S_OK;
 }
 double my12doomRenderer::get_movie_pos(int dimention)
