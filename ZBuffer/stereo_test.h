@@ -47,9 +47,9 @@ HRESULT get_layout(void *src, int width, int height, int *out, int stride = -1)
 	for(int y=0; y<test_size; y++)
 	{
 		int sy = y*height/test_size;
-		sy = y*height242/test_size + start242;
-		if (y > test_size / 2)
-			sy += height2;
+// 		sy = (y%(test_size/2))*height24/test_size + start242;
+// 		if (y >= test_size / 2)
+// 			sy += height2;
 
 		for(int x=0; x<test_size; x+=2)
 		{
@@ -77,6 +77,7 @@ HRESULT get_layout(void *src, int width, int height, int *out, int stride = -1)
 	{
 		int sy = y*height2/test_size;
 		sy = y*height242/test_size + start242;
+
 		for(int x=0; x<test_size; x+=2)
 		{
 			int sx = x*width/test_size;
