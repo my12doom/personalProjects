@@ -2358,6 +2358,12 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 
 		// vertex
 		MyVertex whole_backbuffer_vertex[4];
+		for(int i=0;i <4; i++)
+		{
+			whole_backbuffer_vertex[i].z = 1.0f;
+			whole_backbuffer_vertex[i].w = 1.0f;
+		}
+
 		whole_backbuffer_vertex[0].x = -0.5f; whole_backbuffer_vertex[0].y = -0.5f;
 		whole_backbuffer_vertex[1].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[1].y = -0.5f;
 		whole_backbuffer_vertex[2].x = -0.5f; whole_backbuffer_vertex[2].y = m_active_pp.BackBufferHeight-0.5f;
