@@ -396,3 +396,120 @@ void DoEvents()
 		}
 	}
 }
+
+HRESULT get_mediainfo(const wchar_t *filename, media_info_entry **out, bool use_localization /* = false */)
+{
+	if (!out)
+		return E_POINTER;
+
+	MediaInfo MI;
+
+	// localization
+	if (use_localization)
+	{
+		wchar_t path[MAX_PATH];
+		wcscpy(path, g_apppath);
+		wcscat(path, C(L"MediaInfoLanguageFile"));
+
+		FILE *f = _wfopen(path, L"rb");
+		if (f)
+		{
+			wchar_t lang[102400] = L"";
+			char tmp[1024];
+			wchar_t tmp2[1024];
+			USES_CONVERSION;
+			while (fscanf(f, "%s", tmp, 1024, f) != EOF)
+			{
+				MultiByteToWideChar(CP_UTF8, 0, tmp, 1024, tmp2, 1024);
+
+				if (wcsstr(tmp2, L";"))
+				{
+					wcscat(lang, tmp2);
+					wcscat(lang, L"\n");
+				}
+			}
+			fclose(f);
+			MI.Option(_T("Language"), W2T(lang));
+		}
+		else
+		{
+			MI.Option(_T("Language"));
+		}
+	}
+
+	MI.Open(filename);
+	MI.Option(_T("Complete"));
+	MI.Option(_T("Inform"));
+	String str = MI.Inform().c_str();
+	MI.Close();
+	wchar_t *p = (wchar_t*)str.c_str();
+	wchar_t *p2 = wcsstr(p, L"\n");
+	wchar_t tmp[1024];
+	bool next_is_a_header = true;
+
+	media_info_entry *pm = *out = NULL;
+
+	while (true)
+	{
+		if (p2)
+		{
+			p2[0] = NULL;
+			p2 ++;
+		}
+
+		wcscpy(tmp, p);
+		wcstrim(tmp);
+		wcstrim(tmp, L'\n');
+		wcstrim(tmp, L'\r');
+		wcs_replace(tmp, L"  ", L" ");
+
+		if (tmp[0] == NULL || tmp[0] == L'\n' || tmp[0] == L'\r')
+		{
+			next_is_a_header = true;
+		}		
+		else if (next_is_a_header)
+		{
+			next_is_a_header = false;
+
+			if (NULL == pm)
+				pm = *out = (media_info_entry*)calloc(1, sizeof(media_info_entry));
+			else
+				pm = pm->next = (media_info_entry*)calloc(1, sizeof(media_info_entry));
+
+
+
+			//wcscpy(pm->value, tmp);
+			swscanf(tmp, L"%s : %s", pm->key, pm->value);
+			pm->level_depth = 0;
+		}
+		else
+		{
+			pm = pm->next = (media_info_entry*)calloc(1, sizeof(media_info_entry));
+// 			wcscpy(pm->value, tmp);
+			swscanf(tmp, L"%s : %s", pm->key, pm->value);
+			pm->level_depth = 1;
+		}
+
+
+		if (!p2)
+			break;
+
+		p = p2;
+		p2 = wcsstr(p2, L"\n");
+	}
+
+	return S_OK;
+}
+
+HRESULT free_mediainfo(media_info_entry *p)
+{
+	if (NULL == p)
+		return E_POINTER;
+
+	if (p->next)
+		free_mediainfo(p->next);
+
+	free(p);
+
+	return S_OK;
+}

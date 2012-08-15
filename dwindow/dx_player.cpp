@@ -624,7 +624,17 @@ bool dx_player::is_closed()
 
 LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	if (message == DS_EVENT)
+	if (message == WM_TOUCH)
+	{
+		printf("WM_TOUCH\n");
+	}
+
+	else if (message == WM_GESTURE)
+	{
+		printf("WM_GESTURE\n");
+	}
+
+	else if (message == DS_EVENT)
 	{
 		on_dshow_event();
 	}
@@ -2569,7 +2579,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 	// check private source and whether is MVC content
 	CLSID source_clsid;
-	hr = GetFileSource(file_to_play, &source_clsid);
+	hr = GetFileSource(file_to_play, &source_clsid, !isSlowExtention(file_to_play));
 	bool matched_private_filter = SUCCEEDED(hr);
 
 	// E3D keys

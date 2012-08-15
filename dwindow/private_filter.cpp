@@ -1,8 +1,10 @@
 #include "private_filter.h"
 #include "ImageSource.h"
 #include <atlbase.h>
+#include "MediaInfo.h"
 
 typedef HRESULT (__stdcall *pDllGetClassObject) (REFCLSID rclsid, REFIID riid, LPVOID*ppv);
+HRESULT GetFileSourceMediaInfo(const wchar_t *filename, wchar_t *format);
 
 void GetAppPath(wchar_t *out, int size = MAX_PATH)
 {
@@ -17,7 +19,7 @@ void GetAppPath(wchar_t *out, int size = MAX_PATH)
 	}
 }
 
-HRESULT GetFileSource(const wchar_t *filename, CLSID *out)
+HRESULT GetFileSource(const wchar_t *filename, CLSID *out, bool use_mediainfo/* = false*/)
 {
 	wchar_t ini[MAX_PATH];
 	GetAppPath(ini);
@@ -31,6 +33,13 @@ HRESULT GetFileSource(const wchar_t *filename, CLSID *out)
 			break;
 		}
 
+	if (use_mediainfo)
+	{
+		wchar_t tmp[20] = {0};
+		if (SUCCEEDED(GetFileSourceMediaInfo(filename, tmp)) && tmp[0] != NULL);
+			wcscpy(ext, tmp);
+	}
+
 	wchar_t tmp[MAX_PATH];
 	GetPrivateProfileStringW(L"Extensions", ext, L"", tmp, MAX_PATH, ini);
 
@@ -38,6 +47,54 @@ HRESULT GetFileSource(const wchar_t *filename, CLSID *out)
 		return E_FAIL;
 	else
 		return CLSIDFromString(tmp, out);
+}
+
+bool isSlowExtention(const wchar_t *filename)
+{
+	wchar_t ini[MAX_PATH];
+	GetAppPath(ini);
+	wcscat(ini, L"dwindow.ini");
+
+	wchar_t ext[MAX_PATH];
+	for(int i=wcslen(filename); i>0; i--)
+		if(filename[i] == L'.')
+		{
+			wcscpy(ext, filename+i+1);
+			break;
+		}
+	wchar_t is_slow[MAX_PATH] = {0};
+	GetPrivateProfileStringW(L"SlowExtentions", ext, L"", is_slow, MAX_PATH, ini);
+	return is_slow[0] != NULL;
+}
+
+extern int wcscmp_nocase(const wchar_t*in1, const wchar_t *in2);
+HRESULT GetFileSourceMediaInfo(const wchar_t *filename, wchar_t *format)
+{
+	if (NULL == format)
+		return E_POINTER;
+
+	*format = NULL;
+
+	media_info_entry *o = NULL;
+	if (FAILED(get_mediainfo(filename, &o, false)) || NULL == o || o->level_depth != 0)
+		return E_FAIL;
+
+	media_info_entry *p = o->next;
+	while(p && p->level_depth == 1)
+	{
+		if (wcscmp_nocase(p->key, L"Format") == 0)
+		{
+			wchar_t ini[MAX_PATH];
+			GetAppPath(ini);
+			wcscat(ini, L"dwindow.ini");
+			GetPrivateProfileStringW(L"MediaInfoMatch", p->value, L"", format, MAX_PATH, ini);
+			break;
+		}
+
+		p = p->next;
+	}
+
+	return S_OK;
 }
 
 HRESULT myCreateInstance(CLSID clsid, IID iid, void**out)
