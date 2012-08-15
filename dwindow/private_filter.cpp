@@ -36,7 +36,7 @@ HRESULT GetFileSource(const wchar_t *filename, CLSID *out, bool use_mediainfo/* 
 	if (use_mediainfo)
 	{
 		wchar_t tmp[20] = {0};
-		if (SUCCEEDED(GetFileSourceMediaInfo(filename, tmp)) && tmp[0] != NULL);
+		if (SUCCEEDED(GetFileSourceMediaInfo(filename, tmp)) && tmp[0] != NULL)
 			wcscpy(ext, tmp);
 	}
 
