@@ -1,11 +1,81 @@
 #include <tchar.h>
 #include "dwindow.h"
 #include "resource.h"
+#include <stdio.h>
 
 #define DS_SHOW_MOUSE (WM_USER + 3)
 
+LRESULT DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam){
+	// Create a structure to populate and retrieve the extra message info.
+	GESTUREINFO gi;  
+
+	ZeroMemory(&gi, sizeof(GESTUREINFO));
+
+	gi.cbSize = sizeof(GESTUREINFO);
+
+	BOOL bResult  = GetGestureInfo((HGESTUREINFO)lParam, &gi);
+	BOOL bHandled = FALSE;
+
+	if (bResult){
+		// now interpret the gesture
+		switch (gi.dwID){
+		   case GID_ZOOM:
+			   // Code for zooming goes here
+			   //gi.
+
+			   printf("GID_ZOOM, %d, (%d,%d)\n", (int)gi.ullArguments, gi.ptsLocation.x, gi.ptsLocation.y);
+			   bHandled = TRUE;
+			   break;
+		   case GID_PAN:
+			   // Code for panning goes here
+			   printf("GID_PAN\n");
+			   bHandled = TRUE;
+			   break;
+		   case GID_ROTATE:
+			   printf("GID_ROTATE\n");
+			   // Code for rotation goes here
+			   bHandled = TRUE;
+			   break;
+		   case GID_TWOFINGERTAP:
+			   printf("GID_TWOFINGERTAP\n");
+			   // Code for two-finger tap goes here
+			   bHandled = TRUE;
+			   break;
+		   case GID_PRESSANDTAP:
+			   printf("GID_PRESSANDTAP\n");
+			   // Code for roll over goes here
+			   bHandled = TRUE;
+			   break;
+		   case GID_BEGIN:
+			   printf("GID_BEGIN, (%d-%d), seq %d\n", gi.ptsLocation.x, gi.ptsLocation.y, gi.dwSequenceID);
+			   break;
+		   case GID_END:
+			   printf("GID_END, (%d-%d), seq %d\n", gi.ptsLocation.x, gi.ptsLocation.y, gi.dwSequenceID);
+			   break;
+		   default:
+			   printf("Unkown GESTURE : dwID=%d\n", gi.dwID);
+			   // A gesture was not recognized
+			   break;
+		}
+	}else{
+		DWORD dwErr = GetLastError();
+		if (dwErr > 0){
+			//MessageBoxW(hWnd, L"Error!", L"Could not retrieve a GESTUREINFO structure.", MB_OK);
+		}
+	}
+	if (bHandled){
+		return 0;
+	}else{
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+}
+
+
 LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	
+
+
 	LRESULT lr = S_FALSE;
 	dwindow *_this = NULL;
 	_this = (dwindow*)GetWindowLongPtr(hWnd, GWL_USERDATA);
@@ -18,10 +88,62 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 	int xPos = GET_X_LPARAM(lParam);
 	int yPos = GET_Y_LPARAM(lParam);
 
+	if (message ==  WM_TOUCH || message == WM_GESTURE)
+	{
+		printf("%s : \n", message == WM_TOUCH ? "TOUCH":"GESTURE");
+		if (message == WM_GESTURE)
+		{
+			DecodeGesture(hWnd, message, wParam, lParam);
+		}
+
+		if (message == WM_TOUCH)
+		{
+			UINT cInputs = LOWORD(wParam);
+			PTOUCHINPUT pInputs = new TOUCHINPUT[cInputs];
+			if (NULL != pInputs)
+			{
+				if (GetTouchInputInfo((HTOUCHINPUT)lParam,
+					cInputs,
+					pInputs,
+					sizeof(TOUCHINPUT)))
+				{
+					// process pInputs
+					for(int i=0; i<cInputs; i++)
+					{
+						TOUCHINPUT p = pInputs[i];
+						printf("point#%d, touchID=%d, %d-%d", i, p.dwID, p.x, p.y);
+					}
+
+					printf("\n");
+
+
+					if (!CloseTouchInputHandle((HTOUCHINPUT)lParam))
+					{
+						// error handling
+					}
+				}
+				else
+				{
+					// GetLastError() and error handling
+				}
+				delete [] pInputs;
+			}
+			else
+			{
+				// error handling, presumably out of memory
+			}
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+	}
+
 	switch (message)
 	{
 	case WM_INITDIALOG:
 		lr =_this->on_init_dialog(id, wParam, lParam);
+		{
+		//int o = RegisterTouchWindow(_this->id_to_hwnd(1), 0);
+		//o = RegisterTouchWindow(_this->id_to_hwnd(2), 0);
+		}
 		break;
 
 	case WM_PAINT:

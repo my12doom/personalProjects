@@ -105,6 +105,9 @@ protected:
 	// theater
 	HWND m_theater_owner;
 
+	// touch input
+	bool m_has_multi_touch;
+
 
 	// playlist	
 	wchar_t *m_playlist[max_playlist];

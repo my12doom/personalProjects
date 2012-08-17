@@ -167,8 +167,14 @@ m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD),
 m_swap_eyes(L"SwapEyes", false),
 m_movie_pos_x(L"MoviePosX", 0),
 m_movie_pos_y(L"MoviePosY", 0),
-m_simple_audio_switching(L"SimpleAudioSwitching", false)
+m_simple_audio_switching(L"SimpleAudioSwitching", false),
+m_has_multi_touch(false)
 {
+	// touch 
+	if (GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
+		m_has_multi_touch = true;
+
+
 	m_log = NULL;
 	detect_monitors();
 
@@ -199,8 +205,6 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	m_mirror1 = 0;
 	m_mirror2 = 0;
 	m_parallax = 0;
-// 	m_subtitle_center_x = 0.5;
-// 	m_subtitle_bottom_y = 0.95;
 	m_hexe = hExe;
 	m_user_subtitle_parallax = 0;
 	m_internel_offset = 10; // offset set to 10*0.1% of width
@@ -624,17 +628,19 @@ bool dx_player::is_closed()
 
 LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	if (message == WM_TOUCH)
-	{
-		printf("WM_TOUCH\n");
-	}
 
-	else if (message == WM_GESTURE)
-	{
-		printf("WM_GESTURE\n");
-	}
-
-	else if (message == DS_EVENT)
+		if (message == WM_TOUCH)
+		{
+//			printf("WM_TOUCH\n");
+		}
+	
+		else if (message == WM_GESTURE)
+		{
+// 			printf("WM_GESTURE\n");
+		}
+	
+		else
+	 if (message == DS_EVENT)
 	{
 		on_dshow_event();
 	}
@@ -727,13 +733,24 @@ LRESULT dx_player::on_key_down(int id, int key)
 		set_swap_eyes(!m_swap_eyes);
 		break;
 
+	case 'W':
 	case VK_NUMPAD7:									// image up
 		set_movie_pos(m_movie_pos_x, m_movie_pos_y - 0.005);
 		break;
 
+	case 'S':
 	case VK_NUMPAD1:
 		set_movie_pos(m_movie_pos_x, m_movie_pos_y + 0.005);		// down
 		break;
+
+	case 'A':
+		set_movie_pos(m_movie_pos_x-0.005, m_movie_pos_y);
+		break;
+
+	case 'D':
+		set_movie_pos(m_movie_pos_x+0.005, m_movie_pos_y);
+		break;
+
 
 	case VK_NUMPAD5:									// reset position
 		set_movie_pos(0, 0);
@@ -1837,8 +1854,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uid == ID_EXIT)
 	{
-		show_window(1, false);
-		show_window(2, false);
+		SendMessage(id_to_hwnd(2), WM_CLOSE, 0, 0);
 	}
 	else if (uid == ID_LANGUAGE_CHINESE)
 	{
@@ -1885,7 +1901,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		set_output_monitor(1, monitorid);
 	}
 
-	if (m_output_mode == dual_window || m_output_mode == iz3d)
+	if ((m_output_mode == dual_window || m_output_mode == iz3d) && uid != ID_EXIT)
 	{
 		show_window(2, true);
 		on_move(1, 0, 0);		// to correct second window position
@@ -2229,6 +2245,9 @@ HRESULT dx_player::set_movie_pos(double x, double y)
 {
 	m_movie_pos_x = x;
 	m_movie_pos_y = y;
+
+	if (m_renderer1)
+		m_renderer1->set_movie_pos(1, m_movie_pos_x);
 
 	if (m_renderer1)
 		m_renderer1->set_movie_pos(2, m_movie_pos_y);
