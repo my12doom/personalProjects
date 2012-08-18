@@ -178,6 +178,11 @@ public:
 	HRESULT set_aspect_mode(int mode);
 	HRESULT set_display_orientation(int orientation){m_display_orientation = (display_orientation)orientation; return S_OK;}
 	HRESULT set_vsync(bool on);
+	HRESULT set_zoom_factor(float factor, int zoom_center_x = -99999,
+															int zoom_center_y = -99999);	// the zoom_center is in current screen-space, not movie picture space
+																							// after zooming, zoom_center point's image should stay unmoved.
+																							// m_movie_offset_x and m_movie_offset_y is modified to keep it unmoved.
+																							// if you saved these two variables, remember to get it from renderer.
 
 	// settings GET function
 	DWORD get_mask_color(int id);
@@ -197,6 +202,7 @@ public:
 	HRESULT intel_get_caps(IGFX_S3DCAPS *caps);
 	int get_display_orientation(){return m_display_orientation;}
 	bool get_vsync(){return m_vertical_sync;}
+	float get_zoom_factor(){return m_zoom_factor;}
 
 protected:
 
@@ -220,6 +226,7 @@ protected:
 	bool m_revert_RGB32;
 	REFERENCE_TIME m_last_frame_time;
 	bool m_vertical_sync;
+	float m_zoom_factor;
 
 protected:
 	friend class my12doomRendererDShow;
@@ -300,7 +307,7 @@ protected:
 	HRESULT restore_gpu_objects();
 	HRESULT restore_cpu_objects();
 	HRESULT render_nolock(bool forced = false);
-	HRESULT draw_movie(IDirect3DSurface9 *surface, bool left_eye);
+	HRESULT draw_movie(IDirect3DSurface9 *surface, int view);		// 0 = left eye, 1 = right eye, others not implemented yet
 	HRESULT draw_bmp(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_ui(IDirect3DSurface9 *surface);
 	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left);
@@ -328,6 +335,7 @@ protected:
 	HRESULT test_PC_level();		// test hardware YUV-RGB conversion level
 	DWORD m_PC_level;				// 0
 	HRESULT calculate_movie_position(RECT *position);
+	HRESULT calculate_movie_position_unscaled(RECT *position);
 	HRESULT calculate_subtitle_position(RECTF *postion, bool left_eye);
 
 

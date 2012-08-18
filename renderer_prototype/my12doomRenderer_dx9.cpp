@@ -179,6 +179,9 @@ m_right_queue(_T("right queue"))
 
 void my12doomRenderer::init_variables()
 {
+	// zoom factor
+	m_zoom_factor = 1.0;
+
 	// Vertical Sync
 	m_vertical_sync = true;
 
@@ -1724,7 +1727,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		CComPtr<IDirect3DSurface9> left_surface;
 		hr = m_mask_temp_left->GetSurfaceLevel(0, &left_surface);
 		clear(left_surface);
-		draw_movie(left_surface, true);
+		draw_movie(left_surface, 0);
 		draw_bmp(left_surface, true);
 		adjust_temp_color(left_surface, true);
 		draw_ui(left_surface);
@@ -1732,7 +1735,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		CComPtr<IDirect3DSurface9> right_surface;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &right_surface);
 		clear(right_surface);
-		draw_movie(right_surface, false);
+		draw_movie(right_surface, 1);
 		draw_bmp(right_surface, false);
 		adjust_temp_color(right_surface, false);
 		draw_ui(right_surface);
@@ -1757,7 +1760,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &right_surface);
 
 		clear(left_surface);
-		draw_movie(left_surface, true);
+		draw_movie(left_surface, 0);
 		draw_bmp(left_surface, true);
 		adjust_temp_color(left_surface, true);
 		draw_ui(left_surface);
@@ -1775,7 +1778,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		}
 
 		clear(right_surface);
-		draw_movie(right_surface, false);
+		draw_movie(right_surface, 1);
 		draw_bmp(right_surface, false);
 		adjust_temp_color(right_surface, false);
 		draw_ui(right_surface);
@@ -1807,7 +1810,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		)
 	{
 		clear(back_buffer);
-		draw_movie(back_buffer, true);
+		draw_movie(back_buffer, 0);
 		draw_bmp(back_buffer, true);
 		adjust_temp_color(back_buffer, true);
 		draw_ui(back_buffer);
@@ -1817,7 +1820,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		CComPtr<IDirect3DSurface9> left_surface;
 		hr = m_mask_temp_left->GetSurfaceLevel(0, &left_surface);
 		clear(left_surface);
-		draw_movie(left_surface, true);
+		draw_movie(left_surface, 0);
 		draw_bmp(left_surface, true);
 		adjust_temp_color(left_surface, true);
 		draw_ui(left_surface);
@@ -1825,7 +1828,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		CComPtr<IDirect3DSurface9> right_surface;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &right_surface);
 		clear(right_surface);
-		draw_movie(right_surface, false);
+		draw_movie(right_surface, 1);
 		draw_bmp(right_surface, false);
 		adjust_temp_color(right_surface, false);
 		draw_ui(right_surface);
@@ -1837,14 +1840,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		CComPtr<IDirect3DSurface9> temp_surface;
 		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
-		draw_movie(temp_surface, true);
+		draw_movie(temp_surface, 0);
 		draw_bmp(temp_surface, true);
 		adjust_temp_color(temp_surface, true);
 
 		temp_surface = NULL;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
-		draw_movie(temp_surface, false);
+		draw_movie(temp_surface, 1);
 		draw_bmp(temp_surface, false);
 		adjust_temp_color(temp_surface, false);
 
@@ -1873,14 +1876,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		CComPtr<IDirect3DSurface9> temp_surface;
 		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
-		draw_movie(temp_surface, true);
+		draw_movie(temp_surface, 0);
 		draw_bmp(temp_surface, true);
 		adjust_temp_color(temp_surface, true);
 
 		temp_surface = NULL;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
-		draw_movie(temp_surface, false);
+		draw_movie(temp_surface, 1);
 		draw_bmp(temp_surface, false);
 		adjust_temp_color(temp_surface, false);
 
@@ -1925,7 +1928,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		QueryPerformanceCounter(&l1);
 		clear(back_buffer);
 		QueryPerformanceCounter(&l2);
-		draw_movie(back_buffer, m_pageflip_frames);
+		draw_movie(back_buffer, m_pageflip_frames == 0 ? 1 : 0);
 		QueryPerformanceCounter(&l3);
 		draw_bmp(back_buffer, m_pageflip_frames);
 		adjust_temp_color(back_buffer, m_pageflip_frames);
@@ -1944,14 +1947,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		CComPtr<IDirect3DSurface9> temp_surface;
 		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
-		draw_movie(temp_surface, true);
+		draw_movie(temp_surface, 0);
 		draw_bmp(temp_surface, true);
 		adjust_temp_color(temp_surface, true);
 
 		temp_surface = NULL;
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
 		clear(temp_surface);
-		draw_movie(temp_surface, false);
+		draw_movie(temp_surface, 1);
 		draw_bmp(temp_surface, false);
 		adjust_temp_color(temp_surface, false);
 
@@ -1987,7 +1990,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	else if (m_output_mode == dual_window)
 	{
 		clear(back_buffer);
-		draw_movie(back_buffer, true);
+		draw_movie(back_buffer, 0);
 		draw_bmp(back_buffer, true);
 		adjust_temp_color(back_buffer, true);
 		draw_ui(back_buffer);
@@ -2000,7 +2003,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			hr = m_Device->SetRenderTarget(0, back_buffer2);
 
 			clear(back_buffer2);
-			draw_movie(back_buffer2, false);
+			draw_movie(back_buffer2, 1);
 			draw_bmp(back_buffer2, false);
 			adjust_temp_color(back_buffer2, false);
 			draw_ui(back_buffer2);
@@ -2017,8 +2020,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface2);
 		clear(temp_surface);
 		clear(temp_surface2);
-		draw_movie(temp_surface, true);
-		draw_movie(temp_surface2, false);
+		draw_movie(temp_surface, 0);
+		draw_movie(temp_surface2, 1);
 		draw_bmp(temp_surface, true);
 		draw_bmp(temp_surface2, false);
 		adjust_temp_color(temp_surface, true);
@@ -2167,8 +2170,9 @@ HRESULT my12doomRenderer::clear(IDirect3DSurface9 *surface, DWORD color)
 	return m_Device->Clear( 0L, NULL, D3DCLEAR_TARGET, color, 1.0f, 0L );
 }
 
-HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, bool left_eye)
+HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 {
+	bool left_eye = view == 0;
 	left_eye = left_eye ^ m_swapeyes;
 
 	HRESULT hr;
@@ -2956,13 +2960,16 @@ double my12doomRenderer::get_active_aspect()
 
 	return m_source_aspect;
 }
-
-HRESULT my12doomRenderer::calculate_movie_position(RECT *position)
+HRESULT my12doomRenderer::calculate_movie_position_unscaled(RECT *position)
 {
 	if (!position)
 		return E_POINTER;
 
-	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+	RECT &tar = *position;
+	tar.left = 0;
+	tar.top = 0;
+	tar.right = m_active_pp.BackBufferWidth;
+	tar.bottom = m_active_pp.BackBufferHeight;
 
 	// swap width and height for vertical orientation
 	if (m_display_orientation == vertical)
@@ -3020,9 +3027,24 @@ HRESULT my12doomRenderer::calculate_movie_position(RECT *position)
 		}
 	}
 
-	// offsets
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::calculate_movie_position(RECT *position)
+{
+	if (!position)
+		return E_POINTER;
+
+	RECT tar;
+	calculate_movie_position_unscaled(&tar);
+
+	// offsets and zoom factors
 	int tar_width = tar.right-tar.left;
 	int tar_height = tar.bottom - tar.top;
+	tar.left *= m_zoom_factor;
+	tar.right *= m_zoom_factor;
+	tar.top *= m_zoom_factor;
+	tar.bottom *= m_zoom_factor;
 	tar.left += (LONG)(tar_width * m_movie_offset_x);
 	tar.right += (LONG)(tar_width * m_movie_offset_x);
 	tar.top += (LONG)(tar_height * m_movie_offset_y);
@@ -3401,6 +3423,62 @@ HRESULT my12doomRenderer::set_vsync(bool on)
 
 		set_device_state(need_reset);
 	}
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::set_zoom_factor(float factor, int zoom_center_x /* = -99999 */, int zoom_center_y /* = -99999 */)
+{
+	// f = factor / m_zoom_factor
+	// C = (zoom_center_x, zoom_center_y)
+	// P = point in screen space, before zooming
+	// P'= point in zoom center space
+	// P''' = point in screen space, after zooming
+
+	// P' = P - C
+	// P'' = f (P')
+	// P''' = P'' + C
+
+	if (zoom_center_x == -99999)
+		zoom_center_x = m_active_pp.BackBufferWidth/2;
+	if (zoom_center_y == -99999)
+		zoom_center_y = m_active_pp.BackBufferHeight/2;
+
+	//
+	float f = factor / m_zoom_factor;
+	RECT P0;
+	calculate_movie_position(&P0);
+	int movie_width_1x = (P0.right - P0.left)/m_zoom_factor;
+	int movie_height_1x = (P0.bottom - P0.top)/m_zoom_factor;
+
+	// transform to center point space
+	RECT P1 = P0;
+	P1.left -= zoom_center_x;
+	P1.right -= zoom_center_x;
+	P1.bottom -= zoom_center_y;
+	P1.top -= zoom_center_y;
+
+	RECT P2 = P1;
+	P2.left *= f;
+	P2.right *= f;
+	P2.bottom *= f;
+	P2.top *= f;
+
+	RECT P3 = P2;
+	P3.left += zoom_center_x;
+	P3.right += zoom_center_x;
+	P3.bottom += zoom_center_y;
+	P3.top += zoom_center_y;
+
+	RECT base;
+	calculate_movie_position_unscaled(&base);
+
+	m_zoom_factor = factor;
+	m_movie_offset_x = (double)(P3.left - base.left * m_zoom_factor ) / movie_width_1x;
+	m_movie_offset_y = (double)(P3.top - base.top * m_zoom_factor) / movie_height_1x;
+
+	RECT P4;
+	calculate_movie_position(&P4);
 
 	return S_OK;
 }

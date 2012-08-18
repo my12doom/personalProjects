@@ -734,12 +734,12 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case 'W':
-	case VK_NUMPAD7:									// image up
+	//case VK_NUMPAD7:									// image up
 		set_movie_pos(m_movie_pos_x, m_movie_pos_y - 0.005);
 		break;
 
 	case 'S':
-	case VK_NUMPAD1:
+	//case VK_NUMPAD1:
 		set_movie_pos(m_movie_pos_x, m_movie_pos_y + 0.005);		// down
 		break;
 
@@ -751,8 +751,27 @@ LRESULT dx_player::on_key_down(int id, int key)
 		set_movie_pos(m_movie_pos_x+0.005, m_movie_pos_y);
 		break;
 
+	case VK_NUMPAD1:
+		if (m_renderer1)
+		{
+			m_renderer1->set_zoom_factor(m_renderer1->get_zoom_factor() / 1.05);
+			m_movie_pos_x = m_renderer1->get_movie_pos(1);
+			m_movie_pos_y = m_renderer1->get_movie_pos(2);
+		}
+		break;
+
+	case VK_NUMPAD7:
+		if (m_renderer1)
+		{
+			m_renderer1->set_zoom_factor(m_renderer1->get_zoom_factor() * 1.05);
+			m_movie_pos_x = m_renderer1->get_movie_pos(1);
+			m_movie_pos_y = m_renderer1->get_movie_pos(2);
+		}
+		break;
+
 
 	case VK_NUMPAD5:									// reset position
+		m_renderer1->set_zoom_factor(1.0f);
 		set_movie_pos(0, 0);
 		set_subtitle_pos(0.5, 0.95);
 		set_subtitle_parallax(0);
