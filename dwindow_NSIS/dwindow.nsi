@@ -17,7 +17,7 @@
 ;--------------------------------
 ;General
 
-;SetCompressor /SOLID lzma
+SetCompressor /SOLID lzma
 
 ; The name of the installer
 Name "3D影音"
@@ -138,15 +138,12 @@ Section "3D影音主程序(required)"
   
   ; Put file there
   File "StereoPlayer.exe"
-  File "xvidcore.dll"
   File "dwindow.ini"
-  File "detoured.dll"
   File "alpha.raw"
   File "logo.raw"
   File "Fonts.conf"
   File "MediaInfo.dll"
   File "DevIL.dll"
-  ;File "CoralExplorer_221282.exe"
   SetOutPath $INSTDIR\codec
   File "codec\*"
   SetOutPath $INSTDIR\Language
