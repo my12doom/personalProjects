@@ -49,6 +49,8 @@ AutoSetting<int> SubtitleResizing(L"SubtitleResampling", bilinear_mipmap_minus_o
 IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format format);
 HRESULT myMatrixOrthoRH(D3DMATRIX *matrix, float w, float h, float zn, float zf);
 HRESULT myMatrixIdentity(D3DMATRIX *matrix);
+RECTF ClipRect(const RECTF border, const RECTF rect2clip);
+RECT ClipRect(const RECT border, const RECT rect2clip);
 
 HRESULT mylog(wchar_t *format, ...)
 {
@@ -2495,6 +2497,19 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		desc.Height = src2->m_height;
 	}
 
+	// clipping
+	D3DSURFACE_DESC dst_desc;
+	dst->GetDesc(&dst_desc);
+	RECTF screen = {0, 0, dst_desc.Width, dst_desc.Height};
+	RECTF clipped = ClipRect(screen, d);
+	float fx = (s.right - s.left) / (d.right - d.left);
+	float fy = (s.bottom - s.top) / (d.bottom - d.top);
+	s.left += (clipped.left - d.left) * fx;
+	s.right += (clipped.right - d.right) * fx;
+	s.top += (clipped.top - d.top) * fy;
+	s.bottom += (clipped.bottom - d.bottom) * fy;
+	d = clipped;
+
 	// basic vertex calculation
 	HRESULT hr = E_FAIL;
 	float width_s = s.right - s.left;
@@ -4268,4 +4283,28 @@ float frac(float f)
 {
 	double tmp;
 	return modf(f, &tmp);
+}
+
+RECT ClipRect(const RECT border, const RECT rect2clip)
+{
+	RECT t = rect2clip;
+
+	t.left = max(border.left, t.left);
+	t.right = min(border.right, t.right);
+	t.top = max(border.top, t.top);
+	t.bottom = min(border.bottom, t.bottom);
+
+	return t;
+}
+
+RECTF ClipRect(const RECTF border, const RECTF rect2clip)
+{
+	RECTF t = rect2clip;
+
+	t.left = max(border.left, t.left);
+	t.right = min(border.right, t.right);
+	t.top = max(border.top, t.top);
+	t.bottom = min(border.bottom, t.bottom);
+
+	return t;
 }

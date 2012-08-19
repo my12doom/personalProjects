@@ -45,39 +45,14 @@ float4 yuv2rgb(float4 yuv)
 	yuv.r -= C1;
 	yuv.g -= 128.0/255.0;
 	yuv.b -= 128.0/255.0;
-
-	/*
-	// hue
-	float hue = 0.0/4.0*PI;
-	float gg = (yuv.g) * cos(hue) - (yuv.b) * sin(hue);
-	float bb = (yuv.b) * cos(hue) + (yuv.g) * sin(hue);
-	yuv.g = gg;
-	yuv.b = bb;
-	
-	// Saturation
-	float saturation = 1.0;
-	yuv.g *= saturation;
-	yuv.b *= saturation;
-	
-	// luma
-	float luma = 1.0;
-	yuv.r *= luma;
-	yuv.g *= luma;
-	yuv.b *= luma;
-
-	// final clipping
-	yuv.r = clamp(yuv.r, 0, 1);
-	yuv.g = clamp(yuv.g, -0.5, 0.5);
-	yuv.b = clamp(yuv.b, -0.5, 0.5);
-	*/
-	
+		
 	float4x4 coeffs2=
-		{
-			 1.164, 0.000, 1.596, 0.000,
-			 1.164,-0.391,-0.813, 0.000,
-			 1.164, 2.018, 0.000, 0.000,
-			 0.000, 0.000, 0.000, 1.000
-		};
+	{
+		 1.164, 0.000, 1.596, 0.000,
+		 1.164,-0.391,-0.813, 0.000,
+		 1.164, 2.018, 0.000, 0.000,
+		 0.000, 0.000, 0.000, 1.000
+	};
 	
 	return (mul(coeffs2,yuv));
 }

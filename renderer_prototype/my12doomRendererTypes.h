@@ -69,6 +69,7 @@ enum output_mode_types
 	out_hsbs, out_htb, 
 	hd3d, 
 	intel3d,
+	multiview,
 	output_mode_types_max
 };
 
@@ -107,6 +108,16 @@ enum mask_mode_types
 	subpixel_row_interlace,
 	subpixel_45_interlace,
 	mask_mode_types_max,
+};
+
+enum multiview_mode_types
+{
+	simple_horizontal_4view,
+	subpixel_horizontal_4view,
+	simple_45_4view,
+	subpixel_45_4view,
+
+	multiview_mode_types_max,
 };
 
 enum aspect_mode_types
