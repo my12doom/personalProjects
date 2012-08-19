@@ -68,11 +68,10 @@ bool isSlowExtention(const wchar_t *filename)
 }
 
 extern int wcscmp_nocase(const wchar_t*in1, const wchar_t *in2);
-HRESULT GetFileSourceMediaInfo(const wchar_t *filename, wchar_t *format)
+DWORD WINAPI GetFileSourceMediaInfoCore(LPVOID t)
 {
-	if (NULL == format)
-		return E_POINTER;
-
+	const wchar_t *filename = ((wchar_t **)t)[0];
+	wchar_t *format = ((wchar_t **)t)[1];
 	*format = NULL;
 
 	media_info_entry *o = NULL;
@@ -93,6 +92,27 @@ HRESULT GetFileSourceMediaInfo(const wchar_t *filename, wchar_t *format)
 
 		p = p->next;
 	}
+
+	// leak 2k each time, this should be ok for a player
+	//free(format);
+
+
+	return 0;
+}
+
+HRESULT GetFileSourceMediaInfo(const wchar_t *filename, wchar_t *format)
+{
+	if (NULL == format)
+		return E_POINTER;
+
+	const wchar_t *p[2] = {filename, (wchar_t*)malloc(2048)};
+
+	HANDLE thread = CreateThread(NULL, NULL, GetFileSourceMediaInfoCore, p, NULL, NULL);
+
+	if (WaitForSingleObject(thread, 5000) != WAIT_OBJECT_0)
+		return E_FAIL;
+
+	wcscpy(format, p[1]);
 
 	return S_OK;
 }
