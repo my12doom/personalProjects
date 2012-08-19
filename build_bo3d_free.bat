@@ -24,12 +24,10 @@ copy/y dwindow\dwindow.ini dwindow_NSIS
 copy/y dwindow\alpha.raw dwindow_NSIS
 copy/y dwindow\logo.raw dwindow_NSIS
 copy/y dwindow\release_mt\StereoPlayer.exe dwindow_NSIS
-copy/y dwindow\detours\detoured.dll dwindow_NSIS
 del/q dwindow_NSIS\codec\*.*
 copy/y dwindow\xvidcore.dll dwindow_NSIS
 copy/y 3rdFilter\*.* dwindow_NSIS\codec
 copy/y mySplitter\release_mt\mySplitter.ax dwindow_NSIS\codec
-copy/y SsifSource\bin\Filters_x86\SsifSource.ax dwindow_NSIS\codec\SsifSource.ax
 copy/y my12doomSource\bin\Filters_x86\E3DSource.ax dwindow_NSIS\codec\E3DSource.ax
 copy/y my12doomSource\bin\Filters_x86\my12doomSource.ax dwindow_NSIS\codec\my12doomSource.ax
 copy/y my12doomSource\bin\Filters_x86\MP4Splitter.ax dwindow_NSIS\codec\MP4Splitter.ax
