@@ -478,15 +478,30 @@ HRESULT get_mediainfo(const wchar_t *filename, media_info_entry **out, bool use_
 
 
 
-			//wcscpy(pm->value, tmp);
-			swscanf(tmp, L"%s : %s", pm->key, pm->value);
+			wcscpy(pm->key, tmp);
+			if (wcsrchr(pm->key, L':'))
+			{
+				*((wchar_t*)wcsrchr(pm->key, L':')) = NULL;
+
+				wcscpy(pm->value, wcsrchr(tmp, L':')+1);
+			}
+			wcstrim(pm->key);
+			wcstrim(pm->value);
 			pm->level_depth = 0;
 		}
 		else
 		{
 			pm = pm->next = (media_info_entry*)calloc(1, sizeof(media_info_entry));
-// 			wcscpy(pm->value, tmp);
-			swscanf(tmp, L"%s : %s", pm->key, pm->value);
+
+			wcscpy(pm->key, tmp);
+			if (wcsrchr(pm->key, L':'))
+			{
+				*((wchar_t*)wcsrchr(pm->key, L':')) = NULL;
+
+				wcscpy(pm->value, wcsrchr(tmp, L':')+1);
+			}
+			wcstrim(pm->key);
+			wcstrim(pm->value);
 			pm->level_depth = 1;
 		}
 
