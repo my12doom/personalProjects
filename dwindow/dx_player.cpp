@@ -2658,6 +2658,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		}
 	}
 
+	int video_rendered = 0;
+	int audio_rendered = 0;
 	if (matched_private_filter)
 	{
 		log_line(L"loading with private filter");
@@ -2730,6 +2732,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 							log_line(L"renderering video pin #%d", video_num);
 							hr = render_video_pin(pin);
 							log_line(L"done renderering video pin #%d", video_num);
+							video_rendered ++;
 						}
 						video_num ++;
 					}
@@ -2741,6 +2744,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 						{
 							hr = render_audio_pin(pin);
 							log_line(L"done renderering audio pin #%d", audio_num);
+							audio_rendered ++;
 						}
 						audio_num ++;
 					}
@@ -2763,7 +2767,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 
 	// normal file, just render it.
-	if (!matched_private_filter || (video_track==0 && audio_track==0))
+	if (!matched_private_filter || (video_rendered==0 && audio_rendered==0))
 	{
 		if (m_is_remux_file)
 		{
@@ -2771,7 +2775,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 			return hr;
 		}
 
-		log_line(L"no matching private filters, trying system filters. (%s)", file_to_play);
+		log_line(L"%s, trying system filters. (%s)", matched_private_filter ? L"private filters failed" : L"no matching private filters", file_to_play);
 
 		// this just add decoders
 		hr = render_video_pin(NULL);
