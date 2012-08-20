@@ -17,6 +17,7 @@
 #include "PixelShaders/blur.h"
 #include "PixelShaders/blur2.h"
 #include "PixelShaders/lanczosAll.h"
+#include "PixelShaders/multiview4.h"
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
@@ -1269,6 +1270,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_lanczos.invalid();
 	m_lanczos_NV12.invalid();
 	m_lanczos_YV12.invalid();
+	m_multiview4.invalid();
 
 	// query
 	//m_d3d_query = NULL;
@@ -1448,6 +1450,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_lanczos.set_source(m_Device, g_code_lanczos, sizeof(g_code_lanczos), true, (DWORD*)m_key);
 	m_lanczos_NV12.set_source(m_Device, g_code_lanczos_NV12, sizeof(g_code_lanczos_NV12), true, (DWORD*)m_key);
 	m_lanczos_YV12.set_source(m_Device, g_code_lanczos_YV12, sizeof(g_code_lanczos_YV12), true, (DWORD*)m_key);
+	m_multiview4.set_source(m_Device, g_code_multiview4, sizeof(g_code_multiview4), true, (DWORD*)m_key);
 
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
@@ -1803,6 +1806,65 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
 			hr = m_Device->StretchRect(m_nv3d_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
 		}
+	}
+
+	else if (m_output_mode == multiview)
+	{
+		CPooledTexture *view1, *view2, *view3, *view4;
+		CComPtr<IDirect3DSurface9> surf1;
+		CComPtr<IDirect3DSurface9> surf2;
+		CComPtr<IDirect3DSurface9> surf3;
+		CComPtr<IDirect3DSurface9> surf4;
+		
+		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view1));
+		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view2));
+		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view3));
+		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view4));
+
+		view1->get_first_level(&surf1);
+		view2->get_first_level(&surf2);
+		view3->get_first_level(&surf3);
+		view4->get_first_level(&surf4);
+
+		clear(surf1);
+		draw_movie(surf1, 0);
+		draw_bmp(surf1, true);
+		adjust_temp_color(surf1, true);
+
+		clear(surf2);
+		draw_movie(surf2, 1);
+		draw_bmp(surf2, true);
+		adjust_temp_color(surf2, true);
+
+		clear(surf3);
+		draw_movie(surf3, 2);
+		draw_bmp(surf3, true);
+		adjust_temp_color(surf3, true);
+
+		clear(surf4);
+		draw_movie(surf4, 3);
+		draw_bmp(surf4, true);
+		adjust_temp_color(surf4, true);
+
+		// pass3: analyph
+		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+		m_Device->SetRenderTarget(0, back_buffer);
+		m_Device->SetTexture( 0, m_tex_mask );
+		m_Device->SetTexture( 4, view1->texture );
+		m_Device->SetTexture( 3, view2->texture );
+		m_Device->SetTexture( 2, view3->texture );
+		m_Device->SetTexture( 1, view4->texture );
+		m_Device->SetPixelShader(m_multiview4);
+
+		hr = m_Device->SetFVF( FVF_Flags );
+		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
+
+		draw_ui(back_buffer);
+
+		safe_delete(view1);
+		safe_delete(view2);
+		safe_delete(view3);
+		safe_delete(view4);
 	}
 
 	else if (m_output_mode == mono 
@@ -2174,12 +2236,11 @@ HRESULT my12doomRenderer::clear(IDirect3DSurface9 *surface, DWORD color)
 
 HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 {
-	bool left_eye = view == 0;
-	left_eye = left_eye ^ m_swapeyes;
-
 	HRESULT hr;
 	if (!surface)
 		return E_POINTER;
+	bool left_eye = view == 0;
+	left_eye = left_eye ^ m_swapeyes;
 
 	if (!m_dsr0->is_connected() && m_uidrawer)
 	{
@@ -2203,6 +2264,9 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 
 	if (!src)
 		return S_FALSE;
+
+
+
 
 
 	// movie picture position
@@ -2235,6 +2299,22 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 			assert(0);
 		}
 	}
+
+	if (m_output_mode == multiview)
+	{
+		RECT view1 = {0, 0, m_lVidWidth/2, m_lVidHeight/2};
+		RECT view2 = {m_lVidWidth/2, 0, m_lVidWidth, m_lVidHeight/2};
+		RECT view3 = {0, m_lVidHeight/2, m_lVidWidth/2, m_lVidHeight};
+		RECT view4 = {m_lVidWidth/2, m_lVidHeight/2, m_lVidWidth, m_lVidHeight};
+
+		RECT views[4] = {view1, view2, view3, view4};
+
+		if (view <0 || view >= 4)
+			return E_NOTIMPL;
+
+		src_rect = views[view];
+	}
+
 
 	// parallax adjustments
 	if (m_parallax > 0)
@@ -3097,7 +3177,7 @@ HRESULT my12doomRenderer::calculate_subtitle_position(RECTF *postion, bool left_
 HRESULT my12doomRenderer::generate_mask()
 {
 	HRESULT hr;
-	if (m_output_mode != masking)
+	if (m_output_mode != masking && m_output_mode != multiview)
 		return S_FALSE;
 
 	if (!m_tex_mask)
@@ -3113,7 +3193,33 @@ HRESULT my12doomRenderer::generate_mask()
 
 	BYTE *dst = (BYTE*) locked.pBits;
 
-	if (m_mask_mode == row_interlace)
+	if (m_output_mode == multiview)
+	{
+		// 123412341234
+		// 234123412341
+		// 341234123412
+		// 412341234123
+
+		DWORD color_table[4][4] = {
+			{D3DCOLOR_XRGB(255,63,127), D3DCOLOR_XRGB(191,255,63), D3DCOLOR_XRGB(127,191,255), D3DCOLOR_XRGB(63,127,191)},
+			{D3DCOLOR_XRGB(191,255,63), D3DCOLOR_XRGB(127,191,255), D3DCOLOR_XRGB(63,127,191), D3DCOLOR_XRGB(255,63,127)},
+			{D3DCOLOR_XRGB(127,191,255), D3DCOLOR_XRGB(63,127,191), D3DCOLOR_XRGB(255,63,127), D3DCOLOR_XRGB(191,255,63)},
+			{D3DCOLOR_XRGB(63,127,191), D3DCOLOR_XRGB(255,63,127), D3DCOLOR_XRGB(191,255,63), D3DCOLOR_XRGB(127,191,255)},
+		};
+
+		DWORD four_line[4][BIG_TEXTURE_SIZE];
+		for(DWORD y=0; y<4; y++)
+		for(DWORD x=0; x<BIG_TEXTURE_SIZE; x++)
+		{
+			four_line[y][x] = color_table[y%4][x%4];
+		}
+		for(DWORD y=0; y<m_active_pp.BackBufferHeight; y++)
+		{
+			memcpy(dst, four_line[y%4], m_active_pp.BackBufferWidth*4);
+			dst += locked.Pitch;
+		}
+	}
+	else if (m_mask_mode == row_interlace)
 	{
 		// init row mask texture
 		D3DCOLOR one_line[BIG_TEXTURE_SIZE];

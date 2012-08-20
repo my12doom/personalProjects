@@ -1,6 +1,12 @@
 sampler s0 : register(s0);
 sampler s1 : register(s1);
 sampler s2 : register(s2);
+sampler s3 : register(s3);
+sampler s4 : register(s4);
+sampler s5 : register(s5);
+sampler s6 : register(s6);
+sampler s7 : register(s7);
+
 float4 p0 : register(c0);
 float4 p1 : register(c1);
 float4 p2 : register(c2);
@@ -346,4 +352,35 @@ float4 color_adjust(float2 tex : TEXCOORD0) : COLOR
 	rgb[3] = 1.0;
 	
 	return rgb;
+}
+
+float4 multiview4(float2 tex : TEXCOORD0) : COLOR
+{
+	float4 mask = tex2D(s0, tex);
+	
+	float4 c1 = tex2D(s1, tex);
+	float4 c2 = tex2D(s2, tex);
+	float4 c3 = tex2D(s3, tex);
+	float4 c4 = tex2D(s4, tex);
+		
+	float4 f1 = clamp(mask*4, 0, 1);
+	float4 f2 = clamp(mask*4, 1, 2) - 1;
+	float4 f3 = clamp(mask*4, 2, 3) - 2;
+	float4 f4 = clamp(mask*4, 3, 4) - 3;
+	
+	f1 = f1 >= 1 ? 0 : f1;
+	f2 = f2 >= 1 ? 0 : f2;
+	f3 = f3 >= 1 ? 0 : f3;
+	//f4 = f4 >= 1 ? 0 : f4;
+	
+	float4 o = 0;
+	o  = c1 * f1;
+	o += c2 * f2;
+	o += c3 * f3;
+	o += c4 * f4;
+	
+	float4 t = {1,1,1,0};
+	float4 b = {1,0,0,0};
+	
+	return o;	
 }

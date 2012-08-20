@@ -88,6 +88,7 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 	int xPos = GET_X_LPARAM(lParam);
 	int yPos = GET_Y_LPARAM(lParam);
 
+/*
 	if (message ==  WM_TOUCH || message == WM_GESTURE)
 	{
 		printf("%s : \n", message == WM_TOUCH ? "TOUCH":"GESTURE");
@@ -136,6 +137,7 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		}
 	}
 
+*/
 	switch (message)
 	{
 	case WM_INITDIALOG:

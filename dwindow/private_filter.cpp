@@ -113,7 +113,7 @@ HRESULT GetFileSourceMediaInfo(const wchar_t *filename, wchar_t *format)
 		return E_FAIL;
 
 	wcscpy(format, p[1]);
-	free(p[1]);
+	free((void*)p[1]);
 
 	return S_OK;
 }
