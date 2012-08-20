@@ -129,31 +129,22 @@ enum aspect_mode_types
 	aspect_mode_types_max,
 };
 
-
-enum vertex_types
+enum interlace_types
 {
-	vertex_pass1_types_count = 5,
-	vertex_point_per_type = 4,
+	progressive,
+	top_field_first,
+	bottom_field_first,
+};
+enum deinterlace_types
+{
+	weaving,
+	blending,
+	bob,
+	top_field,
+	bottom_field,
 
-	vertex_pass1_whole = 0,
-	vertex_pass1_left = 4,
-	vertex_pass1_right = 8,
-	vertex_pass1_top = 12,
-	vertex_pass1_bottom = 16,
-
-	vertex_pass2_main = 20,
-	vertex_pass2_second = 24,
-	vertex_pass3 = 28,
-
-	vertex_bmp = 32,
-	vertex_bmp2 = 36,
-
-	vertex_ui = 40,
-
-	vertex_test_sbs = 44,
-	vertex_test_tb = 48,
-	vertex_pass2_main_r = 52,
-
-
-	vertex_total = 56,
+	// these inter-frame methods won't be implemented in the near future
+	selective_blending,
+	inverse_telecine,
+	telecide,
 };

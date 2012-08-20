@@ -79,6 +79,8 @@ public:
 	~my12doomRendererDShow();
 
 	bool is_connected();
+	HRESULT set_interlace_mode(interlace_types mode){m_interlace_mode = mode;}
+	interlace_types get_interlace_mode(){return m_interlace_mode;}
 
 protected:
 	friend class my12doomRenderer;
@@ -99,6 +101,10 @@ protected:
 		__inout REFERENCE_TIME *ptrStart,
 		__inout REFERENCE_TIME *ptrEnd);			// override to send Quality Message only when queue empty
 	HRESULT ShouldDrawSampleNow(gpu_sample *pMediaSample);		//mine
+
+	// interlace variables;
+	interlace_types m_interlace_mode;
+
 
 	// dshow variables
 	REFERENCE_TIME m_time;
