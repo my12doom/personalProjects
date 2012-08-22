@@ -2,6 +2,7 @@
 #include "ImageSource.h"
 #include <atlbase.h>
 #include "MediaInfo.h"
+#include "global_funcs.h"
 
 typedef HRESULT (__stdcall *pDllGetClassObject) (REFCLSID rclsid, REFIID riid, LPVOID*ppv);
 HRESULT GetFileSourceMediaInfo(const wchar_t *filename, wchar_t *format);
@@ -130,6 +131,10 @@ HRESULT myCreateInstance(CLSID clsid, IID iid, void**out)
 
 		return s->QueryInterface(iid, out);
 	}
+
+	if (clsid == CLSID_AVSource)
+		make_av_splitter_support_my_formats();
+
 
 	LPOLESTR strCLSID = NULL;
 	wchar_t filename[MAX_PATH];

@@ -742,7 +742,11 @@ HRESULT set_ff_audio_formats(IBaseFilter *filter)
 	if (NULL == cfg)
 		return E_NOINTERFACE;
 
+
 	HRESULT hr = S_OK;
+
+	hr = cfg->putParam(IDFF_trayIcon, 0);
+
 	hr = cfg->putParam(IDFF_mp3, IDFF_MOVIE_LAVC);
 	hr = cfg->putParam(IDFF_mp2, IDFF_MOVIE_LAVC);
 	hr = cfg->putParam(IDFF_ac3, IDFF_MOVIE_LIBA52);
@@ -772,6 +776,8 @@ HRESULT set_ff_video_formats(IBaseFilter *filter)
 		return E_NOINTERFACE;
 
 	HRESULT hr = S_OK;
+
+	hr = cfg->putParam(IDFF_trayIcon, 0);
 
 	hr = cfg->putParam(IDFF_h264, IDFF_MOVIE_LAVC);		// this is mainly for non-private files, use whatever I can
 	hr = cfg->putParam(IDFF_xvid, IDFF_MOVIE_LAVC);
@@ -1138,6 +1144,38 @@ HRESULT make_xvid_support_mp4v()
 		return E_FAIL;
 
 	RegCloseKey(hkey);
+	return S_OK;
+}
+
+HRESULT make_av_splitter_support_my_formats()
+{
+	HKEY hkey = NULL;
+	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\AVS\\AV Splitter\\Settings", 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+
+	DWORD value = 0, size=4;
+	ret = RegSetValueExW(hkey, L"TrayIcon", 0, REG_DWORD, (const byte*)&value, size );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+
+	RegCloseKey(hkey);
+
+	ret = RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\AVS\\AV Splitter\\Settings\\Formats", 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+
+	value = 1;
+	wchar_t formats[10][200] = {L"asf,wma,wmv", L"avi", L"flv", L"matroska", L"matroska,webm", L"mov,mp4", L"mpeg", L"mpegts", L"ogg,ogm", L"rm,rmvb"};
+	for (int i=0; i<10; i++)
+	{
+		ret = RegSetValueExW(hkey, formats[i], 0, REG_DWORD, (const byte*)&value, 4 );
+		if (ret != ERROR_SUCCESS)
+			return E_FAIL;
+	}
+	RegCloseKey(hkey);
+
+
 	return S_OK;
 }
 
