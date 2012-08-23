@@ -151,21 +151,19 @@ static void prepareListforRefIdx ( Macroblock *currMB, SyntaxElement *currSE, Da
     {
       currSE->mapping = linfo_ue;
 
-	  /*
       if (refidx_present)
         currMB->readRefPictureIdx = (num_ref_idx_active == 2) ? readRefPictureIdx_FLC : readRefPictureIdx_VLC;
       else
         currMB->readRefPictureIdx = readRefPictureIdx_Null;
-	  */
     }
     else
     {
       currSE->reading = readRefFrame_CABAC;
-      //currMB->readRefPictureIdx = (refidx_present) ? readRefPictureIdx_VLC : readRefPictureIdx_Null;
+      currMB->readRefPictureIdx = (refidx_present) ? readRefPictureIdx_VLC : readRefPictureIdx_Null;
     }
   }
-  //else
-    //currMB->readRefPictureIdx = readRefPictureIdx_Null; 
+ else
+   currMB->readRefPictureIdx = readRefPictureIdx_Null; 
 }
 
 void set_chroma_qp(Macroblock* currMB)
@@ -238,21 +236,6 @@ void read_delta_quant(SyntaxElement *currSE, DataPartition *dP, Macroblock *curr
 static void readMBRefPictureIdx (SyntaxElement *currSE, DataPartition *dP, Macroblock *currMB, PicMotionParams **mv_info, int list, int step_v0, int step_h0)
 {
   Slice *currSlice = currMB->p_Slice;
-  int read_func = 0;	//0: 0, 1:VLC, else:FLC
-
-  // copied from prepare
-  if(currSlice->num_ref_idx_active[list] > 1)
-  {
-    if (currMB->p_Vid->active_pps->entropy_coding_mode_flag == (Boolean) CAVLC || dP->bitstream->ei_flag)
-    {
-      if (!currSlice->allrefzero)
-        read_func = (currSlice->num_ref_idx_active[list] == 2) ? 2 : 1;
-    }
-    else
-    {
-      read_func = !currSlice->allrefzero;
-    }
-  }
 
   if (currMB->mb_type == 1)
   {
@@ -264,13 +247,7 @@ static void readMBRefPictureIdx (SyntaxElement *currSE, DataPartition *dP, Macro
 
       currMB->subblock_x = 0;
       currMB->subblock_y = 0;
-      //refframe = currMB->readRefPictureIdx(currMB, currSE, dP, 1, list);
-	  if (read_func == 0)
-		  refframe = 0;
-	  else if (read_func == 1)
-		  refframe = readRefPictureIdx_VLC(currMB, currSE, dP, 1, list);
-	  else
-		  refframe = readRefPictureIdx_FLC(currMB, currSE, dP, 1, list);
+      refframe = currMB->readRefPictureIdx(currMB, currSE, dP, 1, list);
 
       for (j = 0; j <  step_v0; ++j)
       {
@@ -298,13 +275,7 @@ static void readMBRefPictureIdx (SyntaxElement *currSE, DataPartition *dP, Macro
       {
         currMB->subblock_y = j0 << 2;
         currMB->subblock_x = 0;
-        //refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
-		if (read_func == 0)
-			refframe = 0;
-		else if (read_func == 1)
-			refframe = readRefPictureIdx_VLC(currMB, currSE, dP, currMB->b8mode[k], list);
-		else
-			refframe = readRefPictureIdx_FLC(currMB, currSE, dP, currMB->b8mode[k], list);
+        refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
 
         for (j = j0; j < j0 + step_v0; ++j)
         {
@@ -333,13 +304,8 @@ static void readMBRefPictureIdx (SyntaxElement *currSE, DataPartition *dP, Macro
       if ((currMB->b8pdir[k] == list || currMB->b8pdir[k] == BI_PRED) && currMB->b8mode[k] != 0)
       {
         currMB->subblock_x = i0 << 2;
-        //refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
-		if (read_func == 0 )
-			refframe = 0;
-		else if (read_func == 1)
-			refframe = readRefPictureIdx_VLC(currMB, currSE, dP, currMB->b8mode[k], list);
-		else
-			refframe = readRefPictureIdx_FLC(currMB, currSE, dP, currMB->b8mode[k], list);
+        refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
+
         for (j = 0; j < step_v0; ++j)
         {
           char *ref_idx = &mv_info[j][currMB->block_x + i0].ref_idx[list];
@@ -369,13 +335,8 @@ static void readMBRefPictureIdx (SyntaxElement *currSE, DataPartition *dP, Macro
         if ((currMB->b8pdir[k] == list || currMB->b8pdir[k] == BI_PRED) && currMB->b8mode[k] != 0)
         {
           currMB->subblock_x = i0 << 2;
-          //refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
-		  if (read_func == 0 )
-			  refframe = 0;
-		  else if (read_func == 1)
-			  refframe = readRefPictureIdx_VLC(currMB, currSE, dP, currMB->b8mode[k], list);
-		  else
-			  refframe = readRefPictureIdx_FLC(currMB, currSE, dP, currMB->b8mode[k], list);
+          refframe = currMB->readRefPictureIdx(currMB, currSE, dP, currMB->b8mode[k], list);
+
           for (j = j0; j < j0 + step_v0; ++j)
           {
             char *ref_idx = &mv_info[j][currMB->block_x + i0].ref_idx[list];
