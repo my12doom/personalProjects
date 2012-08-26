@@ -4,11 +4,12 @@
 
 unsigned int dwindow_n[32] = {0x5cc5db57, 0x881651da, 0x7981477c, 0xa65785e0, 0x5fe54c72, 0x5247aeff, 0xd2b635f7, 0x24781e90, 0x3d4e298e, 0x92f1bb41, 0x90494ef2, 0x2f0f6eeb, 0xb151c299, 0x6641acf9, 0x8a0681de, 0x9dd53c21, 0x623631ca, 0x906c24ff, 0x14980fce, 0xbbd5419f, 0x1ef0366c, 0xb759416a, 0x1a214b0f, 0x070c6972, 0x382d1969, 0xb9a02637, 0xeadffc31, 0xcd13093a, 0xfd273caf, 0xd2140f85, 0x2800ba50, 0x877d04f0};
 DWORD dwindow_network_n[32] = {0x0429c977, 0xb16e4217, 0x91009d67, 0x984ede2a, 0xb9c4d087, 0x8b7067a4, 0x8ef2ec12, 0x40b89949, 0x5688ead8, 0xa6133eeb, 0x8ef6eb10, 0x0cff6754, 0xfdb87672, 0x6abe98b0, 0x7659b09c, 0xdb9ce7bf, 0x69cf481a, 0xccf1eef7, 0xf1502363, 0x2d0a6b98, 0x40e16c81, 0xce6e58da, 0xe4cd380a, 0x381fe321, 0x143d1e8d, 0xffe014c3, 0x8f36fec1, 0xb3fc8ff3, 0x7a4c3eff, 0xe990f2eb, 0xff356d87, 0x70cd2187};
+DWORD dwindow_update_n[32] = {0xb3aa1d65, 0x31859498, 0x3a829da8, 0x1b038cfa, 0xda5858aa, 0x6c6f6e1d, 0xbc202305, 0x702c05bb, 0x5cc3cd5d, 0x35625268, 0xd3ec0886, 0x5bcbe94e, 0x70b19bb4, 0x12cdf7c7, 0x869fb2a3, 0x00d0fa2c, 0xb8317ead, 0x6cbab690, 0xaeb84108, 0x56d972b6, 0x3ddc5f74, 0x21aad861, 0x2b35a07d, 0xe2e5fbf1, 0xe092bbcf, 0x40567409, 0xc7de00bb, 0x448db1ef, 0x7ba3a476, 0x6f19e41f, 0x3a5772c6, 0x9edaae82};
 
 LONGLONG FileSize(const wchar_t *filename);
 BOOL my_setfilepointer(HANDLE file, LONGLONG target);
 
-bool verify_signature(const DWORD *checksum, const DWORD *signature) // checksum is 20byte, signature is 128byte, true = match
+bool verify_signature(const DWORD *checksum, const DWORD *signature, DWORD *public_key/* = NULL*/) // checksum is 20byte, signature is 128byte, true = match
 {
 	DWORD c[32];
 	DWORD m[32];
@@ -20,7 +21,7 @@ bool verify_signature(const DWORD *checksum, const DWORD *signature) // checksum
 	memcpy(m, checksum, 20);
 	memcpy(c, signature, 128);
 
-	RSA(m1, c, e, (DWORD*)dwindow_n, 32);
+	RSA(m1, c, e, public_key == NULL ? (DWORD*)dwindow_n : public_key, 32);
 
 	for(int i=0; i<32; i++)
 		if (m[i] != m1[i])
@@ -28,6 +29,40 @@ bool verify_signature(const DWORD *checksum, const DWORD *signature) // checksum
 
 	return true;
 }
+
+bool veryfy_file_sha1(const wchar_t *file, DWORD *checksum)		// checksum is 20byte SHA1
+{
+	if (!file || !checksum)
+		return false;
+
+	DWORD sha1[5];
+	sha1_file(file, sha1);
+
+	return memcmp(checksum, sha1, 20) == 0;
+}
+
+void sha1_file(const wchar_t *file, DWORD *checksum)	// calculate sha1 of a file
+{
+	if (!file || !checksum)
+		return;
+
+	FILE *f = _wfopen(file, L"rb");
+	if (NULL == f)
+		return;
+
+	SHA1_STATETYPE csha1;
+	memset(&csha1,0,sizeof(csha1));
+	SHA1_Start(&csha1);
+
+	unsigned char buf[32768];
+	int got = 0;
+	while ((got = fread(buf, 1, sizeof(buf), f)) > 0)
+		SHA1_Hash(buf, got, &csha1);
+	fclose(f);
+
+	SHA1_Finish((unsigned char*)checksum,&csha1);
+}
+
 
 
 LONGLONG FileSize(const wchar_t *filename)

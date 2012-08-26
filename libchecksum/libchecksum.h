@@ -57,13 +57,24 @@ const unsigned char USERTYPE_THEATER = 1;
 const unsigned char USERTYPE_JZ = 2;
 const unsigned char USERTYPE_BAR = 3;
 
+typedef struct _dwindow_update_signature
+{
+	DWORD signature[32];		// signature of sha1
+	BYTE sha1_of_file[20];		// expected sha1 of downloaded file of url.
+	int revision;				// revision of new version
+	wchar_t url[1024];			// NULL-terminated string, url
+	wchar_t description[2048];	// 
+}dwindow_update_signature;
+
 
 extern unsigned int dwindow_n[32];
 extern DWORD dwindow_network_n[32];
-bool verify_signature(const DWORD *checksum, const DWORD *signature); // checksum is 20byte, signature is 128byte, true = match
+bool verify_signature(const DWORD *checksum, const DWORD *signature, DWORD *public_key = NULL); // checksum is 20byte, signature is 128byte, true = match
 int verify_file(wchar_t *file); //return value:
 int video_checksum(wchar_t *file, DWORD *checksum);	// checksum is 20byte
 int find_startcode(wchar_t *file);
+bool veryfy_file_sha1(const wchar_t *file, DWORD *checksum);		// checksum is 20byte SHA1
+void sha1_file(const wchar_t *file, DWORD *checksum);	// calculate sha1 of a file
 HRESULT RSA_dwindow_public(const void *input, void *output);
 HRESULT RSA_dwindow_network_public(const void *input, void *output);
 
