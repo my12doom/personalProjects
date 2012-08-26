@@ -180,26 +180,26 @@ Section "桌面快捷方式"
   
 SectionEnd
 
-;SectionGroup /e "文件关联"
+SectionGroup /e "文件关联"
 
-;Section "mkv文件"
-;!insertmacro Assoc mkv "mkv" "MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
-;SectionEnd
+Section "mkv文件"
+!insertmacro Assoc mkv "mkv" "MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
 
-;Section "mkv3d文件"
-;!insertmacro Assoc mkv3d "mkv3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
-;SectionEnd
+Section "mkv3d文件"
+!insertmacro Assoc mkv3d "mkv3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
 
-;Section "ssif文件"
-;!insertmacro Assoc ssif "ssif" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
-;SectionEnd
+Section "ssif文件"
+!insertmacro Assoc ssif "ssif" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
 
-;Section "mpls播放列表"
-;!insertmacro Assoc mpls "mpls" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
-;SectionEnd
+Section "mpls播放列表"
+!insertmacro Assoc mpls "mpls" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
 
 
-;SectionGroupEnd
+SectionGroupEnd
 
 Section "-Refresh File Icon"
 System::Call 'Shell32::SHChangeNotify(i ${SHCNE_ASSOCCHANGED}, i ${SHCNF_IDLIST}, i 0, i 0)'
@@ -255,7 +255,8 @@ Section "Uninstall"
   Delete $INSTDIR\dxva2.dll
 
   ; Remove shortcuts, if any
-  Delete "$SMPROGRAMS\DWindow\*.*"
+  Delete "$SMPROGRAMS\3D影音\*.*"
+  RMDir "$SMPROGRAMS\3D影音"
   Delete "$DESKTOP\DWindow.lnk"
 
   ; Remove directories used
