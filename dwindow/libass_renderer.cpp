@@ -4,6 +4,7 @@
 #include <streams.h>
 #include <emmintrin.h>
 #include <assert.h>
+#include "command_queue.h"
 
 #define _r(c)  ((c)>>24)
 #define _g(c)  (((c)>>16)&0xFF)
@@ -341,13 +342,6 @@ static DWORD WINAPI loadFontThread(LPVOID param)
 
 /// WRAP classes
 
-typedef struct command_struct
-{
-	int command_type;
-	void *data;
-	int size;
-	command_struct *next;
-} command;
 
 enum command_types
 {
@@ -361,7 +355,6 @@ enum command_types
 LibassRenderer::LibassRenderer()
 {
 	m_core = NULL;
-	m_commands = NULL;
 	m_fallback = new CAssRenderer(NULL, RGB(255,255,255));
 	m_exit_flag = (bool*)malloc(sizeof(bool));
 	*m_exit_flag = false;
@@ -431,25 +424,13 @@ HRESULT LibassRenderer::send_command(int command_type, void *data, int size)
 	if (m_core)
 		return execute_command(command_type, data, size);
 
-	command *p = (command*)m_commands;
-	if (m_commands == NULL)
-	{
-		m_commands = malloc(sizeof(command));
-		p = (command*)m_commands;
-	}
-	else
-	{
-		while (p->next)
-			p = p->next;
+	command p;
 
-		p->next = (command*)malloc(sizeof(command));
-		p = p->next;
-	}
+	p.command_type = command_type;
+	p.data = data;
+	p.size = size;
 
-	p->command_type = command_type;
-	p->data = data;
-	p->size = size;
-	p->next = NULL;
+	m_commands.insert(p);
 
 	return S_OK;
 }
@@ -492,16 +473,15 @@ DWORD WINAPI LibassRenderer::loading_thread(LPVOID param)
 	{
 		CAutoLock (&_this->m_cs);
 		_this->m_core = core;
-		command *p = (command*)_this->m_commands;
+		command *p = _this->m_commands.pop();
 		while (p)
 		{
 			_this->execute_command(p->command_type, p->data, p->size);
-			command *p2 = p;
-			
-			p = p->next;
-			if (p2->data)
-				free(p2->data);
-			free(p2);
+
+			if (p->data)
+				free(p->data);
+			free(p);
+			p = _this->m_commands.pop();
 		}
 		_this->m_loading_done_flag = true;
 	}

@@ -5,6 +5,7 @@ extern "C" {
 #include "CSubtitle.h"
 #include <streams.h>
 #include "srt\srt_renderer.h"
+#include "command_queue.h"
 
 class LibassRendererCore: public CSubtitleRenderer
 {
@@ -63,7 +64,7 @@ protected:
 	CCritSec m_cs;
 	LibassRendererCore *m_core;
 	CAssRenderer *m_fallback;
-	void *m_commands;
+	command_queue m_commands;
 	bool *m_exit_flag;
 	bool m_loading_done_flag;
 };

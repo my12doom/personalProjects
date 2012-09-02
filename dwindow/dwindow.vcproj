@@ -519,6 +519,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\command_queue.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\global_funcs.cpp"
 				>
 			</File>
@@ -798,6 +802,10 @@
 			</File>
 			<File
 				RelativePath=".\bomb_network.h"
+				>
+			</File>
+			<File
+				RelativePath=".\command_queue.h"
 				>
 			</File>
 			<File

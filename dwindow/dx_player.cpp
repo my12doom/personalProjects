@@ -2398,6 +2398,7 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname, const wc
 	return hr;
 fail:
 	reset();
+	show_media_info(pathname, m_theater_owner ? m_theater_owner : id_to_hwnd(1));
 	set_window_text(1, C(L"Open Failed"));
 	return hr;
 }
