@@ -3130,22 +3130,55 @@ HRESULT my12doomRenderer::calculate_movie_position(RECT *position)
 	if (!position)
 		return E_POINTER;
 
-	RECT tar;
-	calculate_movie_position_unscaled(&tar);
+	// f = factor
+	// C = (screen_width/2, screen_height/2)
+	// P = point in screen space, before zooming
+	// P'= point in zoom center space(
+	// P''' = point in screen space, after zooming
+
+	// P' = P - C
+	// P'' = f (P')
+	// P''' = P'' + C
+
+	//
+	float f = m_zoom_factor;
+	RECT P0;
+	calculate_movie_position_unscaled(&P0);
+	int movie_width_1x = (P0.right - P0.left)/m_zoom_factor;
+	int movie_height_1x = (P0.bottom - P0.top)/m_zoom_factor;
+	int zoom_center_x = m_active_pp.BackBufferWidth/2;
+	int zoom_center_y = m_active_pp.BackBufferHeight/2;
+
+	// transform to center point space
+	RECT P1 = P0;
+	P1.left -= zoom_center_x;
+	P1.right -= zoom_center_x;
+	P1.bottom -= zoom_center_y;
+	P1.top -= zoom_center_y;
+
+	// scale
+	RECT P2 = P1;
+	P2.left *= f;
+	P2.right *= f;
+	P2.bottom *= f;
+	P2.top *= f;
+
+	// transform back
+	RECT P3 = P2;
+	P3.left += zoom_center_x;
+	P3.right += zoom_center_x;
+	P3.bottom += zoom_center_y;
+	P3.top += zoom_center_y;
 
 	// offsets and zoom factors
-	int tar_width = tar.right-tar.left;
-	int tar_height = tar.bottom - tar.top;
-	tar.left *= m_zoom_factor;
-	tar.right *= m_zoom_factor;
-	tar.top *= m_zoom_factor;
-	tar.bottom *= m_zoom_factor;
-	tar.left += (LONG)(tar_width * m_movie_offset_x);
-	tar.right += (LONG)(tar_width * m_movie_offset_x);
-	tar.top += (LONG)(tar_height * m_movie_offset_y);
-	tar.bottom += (LONG)(tar_height * m_movie_offset_y);
+	int tar_width = P3.right - P3.left;
+	int tar_height = P3.bottom - P3.top;
+	P3.left += (LONG)(tar_width * m_movie_offset_x);
+	P3.right += (LONG)(tar_width * m_movie_offset_x);
+	P3.top += (LONG)(tar_height * m_movie_offset_y);
+	P3.bottom += (LONG)(tar_height * m_movie_offset_y);
 
-	*position = tar;
+	*position = P3;
 	return S_OK;
 }
 
@@ -3534,6 +3567,8 @@ HRESULT my12doomRenderer::set_aspect_mode(int mode)
 
 HRESULT my12doomRenderer::set_vsync(bool on)
 {
+	return S_OK;
+
 	on = m_output_mode == pageflipping ? true : on;
 	
 	if (m_vertical_sync != on)
@@ -3559,6 +3594,9 @@ HRESULT my12doomRenderer::set_zoom_factor(float factor, int zoom_center_x /* = -
 	// P' = P - C
 	// P'' = f (P')
 	// P''' = P'' + C
+
+	m_zoom_factor = factor;
+	return S_OK;
 
 	if (zoom_center_x == -99999)
 		zoom_center_x = m_active_pp.BackBufferWidth/2;
