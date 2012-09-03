@@ -1,6 +1,6 @@
 #pragma once
 #include "list"
-#include <wxutil.h>
+#include <streams.h>
 
 typedef struct command_struct
 {

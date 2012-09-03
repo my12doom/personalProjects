@@ -2728,7 +2728,11 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		if (width_s != width_d)
 			m_Device->SetPixelShader(lanczos_shader);
 		else
+		{
+			float rect_data[8] = {m_lVidWidth, m_lVidHeight, m_lVidWidth/2, m_lVidHeight, (float)m_last_reset_time/100000, (float)timeGetTime()/100000};
+			hr = m_Device->SetPixelShaderConstantF(0, rect_data, 2);
 			m_Device->SetPixelShader(shader_yuv);
+		}
 
 		// render state and render
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
@@ -2799,7 +2803,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		else if (format == MEDIASUBTYPE_RGB32 || format == MEDIASUBTYPE_ARGB32)
 			lanczos_shader = m_lanczos;
 		if ((height_s != height_d || width_s != width_d)
-			&& (IDirect3DPixelShader9*)m_lanczos)
+			&& lanczos_shader != NULL)
 		{
 			m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 			m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
@@ -3228,10 +3232,10 @@ HRESULT my12doomRenderer::generate_mask()
 
 	if (m_output_mode == multiview)
 	{
-		// 123412341234
-		// 234123412341
-		// 341234123412
 		// 412341234123
+		// 341234123412
+		// 234123412341
+		// 123412341234
 
 		DWORD color_table[4][4] = {
 			{D3DCOLOR_XRGB(255,63,127), D3DCOLOR_XRGB(191,255,63), D3DCOLOR_XRGB(127,191,255), D3DCOLOR_XRGB(63,127,191)},
