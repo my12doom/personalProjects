@@ -27,12 +27,23 @@ const int fade_in_out_time = 500;
 
 // structures
 
-typedef struct
+typedef struct _RECTF
 {
 	float left;
 	float top;
 	float right;
 	float bottom;
+
+	struct _RECTF operator=(const RECT in)
+	{
+		left = in.left; top = in.top; right = in.right; bottom = in.bottom;
+	}
+	operator RECT()
+	{
+		RECT r = {left,top,right,bottom};
+		return r;
+	}
+
 } RECTF;
 
 typedef POINTF VECTORF;

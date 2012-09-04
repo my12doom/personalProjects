@@ -3143,6 +3143,7 @@ HRESULT my12doomRenderer::calculate_movie_position(RECT *position)
 	// P' = P - C
 	// P'' = f (P')
 	// P''' = P'' + C
+	// P''''= P'''+ offset * {width(P'''), height(P''')}
 
 	//
 	float f = m_zoom_factor;
@@ -3174,7 +3175,7 @@ HRESULT my12doomRenderer::calculate_movie_position(RECT *position)
 	P3.bottom += zoom_center_y;
 	P3.top += zoom_center_y;
 
-	// offsets and zoom factors
+	// offsets
 	int tar_width = P3.right - P3.left;
 	int tar_height = P3.bottom - P3.top;
 	P3.left += (LONG)(tar_width * m_movie_offset_x);
@@ -3599,13 +3600,13 @@ HRESULT my12doomRenderer::set_zoom_factor(float factor, int zoom_center_x /* = -
 	// P'' = f (P')
 	// P''' = P'' + C
 
-	m_zoom_factor = factor;
-	return S_OK;
 
-	if (zoom_center_x == -99999)
-		zoom_center_x = m_active_pp.BackBufferWidth/2;
-	if (zoom_center_y == -99999)
-		zoom_center_y = m_active_pp.BackBufferHeight/2;
+	// normal zooming: screen center
+	if (zoom_center_x == -99999 && zoom_center_y == -99999)
+	{ 	
+		m_zoom_factor = factor;
+ 		return S_OK;
+	}
 
 	//
 	float f = factor / m_zoom_factor;
@@ -3615,30 +3616,33 @@ HRESULT my12doomRenderer::set_zoom_factor(float factor, int zoom_center_x /* = -
 	int movie_height_1x = (P0.bottom - P0.top)/m_zoom_factor;
 
 	// transform to center point space
-	RECT P1 = P0;
+	RECTF P1 = {P0.left, P0.top, P0.right, P0.bottom};
 	P1.left -= zoom_center_x;
 	P1.right -= zoom_center_x;
 	P1.bottom -= zoom_center_y;
 	P1.top -= zoom_center_y;
 
-	RECT P2 = P1;
+	// scale
+	RECTF P2 = P1;
 	P2.left *= f;
 	P2.right *= f;
 	P2.bottom *= f;
 	P2.top *= f;
 
-	RECT P3 = P2;
+	// transform back
+	RECTF P3 = P2;
 	P3.left += zoom_center_x;
 	P3.right += zoom_center_x;
 	P3.bottom += zoom_center_y;
 	P3.top += zoom_center_y;
 
+	// calculate new offset
 	RECT base;
 	calculate_movie_position_unscaled(&base);
 
 	m_zoom_factor = factor;
-	m_movie_offset_x = (double)(P3.left - base.left * m_zoom_factor ) / movie_width_1x;
-	m_movie_offset_y = (double)(P3.top - base.top * m_zoom_factor) / movie_height_1x;
+	m_movie_offset_x = (((double)P3.left - m_active_pp.BackBufferWidth/2) / m_zoom_factor + m_active_pp.BackBufferWidth/2 - base.left) / (base.right - base.left);
+	m_movie_offset_y = (((double)P3.top - m_active_pp.BackBufferHeight/2) / m_zoom_factor + m_active_pp.BackBufferHeight/2 - base.top) / (base.bottom - base.top);
 
 	RECT P4;
 	calculate_movie_position(&P4);
