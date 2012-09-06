@@ -3552,6 +3552,16 @@ HRESULT my12doomRenderer::set_movie_pos(int dimention, double offset)		// diment
 		m_movie_offset_x = offset;
 	else if (dimention == 2)
 		m_movie_offset_y = offset;
+	else if (dimention == 3 || dimention == 4)
+	{
+		RECT r;
+		calculate_movie_position(&r);
+
+		if (dimention == 3)
+			m_movie_offset_x = offset / (r.right - r.left);
+		else
+			m_movie_offset_y = offset / (r.bottom - r.top);
+	}
 	else
 		return E_INVALIDARG;
 
@@ -3662,6 +3672,16 @@ double my12doomRenderer::get_movie_pos(int dimention)
 		return m_movie_offset_x;
 	else if (dimention == 2)
 		return m_movie_offset_y;
+	else if (dimention == 3 || dimention == 4)
+	{
+		RECT r;
+		calculate_movie_position(&r);
+
+		if (dimention == 3)
+			return m_movie_offset_x * (r.right - r.left);
+		else
+			return m_movie_offset_y *(r.bottom - r.top);
+	}
 	else
 		return 0.0;
 }

@@ -154,6 +154,7 @@ protected:
 
 	// window handler
 	LRESULT on_display_change();
+	LRESULT DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	LRESULT on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam);
 	LRESULT on_sys_command(int id, WPARAM wParam, LPARAM lParam);	// don't block WM_SYSCOMMAND
 	LRESULT on_command(int id, WPARAM wParam, LPARAM lParam);

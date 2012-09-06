@@ -626,21 +626,155 @@ bool dx_player::is_closed()
 
 // window handle part
 
+static int zoom_start = -9999;
+static double zoom_factor_start;
+static int pan_x = -9999;
+static int pan_y;
+
+LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	// Create a structure to populate and retrieve the extra message info.
+	GESTUREINFO gi;  
+
+	ZeroMemory(&gi, sizeof(GESTUREINFO));
+
+	gi.cbSize = sizeof(GESTUREINFO);
+
+	BOOL bResult  = GetGestureInfo((HGESTUREINFO)lParam, &gi);
+	BOOL bHandled = FALSE;
+
+	if (bResult){
+		// now interpret the gesture
+		switch (gi.dwID){
+		   case GID_ZOOM:
+			   printf("GID_ZOOM, %d, (%d,%d)\n", (int)gi.ullArguments, gi.ptsLocation.x, gi.ptsLocation.y);
+			   bHandled = FALSE;
+
+			   if (zoom_start < -1000 || gi.dwFlags & GF_BEGIN)
+				   zoom_start = (int)gi.ullArguments;
+
+			   m_renderer1->set_zoom_factor(zoom_factor_start * gi.ullArguments / zoom_start);
+			   break;
+		   case GID_PAN:
+			   // Code for panning goes here
+			   printf("GID_PAN\n");
+			   if (pan_x < - 1000 || gi.dwFlags & GF_BEGIN)
+			   {
+				   pan_x = gi.ptsLocation.x;
+				   pan_y = gi.ptsLocation.y;
+			   }
+
+			   printf("before: %f x %f\n", m_renderer1->get_movie_pos(3), m_renderer1->get_movie_pos(4));
+			   printf("%d x %d\n", gi.ptsLocation.x, gi.ptsLocation.y);
+
+			   m_renderer1->set_movie_pos(3, m_renderer1->get_movie_pos(3) + gi.ptsLocation.x - pan_x);
+			   m_renderer1->set_movie_pos(4, m_renderer1->get_movie_pos(4) + gi.ptsLocation.y - pan_y);
+
+			   printf("after: %f x %f\n", m_renderer1->get_movie_pos(3), m_renderer1->get_movie_pos(4));
+			   pan_x = gi.ptsLocation.x;
+			   pan_y = gi.ptsLocation.y;
+
+			   bHandled = FALSE;
+			   break;
+		   case GID_ROTATE:
+			   printf("GID_ROTATE\n");
+			   // Code for rotation goes here
+			   bHandled = TRUE;
+			   break;
+		   case GID_TWOFINGERTAP:
+			   printf("GID_TWOFINGERTAP\n");
+			   // Code for two-finger tap goes here
+			   bHandled = TRUE;
+			   break;
+		   case GID_PRESSANDTAP:
+			   printf("GID_PRESSANDTAP\n");
+			   // Code for roll over goes here
+			   bHandled = TRUE;
+			   break;
+		   case GID_BEGIN:
+			   printf("GID_BEGIN, (%d-%d), seq %d\n", gi.ptsLocation.x, gi.ptsLocation.y, gi.dwSequenceID);
+			   zoom_start = (int)gi.ullArguments;
+			   printf("zoom_start=%d\r\n", zoom_start);
+			   zoom_factor_start = m_renderer1->get_zoom_factor();
+			   break;
+		   case GID_END:
+			   printf("GID_END, (%d-%d), seq %d\n", gi.ptsLocation.x, gi.ptsLocation.y, gi.dwSequenceID);
+			   zoom_start = -9999;
+			   pan_x = -9999;
+			   break;
+		   default:
+			   printf("Unkown GESTURE : dwID=%d\n", gi.dwID);
+			   // A gesture was not recognized
+			   break;
+		}
+	}else{
+		DWORD dwErr = GetLastError();
+		if (dwErr > 0){
+			//MessageBoxW(hWnd, L"Error!", L"Could not retrieve a GESTUREINFO structure.", MB_OK);
+		}
+	}
+	if (bHandled){
+		return S_OK;
+	}else{
+		return S_FALSE;
+	}
+}
+
 LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
+	if (message ==  WM_TOUCH || message == WM_GESTURE)
+	{
+		printf("%s : \n", message == WM_TOUCH ? "TOUCH":"GESTURE");
+		if (message == WM_GESTURE)
+		{
+			return DecodeGesture(id_to_hwnd(id), message, wParam, lParam);
+		}
+
+		/*
 		if (message == WM_TOUCH)
 		{
-//			printf("WM_TOUCH\n");
+			UINT cInputs = LOWORD(wParam);
+			PTOUCHINPUT pInputs = new TOUCHINPUT[cInputs];
+			if (NULL != pInputs)
+			{
+				if (GetTouchInputInfo((HTOUCHINPUT)lParam,
+					cInputs,
+					pInputs,
+					sizeof(TOUCHINPUT)))
+				{
+					// process pInputs
+					for(int i=0; i<cInputs; i++)
+					{
+						TOUCHINPUT p = pInputs[i];
+						printf("point#%d, touchID=%d, %d-%d", i, p.dwID, p.x, p.y);
+					}
+
+					printf("\n");
+
+
+					if (!CloseTouchInputHandle((HTOUCHINPUT)lParam))
+					{
+						// error handling
+					}
+				}
+				else
+				{
+					// GetLastError() and error handling
+				}
+				delete [] pInputs;
+			}
+			else
+			{
+				// error handling, presumably out of memory
+			}
+			return S_FALSE;
 		}
+		*/
+	}
+
 	
-		else if (message == WM_GESTURE)
-		{
-// 			printf("WM_GESTURE\n");
-		}
-	
-		else
-	 if (message == DS_EVENT)
+	if (message == DS_EVENT)
 	{
 		on_dshow_event();
 	}

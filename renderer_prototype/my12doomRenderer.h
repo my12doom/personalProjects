@@ -172,7 +172,7 @@ public:
 	HRESULT set_mask_color(int id, DWORD color);
 	HRESULT set_swap_eyes(bool swap);
 	HRESULT set_fullscreen(bool full);
-	HRESULT set_movie_pos(int dimention, double offset);		// dimention1 = x, dimention2 = y
+	HRESULT set_movie_pos(int dimention, double offset);		// dimention1 = x, dimention2 = y, dimention3 = x in pixel, dimention4 = y in pixel
 	HRESULT set_aspect(double aspect);
 	HRESULT set_window(HWND wnd, HWND wnd2);
 	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow = false);
