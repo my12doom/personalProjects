@@ -509,7 +509,7 @@ HRESULT ui_drawer_dwindow::draw_ui(IDirect3DSurface9 * surface, REFERENCE_TIME c
 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, VOLUME*4, 2 );
 	hr = m_Device->SetPixelShader(NULL);
 
-	float progress_volue = (float)((double)(current) / total);
+	float progress_volue = abs(total) > 1 ? (float)((double)(current) / total) : 0;
 	float ps_const2[12] = {	222.0f,  14.0f,  208.5f, 0.0f,
 							8.0f, 14.0f, 0.1f, 1.0f, 
 							progress_volue, alpha, 0.0f, 0.0f};

@@ -24,12 +24,12 @@ LRESULT DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam){
 			   //gi.
 
 			   printf("GID_ZOOM, %d, (%d,%d)\n", (int)gi.ullArguments, gi.ptsLocation.x, gi.ptsLocation.y);
-			   bHandled = TRUE;
+			   bHandled = FALSE;
 			   break;
 		   case GID_PAN:
 			   // Code for panning goes here
 			   printf("GID_PAN\n");
-			   bHandled = TRUE;
+			   bHandled = FALSE;
 			   break;
 		   case GID_ROTATE:
 			   printf("GID_ROTATE\n");
@@ -88,13 +88,12 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 	int xPos = GET_X_LPARAM(lParam);
 	int yPos = GET_Y_LPARAM(lParam);
 
-/*
 	if (message ==  WM_TOUCH || message == WM_GESTURE)
 	{
 		printf("%s : \n", message == WM_TOUCH ? "TOUCH":"GESTURE");
 		if (message == WM_GESTURE)
 		{
-			DecodeGesture(hWnd, message, wParam, lParam);
+			return DecodeGesture(hWnd, message, wParam, lParam);
 		}
 
 		if (message == WM_TOUCH)
@@ -137,7 +136,6 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		}
 	}
 
-*/
 	switch (message)
 	{
 	case WM_INITDIALOG:
@@ -145,6 +143,12 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		{
 		//int o = RegisterTouchWindow(_this->id_to_hwnd(1), 0);
 		//o = RegisterTouchWindow(_this->id_to_hwnd(2), 0);
+		}
+		break;
+	case WM_GESTURENOTIFY:
+		{
+		GESTURECONFIG gc = {0,GC_ALLGESTURES,0};
+		BOOL bResult = SetGestureConfig(hWnd,0,1,&gc,sizeof(GESTURECONFIG));
 		}
 		break;
 

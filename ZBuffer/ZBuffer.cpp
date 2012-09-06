@@ -11,6 +11,7 @@ int main();
 int SAD16x16(void *pdata1, void *pdata2, int stride);		// assume same stride
 int gen_mask(BYTE *out, BYTE *in, BYTE center_color, int stride);
 int SAD16x16(void *pdata1, void *pdata2, void *mask, int stride);		// assume same stride
+void philip();
 
 
 HRESULT save_bitmap(DWORD *data, const wchar_t *filename, int width, int height) 
@@ -279,6 +280,9 @@ int PC3DV()
 
 int main()
 {
+// 	philip();
+// 	return 0;
+
 	//return PC3DV();
 	//return CV();
 	const int range = 40;
@@ -288,7 +292,7 @@ int main()
 	HANDLE h_parent_process = GetCurrentProcess();
 	SetPriorityClass(h_parent_process, IDLE_PRIORITY_CLASS);			//host idle priority
 
-	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\00136.bmp", IMAGE_BITMAP, 3840, 1080, LR_LOADFROMFILE);
+	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\pro.bmp", IMAGE_BITMAP, 3840, 1080, LR_LOADFROMFILE);
 	GetBitmapBits(bm, 3840*1080*4, resource);
 	DeleteObject(bm);
 	memset(padded, 0, sizeof(DWORD) * (3840+32) * (1080+32));
@@ -510,6 +514,203 @@ int gen_mask(BYTE *out, BYTE *in, BYTE center_color, int stride)
 
 	return c;
 }
+
+RGBQUAD * views[9];
+RGBQUAD * comp_views[9];
+RGBQUAD * out;
+
+void comp()
+{
+	double matrix[] = 
+	{
+// 1.788,-0.682,0.259,-0.094,0.024,0.024,-0.094,0.259,-0.682,
+// -0.682,1.788,-0.682,0.259,-0.094,0.024,0.024,-0.094,0.259,
+// 0.259,-0.682,1.788,-0.682,0.259,-0.094,0.024,0.024,-0.094,
+// -0.094,0.259,-0.682,1.788,-0.682,0.259,-0.094,0.024,0.024,
+// 0.024,-0.094,0.259,-0.682,1.788,-0.682,0.259,-0.094,0.024,
+// 0.024,0.024,-0.094,0.259,-0.682,1.788,-0.682,0.259,-0.094,
+// -0.094,0.024,0.024,-0.094,0.259,-0.682,1.788,-0.682,0.259,
+// 0.259,-0.094,0.024,0.024,-0.094,0.259,-0.682,1.788,-0.682,
+// -0.682,0.259,-0.094,0.024,0.024,-0.094,0.259,-0.682,1.788,
+
+
+// 		0.75,0.25,0.00,0.00,0.00,0.00,0.00,0.00,0.25,
+// 		0.25,0.75,0.25,0.00,0.00,0.00,0.00,0.00,0.00,
+// 		0.00,0.25,0.75,0.25,0.00,0.00,0.00,0.00,0.00,
+// 		0.00,0.00,0.25,0.75,0.25,0.00,0.00,0.00,0.00,
+// 		0.00,0.00,0.00,0.25,0.75,0.25,0.00,0.00,0.00,
+// 		0.00,0.00,0.00,0.00,0.25,0.75,0.25,0.00,0.00,
+// 		0.00,0.00,0.00,0.00,0.00,0.25,0.75,0.25,0.00,
+// 		0.00,0.00,0.00,0.00,0.00,0.00,0.25,0.75,0.25,
+// 		0.25,0.00,0.00,0.00,0.00,0.00,0.00,0.25,0.75,
+
+		1,0,0.00,0.00,0.00,0.00,0.00,0.00,0,
+		0,1,0,0.00,0.00,0.00,0.00,0.00,0.00,
+		0.00,0,1,0,0.00,0.00,0.00,0.00,0.00,
+		0.00,0.00,0,1,0,0.00,0.00,0.00,0.00,
+		0.00,0.00,0.00,0,1,0,0.00,0.00,0.00,
+		0.00,0.00,0.00,0.00,0,1,0,0.00,0.00,
+		0.00,0.00,0.00,0.00,0.00,0,1,0,0.00,
+		0.00,0.00,0.00,0.00,0.00,0.00,0,1,0,
+		0,0.00,0.00,0.00,0.00,0.00,0.00,0,1,
+
+// 0.50,0.25,0.00,0.00,0.00,0.00,0.00,0.00,0.25,
+// 0.25,0.50,0.25,0.00,0.00,0.00,0.00,0.00,0.00,
+// 0.00,0.25,0.50,0.25,0.00,0.00,0.00,0.00,0.00,
+// 0.00,0.00,0.25,0.50,0.25,0.00,0.00,0.00,0.00,
+// 0.00,0.00,0.00,0.25,0.50,0.25,0.00,0.00,0.00,
+// 0.00,0.00,0.00,0.00,0.25,0.50,0.25,0.00,0.00,
+// 0.00,0.00,0.00,0.00,0.00,0.25,0.50,0.25,0.00,
+// 0.00,0.00,0.00,0.00,0.00,0.00,0.25,0.50,0.25,
+// 0.25,0.00,0.00,0.00,0.00,0.00,0.00,0.25,0.50,
+
+// 9.000,-7.000,5.000,-3.000,1.000,1.000,-3.000,5.000,-7.000,
+// -7.000,9.000,-7.000,5.000,-3.000,1.000,1.000,-3.000,5.000,
+// 5.000,-7.000,9.000,-7.000,5.000,-3.000,1.000,1.000,-3.000,
+// -3.000,5.000,-7.000,9.000,-7.000,5.000,-3.000,1.000,1.000,
+// 1.000,-3.000,5.000,-7.000,9.000,-7.000,5.000,-3.000,1.000,
+// 1.000,1.000,-3.000,5.000,-7.000,9.000,-7.000,5.000,-3.000,
+// -3.000,1.000,1.000,-3.000,5.000,-7.000,9.000,-7.000,5.000,
+// 5.000,-3.000,1.000,1.000,-3.000,5.000,-7.000,9.000,-7.000,
+// -7.000,5.000,-3.000,1.000,1.000,-3.000,5.000,-7.000,9.000,
+
+	};
+
+// 	for(int i=0; i<sizeof(matrix)/sizeof(double); i++)
+// 		matrix[i] /= 6;
+
+	for(int y=0; y<1080; y++)
+	{
+		for(int x=0; x<1920; x++)
+		{
+			RGBQUAD p[9];
+			for(int i=0; i<9; i++)
+				p[i] = views[i][y*1920 + x];
+
+			for(int i=0; i<9; i++)  // target view
+			{
+				double r = 0;
+				double g = 0;
+				double b = 0;
+				for(int j=0; j<9; j++) // each source view
+				{
+					double f = matrix[i*9+j];
+					r += f * p[j].rgbRed;
+					g += f * p[j].rgbGreen;
+					b += f * p[j].rgbBlue;
+				}
+
+				RGBQUAD q;
+				q.rgbRed = max(min(r,255),0);
+				q.rgbGreen = max(min(g,255),0);
+				q.rgbBlue = max(min(b,255),0);
+
+				comp_views[i][y*1920 + x] = q;
+			}
+		}
+	}
+
+	printf("");
+}
+
+void interlace()
+{
+	int tbl[9] = {1,3,5,7,9,2,4,6,8};
+
+	for(int y=0; y<1080; y++)
+	{
+		for(int x=0; x<1920; x++)
+		{
+			int r = x*3 + y*4;
+			int g = r+1;
+			int b = g+1;
+
+			int rr = tbl[r%9];
+			int gg = tbl[g%9];
+			int bb = tbl[b%9];
+
+			RGBQUAD q;
+			q.rgbRed = comp_views[rr-1][y*1920 + x].rgbRed;
+			q.rgbGreen = comp_views[gg-1][y*1920 + x].rgbGreen;
+			q.rgbBlue = comp_views[bb-1][y*1920 + x].rgbBlue;
+
+			out[y*1920 + x] = q;
+		}
+	}
+
+}
+
+
+void philip()
+{
+	// read 9 views
+	out = new RGBQUAD[1920*1080];
+	for(int i=0; i<9; i++)
+	{
+		views[i] = new RGBQUAD[1920*1080];
+		comp_views[i] = new RGBQUAD[1920*1080];
+
+		char tmp[MAX_PATH];
+		int n = i+1;
+		sprintf(tmp, "Z:\\1\\view%02d\\unknown00007.bmp", n);
+		HBITMAP bm = (HBITMAP)LoadImageA(0, tmp, IMAGE_BITMAP, 1920, 1080, LR_LOADFROMFILE);
+		memset(views[i], 0x3f, 1920*1080*4);
+		GetBitmapBits(bm, 1920*1080*4, views[i]);
+		DeleteObject(bm);
+
+		// reverse
+		RGBQUAD tmp2[1920];
+		for (int y=0; y<1080/2; y++)
+		{
+			memcpy(tmp2, views[i] + 1920*y, 1920*4);
+			memcpy(views[i] + 1920*y, views[i] + 1920*(1080-1-y), 1920*4);
+			memcpy(views[i] + 1920*(1080-1-y), tmp2,1920*4);
+		}
+	}
+
+
+	// 
+	comp();
+
+	interlace();
+
+
+	for(int i=0; i<9; i++)
+	{
+		wchar_t tmp[MAX_PATH];
+		swprintf(tmp, L"Z:\\comp%02d.bmp", i+1);
+		save_bitmap((DWORD*) comp_views[i], tmp, 1920, 1080);
+	}
+	
+	save_bitmap((DWORD*) out, L"Z:\\philip.bmp", 1920, 1080);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // int SAD16x16(void *pdata1, void *pdata2, int stride)		// assume same stride
 // {

@@ -21,10 +21,6 @@ const int fade_in_out_time = 500;
 #define safe_decommit(x) if((x))(x)->decommit()
 #define JIF(x) {if(FAILED(hr=x))goto clearup;}
 
-#ifndef DEBUG
-#define printf
-#endif
-
 // structures
 
 typedef struct _RECTF
