@@ -24,6 +24,8 @@ typedef enum _hittest_result
 {
 	hit_out = -1,
 	hit_logo = -2,
+	hit_volume2 = -3,
+	hit_brightness = -4,
 	hit_bg = 0,
 	hit_button1 = 1,
 	hit_button2 = 2,
@@ -33,7 +35,7 @@ typedef enum _hittest_result
 	hit_pause = 11,
 	hit_full = 12,
 	hit_volume = 13,
-	hit_progress = 14,
+	hit_progress = 15,
 } hittest_result;
 
 typedef struct _UI_element_fixed

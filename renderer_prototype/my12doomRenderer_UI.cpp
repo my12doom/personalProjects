@@ -544,7 +544,7 @@ HRESULT ui_drawer_dwindow::draw_nonmovie_bg(IDirect3DSurface9 *surface, bool lef
 	return S_OK;
 }
 
-#define rt(x) {*out=x;return S_OK;}
+#define rt(x) {*out=(x);return S_OK;}
 HRESULT ui_drawer_dwindow::hittest(int x, int y, int *out, double *out_value /* = NULL */)
 {
 	int logo_x = m_width/2;
@@ -552,10 +552,24 @@ HRESULT ui_drawer_dwindow::hittest(int x, int y, int *out, double *out_value /* 
 	if ((logo_x-x)*(logo_x-x) + (logo_y-y)*(logo_y-y) < test_button2.width/2 * test_button2.height/2)
 		rt(hit_logo);
 
-	y = y - m_height + 30;
-
 	if (out_value)
 		*out_value = 0;
+
+	if (((m_width - 100 <= x && x < m_width)  ||
+		(0 <= x && x < 100))
+		&& y < m_height - 30
+		)
+	{
+		if (out_value)
+		{
+			*out_value = (double)(m_height-y) / (m_height-30);
+			if(*out_value>1) *out_value = 1;
+			if(*out_value<0) *out_value = 0;
+		}
+		rt(x < 100 ? hit_brightness : hit_volume2);
+	}
+
+	y = y - m_height + 30;
 
 	if (y<0 || y>=30 || x<0 || x>m_width)			// 按钮只要大致
 		rt(hit_out);
@@ -590,6 +604,7 @@ HRESULT ui_drawer_dwindow::hittest(int x, int y, int *out, double *out_value /* 
 		}
 		rt(hit_progress);
 	}
+
 
 	*out = 0;
 	return S_OK;
