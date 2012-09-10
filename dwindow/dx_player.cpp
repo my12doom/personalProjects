@@ -173,6 +173,7 @@ m_has_multi_touch(false)
 	// touch 
 	if (GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
 		m_has_multi_touch = true;
+	m_has_multi_touch = true;
 
 
 	m_log = NULL;
@@ -647,13 +648,18 @@ LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		// now interpret the gesture
 		switch (gi.dwID){
 		   case GID_ZOOM:
+			   {
 			   printf("GID_ZOOM, %d, (%d,%d)\n", (int)gi.ullArguments, gi.ptsLocation.x, gi.ptsLocation.y);
 			   bHandled = FALSE;
 
 			   if (zoom_start < -1000 || gi.dwFlags & GF_BEGIN)
 				   zoom_start = (int)gi.ullArguments;
 
-			   m_renderer1->set_zoom_factor(zoom_factor_start * gi.ullArguments / zoom_start);
+			   POINT p = {gi.ptsLocation.x, gi.ptsLocation.y};
+			   ScreenToClient(hWnd, &p);
+
+			   m_renderer1->set_zoom_factor(zoom_factor_start * gi.ullArguments / zoom_start, p.x, p.y);
+			   }
 			   break;
 		   case GID_PAN:
 			   // Code for panning goes here
@@ -664,13 +670,9 @@ LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 				   pan_y = gi.ptsLocation.y;
 			   }
 
-			   printf("before: %f x %f\n", m_renderer1->get_movie_pos(3), m_renderer1->get_movie_pos(4));
-			   printf("%d x %d\n", gi.ptsLocation.x, gi.ptsLocation.y);
-
 			   m_renderer1->set_movie_pos(3, m_renderer1->get_movie_pos(3) + gi.ptsLocation.x - pan_x);
 			   m_renderer1->set_movie_pos(4, m_renderer1->get_movie_pos(4) + gi.ptsLocation.y - pan_y);
 
-			   printf("after: %f x %f\n", m_renderer1->get_movie_pos(3), m_renderer1->get_movie_pos(4));
 			   pan_x = gi.ptsLocation.x;
 			   pan_y = gi.ptsLocation.y;
 
@@ -684,6 +686,7 @@ LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		   case GID_TWOFINGERTAP:
 			   printf("GID_TWOFINGERTAP\n");
 			   // Code for two-finger tap goes here
+			   on_key_down(hwnd_to_id(hWnd), VK_NUMPAD5);
 			   bHandled = TRUE;
 			   break;
 		   case GID_PRESSANDTAP:
@@ -725,7 +728,6 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 
 	if (message ==  WM_TOUCH || message == WM_GESTURE)
 	{
-		printf("%s : \n", message == WM_TOUCH ? "TOUCH":"GESTURE");
 		if (message == WM_GESTURE)
 		{
 			return DecodeGesture(id_to_hwnd(id), message, wParam, lParam);
@@ -777,6 +779,11 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 	if (message == DS_EVENT)
 	{
 		on_dshow_event();
+	}
+	else if (message ==  WM_GESTURENOTIFY)
+	{
+		GESTURECONFIG gc = {0,GC_ALLGESTURES,0};
+		//BOOL bResult = SetGestureConfig(hWnd,0,1,&gc,sizeof(GESTURECONFIG));
 	}
 
 	else if (message == WM_COPYDATA)
@@ -966,42 +973,29 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 		reset_timer(1, 2000);
 	}
 
-	RECT r;
 	double v;
-	GetClientRect(id_to_hwnd(id), &r);
-	int total_width = r.right - r.left;
-	int height = r.bottom - r.top;
-	int hit_x = x;
-	int hit_y = y;
-
-	if (m_output_mode == out_tb)
-	{
-		height /= 2;
-		hit_y %= height;
-	}
-
-	if (m_output_mode == out_htb)
-	{
-		hit_y = (hit_y%(height/2)) * 2;
-	}
-
-	if (m_output_mode == out_sbs)
-	{
-		total_width /= 2;
-		hit_x %= total_width;
-	}
-
-	if (m_output_mode == out_hsbs)
-	{
-		hit_x *= 2;
-		hit_x %= total_width;
-	}
-
-	int type = -1;
-	if (m_renderer1) type = m_renderer1->hittest(hit_x, hit_y, &v);
+	int type = hittest(x, y, id_to_hwnd(id), &v);
 	if (type == hit_volume && GetAsyncKeyState(VK_LBUTTON) < 0 && m_dragging == hit_volume)
 	{
 		set_volume(v);
+	}
+	else if (type == hit_volume2 && GetAsyncKeyState(VK_LBUTTON) < 0 && m_dragging == hit_volume2)
+	{
+		double v2;
+		get_volume(&v2);
+		set_volume(v2 + v-m_dragging_value);
+		m_dragging_value = v;
+	}
+	else if (type == hit_brightness && GetAsyncKeyState(VK_LBUTTON) < 0 && m_dragging == hit_brightness)
+	{
+		double v2;
+		get_parameter(luminance, &v2);
+		v2 += (v-m_dragging_value)/5;
+		set_parameter(luminance, v2);
+		set_parameter(luminance2, v2);
+// 		set_parameter(saturation, v2*2);
+// 		set_parameter(saturation2, v2*2);
+		m_dragging_value = v;
 	}
 	else if (type == hit_progress && GetAsyncKeyState(VK_LBUTTON) < 0 && m_dragging == hit_progress)
 	{
@@ -1225,17 +1219,10 @@ LRESULT dx_player::on_mouse_wheel(int id, WORD wheel_delta, WORD button_down, in
 	return S_OK;
 }
 
-
-LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
+int  dx_player::hittest(int x, int y, HWND hwnd, double *v)
 {
-	if (!m_gb)
-		return __super::on_mouse_down(id, button, x, y);
-	show_ui(true);
-	show_mouse(true);
-	reset_timer(1, 99999999);
-
 	RECT r;
-	GetClientRect(id_to_hwnd(id), &r);
+	GetClientRect(hwnd, &r);
 	int total_width = r.right - r.left;
 	int height = r.bottom - r.top;
 	if (m_output_mode == out_tb)
@@ -1263,7 +1250,20 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		x %= total_width;
 	}
 
-	if ( (button == VK_RBUTTON || (!m_file_loaded && m_renderer1 && m_renderer1->hittest(x, y, NULL) == hit_logo) && 
+	return m_renderer1->hittest(x, y, v);
+}
+
+LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
+{
+	if (!m_gb)
+		return __super::on_mouse_down(id, button, x, y);
+	show_ui(true);
+	show_mouse(true);
+	reset_timer(1, 99999999);
+
+
+
+	if ( (button == VK_RBUTTON || (!m_file_loaded && hittest(x, y, id_to_hwnd(id), NULL) == hit_logo) && 
 		(!m_renderer1 || !m_renderer1->get_fullscreen())))
 	{
 		popup_menu(id_to_hwnd(1));
@@ -1271,15 +1271,8 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	else if (button == VK_LBUTTON)
 	{
 		double v;
-		int type;
-		
-		int hit_x = x;
-		int hit_y = y;
-
-
-
-		type = -1;
-		if (m_renderer1) type = m_renderer1->hittest(hit_x, hit_y, &v);
+		int type = -1;
+		if (m_renderer1) type = hittest(x, y, id_to_hwnd(id), &v);
 
 		if (type == hit_play)
 		{
@@ -1293,6 +1286,16 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		{
 			set_volume(v);
 			m_dragging = hit_volume;
+		}
+		else if (type == hit_volume2 && m_has_multi_touch)
+		{
+			m_dragging = hit_volume2;
+			m_dragging_value = v;
+		}
+		else if (type == hit_brightness && m_has_multi_touch)
+		{
+			m_dragging = hit_brightness;
+			m_dragging_value = v;
 		}
 		else if (type == hit_progress)
 		{
@@ -1543,7 +1546,12 @@ LRESULT dx_player::on_paint(int id, HDC hdc)
 
 LRESULT dx_player::on_double_click(int id, int button, int x, int y)
 {
-	if (button == VK_LBUTTON)
+	// reset color adjusting parameter
+	if (hittest(x, y, id_to_hwnd(id), NULL) == hit_brightness)
+		for(int i=0; i<color_adjust_max; i++)
+			set_parameter(i, 0.5);
+
+	else if (button == VK_LBUTTON && hittest(x, y, id_to_hwnd(id), NULL) < 0)
 		toggle_fullscreen();
 
 	return S_OK;
