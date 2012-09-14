@@ -169,6 +169,8 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Top Bottom",				L"上下格式");
 			add_localization(L"Monoscopic",				L"非立体影片");
 
+			add_localization(L"Fill Mode",				L"铺满模式");
+			add_localization(L"Source Aspect",			L"来源宽高比");
 			add_localization(L"Aspect Ratio",			L"画面比例");
 			add_localization(L"Output Aspect Ratio",	L"显示长宽比");
 			add_localization(L"Default",				L"默认");
@@ -211,7 +213,8 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Checkboard Interlace", L"棋盘交错");
 
 			add_localization(L"Audio",					L"音频");
-			add_localization(L"Use LAV Audio Decoder",		L"使用内置音频解码器");
+			add_localization(L"No Audio Track",			L"没有音频");
+			add_localization(L"Use ffdshow Audio Decoder",		L"使用内置音频解码器");
 			add_localization(L"Audio Decoder setting may not apply until next file play or audio swtiching.",
 				L"音频解码器已设置，可能需要重新播放或音轨切换时生效");
 			add_localization(L"Use Bitstreaming",			L"使用源码输出");
@@ -219,6 +222,7 @@ HRESULT set_localization_language(localization_language language)
 				L"源码输出已设置，可能需要重新播放或音轨切换时生效");
 
 			add_localization(L"Subtitle",				L"字幕");
+			add_localization(L"No Subtitle",			L"没有字幕");
 			add_localization(L"This is first time to load ass/ssa subtilte, font scanning may take one minute or two, the player may looks like hanged, please wait...",
 							 L"这是第一次载入ass/ssa字幕，扫描字体可能需要几分钟，期间播放器可能无法响应操作，请稍候...");
 			add_localization(L"Please Wait",			L"请稍候");
@@ -240,7 +244,7 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"No BD Drive Found",		L"未找到蓝光驱动器");
 			add_localization(L"Folder...",				L"文件夹...");
 			add_localization(L"None",					L"无");
-			add_localization(L"Load Subtitle File...",	L"从文件载入...");
+			add_localization(L"Load Subtitle File...",	L"载入字幕文件...");
 			add_localization(L"Load Audio Track...",	L"载入外部音轨...");
 			add_localization(L"Font...",				L"字体...");
 			add_localization(L"Color...",				L"颜色...");

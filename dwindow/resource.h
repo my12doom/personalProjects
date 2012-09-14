@@ -200,13 +200,22 @@
 #define ID_OPEN_DOUBLEFILE              40141
 #define ID_ENGLISH_ABOUT                40142
 #define ID_ABOUT                        40143
+#define ID_ASPECTRATIO_FILLMODE         40144
+#define ID_OUTPUTMODE_3DTV40145         40145
+#define ID_OUTPUTMODE_DUALPROJECTOR40146 40146
+#define ID_AUDIO_CHANNELS               40147
+#define ID_CHANNELS_2CHANNEL            40148
+#define ID_CHANNELS_5                   40149
+#define ID_CHANNELS_7                   40150
+#define ID_CHANNELS_DOLBYHEADPHONE      40151
+#define ID_SUBTITLE_NOSUBTITLE          40152
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        126
-#define _APS_NEXT_COMMAND_VALUE         40144
+#define _APS_NEXT_COMMAND_VALUE         40153
 #define _APS_NEXT_CONTROL_VALUE         1043
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

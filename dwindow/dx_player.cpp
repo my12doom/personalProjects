@@ -1023,24 +1023,25 @@ HRESULT dx_player::popup_menu(HWND owner)
 	menu = GetSubMenu(menu, 0);
 	localize_menu(menu);
 	HMENU video = GetSubMenu(menu, 5);
+	HMENU outputmode = GetSubMenu(menu, 9);
+
 
 	// output selection menu
 	::detect_monitors();
-	HMENU output1 = GetSubMenu(video, 4);
-	HMENU output2 = GetSubMenu(video, 5);
+	HMENU output1 = GetSubMenu(outputmode, 20);
+	HMENU output2 = GetSubMenu(outputmode, 21);
 	DeleteMenu(output1, 0, MF_BYPOSITION);
 	DeleteMenu(output2, 0, MF_BYPOSITION);
 
 	// disable selection while full screen
 	if (m_full1 && m_full2 && false)
 	{
-		ModifyMenuW(video, 4, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT1, C(L"Output 1"));
-		ModifyMenuW(video, 5, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT2, C(L"Output 2"));
+		ModifyMenuW(outputmode, 20, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT1, C(L"Output 1"));
+		ModifyMenuW(outputmode, 21, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT2, C(L"Output 2"));
 	}
 #ifdef no_dual_projector
-	ModifyMenuW(video, 4, MF_BYPOSITION, ID_OUTPUT1, C(L"Fullscreen Output"));
-	DeleteMenu(video, 5, MF_BYPOSITION);
-	//DeleteMenu(video, ID_OUTPUTMODE_IZ3D, MF_BYCOMMAND);
+	ModifyMenuW(outputmode, 20, MF_BYPOSITION, ID_OUTPUT1, C(L"Fullscreen Output"));
+	DeleteMenu(outputmode, 21, MF_BYPOSITION);
 #endif
 
 #ifdef nologin
@@ -1219,8 +1220,11 @@ LRESULT dx_player::on_mouse_wheel(int id, WORD wheel_delta, WORD button_down, in
 	return S_OK;
 }
 
-int  dx_player::hittest(int x, int y, HWND hwnd, double *v)
+int dx_player::hittest(int x, int y, HWND hwnd, double *v)
 {
+	if (NULL == m_renderer1)
+		return -1;
+
 	RECT r;
 	GetClientRect(hwnd, &r);
 	int total_width = r.right - r.left;
@@ -3969,7 +3973,7 @@ HRESULT dx_player::list_subtitle_track(HMENU submenu)
 
 	if (subtitle_track_found != 0)
 	{
-		InsertMenuW(submenu, subtitle_track_found, MF_SEPARATOR | MF_BYPOSITION, 0, NULL);
+		DeleteMenu(submenu, ID_SUBTITLE_NOSUBTITLE, MF_BYCOMMAND);
 	}
 
 	return S_OK;

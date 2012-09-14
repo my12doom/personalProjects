@@ -251,58 +251,18 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Video"
         BEGIN
-            POPUP "Input Layout"
+            POPUP "Aspect Ratio"
             BEGIN
-                MENUITEM "Auto",                        ID_INPUTLAYOUT_AUTO
-                MENUITEM "Side By Side",                ID_INPUTLAYOUT_SIDEBYSIDE
-                MENUITEM "Top Bottom",                  ID_INPUTLAYOUT_TOPBOTTOM
-                MENUITEM "Monoscopic",                  ID_INPUTLAYOUT_MONOSCOPIC
-            END
-            POPUP "Output Mode"
-            BEGIN
-                POPUP "3DTV"
-                BEGIN
-                    MENUITEM "Half Side By Side",           ID_OUTPUTMODE_3DTV_SBS
-                    MENUITEM "Half Top Bottom",             ID_OUTPUTMODE_3DTV_TB
-                    MENUITEM "Line Interlace",              ID_OUTPUTMODE_LINEINTERLACE
-                    MENUITEM "Checkboard Interlace",        ID_OUTPUTMODE_CHECKBOARDINTERLACE
-                    MENUITEM "Row Interlace",               ID_OUTPUTMODE_ROWINTERLACE
-                END
-                POPUP "Dual Projector"
-                BEGIN
-                    MENUITEM "Vertical Span Mode",          ID_OUTPUTMODE_DUALPROJECTOR_TB
-                    MENUITEM "Horizontal Span Mode",        ID_OUTPUTMODE_DUALPROJECTOR_SBS
-                    MENUITEM "Independent Mode",            ID_OUTPUTMODE_DUALPROJECTOR
-                END
-                MENUITEM "Nvidia 3D Vision",            ID_OUTPUTMODE_NVIDIA3DVISION
-                MENUITEM "AMD HD3D",                    ID_OUTPUTMODE_AMDHD3D
-                MENUITEM "Intel Stereoscopic",          ID_OUTPUTMODE_INTEL
-                MENUITEM "IZ3D Displayer",              ID_OUTPUTMODE_IZ3D
-                MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
-                MENUITEM "Anaglyph",                    ID_OUTPUTMODE_ANAGLYPH
-                MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
-            END
-            POPUP "Output Aspect Ratio"
-            BEGIN
-                MENUITEM "Default",                     ID_ASPECTRATIO_DEFAULT
+                MENUITEM "Source Aspect",               ID_ASPECTRATIO_DEFAULT
                 MENUITEM "16:9",                        ID_ASPECTRATIO_169
                 MENUITEM "4:3",                         ID_ASPECTRATIO_43
                 MENUITEM "2.35:1",                      ID_ASPECTRATIO_235
-            END
-            POPUP "Aspect Ratio Mode"
-            BEGIN
+                MENUITEM SEPARATOR
+                MENUITEM "Fill Mode",                   ID_ASPECTRATIO_FILLMODE, GRAYED
                 MENUITEM "Default(Letterbox)",          ID_ASPECTRATIO_LETTERBOX
                 MENUITEM "Stretch",                     ID_ASPECTRATIO_STRETCH
                 MENUITEM "Horizontal Fill",             ID_ASPECTRATIO_HORIZONTAL
                 MENUITEM "Vertical Fill",               ID_ASPECTRATIO_VERTICAL
-            END
-            POPUP "Output 1"
-            BEGIN
-                MENUITEM "1",                           ID_OUTPUT1
-            END
-            POPUP "Output 2"
-            BEGIN
-                MENUITEM "2",                           ID_OUTPUT2
             END
             POPUP "Display Orientation"
             BEGIN
@@ -315,20 +275,65 @@ BEGIN
         END
         POPUP "Audio"
         BEGIN
-            MENUITEM "None",                        ID_AUDIO_NONE
-            MENUITEM SEPARATOR
-            MENUITEM "Downmix To 16bit Stereo",     ID_AUDIO_DOWNMIX
-            MENUITEM "Use LAV Audio Decoder",       ID_AUDIO_USELAV
-            MENUITEM "Use Bitstreaming",            ID_AUDIO_BITSTREAM
+            MENUITEM "No Audio Track",              ID_AUDIO_NONE
             MENUITEM "Load Audio Track...",         ID_LOADAUDIOTRACK
+            MENUITEM SEPARATOR
+            MENUITEM "Use ffdshow Audio Decoder",   ID_AUDIO_USELAV
+            MENUITEM SEPARATOR
+            MENUITEM "Channels",                    65535, GRAYED
+            MENUITEM "Stereo",                      ID_CHANNELS_2CHANNEL
+            MENUITEM "5.1 Channel",                 0
+            MENUITEM "7.1 Channel",                 ID_CHANNELS_7
+            MENUITEM "Dolby Headphone",             ID_CHANNELS_DOLBYHEADPHONE
+            MENUITEM "Use Bitstreaming",            ID_AUDIO_BITSTREAM
         END
         POPUP "Subtitle"
         BEGIN
+            MENUITEM "No Subtitle",                 ID_SUBTITLE_NOSUBTITLE
             MENUITEM "Load Subtitle File...",       ID_SUBTITLE_LOADFILE
+            MENUITEM SEPARATOR
             MENUITEM "Font...",                     ID_SUBTITLE_FONT
             MENUITEM "Color...",                    ID_SUBTITLE_COLOR
             MENUITEM "Latency && Stretch...",       ID_SUBTITLE_LATENCY
             MENUITEM "Display Subtitle",            ID_SUBTITLE_DISPLAYSUBTITLE
+        END
+        POPUP "Input Layout"
+        BEGIN
+            MENUITEM "Auto",                        ID_INPUTLAYOUT_AUTO
+            MENUITEM "Side By Side",                ID_INPUTLAYOUT_SIDEBYSIDE
+            MENUITEM "Top Bottom",                  ID_INPUTLAYOUT_TOPBOTTOM
+            MENUITEM "Monoscopic",                  ID_INPUTLAYOUT_MONOSCOPIC
+        END
+        POPUP "Output Mode"
+        BEGIN
+            MENUITEM "Nvidia 3D Vision",            ID_OUTPUTMODE_NVIDIA3DVISION
+            MENUITEM "AMD HD3D",                    ID_OUTPUTMODE_AMDHD3D
+            MENUITEM "Intel Stereoscopic",          ID_OUTPUTMODE_INTEL
+            MENUITEM "IZ3D Displayer",              ID_OUTPUTMODE_IZ3D
+            MENUITEM "Gerneral 120Hz Glasses",      ID_OUTPUTMODE_GERNERAL120HZGLASSES
+            MENUITEM "Anaglyph",                    ID_OUTPUTMODE_ANAGLYPH
+            MENUITEM "Monoscopic 2D",               ID_OUTPUTMODE_MONOSCOPIC2D
+            MENUITEM SEPARATOR
+            MENUITEM "3DTV",                        ID_OUTPUTMODE_3DTV40145, GRAYED
+            MENUITEM "Half Side By Side",           ID_OUTPUTMODE_3DTV_SBS
+            MENUITEM "Half Top Bottom",             ID_OUTPUTMODE_3DTV_TB
+            MENUITEM "Line Interlace",              ID_OUTPUTMODE_LINEINTERLACE
+            MENUITEM "Checkboard Interlace",        ID_OUTPUTMODE_CHECKBOARDINTERLACE
+            MENUITEM "Row Interlace",               ID_OUTPUTMODE_ROWINTERLACE
+            MENUITEM SEPARATOR
+            MENUITEM "Dual Projector",              ID_OUTPUTMODE_DUALPROJECTOR40146, GRAYED
+            MENUITEM "Vertical Span Mode",          ID_OUTPUTMODE_DUALPROJECTOR_TB
+            MENUITEM "Horizontal Span Mode",        ID_OUTPUTMODE_DUALPROJECTOR_SBS
+            MENUITEM "Independent Mode",            ID_OUTPUTMODE_DUALPROJECTOR
+            MENUITEM SEPARATOR
+            POPUP "Fullscreen Output 1"
+            BEGIN
+                MENUITEM "1",                           ID_OUTPUT1
+            END
+            POPUP "Fullscreen Output 2"
+            BEGIN
+                MENUITEM "2",                           ID_OUTPUT2
+            END
         END
         MENUITEM SEPARATOR
         MENUITEM "Play/Pause\t(Space)",         ID_PLAY
