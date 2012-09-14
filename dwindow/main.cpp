@@ -193,8 +193,10 @@ retry:
 
 	BRC();
 
+	AutoSetting<bool> single_instance(L"SingleInstance", false);
 
-	HWND pre_instance = FindWindowA("DWindowClass", NULL);
+
+	HWND pre_instance = single_instance ? FindWindowA("DWindowClass", NULL) : NULL;
 	if (pre_instance)
 	{
 		SendMessageW(pre_instance, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);

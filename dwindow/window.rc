@@ -279,6 +279,7 @@ BEGIN
             MENUITEM "Load Audio Track...",         ID_LOADAUDIOTRACK
             MENUITEM SEPARATOR
             MENUITEM "Use ffdshow Audio Decoder",   ID_AUDIO_USELAV
+            MENUITEM "Normalize Audio",             ID_AUDIO_NORMALIZE
             MENUITEM SEPARATOR
             MENUITEM "Channel Setting",             ID_AUDIO_CHANNELSETTING, GRAYED
             MENUITEM "Source",                      ID_CHANNELS_SOURCE

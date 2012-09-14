@@ -147,6 +147,7 @@ m_saved_rect1(L"Window1", rect_zero),
 m_saved_rect2(L"Window2", rect_zero),
 m_useInternalAudioDecoder(L"InternalAudioDecoder", true),
 m_channel(L"AudioChannel", 2, REG_DWORD),
+m_normalize_audio(L"NormalizeAudio", 0.0),
 m_forced_deinterlace(L"ForcedDeinterlace", false),
 m_saturation(L"Saturation", 0.5),
 m_luminance(L"Luminance", 0.5),
@@ -1171,7 +1172,8 @@ HRESULT dx_player::popup_menu(HWND owner)
 		}
 	}
 
-	// LAV Audio Decoder and downmixing
+	// ffdshow Audio Decoder and downmixing
+	CheckMenuItem(menu, ID_AUDIO_NORMALIZE, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_normalize_audio > 1.0)) ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(menu, ID_AUDIO_USELAV, MF_BYCOMMAND | (m_useInternalAudioDecoder ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(menu, ID_CHANNELS_BITSTREAM, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == -1)) ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(menu, ID_CHANNELS_SOURCE, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 0)) ? MF_CHECKED : MF_UNCHECKED));
@@ -1653,6 +1655,12 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Audio Decoder setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
 	}
 
+	// normalizing
+	else if (uid == ID_AUDIO_NORMALIZE)
+	{
+		m_normalize_audio = m_normalize_audio > 1 ? 0 : 16.0;
+		set_ff_audio_normalizing(m_lav, m_normalize_audio);
+	}
 	// Bitstreaming
 	else if (uid == ID_CHANNELS_SOURCE || uid == ID_CHANNELS_2 || uid == ID_CHANNELS_51 ||  uid == ID_CHANNELS_71 || uid == ID_CHANNELS_HEADPHONE || uid == ID_CHANNELS_BITSTREAM)
 	{
@@ -2647,6 +2655,7 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 	}
 
 	set_ff_output_channel(m_lav, m_channel);
+	set_ff_audio_normalizing(m_lav, m_normalize_audio);
 	handle_downmixer();
 
 	return hr;

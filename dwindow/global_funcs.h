@@ -101,6 +101,7 @@ HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active);
 HRESULT set_ff_audio_formats(IBaseFilter *filter);
 HRESULT set_ff_video_formats(IBaseFilter *filter);
 HRESULT set_ff_output_channel(IBaseFilter *filter, int channel);		// channel=-1: no downmixing, channel=9 : headphone, channel=10 : HRTF, // channel=-1: bitstreaming
+HRESULT set_ff_audio_normalizing(IBaseFilter *filter, double max_ratio);	// setting a ratio less than 1.0 cause normalizing off, more than 1.0 cause normalizing on
 HRESULT find_main_movie(const wchar_t *folder, wchar_t *out);
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
 HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);

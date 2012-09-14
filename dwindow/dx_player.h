@@ -201,6 +201,7 @@ protected:
 	double m_dragging_value;
 	AutoSetting<double> m_volume;	// = 1.0
 	AutoSetting<bool> m_useInternalAudioDecoder;		// = true
+	AutoSetting<double> m_normalize_audio;	// = false
 	AutoSetting<int> m_channel;	// = false
 	HRESULT show_ui(bool show);
 	HRESULT draw_ui();

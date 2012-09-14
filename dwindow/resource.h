@@ -219,13 +219,15 @@
 #define ID_CHANNELS_2                   40160
 #define ID_CHANNELS_BITSTREAM           40161
 #define ID_CHANNELS_SOURCE              40162
+#define ID_AUDIO_NORMALIZEAUDIO         40163
+#define ID_AUDIO_NORMALIZE              40164
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        126
-#define _APS_NEXT_COMMAND_VALUE         40163
+#define _APS_NEXT_COMMAND_VALUE         40165
 #define _APS_NEXT_CONTROL_VALUE         1043
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
