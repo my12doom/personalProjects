@@ -200,7 +200,6 @@ protected:
 	int m_dragging;	// = 0
 	double m_dragging_value;
 	AutoSetting<double> m_volume;	// = 1.0
-	AutoSetting<bool> m_bitstreaming;	// = 1.0
 	AutoSetting<bool> m_useInternalAudioDecoder;		// = true
 	AutoSetting<int> m_channel;	// = false
 	HRESULT show_ui(bool show);

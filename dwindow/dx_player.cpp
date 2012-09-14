@@ -141,13 +141,12 @@ m_volume(L"Volume", 1.0),
 m_aspect(L"Aspect", -1),
 m_subtitle_latency(L"SubtitleLatency", 0, REG_DWORD),
 m_subtitle_ratio(L"SubtitleRatio", 1.0),
-m_bitstreaming(L"BitStreaming", false),
 m_saved_screen1(L"Screen1", rect_zero),
 m_saved_screen2(L"Screen2", rect_zero),
 m_saved_rect1(L"Window1", rect_zero),
 m_saved_rect2(L"Window2", rect_zero),
 m_useInternalAudioDecoder(L"InternalAudioDecoder", true),
-m_channel(L"AudioChannel", 2),
+m_channel(L"AudioChannel", 2, REG_DWORD),
 m_forced_deinterlace(L"ForcedDeinterlace", false),
 m_saturation(L"Saturation", 0.5),
 m_luminance(L"Luminance", 0.5),
@@ -1174,8 +1173,13 @@ HRESULT dx_player::popup_menu(HWND owner)
 
 	// LAV Audio Decoder and downmixing
 	CheckMenuItem(menu, ID_AUDIO_USELAV, MF_BYCOMMAND | (m_useInternalAudioDecoder ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_AUDIO_BITSTREAM, MF_BYCOMMAND | (m_useInternalAudioDecoder && m_bitstreaming ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_AUDIO_DOWNMIX, MF_BYCOMMAND | (m_channel == 2 ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_BITSTREAM, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == -1)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_SOURCE, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 0)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_2, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 2)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_51, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 6)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_71, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 8)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_HEADPHONE, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 9)) ? MF_CHECKED : MF_UNCHECKED));
+	//CheckMenuItem(menu, ID_AUDIO_DOWNMIX, MF_BYCOMMAND | (m_channel == 2 ? MF_CHECKED : MF_UNCHECKED));
 
 	// audio tracks
 	HMENU sub_audio = GetSubMenu(menu, 6);
@@ -1649,22 +1653,35 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Audio Decoder setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
 	}
 
-	else if (uid == ID_AUDIO_DOWNMIX)
-	{
-		m_channel = m_channel == 2 ? 6 : 2;
-		//handle_downmixer();
-
-		set_ff_output_channel(m_lav, m_channel);
-		if (!m_simple_audio_switching)
-			enable_audio_track(-2);
-	}
-
 	// Bitstreaming
-	else if (uid == ID_AUDIO_BITSTREAM)
+	else if (uid == ID_CHANNELS_SOURCE || uid == ID_CHANNELS_2 || uid == ID_CHANNELS_51 ||  uid == ID_CHANNELS_71 || uid == ID_CHANNELS_HEADPHONE || uid == ID_CHANNELS_BITSTREAM)
 	{
-		m_bitstreaming = !m_bitstreaming;
-		set_ff_audio_bitstreaming(m_lav, m_bitstreaming);
+		switch(uid)
+		{
+		case ID_CHANNELS_SOURCE:
+			m_channel = 0;
+			break;
+		case ID_CHANNELS_2:
+			m_channel = 2;
+			break;
+		case ID_CHANNELS_51:
+			m_channel = 6;
+			break;
+		case ID_CHANNELS_71:
+			m_channel = 8;
+			break;
+		case ID_CHANNELS_HEADPHONE:
+			m_channel = 9;
+			break;
+		case ID_CHANNELS_BITSTREAM:
+			m_channel = -1;
+			break;
+		default:
+			assert(0);
+		}
+
 		set_ff_audio_formats(m_lav);
+		set_ff_output_channel(m_lav, m_channel);
 		if (!m_simple_audio_switching)
 			enable_audio_track(-2);
 
@@ -2611,7 +2628,6 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 	myCreateInstance(CLSID_RMAudioDecoder, IID_IBaseFilter, (void**)&rm_audio);
 	m_gb->AddFilter(rm_audio, L"RM Audio Decoder");
 
-	set_lav_audio_bitstreaming(m_lav, m_bitstreaming);
 	set_ff_audio_formats(m_lav);
 
 	if(m_useInternalAudioDecoder)
@@ -2630,7 +2646,6 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 		}
 	}
 
-	set_ff_audio_bitstreaming(m_lav, m_bitstreaming);
 	set_ff_output_channel(m_lav, m_channel);
 	handle_downmixer();
 

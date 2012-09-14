@@ -213,11 +213,17 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Checkboard Interlace", L"棋盘交错");
 
 			add_localization(L"Audio",					L"音频");
+			add_localization(L"Source",					L"来源");
+			add_localization(L"Channel Setting",		L"声道设置");
 			add_localization(L"No Audio Track",			L"没有音频");
+			add_localization(L"Stereo",					L"立体声");
+			add_localization(L"5.1 Channel",			L"5.1声道");
+			add_localization(L"7.1 Channel",			L"7.1声道");
+			add_localization(L"Dolby Headphone",		L"杜比耳机");
 			add_localization(L"Use ffdshow Audio Decoder",		L"使用内置音频解码器");
 			add_localization(L"Audio Decoder setting may not apply until next file play or audio swtiching.",
 				L"音频解码器已设置，可能需要重新播放或音轨切换时生效");
-			add_localization(L"Use Bitstreaming",			L"使用源码输出");
+			add_localization(L"Bitstreaming",			L"源码输出");
 			add_localization(L"Bitstreaming setting may not apply until next file play or audio swtiching.",
 				L"源码输出已设置，可能需要重新播放或音轨切换时生效");
 

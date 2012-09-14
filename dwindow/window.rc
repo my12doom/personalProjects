@@ -280,12 +280,13 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Use ffdshow Audio Decoder",   ID_AUDIO_USELAV
             MENUITEM SEPARATOR
-            MENUITEM "Channels",                    65535, GRAYED
-            MENUITEM "Stereo",                      ID_CHANNELS_2CHANNEL
-            MENUITEM "5.1 Channel",                 0
-            MENUITEM "7.1 Channel",                 ID_CHANNELS_7
-            MENUITEM "Dolby Headphone",             ID_CHANNELS_DOLBYHEADPHONE
-            MENUITEM "Use Bitstreaming",            ID_AUDIO_BITSTREAM
+            MENUITEM "Channel Setting",             ID_AUDIO_CHANNELSETTING, GRAYED
+            MENUITEM "Source",                      ID_CHANNELS_SOURCE
+            MENUITEM "Stereo",                      ID_CHANNELS_2
+            MENUITEM "5.1 Channel",                 ID_CHANNELS_51
+            MENUITEM "7.1 Channel",                 ID_CHANNELS_71
+            MENUITEM "Dolby Headphone",             ID_CHANNELS_HEADPHONE
+            MENUITEM "Bitstreaming",                ID_CHANNELS_BITSTREAM
         END
         POPUP "Subtitle"
         BEGIN

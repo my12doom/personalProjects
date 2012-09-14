@@ -209,13 +209,23 @@
 #define ID_CHANNELS_7                   40150
 #define ID_CHANNELS_DOLBYHEADPHONE      40151
 #define ID_SUBTITLE_NOSUBTITLE          40152
+#define ID_AUDIO_SOURCECHANNELS         40153
+#define ID_AUDIO_5                      40154
+#define ID_CHANNELS_51                  40155
+#define ID_CHANNELS_71                  40156
+#define ID_CHANNELS_HEADPHONE           40157
+#define ID_AUDIO_CHANNELSETTING         40158
+#define ID_AUDIO_SOURCE                 40159
+#define ID_CHANNELS_2                   40160
+#define ID_CHANNELS_BITSTREAM           40161
+#define ID_CHANNELS_SOURCE              40162
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        126
-#define _APS_NEXT_COMMAND_VALUE         40153
+#define _APS_NEXT_COMMAND_VALUE         40163
 #define _APS_NEXT_CONTROL_VALUE         1043
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

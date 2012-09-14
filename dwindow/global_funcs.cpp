@@ -684,7 +684,7 @@ HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active)
 	return hr;
 }
 
-HRESULT set_ff_output_channel(IBaseFilter *filter, int channel)
+HRESULT set_ff_audio_normalizing(IBaseFilter *filter, double max_ratio)	// setting a ratio less than 1.0 cause normalizing off, more than 1.0 cause normalizing on
 {
 	if (filter == NULL)
 		return E_POINTER;
@@ -695,8 +695,38 @@ HRESULT set_ff_output_channel(IBaseFilter *filter, int channel)
 		return E_NOINTERFACE;
 
 	HRESULT hr = S_OK;
-	if (channel == 0 || channel > 8)
+	if (max_ratio < 1.0 )
+		return hr = cfg->putParam(IDFF_volumeNormalize, 0);
+
+	hr = cfg->putParam(IDFF_volumeNormalize, 1);
+	hr = cfg->putParam(IDFF_maxNormalization, max_ratio*100);
+
+	return S_OK;
+}
+
+HRESULT set_ff_output_channel(IBaseFilter *filter, int channel)	// channel=0: no downmixing, channel=9 : headphone, channel=10 : HRTF, channel=-1: bitstreaming
+
+{
+	if (filter == NULL)
+		return E_POINTER;
+
+	CComQIPtr<IffdshowBaseW, &IID_IffdshowBaseW> cfg(filter);
+
+	if (NULL == cfg)
+		return E_NOINTERFACE;
+
+	HRESULT hr = S_OK;
+	if (channel == 0 || channel > 10)
+	{
+		hr = set_ff_audio_bitstreaming(filter, false);
 		return hr = cfg->putParam(IDFF_isMixer, 0);
+	}
+	if (channel == -1)
+	{
+		hr = set_ff_audio_bitstreaming(filter, true);
+		hr = cfg->putParam(IDFF_isMixer, 0);
+		return hr;
+	}
 
 	/*
 	0:mono		:0
@@ -727,6 +757,8 @@ HRESULT set_ff_output_channel(IBaseFilter *filter, int channel)
 	case 7:
 	case 8:
 		return hr = cfg->putParam(IDFF_mixerOut, 24);
+	case 9:
+		return hr = cfg->putParam(IDFF_mixerOut, 17);
 	}
 
 	return hr;
