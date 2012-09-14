@@ -212,6 +212,7 @@ HRESULT set_localization_language(localization_language language)
 			add_localization(L"Gerneral 120Hz Glasses",			L"普通120Hz眼镜");
 			add_localization(L"Checkboard Interlace", L"棋盘交错");
 
+			add_localization(L"Normalize Audio",		L"最大化音量");
 			add_localization(L"Audio",					L"音频");
 			add_localization(L"Source",					L"来源");
 			add_localization(L"Channel Setting",		L"声道设置");

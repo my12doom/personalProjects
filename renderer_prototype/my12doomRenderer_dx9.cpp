@@ -431,12 +431,12 @@ HRESULT my12doomRenderer::CompleteConnect(IPin *pRecievePin, int id)
 	m_layout_detected = mono2d;
 	m_no_more_detect = false;
 
-	if (m_source_aspect > 2.425)
+	if (m_source_aspect > 2.65)
 	{
 		m_layout_detected = side_by_side;
 		m_no_more_detect = true;
 	}
-	else if (m_source_aspect < 1.2125)
+	else if (m_source_aspect < 1.325)
 	{
 		m_layout_detected = top_bottom;
 		m_no_more_detect = true;
@@ -3044,14 +3044,14 @@ double my12doomRenderer::get_active_aspect()
 		return m_source_aspect;
 	else if (get_active_input_layout() == side_by_side)
 	{
-		if (m_source_aspect > 2.425)
+		if (m_source_aspect > 2.65)
 			return m_source_aspect / 2;
 		else
 			return m_source_aspect;
 	}
 	else if (get_active_input_layout() == top_bottom)
 	{
-		if (m_source_aspect < 1.2125)
+		if (m_source_aspect < 1.325)
 			return m_source_aspect * 2;
 		else
 			return m_source_aspect;
