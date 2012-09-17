@@ -168,7 +168,12 @@ m_swap_eyes(L"SwapEyes", false),
 m_movie_pos_x(L"MoviePosX", 0),
 m_movie_pos_y(L"MoviePosY", 0),
 m_simple_audio_switching(L"SimpleAudioSwitching", false),
-m_has_multi_touch(false)
+m_has_multi_touch(false),
+m_widi_has_support(false),
+m_widi_inited(false),
+m_widi_scanning(false),
+m_widi_connected(false),
+m_widi_num_adapters_found(0)
 {
 	// touch 
 	if (GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
@@ -725,6 +730,17 @@ LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 
 LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	if (message == WM_WIDI_INITIALIZED)
+		return OnWiDiInitialized(wParam, lParam);
+	if (message == WM_WIDI_SCAN_COMPLETE)
+		return OnWiDiScanCompleted(wParam, lParam);
+	if (message == WM_WIDI_CONNECTED)
+		return OnWiDiConnected(wParam, lParam);
+	if (message == WM_WIDI_DISCONNECTED)
+		return OnWiDiDisconnected(wParam, lParam);
+	if (message == WM_WIDI_ADAPTER_DISCOVERED)
+		return OnWiDiAdapterDiscovered(wParam, lParam);
+
 
 	if (message ==  WM_TOUCH || message == WM_GESTURE)
 	{
@@ -1068,6 +1084,24 @@ HRESULT dx_player::popup_menu(HWND owner)
 	{
 		//ModifyMenuW(video, 1, MF_BYPOSITION | MF_GRAYED, ID_PLAY, C(L"Output Mode"));
 	}
+
+	// WiDi
+	HMENU widi = GetSubMenu(menu, 10);
+	if (m_widi_num_adapters_found > 0)
+	{
+		wchar_t id[1024];
+		for(int i=0; i<m_widi_num_adapters_found; i++)
+		{
+			widi_get_adapter_by_id(i, id);
+			InsertMenuW(widi, 0, MF_BYPOSITION | MF_STRING, i+'W0', id);
+		}
+
+	}
+	else
+	{
+		// TODO?
+	}
+
 
 
 	// play / pause
@@ -1572,6 +1606,12 @@ LRESULT dx_player::on_getminmaxinfo(int id, MINMAXINFO *info)
 	info->ptMinTrackSize.x = 300;
 	info->ptMinTrackSize.y = 200;
 
+	return S_OK;
+}
+
+LRESULT dx_player::on_close(int id)
+{
+	widi_shutdown();
 	return S_OK;
 }
 LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
@@ -2091,6 +2131,16 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		set_output_monitor(1, monitorid);
 	}
 
+	// widi
+	else if (uid >= 'W0' && uid <'X0')
+	{
+		widi_connect(uid - 'W0');
+	}
+	else if (uid == ID_INTEL_DISCONNECT)
+	{
+		widi_disconnect();
+	}
+
 	if ((m_output_mode == dual_window || m_output_mode == iz3d) && uid != ID_EXIT)
 	{
 		show_window(2, true);
@@ -2149,6 +2199,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SetFocus(id_to_hwnd(id));
 	if (id == 1)
 	{
+		widi_initialize();
 		m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
 		unsigned char passkey_big_decrypted[128];
 		RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
@@ -4118,5 +4169,115 @@ HRESULT dx_player::set_parameter(int parameter, double value)
 	default:
 		return E_FAIL;
 	}
+	return S_OK;
+}
+
+// WiDi functions
+HRESULT dx_player::widi_initialize()
+{
+	CoInitialize(NULL);
+
+	widi_shutdown();
+	m_widi.CoCreateInstance(CLSID_WiDiExtensions);
+
+	if (!m_widi)
+		return E_FAIL;
+
+	HRESULT hr = m_widi->Initialize((DWORD) m_hwnd1);
+	if (FAILED(hr))
+	{
+		widi_shutdown();
+		return hr;
+	}
+
+	return S_OK;
+}
+
+HRESULT dx_player::widi_start_scan()
+{
+	HRESULT hr = m_widi->StartScanForAdapters();
+	if (FAILED(hr))
+		return hr;
+
+	m_widi_scanning = true;
+	m_widi_num_adapters_found = 0;
+	return hr;
+}
+
+HRESULT dx_player::widi_get_adapter_by_id(int id, wchar_t *out)
+{
+	if (!out)
+		return E_POINTER;
+
+	if (id <0 || id >= m_widi_num_adapters_found)
+		return E_FAIL;	// out of range
+
+	wcscpy(out, (wchar_t*)m_widi_adapters[id]);
+
+	return S_OK;
+}
+HRESULT dx_player::widi_connect(int id)
+{
+	OLECHAR str_id[256];
+	HRESULT hr = widi_get_adapter_by_id(id, (wchar_t*)str_id);
+
+	printf("connecting %d\n", id);
+	wprintf(L"str_id = %s\n", str_id);
+
+	if (FAILED(hr))
+		return hr;		 
+
+	return m_widi->StartConnectionToAdapter(SysAllocString(str_id), 0, 0, SM::ExternalOnly);
+}
+HRESULT dx_player::widi_disconnect(int id /*=-1*/)	// -1 means disconnect any connection
+{
+	if (id == -1)
+		return m_widi->DisconnectAdapter(SysAllocString(L""));
+
+	OLECHAR str_id[256];
+	HRESULT hr = widi_get_adapter_by_id(id, (wchar_t*)str_id);
+	if (FAILED(hr))
+		return hr;		 
+
+	return m_widi->DisconnectAdapter(SysAllocString(str_id));
+}
+HRESULT dx_player::widi_shutdown()
+{
+	if (m_widi)
+		m_widi->Shutdown();
+	m_widi = NULL;
+	return S_OK;
+}
+
+// WiDi messages
+LRESULT dx_player::OnWiDiInitialized(WPARAM wParam, LPARAM lParam)
+{
+	m_widi_inited = true;
+	widi_start_scan();
+	return S_OK;
+}
+LRESULT dx_player::OnWiDiScanCompleted(WPARAM wParam, LPARAM lParam)
+{
+	m_widi_scanning = false;
+	return S_OK;
+}
+LRESULT dx_player::OnWiDiConnected(WPARAM wParam, LPARAM lParam)
+{
+	m_widi_connected = true;
+	return S_OK;
+}
+LRESULT dx_player::OnWiDiDisconnected(WPARAM wParam, LPARAM lParam)
+{
+	m_widi_connected = false;
+	return S_OK;
+}
+LRESULT dx_player::OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam)
+{
+	wchar_t * id = (wchar_t*) lParam;
+
+	wcscpy((wchar_t*)m_widi_adapters[m_widi_num_adapters_found], id);
+	m_widi_num_adapters_found ++;
+
+	wprintf(L"Found Adapter %s\r\n", id);
 	return S_OK;
 }

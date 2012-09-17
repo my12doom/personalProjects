@@ -21,6 +21,7 @@
 #include "..\my12doomSource\src\filters\parser\MpegSplitter\IOffsetMetadata.h"
 #include "IStereoLayout.h"
 #include "color_adjust.h"
+#include "IntelWiDiExtensions_i.h"
 
 #define _AFX
 #define __AFX_H__
@@ -29,7 +30,7 @@
 // some definition
 #define max_playlist (50)
 #define countof(x) (sizeof(x)/sizeof(x[0]))
-
+#define MAX_WIDI_ADAPTERS (255)
 
 class subtitle_file_handler
 {
@@ -108,6 +109,29 @@ protected:
 	// touch input
 	bool m_has_multi_touch;
 
+	// WiDi
+	// don't call these functions too frequently
+	// or you may corrupt some variables due to WiDi's non-blocking calls design
+	bool m_widi_inited;
+	bool m_widi_has_support;
+	int m_widi_num_adapters_found;
+	CComPtr<IWiDiExtensions> m_widi;
+	BSTR m_widi_adapters[MAX_WIDI_ADAPTERS][255];
+	bool m_widi_scanning;
+	bool m_widi_connected;
+	HRESULT widi_initialize();
+	HRESULT widi_start_scan();
+	HRESULT widi_get_adapter_by_id(int id, wchar_t *out);
+	HRESULT widi_connect(int id);
+	HRESULT widi_disconnect(int id = -1);	// -1 means disconnect any connection
+	HRESULT widi_shutdown();
+
+	// WiDi messages
+	LRESULT OnWiDiInitialized(WPARAM wParam, LPARAM lParam);
+	LRESULT OnWiDiScanCompleted(WPARAM wParam, LPARAM lParam);
+	LRESULT OnWiDiConnected(WPARAM wParam, LPARAM lParam);
+	LRESULT OnWiDiDisconnected(WPARAM wParam, LPARAM lParam);
+	LRESULT OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam);
 
 	// playlist	
 	wchar_t *m_playlist[max_playlist];
@@ -159,6 +183,7 @@ protected:
 	LRESULT on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam);
 	LRESULT on_sys_command(int id, WPARAM wParam, LPARAM lParam);	// don't block WM_SYSCOMMAND
 	LRESULT on_command(int id, WPARAM wParam, LPARAM lParam);
+	LRESULT on_close(int id);
 	LRESULT on_getminmaxinfo(int id, MINMAXINFO *info);
 	LRESULT on_move(int id, int x, int y);
 	LRESULT on_mouse_move(int id, int x, int y);
