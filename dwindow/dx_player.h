@@ -119,10 +119,15 @@ protected:
 	BSTR m_widi_adapters[MAX_WIDI_ADAPTERS][255];
 	bool m_widi_scanning;
 	bool m_widi_connected;
+	AutoSetting<DWORD> m_widi_screen_mode;
+	AutoSetting<int> m_widi_resolution_width;
+	AutoSetting<int> m_widi_resolution_height;
 	HRESULT widi_initialize();
 	HRESULT widi_start_scan();
 	HRESULT widi_get_adapter_by_id(int id, wchar_t *out);
-	HRESULT widi_connect(int id);
+	HRESULT widi_get_adapter_information(int id, wchar_t *out, wchar_t *key = NULL);
+	HRESULT widi_connect(int id, DWORD screenmode = SM::ExternalOnly, int resolution_width = 0, int resolution_height = 0);
+	HRESULT widi_set_screen_mode(DWORD screenmode);
 	HRESULT widi_disconnect(int id = -1);	// -1 means disconnect any connection
 	HRESULT widi_shutdown();
 

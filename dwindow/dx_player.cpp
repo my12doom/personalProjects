@@ -173,7 +173,10 @@ m_widi_has_support(false),
 m_widi_inited(false),
 m_widi_scanning(false),
 m_widi_connected(false),
-m_widi_num_adapters_found(0)
+m_widi_num_adapters_found(0),
+m_widi_screen_mode(L"WidiScreenMode", SM::Clone, REG_DWORD),
+m_widi_resolution_width(L"WidiScreenWidth", 0, REG_DWORD),
+m_widi_resolution_height(L"WidiScreenHeight", 0, REG_DWORD)
 {
 	// touch 
 	if (GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
@@ -1086,20 +1089,39 @@ HRESULT dx_player::popup_menu(HWND owner)
 	}
 
 	// WiDi
-	HMENU widi = GetSubMenu(menu, 10);
-	if (m_widi_num_adapters_found > 0)
-	{
-		wchar_t id[1024];
-		for(int i=0; i<m_widi_num_adapters_found; i++)
-		{
-			widi_get_adapter_by_id(i, id);
-			InsertMenuW(widi, 0, MF_BYPOSITION | MF_STRING, i+'W0', id);
-		}
+	CheckMenuItem(menu, ID_INTEL_CLONE,				m_widi_screen_mode == SM::Clone ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INTEL_EXTENDED,			m_widi_screen_mode == SM::Extended ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INTEL_EXTERNALONLY,		m_widi_screen_mode == SM::ExternalOnly ? MF_CHECKED:MF_UNCHECKED);
 
+	if (m_widi_has_support)
+	{
+		HMENU widi = GetSubMenu(menu, 10);
+		if (m_widi_scanning)
+			ModifyMenuW(widi, ID_INTEL_NOADAPTORSFOUND, MF_BYCOMMAND | MF_GRAYED, ID_INTEL_NOADAPTORSFOUND, C(L"Scanning Adapters."));
+
+		if (m_widi_num_adapters_found > 0)
+		{
+			if (!m_widi_scanning)
+				DeleteMenu(menu, ID_INTEL_NOADAPTORSFOUND, MF_BYCOMMAND);
+			wchar_t id[1024];
+			wchar_t tmp[1024];
+			for(int i=0; i<m_widi_num_adapters_found; i++)
+			{
+				widi_get_adapter_information(i, tmp);
+				widi_get_adapter_information(i, id, L"State");
+				wcscat(tmp, L" (");
+				wcscat(tmp, C(id));
+				wcscat(tmp, L")");
+				InsertMenuW(widi, 0, MF_BYPOSITION | MF_STRING, i+'W0', tmp);
+			}
+		}
+		else
+		{
+		}
 	}
 	else
 	{
-		// TODO?
+		DeleteMenu(menu, 10, MF_BYPOSITION);
 	}
 
 
@@ -2134,11 +2156,30 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// widi
 	else if (uid >= 'W0' && uid <'X0')
 	{
-		widi_connect(uid - 'W0');
+		widi_connect(uid - 'W0', m_widi_screen_mode, m_widi_resolution_width, m_widi_resolution_height);
 	}
 	else if (uid == ID_INTEL_DISCONNECT)
 	{
 		widi_disconnect();
+	}
+	else if (uid == ID_INTEL_REFRESH)
+	{
+		widi_start_scan();
+	}
+	else if (uid == ID_INTEL_CLONE)
+	{
+		m_widi_screen_mode = SM::Clone;
+		widi_set_screen_mode(m_widi_screen_mode);
+	}
+	else if (uid == ID_INTEL_EXTENDED)
+	{
+		m_widi_screen_mode = SM::Extended;
+		widi_set_screen_mode(m_widi_screen_mode);
+	}
+	else if (uid == ID_INTEL_EXTERNALONLY)
+	{
+		m_widi_screen_mode = SM::ExternalOnly;
+		widi_set_screen_mode(m_widi_screen_mode);
 	}
 
 	if ((m_output_mode == dual_window || m_output_mode == iz3d) && uid != ID_EXIT)
@@ -4190,6 +4231,15 @@ HRESULT dx_player::widi_initialize()
 		return hr;
 	}
 
+	BSTR support = NULL;
+	m_widi->GetHostCapability(SysAllocString(L"WiDiSupported"), &support);
+
+	if (support != NULL)
+	{
+		m_widi_has_support = wcscmp(L"Yes", support) == 0;
+		SysFreeString(support);
+	}
+
 	return S_OK;
 }
 
@@ -4216,7 +4266,36 @@ HRESULT dx_player::widi_get_adapter_by_id(int id, wchar_t *out)
 
 	return S_OK;
 }
-HRESULT dx_player::widi_connect(int id)
+
+HRESULT dx_player::widi_get_adapter_information(int id, wchar_t *out, wchar_t *key/* = NULL*/)
+{
+	wchar_t str_id[255];
+	HRESULT hr = widi_get_adapter_by_id(id, str_id);
+
+	if (FAILED(hr))
+		return hr;
+
+	wcscpy(out, str_id);
+	BSTR infomation = NULL;
+	hr = m_widi->GetAdapterInformation(str_id, key == NULL ? SysAllocString(L"Name") : SysAllocString(key), &infomation);
+	if (FAILED(hr))
+	{
+		if (NULL != infomation)
+			SysFreeString(infomation);
+
+		return hr;
+	}
+
+	if (NULL != infomation)
+	{
+		wcscpy(out, infomation);
+		SysFreeString(infomation);
+	}
+
+	return hr;
+}
+
+HRESULT dx_player::widi_connect(int id, DWORD screenmode /* = SM::ExternalOnly */, int resolution_width /* = 0 */, int resolution_height /* = 0 */)
 {
 	OLECHAR str_id[256];
 	HRESULT hr = widi_get_adapter_by_id(id, (wchar_t*)str_id);
@@ -4227,8 +4306,14 @@ HRESULT dx_player::widi_connect(int id)
 	if (FAILED(hr))
 		return hr;		 
 
-	return m_widi->StartConnectionToAdapter(SysAllocString(str_id), 0, 0, SM::ExternalOnly);
+	return m_widi->StartConnectionToAdapter(SysAllocString(str_id), resolution_width, resolution_height, (ScreenMode)screenmode);
 }
+
+HRESULT dx_player::widi_set_screen_mode(DWORD screenmode)
+{
+	return m_widi->SetScreenMode((ScreenMode) screenmode);
+}
+
 HRESULT dx_player::widi_disconnect(int id /*=-1*/)	// -1 means disconnect any connection
 {
 	if (id == -1)
@@ -4254,6 +4339,16 @@ LRESULT dx_player::OnWiDiInitialized(WPARAM wParam, LPARAM lParam)
 {
 	m_widi_inited = true;
 	widi_start_scan();
+
+	BSTR support = NULL;
+	m_widi->GetHostCapability(SysAllocString(L"WiDiSupported"), &support);
+
+	if (support != NULL)
+	{
+		m_widi_has_support = wcscmp(L"Yes", support) == 0;
+		SysFreeString(support);
+	}
+
 	return S_OK;
 }
 LRESULT dx_player::OnWiDiScanCompleted(WPARAM wParam, LPARAM lParam)
