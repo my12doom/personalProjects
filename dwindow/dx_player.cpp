@@ -1035,11 +1035,11 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 	}
 	else if (type == hit_next)
 	{
-		play_next_file();
+		playlist_play_next();
 	}
 	else if (type == hit_previous)
 	{
-		play_previous_file();
+		playlist_play_previous();
 	}
 	else if (type == hit_3d_swtich)
 	{
@@ -1078,9 +1078,9 @@ LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 			{
 				printf("flicking: speed = %f, delta = (%d, %d), angel = %f\n", speed, dx, dy, angel);
 				if (dx > 0)
-					play_previous_file();
+					playlist_play_previous();
 				else
-					play_next_file();
+					playlist_play_next();
 			}
 		}
 
@@ -1715,7 +1715,18 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			L"*.*\0"
 			L"\0\0"))
 		{
-			reset_and_loadfile_internal(file);
+			if (m_playlist_count >= max_playlist)
+				playlist_clear();
+			for(int i=0; i<max_playlist; i++)
+				if (wcscmp(m_playlist[i], file) == 0)
+				{
+					playlist_play_pos(i);
+					goto play_ok;
+				}
+			playlist_add(file);
+			playlist_play_pos(m_playlist_count-1);
+play_ok:
+			;
 		}
 
 	}
@@ -2567,7 +2578,7 @@ HRESULT dx_player::on_dshow_event()
 		stop();
 		seek(0);
 
-		play_next_file();
+		playlist_play_next();
 	}
 
 	else if (event_code == EC_VIDEO_SIZE_CHANGED)
@@ -2741,7 +2752,7 @@ fail:
 	return hr;
 }
 
-HRESULT dx_player::play_next_file()
+HRESULT dx_player::playlist_play_next()
 {
 restart:
 	if (m_playlist_playing >= m_playlist_count - 1)
@@ -2754,7 +2765,7 @@ restart:
 	return S_OK;
 }
 
-HRESULT dx_player::play_previous_file()
+HRESULT dx_player::playlist_play_previous()
 {
 restart:
 	if (m_playlist_playing <= 0)
@@ -2767,6 +2778,14 @@ restart:
 	return S_OK;
 }
 
+HRESULT dx_player::playlist_play_pos(int pos)
+{
+	HRESULT hr = reset_and_loadfile(m_playlist[m_playlist_playing], false);
+	if (SUCCEEDED(hr))
+		m_playlist_playing = pos;
+	return hr;
+}
+
 HRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 {
 
@@ -2775,15 +2794,39 @@ HRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 		HRESULT hr = load_subtitle(filenames[0], false);
 		if (SUCCEEDED(hr) && m_file_loaded)
 			return S_OK;
+
+		if (m_playlist_count >= max_playlist)
+			playlist_clear();
+		for(int i=0; i<max_playlist; i++)
+			if (wcscmp(m_playlist[i], filenames[0]) == 0)
+			{
+				playlist_play_pos(i);
+				goto play_ok;
+			}
+			playlist_add(filenames[0]);
+			playlist_play_pos(m_playlist_count-1);
+play_ok:
+		return S_OK;
 	}
 
-	m_playlist_count = count;
-	m_playlist_playing = -1;
+	playlist_clear();
+
 	for(int i=0; i<count; i++)
-		wcscpy(m_playlist[i], filenames[i]);
+		playlist_add(filenames[i]);
 
-	play_next_file();
+	playlist_play_pos(0);
 
+	return S_OK;
+}
+
+HRESULT dx_player::playlist_add(const wchar_t *filename)
+{
+	if (m_playlist_count >= max_playlist)
+		return E_OUTOFMEMORY;
+
+	wcscpy(m_playlist[m_playlist_count], filename);
+	m_playlist_count ++;
+	
 	return S_OK;
 }
 

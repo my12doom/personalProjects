@@ -31,7 +31,13 @@ public:
 	virtual HRESULT set_movie_pos(double x, double y) PURE;	// 1.0 = top, -1.0 = bottom, 0 = center
 
 	// playlist
-	virtual HRESULT play_next_file() PURE;
+	virtual HRESULT playlist_play_next() PURE;
+	virtual HRESULT playlist_add(const wchar_t *filename) PURE;
+	virtual HRESULT playlist_clear() PURE;
+	virtual HRESULT playlist_play_previous() PURE;
+	virtual HRESULT playlist_play_pos(int pos) PURE;
+	virtual int playlist_get_item_count() PURE;
+	virtual int playlist_get_playing_position() PURE;
 
 	// play control functions
 	virtual HRESULT play() PURE;

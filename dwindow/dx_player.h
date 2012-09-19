@@ -67,8 +67,13 @@ public:
 	HRESULT set_movie_pos(double x, double y);	// 1.0 = top, -1.0 = bottom, 0 = center
 
 	// playlist
-	HRESULT play_next_file();
-	HRESULT play_previous_file();
+	HRESULT playlist_add(const wchar_t *filename);
+	HRESULT playlist_clear(){m_playlist_count = 0; return S_OK;}
+	HRESULT playlist_play_next();
+	HRESULT playlist_play_previous();
+	HRESULT playlist_play_pos(int pos);
+	int playlist_get_item_count(){return m_playlist_count;}
+	int playlist_get_playing_position(){return m_playlist_playing;}
 
 	// play control functions
 	HRESULT play();
