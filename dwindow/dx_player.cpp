@@ -16,6 +16,7 @@
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_EVENT (WM_USER + 4)
+#define DS_EVENTRELY (WM_USER + 6)
 AutoSetting<BOOL> g_ExclusiveMode(L"ExclusiveMode", false, REG_DWORD);
 
 #include "bomb_network.h"
@@ -808,7 +809,37 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 	
 	if (message == DS_EVENT)
 	{
-		on_dshow_event();
+		CComQIPtr<IMediaEvent, &IID_IMediaEvent> event(m_gb);
+
+		long event_code;
+		LONG_PTR param1;
+		LONG_PTR param2;
+		if (FAILED(event->GetEvent(&event_code, &param1, &param2, 0)))
+			return S_OK;
+
+		// yes, it is very strange
+		// because dshow objects won't get released or processed until this message get processed
+		PostMessageW(id_to_hwnd(id), DS_EVENTRELY, (WPARAM) event_code, 0);
+
+		return S_OK;
+	}
+
+	else if (message == DS_EVENTRELY)
+	{
+		long event_code = (long)wParam;
+
+		if (event_code == EC_COMPLETE)
+		{
+			stop();
+			seek(0);
+
+			playlist_play_next();
+		}
+
+		else if (event_code == EC_VIDEO_SIZE_CHANGED)
+		{
+			printf("EC_VIDEO_SIZE_CHANGED\n");
+		}
 	}
 	else if (message ==  WM_GESTURENOTIFY)
 	{
@@ -2565,28 +2596,6 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 
 HRESULT dx_player::on_dshow_event()
 {
-	CComQIPtr<IMediaEvent, &IID_IMediaEvent> event(m_gb);
-
-	long event_code;
-	LONG_PTR param1;
-	LONG_PTR param2;
-	if (FAILED(event->GetEvent(&event_code, &param1, &param2, 0)))
-		return S_OK;
-
-	if (event_code == EC_COMPLETE)
-	{
-		stop();
-		seek(0);
-
-		playlist_play_next();
-	}
-
-	else if (event_code == EC_VIDEO_SIZE_CHANGED)
-	{
-		printf("EC_VIDEO_SIZE_CHANGED\n");
-	}
-
-
 	return S_OK;
 }
 
@@ -2780,7 +2789,7 @@ restart:
 
 HRESULT dx_player::playlist_play_pos(int pos)
 {
-	HRESULT hr = reset_and_loadfile(m_playlist[m_playlist_playing], false);
+	HRESULT hr = reset_and_loadfile(m_playlist[pos], false);
 	if (SUCCEEDED(hr))
 		m_playlist_playing = pos;
 	return hr;
@@ -3177,6 +3186,10 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 		hr = m_gb->RenderFile(file_to_play, NULL);
 		handle_downmixer();
+	}
+	else
+	{
+		hr = S_OK;
 	}
 
 	// check result

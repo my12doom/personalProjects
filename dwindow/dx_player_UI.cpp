@@ -468,7 +468,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 
 	for(int i=0; i<2; i++)
 	{
-		int ms = i?(int)(total/10000) : (int)(current / 10000);
+		int ms = i?(int)(total) : (int)(current);
 		int s = ms / 1000;
 		int hour = (s / 3600) % 10;
 		int minute1 = (s/60 /10) % 6;
