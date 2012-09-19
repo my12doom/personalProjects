@@ -1927,6 +1927,9 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			|| m_remux_mode)
 			m_Device->SetPixelShader(m_red_blue);
 
+		if (m_force2d)
+			m_Device->SetPixelShader(NULL);
+
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
 
@@ -2239,6 +2242,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	HRESULT hr;
 	if (!surface)
 		return E_POINTER;
+	view = m_force2d ? 0 : view;
 	bool left_eye = view == 0;
 	left_eye = left_eye ^ m_swapeyes;
 
@@ -3513,6 +3517,15 @@ DWORD my12doomRenderer::get_mask_color(int id)
 HRESULT my12doomRenderer::set_swap_eyes(bool swap)
 {
 	m_swapeyes = swap;
+
+	reload_image();
+	repaint_video();
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::set_force_2d(bool force2d)
+{
+	m_force2d = force2d;
 
 	reload_image();
 	repaint_video();

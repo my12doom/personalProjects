@@ -36,6 +36,10 @@ typedef enum _hittest_result
 	hit_full = 12,
 	hit_volume = 13,
 	hit_progress = 15,
+	hit_next = 16,
+	hit_previous = 17,
+	hit_3d_swtich = 18,
+	hit_volume_button = 19,
 } hittest_result;
 
 typedef struct _UI_element_fixed

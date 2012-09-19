@@ -171,6 +171,7 @@ public:
 	HRESULT set_mask_parameter(int parameter);
 	HRESULT set_mask_color(int id, DWORD color);
 	HRESULT set_swap_eyes(bool swap);
+	HRESULT set_force_2d(bool force2d);
 	HRESULT set_fullscreen(bool full);
 	HRESULT set_movie_pos(int dimention, double offset);		// dimention1 = x, dimention2 = y, dimention3 = x in pixel, dimention4 = y in pixel
 	HRESULT set_aspect(double aspect);
@@ -400,6 +401,7 @@ protected:
 	int m_pageflip_frames;
 	int m_pageflipping_start;
 	bool m_swapeyes;
+	bool m_force2d;
 	output_mode_types m_output_mode;
 	input_layout_types m_input_layout;
 	bool m_convert3d;			// = false
