@@ -233,6 +233,9 @@ m_widi_resolution_height(L"WidiScreenHeight", 0, REG_DWORD)
 	SendMessage(m_hwnd2, WM_INITDIALOG, 0, 0);
 
 	// set timer for ui drawing and states updating
+	// ui
+	m_show_ui = false;
+	m_ui_visible_last_change_time = timeGetTime();
 	reset_timer(2, 125);
 
 	// init dshow
@@ -602,8 +605,6 @@ HRESULT dx_player::set_volume(double volume)
 		m_ba->put_Volume(ddb);
 	}
 
-	if (m_renderer1)
-		m_renderer1->m_volume = m_volume;
 	return S_OK;
 }
 HRESULT dx_player::get_volume(double *volume)
@@ -1560,8 +1561,6 @@ LRESULT dx_player::on_timer(int id)
 			SystemParametersInfo(SPI_SETPOWEROFFACTIVE, 0, 0, SPIF_SENDWININICHANGE); // this might not be needed at all...
 			SystemParametersInfo(SPI_SETPOWEROFFACTIVE, fSaverActive, 0, SPIF_SENDWININICHANGE);
 		}
-
-		draw_ui();
 	}
 	return S_OK;
 }
@@ -1662,7 +1661,6 @@ LRESULT dx_player::on_paint(int id, HDC hdc)
 		FillRect(hdc, &client, (HBRUSH)BLACK_BRUSH+1);
 	}
 
-	draw_ui();
 	return S_OK;
 }
 
@@ -2298,6 +2296,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	{
 		widi_initialize();
 		m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
+		m_renderer1->set_ui_drawer(this);
 		unsigned char passkey_big_decrypted[128];
 		RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
 		m_renderer1->m_AES.set_key((unsigned char*)passkey_big_decrypted+64, 256);
@@ -2609,14 +2608,9 @@ HRESULT dx_player::set_movie_pos(double x, double y)
 
 HRESULT dx_player::show_ui(bool show)
 {
+	if (show != m_show_ui)
+		m_ui_visible_last_change_time = timeGetTime();
 	m_show_ui = show;
-	return S_OK;
-}
-
-HRESULT dx_player::draw_ui()
-{
-	if (m_renderer1)
-		m_renderer1->set_ui_visible(m_show_ui && m_theater_owner == NULL);
 	return S_OK;
 }
 

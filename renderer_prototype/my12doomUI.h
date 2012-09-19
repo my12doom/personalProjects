@@ -66,62 +66,12 @@ class ui_drawer_base
 public:
 	ui_drawer_base(){}
 	virtual HRESULT init(int width, int height,IDirect3DDevice9 *device);
-	virtual HRESULT uninit(int width, int height,IDirect3DDevice9 *device);
+	virtual HRESULT uninit();
 	virtual HRESULT init_gpu(int width, int height,IDirect3DDevice9 *device) PURE;
 	virtual HRESULT init_cpu(int width, int height,IDirect3DDevice9 *device) PURE;
 	virtual HRESULT invalidate_gpu() PURE;
 	virtual HRESULT invalidate_cpu() PURE;
-	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, REFERENCE_TIME current, REFERENCE_TIME total, float volume, bool running, float alpha) PURE;
+	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, REFERENCE_TIME current, REFERENCE_TIME total, bool running) PURE;
 	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye) PURE;
 	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL) PURE;
-};
-
-
-class ui_drawer_dwindow : public ui_drawer_base
-{
-public:
-	ui_drawer_dwindow(){}
-	virtual HRESULT init_gpu(int width, int height, IDirect3DDevice9 *device);
-	virtual HRESULT init_cpu(int width, int height, IDirect3DDevice9 *device);
-	virtual HRESULT invalidate_gpu();
-	virtual HRESULT invalidate_cpu();
-	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, REFERENCE_TIME current, REFERENCE_TIME total, float volume, bool running, float alpha);
-	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye);
-	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL);
-
-protected:
-	int m_width;
-	int m_height;
-	IDirect3DDevice9 *m_Device;
-	CComPtr<IDirect3DVertexBuffer9> m_vertex;
-	CComPtr<IDirect3DTexture9> m_ui_logo_cpu;
-	CComPtr<IDirect3DTexture9> m_ui_tex_cpu;
-	CComPtr<IDirect3DTexture9> m_ui_background_cpu;
-	CComPtr<IDirect3DTexture9> m_ui_logo_gpu;
-	CComPtr<IDirect3DTexture9> m_ui_tex_gpu;
-	CComPtr<IDirect3DTexture9> m_ui_background_gpu;
-	CComPtr <IDirect3DPixelShader9> m_ps_UI;
-	HRESULT init_ui2(IDirect3DSurface9 * surface);
-	HRESULT draw_ui2(IDirect3DSurface9 * surface);
-
-	//elements
-	UI_element_fixed
-		playbutton,
-		pausebutton,
-		current_time[5][10],
-		colon[4],
-		total_time[5][10],
-		fullbutton,
-		test_button,
-		test_button2;
-
-	UI_element_warp
-		back_ground,
-		volume,
-		volume_top,
-		volume_back,
-		progressbar,
-		progress_top,
-		progress_bottom;
-
 };

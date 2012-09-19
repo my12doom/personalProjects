@@ -154,7 +154,10 @@ m_right_queue(_T("right queue"))
 
 
 	// UI
-	m_uidrawer = new ui_drawer_dwindow;
+	{
+		CAutoLock lck(&m_uidrawer_cs);
+		m_uidrawer = NULL;
+	}
 
 	// AES
 	unsigned char ran[32];
@@ -170,10 +173,6 @@ m_right_queue(_T("right queue"))
 	m_render_thread = INVALID_HANDLE_VALUE;
 	m_render_thread_exit = false;
 
-
-	// ui
-	m_showui = false;
-	m_ui_visible_last_change_time = m_last_ui_draw = timeGetTime();
 
 	init_variables();
 
@@ -245,7 +244,6 @@ void my12doomRenderer::init_variables()
 
 	// ui & bitmap
 	m_has_subtitle = false;
-	m_volume = 0;
 	m_bmp_parallax = 0;
 	m_bmp_width = 0;
 	m_bmp_height = 0;
@@ -1091,12 +1089,15 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 
 
-			if(m_uidrawer)
 			{
-				delete m_uidrawer;
-				m_uidrawer = NULL;
+				CAutoLock lck(&m_uidrawer_cs);
+				if(m_uidrawer)
+				{
+					delete m_uidrawer;
+					m_uidrawer = NULL;
+				}
 			}
-			m_uidrawer = new ui_drawer_dwindow;
+
 			m_Device = NULL;
 			m_active_pp = m_new_pp;
 		}
@@ -1250,7 +1251,10 @@ HRESULT my12doomRenderer::terminate_render_thread()
 
 HRESULT my12doomRenderer::invalidate_cpu_objects()
 {
-	m_uidrawer->invalidate_cpu();
+	{
+		CAutoLock lck(&m_uidrawer_cs);
+		if (m_uidrawer) m_uidrawer->invalidate_cpu();
+	}
 	if (m_pool) m_pool->DestroyPool(D3DPOOL_MANAGED);
 	if (m_pool) m_pool->DestroyPool(D3DPOOL_SYSTEMMEM);
 
@@ -1260,7 +1264,10 @@ HRESULT my12doomRenderer::invalidate_cpu_objects()
 HRESULT my12doomRenderer::invalidate_gpu_objects()
 {
 	HD3D_invalidate_objects();
-	m_uidrawer->invalidate_gpu();
+	{
+		CAutoLock lck(&m_uidrawer_cs);
+		if (m_uidrawer) m_uidrawer->invalidate_gpu();
+	}
 	m_red_blue.invalid();
 	m_ps_masking.invalid();
 	m_lanczosX.invalid();
@@ -2246,10 +2253,11 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	bool left_eye = view == 0;
 	left_eye = left_eye ^ m_swapeyes;
 
-	if (!m_dsr0->is_connected() && m_uidrawer)
+	if (!m_dsr0->is_connected())
 	{
+		CAutoLock lck(&m_uidrawer_cs);
 		m_last_reset_time = timeGetTime();
-		return m_uidrawer->draw_nonmovie_bg(surface, left_eye);
+		return m_uidrawer != NULL ? m_uidrawer->draw_nonmovie_bg(surface, left_eye) : E_FAIL;
 	}
 
 	CComPtr<IDirect3DSurface9> src;
@@ -2374,15 +2382,6 @@ HRESULT my12doomRenderer::draw_bmp(IDirect3DSurface9 *surface, bool left_eye)
 }
 HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 {
-	float delta_alpha = 1-(float)(timeGetTime()-m_ui_visible_last_change_time)/fade_in_out_time;
-	delta_alpha = max(0, delta_alpha);
-	delta_alpha = min(1, delta_alpha);
-	float alpha = m_showui ? 1.0f : 0.0f;
-	alpha -= m_showui ? delta_alpha : -delta_alpha;
-
-	if (alpha <=0)
-		return S_FALSE;
-
 	if (!surface)
 		return E_POINTER;
 
@@ -2397,7 +2396,8 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 		if (ms)
 			ms->GetDuration(&m_total_time);
 	}
-	return m_uidrawer->draw_ui(surface, m_dsr0->m_thisstream + m_dsr0->m_time, m_total_time, m_volume, m_dsr0->m_State == State_Running, alpha);
+	CAutoLock lck(&m_uidrawer_cs);
+	return m_uidrawer == NULL ? E_FAIL : m_uidrawer->draw_ui(surface, m_dsr0->m_thisstream + m_dsr0->m_time, m_total_time, m_dsr0->m_State == State_Running);
 }
 
 HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left)
@@ -3769,19 +3769,6 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 	return S_OK;
 }
 
-HRESULT my12doomRenderer::set_ui_visible(bool visible)
-{
-	if (m_showui != visible)
-	{
-		m_showui = visible;
-		m_ui_visible_last_change_time = timeGetTime();
-		repaint_video();
-	}
-
-	m_showui = visible;
-	return S_OK;
-}
-
 HRESULT my12doomRenderer::set_bmp_parallax(double offset)
 {
 	if (m_bmp_parallax != offset)
@@ -4390,6 +4377,33 @@ HRESULT my12doomRenderer::HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirec
 	pd3dDevice->SetRenderState(D3DRS_ZENABLE, zEnable);
 	return S_OK;
 }
+
+HRESULT my12doomRenderer::set_ui_drawer(ui_drawer_base * new_ui_drawer)
+{
+	if (!new_ui_drawer)
+		return E_POINTER;
+
+	CAutoLock lck(&m_uidrawer_cs);
+	if (NULL != m_uidrawer)
+		m_uidrawer->uninit();
+
+	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+	if (m_output_mode == out_sbs)
+		tar.right /= 2;
+	else if (m_output_mode == out_tb)
+		tar.bottom /= 2;
+
+	m_uidrawer = new_ui_drawer;
+	if(m_Device && m_uidrawer ) m_uidrawer->init(tar.right, tar.bottom, m_Device);
+	return S_OK;
+}
+
+ui_drawer_base *my12doomRenderer::get_ui_drawer()
+{
+	CAutoLock lck(&m_uidrawer_cs);
+	return m_uidrawer;
+}
+
 
 // helper functions
 

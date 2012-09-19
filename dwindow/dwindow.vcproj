@@ -738,6 +738,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\dx_player_UI.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\private_filter.cpp"
 					>
 				</File>

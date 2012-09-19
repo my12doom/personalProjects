@@ -161,10 +161,11 @@ public:
 	HRESULT repaint_video();
 	HRESULT NV3D_notify(WPARAM wparam);
 	HRESULT reset();
-	int hittest(int x, int y, double*outv){int o = -1; if(m_uidrawer) m_uidrawer->hittest(x, y, &o, outv); return o;}
+	int hittest(int x, int y, double*outv){CAutoLock lck(&m_uidrawer_cs);int o = -1; if(m_uidrawer) m_uidrawer->hittest(x, y, &o, outv); return o;}
 
 
 	// settings SET function
+	HRESULT set_ui_drawer(ui_drawer_base * new_ui_drawer);
 	HRESULT set_input_layout(int layout);
 	HRESULT set_output_mode(int mode);
 	HRESULT set_mask_mode(int mode);
@@ -179,7 +180,6 @@ public:
 	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow = false);
 	HRESULT set_bmp_parallax(double offset);
 	HRESULT set_parallax(double parallax);
-	HRESULT set_ui_visible(bool visible);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
 	HRESULT set_2dto3d(bool convert){m_convert3d = convert;}
 	HRESULT set_aspect_mode(int mode);
@@ -192,6 +192,7 @@ public:
 																							// if you saved these two variables, remember to get it from renderer.
 
 	// settings GET function
+	ui_drawer_base *get_ui_drawer();
 	DWORD get_mask_color(int id);
 	bool get_swap_eyes();
 	input_layout_types get_input_layout();
@@ -215,9 +216,7 @@ protected:
 
 	display_orientation m_display_orientation;
 	double m_parallax;
-	bool m_showui;
 	bool m_has_subtitle;
-	int m_ui_visible_last_change_time;
 	int m_last_ui_draw;
 	int m_bmp_width, m_bmp_height;
 	float m_bmp_fleft, m_bmp_ftop, m_bmp_fwidth, m_bmp_fheight;
@@ -499,11 +498,10 @@ protected:
 
 
 	// test draw ui
+	CCritSec m_uidrawer_cs;
 	ui_drawer_base *m_uidrawer;
 
 	REFERENCE_TIME m_total_time;
 
-public:
-	float m_volume;
 };
 

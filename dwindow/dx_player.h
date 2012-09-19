@@ -42,7 +42,7 @@ public:
 	~subtitle_file_handler();
 };
 
-class dx_player : protected Imy12doomRendererCallback, public dwindow, protected IColorAdjustCB, public Iplayer
+class dx_player : protected Imy12doomRendererCallback, public dwindow, protected IColorAdjustCB, public Iplayer, public ui_drawer_base
 {
 public:
 	dx_player(HINSTANCE hExe);
@@ -239,8 +239,6 @@ protected:
 	AutoSetting<double> m_normalize_audio;	// = false
 	AutoSetting<int> m_channel;	// = false
 	HRESULT show_ui(bool show);
-	HRESULT draw_ui();
-
 	HRESULT on_dshow_event();		//"on move window"
 	HRESULT init_direct_show();
 	HRESULT exit_direct_show();
@@ -314,4 +312,50 @@ protected:
 	HRESULT set_parameter(int parameter, double value);
 	HRESULT get_parameter(int parameter, double *value);
 
+
+	// UI drawer
+
+	virtual HRESULT init_gpu(int width, int height, IDirect3DDevice9 *device);
+	virtual HRESULT init_cpu(int width, int height, IDirect3DDevice9 *device);
+	virtual HRESULT invalidate_gpu();
+	virtual HRESULT invalidate_cpu();
+	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, REFERENCE_TIME current, REFERENCE_TIME total, bool running);
+	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye);
+	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL);
+
+protected:
+	int m_width;
+	int m_height;
+	int m_ui_visible_last_change_time;
+	IDirect3DDevice9 *m_Device;
+	CComPtr<IDirect3DVertexBuffer9> m_vertex;
+	CComPtr<IDirect3DTexture9> m_ui_logo_cpu;
+	CComPtr<IDirect3DTexture9> m_ui_tex_cpu;
+	CComPtr<IDirect3DTexture9> m_ui_background_cpu;
+	CComPtr<IDirect3DTexture9> m_ui_logo_gpu;
+	CComPtr<IDirect3DTexture9> m_ui_tex_gpu;
+	CComPtr<IDirect3DTexture9> m_ui_background_gpu;
+	CComPtr <IDirect3DPixelShader9> m_ps_UI;
+	HRESULT init_ui2(IDirect3DSurface9 * surface);
+	HRESULT draw_ui2(IDirect3DSurface9 * surface);
+
+	//elements
+	UI_element_fixed
+		playbutton,
+		pausebutton,
+		current_time[5][10],
+		colon[4],
+		total_time[5][10],
+		fullbutton,
+		test_button,
+		test_button2;
+
+	UI_element_warp
+		back_ground,
+		volume,
+		volume_top,
+		volume_back,
+		progressbar,
+		progress_top,
+		progress_bottom;
 };
