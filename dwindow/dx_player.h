@@ -62,11 +62,13 @@ public:
 	HRESULT set_subtitle_parallax(int parallax);
 
 	// image control functions
+	HRESULT set_force_2d(bool force2d);
 	HRESULT set_swap_eyes(bool swap_eyes);
 	HRESULT set_movie_pos(double x, double y);	// 1.0 = top, -1.0 = bottom, 0 = center
 
 	// playlist
 	HRESULT play_next_file();
+	HRESULT play_previous_file();
 
 	// play control functions
 	HRESULT play();
@@ -160,6 +162,7 @@ protected:
 	int m_mirror1;
 	int m_mirror2;			// 0x0:no mirror, 0x1 mirror horizontal, 0x2 mirror vertical, 0x3(0x3=0x1|0x2) mirror both
 	AutoSetting<bool> m_swap_eyes;
+	AutoSetting<bool> m_force_2d;
 	AutoSetting<double> m_movie_pos_y;
 	AutoSetting<double> m_movie_pos_x;
 	double m_parallax;
@@ -228,6 +231,8 @@ protected:
 	CCritSec m_seek_sec;
 	bool m_show_ui;
 	int m_dragging;	// = 0
+	POINT m_mouse_down_point;	// = 0
+	int m_mouse_down_time;
 	double m_dragging_value;
 	AutoSetting<double> m_volume;	// = 1.0
 	AutoSetting<bool> m_useInternalAudioDecoder;		// = true

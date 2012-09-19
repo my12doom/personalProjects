@@ -165,6 +165,7 @@ m_subtitle_center_x(L"SubtitleX", 0.5),
 m_subtitle_bottom_y(L"SubtitleY", 0.95),
 m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD),
 m_swap_eyes(L"SwapEyes", false),
+m_force_2d(L"Force2D", false),
 m_movie_pos_x(L"MoviePosX", 0),
 m_movie_pos_y(L"MoviePosY", 0),
 m_simple_audio_switching(L"SimpleAudioSwitching", false),
@@ -1022,6 +1023,18 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 		total(&total_time);
 		seek((int)(total_time * v));
 	}
+	else if (type == hit_next)
+	{
+		play_next_file();
+	}
+	else if (type == hit_previous)
+	{
+		play_previous_file();
+	}
+	else if (type == hit_3d_swtich)
+	{
+		set_force_2d(!m_force_2d);
+	}
 
 	return S_OK;
 }
@@ -1030,6 +1043,42 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 {
 	m_dragging = -1;
+
+	// test for 
+	if (m_mouse_down_point.x > -100  && m_mouse_down_point.y > -100 && m_mouse_down_time > 0)
+	{
+		int time_delta = timeGetTime() - m_mouse_down_time;
+		int dx = x - m_mouse_down_point.x;
+		int dy = y - m_mouse_down_point.y;
+		double delta = sqrt((double)(dx*dx+dy*dy));
+
+		if (delta > 0 && time_delta > 0 && abs(dx) > 0)
+		{
+			double speed = delta / time_delta;
+			double angel = (double)abs(dy) / abs(dx);		// tan(sigma)
+
+			static const double tan15 = 0.26795;	// tan(15) ~= 0.26795
+			static const int min_delta_x = 200;		// 200 pixel
+			static const double min_speed = 2.5;	// min speed: 2.5 pixel / millisecond
+			
+			if (abs(dx) > min_delta_x &&
+				angel < tan15 &&
+				speed > min_speed
+				)
+			{
+				printf("flicking: speed = %f, delta = (%d, %d), angel = %f\n", speed, dx, dy, angel);
+				if (dx > 0)
+					play_previous_file();
+				else
+					play_next_file();
+			}
+		}
+
+		m_mouse_down_time = 0;
+		m_mouse_down_point.x = -9999;
+		m_mouse_down_point.y = -9999;
+	}
+
 	return S_OK;
 }
 
@@ -1375,6 +1424,13 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 			// move this window
 			ReleaseCapture();
 			SendMessage(id_to_hwnd(id), WM_NCLBUTTONDOWN, HTCAPTION, 0);
+		}
+		else if (m_full1 || m_renderer1->get_fullscreen())
+		{
+			// possible flick guesture
+			m_mouse_down_time = timeGetTime();
+			m_mouse_down_point.x = x;
+			m_mouse_down_point.y = y;
 		}
 	}
 
@@ -2310,6 +2366,8 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->m_contrast2 = m_contrast2;
 	m_renderer1->set_display_orientation(m_display_orientation);
 	m_renderer1->set_vsync(true);
+	m_renderer1->set_swap_eyes(m_swap_eyes);
+	m_renderer1->set_force_2d(m_force_2d);
 
 	m_file_loaded = false;
 	m_active_audio_track = 0;
@@ -2523,6 +2581,18 @@ HRESULT dx_player::set_swap_eyes(bool swap_eyes)
 	return S_OK;
 }
 
+HRESULT dx_player::set_force_2d(bool force2d)
+{
+	m_force_2d = force2d;
+
+	if (m_renderer1)
+	{
+		m_renderer1->set_force_2d(force2d);
+	}
+
+	return S_OK;
+}
+
 HRESULT dx_player::set_movie_pos(double x, double y)
 {
 	m_movie_pos_x = x;
@@ -2673,6 +2743,19 @@ restart:
 		return E_FAIL;
 
 	m_playlist_playing ++ ;
+	if (FAILED(reset_and_loadfile(m_playlist[m_playlist_playing], false)))
+		goto restart;
+
+	return S_OK;
+}
+
+HRESULT dx_player::play_previous_file()
+{
+restart:
+	if (m_playlist_playing <= 0)
+		return E_FAIL;
+
+	m_playlist_playing -- ;
 	if (FAILED(reset_and_loadfile(m_playlist[m_playlist_playing], false)))
 		goto restart;
 

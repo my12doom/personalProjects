@@ -873,22 +873,6 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="libcrypt"
-				>
-				<File
-					RelativePath="..\libchecksum\basicRSA.h"
-					>
-				</File>
-				<File
-					RelativePath="..\libchecksum\libchecksum.h"
-					>
-				</File>
-				<File
-					RelativePath="..\libchecksum\SHA1.h"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="Renderer"
 				>
 				<File
@@ -919,6 +903,22 @@
 					RelativePath="..\renderer_prototype\unpack_YUY2.h"
 					>
 				</File>
+				<Filter
+					Name="libcrypt"
+					>
+					<File
+						RelativePath="..\libchecksum\basicRSA.h"
+						>
+					</File>
+					<File
+						RelativePath="..\libchecksum\libchecksum.h"
+						>
+					</File>
+					<File
+						RelativePath="..\libchecksum\SHA1.h"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="E3D"
