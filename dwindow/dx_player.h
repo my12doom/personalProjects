@@ -227,6 +227,8 @@ protected:
 	HRESULT PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn);
 
 	// directshow etc. core part
+	int m_total_time;			// a buffer 
+	int m_current_time;			// from SampleSB()
 	CCritSec m_draw_sec;
 	CCritSec m_seek_sec;
 	bool m_show_ui;
@@ -319,7 +321,7 @@ protected:
 	virtual HRESULT init_cpu(int width, int height, IDirect3DDevice9 *device);
 	virtual HRESULT invalidate_gpu();
 	virtual HRESULT invalidate_cpu();
-	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, REFERENCE_TIME current, REFERENCE_TIME total, bool running);
+	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, bool running);
 	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye);
 	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL);
 

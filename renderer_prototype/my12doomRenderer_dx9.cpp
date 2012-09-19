@@ -2397,7 +2397,7 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 			ms->GetDuration(&m_total_time);
 	}
 	CAutoLock lck(&m_uidrawer_cs);
-	return m_uidrawer == NULL ? E_FAIL : m_uidrawer->draw_ui(surface, m_dsr0->m_thisstream + m_dsr0->m_time, m_total_time, m_dsr0->m_State == State_Running);
+	return m_uidrawer == NULL ? E_FAIL : m_uidrawer->draw_ui(surface, m_dsr0->m_State == State_Running);
 }
 
 HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left)

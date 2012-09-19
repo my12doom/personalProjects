@@ -570,17 +570,26 @@ HRESULT dx_player::tell(int *time)
 }
 HRESULT dx_player::total(int *time)
 {
-	CAutoLock lock(&m_seek_sec);
+		
+
 	if (time == NULL)
 		return E_POINTER;
 
+	if (m_total_time > 0)
+	{
+		*time = m_total_time;
+		return S_OK;
+	}
+
+	CAutoLock lock(&m_seek_sec);
 	if (m_ms == NULL)
 		return VFW_E_WRONG_STATE;
 
 	REFERENCE_TIME total;
 	HRESULT hr = m_ms->GetDuration(&total);
 	if(SUCCEEDED(hr))
-		*time = (int)(total / 10000);
+		*time = m_total_time = (int)(total / 10000);
+
 	return hr;
 }
 HRESULT dx_player::set_volume(double volume)
@@ -2371,6 +2380,7 @@ HRESULT dx_player::exit_direct_show()
 	m_file_loaded = false;
 	m_active_audio_track = 0;
 	m_active_subtitle_track = 0;
+	m_total_time = m_current_time = 0;
 	
 	m_offset_metadata = NULL;
 	m_stereo_layout = NULL;
@@ -2438,6 +2448,7 @@ HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, I
 HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn)
 {
 	// warning: thread safe
+	m_current_time = TimeStart / 10000;
 	if (!m_display_subtitle || !m_renderer1 
 		/*|| timeGetTime()-m_last_bitmap_update < 200*/)	// only update bitmap once per 200ms 
 		return S_OK;

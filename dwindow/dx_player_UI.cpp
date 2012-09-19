@@ -420,8 +420,12 @@ HRESULT dx_player::invalidate_cpu()
 	m_ui_background_cpu = NULL;
 	return S_OK;
 }
-HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, REFERENCE_TIME current, REFERENCE_TIME total, bool running)
+HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 {
+	int total = 0;
+	this->total(&total);
+	int current = m_current_time;
+
 	bool showui = m_show_ui && m_theater_owner == NULL;
 
 	float delta_alpha = 1-(float)(timeGetTime()-m_ui_visible_last_change_time)/fade_in_out_time;
@@ -461,6 +465,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, REFERENCE_TIME current, 
 	//m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 
 	hr = m_Device->SetTexture( 0, m_ui_tex_gpu );
+
 	for(int i=0; i<2; i++)
 	{
 		int ms = i?(int)(total/10000) : (int)(current / 10000);
