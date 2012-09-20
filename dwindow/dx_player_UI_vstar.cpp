@@ -9,7 +9,7 @@ HRESULT dx_player::init_gpu(int width, int height, IDirect3DDevice9 *device)
 {
 	safe_commit(m_toolbar_background);
 	safe_commit(m_UI_logo);
-	for(int i=0; i<7; i++)
+	for(int i=0; i<9; i++)
 		safe_commit(m_buttons[i]);
 	for(int i=0; i<6; i++)
 		safe_commit(m_progress[i]);
@@ -30,36 +30,35 @@ HRESULT dx_player::init_cpu(int width, int height, IDirect3DDevice9 *device)
 	m_width = width;
 	m_height = height;
 
-	if (m_toolbar_background == NULL) m_renderer1->loadBitmap(&m_toolbar_background, L"界面条2.png");
-	if (m_UI_logo == NULL) m_renderer1->loadBitmap(&m_UI_logo, L"logo2.jpg");
+	if (m_UI_logo == NULL) m_renderer1->loadBitmap(&m_UI_logo, L"skin\\logo2.jpg");
+	if (m_toolbar_background == NULL) m_renderer1->loadBitmap(&m_toolbar_background, L"skin\\toolbar_background.png");
+	if (m_volume_base == NULL) m_renderer1->loadBitmap(&m_volume_base, L"skin\\volume_base.png");
+	if (m_volume_button == NULL) m_renderer1->loadBitmap(&m_volume_button, L"skin\\volume_button.png");
 
-
-	if (m_toolbar_background == NULL) m_renderer1->loadBitmap(&m_toolbar_background, L"toolbar_background.png");
-	if (m_volume_base == NULL) m_renderer1->loadBitmap(&m_volume_base, L"volume_base.png");
-	if (m_volume_button == NULL) m_renderer1->loadBitmap(&m_volume_button, L"volume_button.png");
-
-	wchar_t buttons_pic[7][MAX_PATH] = 
+	wchar_t buttons_pic[9][MAX_PATH] = 
 	{
-		L"fullscreen.png",
-		L"喇叭.png",
-		L"前进.png",
-		L"播放.png",
-		L"后退.png",
-		L"停止.png",
-		L"3d.png",
+		L"skin\\fullscreen.png",
+		L"skin\\volume.png",
+		L"skin\\next.png",
+		L"skin\\play.png",
+		L"skin\\previous.png",
+		L"skin\\stop.png",
+		L"skin\\3d.png",
+		L"skin\\pause.png",
+		L"skin\\2d.png",
 	};
-	for(int i=0; i<7; i++)
+	for(int i=0; i<9; i++)
 		if (m_buttons[i] == NULL) m_renderer1->loadBitmap(&m_buttons[i], buttons_pic[i]);
 
 
 	wchar_t progress_pics[6][MAX_PATH] = 
 	{
-		L"progress_left_base.png",
-		L"progress_center_base.png",
-		L"progress_right_base.png",
-		L"progress_left_top.png",
-		L"progress_center_top.png",
-		L"progress_right_top.png",
+		L"skin\\progress_left_base.png",
+		L"skin\\progress_center_base.png",
+		L"skin\\progress_right_base.png",
+		L"skin\\progress_left_top.png",
+		L"skin\\progress_center_top.png",
+		L"skin\\progress_right_top.png",
 	};
 	for(int i=0; i<6; i++)
 		if (m_progress[i] == NULL) m_renderer1->loadBitmap(&m_progress[i], progress_pics[i]);
@@ -71,7 +70,7 @@ HRESULT dx_player::invalidate_gpu()
 {
 	safe_decommit(m_toolbar_background);
 	safe_decommit(m_UI_logo);
-	for(int i=0; i<7; i++)
+	for(int i=0; i<9; i++)
 		safe_decommit(m_buttons[i]);
 	for(int i=0; i<6; i++)
 		safe_decommit(m_progress[i]);
@@ -96,7 +95,7 @@ HRESULT dx_player::invalidate_cpu()
 
 	safe_delete(m_toolbar_background);
 	safe_delete(m_UI_logo);
-	for(int i=0; i<7; i++)
+	for(int i=0; i<9; i++)
 		safe_delete(m_buttons[i]);
 	for(int i=0; i<6; i++)
 		safe_delete(m_progress[i]);
@@ -105,8 +104,28 @@ HRESULT dx_player::invalidate_cpu()
 
 	return S_OK;
 }
+
+AutoSetting<double> g_scale(L"UIScale", 1.0);
+
 HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 {
+	const double button_size = 40 * g_scale * g_scale;
+	const double margin_button_right = 32 * g_scale;
+	const double margin_button_bottom = 8 * g_scale;
+	const double space_of_each_button = 62 * g_scale;
+	const double toolbar_height = 65 * g_scale;
+	const double width_progress_left = 5 * g_scale;
+	const double width_progress_right = 6 * g_scale;
+	const double margin_progress_right = 460 * g_scale;
+	const double margin_progress_left = 37 * g_scale;
+	const double progress_height = 21 * g_scale;
+	const double progress_margin_bottom = 37 * g_scale;
+	const double volume_base_width = 84 * g_scale;
+	const double volume_base_height = 317 * g_scale;
+	const double volume_margin_right = (156 - 84) * g_scale;
+	const double volume_margin_bottom = (376 - 317) * g_scale;
+	const double volume_button_zero_point = 22 * g_scale;
+	const double volume_bar_height = 255 * g_scale;
 
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
@@ -121,32 +140,35 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 	alpha -= showui ? delta_alpha : -delta_alpha;
 
 	// UILayout
-	int client_width = m_width;
-	int client_height = m_height;
-	int x = client_width - 40 - 32;
-	int y = client_height - 40 - 8;
+	double client_width = m_width;
+	double client_height = m_height;
 
 	// toolbar background
-	RECTF t = {0, client_height - 65, client_width, client_height};
+	RECTF t = {0, client_height - toolbar_height, client_width, client_height};
 	m_renderer1->Draw(surface, m_toolbar_background, NULL, &t, alpha);
 
 
 	// buttons
+	double x = client_width - button_size - margin_button_right;
+	double y = client_height - button_size - margin_button_bottom;
 	for(int i=0; i<7; i++)
 	{
-		RECTF rect = {x, y, x+40, y+40};
-		m_renderer1->Draw(surface,m_buttons[i], NULL, &rect, alpha);
+		RECTF rect = {x, y, x+button_size, y+button_size};
+		int select = i;
+		if (select == 3 && running) 
+			select = 7;
+		if (select == 6 && (bool)m_force_2d)
+			select = 8;
+		m_renderer1->Draw(surface,m_buttons[select], NULL, &rect, alpha);
 
-		x -= 62;
+		x -= space_of_each_button;
 	}
 
-	// left size : 5
-	// center size : 16
-	// right size : 6
-	int x_max = client_width - 460;
-	int x_min = 37;
-	int y_min = client_height - 37;
-	int y_max = y_min + 21;
+	// draw progress
+	double x_max = client_width - margin_progress_right;
+	double x_min = margin_progress_left;
+	double y_min = client_height - progress_margin_bottom;
+	int y_max = y_min + progress_height;
 
 	int total_time = 0;
 	total(&total_time);
@@ -164,34 +186,34 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 	};
 
 	// draw progressbar base
-	RECTF l = {x_min, y_min, x_min + 5, y_max};
+	RECTF l = {x_min, y_min, x_min + width_progress_left, y_max};
 	m_renderer1->Draw(surface,m_progress[left_base], NULL, &l, alpha);
 
-	RECTF l2 = {x_min + 5, y_min, x_max-6, y_max};
+	RECTF l2 = {x_min + width_progress_left, y_min, x_max-width_progress_right, y_max};
 	m_renderer1->Draw(surface,m_progress[center_base], NULL, &l2, alpha);
 
-	RECTF l3 = {x_max-6, y_min, x_max, y_max};
+	RECTF l3 = {x_max-width_progress_right, y_min, x_max, y_max};
 	m_renderer1->Draw(surface,m_progress[right_base], NULL, &l3, alpha);
 
 	// draw progressbar top
-	int progress_width = x_max - x_min;
+	double progress_width = x_max - x_min;
 	float v = value * progress_width;
 	if (v > 1.5)
 	{
-		RECTF t1 = {x_min, y_min, x_min + min(5,v), y_max};
+		RECTF t1 = {x_min, y_min, x_min + min(width_progress_left,v), y_max};
 		m_renderer1->Draw(surface,m_progress[left_top], NULL, &t1, alpha);
 	}
 
-	if (v > 5)
+	if (v > width_progress_left)
 	{
-		float r = min(x_max-6, x_min + v);
-		RECTF t2 = {x_min + 5, y_min, r, y_max};
+		float r = min(x_max-width_progress_right, x_min + v);
+		RECTF t2 = {x_min + width_progress_left, y_min, r, y_max};
 		m_renderer1->Draw(surface,m_progress[center_top], NULL, &t2, alpha);
 	}
 
-	if (v > progress_width - 6)
+	if (v > progress_width - width_progress_right)
 	{
-		RECTF t3 = {x_max-6, y_min, x_max - (progress_width - v), y_max};
+		RECTF t3 = {x_max-width_progress_right, y_min, x_max - (progress_width - v), y_max};
 		m_renderer1->Draw(surface,m_progress[right_top], NULL, &t3, alpha);
 	}
 
@@ -202,19 +224,20 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 	alpha = m_show_volume_bar ? 1.0f : 0.0f;
 	alpha -= m_show_volume_bar ? delta_alpha : -delta_alpha;
 
-
 	// draw volume bottom
-	RECTF volume_rect = {client_width - 156, client_height - 376, 
-		client_width - 156 + 84, client_height - 376 + 317};
+	RECTF volume_rect = {client_width - volume_base_width - volume_margin_right, 
+		client_height - volume_base_height - volume_margin_bottom };
+	volume_rect.right = volume_rect.left + volume_base_width;
+	volume_rect.bottom = volume_rect.top + volume_base_height;
+
 	m_renderer1->Draw(surface,m_volume_base, NULL, &volume_rect, alpha);
 
 
 	// draw volume button
-	int volume_bar_height = 275;
-	double ypos = 23 + volume_bar_height * (1-m_volume);
-	RECTF button_rect = {volume_rect.left + 42 - 20,  volume_rect.top + ypos - 20};
-	button_rect.bottom = button_rect.top + 40;
-	button_rect.right = button_rect.left + 40;
+	double ypos = volume_button_zero_point + volume_bar_height * (1-m_volume);
+	RECTF button_rect = {volume_rect.left + volume_base_width/2 - button_size/2,  volume_rect.top + ypos - 20};
+	button_rect.bottom = button_rect.top + button_size;
+	button_rect.right = button_rect.left + button_size;
 	m_renderer1->Draw(surface,m_volume_button, NULL, &button_rect, alpha);
 
 	return S_OK;
@@ -238,36 +261,58 @@ HRESULT dx_player::hittest(int x, int y, int *out, double *out_value /* = NULL *
 	if (out_value)
 		*out_value = 0;
 
+	const double button_size = 40 * g_scale * g_scale;
+	const double margin_button_right = 32 * g_scale;
+	const double margin_button_bottom = 8 * g_scale;
+	const double space_of_each_button = 62 * g_scale;
+	const double toolbar_height = 65 * g_scale;
+	const double width_progress_left = 5 * g_scale;
+	const double width_progress_right = 6 * g_scale;
+	const double margin_progress_right = 460 * g_scale;
+	const double margin_progress_left = 37 * g_scale;
+	const double progress_height = 21 * g_scale;
+	const double progress_margin_bottom = 37 * g_scale;
+	const double volume_base_width = 84 * g_scale;
+	const double volume_base_height = 317 * g_scale;
+	const double volume_margin_right = (156 - 84) * g_scale;
+	const double volume_margin_bottom = (376 - 317) * g_scale;
+	const double volume_button_zero_point = 22 * g_scale;
+	const double volume_bar_height = 255 * g_scale;
+	const double hidden_progress_width = 72 * g_scale;
+
+
 	// hidden volume and brightness 
-	if (((m_width - 72 <= x && x < m_width)  ||
-		(0 <= x && x < 72))
-		&& y < m_height - 64
+	if (((m_width - hidden_progress_width <= x && x < m_width)  ||
+		(0 <= x && x < hidden_progress_width))
+		&& y < m_height - toolbar_height
 		)
 	{
 		if (out_value)
 		{
-			*out_value = (double)(m_height-y) / (m_height-64);
+			*out_value = (double)(m_height-y) / (m_height-toolbar_height);
 			if(*out_value>1) *out_value = 1;
 			if(*out_value<0) *out_value = 0;
 		}
-		rt(x < 100 ? hit_brightness : hit_volume2);
+		rt(x <= hidden_progress_width ? hit_brightness : hit_volume2);
 	}
 
-	int button_x = m_width - 40 - 32;
+	int button_x = m_width - button_size - margin_button_right;
 	int button_outs[7] = {hit_full, hit_volume_button, hit_next, hit_play, hit_previous, hit_stop, hit_3d_swtich};
+	double button_top = margin_button_bottom + button_size;
+
 	for(int i=0; i<7; i++)
 	{
-		if (m_height - 52 < y && y< m_height - 4 && button_x < x && x < button_x + 40)
+		if (m_height - button_top < y && y< m_height - margin_button_bottom && button_x < x && x < button_x + button_size)
 			rt(button_outs[i]);
-		button_x -= 62;
+		button_x -= space_of_each_button;
 	}
 
 	// progress bar
-	int progressbar_right = m_width - 460;
-	int progressbar_left = 37;
+	int progressbar_right = m_width - margin_progress_right;
+	int progressbar_left = margin_progress_left;
 
 
-	if (m_height - 52 < y && y< m_height - 4 && progressbar_left - 5 < x && x < progressbar_right + 5)
+	if (m_height - button_top < y && y< m_height - margin_button_bottom && progressbar_left - 5 < x && x < progressbar_right + 5)
 	{
 		if (out_value)
 		{
@@ -279,15 +324,17 @@ HRESULT dx_player::hittest(int x, int y, int *out, double *out_value /* = NULL *
 	}
 
 	// volume bar
-	RECTF volume_rect = {m_width - 156, m_height - 376, 
-		m_width - 156 + 84, m_height - 376 + 317};
+	RECTF volume_rect = {m_width - volume_base_width - volume_margin_right, 
+		m_height - volume_base_height - volume_margin_bottom };
+	volume_rect.right = volume_rect.left + volume_base_width;
+	volume_rect.bottom = volume_rect.top + volume_base_height;
+
 	if (volume_rect.left < x && x < volume_rect.right &&
 		volume_rect.top < y && y < volume_rect.bottom)
 	{
 		if (out_value)
 		{
-			int volume_bar_height = 275;
-			*out_value = 1 - (double)(y - 23 - volume_rect.top) / volume_bar_height;
+			*out_value = 1 - (double)(y - volume_button_zero_point - volume_rect.top) / volume_bar_height;
 			if(*out_value>1) *out_value = 1;
 			if(*out_value<0) *out_value = 0;
 		}
@@ -296,7 +343,7 @@ HRESULT dx_player::hittest(int x, int y, int *out, double *out_value /* = NULL *
 	}
 
 
-	*out = y < m_height - 64 ? hit_logo : hit_bg;
+	*out = y < m_height - toolbar_height ? hit_logo : hit_bg;
 	return S_OK;
 }
 

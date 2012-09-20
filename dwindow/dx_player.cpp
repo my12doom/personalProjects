@@ -247,8 +247,10 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 
 	// set timer for ui drawing and states updating
 	// ui
+	m_show_volume_bar = false;
 	m_show_ui = false;
 	m_ui_visible_last_change_time = timeGetTime();
+	m_volume_visible_last_change_time = timeGetTime();
 	reset_timer(2, 125);
 
 	// init dshow
@@ -897,16 +899,19 @@ LRESULT dx_player::on_display_change()
 
 	return S_OK;
 }
+extern AutoSetting<double> g_scale;
 
 LRESULT dx_player::on_key_down(int id, int key)
 {
 	switch (key)
 	{
 	case '1':
+ 		g_scale = g_scale + 0.01;
 		m_mirror1 ++;
 		break;
 
 	case '2':
+ 		g_scale = g_scale - 0.01;
 		m_mirror2 ++;
 		break;
 
@@ -1072,7 +1077,7 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 	}
 	else if ( (mouse.x - m_mouse.x) * (mouse.x - m_mouse.x) + (mouse.y - m_mouse.y) * (mouse.y - m_mouse.y) >= 100)
 	{
-		if (type != hit_volume2 && type != hit_brightness && !m_dragging)
+		if (type != hit_volume2 && type != hit_brightness && m_dragging == -1)
 		{
 			show_mouse(true);
 			show_ui(true);
@@ -1462,7 +1467,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		}
 		else if (type == hit_volume_button)
 		{
-			show_volume_bar(true);
+			show_volume_bar(!m_show_volume_bar);
 		}
 		else if (type == hit_brightness && m_has_multi_touch)
 		{
