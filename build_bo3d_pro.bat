@@ -25,6 +25,8 @@ copy/y dwindow\alpha.raw dwindow_NSIS
 copy/y dwindow\logo.raw dwindow_NSIS
 copy/y dwindow\release_personal\StereoPlayer.exe dwindow_NSIS
 del/q dwindow_NSIS\codec\*.*
+del/q dwindow_NSIS\skin\*.*
+copy/y dwindow\skin\*.* dwindow_NSIS\skin
 copy/y dwindow\xvidcore.dll dwindow_NSIS
 copy/y 3rdFilter\*.* dwindow_NSIS\codec
 copy/y mySplitter\release_mt\mySplitter.ax dwindow_NSIS\codec

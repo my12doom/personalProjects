@@ -249,8 +249,8 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	// ui
 	m_show_volume_bar = false;
 	m_show_ui = false;
-	m_ui_visible_last_change_time = timeGetTime();
-	m_volume_visible_last_change_time = timeGetTime();
+	m_ui_visible_last_change_time = timeGetTime() - 5000;
+	m_volume_visible_last_change_time = timeGetTime() - 5000;
 	reset_timer(2, 125);
 
 	// init dshow
@@ -906,12 +906,12 @@ LRESULT dx_player::on_key_down(int id, int key)
 	switch (key)
 	{
 	case '1':
- 		g_scale = g_scale + 0.01;
+//  		g_scale = g_scale + 0.01;
 		m_mirror1 ++;
 		break;
 
 	case '2':
- 		g_scale = g_scale - 0.01;
+//  		g_scale = g_scale - 0.01;
 		m_mirror2 ++;
 		break;
 
