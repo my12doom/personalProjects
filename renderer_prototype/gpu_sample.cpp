@@ -3,10 +3,13 @@
 #include <d3d9.h>
 #include "TextureAllocator.h"
 #include "my12doomRendererTypes.h"
+#include "..\dwindow\global_funcs.h"
 
 #include "gpu_sample.h"
 #include "..\ZBuffer\stereo_test.h"
 #include "unpack_YUY2.h"
+#include "../png2raw/include/il/il.h"
+#pragma comment(lib, "../png2raw/lib/DevIL.lib")
 
 extern HRESULT mylog(wchar_t *format, ...);
 extern HRESULT mylog(const char *format, ...);
@@ -171,7 +174,7 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 		hr = device->SetPixelShader(NULL);
 		if (m_format == MEDIASUBTYPE_YV12) hr = device->SetPixelShader(ps_yv12);
 		if (m_format == MEDIASUBTYPE_NV12 || m_format == MEDIASUBTYPE_YUY2) hr = device->SetPixelShader(ps_nv12);
-		float rect_data[8] = {m_width, m_height, m_width/2, m_height, (float)time/100000, (float)timeGetTime()/100000};
+		float rect_data[8] = {m_width, m_height, m_width/2, m_height, (float)time/100000, (float)timeGetTime()/100000, 1.0f};
 		hr = device->SetPixelShaderConstantF(0, rect_data, 2);
 		hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
 		hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
@@ -605,6 +608,134 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 	m_cpu_stereo_tested = do_cpu_test;
 
+
+	//prepare_rendering();
+	//if (timeGetTime() - l > 5)
+	//mylog("load():createTexture time:%d ms, load data to GPU cost %d ms.\n", l2- l, timeGetTime()-l2);
+
+	return;
+
+clearup:
+	safe_delete(m_tex_RGB32);
+	safe_delete(m_tex_Y);
+	safe_delete(m_tex_YV12_UV);
+	safe_delete(m_tex_NV12_UV);
+	safe_delete(m_tex_YUY2_UV);
+}
+
+extern CCritSec g_ILLock;
+gpu_sample::gpu_sample(const wchar_t *filename, CTextureAllocator *allocator)
+{
+	//CAutoLock lck(&g_gpu_lock);
+	m_allocator = allocator;
+	m_interlace_flags = 0;
+	m_tex_RGB32 = m_tex_YUY2_UV = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
+	m_tex_gpu_RGB32 = m_tex_gpu_YUY2_UV = m_tex_gpu_Y = m_tex_gpu_YV12_UV = m_tex_gpu_NV12_UV = NULL;
+	m_surf_YV12 = m_surf_NV12 = m_surf_YUY2 = NULL;
+	m_surf_gpu_YV12 = m_surf_gpu_NV12 = m_surf_gpu_YUY2 = NULL;
+	m_tex_stereo_test = m_tex_stereo_test_cpu = NULL;
+	m_width = 0;
+	m_height = 0;
+	m_ready = false;
+	m_format = MEDIASUBTYPE_RGB32;
+	m_topdown = false;
+	m_prepared_for_rendering = false;
+	m_converted = false;
+	m_cpu_stereo_tested = false;
+	m_cpu_tested_result = input_layout_auto;		// means unknown
+	CAutoLock lck(&g_ILLock);
+	HRESULT hr;
+	if (!allocator)
+		goto clearup;
+
+	int l = timeGetTime();
+
+	m_ready = true;
+	//return;
+
+	m_StretchRect = false;
+
+
+	m_pool = D3DPOOL_SYSTEMMEM;
+	m_ready = true;
+
+
+	int l2 = timeGetTime();
+
+	// file decoding
+	USES_CONVERSION;
+	ilInit();
+	ilOriginFunc(IL_ORIGIN_UPPER_LEFT);
+	ilEnable(IL_ORIGIN_SET);
+	wchar_t pathname[MAX_PATH];
+	if (filename[1] != L':')
+	{
+		GetModuleFileNameW(NULL, pathname, MAX_PATH);
+		for(int i=wcslen(pathname); i>0; i--)
+			if (pathname[i] == L'\\')
+			{
+				pathname[i+1] = NULL;
+				break;
+			}
+		wcscat(pathname, filename);
+	}
+	else
+		wcscpy(pathname, filename);
+
+	// get file data and size
+	FILE *f = _wfopen(pathname, L"rb");
+	if (!f)
+		goto clearup;
+	fseek(f, 0, SEEK_END);
+	int size = ftell(f);
+	char *data = new char[size];
+	fseek(f, 0, SEEK_SET);
+	fread(data, 1, size, f);
+	fclose(f);
+
+	ILboolean result = ilLoadL(IL_TYPE_UNKNOWN, data, size);
+
+	delete [] data;
+	if (!result)
+	{
+		ILenum err = ilGetError() ;
+		printf( "the error %d\n", err );
+		printf( "string is %s\n", ilGetString( err ) );
+		hr = VFW_E_INVALID_FILE_FORMAT;
+		goto clearup;
+	}
+
+	ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE);
+	int decoded_size = ilGetInteger(IL_IMAGE_SIZE_OF_DATA);
+	m_width = ilGetInteger(IL_IMAGE_WIDTH);
+	m_height = ilGetInteger(IL_IMAGE_HEIGHT);
+	// swap color order: from BGR to RGB
+
+	JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_A8R8G8B8,D3DPOOL_SYSTEMMEM,	&m_tex_RGB32));
+
+
+	// data loading
+	D3DLOCKED_RECT &d3dlr = m_tex_RGB32->locked_rect;
+	BYTE * src = (BYTE*)ilGetData();
+	BYTE * dst = (BYTE *)d3dlr.pBits;
+	if (m_format == MEDIASUBTYPE_RGB32 || m_format == MEDIASUBTYPE_ARGB32)
+	{
+		for(int i=0; i<m_height; i++)
+		{
+			memcpy(dst, src, m_width*4);
+
+			src += m_width*4;
+			dst += d3dlr.Pitch;
+		}
+
+		RGBQUAD *p = (RGBQUAD *)d3dlr.pBits;
+		for(int i=0; i<m_width*m_height; i++)
+		{
+			p[i].rgbBlue ^= p[i].rgbRed;
+			p[i].rgbRed ^= p[i].rgbBlue;
+			p[i].rgbBlue ^= p[i].rgbRed;
+		}
+	}
 
 	//prepare_rendering();
 	//if (timeGetTime() - l > 5)

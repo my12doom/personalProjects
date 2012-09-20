@@ -237,6 +237,7 @@ protected:
 	CCritSec m_draw_sec;
 	CCritSec m_seek_sec;
 	bool m_show_ui;
+	bool m_show_volume_bar;
 	int m_dragging;	// = 0
 	POINT m_mouse_down_point;	// = 0
 	int m_mouse_down_time;
@@ -246,6 +247,7 @@ protected:
 	AutoSetting<double> m_normalize_audio;	// = false
 	AutoSetting<int> m_channel;	// = false
 	HRESULT show_ui(bool show);
+	HRESULT show_volume_bar(bool show);
 	HRESULT on_dshow_event();		//"on move window"
 	HRESULT init_direct_show();
 	HRESULT exit_direct_show();
@@ -334,6 +336,7 @@ protected:
 	int m_width;
 	int m_height;
 	int m_ui_visible_last_change_time;
+	int m_volume_visible_last_change_time;
 	IDirect3DDevice9 *m_Device;
 	CComPtr<IDirect3DVertexBuffer9> m_vertex;
 	CComPtr<IDirect3DTexture9> m_ui_logo_cpu;
@@ -345,6 +348,7 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_UI;
 	HRESULT init_ui2(IDirect3DSurface9 * surface);
 	HRESULT draw_ui2(IDirect3DSurface9 * surface);
+
 
 	//elements
 	UI_element_fixed
@@ -365,4 +369,14 @@ protected:
 		progressbar,
 		progress_top,
 		progress_bottom;
+#define VSTAR
+//#ifdef VSTAR
+	gpu_sample *m_toolbar_background;
+	gpu_sample *m_UI_logo;
+	gpu_sample *m_buttons[7];
+	gpu_sample *m_progress[6];
+	gpu_sample *m_volume_base;
+	gpu_sample *m_volume_button;
+
+//#endif
 };

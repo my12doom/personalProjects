@@ -1,7 +1,9 @@
+#pragma once
 class gpu_sample
 {
 public:
 	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test = false, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM, DWORD PC_LEVEL = 0);
+	gpu_sample(const wchar_t *filename, CTextureAllocator *allocator);	// warning: not pooled
 	~gpu_sample();
 	HRESULT commit();		// it's just unlock textures
 	HRESULT decommit();

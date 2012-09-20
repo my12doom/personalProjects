@@ -29,7 +29,7 @@ char g_passkey[32];
 char g_passkey_big[128];
 DWORD g_last_bar_time;
 char g_ad_address[512] = {0};
-
+CCritSec g_ILLock;
 
 int g_logic_monitor_count;
 RECT g_logic_monitor_rects[16];

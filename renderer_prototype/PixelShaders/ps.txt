@@ -19,7 +19,7 @@ float4 p2 : register(c2);
 #define t_width (p0[2])
 #define t_height (p0[3])
 
-#define repeat_x (p0[0])
+#define additional_alpha (p1[2])
 #define repeat_y (p0[1])
 
 #define dx (1/width)
@@ -45,6 +45,10 @@ float4 main(float2 tex : TEXCOORD0) : COLOR
 	//return float4(1,tex.x,tex.y,1);
 }
 
+float4 alpha_only(float2 tex : TEXCOORD0) : COLOR
+{
+	return tex2D(s0, tex) * additional_alpha;
+}
 
 float4 yuv2rgb(float4 yuv)
 {
@@ -185,7 +189,7 @@ float4 NV12toRGB(float2 tex : TEXCOORD0) : COLOR		//NV12
 	if (time2<=time1 || time2-time1>2000 || time2<0.1)
 		return tex2D(s0, tex);
 		
-	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex)[0], tex2D(s1, tex)[3], 1));
+	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex)[0], tex2D(s1, tex)[3], 1)) * additional_alpha;
 }
 
 float4 YV12toRGB(float2 tex : TEXCOORD0) : COLOR
@@ -195,7 +199,7 @@ float4 YV12toRGB(float2 tex : TEXCOORD0) : COLOR
 		
 	float2 tex_v = {tex.x, tex.y/2};
 	float2 tex_u = {tex.x, tex.y/2+0.5};
-	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex_u)[0], tex2D(s1, tex_v)[0], 1));
+	return yuv2rgb(float4(tex2D(s0, tex)[0], tex2D(s1, tex_u)[0], tex2D(s1, tex_v)[0], 1))  * additional_alpha;
 }
 
 #define tx (p0[0])

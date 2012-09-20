@@ -7,6 +7,7 @@
 #include "..\my12doom_revision.h"
 #include <dxva.h>
 #include <dxva2api.h>
+#include <streams.h>
 
 // ffdshow
 #include <streams.h>
@@ -54,6 +55,7 @@ extern HMONITOR g_phy_monitors[16];
 extern D3DADAPTER_IDENTIFIER9 g_phy_ids[16];
 extern D3DADAPTER_IDENTIFIER9 g_logic_ids[16];
 extern HMONITOR g_logic_monitors[16];
+extern CCritSec g_ILLock;
 
 //definitions
 #define AmHresultFromWin32(x) (MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, x))

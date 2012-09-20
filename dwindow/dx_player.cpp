@@ -169,7 +169,6 @@ m_swap_eyes(L"SwapEyes", false),
 m_force_2d(L"Force2D", false),
 m_movie_pos_x(L"MoviePosX", 0),
 m_movie_pos_y(L"MoviePosY", 0),
-m_simple_audio_switching(L"SimpleAudioSwitching", false),
 m_has_multi_touch(false),
 m_widi_has_support(false),
 m_widi_inited(false),
@@ -178,13 +177,26 @@ m_widi_connected(false),
 m_widi_num_adapters_found(0),
 m_widi_screen_mode(L"WidiScreenMode", SM::Clone, REG_DWORD),
 m_widi_resolution_width(L"WidiScreenWidth", 0, REG_DWORD),
-m_widi_resolution_height(L"WidiScreenHeight", 0, REG_DWORD)
+m_widi_resolution_height(L"WidiScreenHeight", 0, REG_DWORD),
+m_toolbar_background(NULL),
+m_UI_logo(NULL),
+#ifdef VSTAR
+#endif
+m_simple_audio_switching(L"SimpleAudioSwitching", false)
 {
 	// touch 
 	if (GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
 		m_has_multi_touch = true;
 	m_has_multi_touch = true;
 
+	//
+	m_toolbar_background = NULL;
+	m_UI_logo = NULL;
+	memset(m_buttons, 0, sizeof(m_buttons));
+	memset(m_progress, 0, sizeof(m_progress));
+	m_toolbar_background = NULL;
+	m_volume_base = NULL;
+	m_volume_button = NULL;
 
 	m_log = NULL;
 	detect_monitors();
@@ -1027,12 +1039,6 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 {
 	POINT mouse;
 	GetCursorPos(&mouse);
-	if ( (mouse.x - m_mouse.x) * (mouse.x - m_mouse.x) + (mouse.y - m_mouse.y) * (mouse.y - m_mouse.y) >= 100)
-	{
-		show_mouse(true);
-		show_ui(true);
-		reset_timer(1, 2000);
-	}
 
 	double v;
 	int type = hittest(x, y, id_to_hwnd(id), &v);
@@ -1064,17 +1070,14 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 		total(&total_time);
 		seek((int)(total_time * v));
 	}
-	else if (type == hit_next)
+	else if ( (mouse.x - m_mouse.x) * (mouse.x - m_mouse.x) + (mouse.y - m_mouse.y) * (mouse.y - m_mouse.y) >= 100)
 	{
-		playlist_play_next();
-	}
-	else if (type == hit_previous)
-	{
-		playlist_play_previous();
-	}
-	else if (type == hit_3d_swtich)
-	{
-		set_force_2d(!m_force_2d);
+		if (type != hit_volume2 && type != hit_brightness && !m_dragging)
+		{
+			show_mouse(true);
+			show_ui(true);
+			reset_timer(1, 2000);
+		}
 	}
 
 	return S_OK;
@@ -1413,15 +1416,15 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 {
 	if (!m_gb)
 		return __super::on_mouse_down(id, button, x, y);
-	show_ui(true);
-	show_mouse(true);
-	reset_timer(1, 99999999);
 
 
 
 	if ( (button == VK_RBUTTON || (!m_file_loaded && hittest(x, y, id_to_hwnd(id), NULL) == hit_logo) && 
 		(!m_renderer1 || !m_renderer1->get_fullscreen())))
 	{
+		show_ui(true);
+		show_mouse(true);
+		reset_timer(1, 99999999);
 		popup_menu(id_to_hwnd(1));
 	}
 	else if (button == VK_LBUTTON)
@@ -1429,6 +1432,13 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		double v;
 		int type = -1;
 		if (m_renderer1) type = hittest(x, y, id_to_hwnd(id), &v);
+
+		if (type != hit_volume2 && type != hit_brightness)
+		{
+			show_ui(true);
+			show_mouse(true);
+			reset_timer(1, 99999999);
+		}
 
 		if (type == hit_play)
 		{
@@ -1440,13 +1450,19 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		}
 		else if (type == hit_volume)
 		{
+			show_volume_bar(true);
 			set_volume(v);
 			m_dragging = hit_volume;
 		}
 		else if (type == hit_volume2 && m_has_multi_touch)
 		{
+			show_volume_bar(true);
 			m_dragging = hit_volume2;
 			m_dragging_value = v;
+		}
+		else if (type == hit_volume_button)
+		{
+			show_volume_bar(true);
 		}
 		else if (type == hit_brightness && m_has_multi_touch)
 		{
@@ -1460,6 +1476,23 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 			seek((int)(total_time * v));
 			m_dragging = hit_progress;
 		}
+		else if (type == hit_next)
+		{
+			playlist_play_next();
+		}
+		else if (type == hit_previous)
+		{
+			playlist_play_previous();
+		}
+		else if (type == hit_3d_swtich)
+		{
+			set_force_2d(!m_force_2d);
+		}
+		else if (type == hit_stop)
+		{
+			reset();
+		}
+
 		else if (type < 0 && !m_full1 && (!m_renderer1 || !m_renderer1->get_fullscreen()))
 		{
 			// move this window
@@ -1583,6 +1616,7 @@ LRESULT dx_player::on_timer(int id)
 		{
 			show_mouse(false);
 			show_ui(false);
+			show_volume_bar(false);
 		}
 	}
 
@@ -2642,6 +2676,14 @@ HRESULT dx_player::show_ui(bool show)
 	if (show != m_show_ui)
 		m_ui_visible_last_change_time = timeGetTime();
 	m_show_ui = show;
+	return S_OK;
+}
+
+HRESULT dx_player::show_volume_bar(bool show)
+{
+	if (show != m_show_volume_bar)
+		m_volume_visible_last_change_time = timeGetTime();
+	m_show_volume_bar = show;
 	return S_OK;
 }
 

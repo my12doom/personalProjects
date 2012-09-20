@@ -6,8 +6,6 @@
 #include "../png2raw/include/il/il.h"
 #pragma comment(lib, "../png2raw/lib/DevIL.lib")
 
-CCritSec g_ILLock;
-
 #define FPS 24
 #define LENGTH 10
 #define safe_delete(x) {if(x) delete[]x; x=NULL;}
@@ -60,6 +58,8 @@ HRESULT my12doomImageSource::GetLayout(DWORD *out)
 	*out = m_layout | IStereoLayout_StillImage;
 	return S_OK;
 }
+
+extern CCritSec g_ILLock;
 
 STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_MEDIA_TYPE *pmt)
 {

@@ -18,6 +18,7 @@
 #include "PixelShaders/blur2.h"
 #include "PixelShaders/lanczosAll.h"
 #include "PixelShaders/multiview4.h"
+#include "PixelShaders/Alpha.h"
 #include "3dvideo.h"
 #include <dvdmedia.h>
 #include <math.h>
@@ -247,7 +248,6 @@ void my12doomRenderer::init_variables()
 	m_bmp_parallax = 0;
 	m_bmp_width = 0;
 	m_bmp_height = 0;
-	m_total_time = 0;
 }
 
 my12doomRenderer::~my12doomRenderer()
@@ -1278,6 +1278,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_lanczos_NV12.invalid();
 	m_lanczos_YV12.invalid();
 	m_multiview4.invalid();
+	m_alpha_multiply.invalid();
 
 	// query
 	//m_d3d_query = NULL;
@@ -1458,6 +1459,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_lanczos_NV12.set_source(m_Device, g_code_lanczos_NV12, sizeof(g_code_lanczos_NV12), true, (DWORD*)m_key);
 	m_lanczos_YV12.set_source(m_Device, g_code_lanczos_YV12, sizeof(g_code_lanczos_YV12), true, (DWORD*)m_key);
 	m_multiview4.set_source(m_Device, g_code_multiview4, sizeof(g_code_multiview4), true, (DWORD*)m_key);
+	m_alpha_multiply.set_source(m_Device, g_code_alpha_only, sizeof(g_code_alpha_only), true, (DWORD*)m_key);
 
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
@@ -2385,20 +2387,26 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 	if (!surface)
 		return E_POINTER;
 
-	if (m_total_time == 0)
-	{
-		CComPtr<IFilterGraph> fg;
-		FILTER_INFO fi;
-		m_dsr0->QueryFilterInfo(&fi);
-		fg.Attach(fi.pGraph);
-		CComQIPtr<IMediaSeeking, &IID_IMediaSeeking> ms(fg);
-
-		if (ms)
-			ms->GetDuration(&m_total_time);
-	}
 	CAutoLock lck(&m_uidrawer_cs);
 	return m_uidrawer == NULL ? E_FAIL : m_uidrawer->draw_ui(surface, m_dsr0->m_State == State_Running);
 }
+
+HRESULT my12doomRenderer::loadBitmap(gpu_sample **out, wchar_t *file)
+{
+	if (!out)
+		return E_POINTER;
+
+	CAutoLock lck(&m_pool_lock);
+	*out = new gpu_sample(file, m_pool);
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::Draw(IDirect3DSurface9 *rt, gpu_sample *resource, RECTF *src, RECTF *dst, float alpha)
+{
+	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	return resize_surface(NULL, resource, rt, src, dst, bilinear_no_mipmap, alpha);
+}
+
 
 HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left)
 {
@@ -2489,7 +2497,7 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 	return hr;
 }
 
-HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECT *src_rect /* = NULL */, RECT *dst_rect /* = NULL */, resampling_method method /* = bilinear_mipmap_minus_one */)
+HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECT *src_rect /* = NULL */, RECT *dst_rect /* = NULL */, resampling_method method /* = bilinear_mipmap_minus_one */, float alpha /*= 1.0f*/)
 {
 	if ((!src && !src2) || !dst)
 		return E_POINTER;
@@ -2526,11 +2534,11 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		s.bottom = src2->m_height;
 	}
 
-	return resize_surface(src, src2, dst, &s, &d, method);
+	return resize_surface(src, src2, dst, &s, &d, method, alpha);
 }
 
 
-HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECTF *src_rect /* = NULL */, RECTF *dst_rect /* = NULL */, resampling_method method /* = bilinear_mipmap_minus_one */)
+HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECTF *src_rect /* = NULL */, RECTF *dst_rect /* = NULL */, resampling_method method /* = bilinear_mipmap_minus_one */, float alpha /*= 1.0f*/)
 {
 	if ((!src && !src2) || !dst)
 		return E_POINTER;
@@ -2665,7 +2673,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		{
 			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_rgb32));
 			m_Device->SetTexture(1, NULL);
-			shader_yuv = NULL;
+			shader_yuv = m_alpha_multiply;
 		}
 	}
 	hr = m_Device->SetPixelShader(shader_yuv);
@@ -2733,7 +2741,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			m_Device->SetPixelShader(lanczos_shader);
 		else
 		{
-			float rect_data[8] = {m_lVidWidth, m_lVidHeight, m_lVidWidth/2, m_lVidHeight, (float)m_last_reset_time/100000, (float)timeGetTime()/100000};
+			float rect_data[8] = {m_lVidWidth, m_lVidHeight, m_lVidWidth/2, m_lVidHeight, (float)m_last_reset_time/100000, (float)timeGetTime()/100000, alpha};
 			hr = m_Device->SetPixelShaderConstantF(0, rect_data, 2);
 			m_Device->SetPixelShader(shader_yuv);
 		}
@@ -2837,8 +2845,10 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			// so if we need to use MIPMAP, then we need convert to RGB32 first;
 			FAIL_RET(src2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, NULL, NULL, m_last_reset_time));
 			m_Device->SetTexture(0, src2->m_tex_gpu_RGB32->texture);
-			shader_yuv = NULL;
+			shader_yuv = m_alpha_multiply;
 		}
+
+		float shader_alpha_parameter[8] = {0,0,0,0,0,0,alpha};
 
 		float mip_lod = (method == bilinear_mipmap_minus_one) ?  -1.0f : 0.0f;
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
@@ -2851,6 +2861,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		m_Device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
 		m_Device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 		m_Device->SetSamplerState(0, D3DSAMP_BORDERCOLOR, 0);					// set to border mode, to remove a single half-line
+		hr = m_Device->SetPixelShaderConstantF(0, shader_alpha_parameter, 2);
 		hr = m_Device->SetPixelShader(shader_yuv);
 		hr = m_Device->SetStreamSource( 0, NULL, 0, sizeof(MyVertex) );
 		hr = m_Device->SetFVF( FVF_Flags );

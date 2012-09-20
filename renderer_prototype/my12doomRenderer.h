@@ -320,9 +320,9 @@ protected:
 	// assume dst has D3DUSAGE_RENDERTARGET Flag
 	// assume src is first level of a texture
 	HRESULT resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECT *src_rect = NULL, RECT *dst_rect = NULL,
-							resampling_method method = bilinear_mipmap_minus_one);
+							resampling_method method = bilinear_mipmap_minus_one, float alpha = 1.0f);
 	HRESULT resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECTF *src_rect = NULL, RECTF *dst_rect = NULL, 
-							resampling_method method = bilinear_mipmap_minus_one);
+							resampling_method method = bilinear_mipmap_minus_one, float alpha = 1.0f);
 #ifdef DEBUG
 	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_ARGB(0, 0, 0, 0));
 #else
@@ -454,6 +454,7 @@ protected:
 	my12doom_auto_shader m_lanczos_YV12;
 	my12doom_auto_shader m_lanczos_NV12;
 	my12doom_auto_shader m_multiview4;
+	my12doom_auto_shader m_alpha_multiply;
 
 	// TV - PC level test surfaces
 	CComPtr<IDirect3DSurface9> m_PC_level_test;
@@ -500,8 +501,10 @@ protected:
 	// test draw ui
 	CCritSec m_uidrawer_cs;
 	ui_drawer_base *m_uidrawer;
+public:
 
-	REFERENCE_TIME m_total_time;
+	HRESULT loadBitmap(gpu_sample **out, wchar_t *file);
+	HRESULT Draw(IDirect3DSurface9 *rt, gpu_sample *resource, RECTF *src, RECTF *dst, float alpha);
 
 };
 
