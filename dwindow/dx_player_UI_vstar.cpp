@@ -124,8 +124,8 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 	const double volume_base_height = 317 * g_scale;
 	const double volume_margin_right = (156 - 84) * g_scale;
 	const double volume_margin_bottom = (376 - 317) * g_scale;
-	const double volume_button_zero_point = 22 * g_scale;
-	const double volume_bar_height = 255 * g_scale;
+	const double volume_button_zero_point = 32 * g_scale;
+	const double volume_bar_height = 265 * g_scale;
 
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
@@ -276,8 +276,8 @@ HRESULT dx_player::hittest(int x, int y, int *out, double *out_value /* = NULL *
 	const double volume_base_height = 317 * g_scale;
 	const double volume_margin_right = (156 - 84) * g_scale;
 	const double volume_margin_bottom = (376 - 317) * g_scale;
-	const double volume_button_zero_point = 22 * g_scale;
-	const double volume_bar_height = 255 * g_scale;
+	const double volume_button_zero_point = 32 * g_scale;
+	const double volume_bar_height = 265 * g_scale;
 	const double hidden_progress_width = 72 * g_scale;
 
 
