@@ -11,6 +11,8 @@ HRESULT dx_player::init_gpu(int width, int height, IDirect3DDevice9 *device)
 	safe_commit(m_UI_logo);
 	for(int i=0; i<9; i++)
 		safe_commit(m_buttons[i]);
+	for(int i=0; i<11; i++)
+		safe_commit(m_numbers[i]);
 	for(int i=0; i<6; i++)
 		safe_commit(m_progress[i]);
 	safe_commit(m_volume_base);
@@ -49,6 +51,12 @@ HRESULT dx_player::init_cpu(int width, int height, IDirect3DDevice9 *device)
 	};
 	for(int i=0; i<9; i++)
 		if (m_buttons[i] == NULL) m_renderer1->loadBitmap(&m_buttons[i], buttons_pic[i]);
+	for(int i=0; i<11; i++)
+	{
+		wchar_t tmp[100];
+		wsprintfW(tmp, L"skin\\%d.png", i);
+		if (m_numbers[i] == NULL) m_renderer1->loadBitmap(&m_numbers[i], tmp);
+	}
 
 
 	wchar_t progress_pics[6][MAX_PATH] = 
@@ -72,6 +80,8 @@ HRESULT dx_player::invalidate_gpu()
 	safe_decommit(m_UI_logo);
 	for(int i=0; i<9; i++)
 		safe_decommit(m_buttons[i]);
+	for(int i=0; i<11; i++)
+		safe_decommit(m_numbers[i]);
 	for(int i=0; i<6; i++)
 		safe_decommit(m_progress[i]);
 	safe_decommit(m_volume_base);
@@ -97,6 +107,8 @@ HRESULT dx_player::invalidate_cpu()
 	safe_delete(m_UI_logo);
 	for(int i=0; i<9; i++)
 		safe_delete(m_buttons[i]);
+	for(int i=0; i<11; i++)
+		safe_delete(m_numbers[i]);
 	for(int i=0; i<6; i++)
 		safe_delete(m_progress[i]);
 	safe_delete(m_volume_base);
@@ -119,13 +131,18 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 	const double margin_progress_right = 460 * g_scale;
 	const double margin_progress_left = 37 * g_scale;
 	const double progress_height = 21 * g_scale;
-	const double progress_margin_bottom = 37 * g_scale;
+	const double progress_margin_bottom = 27 * g_scale;
 	const double volume_base_width = 84 * g_scale;
 	const double volume_base_height = 317 * g_scale;
 	const double volume_margin_right = (156 - 84) * g_scale;
 	const double volume_margin_bottom = (376 - 317) * g_scale;
 	const double volume_button_zero_point = 32 * g_scale;
 	const double volume_bar_height = 265 * g_scale;
+	const double numbers_left_margin = 21 * g_scale;
+	const double numbers_right_margin = 455 * g_scale;
+	const double numbers_width = 12 * g_scale;
+	const double numbers_height = 20 * g_scale;
+	const double numbers_bottom_margin = 26;
 
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
@@ -217,6 +234,64 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 		m_renderer1->Draw(surface,m_progress[right_top], NULL, &t3, alpha);
 	}
 
+
+	// draw numbers
+	if (m_file_loaded)
+	{
+		for(int i=0; i<2; i++)
+		{
+			int ms = i?(int)(total_time) : (int)(m_current_time);
+			int s = ms / 1000;
+			int hour = (s / 3600) % 100;
+			int h1 = hour/10;
+			int h2 = hour%10;
+			int minute1 = (s/60 /10) % 6;
+			int minute2 = (s/60) % 10;
+			int s1 = (s/10) % 6;
+			int s2 = s%10;
+
+			double left = i ? (m_width - numbers_right_margin - numbers_width * 8)
+				: (numbers_left_margin);
+			double top = m_height - numbers_bottom_margin - numbers_height;
+
+			// H1H2:M1M2:S1S2
+			RECTF r = {left, top, left + numbers_width, top + numbers_height};
+
+			m_renderer1->Draw(surface,m_numbers[h1], NULL, &r, alpha);
+			r.left += numbers_width;
+			r.right += numbers_width;
+
+			m_renderer1->Draw(surface,m_numbers[h2], NULL, &r, alpha);
+			r.left += numbers_width;
+			r.right += numbers_width;
+
+			m_renderer1->Draw(surface,m_numbers[10], NULL, &r, alpha);
+			r.left += numbers_width;
+			r.right += numbers_width;
+
+			m_renderer1->Draw(surface,m_numbers[minute1], NULL, &r, alpha);
+			r.left += numbers_width;
+			r.right += numbers_width;
+
+			m_renderer1->Draw(surface,m_numbers[minute2], NULL, &r, alpha);
+			r.left += numbers_width;
+			r.right += numbers_width;
+
+			m_renderer1->Draw(surface,m_numbers[10], NULL, &r, alpha);
+			r.left += numbers_width;
+			r.right += numbers_width;
+
+			m_renderer1->Draw(surface,m_numbers[s1], NULL, &r, alpha);
+			r.left += numbers_width;
+			r.right += numbers_width;
+
+			m_renderer1->Draw(surface,m_numbers[s2], NULL, &r, alpha);
+			r.left += numbers_width;
+			r.right += numbers_width;
+		}
+
+	}
+
 	// calculate volume alpha
 	delta_alpha = 1-(float)(timeGetTime()-m_volume_visible_last_change_time)/fade_in_out_time;
 	delta_alpha = max(0, delta_alpha);
@@ -239,6 +314,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 	button_rect.bottom = button_rect.top + button_size;
 	button_rect.right = button_rect.left + button_size;
 	m_renderer1->Draw(surface,m_volume_button, NULL, &button_rect, alpha);
+
 
 	return S_OK;
 }

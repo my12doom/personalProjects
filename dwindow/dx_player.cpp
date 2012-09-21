@@ -194,6 +194,7 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	m_UI_logo = NULL;
 	memset(m_buttons, 0, sizeof(m_buttons));
 	memset(m_progress, 0, sizeof(m_progress));
+	memset(m_numbers, 0, sizeof(m_numbers));
 	m_toolbar_background = NULL;
 	m_volume_base = NULL;
 	m_volume_button = NULL;

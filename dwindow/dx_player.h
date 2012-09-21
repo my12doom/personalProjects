@@ -374,6 +374,7 @@ protected:
 	gpu_sample *m_toolbar_background;
 	gpu_sample *m_UI_logo;
 	gpu_sample *m_buttons[9];
+	gpu_sample *m_numbers[11];
 	gpu_sample *m_progress[6];
 	gpu_sample *m_volume_base;
 	gpu_sample *m_volume_button;
