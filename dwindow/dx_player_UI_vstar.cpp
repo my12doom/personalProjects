@@ -143,6 +143,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 	const double numbers_width = 12 * g_scale;
 	const double numbers_height = 20 * g_scale;
 	const double numbers_bottom_margin = 26;
+	const double hidden_progress_width = 72 * g_scale;
 
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
@@ -347,13 +348,18 @@ HRESULT dx_player::hittest(int x, int y, int *out, double *out_value /* = NULL *
 	const double margin_progress_right = 460 * g_scale;
 	const double margin_progress_left = 37 * g_scale;
 	const double progress_height = 21 * g_scale;
-	const double progress_margin_bottom = 37 * g_scale;
+	const double progress_margin_bottom = 27 * g_scale;
 	const double volume_base_width = 84 * g_scale;
 	const double volume_base_height = 317 * g_scale;
 	const double volume_margin_right = (156 - 84) * g_scale;
 	const double volume_margin_bottom = (376 - 317) * g_scale;
 	const double volume_button_zero_point = 32 * g_scale;
 	const double volume_bar_height = 265 * g_scale;
+	const double numbers_left_margin = 21 * g_scale;
+	const double numbers_right_margin = 455 * g_scale;
+	const double numbers_width = 12 * g_scale;
+	const double numbers_height = 20 * g_scale;
+	const double numbers_bottom_margin = 26;
 	const double hidden_progress_width = 72 * g_scale;
 
 

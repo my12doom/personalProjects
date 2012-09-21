@@ -1283,6 +1283,7 @@ HRESULT dx_player::popup_menu(HWND owner)
 	CheckMenuItem(menu, ID_OUTPUTMODE_INTEL,				m_output_mode == intel3d ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_MONOSCOPIC2D,			m_output_mode == mono ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_ROWINTERLACE,			m_output_mode == masking && m_mask_mode == row_interlace ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_3DVSTARDEMO,			m_output_mode == masking && m_mask_mode == subpixel_row_interlace ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_LINEINTERLACE,		m_output_mode == masking && m_mask_mode == line_interlace? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_CHECKBOARDINTERLACE,	m_output_mode == masking && m_mask_mode == checkboard_interlace ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR,		m_output_mode == dual_window ? MF_CHECKED:MF_UNCHECKED);
@@ -2025,6 +2026,15 @@ play_ok:
 	else if (uid == ID_OUTPUTMODE_ROWINTERLACE)
 	{
 		m_mask_mode = row_interlace;
+		if (m_renderer1)
+		{
+			m_renderer1->set_mask_mode(m_mask_mode);
+		}
+		set_output_mode(masking);
+	}
+	else if (uid == ID_OUTPUTMODE_3DVSTARDEMO)
+	{
+		m_mask_mode = subpixel_row_interlace;
 		if (m_renderer1)
 		{
 			m_renderer1->set_mask_mode(m_mask_mode);
