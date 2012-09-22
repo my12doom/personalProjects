@@ -332,7 +332,7 @@ HRESULT dx_player::draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye)
 	return S_OK;
 }
 
-#define rt(x) {*out=(x);return S_OK;}
+#define rt(x) {if(out)*out=(x);return S_OK;}
 HRESULT dx_player::hittest(int x, int y, int *out, double *out_value /* = NULL */)
 {
 	if (out_value)
@@ -424,9 +424,15 @@ HRESULT dx_player::hittest(int x, int y, int *out, double *out_value /* = NULL *
 			rt(hit_volume);
 	}
 
+	// logo : center at (m_width/2, m_height/2), size = 500x213
+	if (y > m_height - toolbar_height)
+		rt(hit_bg);
 
-	*out = y < m_height - toolbar_height ? hit_logo : hit_bg;
-	return S_OK;
+	if (m_width/2 - 250 < x && x < m_width/2 + 250
+		&& (m_height-toolbar_height)/2 - 106 < y && y < (m_height-toolbar_height)/2 + 106)
+		rt(hit_logo);
+
+	rt (hit_out);
 }
 
 #endif

@@ -1763,6 +1763,11 @@ LRESULT dx_player::on_getminmaxinfo(int id, MINMAXINFO *info)
 	info->ptMinTrackSize.x = 300;
 	info->ptMinTrackSize.y = 200;
 
+#ifdef VSTAR
+	info->ptMinTrackSize.x = 559;
+	info->ptMinTrackSize.y = 338;
+#endif
+
 	return S_OK;
 }
 
