@@ -130,7 +130,16 @@ int get_mixed_monitor_count(bool horizontal = false, bool vertical = false);
 int get_mixed_monitor_by_id(int id, RECT *rect, wchar_t *descriptor, bool horizontal = false, bool vertical = false);
 HRESULT myDXVA2CreateDirect3DDeviceManager9(UINT* pResetToken, IDirect3DDeviceManager9** ppDeviceManager);
 HRESULT myDXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppService);
-
+DWORD color_GDI2ARGB(DWORD in);
+inline bool compare_rect(const RECT in1, const RECT in2)
+{
+	return memcmp(&in1, &in2, sizeof(RECT)) == 0;
+}
+inline void NormalizeRect(RECT *rect)
+{
+	RECT normal = {min(rect->left, rect->right), min(rect->top, rect->bottom), max(rect->left, rect->right), max(rect->top, rect->bottom)};
+	*rect = normal;
+}
 
 // CoreMVC
 HRESULT ActiveCoreMVC(IBaseFilter *decoder);

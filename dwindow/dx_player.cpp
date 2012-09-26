@@ -18,113 +18,12 @@
 #define DS_EVENT (WM_USER + 4)
 #define DS_EVENTRELY (WM_USER + 6)
 AutoSetting<BOOL> g_ExclusiveMode(L"ExclusiveMode", false, REG_DWORD);
+RECT rect_zero = {0,0,0,0};
+LOGFONTW empty_logfontw = {0};
 
 #include "bomb_network.h"
 
-// helper functions
-
-DWORD color_GDI2ARGB(DWORD in)
-{
-	BYTE tmp[5];
-	*((DWORD*)tmp) = in;
-	tmp[3] = 0xff;
-
-	tmp[4] = tmp[0];
-	tmp[0] = tmp[2];
-	tmp[2] = tmp[4];
-
-	return *((DWORD*)tmp);
-}
-
-HRESULT dx_player::CrackPD10(IBaseFilter *filter)
-{
-	if (!filter)
-		return E_POINTER;
-
-	// check if PD10 decoder
-	CLSID filter_id;
-	filter->GetClassID(&filter_id);
-	if (filter_id != CLSID_PD10_DECODER)
-		return E_FAIL;
-
-	// query graph builder
-	FILTER_INFO fi;
-	filter->QueryFilterInfo(&fi);
-	if (!fi.pGraph)
-		return E_FAIL; // not in a graph
-	CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(fi.pGraph);
-	fi.pGraph->Release();
-
-	// create source and demuxer and add to graph
-	CComPtr<IBaseFilter> h264;
-	CComPtr<IBaseFilter> demuxer;
-	h264.CoCreateInstance(CLSID_AsyncReader);
-	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> h264_control(h264);
-	myCreateInstance(CLSID_PD10_DEMUXER, IID_IBaseFilter, (void**)&demuxer);
-
-	if (demuxer == NULL)
-		return E_FAIL;	// demuxer not registered
-
-	gb->AddFilter(h264, L"MVC");
-	gb->AddFilter(demuxer, L"Demuxer");
-
-	// write active file and load
-	unsigned int mvc_data[149] = {0x01000000, 0x29006467, 0x7800d1ac, 0x84e52702, 0xa40f0000, 0x00ee0200, 0x00000010, 0x00806f01, 0x00d1ac29, 0xe5270278, 0x0f000084, 0xee0200a4, 0xaa4a1500, 0xe0f898b2, 0x207d0000, 0x00701700, 0x00000080, 0x63eb6801, 0x0000008b, 0xdd5a6801, 0x0000c0e2, 0x7a680100, 0x00c0e2de, 0x6e010000, 0x00070000, 0x65010000, 0x9f0240b8, 0x1f88f7fe, 0x9c6fcb32, 0x16734a68, 0xc9a57ff0, 0x86ed5c4b, 0xac027e73, 0x0000fca8, 0x03000003, 0x00030000, 0x00000300, 0xb4d40303, 0x696e5f00, 0x70ac954a, 0x00030000, 0x03000300, 0x030000ec, 0x0080ca00, 0x00804600, 0x00e02d00, 0x00401f00, 0x00201900, 0x00401c00, 0x00c01f00, 0x00402600, 0x00404300, 0x00808000, 0x0000c500, 0x00d80103, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00080800, 0x54010000, 0xe0450041, 0xfe9f820c, 0x00802ab5, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0xab010003};
-	wchar_t tmp[MAX_PATH];
-	GetTempPathW(MAX_PATH, tmp);
-	wcscat(tmp, L"ac.mvc");
-	FILE *f = _wfopen(tmp, L"wb");
-	if(!f)
-		return E_FAIL;	// failed writing file
-	fwrite(mvc_data,1,596,f);
-	fflush(f);
-	fclose(f);
-
-	h264_control->Load(tmp, NULL);
-	
-	// connect source & demuxer
-	CComPtr<IPin> h264_o;
-	GetUnconnectedPin(h264, PINDIR_OUTPUT, &h264_o);
-	CComPtr<IPin> demuxer_i;
-	GetUnconnectedPin(demuxer, PINDIR_INPUT, &demuxer_i);
-	gb->ConnectDirect(h264_o, demuxer_i, NULL);
-
-	// connect demuxer & decoder
-	CComPtr<IPin> demuxer_o;
-	GetUnconnectedPin(demuxer, PINDIR_OUTPUT, &demuxer_o);
-	CComPtr<IPin> decoder_i;
-	GetConnectedPin(filter, PINDIR_INPUT, &decoder_i);
-	if (NULL == decoder_i)
-		GetUnconnectedPin(filter, PINDIR_INPUT, &decoder_i);
-	CComPtr<IPin> decoder_up;
-	decoder_i->ConnectedTo(&decoder_up);
-	if (decoder_up)
-	{
-		gb->Disconnect(decoder_i);
-		gb->Disconnect(decoder_up);
-	}
-	gb->ConnectDirect(demuxer_o, decoder_i, NULL);
-
-	// remove source & demuxer, and reconnect decoder(if it is connected before)
-	
-	gb->RemoveFilter(h264);
-	gb->RemoveFilter(demuxer);
-	if (decoder_up)gb->ConnectDirect(decoder_up, decoder_i, NULL);
-
-	// delete file
-	_wremove(tmp);
-
-	return S_OK;
-}
-
-RECT rect_zero = {0,0,0,0};
-inline bool compare_rect(const RECT in1, const RECT in2)
-{
-	return memcmp(&in1, &in2, sizeof(RECT)) == 0;
-}
-
 // constructor & destructor
-LOGFONTW empty_logfontw = {0};
 dx_player::dx_player(HINSTANCE hExe):
 m_renderer1(NULL),
 dwindow(m_screen1, m_screen2),
@@ -305,12 +204,6 @@ HRESULT dx_player::detect_monitors()
 	m_saved_screen2 = m_screen2;
 
 	return S_OK;
-}
-
-inline void NormalizeRect(RECT *rect)
-{
-	RECT normal = {min(rect->left, rect->right), min(rect->top, rect->bottom), max(rect->left, rect->right), max(rect->top, rect->bottom)};
-	*rect = normal;
 }
 
 bool dx_player::rect_visible(RECT rect)
@@ -1146,20 +1039,20 @@ HRESULT dx_player::popup_menu(HWND owner)
 
 	// output selection menu
 	::detect_monitors();
-	HMENU output1 = GetSubMenu(outputmode, 20);
-	HMENU output2 = GetSubMenu(outputmode, 21);
+	HMENU output1 = GetSubMenu(outputmode, 21);
+	HMENU output2 = GetSubMenu(outputmode, 22);
 	DeleteMenu(output1, 0, MF_BYPOSITION);
 	DeleteMenu(output2, 0, MF_BYPOSITION);
 
 	// disable selection while full screen
 	if (m_full1 && m_full2 && false)
 	{
-		ModifyMenuW(outputmode, 20, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT1, C(L"Output 1"));
-		ModifyMenuW(outputmode, 21, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT2, C(L"Output 2"));
+		ModifyMenuW(outputmode, 21, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT1, C(L"Output 1"));
+		ModifyMenuW(outputmode, 22, MF_BYPOSITION | MF_GRAYED, ID_OUTPUT2, C(L"Output 2"));
 	}
 #ifdef no_dual_projector
-	ModifyMenuW(outputmode, 20, MF_BYPOSITION, ID_OUTPUT1, C(L"Fullscreen Output"));
-	DeleteMenu(outputmode, 21, MF_BYPOSITION);
+	ModifyMenuW(outputmode, 21, MF_BYPOSITION, ID_OUTPUT1, C(L"Fullscreen Output"));
+	DeleteMenu(outputmode, 22, MF_BYPOSITION);
 #endif
 
 #ifdef nologin
@@ -3284,6 +3177,87 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	}
 
 	return hr;
+}
+
+HRESULT dx_player::CrackPD10(IBaseFilter *filter)
+{
+	if (!filter)
+		return E_POINTER;
+
+	// check if PD10 decoder
+	CLSID filter_id;
+	filter->GetClassID(&filter_id);
+	if (filter_id != CLSID_PD10_DECODER)
+		return E_FAIL;
+
+	// query graph builder
+	FILTER_INFO fi;
+	filter->QueryFilterInfo(&fi);
+	if (!fi.pGraph)
+		return E_FAIL; // not in a graph
+	CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(fi.pGraph);
+	fi.pGraph->Release();
+
+	// create source and demuxer and add to graph
+	CComPtr<IBaseFilter> h264;
+	CComPtr<IBaseFilter> demuxer;
+	h264.CoCreateInstance(CLSID_AsyncReader);
+	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> h264_control(h264);
+	myCreateInstance(CLSID_PD10_DEMUXER, IID_IBaseFilter, (void**)&demuxer);
+
+	if (demuxer == NULL)
+		return E_FAIL;	// demuxer not registered
+
+	gb->AddFilter(h264, L"MVC");
+	gb->AddFilter(demuxer, L"Demuxer");
+
+	// write active file and load
+	unsigned int mvc_data[149] = {0x01000000, 0x29006467, 0x7800d1ac, 0x84e52702, 0xa40f0000, 0x00ee0200, 0x00000010, 0x00806f01, 0x00d1ac29, 0xe5270278, 0x0f000084, 0xee0200a4, 0xaa4a1500, 0xe0f898b2, 0x207d0000, 0x00701700, 0x00000080, 0x63eb6801, 0x0000008b, 0xdd5a6801, 0x0000c0e2, 0x7a680100, 0x00c0e2de, 0x6e010000, 0x00070000, 0x65010000, 0x9f0240b8, 0x1f88f7fe, 0x9c6fcb32, 0x16734a68, 0xc9a57ff0, 0x86ed5c4b, 0xac027e73, 0x0000fca8, 0x03000003, 0x00030000, 0x00000300, 0xb4d40303, 0x696e5f00, 0x70ac954a, 0x00030000, 0x03000300, 0x030000ec, 0x0080ca00, 0x00804600, 0x00e02d00, 0x00401f00, 0x00201900, 0x00401c00, 0x00c01f00, 0x00402600, 0x00404300, 0x00808000, 0x0000c500, 0x00d80103, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00080800, 0x54010000, 0xe0450041, 0xfe9f820c, 0x00802ab5, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0xab010003};
+	wchar_t tmp[MAX_PATH];
+	GetTempPathW(MAX_PATH, tmp);
+	wcscat(tmp, L"ac.mvc");
+	FILE *f = _wfopen(tmp, L"wb");
+	if(!f)
+		return E_FAIL;	// failed writing file
+	fwrite(mvc_data,1,596,f);
+	fflush(f);
+	fclose(f);
+
+	h264_control->Load(tmp, NULL);
+
+	// connect source & demuxer
+	CComPtr<IPin> h264_o;
+	GetUnconnectedPin(h264, PINDIR_OUTPUT, &h264_o);
+	CComPtr<IPin> demuxer_i;
+	GetUnconnectedPin(demuxer, PINDIR_INPUT, &demuxer_i);
+	gb->ConnectDirect(h264_o, demuxer_i, NULL);
+
+	// connect demuxer & decoder
+	CComPtr<IPin> demuxer_o;
+	GetUnconnectedPin(demuxer, PINDIR_OUTPUT, &demuxer_o);
+	CComPtr<IPin> decoder_i;
+	GetConnectedPin(filter, PINDIR_INPUT, &decoder_i);
+	if (NULL == decoder_i)
+		GetUnconnectedPin(filter, PINDIR_INPUT, &decoder_i);
+	CComPtr<IPin> decoder_up;
+	decoder_i->ConnectedTo(&decoder_up);
+	if (decoder_up)
+	{
+		gb->Disconnect(decoder_i);
+		gb->Disconnect(decoder_up);
+	}
+	gb->ConnectDirect(demuxer_o, decoder_i, NULL);
+
+	// remove source & demuxer, and reconnect decoder(if it is connected before)
+
+	gb->RemoveFilter(h264);
+	gb->RemoveFilter(demuxer);
+	if (decoder_up)gb->ConnectDirect(decoder_up, decoder_i, NULL);
+
+	// delete file
+	_wremove(tmp);
+
+	return S_OK;
 }
 
 HRESULT dx_player::end_loading()
