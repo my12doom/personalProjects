@@ -1702,7 +1702,7 @@ extern "C" HRESULT WINAPI DXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID 
 	return myDXVA2CreateVideoService(pDD, riid, ppService);
 }
 
-DWORD color_GDI2ARGB(DWORD in);
+DWORD color_GDI2ARGB(DWORD in)
 {
 	BYTE tmp[5];
 	*((DWORD*)tmp) = in;

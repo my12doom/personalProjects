@@ -182,8 +182,6 @@ DWORD color_GDI2ARGB(DWORD in);
 HRESULT dx_player::init_gpu(int width, int height, IDirect3DDevice9 *device)
 {
 	invalidate_gpu();
-	if (m_toolbar_background)
-		m_toolbar_background->commit();
 
 	HRESULT hr;
 	if (!m_ui_logo_gpu)
@@ -335,8 +333,6 @@ HRESULT dx_player::init_cpu(int width, int height, IDirect3DDevice9 *device)
 	m_width = width;
 	m_height = height;
 
-	m_renderer1->loadBitmap(&m_toolbar_background, L"Z:\\½çÃæÌõ2.png");
-
 	// creation
 	if (!m_ui_logo_cpu)
 		m_Device->CreateTexture(512, 512, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_ui_logo_cpu, NULL);
@@ -409,8 +405,6 @@ HRESULT dx_player::init_cpu(int width, int height, IDirect3DDevice9 *device)
 
 HRESULT dx_player::invalidate_gpu()
 {
-	if (m_toolbar_background)
-		m_toolbar_background->decommit();
 	m_ps_UI = NULL;
 	m_vertex = NULL;
 	m_ui_logo_gpu = NULL;
@@ -426,8 +420,6 @@ HRESULT dx_player::invalidate_cpu()
 	m_ui_logo_cpu = NULL;
 	m_ui_tex_cpu = NULL;
 	m_ui_background_cpu = NULL;
-	if (m_toolbar_background)
-		delete m_toolbar_background;
 	return S_OK;
 }
 HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
@@ -529,10 +521,6 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 
 	// restore alpha op
 	m_Device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-
-	RECTF dst = {0,0,m_width,65};
-	m_renderer1->Draw(surface, m_toolbar_background, NULL, &dst, alpha);
-
 	return S_OK;
 }
 

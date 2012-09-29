@@ -369,7 +369,7 @@ protected:
 		progressbar,
 		progress_top,
 		progress_bottom;
-#define VSTAR
+//#define VSTAR
 //#ifdef VSTAR
 	gpu_sample *m_toolbar_background;
 	gpu_sample *m_UI_logo;
