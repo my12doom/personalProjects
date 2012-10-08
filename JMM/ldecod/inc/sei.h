@@ -126,7 +126,7 @@ void interpret_full_frame_snapshot_info                 ( byte* payload, int siz
 void interpret_progressive_refinement_start_info        ( byte* payload, int size, VideoParameters *p_Vid );
 void interpret_progressive_refinement_end_info          ( byte* payload, int size, VideoParameters *p_Vid );
 void interpret_motion_constrained_slice_group_set_info  ( byte* payload, int size, VideoParameters *p_Vid );
-void interpret_reserved_info                            ( byte* payload, int size, VideoParameters *p_Vid );
+void interpret_reserved_info                            ( byte* payload, int payload_type, int size, VideoParameters *p_Vid );
 void interpret_buffering_period_info                    ( byte* payload, int size, VideoParameters *p_Vid );
 void interpret_picture_timing_info                      ( byte* payload, int size, VideoParameters *p_Vid );
 void interpret_film_grain_characteristics_info          ( byte* payload, int size, VideoParameters *p_Vid );

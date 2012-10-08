@@ -286,6 +286,7 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	int frame_count = args[2].AsInt(-1);
 	int buffer_count = args[3].AsInt(10);
 	const char *ldecod_args = args[4].AsString("");
+	const bool swap_eyes = args[5].AsBool(false);
 	char playlist[MAX_PATH] = {0};
 
 	// check para and input files
@@ -373,7 +374,7 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 
 	// avs init
 	avs->avs_init(file1, env, file2, playlist[0] ? playlist : file1, frame_count == -1 ? scan_result.frame_count : frame_count,
-		buffer_count, scan_result.fps_numerator, scan_result.fps_denominator);
+		buffer_count, scan_result.fps_numerator, scan_result.fps_denominator, swap_eyes);
 
 	// start decoding thread
 	avs->m_decoding_thread = CreateThread(NULL, NULL, decoding_thread, avs, NULL, NULL);
@@ -419,7 +420,7 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env)
 {
 	printf("ldecod for avisynth rev %d.\n", my12doom_rev);
-	env->AddFunction("ldecod","[file1]s[file2]s[frame_count]i[buffer_count]i[ldecod_args]s",Create_JM3DSource,0);
+	env->AddFunction("ldecod","[file1]s[file2]s[frame_count]i[buffer_count]i[ldecod_args]s[swap]b",Create_JM3DSource,0);
 	env->SetMemoryMax(32);
 	return 0;
 }
@@ -470,7 +471,7 @@ JMAvs::~JMAvs()
 }
 
 int JMAvs::avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2ts_right /* = NULL */,
-					const char*offset_out, const int frame_count /* = -1 */, int buffer_count /* = 10 */, int fps_numerator /* = 24000 */, int fps_denominator /* = 1001 */)
+					const char*offset_out, const int frame_count /* = -1 */, int buffer_count /* = 10 */, int fps_numerator /* = 24000 */, int fps_denominator /* = 1001 */, bool swapeyes /* = false */)
 {
 	strcpy(m_m2ts_left, m2ts_left);
 	strcpy(m_m2ts_right, m2ts_right);
@@ -497,6 +498,7 @@ int JMAvs::avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2
 
 	m_frame_count = frame_count;
 	m_buffer_unit_count = buffer_count;
+	m_swap_eyes = swapeyes;
 	vi.fps_numerator = fps_numerator;
 	vi.fps_denominator = fps_denominator;
 	vi.num_frames = frame_count;
@@ -549,10 +551,10 @@ PVideoFrame __stdcall JMAvs::GetFrame(int n, IScriptEnvironment* env)
 	if (right_buffer)
 	{
 		// get left and copy to dst;
-		get_frame(n, left_buffer,dst->GetWritePtr(PLANAR_Y), m_width * 2, 0);
+		get_frame(n, m_swap_eyes ? right_buffer : left_buffer,dst->GetWritePtr(PLANAR_Y), m_width * 2, 0);
 
 		// get right and copy to dst;
-		get_frame(n, right_buffer, dst->GetWritePtr(PLANAR_Y), m_width * 2, m_width);
+		get_frame(n, m_swap_eyes ? left_buffer : right_buffer, dst->GetWritePtr(PLANAR_Y), m_width * 2, m_width);
 	}
 	else
 	{

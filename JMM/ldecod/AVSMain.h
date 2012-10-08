@@ -83,6 +83,7 @@ public:
 	int m_buffer_unit_count;
 	my12doom_offset_metadata_header m_header;
 	FILE *m_offset_file;
+	bool m_swap_eyes;
 
 	CFrameBuffer *left_buffer; 
 	CFrameBuffer *right_buffer;
@@ -95,7 +96,8 @@ public:
 	JMAvs();
 	int avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2ts_right = NULL, const char * offset_out = NULL,
 		const int frame_count = -1, int buffer_count = 10,
-		int fps_numerator = 24000, int fps_denominator = 1001);
+		int fps_numerator = 24000, int fps_denominator = 1001,
+		bool swap_eyes = false);
 	int ldecod_init(int width, int height, int fps, int fpsdenumorator);
 	int insert_offset(BYTE *data, int count);
 	virtual ~JMAvs();

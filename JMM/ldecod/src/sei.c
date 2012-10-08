@@ -170,8 +170,9 @@ void InterpretSEIMessage(byte* msg, int size, VideoParameters *p_Vid, Slice *pSl
       break;
 	case SEI_MVC_SCALABLE_NESTING:
 	  interpret_mvc_scalable_nesting_info(msg + offset, payload_size, p_Vid);
+	  break;
     default:
-      interpret_reserved_info( msg+offset, payload_size, p_Vid );
+      interpret_reserved_info( msg+offset, payload_type, payload_size, p_Vid );
       break;    
     }
     offset += payload_size;
@@ -1550,13 +1551,13 @@ void interpret_stereo_video_info_info( byte* payload, int size, VideoParameters 
  *
  ************************************************************************
  */
-void interpret_reserved_info( byte* payload, int size, VideoParameters *p_Vid )
+void interpret_reserved_info( byte* payload, int payload_type, int size, VideoParameters *p_Vid )
 {
   int offset = 0;
   byte payload_byte;
-
+//#define PRINT_RESERVED_INFO
 #ifdef PRINT_RESERVED_INFO
-  printf("Reserved SEI message\n");
+  printf("Reserved SEI message type %d\n", payload_type);
 #endif
 
   while (offset < size)
