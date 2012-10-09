@@ -126,7 +126,6 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 
 	while (left > 0)
 	{
-
 		if (m_pos >= m_buffer_start + buffer_count*buffer_size/2)
 			increase_buffers();
 
@@ -212,20 +211,22 @@ BOOL InternetFile::SetFilePointerEx(__in LARGE_INTEGER liDistanceToMove, __out_o
 
 DWORD InternetFile::downloading_thread()
 {
-	const int block_size = 4096;
+	const int block_size = 16384;
 	BYTE buf[block_size];
 	__int64 internet_pos = m_buffer_start;
 
 	while(!m_downloading_thread_exit)
 	{
 		DWORD nRead = 0;
-		BOOL succ =  InternetReadFile(m_hRequest ? m_hRequest : m_hFile, buf, 4096, &nRead);
+		BOOL succ =  InternetReadFile(m_hRequest ? m_hRequest : m_hFile, buf, block_size, &nRead);
 
 		if (!succ)
 			break;
 
 wait:
+		m_buffer_lock.Lock();
 		int n = (internet_pos - m_buffer_start) / buffer_size;
+		m_buffer_lock.Unlock();
 
 		if (n<0 || m_downloading_thread_exit)
 			break;
@@ -236,7 +237,9 @@ wait:
 			goto wait;
 		}
 
+		m_buffer_lock.Lock();
 		m_buffer[n]->insert(nRead, buf);
+		m_buffer_lock.Unlock();
 
 		if (nRead != block_size)
 			break;
@@ -244,8 +247,13 @@ wait:
 		internet_pos += nRead;
 	}
 
-	m_buffer[0]->no_more_remove = true;
-	m_buffer[0]->no_more_data = true;
+	m_buffer_lock.Lock();
+	for(int i=0; i<countof(m_buffer); i++)
+	{
+		m_buffer[i]->no_more_remove = true;
+		m_buffer[i]->no_more_data = true;
+	}
+	m_buffer_lock.Unlock();
 
 	return 0;
 }
