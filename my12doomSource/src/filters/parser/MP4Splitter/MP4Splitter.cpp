@@ -1508,6 +1508,24 @@ STDMETHODIMP CMP4SplitterFilter::GetKeyFrames(const GUID* pFormat, REFERENCE_TIM
 	return E_FAIL;
 }
 
+// IAMOpenProgress
+
+
+STDMETHODIMP CMP4SplitterFilter::QueryProgress(LONGLONG* pllTotal, LONGLONG* pllCurrent)
+{
+	if (pllTotal)
+		*pllTotal = this->m_pFile->GetLength();
+	if (pllCurrent)
+		*pllCurrent = this->m_pFile->GetPos();
+
+	return S_OK;
+}
+
+STDMETHODIMP CMP4SplitterFilter::AbortOperation()
+{
+	return E_NOTIMPL;
+}
+
 //
 // CMP4SourceFilter
 //

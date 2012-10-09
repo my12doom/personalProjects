@@ -1,7 +1,11 @@
 #pragma once
 #include <Windows.h>
 #include <wininet.h>
+#include "CFileBuffer.h"
 #pragma comment(lib,"wininet.lib")
+
+const int buffer_size = 64*1024;
+const int buffer_count = 16*20;
 
 class InternetFile
 {
@@ -19,11 +23,21 @@ protected:
 
 	static DWORD WINAPI downloading_thread_entry(LPVOID p){return ((InternetFile*)p)->downloading_thread();}
 	DWORD downloading_thread();
+	HANDLE m_downloading_thread;
+	bool m_downloading_thread_exit;
+
+	CFileBuffer *m_buffer[buffer_count];
+	int m_buffer_start;
+	myCCritSec m_buffer_lock;
+	int get_from_buffer(void *buf, __int64 start, int size);
+	int increase_buffers();
+
+
 
 	bool m_ready;
 	wchar_t m_URL[MAX_PATH];
 	__int64 m_size;
-	__int64 m_cur;
+	__int64 m_pos;
 	HINTERNET m_hInternet;
 	HINTERNET m_hFile;
 	HINTERNET m_hConnect;

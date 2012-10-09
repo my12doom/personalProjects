@@ -268,6 +268,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CCritSec.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CFileBuffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CFileBuffer.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\..\AESFile\E3DReader.cpp"
 				>
 			</File>

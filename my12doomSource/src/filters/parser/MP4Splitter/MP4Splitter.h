@@ -53,6 +53,11 @@ public:
 
 	STDMETHODIMP_(HRESULT) GetKeyFrameCount(UINT& nKFs);
 	STDMETHODIMP_(HRESULT) GetKeyFrames(const GUID* pFormat, REFERENCE_TIME* pKFs, UINT& nKFs);
+
+	// IAMOpenProgress
+
+	STDMETHODIMP QueryProgress(LONGLONG* pllTotal, LONGLONG* pllCurrent);
+	STDMETHODIMP AbortOperation();
 };
 
 class __declspec(uuid("3CCC052E-BDEE-408a-BEA7-90914EF2964B"))
