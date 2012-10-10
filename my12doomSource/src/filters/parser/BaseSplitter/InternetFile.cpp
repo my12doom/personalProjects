@@ -64,7 +64,14 @@ BOOL InternetFile::Open(const wchar_t *URL, int max_buffer, __int64 startpos /*=
 	}
 	else
 	{
-		m_hConnect = InternetConnectW(m_hInternet, L"dwindow.bo3d.net", INTERNET_DEFAULT_HTTP_PORT,
+		wchar_t host[1024];
+		wchar_t get_request[1024];
+
+		wcscpy(get_request, wcschr(URL+7, L'/'));
+		wcscpy(host, URL+7);
+		*((wchar_t*)wcschr(host, L'/')) = NULL;
+
+		m_hConnect = InternetConnectW(m_hInternet, host, INTERNET_DEFAULT_HTTP_PORT,
 							NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 		if (!m_hConnect)
 		{
@@ -72,8 +79,8 @@ BOOL InternetFile::Open(const wchar_t *URL, int max_buffer, __int64 startpos /*=
 			return FALSE;
 		}
 
-		const wchar_t* rgpszAcceptTypes[] = {L"text/*", NULL};
-		m_hRequest = HttpOpenRequestW(m_hConnect, NULL, L"/test/hrag.mp4", NULL, NULL, rgpszAcceptTypes, NULL, NULL);
+		const wchar_t* rgpszAcceptTypes[] = {L"*/*", NULL};
+		m_hRequest = HttpOpenRequestW(m_hConnect, NULL, get_request, NULL, NULL, rgpszAcceptTypes, NULL, NULL);
 		if (!m_hRequest)
 		{
 			Close();
@@ -82,7 +89,7 @@ BOOL InternetFile::Open(const wchar_t *URL, int max_buffer, __int64 startpos /*=
 
 		wchar_t tmp[200] = {0};
 		if (startpos>0)
-			wsprintfW(tmp, L"Range :bytes=%I64d-", startpos);
+			wsprintfW(tmp, L"Range: bytes=%I64d-", startpos);
 		if (!HttpSendRequestW(m_hRequest, startpos>0?tmp:NULL, wcslen(tmp), NULL, NULL))
 		{
 			Close();
