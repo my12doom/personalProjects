@@ -2641,7 +2641,7 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname, const wc
 // 	hr = load_file(L"Z:\\right.mkv");
 	//hr = load_file(L"Z:\\00001.m2ts");
 	hr = load_file(pathname);
-	if(pathname2)
+	if(pathname2 && pathname2[0] != NULL)
 	{
 		hr = load_file(pathname2);
 		CComPtr<IPin> pin;
