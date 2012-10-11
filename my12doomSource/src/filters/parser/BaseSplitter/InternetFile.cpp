@@ -23,6 +23,9 @@ InternetFile::InternetFile()
 InternetFile::~InternetFile()
 {
 	Close();
+
+	for(int i=0; i<countof(m_buffer); i++)
+		delete m_buffer[i];
 }
 
 BOOL InternetFile::Open(const wchar_t *URL, int max_buffer, __int64 startpos /*=0*/)
