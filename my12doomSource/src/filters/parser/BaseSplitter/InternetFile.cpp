@@ -1,5 +1,6 @@
 #include "InternetFile.h"
 #include <assert.h>
+#include <stdio.h>
 
 #define safe_close(x) {if(x){InternetCloseHandle(x);x=NULL;}}
 #define rtn_null(x) {if ((x) == NULL){Close();return FALSE}}
@@ -134,10 +135,9 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 	BYTE *p = (BYTE*)lpBuffer;
 	*nRead = 0;
 
+	int l = GetTickCount();
 	while (left > 0)
 	{
-		if (m_pos >= m_buffer_start + buffer_count*buffer_size/2)
-			increase_buffers();
 
 		int this_round_got = 0;
 
@@ -166,6 +166,15 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 		if (this_round_got == 0)
 			Sleep(1);
 	}
+
+	myCAutoLock lck(&m_buffer_lock);
+	for(int i=0; i< (m_pos - m_buffer_start - buffer_count*buffer_size/2) / buffer_size; i++)
+		increase_buffers();
+
+	int ms = GetTickCount() - l;
+	char tmp[200];
+	sprintf(tmp, "%fK Byte/s\n", (float)nToRead/ms);
+	OutputDebugStringA(tmp);
 
 	return nRead == 0 ? FALSE : TRUE;
 }
@@ -260,14 +269,18 @@ wait:
 			goto wait;
 		}
 
-		int insert_result = m_buffer[n]->insert(nRead, buf, 100);
-		m_buffer_lock.Unlock();
-
-		if (insert_result < 0)
+		if (m_buffer[n]->wait_for_free_space(nRead, 0) < 0)
 		{
+			m_buffer_lock.Unlock();
 			Sleep(1);
 			goto wait;
 		}
+
+		int insert_result = m_buffer[n]->insert(nRead, buf, 1);
+		m_buffer_lock.Unlock();
+
+		if (insert_result < 0)
+			goto wait;
 
 		if (nRead != block_size)
 			break;
