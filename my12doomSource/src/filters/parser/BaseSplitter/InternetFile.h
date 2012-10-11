@@ -4,8 +4,8 @@
 #include "CFileBuffer.h"
 #pragma comment(lib,"wininet.lib")
 
-const int buffer_size = 64*1024;
-const int buffer_count = 16*20;
+const int buffer_size = 4096;
+const int buffer_count = 256*10;
 
 class InternetFile
 {

@@ -141,11 +141,12 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 
 		int this_round_got = 0;
 
-		for(int i=0; i<countof(m_buffer); i++)
+		for(int i=(m_pos-m_buffer_start)/buffer_size; 
+			i<=min(countof(m_buffer)-1, (m_pos+left-m_buffer_start)/buffer_size); i++)
 		{
 			__int64 L = m_buffer_start + buffer_size * i;
 			__int64 R = m_buffer_start + buffer_size *(i+1);
-			int size = min(4096, left);
+			int size = min(buffer_size, left);
 			size = min(size, R-m_pos);
 
 			if (size>0 && m_pos >= L)
@@ -227,7 +228,7 @@ BOOL InternetFile::SetFilePointerEx(__in LARGE_INTEGER liDistanceToMove, __out_o
 
 DWORD InternetFile::downloading_thread()
 {
-	const int block_size = 16384;
+	const int block_size = 4096;
 	BYTE buf[block_size];
 	__int64 internet_pos = m_buffer_start;
 
@@ -235,6 +236,9 @@ DWORD InternetFile::downloading_thread()
 	{
 		DWORD nRead = 0;
 		BOOL succ =  InternetReadFile(m_hRequest ? m_hRequest : m_hFile, buf, block_size, &nRead);
+
+		while( GetKeyState(VK_CONTROL) < 0)
+			Sleep(1);
 
 		if (!succ)
 			break;
