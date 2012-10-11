@@ -27,7 +27,7 @@ protected:
 	bool m_downloading_thread_exit;
 
 	CFileBuffer *m_buffer[buffer_count];
-	int m_buffer_start;
+	__int64 m_buffer_start;
 	myCCritSec m_buffer_lock;
 	int get_from_buffer(void *buf, __int64 start, int size);
 	int increase_buffers();

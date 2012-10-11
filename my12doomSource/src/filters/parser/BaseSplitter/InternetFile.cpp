@@ -136,6 +136,8 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 		if (m_pos >= m_buffer_start + buffer_count*buffer_size/2)
 			increase_buffers();
 
+		int this_round_got = 0;
+
 		for(int i=0; i<countof(m_buffer); i++)
 		{
 			__int64 L = m_buffer_start + buffer_size * i;
@@ -153,8 +155,12 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 				m_pos += got;
 				p += got;
 				left -= got;
+				this_round_got += got;
 			}
 		}
+
+		if (this_round_got == 0)
+			Sleep(1);
 	}
 
 	return nRead == 0 ? FALSE : TRUE;
@@ -233,20 +239,28 @@ DWORD InternetFile::downloading_thread()
 wait:
 		m_buffer_lock.Lock();
 		int n = (internet_pos - m_buffer_start) / buffer_size;
-		m_buffer_lock.Unlock();
 
 		if (n<0 || m_downloading_thread_exit)
+		{
+			m_buffer_lock.Unlock();
 			break;
+		}
 
 		if (n>=buffer_count)
 		{
+			m_buffer_lock.Unlock();
 			Sleep(1);
 			goto wait;
 		}
 
-		m_buffer_lock.Lock();
-		m_buffer[n]->insert(nRead, buf);
+		int insert_result = m_buffer[n]->insert(nRead, buf, 100);
 		m_buffer_lock.Unlock();
+
+		if (insert_result < 0)
+		{
+			Sleep(1);
+			goto wait;
+		}
 
 		if (nRead != block_size)
 			break;

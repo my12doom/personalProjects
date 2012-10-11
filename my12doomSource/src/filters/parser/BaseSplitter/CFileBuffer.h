@@ -24,7 +24,7 @@ public:
 	int reset();
 	int wait_for_data(int size);
 	int remove_data(int size);
-	int insert(int size, const BYTE*buf);
+	int insert(int size, const BYTE*buf, int time_out = INFINITE);
 	int remove(int size, BYTE *buf);
 	int block_remove(int size, BYTE *buf);
 
