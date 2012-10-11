@@ -28,6 +28,7 @@ protected:
 
 	CFileBuffer *m_buffer[buffer_count];
 	__int64 m_buffer_start;
+	__int64 m_downloading_pos;
 	myCCritSec m_buffer_lock;
 	int get_from_buffer(void *buf, __int64 start, int size);
 	int increase_buffers();

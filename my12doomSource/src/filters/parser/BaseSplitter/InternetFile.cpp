@@ -286,6 +286,7 @@ wait:
 			break;
 
 		internet_pos += nRead;
+		m_downloading_pos = internet_pos;
 	}
 
 	m_buffer_lock.Lock();
