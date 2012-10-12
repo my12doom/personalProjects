@@ -118,6 +118,7 @@ BOOL InternetFile::Close()
 	m_size = 0;
 	m_pos = 0;
 	m_downloading_thread_exit = true;
+	m_downloading_thread_state = 0;
 
 	WaitForSingleObject(m_downloading_thread, INFINITE);
 
@@ -151,7 +152,10 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 
 			if (size>0 && m_pos >= L)
 			{
-				int got = m_buffer[i]->wait_for_data(m_pos+size-L) + L - m_pos;
+				int got = m_buffer[i]->wait_for_data(m_pos+size-L);
+				if (got == 0)	// downloading thread down
+					break;
+				got += L - m_pos;
 
 				memcpy(p, m_buffer[i]->m_the_buffer + m_buffer[i]->m_data_start + m_pos - L, got);
 
@@ -164,7 +168,11 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 		}
 
 		if (this_round_got == 0)
+		{
+			if (m_downloading_thread_state == 0)
+				break;
 			Sleep(1);
+		}
 	}
 
 	myCAutoLock lck(&m_buffer_lock);
@@ -176,7 +184,7 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 	sprintf(tmp, "%fK Byte/s\n", (float)nToRead/ms);
 	OutputDebugStringA(tmp);
 
-	return nRead == 0 ? FALSE : TRUE;
+	return *nRead == 0 ? FALSE : TRUE;
 }
 
 int InternetFile::increase_buffers()
@@ -240,14 +248,12 @@ DWORD InternetFile::downloading_thread()
 	const int block_size = 4096;
 	BYTE buf[block_size];
 	__int64 internet_pos = m_buffer_start;
+	m_downloading_thread_state = 1;
 
 	while(!m_downloading_thread_exit)
 	{
 		DWORD nRead = 0;
 		BOOL succ =  InternetReadFile(m_hRequest ? m_hRequest : m_hFile, buf, block_size, &nRead);
-
-		while( GetKeyState(VK_CONTROL) < 0)
-			Sleep(1);
 
 		if (!succ)
 			break;
@@ -296,6 +302,8 @@ wait:
 		m_buffer[i]->no_more_data = true;
 	}
 	m_buffer_lock.Unlock();
+
+	m_downloading_thread_state = 0;
 
 	return 0;
 }

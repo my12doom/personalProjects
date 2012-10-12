@@ -25,6 +25,7 @@ protected:
 	DWORD downloading_thread();
 	HANDLE m_downloading_thread;
 	bool m_downloading_thread_exit;
+	bool m_downloading_thread_state;	// 0 = down/not started, 1 = running
 
 	CFileBuffer *m_buffer[buffer_count];
 	__int64 m_buffer_start;

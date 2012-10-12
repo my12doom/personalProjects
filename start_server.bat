@@ -1,1 +1,1 @@
-svnserve -d -r H:\private_repo
+svnserve -d -r M:\private_repo
