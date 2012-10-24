@@ -562,6 +562,9 @@ static int pan_y;
 
 LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	if (!hasGetGustureInfo())
+		return S_FALSE;
+
 	// Create a structure to populate and retrieve the extra message info.
 	GESTUREINFO gi;  
 
@@ -569,7 +572,7 @@ LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 
 	gi.cbSize = sizeof(GESTUREINFO);
 
-	BOOL bResult  = GetGestureInfo((HGESTUREINFO)lParam, &gi);
+	BOOL bResult  = myGetGestureInfo((HGESTUREINFO)lParam, &gi);
 	BOOL bHandled = FALSE;
 
 	if (bResult){

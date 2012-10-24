@@ -131,6 +131,9 @@ int get_mixed_monitor_by_id(int id, RECT *rect, wchar_t *descriptor, bool horizo
 HRESULT myDXVA2CreateDirect3DDeviceManager9(UINT* pResetToken, IDirect3DDeviceManager9** ppDeviceManager);
 HRESULT myDXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppService);
 DWORD color_GDI2ARGB(DWORD in);
+BOOL myGetGestureInfo(HGESTUREINFO hGestureInfo, PGESTUREINFO pGestureInfo);
+BOOL hasGetGustureInfo();
+
 inline bool compare_rect(const RECT in1, const RECT in2)
 {
 	return memcmp(&in1, &in2, sizeof(RECT)) == 0;

@@ -1715,3 +1715,25 @@ DWORD color_GDI2ARGB(DWORD in)
 	return *((DWORD*)tmp);
 }
 
+typedef HRESULT (WINAPI *lpGetGestureInfo)(HGESTUREINFO hGestureInfo, PGESTUREINFO pGestureInfo);
+lpGetGestureInfo mineGetGestureInfo;
+HMODULE hUser32 = LoadLibrary( L"User32.dll" );
+
+BOOL myGetGestureInfo(HGESTUREINFO hGestureInfo, PGESTUREINFO pGestureInfo)
+{
+	if (!mineGetGestureInfo)
+		mineGetGestureInfo = (lpGetGestureInfo)GetProcAddress(hUser32, "GetGestureInfo");
+
+	if (!mineGetGestureInfo)
+		return FALSE;
+
+	return mineGetGestureInfo(hGestureInfo, pGestureInfo);
+}
+
+BOOL hasGetGustureInfo()
+{
+	if (!mineGetGestureInfo)
+		mineGetGestureInfo = (lpGetGestureInfo)GetProcAddress(hUser32, "GetGestureInfo");
+
+	return mineGetGestureInfo != NULL;
+}

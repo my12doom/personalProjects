@@ -738,6 +738,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\MediaInfo.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\private_filter.cpp"
 					>
 				</File>
@@ -766,10 +770,6 @@
 					</File>
 					<File
 						RelativePath=".\latency_dialog.cpp"
-						>
-					</File>
-					<File
-						RelativePath=".\MediaInfo.cpp"
 						>
 					</File>
 					<File
@@ -964,6 +964,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\MediaInfo.h"
+					>
+				</File>
+				<File
 					RelativePath=".\private_filter.h"
 					>
 				</File>
@@ -984,10 +988,6 @@
 					</File>
 					<File
 						RelativePath=".\latency_dialog.h"
-						>
-					</File>
-					<File
-						RelativePath=".\MediaInfo.h"
 						>
 					</File>
 					<File
