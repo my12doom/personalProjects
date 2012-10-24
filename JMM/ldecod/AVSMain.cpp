@@ -4,6 +4,7 @@
 #include "AVSMain.h"
 #include "readmpls.h"
 #include "ts_stream.h"
+#include "..\resource.h"
 
 #include "..\..\my12doom_revision.h"
 
@@ -544,6 +545,7 @@ int JMAvs::insert_offset(BYTE *data, int count)
 	return 0;
 }
 
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 PVideoFrame __stdcall JMAvs::GetFrame(int n, IScriptEnvironment* env)
 {
 	PVideoFrame dst = env->NewVideoFrame(vi);
@@ -567,6 +569,35 @@ PVideoFrame __stdcall JMAvs::GetFrame(int n, IScriptEnvironment* env)
 
 	buffer_load = (float)current/total;
 
+	// add mask here
+	// assume colorspace = YV12
+	if (n==0)
+	{
+		HMODULE hm = (HMODULE)&__ImageBase;
+		HGLOBAL hDllData = LoadResource(hm, FindResource(hm, MAKEINTRESOURCE(IDR_RCDATA1), RT_RCDATA));
+		void * dll_data = LockResource(hDllData);
+
+		SIZE size = {200, 136};
+
+		// get data and close it
+		unsigned char *m_mask = (unsigned char*)malloc(27200);
+		memset(m_mask, 0, 27200);
+		if(dll_data) memcpy(m_mask, dll_data, 27200);
+
+		// add mask
+		int width = vi.width;
+		int height = vi.height;
+		BYTE *pdst = dst->GetWritePtr(PLANAR_Y);
+		for(int y=0; y<size.cy; y++)
+		{
+			memcpy(pdst+(y+height/2-size.cy/2)*width +width/4-size.cx/2, 
+				m_mask + size.cx*y, size.cx);
+			memcpy(pdst+(y+height/2-size.cy/2)*width +width/4-size.cx/2 + width/2,
+				m_mask + size.cx*y, size.cx);
+		}
+
+		free(m_mask);
+	}
 
 	return dst;
 }

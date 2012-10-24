@@ -1387,6 +1387,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ldecod\inc\rtp.h"
 				>
 			</File>
@@ -1521,6 +1525,22 @@
 		</File>
 		<File
 			RelativePath=".\ldecod120105.vsp"
+			>
+		</File>
+		<File
+			RelativePath=".\ldecod\mask.raw"
+			>
+		</File>
+		<File
+			RelativePath=".\rcdata1.bin"
+			>
+		</File>
+		<File
+			RelativePath=".\ldecod\rcdata2.bin"
+			>
+		</File>
+		<File
+			RelativePath=".\resource.rc"
 			>
 		</File>
 	</Files>
