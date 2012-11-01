@@ -122,22 +122,23 @@ DWORD WINAPI core_thread(LPVOID parameter)
 	DWORD *out = para->out;
 	const int range = 160;
 	DWORD *mask = new DWORD[(3840+32) * (1080+32)];
+	const int throat = 0x7ffff;
 
 	for(int y=para->left; y<para->right; y++)
 	{
 		printf("\r%d/1080", y-para->left);
 		for(int x=0; x<1920; x++)
 		{
-			int min_delta = 0xffff;
+			int min_delta = throat;
 			int offset = -99999;
 			BYTE *p1 = YDataPadded + (3840+32) * (y-8) + x - 8;
-			min_delta = min(min_delta, gen_mask((BYTE*)mask, (BYTE*)p1, YDataPadded [(3840+32) * y + x], (3840+32))*10 );
-			for(int j=-0; j<=0; j+=5)
+			//min_delta = min(min_delta, gen_mask((BYTE*)mask, (BYTE*)p1, YDataPadded [(3840+32) * y + x], (3840+32))*10 );
+			for(int j=-5; j<=5; j+=5)
 			for(int i=-range; i<=range; i++)
 			{
 				BYTE *p2 = YDataPadded + (3840+32) * (y-8+j) + x + 1920 - 8 + i;
 
-				int t = SAD16x16(p1, p2, mask, (3840+32));
+				int t = SAD16x16(p1, p2/*, mask*/, (3840+32));
 				//if (x == 540) printf("%.1f, ", (float)t);
 				if (t<min_delta)
 				{
@@ -148,15 +149,15 @@ DWORD WINAPI core_thread(LPVOID parameter)
 			if (offset != -99999)
 			{
 				int c = min((offset+range)*255/(2*range)+1, 255);
-				//c = min_delta;
-				out[(1080-1-y)*1920+x] = RGB(0, 0, c);
+				c = min_delta * 255 / (throat/32);
+				out[(1080-1-y)*1920+x] = RGB(c, c, c);
 			}
 			else
 			{
-				int x1 = max(0, min(x, 1920));
-				int y1 = max(0, min(y, 1080));
-				out[(1080-1-y)*1920+x] = out[(1080-1-y1)*1920+x1];
-				//out[(1080-1-y)*1920+x] = RGB(255, 255, 255);
+// 				int x1 = max(0, min(x, 1920));
+// 				int y1 = max(0, min(y, 1080));
+// 				out[(1080-1-y)*1920+x] = out[(1080-1-y1)*1920+x1];
+				out[(1080-1-y)*1920+x] = RGB(255, 255, 255);
 			}
 			//if (x==540)printf("%d\n", y);
 		}
@@ -278,8 +279,64 @@ int PC3DV()
 	return 0;
 }
 
+int subpixel2D()
+{
+	RGBQUAD *src = new RGBQUAD [1920*1080];
+	RGBQUAD *dst = new RGBQUAD [1920*1080*6];
+	RGBQUAD *ref = new RGBQUAD [1920*1080*3];
+
+	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\ass01.bmp", IMAGE_BITMAP, 1920, 1080, LR_LOADFROMFILE);
+	memset(src, 0x3f, 1920*1080*4);
+	GetBitmapBits(bm, 1920*1080*4, src);
+	DeleteObject(bm);
+
+	for(int y=0; y<1080; y++)
+	for(int x=0; x<1920; x++)
+	{
+		// BGRA
+		RGBQUAD s = src[y*1920+x];
+		RGBQUAD r = {0, 0, s.rgbRed, 0};
+		RGBQUAD g = {0, s.rgbGreen, 0, 0};
+		RGBQUAD b = {s.rgbBlue, 0, 0, 0};
+
+		RGBQUAD *d = &dst[y*1920*6+ x*6];
+		d[0] = g;
+		d[1] = g;
+		d[2] = r;
+		d[3] = r;
+		d[4] = b;
+		d[5] = b;
+	}
+
+// 	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\ass01.bmp", IMAGE_BITMAP, 1920, 1080, LR_LOADFROMFILE);
+	memset(src, 0x3f, 1920*1080*4);
+	GetBitmapBits(bm, 1920*1080*4, src);
+	DeleteObject(bm);
+	for(int y=0; y<1080; y++)
+	for(int x=0; x<1920; x++)
+	{
+		// BGRA
+		RGBQUAD s = src[y*1920+x];
+		RGBQUAD r = {0, 0, s.rgbRed, 0};
+		RGBQUAD g = {0, s.rgbGreen, 0, 0};
+		RGBQUAD b = {s.rgbBlue, 0, 0, 0};
+
+		RGBQUAD *d = &ref[y*1920*3+ x*3];
+		d[0] = r;
+		d[1] = g;
+		d[2] = b;
+	}
+
+	save_bitmap((DWORD*)dst, L"Z:\\out.bmp", 1920*6, 1080);
+	save_bitmap((DWORD*)ref, L"Z:\\ref.bmp", 1920*3, 1080);
+
+	return 0;
+}
+
 int main()
 {
+// 	return subpixel2D();
+
 // 	philip();
 // 	return 0;
 
@@ -297,7 +354,7 @@ int main()
 	DeleteObject(bm);
 	memset(padded, 0, sizeof(DWORD) * (3840+32) * (1080+32));
 
-	FILE * f = fopen("Z:\\Y.raw", "rb");
+	FILE * f = fopen("Z:\\I.raw", "rb");
 	fread(YData, 1, 3840*1080, f);
 	fclose(f);
 	memset(YDataPadded, 0, (3840+32)*(1080+32));
@@ -355,7 +412,7 @@ int main()
 	int layout = input_layout_auto;
 	for(int j=0; j<100; j++)
 	{
-		get_layout<DWORD>(resource, 3840, 1080, &layout);
+		get_layout<BYTE>(YData, 3840, 1080, &layout);
 	}
 
 	if (layout == side_by_side)

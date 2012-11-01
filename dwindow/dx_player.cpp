@@ -4280,6 +4280,24 @@ HRESULT dx_player::list_subtitle_track(HMENU submenu)
 }
 
 wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for);
+bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for)
+{
+	if (wcslen(search_in) < wcslen(search_for))
+		return false;
+
+	wchar_t *tmp = new wchar_t[wcslen(search_in)+1];
+	wchar_t *tmp2 = new wchar_t[wcslen(search_for)+1];
+	wcscpy(tmp, search_in);
+	wcscpy(tmp2, search_for);
+	_wcslwr(tmp);
+	_wcslwr(tmp2);
+
+	int o = wcscmp(tmp+wcslen(search_in)-wcslen(search_for), tmp2);
+
+	delete [] tmp;
+	delete [] tmp2;
+	return o == 0;
+}
 
 subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 {
@@ -4293,22 +4311,22 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	fclose(f);
 
 	const wchar_t *p_3 = pathname + wcslen(pathname) -3;
-	if ( wcsstr_nocase(pathname, L".srt"))
+	if ( wcs_endwith_nocase(pathname, L".srt"))
 	{
 		m_renderer = new CsrtRenderer(NULL, 0xffffff);
 	}
-	else if (wcsstr_nocase(pathname, L".ssa") || wcsstr_nocase(pathname, L".ass"))
+	else if (wcs_endwith_nocase(pathname, L".ssa") || wcs_endwith_nocase(pathname, L".ass"))
 	{
 // 		if (LibassRendererCore::fonts_loaded() != S_OK)
 // 			MessageBoxW(NULL, C(L"This is first time to load ass/ssa subtilte, font scanning may take one minute or two, the player may looks like hanged, please wait..."), C(L"Please Wait"), MB_OK);
 
 		m_renderer = new LibassRenderer();
 	}
-	else if (wcsstr_nocase(pathname, L".sup"))
+	else if (wcs_endwith_nocase(pathname, L".sup"))
 	{
 		m_renderer = new PGSRenderer();
 	}
-	else if (wcsstr_nocase(pathname, L".sub") || wcsstr_nocase(pathname, L".idx"))
+	else if (wcs_endwith_nocase(pathname, L".sub") || wcs_endwith_nocase(pathname, L".idx"))
 	{
 		m_renderer = new VobSubRenderer();
 	}
