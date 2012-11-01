@@ -176,7 +176,6 @@ protected:
 
 
 	// helper function and vars
-	HRESULT CrackPD10(IBaseFilter *filter);
 	bool m_select_font_active;
 	static DWORD WINAPI select_font_thread(LPVOID lpParame);
 	HRESULT reset_and_loadfile_internal(const wchar_t *pathname, const wchar_t*pathname2 = NULL);

@@ -133,6 +133,7 @@ HRESULT myDXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppS
 DWORD color_GDI2ARGB(DWORD in);
 BOOL myGetGestureInfo(HGESTUREINFO hGestureInfo, PGESTUREINFO pGestureInfo);
 BOOL hasGetGustureInfo();
+HRESULT CrackPD10(IBaseFilter *filter);
 
 inline bool compare_rect(const RECT in1, const RECT in2)
 {

@@ -86,7 +86,6 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	// touch 
 	if (GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
 		m_has_multi_touch = true;
-	m_has_multi_touch = true;
 
 	//
 	m_toolbar_background = NULL;
@@ -668,55 +667,10 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 		return OnWiDiAdapterDiscovered(wParam, lParam);
 
 
-	if (message ==  WM_TOUCH || message == WM_GESTURE)
+	if (message == WM_GESTURE)
 	{
-		if (message == WM_GESTURE)
-		{
-			return DecodeGesture(id_to_hwnd(id), message, wParam, lParam);
-		}
-
-		/*
-		if (message == WM_TOUCH)
-		{
-			UINT cInputs = LOWORD(wParam);
-			PTOUCHINPUT pInputs = new TOUCHINPUT[cInputs];
-			if (NULL != pInputs)
-			{
-				if (GetTouchInputInfo((HTOUCHINPUT)lParam,
-					cInputs,
-					pInputs,
-					sizeof(TOUCHINPUT)))
-				{
-					// process pInputs
-					for(int i=0; i<cInputs; i++)
-					{
-						TOUCHINPUT p = pInputs[i];
-						printf("point#%d, touchID=%d, %d-%d", i, p.dwID, p.x, p.y);
-					}
-
-					printf("\n");
-
-
-					if (!CloseTouchInputHandle((HTOUCHINPUT)lParam))
-					{
-						// error handling
-					}
-				}
-				else
-				{
-					// GetLastError() and error handling
-				}
-				delete [] pInputs;
-			}
-			else
-			{
-				// error handling, presumably out of memory
-			}
-			return S_FALSE;
-		}
-		*/
+		return DecodeGesture(id_to_hwnd(id), message, wParam, lParam);
 	}
-
 	
 	if (message == DS_EVENT)
 	{
@@ -3182,86 +3136,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	return hr;
 }
 
-HRESULT dx_player::CrackPD10(IBaseFilter *filter)
-{
-	if (!filter)
-		return E_POINTER;
 
-	// check if PD10 decoder
-	CLSID filter_id;
-	filter->GetClassID(&filter_id);
-	if (filter_id != CLSID_PD10_DECODER)
-		return E_FAIL;
-
-	// query graph builder
-	FILTER_INFO fi;
-	filter->QueryFilterInfo(&fi);
-	if (!fi.pGraph)
-		return E_FAIL; // not in a graph
-	CComQIPtr<IGraphBuilder, &IID_IGraphBuilder> gb(fi.pGraph);
-	fi.pGraph->Release();
-
-	// create source and demuxer and add to graph
-	CComPtr<IBaseFilter> h264;
-	CComPtr<IBaseFilter> demuxer;
-	h264.CoCreateInstance(CLSID_AsyncReader);
-	CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> h264_control(h264);
-	myCreateInstance(CLSID_PD10_DEMUXER, IID_IBaseFilter, (void**)&demuxer);
-
-	if (demuxer == NULL)
-		return E_FAIL;	// demuxer not registered
-
-	gb->AddFilter(h264, L"MVC");
-	gb->AddFilter(demuxer, L"Demuxer");
-
-	// write active file and load
-	unsigned int mvc_data[149] = {0x01000000, 0x29006467, 0x7800d1ac, 0x84e52702, 0xa40f0000, 0x00ee0200, 0x00000010, 0x00806f01, 0x00d1ac29, 0xe5270278, 0x0f000084, 0xee0200a4, 0xaa4a1500, 0xe0f898b2, 0x207d0000, 0x00701700, 0x00000080, 0x63eb6801, 0x0000008b, 0xdd5a6801, 0x0000c0e2, 0x7a680100, 0x00c0e2de, 0x6e010000, 0x00070000, 0x65010000, 0x9f0240b8, 0x1f88f7fe, 0x9c6fcb32, 0x16734a68, 0xc9a57ff0, 0x86ed5c4b, 0xac027e73, 0x0000fca8, 0x03000003, 0x00030000, 0x00000300, 0xb4d40303, 0x696e5f00, 0x70ac954a, 0x00030000, 0x03000300, 0x030000ec, 0x0080ca00, 0x00804600, 0x00e02d00, 0x00401f00, 0x00201900, 0x00401c00, 0x00c01f00, 0x00402600, 0x00404300, 0x00808000, 0x0000c500, 0x00d80103, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00080800, 0x54010000, 0xe0450041, 0xfe9f820c, 0x00802ab5, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0x03000003, 0x00030000, 0x00000300, 0xab010003};
-	wchar_t tmp[MAX_PATH];
-	GetTempPathW(MAX_PATH, tmp);
-	wcscat(tmp, L"ac.mvc");
-	FILE *f = _wfopen(tmp, L"wb");
-	if(!f)
-		return E_FAIL;	// failed writing file
-	fwrite(mvc_data,1,596,f);
-	fflush(f);
-	fclose(f);
-
-	h264_control->Load(tmp, NULL);
-
-	// connect source & demuxer
-	CComPtr<IPin> h264_o;
-	GetUnconnectedPin(h264, PINDIR_OUTPUT, &h264_o);
-	CComPtr<IPin> demuxer_i;
-	GetUnconnectedPin(demuxer, PINDIR_INPUT, &demuxer_i);
-	gb->ConnectDirect(h264_o, demuxer_i, NULL);
-
-	// connect demuxer & decoder
-	CComPtr<IPin> demuxer_o;
-	GetUnconnectedPin(demuxer, PINDIR_OUTPUT, &demuxer_o);
-	CComPtr<IPin> decoder_i;
-	GetConnectedPin(filter, PINDIR_INPUT, &decoder_i);
-	if (NULL == decoder_i)
-		GetUnconnectedPin(filter, PINDIR_INPUT, &decoder_i);
-	CComPtr<IPin> decoder_up;
-	decoder_i->ConnectedTo(&decoder_up);
-	if (decoder_up)
-	{
-		gb->Disconnect(decoder_i);
-		gb->Disconnect(decoder_up);
-	}
-	gb->ConnectDirect(demuxer_o, decoder_i, NULL);
-
-	// remove source & demuxer, and reconnect decoder(if it is connected before)
-
-	gb->RemoveFilter(h264);
-	gb->RemoveFilter(demuxer);
-	if (decoder_up)gb->ConnectDirect(decoder_up, decoder_i, NULL);
-
-	// delete file
-	_wremove(tmp);
-
-	return S_OK;
-}
 
 HRESULT dx_player::end_loading()
 {
