@@ -142,13 +142,14 @@ wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for)
 	delete [] tmp2;
 	return out ? out - tmp + (wchar_t*)search_in : NULL;
 }
+bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for);
 
 int srt_parser::load(wchar_t *pathname)
 {
 	if (!m_index)
 		return -1;
 
-	m_ass = wcsstr_nocase(pathname, L"ssa") || wcsstr_nocase(pathname, L"ass");
+	m_ass = wcs_endwith_nocase(pathname, L"ssa") || wcs_endwith_nocase(pathname, L"ass");
 	m_ass_events_start = false;
 
 	FILE * f = _wfopen(pathname, L"rb");
