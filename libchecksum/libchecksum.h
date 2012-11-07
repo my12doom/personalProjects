@@ -66,9 +66,13 @@ typedef struct _dwindow_update_signature
 	wchar_t description[2048];	// 
 }dwindow_update_signature;
 
-
+#ifdef VSTAR
+#define dwindow_n dwindow_vstar_n
+#else
 extern unsigned int dwindow_n[32];
+#endif
 extern DWORD dwindow_network_n[32];
+extern DWORD dwindow_vstar_n[32];
 bool verify_signature(const DWORD *checksum, const DWORD *signature, DWORD *public_key = NULL); // checksum is 20byte, signature is 128byte, true = match
 int verify_file(wchar_t *file); //return value:
 int video_checksum(wchar_t *file, DWORD *checksum);	// checksum is 20byte
