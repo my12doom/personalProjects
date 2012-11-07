@@ -71,6 +71,9 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 	if (strstr(result, "E_FAIL"))
 		hr = E_FAIL;
 
+#ifdef VSTAR
+	return 0;
+#endif
 
 	if (hr != S_OK)
 	{
@@ -111,9 +114,7 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 			aes.set_key(message.random_AES_key, 256);
 			for(int i=0; i<128; i+=16)
 				aes.decrypt(new_key+i, new_key+i);
-#ifndef VSTAR
 			memcpy(&g_passkey_big, new_key, 128);
-#endif
 
 			if (SUCCEEDED(check_passkey()))
 				save_passkey();

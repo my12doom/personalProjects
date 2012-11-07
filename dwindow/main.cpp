@@ -226,7 +226,21 @@ retry:
 		dwindow_dll_go(hinstance, NULL, test);
 	else
 	while (!test->is_closed())
+	{
+		USES_CONVERSION;
+		char tmp[1024];
+		wchar_t out[1024];
+		wchar_t wtmp[1024];
+		fgets(tmp, 1024, stdin);
+		wcscpy(wtmp, A2W(tmp));
+		wcstrim(wtmp, L'\r');
+		wcstrim(wtmp, L'\n');
+		out[0] = NULL;
+		HRESULT hr = test->execute_command_line(wtmp, out);
+		wprintf(L"result: %08x, %s\n", hr, out);
+
 		Sleep(100);
+	}
 
 	// reset passkey on need
 	if(GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) < 0)
