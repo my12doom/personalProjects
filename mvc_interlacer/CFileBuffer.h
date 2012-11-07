@@ -20,6 +20,7 @@ public:
 
 	CFileBuffer(int buffer_size);
 	~CFileBuffer();
+	int reset();
 	int wait_for_data(int size);
 	int remove_data(int size);
 	int insert(int size, const BYTE*buf);
