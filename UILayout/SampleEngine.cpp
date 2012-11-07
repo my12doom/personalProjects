@@ -270,7 +270,7 @@ HRESULT SampleEngine::LoadResource(ID3D9UIResource **out, void *data, int type)
 	switch(type)
 	{
 	case ResourceType_FileImage:
-		*out = new SampleImageResource((wchar_t*)data, m_device, -1, -1);
+		*out = new SampleImageResource((wchar_t*)data, m_device, D3DX_DEFAULT_NONPOW2, D3DX_DEFAULT_NONPOW2);
 		break;
 	case ResourceType_Font:
 		*out = new SampleFontResource(m_device, data);
@@ -486,7 +486,7 @@ SampleImageResource::SampleImageResource(const wchar_t* filename, IDirect3DDevic
 	HRESULT hr = D3DXCreateTextureFromFileExW( m_device, filename, width, height, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, D3DX_DEFAULT,
 		D3DX_DEFAULT,0,0,0, &m_texture_cpu );
 
-	if (width == D3DX_DEFAULT || height == D3DX_DEFAULT && m_texture_cpu)
+	if (width == D3DX_DEFAULT_NONPOW2 || height == D3DX_DEFAULT_NONPOW2 && m_texture_cpu)
 	{
 		D3DSURFACE_DESC desc;
 		m_texture_cpu->GetLevelDesc(0, &desc);
