@@ -317,9 +317,16 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	if (file2[0] == NULL && 0 == scan_mpls(file1, &main_playlist_count, main_playlist, lengths, sub_playlist, &sub_playlist_count))
 	{
 		if (main_playlist_count != sub_playlist_count)
-			env->ThrowError("Invalid playlist file, main count != sub count.");
-
-		printf("MPLS file detected.\n");
+		{
+			if (sub_playlist_count != 0)
+				env->ThrowError("Invalid playlist file, main count(%d) != sub count(%d).", main_playlist_count, sub_playlist_count);
+			else
+				printf("2D MPLS file detected.\n");
+		}
+		else
+		{
+			printf("3D MPLS file detected.\n");
+		}
 
 		// find path
 		int path_pos = 0;
@@ -340,27 +347,33 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 		tmp1[path_pos] = '\0';
 		strcat(tmp1, "STREAM\\");
 
-		strcpy(tmp2, tmp1);
+		tmp2[0] = NULL;
+		if (sub_playlist_count>0)
+			strcpy(tmp2, tmp1);
 
 		for(int i=0; i<main_playlist_count; i++)
 		{
 			strcat(tmp1, main_playlist+6*i);
 			strcat(tmp1, i==main_playlist_count-1?".m2ts":".m2ts:");
-			strcat(tmp2, sub_playlist+6*i);
-			strcat(tmp2, i==main_playlist_count-1?".m2ts":".m2ts:");
+			if (sub_playlist_count>0)
+			{
+				strcat(tmp2, sub_playlist+6*i);
+				strcat(tmp2, i==main_playlist_count-1?".m2ts":".m2ts:");
+			}
 		}
 
 		file1 = tmp1;
 		file2 = tmp2;
 
 		printf("left  eye:%s.\n", file1);
-		printf("right eye:%s.\n", file2);
+		if (sub_playlist_count>0)
+			printf("right eye:%s.\n", file2);
 	}
 
 	parse_combined_filename(file1, 0, tmp);
 	h264_scan_result scan_result = scan_m2ts(tmp);
 	if (scan_result.frame_count == 0 && frame_count == -1)
-		env->ThrowError("can't detect frame count of input file.");
+		env->ThrowError("can't detect frame count of input file (%s).", tmp);
 
 	// recalculate frame count if it is a valid mpls
 	if (main_playlist_count > 0 && lengths[0] > 0)

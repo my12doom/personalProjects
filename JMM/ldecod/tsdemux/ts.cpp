@@ -784,7 +784,7 @@ int ts::demuxer::fast_scan_file(const char* name, int scan_packet_count/*=250000
 		if((n=demux_ts_packet(buf+i*buf_len)))
 		{
 			//fprintf(stderr,"%s: invalid packet %llu (%i)\n",name,pn,n);
-			return -1;
+			//return -1;
 		}
 	}
 
