@@ -17,6 +17,13 @@ int wcscmp_nocase(const wchar_t*in1, const wchar_t *in2)
 	return out;
 }
 
+wchar_t * wcscpy2(wchar_t *out, const wchar_t *in)
+{
+	if (!out || !in)
+		return NULL;
+	return wcscpy(out, in);
+}
+
 
 // helper classes
 static const wchar_t myTRUE[] = L"True";
@@ -24,9 +31,12 @@ static const wchar_t myFALSE[] = L"False";
 class myBool
 {
 public:
-	myBool(const wchar_t *str)
+	myBool(const wchar_t *str, bool _default=false)
 	{
-		m_value = wcscmp_nocase(str, myTRUE) == 0;
+		if (str == NULL)
+			m_value = _default;
+		else
+			m_value = wcscmp_nocase(str, myTRUE) == 0;
 	}
 	myBool(const bool b)
 	{
@@ -50,9 +60,12 @@ protected:
 class myInt
 {
 public:
-	myInt(const wchar_t *str)
+	myInt(const wchar_t *str, int _default = 0)
 	{
-		m_value = _wtoi(str);
+		if (str == NULL)
+			m_value = _default;
+		else
+			m_value = _wtoi(str);
 	}
 	myInt(const int b)
 	{
@@ -77,9 +90,12 @@ protected:
 class myDouble
 {
 public:
-	myDouble(const wchar_t *str)
+	myDouble(const wchar_t *str, double _default=0)
 	{
-		m_value = _wtof(str);
+		if (str == NULL)
+			m_value = _default;
+		else
+			m_value = _wtof(str);
 	}
 	myDouble(const double b)
 	{
@@ -214,6 +230,44 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 	{
 		wcscpy(out, myBool(m_full1));
 		hr = S_OK;
+	}
+
+	CASE(L"list_file")
+	{
+		wchar_t *tmp = new wchar_t[102400];
+		wcscpy(tmp, args[0]);
+		wcscat(tmp, L"*.*");
+
+		WIN32_FIND_DATAW find_data;
+		HANDLE find_handle = FindFirstFileW(tmp, &find_data);
+		tmp[0] = NULL;
+
+		if (find_handle != INVALID_HANDLE_VALUE)
+		{
+				do
+			{
+				if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)!=0
+						&& wcscmp(L".",find_data.cFileName ) !=0
+						&& wcscmp(L"..", find_data.cFileName) !=0
+					)
+				{
+					wcscat(tmp, find_data.cFileName);
+					wcscat(tmp, L"\\|");
+				}
+				else if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
+
+				{
+					wcscat(tmp, find_data.cFileName);
+					wcscat(tmp, L"|");
+				}
+
+			}
+			while( FindNextFile(find_handle, &find_data ) );
+		}
+
+		wcscpy(out, tmp);
+		delete [] tmp;
+		return S_OK;
 	}
 
 	DEFAULT

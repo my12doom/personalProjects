@@ -1671,6 +1671,7 @@ int wcsexplode(const wchar_t *string_to_explode, const wchar_t *delimeter, wchar
 
 	if (delleng == 0 || delleng >= strleng)
 	{
+		out[0] = (wchar_t*)malloc(2);
 		wcscpy(out[0], string_to_explode);
 		return 0;
 	}

@@ -31,6 +31,7 @@
 #define max_playlist (50)
 #define countof(x) (sizeof(x)/sizeof(x[0]))
 #define MAX_WIDI_ADAPTERS (255)
+#define PURE2
 
 class subtitle_file_handler
 {
@@ -51,7 +52,7 @@ public:
 	// load functions
 	HRESULT reset();								// unload all video and subtitle files
 	HRESULT start_loading();
-	HRESULT reset_and_loadfile(const wchar_t *pathname, bool stop);
+	HRESULT reset_and_loadfile(const wchar_t *pathname, bool stop, const wchar_t*pathname2 = NULL);
 	HRESULT load_audiotrack(const wchar_t *pathname);
 	HRESULT load_subtitle(const wchar_t *pathname, bool reset = true);
 	HRESULT load_file(const wchar_t *pathname, bool non_mainfile = false, int audio_track = LOADFILE_FIRST_TRACK, int video_track = LOADFILE_ALL_TRACK);			// for multi stream mkv
@@ -60,11 +61,16 @@ public:
 	// subtitle control functions
 	HRESULT set_subtitle_pos(double center_x, double bottom_y);
 	HRESULT set_subtitle_parallax(int parallax);
+	HRESULT get_subtitle_pos(double *out, int which) PURE2;					// which: 0 = x, 1=y
+	HRESULT get_subtitle_parallax(int *parallax) PURE2;
 
 	// image control functions
 	HRESULT set_force_2d(bool force2d);
 	HRESULT set_swap_eyes(bool swap_eyes);
 	HRESULT set_movie_pos(double x, double y);	// 1.0 = top, -1.0 = bottom, 0 = center
+	HRESULT get_force_2d(bool *force2d) PURE2;
+	HRESULT get_swap_eyes(bool *swap_eyes) PURE2;
+	HRESULT get_movie_pos(int which, double *out) PURE2;	// which: 0 = x, 1=y
 
 	// playlist
 	HRESULT playlist_add(const wchar_t *filename);
@@ -72,6 +78,7 @@ public:
 	HRESULT playlist_play_next();
 	HRESULT playlist_play_previous();
 	HRESULT playlist_play_pos(int pos);
+	HRESULT playlist_get_item(int id, wchar_t *filename_out) PURE2;
 	int playlist_get_item_count(){return m_playlist_count;}
 	int playlist_get_playing_position(){return m_playlist_playing;}
 

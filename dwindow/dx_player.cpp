@@ -2566,11 +2566,11 @@ HRESULT dx_player::start_loading()
 	return S_OK;
 }
 
-HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, bool stop)
+HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, bool stop, const wchar_t*pathname2/* = NULL*/)
 {
 	if (GetCurrentThreadId() == m_thread_id1)
 	{
-		HRESULT hr = reset_and_loadfile_internal(pathname);
+		HRESULT hr = reset_and_loadfile_internal(pathname, pathname2);
 
 		if (stop)
 			pause();
