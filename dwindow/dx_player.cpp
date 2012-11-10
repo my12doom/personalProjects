@@ -3149,7 +3149,8 @@ HRESULT dx_player::end_loading()
 
 	CComPtr<IPin> renderer1_input;
 	GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer1_input);
-	if (renderer1_input)
+	AutoSetting<bool> video_only(L"ForceVideo", true);
+	if (renderer1_input && (bool)video_only)
 	{
 		log_line(L"no video stream found.");
 		return E_FAIL;
