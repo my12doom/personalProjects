@@ -127,6 +127,15 @@ public class SplashWindow3DActivity extends Activity {
 		System.out.println(send_cmd2("shit").hr.successed());
 	}
     
+    private boolean isMediaFile(String filename){
+    	String[] exts = {".mp4", ".mkv", ".avi", ".rmvb", ".wmv", ".avs", ".ts", ".m2ts", ".ssif", ".mpls", ".3dv", ".e3d"};
+    	
+    	for(int i=0; i<exts.length; i++)
+    		if (filename.endsWith(exts[i]))
+    			return true;
+    	return false;
+    }
+    
     private String path = "\\";
     private void refresh(){
 		cmd_result list_result = send_cmd2("list_file|"+path);
@@ -135,9 +144,17 @@ public class SplashWindow3DActivity extends Activity {
 		
 		Arrays.sort(file_list, new Comparator<String>(){
 			public int compare(String lhs, String rhs) {
-				
 				if (lhs.endsWith("\\") != rhs.endsWith("\\"))
 					return lhs.endsWith("\\") ? -1 : 1;
+				
+				if (isMediaFile(lhs) && isMediaFile(rhs))
+					;
+				else{
+					if (isMediaFile(lhs))
+						return -1;
+					if (isMediaFile(rhs))
+						return 1;
+				}				
 				
 				return lhs.compareTo(rhs);
 			}
