@@ -8,7 +8,7 @@ typedef struct _media_info_output
 
 	int level_depth;
 	wchar_t key[200];
-	wchar_t value[1024];
+	wchar_t value[20480];
 } media_info_entry;
 
 HRESULT show_media_info(const wchar_t *filename, HWND parent);

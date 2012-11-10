@@ -444,7 +444,7 @@ HRESULT get_mediainfo(const wchar_t *filename, media_info_entry **out, bool use_
 	MI.Close();
 	wchar_t *p = (wchar_t*)str.c_str();
 	wchar_t *p2 = wcsstr(p, L"\n");
-	wchar_t tmp[1024];
+	wchar_t tmp[20480];
 	bool next_is_a_header = true;
 
 	media_info_entry *pm = *out = NULL;
