@@ -133,8 +133,8 @@ int my_handle_req(char* data, int size, DWORD ip, int client_sock)
 
 				wprintf(L"%s\n", line_w);
 				HRESULT hr = command_reciever->execute_command_line(line_w, out);
-				wprintf(L"0x%08x,%s\n", hr, out);
-				swprintf(out2, L"0x%08x,", hr);
+				wprintf(L"%08x,%s\n", hr, out);
+				swprintf(out2, L"%08x,", hr);
 				wcscat(out2, out);
 				int o = WideCharToMultiByte(CP_UTF8, 0, out2, -1, outA, 102400, NULL, NULL);
 				send(client_sock, outA, strlen(outA), 0);

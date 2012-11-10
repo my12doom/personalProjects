@@ -427,7 +427,7 @@ int srt_parser::handle_data_16(unsigned short *data, bool big, int size)
 				line_w[p++] = c;
 			else
 			{
-				if(c == 0xD)
+				if(c == 0xD || c == 0xA)
 				{
 					line_w[p] = NULL;
 					wstrtrim(line_w);
@@ -449,7 +449,7 @@ int srt_parser::handle_data_16(unsigned short *data, bool big, int size)
 				line_w[p++] = c;
 			else
 			{
-				if(c == 0xD)
+				if(c == 0xD || c == 0xA)
 				{
 					line_w[p] = NULL;
 					wstrtrim(line_w);

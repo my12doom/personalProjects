@@ -235,34 +235,53 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 	CASE(L"list_file")
 	{
 		wchar_t *tmp = new wchar_t[102400];
-		wcscpy(tmp, args[0]);
-		wcscat(tmp, L"*.*");
-
-		WIN32_FIND_DATAW find_data;
-		HANDLE find_handle = FindFirstFileW(tmp, &find_data);
 		tmp[0] = NULL;
 
-		if (find_handle != INVALID_HANDLE_VALUE)
+		if (wcslen(args[0]) <= 1)
 		{
-				do
+			for(int i=0; i<26; i++)
 			{
-				if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)!=0
-						&& wcscmp(L".",find_data.cFileName ) !=0
-						&& wcscmp(L"..", find_data.cFileName) !=0
-					)
+				wchar_t path[50];
+				wchar_t tmp2[MAX_PATH];
+				swprintf(path, L"%c:\\", L'A'+i);
+				if (GetVolumeInformationW(path, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
 				{
-					wcscat(tmp, find_data.cFileName);
-					wcscat(tmp, L"\\|");
-				}
-				else if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
-
-				{
-					wcscat(tmp, find_data.cFileName);
+					wcscat(tmp, path);
 					wcscat(tmp, L"|");
 				}
-
 			}
-			while( FindNextFile(find_handle, &find_data ) );
+		}
+		else
+		{
+			wcscpy(tmp, args[0]+1);
+			wcscat(tmp, L"*.*");
+
+			WIN32_FIND_DATAW find_data;
+			HANDLE find_handle = FindFirstFileW(tmp, &find_data);
+			tmp[0] = NULL;
+
+			if (find_handle != INVALID_HANDLE_VALUE)
+			{
+				do
+				{
+					if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)!=0
+							&& wcscmp(L".",find_data.cFileName ) !=0
+							&& wcscmp(L"..", find_data.cFileName) !=0
+						)
+					{
+						wcscat(tmp, find_data.cFileName);
+						wcscat(tmp, L"\\|");
+					}
+					else if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
+
+					{
+						wcscat(tmp, find_data.cFileName);
+						wcscat(tmp, L"|");
+					}
+
+				}
+				while( FindNextFile(find_handle, &find_data ) );
+			}
 		}
 
 		wcscpy(out, tmp);
