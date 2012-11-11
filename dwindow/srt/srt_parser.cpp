@@ -25,7 +25,7 @@ int srt_parser::wstrtrim(wchar_t *str, wchar_t char_ )
 {
 	int len = (int)wcslen(str);
 	//LEADING:
-	int lead = 0;
+	int lead = len;
 	for(int i=0; i<len; i++)
 		if (str[i] != char_)
 		{
@@ -34,7 +34,7 @@ int srt_parser::wstrtrim(wchar_t *str, wchar_t char_ )
 		}
 
 	//ENDING:
-	int end = 0;
+	int end = len;
 	for (int i=len-1; i>=0; i--)
 		if (str[i] != char_)
 		{
@@ -42,10 +42,17 @@ int srt_parser::wstrtrim(wchar_t *str, wchar_t char_ )
 			break;
 		}
 	//TRIMMING:
-	memmove(str, str+lead, (len-lead-end)*sizeof(wchar_t));
-	str[len-lead-end] = NULL;
+	wchar_t *trim_start = str + lead;
+	wchar_t *trim_end = str + len - end;
+	if (trim_end <= trim_start)
+	{
+		str[0] = NULL;
+		return len;
+	}
+	memmove(str, trim_start, sizeof(wchar_t)*(trim_end - trim_start));
+	str[trim_end - trim_start] = NULL;
 
-	return len - lead - end;
+	return len - (trim_end - trim_start);
 }
 int srt_parser::time_to_decimal(wchar_t *str)
 {
@@ -423,44 +430,44 @@ int srt_parser::handle_data_16(unsigned short *data, bool big, int size)
 		for (int i=0; i<size; i++)
 		{
 			wchar_t c = swap_big_little(data[i]);
-			if (c != 0xA && c != 0xD && p<1024)
+			if (c != 0xA && p<1024)
 				line_w[p++] = c;
 			else
 			{
-				if(c == 0xD || c == 0xA)
+				if(c == 0xA)
 				{
 					line_w[p] = NULL;
 					wstrtrim(line_w);
+					wstrtrim(line_w, 0xD);
 
 					if (NULL != line_w[0])
 						handle_line(line_w);
 					else
 						m_last_type = 0;
-				}
-				else
 					p = 0;
+				}
 			}
 		}
 	else//little
 		for (int i=0; i<size/2; i++)
 		{
 			wchar_t c = data[i];
-			if (c != 0xA && c != 0xD && p<1024)
+			if (c != 0xA && p<1024)
 				line_w[p++] = c;
 			else
 			{
-				if(c == 0xD || c == 0xA)
+				if(c == 0xA)
 				{
 					line_w[p] = NULL;
 					wstrtrim(line_w);
+					wstrtrim(line_w, 0xD);
 
 					if (NULL != line_w[0])
 						handle_line(line_w);
 					else
 						m_last_type = 0;
-				}
-				else
 					p = 0;
+				}
 			}
 		}
 
@@ -474,23 +481,23 @@ int srt_parser::handle_data_8(unsigned char *data, int code_page, int size)
 	int p = 0;
 	for (int i=0; i<size; i++)
 	{
-		if (data[i] != 0xA && data[i] != 0xD && p<1024)
+		if (data[i] != 0xA && p<1024)
 			line[p++] = data[i];
 		else
 		{
-			if(data[i] == 0xD)
+			if(data[i] == 0xA)
 			{
 				line[p] = NULL;
 				MultiByteToWideChar(code_page, 0, line, 1024, line_w, 1024);
 				wstrtrim(line_w);
+				wstrtrim(line_w, 0xD);
 
 				if (NULL != line_w[0])
 					handle_line(line_w);
 				else
 					m_last_type = 0;
-			}
-			else
 				p = 0;
+			}
 		}
 	}
 
