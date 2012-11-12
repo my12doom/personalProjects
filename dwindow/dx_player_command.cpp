@@ -277,23 +277,48 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 
 	CASE(L"list_audio_track")
 	{
+		wchar_t tmp[32][1024];
+		wchar_t *tmp2[32];
+		bool connected[32];
+		for(int i=0; i<32; i++)
+			tmp2[i] = tmp[i];
+		int found = 0;
+		list_audio_track(tmp2, connected, &found);
 
+		out[0] = NULL;
+		for(int i=0; i<found; i++)
+		{
+			wcscat(out, tmp2[i]);
+			wcscat(out, L"|");
+			wcscat(out, myBool(connected[i]));
+		}
 	}
 
 	CASE(L"list_subtitle_track")
 	{
+		wchar_t tmp[32][1024];
+		wchar_t *tmp2[32];
+		bool connected[32];
+		for(int i=0; i<32; i++)
+			tmp2[i] = tmp[i];
+		int found = 0;
+		list_subtitle_track(tmp2, connected, &found);
 
+		out[0] = NULL;
+		for(int i=0; i<found; i++)
+		{
+			wcscat(out, tmp2[i]);
+			wcscat(out, L"|");
+			wcscat(out, myBool(connected[i]));
+			wcscat(out, L"|");
+		}
 	}
 
 	CASE(L"enable_audio_track")
-	{
-
-	}
+		hr = enable_audio_track(myInt(args[0], -999));		// -999 should cause no harm
 
 	CASE(L"enable_subtitle_track")
-	{
-
-	}
+		hr = enable_subtitle_track(myInt(args[0], -999));	// -999 should cause no harm
 
 	CASE(L"list_drive")
 	{

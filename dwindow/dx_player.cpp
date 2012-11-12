@@ -1207,10 +1207,24 @@ HRESULT dx_player::popup_menu(HWND owner)
 
 	// audio tracks
 	HMENU sub_audio = GetSubMenu(menu, 6);
-	list_audio_track(sub_audio);
+	wchar_t tmp[32][1024];
+	wchar_t *tmp2[32];
+	bool connected[32];
+	for(int i=0; i<32; i++)
+		tmp2[i] = tmp[i];
+	int found = 0;
+	list_audio_track(tmp2, connected, &found);
+	for(int i=0; i<found; i++)
+		InsertMenuW(sub_audio, i, MF_STRING | MF_BYPOSITION | (connected[i] ? MF_CHECKED : MF_UNCHECKED), 'A0'+i, tmp2[i]);
+	if (found != 0)
+		DeleteMenu(sub_audio, ID_AUDIO_NONE, MF_BYCOMMAND);
 
 	// subtitle tracks
-	list_subtitle_track(sub_subtitle);
+	list_subtitle_track(tmp2, connected, &found);
+	for(int i=0; i<found; i++)
+		InsertMenuW(sub_subtitle, i, MF_STRING | MF_BYPOSITION | (connected[i] ? MF_CHECKED : MF_UNCHECKED), 'S0'+i, tmp2[i]);
+	if (found != 0)
+		DeleteMenu(sub_subtitle, ID_SUBTITLE_NOSUBTITLE, MF_BYCOMMAND );
 
 	// language
 	if (g_active_language == ENGLISH)
@@ -3449,6 +3463,8 @@ HRESULT dx_player::toggle_fullscreen()
 
 HRESULT dx_player::enable_audio_track(int track)
 {
+	if (track < -2)
+		return S_OK;
 	if (track < -1)
 		track = m_active_audio_track;
 
@@ -3679,7 +3695,9 @@ HRESULT dx_player::enable_audio_track(int track)
 }
 HRESULT dx_player::enable_subtitle_track(int track)
 {
-	if (track < 0)
+	if (track < -2)
+		return S_OK;
+	if (track < -1)
 		track = m_active_subtitle_track;
 
 	CComPtr<IEnumFilters> ef;
@@ -3961,7 +3979,7 @@ retry:
 	return S_OK;
 }
 
-HRESULT dx_player::list_audio_track(HMENU submenu)
+HRESULT dx_player::list_audio_track(wchar_t **out, bool *connected_out, int *found)
 {
 	CComPtr<IEnumFilters> ef;
 	CComPtr<IEnumPins> ep;
@@ -3981,6 +3999,7 @@ HRESULT dx_player::list_audio_track(HMENU submenu)
 			if (clsid == CLSID_AsyncReader)
 			{
 				// assume connected
+				pin = NULL;
 				GetConnectedPin(filter, PINDIR_OUTPUT, &pin);
 				CComPtr<IPin> connected;
 				pin->ConnectedTo(&connected);
@@ -3991,14 +4010,13 @@ HRESULT dx_player::list_audio_track(HMENU submenu)
 				filter = NULL;
 				filter.Attach(pi.pFilter);
 			}
-			//break;
 			CComQIPtr<IAMStreamSelect, &IID_IAMStreamSelect> stream_select(filter);
 			if (stream_select == NULL)
 			{
 				// splitter that doesn't support IAMStreamSelect should have multiple Audio Pins
 				ep = NULL;
-				pin = NULL;
 				filter->EnumPins(&ep);
+				pin = NULL;
 				while (ep->Next(1, &pin, NULL) == S_OK)
 				{
 					PIN_INFO pi;
@@ -4010,9 +4028,11 @@ HRESULT dx_player::list_audio_track(HMENU submenu)
 
 					if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Audio) == S_OK)
 					{
-						int flag = MF_STRING | MF_BYPOSITION;
-						if (connected) flag |= MF_CHECKED;
-						InsertMenuW(submenu, audio_track_found, flag, 'A0'+audio_track_found, pi.achName);
+						if (audio_track_found < 32)
+						{
+							wcscpy(out[audio_track_found], pi.achName);
+							connected_out[audio_track_found] = connected != NULL;
+						}
 						audio_track_found++;
 					}
 
@@ -4040,9 +4060,11 @@ HRESULT dx_player::list_audio_track(HMENU submenu)
 
 						CComPtr<IPin> connected;
 						if (pin) pin->ConnectedTo(&connected);
-						int flag = MF_STRING | MF_BYPOSITION;
-						if (enabled && connected) flag |= MF_CHECKED;
-						InsertMenuW(submenu, audio_track_found, flag, 'A0'+audio_track_found, name);
+						if (audio_track_found < 32)
+						{
+							wcscpy(out[audio_track_found], name);
+							connected_out[audio_track_found] = connected && enabled;
+						}
 						audio_track_found++;
 					}
 					CoTaskMemFree (name);
@@ -4053,15 +4075,12 @@ HRESULT dx_player::list_audio_track(HMENU submenu)
 		filter = NULL;
 	}
 
-	if (audio_track_found != 0)
-	{
-		DeleteMenu(submenu, ID_AUDIO_NONE, MF_BYCOMMAND);
-	}
-
+	if (found != NULL)
+		*found = audio_track_found;
 	return S_OK;
 }
 
-HRESULT dx_player::list_subtitle_track(HMENU submenu)
+HRESULT dx_player::list_subtitle_track(wchar_t **out, bool*connected_out, int *found)
 {
 	CComPtr<IEnumFilters> ef;
 	CComPtr<IEnumPins> ep;
@@ -4075,7 +4094,10 @@ HRESULT dx_player::list_subtitle_track(HMENU submenu)
 		int flag = MF_STRING | MF_BYPOSITION;
 		CAutoPtr<subtitle_file_handler> &tmp = m_external_subtitles.GetAt(i);
 		if (tmp->actived) flag |= MF_CHECKED;
-		InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, tmp->m_pathname);
+// 		InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, tmp->m_pathname);
+		if (subtitle_track_found < 32)
+			wcscpy(out[subtitle_track_found], tmp->m_pathname);
+
 		subtitle_track_found++;
 	}
 
@@ -4121,9 +4143,11 @@ HRESULT dx_player::list_subtitle_track(HMENU submenu)
 
 					if (pi.dir == PINDIR_OUTPUT && DeterminPin(pin, NULL, MEDIATYPE_Subtitle) == S_OK)
 					{
-						int flag = MF_STRING | MF_BYPOSITION;
-						if (connected) flag |= MF_CHECKED;
-						InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, pi.achName);
+						if (subtitle_track_found < 32)
+						{
+							wcscpy(out[subtitle_track_found], pi.achName);
+							connected_out[subtitle_track_found] = connected != NULL;
+						}
 						subtitle_track_found++;
 					}
 
@@ -4151,9 +4175,11 @@ HRESULT dx_player::list_subtitle_track(HMENU submenu)
 						CComPtr<IPin> connected;
 						if (pin) pin->ConnectedTo(&connected);
 
-						int flag = MF_STRING | MF_BYPOSITION;
-						if (enabled && connected) flag |= MF_CHECKED;
-						InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, name);
+						if (subtitle_track_found < 32)
+						{
+							wcscpy(out[subtitle_track_found], name);
+							connected_out[subtitle_track_found] = enabled && connected;
+						}
 						subtitle_track_found++;
 					}
 					CoTaskMemFree (name);
@@ -4163,10 +4189,8 @@ HRESULT dx_player::list_subtitle_track(HMENU submenu)
 		filter = NULL;
 	}
 
-	if (subtitle_track_found != 0)
-	{
-		DeleteMenu(submenu, ID_SUBTITLE_NOSUBTITLE, MF_BYCOMMAND);
-	}
+	if (found != NULL)
+		*found = subtitle_track_found;
 
 	return S_OK;
 }
