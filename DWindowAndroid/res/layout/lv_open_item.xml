@@ -4,20 +4,24 @@
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     >
-<ImageView
-android:layout_width="fill_parent"
-android:layout_height="2dp"
-android:src="@drawable/border"
-android:scaleType="fitXY"
-/>
-<TextView
-android:id="@+id/tv_open_filename"  
-android:layout_width="fill_parent" 
-android:layout_height="50dip"
-android:padding="3dip"
-android:singleLine="true"
-android:gravity="center"
-android:textColor="#ABABAB"
-android:background="@drawable/bg"
-/>
+    
+	<ImageView
+	android:layout_width="fill_parent"
+	android:layout_height="2dp"
+	android:src="@drawable/border"
+	android:scaleType="fitXY"
+	android:layout_gravity="bottom"
+	/>
+	
+	<TextView
+	android:id="@+id/tv_open_filename"  
+	android:layout_width="fill_parent" 
+	android:layout_height="50dip"
+	android:padding="3dip"
+	android:singleLine="true"
+	android:gravity="center_vertical"
+	android:textColor="#ABABAB"
+	android:background="@drawable/bg"
+	/>
+	
 </LinearLayout>

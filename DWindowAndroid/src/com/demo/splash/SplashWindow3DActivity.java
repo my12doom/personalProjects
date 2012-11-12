@@ -1,28 +1,17 @@
 package com.demo.splash;
 
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 
 import com.Vstar.Splash;
 import com.Vstar.Splash.OnSplashCompletionListener;
+import com.demo.splash.DWindowNetworkConnection.cmd_result;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
@@ -32,53 +21,29 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import java.util.Comparator;
 
 public class SplashWindow3DActivity extends Activity {
 	
 	String[] file_list = new String[]{"connection failed"};
+	BDROMEntry[] bdrom_entry;
 	ListViewAdapter adapter;
 	ListView listView;
+	DWindowNetworkConnection conn = new DWindowNetworkConnection();
 	
-	class HRESULT{
-		public long m_code;
-		public HRESULT(String str){
-			m_code = Long.valueOf(str,16);
-		}
-		
-		public boolean failed(){
-			return m_code>=0x8000000;
-		}
-		
-		public String toString(){
-			return String.format("%08x", m_code);
-		}
-		
-		public boolean successed(){
-			return !failed();
-		}
+	private class BDROMEntry{
+		String path;
+		String text;
+		int state;	// 0 = no disc, 1 = non-movie disc, 2 = bd
 	}
 	
-	class cmd_result{
-		cmd_result(){
-			hr = new HRESULT("80004005");	// E_FAIL
-		}
-		HRESULT hr;
-		String result;
-		public boolean failed(){
-			return hr.failed();
-		}
-		
-		public String toString(){
-			return hr.toString();
-		}
-		
-		public boolean successed(){
-			return hr.successed();
-		}
+	private void connect()
+	{
+		conn.connect("192.168.1.199");
+		int login_result = conn.login("TestCode");
+		file_list = new String[]{login_result == 1 ? "Login OK" : (login_result == 0 ? "Password Error" : "Login Failed")};
+		adapter.notifyDataSetChanged();
 	}
 	
     @Override
@@ -93,14 +58,24 @@ public class SplashWindow3DActivity extends Activity {
         listView.setAdapter(adapter = new ListViewAdapter(this));
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
         	public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
-        		String file = file_list[position];
-        		if (!file.endsWith("\\"))
-        			send_cmd("reset_and_loadfile|"+path.substring(1,path.length())+file);
+        		String file = file_list[position];        		
+    			if (conn.getState(true)<0)
+    				connect();
+        		if (!file.endsWith("\\")){
+        			conn.execute_command("reset_and_loadfile|"+path.substring(1,path.length())+file);
+        		}
         		else
         		{
-        			path += file;
-        			refresh();
-        			listView.setSelection(0);
+         			if (path.equals("\\") && isBDPath(file))
+         				conn.execute_command("reset_and_loadfile|"+file);
+         			else{
+         				String oldpath = path;
+	         			path += file;
+	        			if (!refresh())
+	        				path = oldpath;
+	        			
+	        			listView.setSelection(0);
+         			}
         		}
 			}
         });
@@ -115,33 +90,47 @@ public class SplashWindow3DActivity extends Activity {
 		splash.setOnCompletionListener(new OnSplashCompletionListener() {
 			public void onCompletion() {
 				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-				cmd_result isfull = send_cmd2("is_fullscreen");
-				if (isfull.successed() && !isfull.result.equalsIgnoreCase("true"))
-					send_cmd("toggle_fullscreen");
-				
+				connect();
 				refresh();
 				listView.setSelection(0);
 			}
-		});
-		
-		System.out.println(send_cmd2("shit").hr.successed());
+		});		
 	}
     
     private boolean isMediaFile(String filename){
     	String[] exts = {".mp4", ".mkv", ".avi", ".rmvb", ".wmv", ".avs", ".ts", ".m2ts", ".ssif", ".mpls", ".3dv", ".e3d"};
     	
     	for(int i=0; i<exts.length; i++)
-    		if (filename.endsWith(exts[i]))
+    		if (filename.toLowerCase().endsWith(exts[i]))
     			return true;
     	return false;
     }
     
+    private String C(String c){
+    	return c;
+    }
+    
+    private boolean isBDPath(String path){
+    	for(int i=0; i<bdrom_entry.length; i++){
+    		if (bdrom_entry[i].path.equalsIgnoreCase(path) && bdrom_entry[i].state == 2)
+    			return true;    			
+    	}
+    	return false;
+    }
+    
     private String path = "\\";
-    private void refresh(){
-		cmd_result list_result = send_cmd2("list_file|"+path);
+    private boolean refresh(){
+    	// reconnect if
+		if (conn.getState()<0)
+			connect();
+    	
+    	// file list
+		String cmd = path.equals("\\") ? "list_drive" : "list_file|" + path.substring(1, path.length());
+		cmd_result list_result = conn.execute_command(cmd);
 		if (list_result.successed())
-			file_list = list_result.result.split("\\|");				
+			file_list = list_result.result.split("\\|");
 		
+		// sort
 		Arrays.sort(file_list, new Comparator<String>(){
 			public int compare(String lhs, String rhs) {
 				if (lhs.endsWith("\\") != rhs.endsWith("\\"))
@@ -160,15 +149,45 @@ public class SplashWindow3DActivity extends Activity {
 			}
 		});
 		
-		adapter.notifyDataSetChanged();   	
+		// bd list
+		if (path.equals("\\")){
+			list_result = conn.execute_command("list_bd3d");
+			if (list_result.successed())
+			{
+				String[] bd_list = list_result.result.split("\\|");
+				bdrom_entry = new BDROMEntry[bd_list.length];
+				for(int i=0; i<bdrom_entry.length; i++)
+				{
+					bdrom_entry[i] = new BDROMEntry();
+					bdrom_entry[i].path = bd_list[i].substring(0,3);
+					bdrom_entry[i].text = bd_list[i].substring(3,bd_list[i].length());
+					
+					if (bdrom_entry[i].text.equalsIgnoreCase("/"))
+						bdrom_entry[i].state = 0;
+					else if (bdrom_entry[i].text.equalsIgnoreCase(":"))
+						bdrom_entry[i].state = 1;
+					else
+						bdrom_entry[i].state = 2;
+				}
+			}
+		}
+
+		// refresh
+		adapter.notifyDataSetChanged();
+		
+		return conn.getState() >= 0;
     }
     
     public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
+			if (conn.getState(true)<0)
+				connect();
 			if (path.length() > 1){
+ 				String oldpath = path;
 				path = path.substring(0,path.lastIndexOf("\\"));
 				path = path.substring(0,path.lastIndexOf("\\")+1);
-				refresh();
+    			if (!refresh())
+    				path = oldpath;
 				
 				return true;
 			}
@@ -182,51 +201,10 @@ public class SplashWindow3DActivity extends Activity {
     }
     
     public void onStop(){
-    	send_cmd("reset");
+    	conn.execute_command("reset");
     	super.onStop();
     }
-    
-    private cmd_result send_cmd2(String cmd){
-    	cmd_result out = new cmd_result();
-    	try{
-    	String file_list_str = send_cmd(cmd);
-		String[] split = file_list_str.split(",", 2);
-		
-		out.result = split.length > 1 ? split[1] : "";
-		out.hr = new HRESULT(split[0]);
-    	}catch (Exception e){    		
-    	}
-		
-    	return out;
-    }
-    
-    private String send_cmd(String cmd){
-    	Log.i("send_cmd()", "sending "+cmd);
-    	String out = null;
-        Socket socket = null;
-        try {
-            String msg = cmd+"\r\n";
-            socket = new Socket();
-            InetAddress addr = InetAddress.getByName( "192.168.1.199");
-            socket.connect(new InetSocketAddress(addr, 8080), 3000);
-            InputStream inputStream = socket.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
-            String welcomeString = reader.readLine();
-            
-            OutputStream outputStream = socket.getOutputStream();
-            outputStream.write(msg.getBytes("UTF-8"));
-            out = reader.readLine();
-        } catch (UnknownHostException e) {
-        } catch (IOException e) {
-        } catch (Exception e){
-        } finally {
-            try {socket.close();} catch (Exception e){}
-        }
         
-    	Log.i("send_cmd()", "got "+out);
-        return out;
-    }
-    
     private class ListViewAdapter extends BaseAdapter {
 		LayoutInflater inflater;
 

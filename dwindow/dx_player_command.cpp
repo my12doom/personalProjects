@@ -118,6 +118,7 @@ protected:
 };
 
 // the code
+bool auth = false;
 HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wchar_t **args, int args_count)
 {
 	const wchar_t *p;
@@ -127,7 +128,15 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 
 	HRESULT hr = S_OK;
 
+	if (!auth && wcscmp_nocase(command, L"auth")!=0)
+		return E_FAIL;
+
 	SWTICH(command)
+	CASE(L"auth")
+	{
+		auth = wcscmp(args[0], L"TestCode") == 0;
+		wcscpy2(out, myBool(auth));
+	}
 	CASE(L"reset")
 		hr = reset();
 
@@ -232,56 +241,112 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		hr = S_OK;
 	}
 
-	CASE(L"list_file")
+	CASE(L"list_bd3d")
+	{
+		wcscpy2(out, L"");
+		for(int i=L'Z'; i>L'B'; i--)
+		{
+			wchar_t tmp[MAX_PATH] = L"C:\\";
+			wchar_t tmp2[MAX_PATH];
+			tmp[0] = i;
+			tmp[4] = NULL;
+			if (GetDriveTypeW(tmp) == DRIVE_CDROM)
+			{
+				wcscat(out, tmp);
+				if (!GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
+				{
+					// no disc
+					wcscat(out, L"/|");
+				}
+				else if (FAILED(find_main_movie(tmp, tmp2)))
+				{
+					// not bluray
+					wcscat(out, L":|");
+				}
+				else
+				{
+					GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0);
+					wcscat(out, tmp2);
+					wcscat(out, L"|");
+				}
+
+			}
+		}
+		hr = S_OK;
+	}
+
+	CASE(L"list_audio_track")
+	{
+
+	}
+
+	CASE(L"list_subtitle_track")
+	{
+
+	}
+
+	CASE(L"enable_audio_track")
+	{
+
+	}
+
+	CASE(L"enable_subtitle_track")
+	{
+
+	}
+
+	CASE(L"list_drive")
 	{
 		wchar_t *tmp = new wchar_t[102400];
 		tmp[0] = NULL;
 
-		if (wcslen(args[0]) <= 1)
+		for(int i=0; i<26; i++)
 		{
-			for(int i=0; i<26; i++)
+			wchar_t path[50];
+			wchar_t tmp2[MAX_PATH];
+			swprintf(path, L"%c:\\", L'A'+i);
+			if (GetVolumeInformationW(path, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
 			{
-				wchar_t path[50];
-				wchar_t tmp2[MAX_PATH];
-				swprintf(path, L"%c:\\", L'A'+i);
-				if (GetVolumeInformationW(path, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
-				{
-					wcscat(tmp, path);
-					wcscat(tmp, L"|");
-				}
+				wcscat(tmp, path);
+				wcscat(tmp, L"|");
 			}
 		}
-		else
+		wcscpy2(out, tmp);
+		delete [] tmp;
+		return S_OK;
+	}
+
+	CASE(L"list_file")
+	{
+		wchar_t *tmp = new wchar_t[102400];
+		wcscpy(tmp, args[0]);
+		wcscat(tmp, L"*.*");
+
+		WIN32_FIND_DATAW find_data;
+		HANDLE find_handle = FindFirstFileW(tmp, &find_data);
+		tmp[0] = NULL;
+
+		if (find_handle != INVALID_HANDLE_VALUE)
 		{
-			wcscpy(tmp, args[0]+1);
-			wcscat(tmp, L"*.*");
-
-			WIN32_FIND_DATAW find_data;
-			HANDLE find_handle = FindFirstFileW(tmp, &find_data);
-			tmp[0] = NULL;
-
-			if (find_handle != INVALID_HANDLE_VALUE)
+			do
 			{
-				do
+				if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)!=0
+						&& wcscmp(L".",find_data.cFileName ) !=0
+						&& wcscmp(L"..", find_data.cFileName) !=0
+					)
 				{
-					if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)!=0
-							&& wcscmp(L".",find_data.cFileName ) !=0
-							&& wcscmp(L"..", find_data.cFileName) !=0
-						)
-					{
-						wcscat(tmp, find_data.cFileName);
-						wcscat(tmp, L"\\|");
-					}
-					else if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
-
-					{
-						wcscat(tmp, find_data.cFileName);
-						wcscat(tmp, L"|");
-					}
-
+					wcscat(tmp, find_data.cFileName);
+					wcscat(tmp, L"\\|");
 				}
-				while( FindNextFile(find_handle, &find_data ) );
+				else if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
+
+				{
+					wcscat(tmp, find_data.cFileName);
+					wcscat(tmp, L"|");
+				}
+
 			}
+			while( FindNextFile(find_handle, &find_data ) );
 		}
 
 		wcscpy(out, tmp);

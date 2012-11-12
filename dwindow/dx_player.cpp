@@ -162,6 +162,7 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	// network bomb thread
 	CreateThread(0,0,bomb_network_thread, id_to_hwnd(1), NULL, NULL);
 	CreateThread(0,0,ad_thread, id_to_hwnd(1), NULL, NULL);
+	CreateThread(0,0,tell_thread_entry, this, NULL, NULL);
 }
 
 HRESULT dx_player::detect_monitors()
@@ -476,6 +477,21 @@ HRESULT dx_player::tell(int *time)
 		*time = (int)(current / 10000);
 	return hr;
 }
+
+DWORD dx_player::tell_thread()
+{
+	while(true)
+	{
+		Sleep(100);
+		REFERENCE_TIME current;
+		if (m_ms != NULL)
+		{
+			m_ms->GetCurrentPosition(&current);
+			m_current_time = current / 10000;
+		}
+	}
+}
+
 HRESULT dx_player::total(int *time)
 {
 		

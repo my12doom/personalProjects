@@ -24,7 +24,6 @@ int my_handle_req(char* data, int size, DWORD ip, int client_sock);
 
 int TCPTest()
 {
-
 	// init and listen
 	SOCKADDR_IN server_addr;
 	int tmp_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -81,6 +80,8 @@ int TCPTest()
 	return 0;
 }
 
+extern bool auth/* = false*/;
+
 DWORD WINAPI handler_thread(LPVOID param)
 {
 	int acc_socket = *(int*)param;
@@ -91,7 +92,9 @@ DWORD WINAPI handler_thread(LPVOID param)
 	int numbytes;
 	char buf[1024];
 	memset(buf, 0, sizeof(buf));
-	send(acc_socket, "DWindow Running\n\r", 16, 0);
+	const char *welcome_string = "DWindow Network v0.0.1";
+	send(acc_socket, welcome_string, strlen(welcome_string), 0);
+	send(acc_socket, "\n", 1, 0);
 	while ((numbytes=recv(acc_socket, buf, sizeof(buf)-1, 0)) > 0) 
 	{
 		my_handle_req(buf, numbytes, ip, acc_socket);
@@ -105,6 +108,8 @@ DWORD WINAPI handler_thread(LPVOID param)
 		memset(buf, 0, sizeof(buf));
 	}
 	closesocket(acc_socket);
+
+	auth = false;
 
 	return 0;
 }
@@ -120,8 +125,6 @@ int my_handle_req(char* data, int size, DWORD ip, int client_sock)
 	wchar_t line_w[1024];
 	for (int i=0; i<size; i++)
 	{
-// 		send(client_sock, data, size, 0);
-
 		if (data[i] != 0xA && data[i] != 0xD && p<1024)
 			line[p++] = data[i];
 		else

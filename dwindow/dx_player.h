@@ -185,6 +185,8 @@ protected:
 	// helper function and vars
 	bool m_select_font_active;
 	static DWORD WINAPI select_font_thread(LPVOID lpParame);
+	DWORD tell_thread();
+	static DWORD WINAPI tell_thread_entry(LPVOID lpParame){return ((dx_player*)lpParame)->tell_thread();}
 	HRESULT reset_and_loadfile_internal(const wchar_t *pathname, const wchar_t*pathname2 = NULL);
 	HRESULT render_audio_pin(IPin *pin = NULL);		// render audio pin, if pin=NULL, add all possible decoder
 	HRESULT render_video_pin(IPin *pin = NULL);		// render video pin, if pin=NULL, add all possible decoder
