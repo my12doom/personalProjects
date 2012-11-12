@@ -33,6 +33,27 @@
 #define MAX_WIDI_ADAPTERS (255)
 #define PURE2
 
+
+// dx_player's definition of output mode (combination of output mode and interlace mode)
+enum dx_player_outputmode
+{
+	dx_player_NV3D = 0,
+	dx_player_HD3D = 1,
+	dx_player_Intel = 2,
+	dx_player_IZ3D = 3,
+	dx_player_pageflipping = 4,
+	dx_player_anaglyph = 5,
+	dx_player_2D = 6,
+	dx_player_HSBS = 7,
+	dx_player_line_interlace = 8,
+	dx_player_checkboard = 9,
+	dx_player_row_interlace = 10,
+	dx_player_tb = 11,
+	dx_player_sbs = 12,
+	dx_player_dual_projector = 13,
+	dx_player_outputmode_max,
+};
+
 class subtitle_file_handler
 {
 public:
