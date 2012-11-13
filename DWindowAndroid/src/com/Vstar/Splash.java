@@ -42,7 +42,6 @@ public class Splash implements SurfaceHolder.Callback{
 		mListener=listener;
 	}
 
-	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
 		if (mOpen3d.has3D() && mSurfaceNotCreated) {
 			mOpen3d.Op3d(mSurfaceView, holder, true);
@@ -50,10 +49,8 @@ public class Splash implements SurfaceHolder.Callback{
 		}
 	}
 
-	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
 		mMediaPlayer.setOnCompletionListener(new OnCompletionListener() {
-			@Override
 			public void onCompletion(MediaPlayer mp) {
 				mp.reset();
 				mp.release();
@@ -80,7 +77,6 @@ public class Splash implements SurfaceHolder.Callback{
 		}
 	}
 	
-	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
 		if(mOpen3d!=null)
 			mOpen3d.Op3d(mSurfaceView, holder, false);

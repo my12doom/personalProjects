@@ -44,7 +44,7 @@ public class SplashWindow3DActivity extends Activity {
 	
 	private void connect()
 	{
-		conn.connect("192.168.1.199");
+		conn.connect("192.168.10.199");
 		int login_result = conn.login("TestCode");
 		file_list = new String[]{login_result == 1 ? "Login OK" : (login_result == 0 ? "Password Error" : "Login Failed")};
 		adapter.notifyDataSetChanged();
@@ -225,22 +225,18 @@ public class SplashWindow3DActivity extends Activity {
 			inflater = LayoutInflater.from(context);
 		}
 
-		@Override
 		public int getCount() {
 			return file_list.length;
 		}
 
-		@Override
 		public Object getItem(int position) {
 			return null;
 		}
 
-		@Override
 		public long getItemId(int position) {
 			return 0;
 		}
 
-		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			if (convertView == null)
 				convertView = inflater.inflate(R.layout.lv_open_item, null);

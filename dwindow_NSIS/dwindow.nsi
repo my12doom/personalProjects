@@ -144,6 +144,7 @@ Section "3DÓ°ÒôÖ÷³ÌÐò(required)"
   File "Fonts.conf"
   File "MediaInfo.dll"
   File "DevIL.dll"
+  File "ILU.dll"
   SetOutPath $INSTDIR\codec
   File "codec\*"
   SetOutPath $INSTDIR\skin
