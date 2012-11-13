@@ -1,7 +1,9 @@
 #include "dx_player.h"
 #include "..\renderer_prototype\YV12_to_RGB32.h"
 #include "../png2raw/include/il/il.h"
+#include "../png2raw/include/il/ilu.h"
 #pragma comment(lib, "../png2raw/lib/DevIL.lib")
+#pragma comment(lib, "../png2raw/lib/ILU.lib")
 
 // helper functions
 int wcscmp_nocase(const wchar_t*in1, const wchar_t *in2)
@@ -153,18 +155,19 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 			// save it to jpg
 			CAutoLock lck(&g_ILLock);
 			ilInit();
-			ilOriginFunc(IL_ORIGIN_UPPER_LEFT);
-			ilEnable(IL_ORIGIN_SET);
+// 			ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
+// 			ilEnable(IL_ORIGIN_SET);
 // 			ilEnable(IL_FILE_OVERWRITE);
 			ILuint imageNo = 0;
 			ilGenImages(1, &imageNo);
 			ilBindImage(imageNo);
 			ilSetInteger(IL_JPG_QUALITY, 60);
-			ILboolean result =ilTexImage(1920, 1080, 1, 4, IL_RGBA, IL_UNSIGNED_BYTE, dst);
+			ILboolean result =ilTexImage(1920, 1080, 1, 4, IL_BGRA, IL_UNSIGNED_BYTE, dst);
+			iluFlipImage();
+
 // 			for (int y=0; y<1080; ++y)
 // 			{
-// 				ilSetPixels(0, y, 0, 1920, 1, 1, 1080, IL_UNSIGNED_BYTE, (void*) dst);
-// 				dst += 1920;
+// 				 ilSetPixels(0, y, 0, 1920, 1, 1, IL_BGRA, IL_UNSIGNED_BYTE, dst + 1920*y);
 // 			}
 
 			DeleteFileA(tmpFile);
@@ -175,7 +178,8 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 				printf( "the error %x\n", err );
 				printf( "string is %s\n", ilGetString( err ) );
 			}
-
+			ilDeleteImage(imageNo);
+			delete [] dst;
 		}
 
 		FILE *f = fopen(tmpFile, "rb");

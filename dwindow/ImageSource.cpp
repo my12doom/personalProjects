@@ -132,7 +132,7 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 		return VFW_E_INVALID_FILE_FORMAT;
 	}
 
-	ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE);
+	ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
 	int decoded_size = ilGetInteger(IL_IMAGE_SIZE_OF_DATA);
 	int width = ilGetInteger(IL_IMAGE_WIDTH);
 	m_height = ilGetInteger(IL_IMAGE_HEIGHT);
@@ -171,16 +171,6 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 			dst += m_width*4;
 			data += width2*4;
 		}
-	}
-
-	// swap color order: from BGR to RGB
-	RGBQUAD *p = (RGBQUAD *)m_decoded_data;
-	for(int i=0; i<m_width*m_height; i++)
-	{
-		p[i].rgbBlue ^= p[i].rgbRed;
-		p[i].rgbRed ^= p[i].rgbBlue;
-		p[i].rgbBlue ^= p[i].rgbRed;
-		p[i].rgbReserved = 0xff;
 	}
 
 	HRESULT hr = E_FAIL;
