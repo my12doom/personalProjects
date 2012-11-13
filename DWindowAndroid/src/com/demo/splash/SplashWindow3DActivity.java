@@ -11,6 +11,9 @@ import com.demo.splash.DWindowNetworkConnection.cmd_result;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -21,6 +24,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -91,10 +95,10 @@ public class SplashWindow3DActivity extends Activity {
 			public void onCompletion() {
 				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 				connect();
-				refresh();
+				refresh();				
 				listView.setSelection(0);
 			}
-		});		
+		});
 	}
     
     private boolean isMediaFile(String filename){
@@ -195,15 +199,24 @@ public class SplashWindow3DActivity extends Activity {
 				finish();
 			}
 		} else if (keyCode == KeyEvent.KEYCODE_MENU){
-			refresh();
+			//refresh();
+			long l = System.currentTimeMillis();
+			byte[] jpg = conn.shot();
+			l = System.currentTimeMillis() - l;
+			System.out.println("speed:" + (l>0?jpg.length / l : -1));
+			l = System.currentTimeMillis();
+			if (jpg != null)
+			{
+				Bitmap bmp = BitmapFactory.decodeByteArray(jpg, 0, jpg.length);
+				BitmapDrawable bd = new BitmapDrawable(bmp);
+				LinearLayout layout = (LinearLayout)findViewById(R.id.main_layout);
+				layout.setBackgroundDrawable(bd);
+				l = System.currentTimeMillis() - l;
+				System.out.println("speed:" + (l>0?jpg.length / l : -1));
+			}
 		}
 		return false;
-    }
-    
-    public void onStop(){
-    	conn.execute_command("reset");
-    	super.onStop();
-    }
+    }    
         
     private class ListViewAdapter extends BaseAdapter {
 		LayoutInflater inflater;
