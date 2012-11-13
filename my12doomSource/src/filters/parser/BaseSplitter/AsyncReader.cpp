@@ -76,7 +76,7 @@ STDMETHODIMP CAsyncFileReader::SyncRead(LONGLONG llPosition, LONG lLength, BYTE*
 			if((ULONGLONG)llPosition != Seek(llPosition, begin)) {
 				return E_FAIL;
 			}
-			if((UINT)lLength > Read(pBuffer, lLength)) {
+			if((UINT)lLength < Read(pBuffer, lLength)) {
 				return E_FAIL;
 			}
 
