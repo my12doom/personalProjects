@@ -1,5 +1,6 @@
 #pragma once
 #include <Windows.h>
+#include <stdio.h>
 
 int wcsexplode(const wchar_t *string_to_explode, const wchar_t *delimeter, wchar_t **out, int max_part /* = 0xfffffff */);
 
@@ -17,12 +18,8 @@ public:
 		if (arg2== NULL) args_count = 1;
 		if (arg1== NULL) args_count = 0;
 		const wchar_t *args[4] = {arg1,arg2,arg3,arg4};
-		wchar_t tmp[10240] = L"";
 
-		HRESULT hr = execute_command_adv(command, tmp, args, args_count);
-
-		if (out != NULL)
-			wcscpy(out, tmp);
+		HRESULT hr = execute_command_adv(command, out, args, args_count);
 
 		return hr;
 	}

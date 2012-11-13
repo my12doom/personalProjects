@@ -117,9 +117,9 @@ DWORD WINAPI handler_thread(LPVOID param)
 char line[1024];
 int p = 0;
 int code_page = CP_ACP;
-wchar_t *out = new wchar_t[102400];
-wchar_t *out2 = new wchar_t[102400];
-char *outA = new char[102400];
+wchar_t *out = new wchar_t[1024000];
+wchar_t *out2 = new wchar_t[1024000];
+char *outA = new char[1024000];
 int my_handle_req(char* data, int size, DWORD ip, int client_sock) 
 {
 	wchar_t line_w[1024];
@@ -135,13 +135,28 @@ int my_handle_req(char* data, int size, DWORD ip, int client_sock)
 				MultiByteToWideChar(CP_UTF8, 0, line, 1024, line_w, 1024);
 
 				wprintf(L"%s\n", line_w);
+				out[0] = NULL;
 				HRESULT hr = command_reciever->execute_command_line(line_w, out);
-				wprintf(L"%08x,%s\n", hr, out);
-				swprintf(out2, L"%08x,", hr);
-				wcscat(out2, out);
-				int o = WideCharToMultiByte(CP_UTF8, 0, out2, -1, outA, 102400, NULL, NULL);
-				send(client_sock, outA, strlen(outA), 0);
-				send(client_sock, "\n", 1, 0);
+				if (hr == S_FALSE)
+				{
+					int s = send(client_sock, ((char*)out), *((int*)out)+4, 0);
+					if (s<0)
+					{
+						int e =  WSAGetLastError();
+						break;
+					}
+				}
+
+				else
+				{
+					wprintf(L"%08x,%s\n", hr, out);
+					swprintf(out2, L"%08x,", hr);
+					wcscat(out2, out);
+					int o = WideCharToMultiByte(CP_UTF8, 0, out2, -1, outA, 1024000, NULL, NULL);
+					send(client_sock, outA, strlen(outA), 0);
+					send(client_sock, "\n", 1, 0);
+				}
+
 
 			}
 			else

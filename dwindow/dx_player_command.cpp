@@ -1,4 +1,7 @@
 #include "dx_player.h"
+#include "..\renderer_prototype\YV12_to_RGB32.h"
+#include "../png2raw/include/il/il.h"
+#pragma comment(lib, "../png2raw/lib/DevIL.lib")
 
 // helper functions
 int wcscmp_nocase(const wchar_t*in1, const wchar_t *in2)
@@ -22,6 +25,12 @@ wchar_t * wcscpy2(wchar_t *out, const wchar_t *in)
 	if (!out || !in)
 		return NULL;
 	return wcscpy(out, in);
+}
+wchar_t * wcscat2(wchar_t *out, const wchar_t *in)
+{
+	if (!out || !in)
+		return NULL;
+	return wcscat(out, in);
 }
 
 
@@ -132,6 +141,55 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		return E_FAIL;
 
 	SWTICH(command)
+
+	CASE(L"shot")
+	{
+		const char *tmpFile = "Z:\\tmp.jpg";
+
+		{
+			RGBQUAD *dst = new RGBQUAD[1920*1080];
+			m_renderer1->screenshot((BYTE*)dst);
+
+			// save it to jpg
+			CAutoLock lck(&g_ILLock);
+			ilInit();
+			ilOriginFunc(IL_ORIGIN_UPPER_LEFT);
+			ilEnable(IL_ORIGIN_SET);
+// 			ilEnable(IL_FILE_OVERWRITE);
+			ILuint imageNo = 0;
+			ilGenImages(1, &imageNo);
+			ilBindImage(imageNo);
+			ilSetInteger(IL_JPG_QUALITY, 60);
+			ILboolean result =ilTexImage(1920, 1080, 1, 4, IL_RGBA, IL_UNSIGNED_BYTE, dst);
+// 			for (int y=0; y<1080; ++y)
+// 			{
+// 				ilSetPixels(0, y, 0, 1920, 1, 1, 1080, IL_UNSIGNED_BYTE, (void*) dst);
+// 				dst += 1920;
+// 			}
+
+			DeleteFileA(tmpFile);
+			result = ilSaveImage((wchar_t*)L"Z:\\tmp.jpg");
+			if (!result)
+			{
+				ILenum err = ilGetError() ;
+				printf( "the error %x\n", err );
+				printf( "string is %s\n", ilGetString( err ) );
+			}
+
+		}
+
+		FILE *f = fopen(tmpFile, "rb");
+		fseek(f, 0, SEEK_END);
+		int size = ftell(f);
+		fseek(f, 0, SEEK_SET);
+		*((int*)out) = size;
+		memset(out+2, 0, size);
+		int r = fread(out+2, 1, size, f);
+		fclose(f);
+
+		return S_FALSE;
+	}
+
 	CASE(L"auth")
 	{
 		auth = wcscmp(args[0], L"TestCode") == 0;
@@ -194,14 +252,14 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 	{
 		int now;
 		hr = tell(&now);
-		wcscpy(out, myInt(now));
+		wcscpy2(out, myInt(now));
 	}
 
 	CASE(L"total")
 	{
 		int t;
 		hr = total(&t);
-		wcscpy(out, myInt(t));
+		wcscpy2(out, myInt(t));
 	}
 
 	CASE(L"set_volume")
@@ -211,12 +269,12 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 	{
 		double v;
 		hr = get_volume(&v);
-		wcscpy(out, myDouble(v));
+		wcscpy2(out, myDouble(v));
 	}
 
 	CASE(L"is_playing")
 	{
-		wcscpy(out, myBool(is_playing()));
+		wcscpy2(out, myBool(is_playing()));
 		hr = S_OK;
 	}
 
@@ -237,7 +295,7 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 
 	CASE(L"is_fullscreen")
 	{
-		wcscpy(out, myBool(m_full1));
+		wcscpy2(out, myBool(m_full1));
 		hr = S_OK;
 	}
 
@@ -252,22 +310,22 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 			tmp[4] = NULL;
 			if (GetDriveTypeW(tmp) == DRIVE_CDROM)
 			{
-				wcscat(out, tmp);
+				wcscat2(out, tmp);
 				if (!GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
 				{
 					// no disc
-					wcscat(out, L"/|");
+					wcscat2(out, L"/|");
 				}
 				else if (FAILED(find_main_movie(tmp, tmp2)))
 				{
 					// not bluray
-					wcscat(out, L":|");
+					wcscat2(out, L":|");
 				}
 				else
 				{
 					GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0);
-					wcscat(out, tmp2);
-					wcscat(out, L"|");
+					wcscat2(out, tmp2);
+					wcscat2(out, L"|");
 				}
 
 			}
@@ -288,9 +346,9 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		out[0] = NULL;
 		for(int i=0; i<found; i++)
 		{
-			wcscat(out, tmp2[i]);
-			wcscat(out, L"|");
-			wcscat(out, myBool(connected[i]));
+			wcscat2(out, tmp2[i]);
+			wcscat2(out, L"|");
+			wcscat2(out, myBool(connected[i]));
 		}
 	}
 
@@ -307,10 +365,10 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		out[0] = NULL;
 		for(int i=0; i<found; i++)
 		{
-			wcscat(out, tmp2[i]);
-			wcscat(out, L"|");
-			wcscat(out, myBool(connected[i]));
-			wcscat(out, L"|");
+			wcscat2(out, tmp2[i]);
+			wcscat2(out, L"|");
+			wcscat2(out, myBool(connected[i]));
+			wcscat2(out, L"|");
 		}
 	}
 
@@ -332,8 +390,8 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 			swprintf(path, L"%c:\\", L'A'+i);
 			if (GetVolumeInformationW(path, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
 			{
-				wcscat(tmp, path);
-				wcscat(tmp, L"|");
+				wcscat2(tmp, path);
+				wcscat2(tmp, L"|");
 			}
 		}
 		wcscpy2(out, tmp);
@@ -344,8 +402,8 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 	CASE(L"list_file")
 	{
 		wchar_t *tmp = new wchar_t[102400];
-		wcscpy(tmp, args[0]);
-		wcscat(tmp, L"*.*");
+		wcscpy2(tmp, args[0]);
+		wcscat2(tmp, L"*.*");
 
 		WIN32_FIND_DATAW find_data;
 		HANDLE find_handle = FindFirstFileW(tmp, &find_data);
@@ -360,21 +418,21 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 						&& wcscmp(L"..", find_data.cFileName) !=0
 					)
 				{
-					wcscat(tmp, find_data.cFileName);
-					wcscat(tmp, L"\\|");
+					wcscat2(tmp, find_data.cFileName);
+					wcscat2(tmp, L"\\|");
 				}
 				else if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
 
 				{
-					wcscat(tmp, find_data.cFileName);
-					wcscat(tmp, L"|");
+					wcscat2(tmp, find_data.cFileName);
+					wcscat2(tmp, L"|");
 				}
 
 			}
 			while( FindNextFile(find_handle, &find_data ) );
 		}
 
-		wcscpy(out, tmp);
+		wcscpy2(out, tmp);
 		delete [] tmp;
 		return S_OK;
 	}

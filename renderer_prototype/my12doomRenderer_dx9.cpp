@@ -2207,7 +2207,7 @@ presant:
 		hr = DDERR_WASSTILLDRAWING;
 		while (hr == DDERR_WASSTILLDRAWING)
 			hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, NULL);
-		if (timeGetTime()-l2 > 9) printf("Presant() cost %dms.\n", timeGetTime() - l2);
+// 		if (timeGetTime()-l2 > 9) printf("Presant() cost %dms.\n", timeGetTime() - l2);
 		if (FAILED(hr))
 			set_device_state(device_lost);
 
@@ -3039,6 +3039,18 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 	n = timeGetTime();
 
 	return hr;
+}
+
+HRESULT my12doomRenderer::screenshot(BYTE *out)
+{
+	if (!out)
+		return E_POINTER;
+
+	CAutoLock rendered_lock(&m_rendered_packet_lock);
+	if (!m_last_rendered_sample1)
+		return E_FAIL;
+
+	return m_last_rendered_sample1->convert_to_RGB32_CPU(out);
 }
 
 input_layout_types my12doomRenderer::get_active_input_layout()

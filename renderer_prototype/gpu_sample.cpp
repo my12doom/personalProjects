@@ -4,6 +4,7 @@
 #include "TextureAllocator.h"
 #include "my12doomRendererTypes.h"
 #include "..\dwindow\global_funcs.h"
+#include "YV12_to_RGB32.h"
 
 #include "gpu_sample.h"
 #include "..\ZBuffer\stereo_test.h"
@@ -217,6 +218,22 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 	if (SUCCEEDED(hr))
 		m_converted = true;
 	return hr;
+}
+
+HRESULT gpu_sample::convert_to_RGB32_CPU(BYTE *out)
+{
+	if (!out)
+		return E_POINTER;
+
+	if (m_format == MEDIASUBTYPE_YV12)
+	{
+
+		YV12_to_RGB32((BYTE*)m_tex_Y->locked_rect.pBits,
+					  ((BYTE*)m_tex_YV12_UV->locked_rect.pBits) + m_tex_YV12_UV->locked_rect.Pitch * m_height/2,
+					  ((BYTE*)m_tex_YV12_UV->locked_rect.pBits), out, m_width, m_height, m_tex_Y->locked_rect.Pitch, m_tex_YV12_UV->locked_rect.Pitch, m_width*4);
+	}
+
+	return S_OK;
 }
 
 HRESULT gpu_sample::do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShader9 *shader_sbs, IDirect3DPixelShader9 *shader_tb, IDirect3DVertexBuffer9 *vb)

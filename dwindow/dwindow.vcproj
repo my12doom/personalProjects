@@ -932,6 +932,14 @@
 				RelativePath=".\resource.h"
 				>
 			</File>
+			<File
+				RelativePath="..\renderer_prototype\YV12_to_RGB32.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\YV12_to_RGB32.h"
+				>
+			</File>
 			<Filter
 				Name="subtitle"
 				>
