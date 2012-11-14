@@ -21,6 +21,7 @@
         <EditText
             android:id="@+id/et_host"
             android:layout_width="fill_parent"
+            android:singleLine="true"
             android:layout_height="50dip" />
 
         <EditText
@@ -28,6 +29,7 @@
             android:layout_width="fill_parent"
             android:layout_height="50dip"
             android:password="true"
+            android:singleLine="true"
             android:layout_marginTop="-2dp" />
 
         <Button
@@ -35,6 +37,7 @@
             android:layout_width="fill_parent"
             android:layout_height="50dip"
             android:text="GO"
+            android:layout_marginBottom="100dp"
             android:layout_marginTop="0dp" />
     </LinearLayout>
 
