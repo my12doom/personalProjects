@@ -2,7 +2,9 @@ package com.dwindow;
 
 
 
+import com.Vstar.DateBase;
 import com.demo.splash.R;
+import com.Vstar.Value;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -24,17 +26,16 @@ import android.widget.Toast;
 public class SplashWindow3DActivity extends Activity {
 	
 	static public DWindowNetworkConnection conn = new DWindowNetworkConnection();
-	private String host = "192.168.1.199";
-	private String password = "TestCode";
 	Button btn_GO;
 	EditText editHost;
 	EditText editPassword;
-	
+	private Value<String> host = (Value<String>) Value.newValue("host", "192.168.1.199");// 出入屏程度
+	private Value<String> password = (Value<String>) Value.newValue("password", "TestCode");// 出入屏程度
 	
 	private boolean connect()
 	{
-		conn.connect(host);
-		int login_result = conn.login(password);		
+		conn.connect(host.get());
+		int login_result = conn.login(password.get());		
 		return login_result == 1;
 	}
 	
@@ -44,16 +45,17 @@ public class SplashWindow3DActivity extends Activity {
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.main);
+		DateBase.Init(this);
 		
         btn_GO = (Button)findViewById(R.id.btn_go);
         editHost = (EditText)findViewById(R.id.et_host);
         editPassword = (EditText)findViewById(R.id.et_password);
-        editHost.setText(host);
-        editPassword.setText(password);
+        editHost.setText(host.get());
+        editPassword.setText(password.get());
         btn_GO.setOnClickListener(new OnClickListener(){
 			public void onClick(View v) {
-				host = editHost.getText().toString();
-				password = editPassword.getText().toString();
+				host.set(editHost.getText().toString());
+				password.set(editPassword.getText().toString());
 				
 				if (connect())
 				{

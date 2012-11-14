@@ -3,6 +3,7 @@ package com.dwindow;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import com.Vstar.DateBase;
 import com.demo.splash.R;
 import com.dwindow.DWindowNetworkConnection.cmd_result;
 
@@ -35,6 +36,8 @@ public class SelectfileActivity extends Activity
     public void onCreate(Bundle savedInstanceState) 
     {
 		super.onCreate(savedInstanceState);
+		
+		DateBase.Init(this);
 		
 		// intents
 		Intent intent = getIntent();
