@@ -43,8 +43,8 @@ public class SplashWindow3DActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) 
     {
 		super.onCreate(savedInstanceState);
-		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		//getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		//requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.main);
 		DateBase.Init(this);
 		
