@@ -201,7 +201,7 @@ retry:
 
 	BRC();
 
-	AutoSetting<bool> single_instance(L"SingleInstance", false);
+	AutoSetting<bool> single_instance(L"SingleInstance", true);
 
 
 	HWND pre_instance = single_instance ? FindWindowA("DWindowClass", NULL) : NULL;
