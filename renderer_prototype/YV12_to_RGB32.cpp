@@ -39,32 +39,32 @@ void YV12_to_RGB32(BYTE *Y, BYTE * U, BYTE * V, BYTE* dst, int width, int height
 
 			//top-left pixel
 			long scaledY = (srcY[0] - 16) * YCoeff;
-			ptr[0] = clip(( scaledY + scaledChromaToR ) >> 16);
+			ptr[0] = clip(( scaledY + scaledChromaToB ) >> 16);
 			ptr[1] = clip(( scaledY + scaledChromaToG ) >> 16);
-			ptr[2] = clip(( scaledY + scaledChromaToB ) >> 16);
+			ptr[2] = clip(( scaledY + scaledChromaToR ) >> 16);
 			ptr[3] = 255;             
 
 			//top-right pixel
 			scaledY = (srcY[1] - 16) * YCoeff;
-			ptr[4] = clip(( scaledY + scaledChromaToR ) >> 16);
+			ptr[4] = clip(( scaledY + scaledChromaToB ) >> 16);
 			ptr[5] = clip(( scaledY + scaledChromaToG ) >> 16);
-			ptr[6] = clip(( scaledY + scaledChromaToB ) >> 16);
+			ptr[6] = clip(( scaledY + scaledChromaToR ) >> 16);
 			ptr[7] = 255;             
 
 			ptr = dst + 4 * x + (y+1) * strideRGB;
 
 			//bottom-left pixel
 			scaledY = (srcY[strideY] - 16) * YCoeff;      
-			ptr[0] = clip(( scaledY + scaledChromaToR ) >> 16);
+			ptr[0] = clip(( scaledY + scaledChromaToB ) >> 16);
 			ptr[1] = clip(( scaledY + scaledChromaToG ) >> 16);
-			ptr[2] = clip(( scaledY + scaledChromaToB ) >> 16);
+			ptr[2] = clip(( scaledY + scaledChromaToR ) >> 16);
 			ptr[3] = 255;             
 
 			//bottom-right pixel
 			scaledY = (srcY[strideY+1] - 16) * YCoeff;
-			ptr[4] = clip(( scaledY + scaledChromaToR ) >> 16);
+			ptr[4] = clip(( scaledY + scaledChromaToB ) >> 16);
 			ptr[5] = clip(( scaledY + scaledChromaToG ) >> 16);
-			ptr[6] = clip(( scaledY + scaledChromaToB ) >> 16);
+			ptr[6] = clip(( scaledY + scaledChromaToR ) >> 16);
 			ptr[7] = 255;             
 		}
 	}

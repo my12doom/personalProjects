@@ -232,6 +232,15 @@ HRESULT gpu_sample::convert_to_RGB32_CPU(BYTE *out)
 					  ((BYTE*)m_tex_YV12_UV->locked_rect.pBits) + m_tex_YV12_UV->locked_rect.Pitch * m_height/2,
 					  ((BYTE*)m_tex_YV12_UV->locked_rect.pBits), out, m_width, m_height, m_tex_Y->locked_rect.Pitch, m_tex_YV12_UV->locked_rect.Pitch, m_width*4);
 	}
+	else if (m_format == MEDIASUBTYPE_RGB32)
+	{
+		for(int y=0; y<m_height; y++)
+		{
+			memcpy( out + m_width * 4 *y,
+					((BYTE*)m_tex_RGB32->locked_rect.pBits) + y * m_tex_RGB32->locked_rect.Pitch,
+					m_width*4);
+		}
+	}
 
 	return S_OK;
 }
