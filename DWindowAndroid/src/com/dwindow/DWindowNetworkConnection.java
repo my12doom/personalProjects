@@ -1,4 +1,4 @@
-package com.demo.splash;
+package com.dwindow;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -104,7 +104,7 @@ public class DWindowNetworkConnection {
 	}
 	
 	// calling this before login() may cause disconnection.
-	public cmd_result execute_command(String cmd){
+	public synchronized cmd_result execute_command(String cmd){
 		cmd_result out = new cmd_result();
 		try{
 			outputStream.write((cmd+"\r\n").getBytes("UTF-8"));		
@@ -118,7 +118,7 @@ public class DWindowNetworkConnection {
 		return out;
 	}
 	
-	public byte[] shot(){
+	public synchronized byte[] shot(){
 		try{
 			outputStream.write(("shot\r\n").getBytes("UTF-8"));
 			byte[] p = new byte[4];
@@ -128,6 +128,7 @@ public class DWindowNetworkConnection {
 			readStream(socket.getInputStream(), out);
 			return out;
 		}catch (Exception e){
+		}catch (Error e2){			
 		}
 		mState = -3;
 		return null;		

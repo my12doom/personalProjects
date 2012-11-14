@@ -1,4 +1,4 @@
-package com.demo.splash;
+package com.dwindow;
 
 
 import java.util.Arrays;
@@ -6,7 +6,8 @@ import java.util.Comparator;
 
 import com.Vstar.Splash;
 import com.Vstar.Splash.OnSplashCompletionListener;
-import com.demo.splash.DWindowNetworkConnection.cmd_result;
+import com.demo.splash.R;
+import com.dwindow.DWindowNetworkConnection.cmd_result;
 
 import android.app.Activity;
 import android.content.Context;
@@ -34,7 +35,7 @@ public class SplashWindow3DActivity extends Activity {
 	BDROMEntry[] bdrom_entry;
 	ListViewAdapter adapter;
 	ListView listView;
-	DWindowNetworkConnection conn = new DWindowNetworkConnection();
+	static public DWindowNetworkConnection conn = new DWindowNetworkConnection();
 	
 	private class BDROMEntry{
 		String path;
@@ -44,7 +45,7 @@ public class SplashWindow3DActivity extends Activity {
 	
 	private void connect()
 	{
-		conn.connect("192.168.10.199");
+		conn.connect("192.168.1.199");
 		int login_result = conn.login("TestCode");
 		file_list = new String[]{login_result == 1 ? "Login OK" : (login_result == 0 ? "Password Error" : "Login Failed")};
 		adapter.notifyDataSetChanged();
@@ -62,7 +63,9 @@ public class SplashWindow3DActivity extends Activity {
         listView.setAdapter(adapter = new ListViewAdapter(this));
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
         	public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
-        		String file = file_list[position];        		
+        		if (position==0)
+        			return;
+        		String file = file_list[position-1];        		
     			if (conn.getState(true)<0)
     				connect();
         		if (!file.endsWith("\\")){
@@ -93,7 +96,7 @@ public class SplashWindow3DActivity extends Activity {
 		Splash splash = new Splash(this, surface_wel, clip3d, clip2d);
 		splash.setOnCompletionListener(new OnSplashCompletionListener() {
 			public void onCompletion() {
-				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+//				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 				connect();
 				refresh();				
 				listView.setSelection(0);
@@ -226,7 +229,7 @@ public class SplashWindow3DActivity extends Activity {
 		}
 
 		public int getCount() {
-			return file_list.length;
+			return file_list.length+1;
 		}
 
 		public Object getItem(int position) {
@@ -241,9 +244,10 @@ public class SplashWindow3DActivity extends Activity {
 			if (convertView == null)
 				convertView = inflater.inflate(R.layout.lv_open_item, null);
 			TextView tv_filename = (TextView) convertView.findViewById(R.id.tv_open_filename);
-			String file = file_list[position];
+			String file = position > 0 ? file_list[position-1] : path;
 			if (file.endsWith("\\"))
 				file = "("+file.substring(0, file.length()-1)+")";
+			file = position > 0 ? file : path;
 			tv_filename.setText(file);
 			convertView.setId(position);
 			return convertView;
