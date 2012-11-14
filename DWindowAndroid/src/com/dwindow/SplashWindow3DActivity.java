@@ -100,10 +100,6 @@ public class SplashWindow3DActivity extends Activity {
     
     public boolean onKeyDown(int keyCode, KeyEvent event) 
     {
-    	if (keyCode == KeyEvent.KEYCODE_MENU)
-    	{
-    		connect();
-		}
     	if (keyCode == KeyEvent.KEYCODE_BACK)
     	{
     		if (conn.getState() >= 0)
