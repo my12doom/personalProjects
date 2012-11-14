@@ -224,10 +224,6 @@ retry:
 	if (argc>1)
 	{
 		test->reset_and_loadfile(argv[1], false);
-		while(!test->m_reset_load_done)
-			Sleep(50);
-
-		//test->toggle_fullscreen();
 		SetFocus(test->m_hwnd1);
 	}
 
