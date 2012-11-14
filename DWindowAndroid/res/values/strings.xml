@@ -3,5 +3,6 @@
 
     <string name="hello">Hello World, SplashWindow3DActivity!</string>
     <string name="app_name">DWindow</string>
+    <string name="text_username">UserName</string>
 
 </resources>

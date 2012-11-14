@@ -12,6 +12,10 @@ import java.net.Socket;
 
 public class DWindowNetworkConnection {
 	
+	private final int ERROR_NOT_CONNECTED = -9999;
+	private final int ERROR_NOT_LOGINED = -9998;
+	private final int ERROR_LOGIN_FAILED = -9997;
+	
 	public class HRESULT{
 		public long m_code;
 		public HRESULT(String str){
@@ -78,17 +82,25 @@ public class DWindowNetworkConnection {
 			mState = -1;
 			return false;
 		}
+		mState = ERROR_NOT_LOGINED;
         return true;
 	}
 	public int login(String password){
 		cmd_result result = execute_command("auth|"+password);
 		if (result.successed())
+		{
+			mState = result.result.equalsIgnoreCase("true") ? 0 : ERROR_LOGIN_FAILED;
+
 			return result.result.equalsIgnoreCase("true") ? 1 : 0;
+		}
 		else
+		{
 			return -1;
+		}
 	}
 	public void disconnect(){
 		try {
+			mState = ERROR_NOT_CONNECTED;
 			socket.close();
 			socket = new Socket();
 		} catch (Exception e){}
@@ -146,5 +158,5 @@ public class DWindowNetworkConnection {
 	private Socket socket = new Socket();
 	private BufferedReader reader;
 	private OutputStream outputStream;
-	private int mState = 0;
+	private int mState = ERROR_NOT_CONNECTED;
 }
