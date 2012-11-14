@@ -40,7 +40,8 @@ public class SplashWindow3DActivity extends Activity {
 	}
 	
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) 
+    {
 		super.onCreate(savedInstanceState);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -52,8 +53,10 @@ public class SplashWindow3DActivity extends Activity {
         editPassword = (EditText)findViewById(R.id.et_password);
         editHost.setText(host.get());
         editPassword.setText(password.get());
-        btn_GO.setOnClickListener(new OnClickListener(){
-			public void onClick(View v) {
+        btn_GO.setOnClickListener(new OnClickListener()
+        {
+			public void onClick(View v) 
+			{
 				host.set(editHost.getText().toString());
 				password.set(editPassword.getText().toString());
 				
