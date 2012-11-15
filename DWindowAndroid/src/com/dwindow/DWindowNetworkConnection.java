@@ -12,9 +12,10 @@ import java.net.Socket;
 
 public class DWindowNetworkConnection {
 	
-	private final int ERROR_NOT_CONNECTED = -9999;
-	private final int ERROR_NOT_LOGINED = -9998;
-	private final int ERROR_LOGIN_FAILED = -9997;
+	public final int ERROR_NOT_CONNECTED = -9999;
+	public final int ERROR_NOT_LOGINED = -9998;
+	public final int ERROR_LOGIN_FAILED = -9997;
+	public final int ERROR_NEW_PROTOCOL = -9996;
 	
 	public class HRESULT{
 		public long m_code;
@@ -76,6 +77,15 @@ public class DWindowNetworkConnection {
 	        socket.setSoTimeout(3000);
 	        reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
 	        String welcomeString = reader.readLine();
+	        welcomeString = welcomeString.substring(welcomeString.lastIndexOf("v")+1, welcomeString.length());
+	        String [] version_strs = welcomeString.split("\\.");
+	        int[] version = new int[] {Integer.parseInt(version_strs[0]), Integer.parseInt(version_strs[1]), Integer.parseInt(version_strs[2])};
+	        
+	        if (version[0] > 0 || version[1] > 0 || version[2] > 1)
+	        {
+	        	mState = ERROR_NEW_PROTOCOL;
+	        	return false;
+	        }
 	        
 	        outputStream = socket.getOutputStream();
 		}
@@ -121,6 +131,8 @@ public class DWindowNetworkConnection {
 		synchronized(this)
 		{
 		cmd_result out = new cmd_result();
+		if (mState < 0)
+			return out;
 		try{
 			outputStream.write((cmd+"\r\n").getBytes("UTF-8"));		
 			String out_str = reader.readLine();

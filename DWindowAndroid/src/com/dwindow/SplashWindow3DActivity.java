@@ -93,7 +93,14 @@ public class SplashWindow3DActivity extends Activity {
 				}
 				else
 				{
-					Toast.makeText(SplashWindow3DActivity.this, result == 0 ? "Password Error" : "Connection Failed", Toast.LENGTH_SHORT).show();
+					int state = conn.getState();
+					String hint = "Connection Failed";
+					if (result == 0 )
+						hint = "Password Error";
+					if (state == conn.ERROR_NEW_PROTOCOL)
+						hint = "Need New Version";
+					
+					Toast.makeText(SplashWindow3DActivity.this, hint, Toast.LENGTH_SHORT).show();
 				}
 			}
         });
@@ -173,7 +180,7 @@ public class SplashWindow3DActivity extends Activity {
     				{
     					Thread.sleep(5);
 	    				cmd_result result = conn.execute_command("tell");
-	    				if (result.successed())
+	    				if (result.successed() && total > 1)
 	    					tell = Integer.parseInt(result.result);
 	    				result = conn.execute_command("total");
 	    				if (result.successed())
@@ -230,6 +237,8 @@ public class SplashWindow3DActivity extends Activity {
 			{
 				if (total>=0)sb_progress.setMax(total);
 				if (tell>=0)sb_progress.setProgress(tell);
+				
+				System.out.println(String.format("progress: %d / %d", tell, total));
 			}
 	   		handler.sendEmptyMessageDelayed(0, 20);
     	}
