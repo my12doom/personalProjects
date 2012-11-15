@@ -146,8 +146,10 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 
 	CASE(L"shot")
 	{
-		const char *tmpFile = "Z:\\tmp.jpg";
-
+		wchar_t tmpPath[MAX_PATH];
+		GetTempPathW(MAX_PATH, tmpPath);
+		wchar_t tmpFile[MAX_PATH];
+		GetTempFileNameW(tmpPath, L"DWindow", 0, tmpFile);
 		{
 			RGBQUAD *dst = new RGBQUAD[1920*1080];
 			m_renderer1->screenshot((BYTE*)dst);
@@ -162,8 +164,8 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 			ILboolean result =ilTexImage(1920, 1080, 1, 4, IL_BGRA, IL_UNSIGNED_BYTE, dst);
 			iluFlipImage();
 
-			DeleteFileA(tmpFile);
-			result = ilSaveImage((wchar_t*)L"Z:\\tmp.jpg");
+			DeleteFileW(tmpFile);
+			result = ilSave(IL_JPG, tmpFile);
 			if (!result)
 			{
 				ILenum err = ilGetError() ;
@@ -174,7 +176,9 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 			delete [] dst;
 		}
 
-		FILE *f = fopen(tmpFile, "rb");
+		FILE *f = _wfopen(tmpFile, L"rb");
+		if (!f)
+			return E_FAIL;
 		fseek(f, 0, SEEK_END);
 		int size = ftell(f);
 		fseek(f, 0, SEEK_SET);
@@ -182,6 +186,7 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		memset(out+2, 0, size);
 		int r = fread(out+2, 1, size, f);
 		fclose(f);
+		DeleteFileW(tmpFile);
 
 		return S_JPG;
 	}
