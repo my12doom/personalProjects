@@ -131,7 +131,7 @@ public class DWindowNetworkConnection {
 		synchronized(this)
 		{
 		cmd_result out = new cmd_result();
-		if (mState < 0)
+		if (mState < 0 && mState != ERROR_NOT_LOGINED)
 			return out;
 		try{
 			outputStream.write((cmd+"\r\n").getBytes("UTF-8"));		
