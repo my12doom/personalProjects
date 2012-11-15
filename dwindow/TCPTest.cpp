@@ -21,9 +21,13 @@ extern ICommandReciever *command_reciever;
 
 DWORD WINAPI handler_thread(LPVOID param);
 int my_handle_req(char* data, int size, DWORD ip, int client_sock);
+HRESULT init_winsock();
 
 int TCPTest()
 {
+	if (FAILED(init_winsock()))
+		return -1;
+
 	// init and listen
 	SOCKADDR_IN server_addr;
 	int tmp_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -137,7 +141,7 @@ int my_handle_req(char* data, int size, DWORD ip, int client_sock)
 				wprintf(L"%s\n", line_w);
 				out[0] = NULL;
 				HRESULT hr = command_reciever->execute_command_line(line_w, out);
-				if (hr == S_FALSE)
+				if (hr == S_JPG)
 				{
 					int s = send(client_sock, ((char*)out), *((int*)out)+4, 0);
 					if (s<0)
@@ -165,4 +169,18 @@ int my_handle_req(char* data, int size, DWORD ip, int client_sock)
 	}
 
 	return 0;
+}
+
+HRESULT init_winsock()
+{
+	static bool inited = false;
+	if (inited)
+		return S_FALSE;
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(1, 1), &wsaData) != 0) 
+		return E_FAIL;
+
+	inited = true;
+
+	return S_OK;
 }

@@ -40,60 +40,6 @@ INT_PTR CALLBACK register_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 	return TRUE; // Handled message
 }
 
-int select1=0, select2=0;
-INT_PTR CALLBACK select_monitor_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
-{
-	switch( msg ) 
-	{
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK)
-		{
-			HWND combo1 = GetDlgItem(hDlg, CB_ADDSTRING);
-			HWND combo2 = GetDlgItem(hDlg, CB_ADDSTRING);
-			select1 = SendMessage(combo1, CB_GETCURSEL, 0, 0);
-			select2 = SendMessage(combo2, CB_GETCURSEL, 0, 0);
-
-			if (select1 == select2)
-				MessageBoxW(hDlg, C(L"You selected the same monitor!"), C(L"Warning"), MB_ICONERROR);
-			EndDialog(hDlg, 0);
-		}
-
-		break;
-
-	case WM_INITDIALOG:
-		{
-			USES_CONVERSION;
-			HWND combo1 = GetDlgItem(hDlg, CB_ADDSTRING);
-			HWND combo2 = GetDlgItem(hDlg, CB_ADDSTRING);
-			for(int i=0; i<g_logic_monitor_count; i++)
-			{
-				wchar_t tmp[1024];
-				MONITORINFOEXW info;
-				memset(&info, 0, sizeof(MONITORINFOEXW));
-				info.cbSize = sizeof(MONITORINFOEXW);
-				GetMonitorInfoW(g_logic_monitors[i], &info);
-
-				wsprintfW(tmp, L"%s @ %s(%dx%d)", info.szDevice, A2W(g_logic_ids[i].Description),
-					g_logic_monitor_rects[i].right - g_logic_monitor_rects[i].left, g_logic_monitor_rects[i].bottom - g_logic_monitor_rects[i].top);
-				SendMessage(combo1, CB_ADDSTRING, 0, (LPARAM) tmp);
-				SendMessage(combo2, CB_ADDSTRING, 0, (LPARAM) tmp);
-				SendMessage(combo1, CB_SETCURSEL, 0, 0);
-				SendMessage(combo2, CB_SETCURSEL, 1, 0);
-			}
-		}
-		break;
-
-	case WM_CLOSE:
-		EndDialog(hDlg, -1);
-		break;
-
-	default:
-		return FALSE;
-	}
-
-	return TRUE; // Handled message
-}
-
 extern HRESULT dwindow_dll_go(HINSTANCE inst, HWND owner, Iplayer *p);
 
 DWORD WINAPI pre_read_thread(LPVOID k)

@@ -23,65 +23,80 @@ import android.widget.BaseAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class SelectfileActivity extends Activity 
 {
 	private Intent resultIntent = new Intent();
 	private String[] selectionRange;
 	private String path;
+	private boolean listBD = false;
 	private ListViewAdapter adapter;
 	private ListView listView;
 	private DWindowNetworkConnection conn = SplashWindow3DActivity.conn;
+	
+	private boolean result_selected;
+	private String result_file;
 
     public void onCreate(Bundle savedInstanceState) 
     {
+    	// basic
 		super.onCreate(savedInstanceState);
-		
+		setContentView(R.layout.selectfile);		
 		DateBase.Init(this);
 		
 		// intents
 		Intent intent = getIntent();
 		path = intent.getStringExtra("path");
-		selectionRange = (String[]) intent.getSerializableExtra("selectionRange");
+		String [] intentSelectionRange = (String[]) intent.getSerializableExtra("selectionRange");
+		listBD = intent.getBooleanExtra("BD", false);
+		if (intentSelectionRange != null)
+			selectionRange = intentSelectionRange;
+		refresh();
 		
 		
 		// UI init
 		listView = (ListView)findViewById(R.id.lv_player_list);
         listView.setAdapter(adapter = new ListViewAdapter(this));
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
-        	public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
-        		if (position==0)
-        			return;
-        		String file = selectionRange[position-1];
-    			if (conn.getState(true)<0)
-    				return;
-        		if (!file.endsWith("\\"))
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener()
+        {
+        	public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id)
+        	{
+        		String file = selectionRange[position];
+        		if (listBD)
+         		{
+         			if (!file.endsWith("/") && !file.endsWith(":"))
+         			{
+ 	        			result_file = file.substring(0,3);
+ 	        			result_selected = true;
+ 	        			myFinish();
+         			}
+         			else
+         			{
+         				Toast.makeText(SelectfileActivity.this, file.endsWith("/")?"No Disc":"Non Movie Disc", Toast.LENGTH_SHORT).show();
+         			}
+         		}
+        		else if (!file.endsWith("\\"))
         		{
+        			result_file = path.substring(1, path.length()) + file;
+        			result_selected = true;
+        			myFinish();
         		}
         		else
         		{
-         				String oldpath = path;
-	         			path += file;
-	        			if (!refresh())
-	        				path = oldpath;
-	        			
-	        			listView.setSelection(0);
+     				String oldpath = path;
+         			path += file;
+        			if (!refresh())
+        				path = oldpath;
+        			
+        			listView.setSelection(0);
         		}
 			}
         });
         
         listView.setDividerHeight(0);
-		setContentView(R.layout.selectfile);
     }
-    
-    private void connect()
-	{
-		conn.connect("192.168.1.199");
-		int login_result = conn.login("TestCode");
-		selectionRange = new String[]{login_result == 1 ? "Login OK" : (login_result == 0 ? "Password Error" : "Login Failed")};
-		adapter.notifyDataSetChanged();
-	}
-    
+        
     private boolean isMediaFile(String filename){
     	String[] exts = {".mp4", ".mkv", ".avi", ".rmvb", ".wmv", ".avs", ".ts", ".m2ts", ".ssif", ".mpls", ".3dv", ".e3d"};
     	
@@ -91,13 +106,10 @@ public class SelectfileActivity extends Activity
     	return false;
     }
     
-    private boolean refresh(){
-    	// reconnect if
-		if (conn.getState()<0)
-			connect();
-    	
+    private boolean refresh(){    	
     	// file list
 		String cmd = path.equals("\\") ? "list_drive" : "list_file|" + path.substring(1, path.length());
+		cmd = listBD ? "list_bd" : cmd;
 		cmd_result list_result = conn.execute_command(cmd);
 		if (list_result.successed())
 			selectionRange = list_result.result.split("\\|");
@@ -122,18 +134,31 @@ public class SelectfileActivity extends Activity
 		});		
 
 		// refresh
-		adapter.notifyDataSetChanged();
+		if (adapter != null)
+			adapter.notifyDataSetChanged();
 		
 		return conn.getState() >= 0;
     }
     
-    public void onStop()
+    private void myFinish()
     {
     	resultIntent.putExtra("Hello", "World");
+    	resultIntent.putExtra("selected", result_selected);
+    	resultIntent.putExtra("selected_file", result_file);
+    	
     	setResult(0, resultIntent);
+    	finish();
     }
     
-
+    private String filterBD(String c)
+    {
+    	if (c.endsWith("/"))
+    		c = c.substring(0, c.length()-1) + "(No Disc)";
+    	else if (c.endsWith(":"))
+    		c = c.substring(0, c.length()-1) + "(Non Movie Disc)";
+    	return c;
+    }
+    
     private class ListViewAdapter extends BaseAdapter {
 		LayoutInflater inflater;
 
@@ -158,7 +183,9 @@ public class SelectfileActivity extends Activity
 				convertView = inflater.inflate(R.layout.lv_open_item, null);
 			TextView tv_filename = (TextView) convertView.findViewById(R.id.tv_open_filename);
 			String file = selectionRange[position];
-			if (file.endsWith("\\"))
+			if (listBD)		// BD drivers
+				file = filterBD(file);
+			else if (file.endsWith("\\"))	// files and folders
 				file = "("+file.substring(0, file.length()-1)+")";
 			tv_filename.setText(file);
 			convertView.setId(position);
@@ -168,9 +195,9 @@ public class SelectfileActivity extends Activity
     
     public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
-			if (conn.getState(true)<0)
-				connect();
-			if (path.length() > 1){
+			if (listBD)
+				myFinish();
+			else if (path.length() > 1){
  				String oldpath = path;
 				path = path.substring(0,path.lastIndexOf("\\"));
 				path = path.substring(0,path.lastIndexOf("\\")+1);
@@ -180,23 +207,7 @@ public class SelectfileActivity extends Activity
 				return true;
 			}
 			else{
-				finish();
-			}
-		} else if (keyCode == KeyEvent.KEYCODE_MENU){
-			//refresh();
-			long l = System.currentTimeMillis();
-			byte[] jpg = conn.shot();
-			l = System.currentTimeMillis() - l;
-			System.out.println("speed:" + (l>0?jpg.length / l : -1));
-			l = System.currentTimeMillis();
-			if (jpg != null)
-			{
-				Bitmap bmp = BitmapFactory.decodeByteArray(jpg, 0, jpg.length);
-				BitmapDrawable bd = new BitmapDrawable(bmp);
-				LinearLayout layout = (LinearLayout)findViewById(R.id.main_layout);
-				layout.setBackgroundDrawable(bd);
-				l = System.currentTimeMillis() - l;
-				System.out.println("speed:" + (l>0?jpg.length / l : -1));
+				myFinish();
 			}
 		}
 		return false;

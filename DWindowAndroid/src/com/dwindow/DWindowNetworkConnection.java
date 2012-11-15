@@ -73,6 +73,7 @@ public class DWindowNetworkConnection {
 	        }
 	        InetAddress addr = InetAddress.getByName( server );
 	        socket.connect(new InetSocketAddress(addr, port), timeout);
+	        socket.setSoTimeout(3000);
 	        reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
 	        String welcomeString = reader.readLine();
 	        
@@ -116,7 +117,9 @@ public class DWindowNetworkConnection {
 	}
 	
 	// calling this before login() may cause disconnection.
-	public synchronized cmd_result execute_command(String cmd){
+	public cmd_result execute_command(String cmd){
+		synchronized(this)
+		{
 		cmd_result out = new cmd_result();
 		try{
 			outputStream.write((cmd+"\r\n").getBytes("UTF-8"));		
@@ -128,9 +131,12 @@ public class DWindowNetworkConnection {
 			mState = -2;
 		}
 		return out;
+		}
 	}
 	
 	public synchronized byte[] shot(){
+		synchronized(this)
+		{
 		try{
 			outputStream.write(("shot\r\n").getBytes("UTF-8"));
 			byte[] p = new byte[4];
@@ -140,10 +146,11 @@ public class DWindowNetworkConnection {
 			readStream(socket.getInputStream(), out);
 			return out;
 		}catch (Exception e){
-		}catch (Error e2){			
+		}catch (Error e2){
 		}
 		mState = -3;
-		return null;		
+		return null;
+		}
 	}
 	
 	public int readStream(InputStream inStream, byte[] out) throws Exception {

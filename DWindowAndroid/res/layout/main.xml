@@ -18,6 +18,7 @@
         android:layout_marginRight="50dip"
         android:orientation="vertical" >
 
+
         <EditText
             android:id="@+id/et_host"
             android:layout_width="fill_parent"
@@ -41,4 +42,42 @@
             android:layout_marginTop="0dp" />
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/main_console"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginLeft="50dip"
+        android:layout_marginRight="50dip"
+        android:visibility="gone"
+        android:orientation="vertical" >
+        
+        
+        <Button
+            android:id="@+id/btn_playpause"
+            android:layout_width="fill_parent"
+            android:layout_height="50dip"
+            android:text="Play"
+            android:layout_marginTop="0dp" />
+        
+        <SeekBar
+            android:id="@+id/sb_progress"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
+        
+        <Button
+            android:id="@+id/btn_open_bd"
+            android:layout_width="fill_parent"
+            android:layout_height="50dip"
+            android:text="Open Bluray"
+            android:layout_marginTop="0dp" />
+        
+        <Button
+            android:id="@+id/btn_open_file"
+            android:layout_width="fill_parent"
+            android:layout_height="50dip"
+            android:text="Open File"
+            android:layout_marginBottom="50dp"
+            android:layout_marginTop="0dp" />
+    </LinearLayout>
 </RelativeLayout>

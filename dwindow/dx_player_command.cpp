@@ -155,20 +155,12 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 			// save it to jpg
 			CAutoLock lck(&g_ILLock);
 			ilInit();
-// 			ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
-// 			ilEnable(IL_ORIGIN_SET);
-// 			ilEnable(IL_FILE_OVERWRITE);
 			ILuint imageNo = 0;
 			ilGenImages(1, &imageNo);
 			ilBindImage(imageNo);
-			ilSetInteger(IL_JPG_QUALITY, 60);
+			ilSetInteger(IL_JPG_QUALITY, 15);
 			ILboolean result =ilTexImage(1920, 1080, 1, 4, IL_BGRA, IL_UNSIGNED_BYTE, dst);
 			iluFlipImage();
-
-// 			for (int y=0; y<1080; ++y)
-// 			{
-// 				 ilSetPixels(0, y, 0, 1920, 1, 1, IL_BGRA, IL_UNSIGNED_BYTE, dst + 1920*y);
-// 			}
 
 			DeleteFileA(tmpFile);
 			result = ilSaveImage((wchar_t*)L"Z:\\tmp.jpg");
@@ -191,7 +183,7 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		int r = fread(out+2, 1, size, f);
 		fclose(f);
 
-		return S_FALSE;
+		return S_JPG;
 	}
 
 	CASE(L"auth")
@@ -303,7 +295,7 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		hr = S_OK;
 	}
 
-	CASE(L"list_bd3d")
+	CASE(L"list_bd")
 	{
 		wcscpy2(out, L"");
 		for(int i=L'Z'; i>L'B'; i--)
