@@ -146,6 +146,7 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 
 	CASE(L"shot")
 	{
+		int l = timeGetTime();
 		wchar_t tmpPath[MAX_PATH];
 		GetTempPathW(MAX_PATH, tmpPath);
 		wchar_t tmpFile[MAX_PATH];
@@ -163,7 +164,9 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 			ilSetInteger(IL_JPG_QUALITY, 15);
 			ILboolean result =ilTexImage(1920, 1080, 1, 4, IL_BGRA, IL_UNSIGNED_BYTE, dst);
 			iluFlipImage();
+			iluScale(540, 300, 4);
 
+			l = timeGetTime() - l;
 			DeleteFileW(tmpFile);
 			result = ilSave(IL_JPG, tmpFile);
 			if (!result)
@@ -188,6 +191,9 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		fclose(f);
 		DeleteFileW(tmpFile);
 
+		char tmp[200];
+		sprintf(tmp, "shot take %dms\n", l);
+		OutputDebugStringA(tmp);
 		return S_JPG;
 	}
 
