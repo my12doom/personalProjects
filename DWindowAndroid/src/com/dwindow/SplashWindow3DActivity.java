@@ -34,15 +34,18 @@ public class SplashWindow3DActivity extends Activity {
 	Button btn_openfile;
 	Button btn_openBD;
 	Button btn_playpause;
+	Button btn_fullscreen;
 	SeekBar sb_progress;
 	EditText editHost;
 	EditText editPassword;
 	private Value<String> host = (Value<String>) Value.newValue("host", "192.168.1.199");
 	private Value<String> password = (Value<String>) Value.newValue("password", "TestCode");
+	private Value<String> path = (Value<String>) Value.newValue("path", "\\");
 	private Bitmap bmp = null;
 	private int total = 1;
 	private int tell = 0;
 	private boolean playing = false;
+	private boolean disconnectIsFromUser = false;
 	
 	private boolean thisActivityVisible = false; 
 	private Thread shotThread;
@@ -68,6 +71,7 @@ public class SplashWindow3DActivity extends Activity {
         btn_openfile = (Button)findViewById(R.id.btn_open_file);
         btn_openBD = (Button)findViewById(R.id.btn_open_bd);
         btn_playpause = (Button)findViewById(R.id.btn_playpause);
+        btn_fullscreen = (Button)findViewById(R.id.btn_fullscreen);
         editHost = (EditText)findViewById(R.id.et_host);
         editPassword = (EditText)findViewById(R.id.et_password);
         editHost.setText(host.get());
@@ -78,6 +82,7 @@ public class SplashWindow3DActivity extends Activity {
 			{
 				host.set(editHost.getText().toString());
 				password.set(editPassword.getText().toString());
+				disconnectIsFromUser = false;
 				
 				int result = connect();
 				if (result == 1)
@@ -98,7 +103,7 @@ public class SplashWindow3DActivity extends Activity {
 			public void onClick(View v) 
 			{
 				Intent intent = new Intent(SplashWindow3DActivity.this, SelectfileActivity.class);
-				intent.putExtra("path", "\\");
+				intent.putExtra("path", path.get());
 				startActivityForResult(intent, request_code_openfile);
 			}
         });
@@ -108,7 +113,7 @@ public class SplashWindow3DActivity extends Activity {
 			public void onClick(View v) 
 			{
 				Intent intent = new Intent(SplashWindow3DActivity.this, SelectfileActivity.class);
-				intent.putExtra("path", "\\");
+				intent.putExtra("path", path.get());
 				intent.putExtra("BD", true);
 				startActivityForResult(intent, request_code_openBD);
 			}
@@ -121,7 +126,15 @@ public class SplashWindow3DActivity extends Activity {
 				conn.execute_command("pause");
 			}
         });
-	}
+        
+        btn_fullscreen.setOnClickListener(new OnClickListener()
+        {
+			public void onClick(View v) 
+			{
+				conn.execute_command("toggle_fullscreen");
+			}
+        });
+}
     
     public void onActivityResult(int requestCode, int resultCode, Intent data)
     {
@@ -129,6 +142,7 @@ public class SplashWindow3DActivity extends Activity {
     	{
     		boolean selected = data.getBooleanExtra("selected", false);
     		String selected_file = data.getStringExtra("selected_file");
+    		path.set(data.getStringExtra("path"));
     		
     		if (selected)
     		{
@@ -194,10 +208,11 @@ public class SplashWindow3DActivity extends Activity {
     {
     	public void handleMessage(Message msg)
     	{
-    		btn_playpause.setText(playing?"Pause":"Play");
-    		ImageView imageView = (ImageView)findViewById(R.id.iv_b512);
-			if (conn.getState()<0)
+			if (conn.getState()<0 && !disconnectIsFromUser)
 				connect();
+			
+    		ImageView imageView = (ImageView)findViewById(R.id.iv_b512);
+    		btn_playpause.setText(playing?"Pause":"Play");
 			if (conn.getState()<0)
     		{
 				findViewById(R.id.login_layout).setVisibility(View.VISIBLE);
@@ -213,8 +228,8 @@ public class SplashWindow3DActivity extends Activity {
 			}
 			if (!isUserDragging)
 			{
-				if (total>0)sb_progress.setMax(total);
-				if (tell>0)sb_progress.setProgress(tell);
+				if (total>=0)sb_progress.setMax(total);
+				if (tell>=0)sb_progress.setProgress(tell);
 			}
 	   		handler.sendEmptyMessageDelayed(0, 20);
     	}
@@ -224,6 +239,7 @@ public class SplashWindow3DActivity extends Activity {
     {
     	if (keyCode == KeyEvent.KEYCODE_BACK)
     	{
+    		disconnectIsFromUser = true;
     		if (conn.getState() >= 0)
     			conn.disconnect();
     		else

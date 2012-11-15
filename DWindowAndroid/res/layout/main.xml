@@ -52,7 +52,17 @@
         android:visibility="gone"
         android:orientation="vertical" >
         
+         <SeekBar
+            android:id="@+id/sb_progress"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
         
+        <Button
+            android:id="@+id/btn_fullscreen"
+            android:layout_width="fill_parent"
+            android:layout_height="50dip"
+            android:text="Full"
+            android:layout_marginTop="0dp" />
         <Button
             android:id="@+id/btn_playpause"
             android:layout_width="fill_parent"
@@ -60,10 +70,6 @@
             android:text="Play"
             android:layout_marginTop="0dp" />
         
-        <SeekBar
-            android:id="@+id/sb_progress"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content" />
         
         <Button
             android:id="@+id/btn_open_bd"

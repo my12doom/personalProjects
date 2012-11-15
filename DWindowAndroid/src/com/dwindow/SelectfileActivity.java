@@ -142,7 +142,7 @@ public class SelectfileActivity extends Activity
     
     private void myFinish()
     {
-    	resultIntent.putExtra("Hello", "World");
+    	resultIntent.putExtra("path", path);
     	resultIntent.putExtra("selected", result_selected);
     	resultIntent.putExtra("selected_file", result_file);
     	
