@@ -4,6 +4,7 @@
 #include <conio.h>
 #include <atlbase.h>
 #include "ICommand.h"
+#include "global_funcs.h"
 
 #pragma  comment(lib, "ws2_32.lib")
 
@@ -15,12 +16,12 @@
 #define UM_ICONNOTIFY (WM_USER+2)
 int server_socket = -1;
 bool server_stopping = false;
-int server_port = 8080;
+AutoSetting<DWORD> server_port(L"DWindowNetworkPort", 8080, REG_DWORD);
 extern ICommandReciever *command_reciever;
 
 
 DWORD WINAPI handler_thread(LPVOID param);
-int my_handle_req(char* data, int size, DWORD ip, int client_sock);
+int my_handle_req(char* data, int size, DWORD ip, int client_sock, char*line, int &p);
 HRESULT init_winsock();
 
 int TCPTest()
@@ -99,9 +100,11 @@ DWORD WINAPI handler_thread(LPVOID param)
 	const char *welcome_string = "DWindow Network v0.0.1";
 	send(acc_socket, welcome_string, strlen(welcome_string), 0);
 	send(acc_socket, "\n", 1, 0);
+	char line[1024];
+	int p = 0;
 	while ((numbytes=recv(acc_socket, buf, sizeof(buf)-1, 0)) > 0) 
 	{
-		my_handle_req(buf, numbytes, ip, acc_socket);
+		my_handle_req(buf, numbytes, ip, acc_socket, line, p);
 	}
 
 	shutdown(acc_socket, SD_SEND);
@@ -118,14 +121,13 @@ DWORD WINAPI handler_thread(LPVOID param)
 	return 0;
 }
 
-char line[1024];
-int p = 0;
-int code_page = CP_ACP;
 wchar_t *out = new wchar_t[1024000];
 wchar_t *out2 = new wchar_t[1024000];
 char *outA = new char[1024000];
-int my_handle_req(char* data, int size, DWORD ip, int client_sock) 
+CCritSec sec;
+int my_handle_req(char* data, int size, DWORD ip, int client_sock, char*line, int &p) 
 {
+	int code_page = CP_ACP;
 	wchar_t line_w[1024];
 	for (int i=0; i<size; i++)
 	{
@@ -135,6 +137,7 @@ int my_handle_req(char* data, int size, DWORD ip, int client_sock)
 		{
 			if(data[i] == 0xD)
 			{
+				CAutoLock lck(&sec);
 				line[p] = NULL;
 				MultiByteToWideChar(CP_UTF8, 0, line, 1024, line_w, 1024);
 

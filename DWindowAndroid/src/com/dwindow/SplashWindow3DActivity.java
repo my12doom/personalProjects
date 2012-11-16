@@ -167,6 +167,7 @@ public class SplashWindow3DActivity extends Activity {
     	{
     		public void run()
     		{
+    			long last_UI_fetch = System.currentTimeMillis();
     			while(thisActivityVisible)
     			{
     				if (conn.getState() >= 0)
@@ -181,16 +182,21 @@ public class SplashWindow3DActivity extends Activity {
     				
     				try 
     				{
-//    					Thread.sleep(5);
-//	    				cmd_result result = conn.execute_command("tell");
-//	    				if (result.successed() && total > 1)
-//	    					tell = Integer.parseInt(result.result);
-//	    				result = conn.execute_command("total");
-//	    				if (result.successed())
-//	    					total = Integer.parseInt(result.result);
-//	    				result = conn.execute_command("is_playing");
-//	    				if (result.successed())
-//	    					playing = Boolean.parseBoolean(result.result);
+    					Thread.sleep(5);
+    					
+    					if (System.currentTimeMillis() - last_UI_fetch > 3000)
+    					{
+		    				cmd_result result = conn.execute_command("tell");
+		    				if (result.successed() && total > 1)
+		    					tell = Integer.parseInt(result.result);
+		    				result = conn.execute_command("total");
+		    				if (result.successed())
+		    					total = Integer.parseInt(result.result);
+		    				result = conn.execute_command("is_playing");
+		    				if (result.successed())
+		    					playing = Boolean.parseBoolean(result.result);
+ 	    					last_UI_fetch = System.currentTimeMillis();
+    					}
     				}
     				catch (Exception e) 
     				{

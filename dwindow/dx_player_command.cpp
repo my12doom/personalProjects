@@ -173,7 +173,8 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 
 	CASE(L"auth")
 	{
-		auth = wcscmp(args[0], L"TestCode") == 0;
+		AutoSettingString password(L"DWindowNetworkPassword", L"TestCode");
+		auth = wcscmp(args[0], password) == 0;
 		wcscpy2(out, myBool(auth));
 	}
 	CASE(L"reset")
