@@ -27,6 +27,8 @@ public class SplashWindow3DActivity extends Activity {
 	
 	private final int request_code_openfile = 10000;
 	private final int request_code_openBD = 10001;
+	private final int request_code_selectAudio = 10002;
+	private final int request_code_selectSubtitle = 10003;
 	
 	
 	static public DWindowNetworkConnection conn = new DWindowNetworkConnection();
@@ -35,6 +37,8 @@ public class SplashWindow3DActivity extends Activity {
 	Button btn_openBD;
 	Button btn_playpause;
 	Button btn_fullscreen;
+	Button btn_selectaudio;
+	Button btn_selectsubtitle;
 	SeekBar sb_progress;
 	SeekBar sb_volume;
 	EditText editHost;
@@ -76,6 +80,8 @@ public class SplashWindow3DActivity extends Activity {
         btn_openBD = (Button)findViewById(R.id.btn_open_bd);
         btn_playpause = (Button)findViewById(R.id.btn_playpause);
         btn_fullscreen = (Button)findViewById(R.id.btn_fullscreen);
+        btn_selectaudio = (Button)findViewById(R.id.btn_audiotrack);
+        btn_selectsubtitle = (Button)findViewById(R.id.btn_subtitletrack);
         editHost = (EditText)findViewById(R.id.et_host);
         editPassword = (EditText)findViewById(R.id.et_password);
         editHost.setText(host.get());
@@ -130,6 +136,25 @@ public class SplashWindow3DActivity extends Activity {
 			}
         });
         
+        btn_selectaudio.setOnClickListener(new OnClickListener()
+        {
+			public void onClick(View v) 
+			{
+				Intent intent = new Intent(SplashWindow3DActivity.this, SelectTrackActivity.class);
+				intent.putExtra("track", "audio");
+				startActivityForResult(intent, request_code_selectAudio);
+			}
+        });
+
+        btn_selectsubtitle.setOnClickListener(new OnClickListener()
+        {
+			public void onClick(View v) 
+			{
+				Intent intent = new Intent(SplashWindow3DActivity.this, SelectTrackActivity.class);
+				intent.putExtra("track", "subtitle");
+				startActivityForResult(intent, request_code_selectSubtitle);
+			}
+        });
         btn_playpause.setOnClickListener(new OnClickListener()
         {
 			public void onClick(View v) 
@@ -161,7 +186,17 @@ public class SplashWindow3DActivity extends Activity {
     			total = 1;
     			conn.execute_command("reset_and_loadfile|"+selected_file);
     		}
-    	}    	
+    	}
+    	else if (requestCode == request_code_selectAudio || requestCode == request_code_selectSubtitle)
+    	{
+    		boolean selected = data.getBooleanExtra("selected", false);
+    		int selected_track = data.getIntExtra("selected_track", -999);
+    		
+    		if (selected)
+    		{
+    			conn.execute_command("enable_" + (requestCode == request_code_selectAudio ? "audio" : "subtitle") +"_track|"+selected_track);
+    		}   		
+    	}
     }
     
     public void onResume()
@@ -178,7 +213,7 @@ public class SplashWindow3DActivity extends Activity {
     				{
     					System.out.println("shot() start");
     		 			byte[] jpg = null;
-    		 			//jpg = conn.shot();
+    		 			jpg = conn.shot();
     					System.out.println("shot() network end");
     					if (jpg != null)
     						bmp = BitmapFactory.decodeByteArray(jpg, 0, jpg.length);

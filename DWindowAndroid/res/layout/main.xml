@@ -73,7 +73,18 @@
             android:layout_height="50dip"
             android:text="Play"
             android:layout_marginTop="0dp" />
-        
+        <Button
+            android:id="@+id/btn_audiotrack"
+            android:layout_width="fill_parent"
+            android:layout_height="50dip"
+            android:text="AudioTrack"
+            android:layout_marginTop="0dp" />
+        <Button
+            android:id="@+id/btn_subtitletrack"
+            android:layout_width="fill_parent"
+            android:layout_height="50dip"
+            android:text="SubtitleTrack"
+            android:layout_marginTop="0dp" />
         
         <Button
             android:id="@+id/btn_open_bd"
