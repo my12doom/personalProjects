@@ -134,6 +134,7 @@ DWORD color_GDI2ARGB(DWORD in);
 BOOL myGetGestureInfo(HGESTUREINFO hGestureInfo, PGESTUREINFO pGestureInfo);
 BOOL hasGetGustureInfo();
 HRESULT CrackPD10(IBaseFilter *filter);
+bool jpeg_enc_yv12(unsigned char* Ybuffer, unsigned char *Ubuffer, unsigned char*Vbuffer, int width, int height, int Ystride, int UVstride, int quality, const wchar_t* filename);
 
 inline bool compare_rect(const RECT in1, const RECT in2)
 {

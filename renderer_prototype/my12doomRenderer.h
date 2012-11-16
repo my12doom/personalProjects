@@ -162,7 +162,7 @@ public:
 	HRESULT NV3D_notify(WPARAM wparam);
 	HRESULT reset();
 	int hittest(int x, int y, double*outv){CAutoLock lck(&m_uidrawer_cs);int o = -1; if(m_uidrawer) m_uidrawer->hittest(x, y, &o, outv); return o;}
-	HRESULT screenshot(BYTE *out);	// movie only
+	HRESULT screenshot(const wchar_t*file);	// movie only
 
 
 	// settings SET function

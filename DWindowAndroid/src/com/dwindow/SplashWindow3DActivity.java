@@ -171,23 +171,26 @@ public class SplashWindow3DActivity extends Activity {
     			{
     				if (conn.getState() >= 0)
     				{
+    					System.out.println("shot() start");
     		 			byte[] jpg = conn.shot();
+    					System.out.println("shot() network end");
     					if (jpg != null)
     						bmp = BitmapFactory.decodeByteArray(jpg, 0, jpg.length);
+    					System.out.println("shot() end");
     				}
     				
     				try 
     				{
-    					Thread.sleep(5);
-	    				cmd_result result = conn.execute_command("tell");
-	    				if (result.successed() && total > 1)
-	    					tell = Integer.parseInt(result.result);
-	    				result = conn.execute_command("total");
-	    				if (result.successed())
-	    					total = Integer.parseInt(result.result);
-	    				result = conn.execute_command("is_playing");
-	    				if (result.successed())
-	    					playing = Boolean.parseBoolean(result.result);
+//    					Thread.sleep(5);
+//	    				cmd_result result = conn.execute_command("tell");
+//	    				if (result.successed() && total > 1)
+//	    					tell = Integer.parseInt(result.result);
+//	    				result = conn.execute_command("total");
+//	    				if (result.successed())
+//	    					total = Integer.parseInt(result.result);
+//	    				result = conn.execute_command("is_playing");
+//	    				if (result.successed())
+//	    					playing = Boolean.parseBoolean(result.result);
     				}
     				catch (Exception e) 
     				{
@@ -240,7 +243,7 @@ public class SplashWindow3DActivity extends Activity {
 				
 				System.out.println(String.format("progress: %d / %d", tell, total));
 			}
-	   		handler.sendEmptyMessageDelayed(0, 20);
+	   		handler.sendEmptyMessageDelayed(0, 5);
     	}
     };
     

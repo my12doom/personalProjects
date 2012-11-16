@@ -671,10 +671,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\ZBuffer\stereo_test.h"
-				>
-			</File>
-			<File
 				RelativePath=".\TCPTest.cpp"
 				>
 			</File>
@@ -933,6 +929,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\ZBuffer\stereo_test.h"
+				>
+			</File>
+			<File
 				RelativePath="..\renderer_prototype\YV12_to_RGB32.cpp"
 				>
 			</File>
@@ -987,6 +987,10 @@
 			<Filter
 				Name="Renderer"
 				>
+				<File
+					RelativePath="..\renderer_prototype\bilinear.h"
+					>
+				</File>
 				<File
 					RelativePath="..\renderer_prototype\gpu_sample.h"
 					>

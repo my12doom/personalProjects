@@ -3041,16 +3041,16 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 	return hr;
 }
 
-HRESULT my12doomRenderer::screenshot(BYTE *out)
+HRESULT my12doomRenderer::screenshot(const wchar_t*file)
 {
-	if (!out)
+	if (!file)
 		return E_POINTER;
 
 	CAutoLock rendered_lock(&m_rendered_packet_lock);
 	if (!m_last_rendered_sample1)
 		return E_FAIL;
 
-	return m_last_rendered_sample1->convert_to_RGB32_CPU(out);
+	return m_last_rendered_sample1->convert_to_RGB32_CPU(file);
 }
 
 input_layout_types my12doomRenderer::get_active_input_layout()

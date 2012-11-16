@@ -151,33 +151,7 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		GetTempPathW(MAX_PATH, tmpPath);
 		wchar_t tmpFile[MAX_PATH];
 		GetTempFileNameW(tmpPath, L"DWindow", 0, tmpFile);
-		{
-			RGBQUAD *dst = new RGBQUAD[1920*1080];
-			m_renderer1->screenshot((BYTE*)dst);
-
-			// save it to jpg
-			CAutoLock lck(&g_ILLock);
-			ilInit();
-			ILuint imageNo = 0;
-			ilGenImages(1, &imageNo);
-			ilBindImage(imageNo);
-			ilSetInteger(IL_JPG_QUALITY, 15);
-			ILboolean result =ilTexImage(1920, 1080, 1, 4, IL_BGRA, IL_UNSIGNED_BYTE, dst);
-			iluFlipImage();
-			iluScale(540, 300, 4);
-
-			l = timeGetTime() - l;
-			DeleteFileW(tmpFile);
-			result = ilSave(IL_JPG, tmpFile);
-			if (!result)
-			{
-				ILenum err = ilGetError() ;
-				printf( "the error %x\n", err );
-				printf( "string is %s\n", ilGetString( err ) );
-			}
-			ilDeleteImage(imageNo);
-			delete [] dst;
-		}
+		m_renderer1->screenshot(tmpFile);
 
 		FILE *f = _wfopen(tmpFile, L"rb");
 		if (!f)
@@ -192,7 +166,7 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		DeleteFileW(tmpFile);
 
 		char tmp[200];
-		sprintf(tmp, "shot take %dms\n", l);
+		sprintf(tmp, "shot take %dms\n", GetTickCount()-l);
 		OutputDebugStringA(tmp);
 		return S_JPG;
 	}
