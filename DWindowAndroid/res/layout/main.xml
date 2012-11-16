@@ -56,7 +56,11 @@
             android:id="@+id/sb_progress"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content" />
-        
+         <SeekBar
+            android:id="@+id/sb_volume"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
+         
         <Button
             android:id="@+id/btn_fullscreen"
             android:layout_width="fill_parent"

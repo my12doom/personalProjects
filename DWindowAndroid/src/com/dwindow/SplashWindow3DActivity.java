@@ -36,6 +36,7 @@ public class SplashWindow3DActivity extends Activity {
 	Button btn_playpause;
 	Button btn_fullscreen;
 	SeekBar sb_progress;
+	SeekBar sb_volume;
 	EditText editHost;
 	EditText editPassword;
 	private Value<String> host = (Value<String>) Value.newValue("host", "192.168.1.199");
@@ -44,6 +45,7 @@ public class SplashWindow3DActivity extends Activity {
 	private Bitmap bmp = null;
 	private int total = 1;
 	private int tell = 0;
+	private int volume = 100;
 	private boolean playing = false;
 	private boolean disconnectIsFromUser = false;
 	
@@ -67,6 +69,8 @@ public class SplashWindow3DActivity extends Activity {
 		
         sb_progress = (SeekBar)findViewById(R.id.sb_progress);
         sb_progress.setOnSeekBarChangeListener(new SeekBarListener());
+        sb_volume = (SeekBar)findViewById(R.id.sb_volume);
+        sb_volume.setOnSeekBarChangeListener(new SeekBarListener());
         btn_go = (Button)findViewById(R.id.btn_go);
         btn_openfile = (Button)findViewById(R.id.btn_open_file);
         btn_openBD = (Button)findViewById(R.id.btn_open_bd);
@@ -173,7 +177,8 @@ public class SplashWindow3DActivity extends Activity {
     				if (conn.getState() >= 0)
     				{
     					System.out.println("shot() start");
-    		 			byte[] jpg = conn.shot();
+    		 			byte[] jpg = null;
+    		 			//jpg = conn.shot();
     					System.out.println("shot() network end");
     					if (jpg != null)
     						bmp = BitmapFactory.decodeByteArray(jpg, 0, jpg.length);
@@ -192,6 +197,9 @@ public class SplashWindow3DActivity extends Activity {
 		    				result = conn.execute_command("total");
 		    				if (result.successed())
 		    					total = Integer.parseInt(result.result);
+		    				result = conn.execute_command("get_volume");
+		    				if (result.successed())
+		    					volume = (int) (Float.parseFloat(result.result) * 100);
 		    				result = conn.execute_command("is_playing");
 		    				if (result.successed())
 		    					playing = Boolean.parseBoolean(result.result);
@@ -246,6 +254,8 @@ public class SplashWindow3DActivity extends Activity {
 			{
 				if (total>=0)sb_progress.setMax(total);
 				if (tell>=0)sb_progress.setProgress(tell);
+				if (volume>=0)sb_volume.setProgress(volume);
+				sb_volume.setMax(100);
 				
 				System.out.println(String.format("progress: %d / %d", tell, total));
 			}
@@ -268,18 +278,25 @@ public class SplashWindow3DActivity extends Activity {
     
     private boolean isUserDragging = false;
     private int seek_target = -1;
+    private int volume_target = -1;
     class SeekBarListener implements SeekBar.OnSeekBarChangeListener
     {
 		public void onProgressChanged(SeekBar seekBar, int position, boolean fromUser) 
 		{
 			if (fromUser)
-				seek_target = position;
+			{
+				if (seekBar == sb_progress)
+					seek_target = position;
+				else
+					volume_target = position;
+			}
 		}
 		public void onStartTrackingTouch(SeekBar seekBar)
 		{
+			volume_target = -1;
 			seek_target = -1;
 			isUserDragging = true;
-		}		
+		}
 		public void onStopTrackingTouch(SeekBar seekBar)
 		{
 			isUserDragging = false;
@@ -287,6 +304,11 @@ public class SplashWindow3DActivity extends Activity {
 			{
 				total = tell = -1;
 				conn.execute_command("seek|"+seek_target);
+			}
+			if (volume_target >= 0)
+			{
+				volume = -1;
+				conn.execute_command("set_volume|"+(float)volume_target/100f);
 			}
 		}
 	}
