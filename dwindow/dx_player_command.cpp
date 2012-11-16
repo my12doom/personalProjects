@@ -331,6 +331,7 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 			wcscat2(out, tmp2[i]);
 			wcscat2(out, L"|");
 			wcscat2(out, myBool(connected[i]));
+			wcscat2(out, L"|");
 		}
 	}
 

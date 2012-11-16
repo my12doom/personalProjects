@@ -12,6 +12,7 @@ Global
 		release_personal|Win32 = release_personal|Win32
 		release_test|Win32 = release_test|Win32
 		release_vstar|Win32 = release_vstar|Win32
+		release_zhu|Win32 = release_zhu|Win32
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
@@ -27,6 +28,8 @@ Global
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_test|Win32.Build.0 = release_test|Win32
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_vstar|Win32.ActiveCfg = release_vstar|Win32
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_vstar|Win32.Build.0 = release_vstar|Win32
+		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_zhu|Win32.ActiveCfg = release_zhu|Win32
+		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_zhu|Win32.Build.0 = release_zhu|Win32
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.Release|Win32.ActiveCfg = Release|Win32
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.Release|Win32.Build.0 = Release|Win32
 		{9497A684-154E-491D-A088-175BC9ED825D}.Debug|Win32.ActiveCfg = Debug|Win32
@@ -41,6 +44,7 @@ Global
 		{9497A684-154E-491D-A088-175BC9ED825D}.release_test|Win32.Build.0 = Release|Win32
 		{9497A684-154E-491D-A088-175BC9ED825D}.release_vstar|Win32.ActiveCfg = release_vstar|Win32
 		{9497A684-154E-491D-A088-175BC9ED825D}.release_vstar|Win32.Build.0 = release_vstar|Win32
+		{9497A684-154E-491D-A088-175BC9ED825D}.release_zhu|Win32.ActiveCfg = release_zhu|Win32
 		{9497A684-154E-491D-A088-175BC9ED825D}.Release|Win32.ActiveCfg = Release|Win32
 		{9497A684-154E-491D-A088-175BC9ED825D}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
