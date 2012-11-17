@@ -207,6 +207,11 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 
 	CASE(L"set_swapeyes")
 		hr = set_swap_eyes(myBool(args[0]));
+	CASE(L"get_swapeyes")
+	{
+		wcscpy2(out, myBool(m_swap_eyes));
+		return S_OK;
+	}
 
 	CASE(L"set_movie_pos")
 		hr = set_movie_pos(myDouble(args[0]), myDouble(args[1]));

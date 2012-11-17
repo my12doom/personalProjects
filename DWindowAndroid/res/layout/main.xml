@@ -86,6 +86,12 @@
             android:layout_height="50dip"
             android:text="SubtitleTrack"
             android:layout_marginTop="0dp" />
+        <Button
+            android:id="@+id/btn_swapeyes"
+            android:layout_width="fill_parent"
+            android:layout_height="50dip"
+            android:text="SwapEyes"
+            android:layout_marginTop="0dp" />
         
         <Button
             android:id="@+id/btn_open_bd"

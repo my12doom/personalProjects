@@ -40,6 +40,7 @@ public class SplashWindow3DActivity extends Activity {
 	Button btn_selectaudio;
 	Button btn_selectsubtitle;
 	Button btn_shutdown;
+	Button btn_swapeyes;
 	SeekBar sb_progress;
 	SeekBar sb_volume;
 	EditText editHost;
@@ -84,6 +85,7 @@ public class SplashWindow3DActivity extends Activity {
         btn_selectaudio = (Button)findViewById(R.id.btn_audiotrack);
         btn_selectsubtitle = (Button)findViewById(R.id.btn_subtitletrack);
         btn_shutdown = (Button)findViewById(R.id.btn_shutdown);
+        btn_swapeyes = (Button)findViewById(R.id.btn_swapeyes);
         editHost = (EditText)findViewById(R.id.et_host);
         editPassword = (EditText)findViewById(R.id.et_password);
         editHost.setText(host.get());
@@ -173,10 +175,29 @@ public class SplashWindow3DActivity extends Activity {
 			}
         });
         
+        btn_swapeyes.setOnClickListener(new OnClickListener()
+        {
+			public void onClick(View v) 
+			{
+				cmd_result result = conn.execute_command("get_swapeyes");
+				if (result.successed())
+				{
+					boolean b = false;
+					try
+					{
+						b = Boolean.parseBoolean(result.result);
+					}catch(Exception e){}
+					
+					conn.execute_command("set_swapeyes|"+!b);
+				}
+			}
+        });
+        
         btn_shutdown.setOnClickListener(new OnClickListener()
         {
 			public void onClick(View v) 
 			{
+				disconnectIsFromUser = true;
 				conn.execute_command("shutdown");
 			}
         });
