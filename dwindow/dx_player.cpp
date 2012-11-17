@@ -4094,12 +4094,12 @@ HRESULT dx_player::list_subtitle_track(wchar_t **out, bool*connected_out, int *f
 	// external subtitle files
 	for(POSITION i = m_external_subtitles.GetHeadPosition(); i; m_external_subtitles.GetNext(i))
 	{
-		int flag = MF_STRING | MF_BYPOSITION;
 		CAutoPtr<subtitle_file_handler> &tmp = m_external_subtitles.GetAt(i);
-		if (tmp->actived) flag |= MF_CHECKED;
-// 		InsertMenuW(submenu, subtitle_track_found, flag, 'S0'+subtitle_track_found, tmp->m_pathname);
 		if (subtitle_track_found < 32)
+		{
 			wcscpy(out[subtitle_track_found], tmp->m_pathname);
+			connected_out[subtitle_track_found] = tmp->actived;
+		}
 
 		subtitle_track_found++;
 	}
