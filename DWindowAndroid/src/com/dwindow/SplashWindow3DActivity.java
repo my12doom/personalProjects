@@ -39,13 +39,14 @@ public class SplashWindow3DActivity extends Activity {
 	Button btn_fullscreen;
 	Button btn_selectaudio;
 	Button btn_selectsubtitle;
+	Button btn_shutdown;
 	SeekBar sb_progress;
 	SeekBar sb_volume;
 	EditText editHost;
 	EditText editPassword;
 	private Value<String> host = (Value<String>) Value.newValue("host", "192.168.1.199");
 	private Value<String> password = (Value<String>) Value.newValue("password", "TestCode");
-	private Value<String> path = (Value<String>) Value.newValue("path", "\\");
+	public static Value<String> path = (Value<String>) Value.newValue("path", "\\");
 	private Bitmap bmp = null;
 	private int total = 1;
 	private int tell = 0;
@@ -82,6 +83,7 @@ public class SplashWindow3DActivity extends Activity {
         btn_fullscreen = (Button)findViewById(R.id.btn_fullscreen);
         btn_selectaudio = (Button)findViewById(R.id.btn_audiotrack);
         btn_selectsubtitle = (Button)findViewById(R.id.btn_subtitletrack);
+        btn_shutdown = (Button)findViewById(R.id.btn_shutdown);
         editHost = (EditText)findViewById(R.id.et_host);
         editPassword = (EditText)findViewById(R.id.et_password);
         editHost.setText(host.get());
@@ -170,7 +172,15 @@ public class SplashWindow3DActivity extends Activity {
 				conn.execute_command("toggle_fullscreen");
 			}
         });
-}
+        
+        btn_shutdown.setOnClickListener(new OnClickListener()
+        {
+			public void onClick(View v) 
+			{
+				conn.execute_command("shutdown");
+			}
+        });
+    }
     
     public void onActivityResult(int requestCode, int resultCode, Intent data)
     {
@@ -189,13 +199,6 @@ public class SplashWindow3DActivity extends Activity {
     	}
     	else if (requestCode == request_code_selectAudio || requestCode == request_code_selectSubtitle)
     	{
-    		boolean selected = data.getBooleanExtra("selected", false);
-    		int selected_track = data.getIntExtra("selected_track", -999);
-    		
-    		if (selected)
-    		{
-    			conn.execute_command("enable_" + (requestCode == request_code_selectAudio ? "audio" : "subtitle") +"_track|"+selected_track);
-    		}   		
     	}
     }
     

@@ -366,7 +366,11 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		wchar_t *tmp = new wchar_t[102400];
 		tmp[0] = NULL;
 
+#ifdef ZHUZHU
+		for(int i=3; i<26; i++)
+#else
 		for(int i=0; i<26; i++)
+#endif
 		{
 			wchar_t path[50];
 			wchar_t tmp2[MAX_PATH];
@@ -379,6 +383,36 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		}
 		wcscpy2(out, tmp);
 		delete [] tmp;
+		return S_OK;
+	}
+
+	CASE(L"shutdown")
+	{
+		show_window(1, false);
+		show_window(2, false);
+		return S_OK;
+	}
+
+	CASE(L"shutdown_windows")
+	{
+		HANDLE hToken;
+		TOKEN_PRIVILEGES tkp;
+		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
+			return E_FAIL;
+
+		LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
+
+		tkp.PrivilegeCount = 1;    
+		tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+		AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
+
+		if(GetLastError() != ERROR_SUCCESS)
+			return E_FAIL;
+
+		if(!ExitWindowsEx(EWX_POWEROFF | EWX_FORCE, 0))
+			return E_FAIL;
+
 		return S_OK;
 	}
 

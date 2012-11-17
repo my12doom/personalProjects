@@ -139,6 +139,9 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	// show it!
 	show_window(1, true);
 	show_window(2, m_output_mode == dual_window || m_output_mode == iz3d);
+#ifdef ZHUZHU
+	toggle_fullscreen();
+#endif
 
 	// to init video zone
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);

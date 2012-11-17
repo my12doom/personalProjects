@@ -34,7 +34,7 @@ public class SelectfileActivity extends Activity
 	private ListViewAdapter adapter;
 	private ListView listView;
 	private DWindowNetworkConnection conn = SplashWindow3DActivity.conn;
-	
+	String[] exts = {".mp4", ".mkv", ".avi", ".rmvb", ".wmv", ".avs", ".ts", ".m2ts", ".ssif", ".mpls", ".3dv", ".e3d"};
 	private boolean result_selected;
 	private String result_file;
 
@@ -48,10 +48,13 @@ public class SelectfileActivity extends Activity
 		// intents
 		Intent intent = getIntent();
 		path = intent.getStringExtra("path");
-		String [] intentSelectionRange = (String[]) intent.getSerializableExtra("selectionRange");
 		listBD = intent.getBooleanExtra("BD", false);
+		String [] intentSelectionRange = (String[]) intent.getSerializableExtra("selectionRange");
 		if (intentSelectionRange != null)
 			selectionRange = intentSelectionRange;
+		String [] exts_external = (String[]) intent.getSerializableExtra("exts");
+		if (exts_external != null)
+			exts = exts_external;
 		refresh();
 		
 		
@@ -97,9 +100,7 @@ public class SelectfileActivity extends Activity
         listView.setDividerHeight(0);
     }
         
-    private boolean isMediaFile(String filename){
-    	String[] exts = {".mp4", ".mkv", ".avi", ".rmvb", ".wmv", ".avs", ".ts", ".m2ts", ".ssif", ".mpls", ".3dv", ".e3d"};
-    	
+    private boolean isMediaFile(String filename){    	
     	for(int i=0; i<exts.length; i++)
     		if (filename.toLowerCase().endsWith(exts[i]))
     			return true;

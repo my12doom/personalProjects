@@ -66,6 +66,7 @@
             android:layout_width="fill_parent"
             android:layout_height="50dip"
             android:text="Full"
+            android:visibility="gone"
             android:layout_marginTop="0dp" />
         <Button
             android:id="@+id/btn_playpause"
@@ -98,7 +99,12 @@
             android:layout_width="fill_parent"
             android:layout_height="50dip"
             android:text="Open File"
-            android:layout_marginBottom="50dp"
             android:layout_marginTop="0dp" />
-    </LinearLayout>
+        <Button
+            android:id="@+id/btn_shutdown"
+            android:layout_width="fill_parent"
+            android:layout_height="50dip"
+            android:text="Shutdown"
+           android:layout_marginTop="0dp" />
+        </LinearLayout>
 </RelativeLayout>
