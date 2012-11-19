@@ -614,20 +614,6 @@ int srt_parser::handle_line(wchar_t *line)
 		{
 			m_last_type = 2;
 
-			/*
-			m_index[m_index_pos].time_start = ms_start;
-			m_index[m_index_pos].time_end = ms_end;
-
-			if (m_text_data[0] != NULL)
-				m_text_pos += (int)wcslen(m_text_data + m_text_pos) + 1;
-
-			m_index[m_index_pos].pos = m_text_pos;
-
-			m_text_data[m_text_pos] = NULL;
-
-			m_index_pos ++;
-			*/
-
 			if (tmp[0])
 				direct_add_subtitle(tmp, tmp_index.time_start, tmp_index.time_end);
 
