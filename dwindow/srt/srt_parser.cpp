@@ -180,6 +180,9 @@ int srt_parser::load(wchar_t *pathname)
 	else																	//Unknown BOM
 		handle_data_8 (data, CP_ACP, (int)size);
 
+	// add last srt subtitle
+	if (tmp[0] != NULL)
+		direct_add_subtitle(tmp, tmp_index.time_start, tmp_index.time_end);
 
 	delete [] data;
 
