@@ -108,11 +108,11 @@ public class SplashWindow3DActivity extends Activity {
 				else
 				{
 					int state = conn.getState();
-					String hint = "Connection Failed";
+					String hint = getResources().getString(R.string.ConnectionFailed);
 					if (result == 0 )
-						hint = "Password Error";
+						hint = getResources().getString(R.string.PasswordError);
 					if (state == conn.ERROR_NEW_PROTOCOL)
-						hint = "Need New Version";
+						hint = getResources().getString(R.string.NeedNewVersion);
 					
 					Toast.makeText(SplashWindow3DActivity.this, hint, Toast.LENGTH_SHORT).show();
 				}

@@ -37,7 +37,7 @@
             android:id="@+id/btn_go"
             android:layout_width="fill_parent"
             android:layout_height="50dip"
-            android:text="GO"
+            android:text="@string/connect"
             android:layout_marginBottom="100dp"
             android:layout_marginTop="0dp" />
     </LinearLayout>
@@ -65,52 +65,52 @@
             android:id="@+id/btn_fullscreen"
             android:layout_width="fill_parent"
             android:layout_height="50dip"
-            android:text="Full"
+            android:text="@string/FullScreen"
             android:visibility="gone"
             android:layout_marginTop="0dp" />
         <Button
             android:id="@+id/btn_playpause"
             android:layout_width="fill_parent"
             android:layout_height="50dip"
-            android:text="Play"
+            android:text="@string/play"
             android:layout_marginTop="0dp" />
         <Button
             android:id="@+id/btn_audiotrack"
             android:layout_width="fill_parent"
             android:layout_height="50dip"
-            android:text="AudioTrack"
+            android:text="@string/AudioTrack"
             android:layout_marginTop="0dp" />
         <Button
             android:id="@+id/btn_subtitletrack"
             android:layout_width="fill_parent"
             android:layout_height="50dip"
-            android:text="SubtitleTrack"
+            android:text="@string/SubtitleTrack"
             android:layout_marginTop="0dp" />
         <Button
             android:id="@+id/btn_swapeyes"
             android:layout_width="fill_parent"
             android:layout_height="50dip"
-            android:text="SwapEyes"
+            android:text="@string/SwapEyes"
             android:layout_marginTop="0dp" />
         
         <Button
             android:id="@+id/btn_open_bd"
             android:layout_width="fill_parent"
             android:layout_height="50dip"
-            android:text="Open Bluray"
+            android:text="@string/OpenBluray"
             android:layout_marginTop="0dp" />
         
         <Button
             android:id="@+id/btn_open_file"
             android:layout_width="fill_parent"
             android:layout_height="50dip"
-            android:text="Open File"
+            android:text="@string/OpenFile"
             android:layout_marginTop="0dp" />
         <Button
             android:id="@+id/btn_shutdown"
             android:layout_width="fill_parent"
             android:layout_height="50dip"
-            android:text="Shutdown"
+            android:text="@string/Shutdown"
            android:layout_marginTop="0dp" />
         </LinearLayout>
 </RelativeLayout>

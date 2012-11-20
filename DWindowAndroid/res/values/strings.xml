@@ -4,5 +4,21 @@
     <string name="hello">Hello World, SplashWindow3DActivity!</string>
     <string name="app_name">DWindow</string>
     <string name="text_username">UserName</string>
-
+    <string name="connect">Connect</string>
+    <string name="play">Play</string>
+    <string name="AudioTrack">AudioTrack</string>
+    <string name="SubtitleTrack">SubtitleTrack</string>
+    <string name="SwapEyes">SwapEyes</string>
+    <string name="OpenFile">Open File</string>
+    <string name="Shutdown">"Shutdown"</string>
+    <string name="FullScreen">FullScreen</string>
+    <string name="OpenBluray">Open Bluray</string>
+    <string name="NoDisc">No Disc</string>
+    <string name="NonMovieDisc">Non Movie Disc</string>
+    <string name="ConnectionFailed">Connection Failed</string>
+    <string name="PasswordError">Password Error</string>
+    <string name="NeedNewVersion">Need New Version</string>
+    <string name="LoadSubtitle">Load Subtitle....</string>
+    <string name="GoToParent">Go To Parent</string>
+    
 </resources>

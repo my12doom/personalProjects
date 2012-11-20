@@ -30,6 +30,7 @@ public class SelectfileActivity extends Activity
 	private Intent resultIntent = new Intent();
 	private String[] selectionRange;
 	private String path;
+	private boolean showAllFiles = false;
 	private boolean listBD = false;
 	private ListViewAdapter adapter;
 	private ListView listView;
@@ -49,6 +50,7 @@ public class SelectfileActivity extends Activity
 		Intent intent = getIntent();
 		path = intent.getStringExtra("path");
 		listBD = intent.getBooleanExtra("BD", false);
+		showAllFiles = intent.getBooleanExtra("showAllFiles", false);
 		String [] intentSelectionRange = (String[]) intent.getSerializableExtra("selectionRange");
 		if (intentSelectionRange != null)
 			selectionRange = intentSelectionRange;
@@ -61,43 +63,58 @@ public class SelectfileActivity extends Activity
 		// UI init
 		listView = (ListView)findViewById(R.id.lv_player_list);
         listView.setAdapter(adapter = new ListViewAdapter(this));
+        listView.setDividerHeight(0);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener()
         {
         	public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id)
         	{
-        		String file = selectionRange[position];
         		if (listBD)
          		{
-         			if (!file.endsWith("/") && !file.endsWith(":"))
+        			String drive = position >= 0 ? selectionRange[position] : "";
+         			if (!drive.endsWith("/") && !drive.endsWith(":"))
          			{
- 	        			result_file = file.substring(0,3);
+ 	        			result_file = drive.substring(0,3);
  	        			result_selected = true;
  	        			myFinish();
          			}
          			else
          			{
-         				Toast.makeText(SelectfileActivity.this, file.endsWith("/")?"No Disc":"Non Movie Disc", Toast.LENGTH_SHORT).show();
+         				Toast.makeText(SelectfileActivity.this, drive.endsWith("/")?R.string.NoDisc:R.string.NonMovieDisc, Toast.LENGTH_SHORT).show();
          			}
          		}
-        		else if (!file.endsWith("\\"))
-        		{
-        			result_file = path.substring(1, path.length()) + file;
-        			result_selected = true;
-        			myFinish();
-        		}
         		else
         		{
-     				String oldpath = path;
-         			path += file;
-        			if (!refresh())
-        				path = oldpath;
-        			
-        			listView.setSelection(0);
+	        		boolean isParentButton = path.length() > 1 && position == 0;
+	        		if (path.length() > 1) position --;
+	        		String file = position >= 0 ? selectionRange[position] : "";
+	        		if (isParentButton)
+	        		{
+         				String oldpath = path;
+        				path = path.substring(0,path.lastIndexOf("\\"));
+        				path = path.substring(0,path.lastIndexOf("\\")+1);
+            			if (!refresh())
+            				path = oldpath;        				
+	        			
+	        		}
+	        		else if (!file.endsWith("\\"))
+	        		{
+	        			result_file = path.substring(1, path.length()) + file;
+	        			result_selected = true;
+	        			myFinish();
+	        		}
+	        		else
+	        		{
+	     				String oldpath = path;
+	         			path += file;
+	        			if (!refresh())
+	        				path = oldpath;
+	        			
+	        			listView.setSelection(0);
+	        		}
         		}
 			}
         });
         
-        listView.setDividerHeight(0);
     }
         
     private boolean isMediaFile(String filename){    	
@@ -115,15 +132,36 @@ public class SelectfileActivity extends Activity
 		if (list_result.successed())
 			selectionRange = list_result.result.split("\\|");
 		
+		// remove unknown file extension if needed
+		if (!showAllFiles && !listBD)
+		{
+			int count = 0;
+			for(int i=0; i<selectionRange.length; i++)
+			{
+				if (isMediaFile(selectionRange[i]) || selectionRange[i].endsWith("\\"))
+					count ++;				
+			}
+			String [] tmp = new String[count];
+			for(int i=0, j=0; i<selectionRange.length; i++)
+			{
+				if (isMediaFile(selectionRange[i])|| selectionRange[i].endsWith("\\"))
+					tmp[j++] = selectionRange[i];
+			}
+			selectionRange = tmp;
+		}
+		
 		// sort
-		Arrays.sort(selectionRange, new Comparator<String>(){
-			public int compare(String lhs, String rhs) {
+		Arrays.sort(selectionRange, new Comparator<String>()
+		{
+			public int compare(String lhs, String rhs)
+			{
 				if (lhs.endsWith("\\") != rhs.endsWith("\\"))
 					return lhs.endsWith("\\") ? -1 : 1;
 				
 				if (isMediaFile(lhs) && isMediaFile(rhs))
 					;
-				else{
+				else
+				{
 					if (isMediaFile(lhs))
 						return -1;
 					if (isMediaFile(rhs))
@@ -132,8 +170,8 @@ public class SelectfileActivity extends Activity
 				
 				return lhs.compareTo(rhs);
 			}
-		});		
-
+		});
+		
 		// refresh
 		if (adapter != null)
 			adapter.notifyDataSetChanged();
@@ -154,9 +192,9 @@ public class SelectfileActivity extends Activity
     private String filterBD(String c)
     {
     	if (c.endsWith("/"))
-    		c = c.substring(0, c.length()-1) + "(No Disc)";
+    		c = c.substring(0, c.length()-1) + getResources().getString(R.string.NoDisc);
     	else if (c.endsWith(":"))
-    		c = c.substring(0, c.length()-1) + "(Non Movie Disc)";
+    		c = c.substring(0, c.length()-1) + getResources().getString(R.string.NonMovieDisc);
     	return c;
     }
     
@@ -168,7 +206,8 @@ public class SelectfileActivity extends Activity
 		}
 
 		public int getCount() {
-			return selectionRange.length;
+    		boolean addParentButton = path.length() > 1 && !listBD;
+			return selectionRange.length + (addParentButton ? 1 : 0);
 		}
 
 		public Object getItem(int position) {
@@ -183,11 +222,19 @@ public class SelectfileActivity extends Activity
 			if (convertView == null)
 				convertView = inflater.inflate(R.layout.lv_open_item, null);
 			TextView tv_filename = (TextView) convertView.findViewById(R.id.tv_open_filename);
-			String file = selectionRange[position];
+	    	boolean addParentButton = path.length() > 1 && !listBD;
+	    	String file;
+	    	if (addParentButton)
+	    		file = position == 0 ? getResources().getString(R.string.GoToParent) : selectionRange[position-1];
+	    	else
+	    		file = selectionRange[position];
+	    		
 			if (listBD)		// BD drivers
 				file = filterBD(file);
 			else if (file.endsWith("\\"))	// files and folders
+			{
 				file = "("+file.substring(0, file.length()-1)+")";
+			}
 			tv_filename.setText(file);
 			convertView.setId(position);
 			return convertView;
@@ -196,20 +243,7 @@ public class SelectfileActivity extends Activity
     
     public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
-			if (listBD)
-				myFinish();
-			else if (path.length() > 1){
- 				String oldpath = path;
-				path = path.substring(0,path.lastIndexOf("\\"));
-				path = path.substring(0,path.lastIndexOf("\\")+1);
-    			if (!refresh())
-    				path = oldpath;
-				
-				return true;
-			}
-			else{
-				myFinish();
-			}
+			myFinish();			
 		}
 		return false;
     }    

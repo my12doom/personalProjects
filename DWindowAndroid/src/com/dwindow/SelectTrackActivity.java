@@ -129,7 +129,7 @@ public class SelectTrackActivity extends Activity
 			
 			TextView tv_filename = (TextView) convertView.findViewById(R.id.tv_open_filename);
 			ImageView iv_selected = (ImageView) convertView.findViewById(R.id.iv_selected);
-			String file = (position >= selectionRange.length/2) ? "Load Subtitle..." : selectionRange[position*2];
+			String file = (position >= selectionRange.length/2) ? getResources().getString(R.string.LoadSubtitle) : selectionRange[position*2];
 			
 			boolean selected = false;
 			try
