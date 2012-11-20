@@ -241,11 +241,13 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		hr = tell(&now);
 		wcscpy2(out, myInt(now));
 	}
+#ifdef DEBUG
 	CASE(L"error")
 	{
 		*((BYTE*)NULL) = 8;
 		return S_OK;
 	}
+#endif
 
 	CASE(L"total")
 	{

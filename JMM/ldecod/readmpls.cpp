@@ -90,7 +90,7 @@ int scan_mpls(const char *file, int *main_playlist_count, char *main_playlist, i
 	memset(sub_playlist, 0, 4096);
 	fseek(f, ext_data_pos, SEEK_SET);
 	DWORD ext_data_length = readDWORD(f);
-	if (ext_data_length>0)
+	if (ext_data_length>0 && ext_data_pos > 0)
 	{
 		BYTE *ext_data = (BYTE*)malloc(ext_data_length);
 		fread(ext_data, 1, ext_data_length, f);
