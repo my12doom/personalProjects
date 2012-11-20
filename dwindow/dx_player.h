@@ -216,6 +216,7 @@ protected:
 	bool m_stop_after_load;
 	HRESULT m_reset_load_hr;
 	wchar_t m_file_to_load[MAX_PATH];
+	wchar_t m_file_to_load2[MAX_PATH];
 	int init_done_flag;
 
 

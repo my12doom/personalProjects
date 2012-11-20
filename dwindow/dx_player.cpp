@@ -139,9 +139,6 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	// show it!
 	show_window(1, true);
 	show_window(2, m_output_mode == dual_window || m_output_mode == iz3d);
-#ifdef ZHUZHU
-	toggle_fullscreen();
-#endif
 
 	// to init video zone
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);
@@ -2292,6 +2289,10 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		memcpy(m_renderer1->m_key, (unsigned char*)passkey_big_decrypted+64, 32);
 		memset(passkey_big_decrypted, 0, 128);
 		init_done_flag = 0x12345678;
+
+#ifdef ZHUZHU
+		toggle_fullscreen();
+#endif
 	}
 
 	return S_OK;
@@ -2612,6 +2613,9 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, bool stop, const 
 	}
 
 	wcscpy(m_file_to_load, pathname);
+	m_file_to_load2[0] = NULL;
+	if (pathname2)
+		wcscpy(m_file_to_load2, pathname2);
 	m_reset_and_load = true;
 	m_stop_after_load = stop;
 	m_reset_load_done = false;
@@ -2795,7 +2799,7 @@ LRESULT dx_player::on_idle_time()
 
 	if (m_reset_and_load)
 	{
-		m_reset_load_hr = reset_and_loadfile_internal(m_file_to_load);
+		m_reset_load_hr = reset_and_loadfile_internal(m_file_to_load, m_file_to_load2[0] == NULL ? NULL: m_file_to_load2);
 		m_reset_and_load = false;
 
 		if (m_stop_after_load)
