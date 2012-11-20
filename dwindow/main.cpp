@@ -98,7 +98,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	CreateThread(NULL, NULL, pre_read_thread, g_apppath, NULL, NULL);
 
-// 	SetUnhandledExceptionFilter(my_handler);
+ 	SetUnhandledExceptionFilter(my_handler);
 	int argc = 1;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 
@@ -298,6 +298,13 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	fflush(stdout);
 
 	//TerminateThread(GetCurrentThread(), -1);
+	wchar_t reset_exe[MAX_PATH];
+	wcscpy(reset_exe, g_apppath);
+	wcscat(reset_exe, L"reset.exe");
+	wchar_t this_exe[MAX_PATH];
+	GetModuleFileNameW(NULL, this_exe, MAX_PATH);
+	ShellExecute(NULL, NULL, reset_exe, this_exe, NULL, SW_SHOW);
+	ExitProcess(-1);
 	DebugBreak();
 
 	return EXCEPTION_CONTINUE_SEARCH;
