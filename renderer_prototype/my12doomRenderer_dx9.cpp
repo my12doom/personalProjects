@@ -1189,6 +1189,15 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 	return S_OK;
 }
 
+HRESULT my12doomRenderer::test_device_state()
+{
+	if (m_device_state == fine)
+		return S_OK;
+	if (m_device_state < device_lost)
+		return S_FALSE;
+	return E_FAIL;
+}
+
 HRESULT my12doomRenderer::set_device_state(device_state new_state)
 {
 	m_device_state = max(m_device_state, new_state);

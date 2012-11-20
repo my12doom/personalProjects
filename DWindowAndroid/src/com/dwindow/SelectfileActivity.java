@@ -35,7 +35,7 @@ public class SelectfileActivity extends Activity
 	private ListViewAdapter adapter;
 	private ListView listView;
 	private DWindowNetworkConnection conn = SplashWindow3DActivity.conn;
-	String[] exts = {".mp4", ".mkv", ".avi", ".rmvb", ".wmv", ".avs", ".ts", ".m2ts", ".ssif", ".mpls", ".3dv", ".e3d"};
+	String[] exts = {".mp4", ".mkv", ".avi", ".rmvb", ".wmv", ".avs", ".ts", ".m2ts", ".ssif", ".mpls", ".3dv", ".e3d", ".iso"};
 	private boolean result_selected;
 	private String result_file;
 

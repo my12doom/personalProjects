@@ -146,6 +146,9 @@ public:
 	bool m_forced_deinterlace;
 	bool m_remux_mode;
 
+	// dx9 device state test
+	HRESULT test_device_state();		// S_OK : all fine, S_FALSE : need reset/resize, but can continue rendering, E_FAIL: can't render at all
+
 	// color adjust controll
 	double m_saturation1;
 	double m_luminance1;

@@ -23,6 +23,27 @@ LOGFONTW empty_logfontw = {0};
 
 #include "bomb_network.h"
 
+
+wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for);
+bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for)
+{
+	if (wcslen(search_in) < wcslen(search_for))
+		return false;
+
+	wchar_t *tmp = new wchar_t[wcslen(search_in)+1];
+	wchar_t *tmp2 = new wchar_t[wcslen(search_for)+1];
+	wcscpy(tmp, search_in);
+	wcscpy(tmp2, search_for);
+	_wcslwr(tmp);
+	_wcslwr(tmp2);
+
+	int o = wcscmp(tmp+wcslen(search_in)-wcslen(search_for), tmp2);
+
+	delete [] tmp;
+	delete [] tmp2;
+	return o == 0;
+}
+
 // constructor & destructor
 dx_player::dx_player(HINSTANCE hExe):
 m_renderer1(NULL),
@@ -2290,9 +2311,6 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		memset(passkey_big_decrypted, 0, 128);
 		init_done_flag = 0x12345678;
 
-#ifdef ZHUZHU
-		toggle_fullscreen();
-#endif
 	}
 
 	return S_OK;
@@ -2794,6 +2812,19 @@ LRESULT dx_player::on_idle_time()
 	if (init_done_flag != 0x12345678)
 		return S_FALSE;
 
+#ifdef ZHUZHU
+	static bool toggled = false;
+	if (!toggled)
+	{
+		if (m_renderer1->test_device_state() == S_OK)
+		{
+			toggle_fullscreen();
+			toggled = true;
+		}
+	}
+#endif
+
+
 	if (m_renderer1)
 		m_renderer1->pump();
 
@@ -2934,6 +2965,28 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 {
 	wchar_t file_to_play[MAX_PATH];
 	wcscpy(file_to_play, pathname);
+
+	// detect ISO files
+	if (wcs_endwith_nocase(pathname, L".iso"))
+	{
+		AutoSettingString daemon_drive(L"DaemonDrive", L"dt,0");
+		AutoSettingString daemon_exe(L"DaemonExe", L"C:\\Program Files\\DAEMON Tools Lite\\DTLite.exe");
+
+		wchar_t cmdline[MAX_PATH];
+		swprintf(cmdline, L"-get_letter %s", (wchar_t*)daemon_drive);
+		int letter = shellexecute_and_wait(daemon_exe, cmdline);
+		if (letter < 0)
+			return E_FAIL;
+
+		swprintf(cmdline, L"-mount %s,\"%s\"", (wchar_t*)daemon_drive, pathname);
+		int o = shellexecute_and_wait(daemon_exe, cmdline);
+		if (o < 0)
+			return E_FAIL;
+
+		wchar_t path[100] = L"?:\\";
+		path[0] = L'A' + letter;
+		return load_file(path, non_mainfile, audio_track, video_track);
+	}
 
 	// Bluray Directory
 	log_line(L"start loading %s", file_to_play);
@@ -4202,25 +4255,6 @@ HRESULT dx_player::list_subtitle_track(wchar_t **out, bool*connected_out, int *f
 	return S_OK;
 }
 
-wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for);
-bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for)
-{
-	if (wcslen(search_in) < wcslen(search_for))
-		return false;
-
-	wchar_t *tmp = new wchar_t[wcslen(search_in)+1];
-	wchar_t *tmp2 = new wchar_t[wcslen(search_for)+1];
-	wcscpy(tmp, search_in);
-	wcscpy(tmp2, search_for);
-	_wcslwr(tmp);
-	_wcslwr(tmp2);
-
-	int o = wcscmp(tmp+wcslen(search_in)-wcslen(search_for), tmp2);
-
-	delete [] tmp;
-	delete [] tmp2;
-	return o == 0;
-}
 
 subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 {

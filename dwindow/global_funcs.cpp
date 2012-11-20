@@ -1906,3 +1906,25 @@ exit:
 	jpeg_destroy_compress(&cinfo);
 	return ret;
 }
+
+DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter)
+{
+	SHELLEXECUTEINFO ShExecInfo = {0};
+	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	ShExecInfo.hwnd = NULL;
+	ShExecInfo.lpFile = file;
+	ShExecInfo.lpParameters = parameter;	
+	ShExecInfo.lpDirectory = NULL;
+	ShExecInfo.nShow = SW_HIDE;
+	ShExecInfo.hInstApp = NULL;	
+	ShExecInfo.lpVerb = _T("open");
+
+	ShellExecuteEx(&ShExecInfo);
+
+	DWORD exit_code = STILL_ACTIVE;
+	while(exit_code == STILL_ACTIVE)
+		GetExitCodeProcess(ShExecInfo.hProcess, &exit_code);
+
+	return exit_code;
+}
