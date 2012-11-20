@@ -112,6 +112,7 @@ static int GetHighestBitSet32(unsigned long _Value)
 	}
 }
 
+/*
 
 HRESULT find_main_movie(wchar_t *in, wchar_t *out)
 {
@@ -130,7 +131,8 @@ HRESULT find_main_movie(wchar_t *in, wchar_t *out)
 	wcsncpy(out, T2W(main_file.GetBuffer()), MAX_PATH);
 	out[MAX_PATH-1] = NULL;
 	return hr;
-}
+}*/
+
 
 CString FormatBitrate(double _Bitrate)
 {

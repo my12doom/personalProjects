@@ -23,6 +23,7 @@
 #include "stdafx.h"
 #include "HdmvClipInfo.h"
 #include "DSUtil.h"
+#include "..\..\..\JMM\ldecod\readmpls.h"
 
 extern LCID    ISO6392ToLcid(LPCSTR code);
 
@@ -249,6 +250,18 @@ LPCTSTR CHdmvClipInfo::Stream::Format()
 }
 
 
+bool is2DPlaylist(const char *pathname)
+{
+	int main_playlist_count = 0;
+	int sub_playlist_count = 0;
+	char main_playlist[4096];
+	char sub_playlist[4096];
+	int lengths[4096] = {0};
+	scan_mpls(pathname, &main_playlist_count, main_playlist, lengths, sub_playlist, &sub_playlist_count);
+
+	return sub_playlist_count != main_playlist_count;
+}
+
 HRESULT CHdmvClipInfo::ReadPlaylist(CString strPlaylistFile, REFERENCE_TIME& rtDuration, CAtlList<PlaylistItem>& Playlist)
 {
 
@@ -287,6 +300,9 @@ HRESULT CHdmvClipInfo::ReadPlaylist(CString strPlaylistFile, REFERENCE_TIME& rtD
 		nPlaylistItems = ReadShort();
 		ReadShort();
 
+		USES_CONVERSION;
+		bool is2D = is2DPlaylist(T2A(strPlaylistFile));
+
 		dwPos	  += 10;
 		for (size_t i=0; i<nPlaylistItems; i++) {
 			PlaylistItem	Item;
@@ -294,8 +310,10 @@ HRESULT CHdmvClipInfo::ReadPlaylist(CString strPlaylistFile, REFERENCE_TIME& rtD
 			dwPos = dwPos + ReadShort() + 2;
 			ReadBuffer(Buff, 5);
 			// my12doom :ssif
-			Item.m_strFileName.Format(_T("%s\\STREAM\\SSIF\\%c%c%c%c%c.SSIF"), Path, Buff[0], Buff[1], Buff[2], Buff[3], Buff[4]);
-			//Item.m_strFileName.Format(_T("%s\\STREAM\\%c%c%c%c%c.M2TS"), Path, Buff[0], Buff[1], Buff[2], Buff[3], Buff[4]);
+			if (!is2D)
+				Item.m_strFileName.Format(_T("%s\\STREAM\\SSIF\\%c%c%c%c%c.SSIF"), Path, Buff[0], Buff[1], Buff[2], Buff[3], Buff[4]);
+			else
+				Item.m_strFileName.Format(_T("%s\\STREAM\\%c%c%c%c%c.M2TS"), Path, Buff[0], Buff[1], Buff[2], Buff[3], Buff[4]);
 
 			ReadBuffer(Buff, 4);
 			if (memcmp (Buff, "M2TS", 4)) {

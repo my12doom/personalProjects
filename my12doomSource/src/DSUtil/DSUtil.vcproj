@@ -319,6 +319,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\JMM\ldecod\readmpls.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\JMM\ldecod\readmpls.h"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
