@@ -75,7 +75,15 @@ BOOL InternetFile::Open(const wchar_t *URL, int max_buffer, __int64 startpos /*=
 		wcscpy(host, URL+7);
 		*((wchar_t*)wcschr(host, L'/')) = NULL;
 
-		m_hConnect = InternetConnectW(m_hInternet, host, INTERNET_DEFAULT_HTTP_PORT,
+		int port = INTERNET_DEFAULT_HTTP_PORT;
+		wchar_t *p = (wchar_t*)wcschr(host, L':');
+		if (p)
+		{
+			p[0] = NULL;
+			port = _wtoi(p+1);
+		}
+
+		m_hConnect = InternetConnectW(m_hInternet, host, port,
 							NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 		if (!m_hConnect)
 		{
