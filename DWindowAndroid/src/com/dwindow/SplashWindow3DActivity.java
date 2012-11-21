@@ -300,7 +300,7 @@ public class SplashWindow3DActivity extends Activity {
     		{
 				findViewById(R.id.login_layout).setVisibility(View.VISIBLE);
 				findViewById(R.id.main_console).setVisibility(View.GONE);
-				imageView.setImageResource(R.drawable.b512);
+				imageView.setImageResource(R.drawable.logo);
     			return;
     		}
    		

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, SplashWindow3DActivity!</string>
+    <string name="app_name">DWindow</string>
+    <string name="text_username">用户名</string>
+    <string name="connect">连接</string>
+    <string name="play">播放</string>
+    <string name="AudioTrack">选择音轨</string>
+    <string name="SubtitleTrack">选择字幕</string>
+    <string name="SwapEyes">切换左右眼</string>
+    <string name="OpenFile">打开文件</string>
+    <string name="Shutdown">"关闭主机"</string>
+    <string name="FullScreen">全屏</string>
+    <string name="OpenBluray">打开蓝光</string>
+    <string name="NoDisc">没有光盘</string>
+    <string name="NonMovieDisc">非电影光盘</string>
+    <string name="ConnectionFailed">连接失败</string>
+    <string name="PasswordError">密码错误</string>
+    <string name="NeedNewVersion">请更新版本</string>
+    <string name="LoadSubtitle">载入外部字幕....</string>
+    <string name="GoToParent">返回上一层</string>
+    
+</resources>
