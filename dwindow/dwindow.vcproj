@@ -48,7 +48,7 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
+				WarningLevel="4"
 				DebugInformationFormat="4"
 				DisableSpecificWarnings="4995;4996;4018"
 			/>
@@ -760,6 +760,14 @@
 			</File>
 			<File
 				RelativePath="..\lrtb\mySink.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\StackWalker.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\StackWalker.h"
 				>
 			</File>
 			<File

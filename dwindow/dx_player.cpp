@@ -95,7 +95,7 @@ m_widi_inited(false),
 m_widi_scanning(false),
 m_widi_connected(false),
 m_widi_num_adapters_found(0),
-m_widi_screen_mode(L"WidiScreenMode", SM::Clone, REG_DWORD),
+m_widi_screen_mode(L"WidiScreenMode", Clone, REG_DWORD),
 m_widi_resolution_width(L"WidiScreenWidth", 0, REG_DWORD),
 m_widi_resolution_height(L"WidiScreenHeight", 0, REG_DWORD),
 m_toolbar_background(NULL),
@@ -1075,9 +1075,9 @@ HRESULT dx_player::popup_menu(HWND owner)
 	}
 
 	// WiDi
-	CheckMenuItem(menu, ID_INTEL_CLONE,				m_widi_screen_mode == SM::Clone ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_INTEL_EXTENDED,			m_widi_screen_mode == SM::Extended ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_INTEL_EXTERNALONLY,		m_widi_screen_mode == SM::ExternalOnly ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INTEL_CLONE,				m_widi_screen_mode == Clone ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INTEL_EXTENDED,			m_widi_screen_mode == Extended ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INTEL_EXTERNALONLY,		m_widi_screen_mode == ExternalOnly ? MF_CHECKED:MF_UNCHECKED);
 
 	if (m_widi_has_support)
 	{
@@ -2229,17 +2229,17 @@ play_ok:
 	}
 	else if (uid == ID_INTEL_CLONE)
 	{
-		m_widi_screen_mode = SM::Clone;
+		m_widi_screen_mode = Clone;
 		widi_set_screen_mode(m_widi_screen_mode);
 	}
 	else if (uid == ID_INTEL_EXTENDED)
 	{
-		m_widi_screen_mode = SM::Extended;
+		m_widi_screen_mode = Extended;
 		widi_set_screen_mode(m_widi_screen_mode);
 	}
 	else if (uid == ID_INTEL_EXTERNALONLY)
 	{
-		m_widi_screen_mode = SM::ExternalOnly;
+		m_widi_screen_mode = ExternalOnly;
 		widi_set_screen_mode(m_widi_screen_mode);
 	}
 
@@ -4456,7 +4456,7 @@ HRESULT dx_player::widi_get_adapter_information(int id, wchar_t *out, wchar_t *k
 	return hr;
 }
 
-HRESULT dx_player::widi_connect(int id, DWORD screenmode /* = SM::ExternalOnly */, int resolution_width /* = 0 */, int resolution_height /* = 0 */)
+HRESULT dx_player::widi_connect(int id, DWORD screenmode /* = ExternalOnly */, int resolution_width /* = 0 */, int resolution_height /* = 0 */)
 {
 	OLECHAR str_id[256];
 	HRESULT hr = widi_get_adapter_by_id(id, (wchar_t*)str_id);

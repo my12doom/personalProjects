@@ -7,6 +7,7 @@
 #include "vobsub_parser.h"
 #include "MediaInfo.h"
 #include <locale.h>
+#include "StackWalker.h"
 
 ICommandReciever *command_reciever;
 
@@ -254,8 +255,62 @@ void format_addr(char *out, ADDR addr)
 	}
 }
 
+// Simple implementation of an additional output to the console:
+class MyStackWalker : public StackWalker
+{
+public:
+	MyStackWalker() : StackWalker() {}
+	MyStackWalker(DWORD dwProcessId, HANDLE hProcess) : StackWalker(dwProcessId, hProcess) {}
+	virtual void OnOutput(LPCSTR szText) { printf(szText); StackWalker::OnOutput(szText); }
+	virtual void OnSymInit(LPCSTR szSearchPath, DWORD symOptions, LPCSTR szUserName){return;}
+	virtual void OnLoadModule(LPCSTR img, LPCSTR mod, DWORD64 baseAddr, DWORD size, DWORD result, LPCSTR symType, LPCSTR pdbName, ULONGLONG fileVersion){return;}
+	//virtual void OnCallstackEntry(CallstackEntryType eType, CallstackEntry &entry){return;}
+	virtual void OnDbgHelpErr(LPCSTR szFuncName, DWORD gle, DWORD64 addr){return;}
+};
+
+#include <Dbghelp.h>
+#pragma comment( lib, "DbgHelp" )
 LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 {
+	{
+		HANDLE lhDumpFile = CreateFile(_T("Z:\\DumpFile.dmp"), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
+
+		MINIDUMP_EXCEPTION_INFORMATION loExceptionInfo;
+		loExceptionInfo.ExceptionPointers = ExceptionInfo;
+		loExceptionInfo.ThreadId = GetCurrentThreadId();
+		loExceptionInfo.ClientPointers = TRUE;
+		MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),lhDumpFile, MiniDumpNormal, &loExceptionInfo, NULL, NULL);
+
+		CloseHandle(lhDumpFile);
+
+		HANDLE hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+		THREADENTRY32 te32; 
+		te32.dwSize = sizeof(THREADENTRY32 ); 
+		if( Thread32First( hThreadSnap, &te32 ) ) 
+		{
+			MyStackWalker sw; 
+			do 
+			{ 
+				if( te32.th32OwnerProcessID == GetCurrentProcessId() )
+				{
+					printf( "THREAD ID      = 0x%08X%s\n", te32.th32ThreadID, te32.th32ThreadID == GetCurrentThreadId() ? "(Current Thread)" : ""); 
+					printf( "base priority  = %d\n", te32.tpBasePri ); 
+					printf( "delta priority = %d\n", te32.tpDeltaPri ); 
+
+					HANDLE hThread = te32.th32ThreadID == GetCurrentThreadId() ? GetCurrentThread() : OpenThread(THREAD_ALL_ACCESS , FALSE, te32.th32ThreadID);
+// 						TerminateThread(hThread, -1);
+// 						printf("Terminated.\n\n");
+
+					sw.ShowCallstack(hThread);
+					CloseHandle(hThread);
+					printf("---------------------\r\n");
+					fflush(stdout);
+				}
+			} while( Thread32Next(hThreadSnap, &te32 ) ); 
+		}
+	}
+
+
 	printf("EXCEPTION CODE: %08x\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
 
 	if (me32 == NULL)
