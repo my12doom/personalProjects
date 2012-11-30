@@ -479,7 +479,7 @@ HRESULT get_mediainfo(const wchar_t *filename, media_info_entry **out, bool use_
 
 
 			wcscpy(pm->key, tmp);
-			if (wcsrchr(pm->key, L':'))
+			if (wcschr(pm->key, L':'))
 			{
 				*((wchar_t*)wcsrchr(pm->key, L':')) = NULL;
 
@@ -494,7 +494,7 @@ HRESULT get_mediainfo(const wchar_t *filename, media_info_entry **out, bool use_
 			pm = pm->next = (media_info_entry*)calloc(1, sizeof(media_info_entry));
 
 			wcscpy(pm->key, tmp);
-			if (wcsrchr(pm->key, L':'))
+			if (wcschr(pm->key, L':'))
 			{
 				*((wchar_t*)wcsrchr(pm->key, L':')) = NULL;
 

@@ -388,6 +388,9 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 			wchar_t tmp2[MAX_PATH];
 			swprintf(path, L"%c:\\", L'A'+i);
 			if (GetVolumeInformationW(path, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
+#ifdef ZHUZHU
+			if (GetDriveTypeW(path) != DRIVE_CDROM)
+#endif
 			{
 				wcscat2(tmp, path);
 				wcscat2(tmp, L"|");

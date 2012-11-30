@@ -272,8 +272,12 @@ public:
 #pragma comment( lib, "DbgHelp" )
 LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 {
+
 	{
-		HANDLE lhDumpFile = CreateFile(_T("Z:\\DumpFile.dmp"), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
+		wchar_t tmp[MAX_PATH];
+		GetTempPathW(MAX_PATH, tmp);
+		wcscat(tmp, L"DumpFile.dmp");
+		HANDLE lhDumpFile = CreateFileW(tmp, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
 
 		MINIDUMP_EXCEPTION_INFORMATION loExceptionInfo;
 		loExceptionInfo.ExceptionPointers = ExceptionInfo;
