@@ -458,6 +458,7 @@ protected:
 	my12doom_auto_shader m_lanczos_YV12;
 	my12doom_auto_shader m_lanczos_NV12;
 	my12doom_auto_shader m_multiview4;
+	my12doom_auto_shader m_multiview6;
 	my12doom_auto_shader m_alpha_multiply;
 
 	// TV - PC level test surfaces

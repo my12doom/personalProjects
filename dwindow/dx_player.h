@@ -264,6 +264,7 @@ protected:
 	// directshow etc. core part
 	int m_total_time;			// a buffer 
 	int m_current_time;			// from SampleSB()
+	DWORD m_lastVideoCBTick;
 	CCritSec m_draw_sec;
 	CCritSec m_seek_sec;
 	bool m_show_ui;

@@ -139,6 +139,7 @@ int ConvertToUTF8(char *input, int input_size, char *output, int output_size)
 		}
 	}
 
+	output[op] = NULL;
 	return op;
 }
 

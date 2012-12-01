@@ -18,6 +18,7 @@
 #include "PixelShaders/blur2.h"
 #include "PixelShaders/lanczosAll.h"
 #include "PixelShaders/multiview4.h"
+#include "PixelShaders/multiview6.h"
 #include "PixelShaders/Alpha.h"
 #include "3dvideo.h"
 #include <dvdmedia.h>
@@ -1287,6 +1288,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_lanczos_NV12.invalid();
 	m_lanczos_YV12.invalid();
 	m_multiview4.invalid();
+	m_multiview6.invalid();
 	m_alpha_multiply.invalid();
 
 	// query
@@ -1468,6 +1470,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_lanczos_NV12.set_source(m_Device, g_code_lanczos_NV12, sizeof(g_code_lanczos_NV12), true, (DWORD*)m_key);
 	m_lanczos_YV12.set_source(m_Device, g_code_lanczos_YV12, sizeof(g_code_lanczos_YV12), true, (DWORD*)m_key);
 	m_multiview4.set_source(m_Device, g_code_multiview4, sizeof(g_code_multiview4), true, (DWORD*)m_key);
+	m_multiview6.set_source(m_Device, g_code_multiview6, sizeof(g_code_multiview6), true, (DWORD*)m_key);
 	m_alpha_multiply.set_source(m_Device, g_code_alpha_only, sizeof(g_code_alpha_only), true, (DWORD*)m_key);
 
 	int l = timeGetTime();
@@ -1872,12 +1875,13 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_Device->SetTexture( 3, view2->texture );
 		m_Device->SetTexture( 2, view3->texture );
 		m_Device->SetTexture( 1, view4->texture );
-		m_Device->SetPixelShader(m_multiview4);
+		m_Device->SetPixelShader(m_multiview6);
 
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
 
 		draw_ui(back_buffer);
+
 
 		safe_delete(view1);
 		safe_delete(view2);
@@ -2325,17 +2329,26 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 
 	if (m_output_mode == multiview)
 	{
-		RECT view1 = {0, 0, m_lVidWidth/2, m_lVidHeight/2};
-		RECT view2 = {m_lVidWidth/2, 0, m_lVidWidth, m_lVidHeight/2};
-		RECT view3 = {0, m_lVidHeight/2, m_lVidWidth/2, m_lVidHeight};
-		RECT view4 = {m_lVidWidth/2, m_lVidHeight/2, m_lVidWidth, m_lVidHeight};
+// 		RECT view1 = {0, 0, m_lVidWidth/2, m_lVidHeight/2};
+// 		RECT view2 = {m_lVidWidth/2, 0, m_lVidWidth, m_lVidHeight/2};
+// 		RECT view3 = {0, m_lVidHeight/2, m_lVidWidth/2, m_lVidHeight};
+// 		RECT view4 = {m_lVidWidth/2, m_lVidHeight/2, m_lVidWidth, m_lVidHeight};
+// 
+// 		RECT views[4] = {view1, view2, view3, view4};
+// 
+// 		if (view <0 || view >= 4)
+// 			return E_NOTIMPL;
+// 
+// 		src_rect = views[view];
 
-		RECT views[4] = {view1, view2, view3, view4};
-
-		if (view <0 || view >= 4)
+		// 6view
+		if (view <0 || view >= 9)
 			return E_NOTIMPL;
+		int x = view%3;
+		int y = view/3;
+		RECT r = {m_lVidWidth*x/3, m_lVidHeight*y/3, m_lVidWidth*(x+1)/3, m_lVidHeight*(y+1)/3};
 
-		src_rect = views[view];
+		src_rect = r;
 	}
 
 
@@ -3269,6 +3282,30 @@ HRESULT my12doomRenderer::generate_mask()
 
 	if (m_output_mode == multiview)
 	{
+/*		// 412341234123
+		// 341234123412
+		// 234123412341
+		// 123412341234
+
+		DWORD color_table[4][4] = {
+			{D3DCOLOR_XRGB(255,63,127), D3DCOLOR_XRGB(191,255,63), D3DCOLOR_XRGB(127,191,255), D3DCOLOR_XRGB(63,127,191)},
+			{D3DCOLOR_XRGB(191,255,63), D3DCOLOR_XRGB(127,191,255), D3DCOLOR_XRGB(63,127,191), D3DCOLOR_XRGB(255,63,127)},
+			{D3DCOLOR_XRGB(127,191,255), D3DCOLOR_XRGB(63,127,191), D3DCOLOR_XRGB(255,63,127), D3DCOLOR_XRGB(191,255,63)},
+			{D3DCOLOR_XRGB(63,127,191), D3DCOLOR_XRGB(255,63,127), D3DCOLOR_XRGB(191,255,63), D3DCOLOR_XRGB(127,191,255)},
+		};
+
+		DWORD four_line[4][BIG_TEXTURE_SIZE];
+		for(DWORD y=0; y<4; y++)
+		for(DWORD x=0; x<BIG_TEXTURE_SIZE; x++)
+		{
+			four_line[y][x] = color_table[y%4][x%4];
+		}
+		for(DWORD y=0; y<m_active_pp.BackBufferHeight; y++)
+		{
+			memcpy(dst, four_line[y%4], m_active_pp.BackBufferWidth*4);
+			dst += locked.Pitch;
+		}
+*/
 		// 412341234123
 		// 341234123412
 		// 234123412341
@@ -3292,6 +3329,7 @@ HRESULT my12doomRenderer::generate_mask()
 			memcpy(dst, four_line[y%4], m_active_pp.BackBufferWidth*4);
 			dst += locked.Pitch;
 		}
+
 	}
 	else if (m_mask_mode == row_interlace)
 	{

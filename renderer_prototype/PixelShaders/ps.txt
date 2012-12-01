@@ -358,6 +358,17 @@ float4 color_adjust(float2 tex : TEXCOORD0) : COLOR
 	return rgb;
 }
 
+float4 clipfunc(float4 i)
+{
+	float4 o = i;
+	//o.a = i.a;
+	o.r = i.r >= 1 ? 0: i.r;
+	o.g = i.g >= 1 ? 0: i.g;
+	o.b = i.b >= 1 ? 0: i.b;
+	
+	return o;
+}
+
 float4 multiview4(float2 tex : TEXCOORD0) : COLOR
 {
 	float4 mask = tex2D(s0, tex);
@@ -372,19 +383,68 @@ float4 multiview4(float2 tex : TEXCOORD0) : COLOR
 	float4 f3 = clamp(mask*4, 2, 3) - 2;
 	float4 f4 = clamp(mask*4, 3, 4) - 3;
 	
-	f1 = f1 > 1 ? 0 : f1;
-	f2 = f2 > 1 ? 0 : f2;
-	f3 = f3 > 1 ? 0 : f3;
-	f4 = f4 > 1 ? 0 : f4;
+
+	f1 = clipfunc(f1);
+	f2 = clipfunc(f2);
+	f3 = clipfunc(f3);
+	f4 = clipfunc(f4);
 	
 	float4 o = 0;
 	o  = c1 * f1;
 	o += c2 * f2;
 	o += c3 * f3;
 	o += c4 * f4;
-	
-	float4 t = {1,1,1,0};
-	float4 b = {1,0,0,0};
-	
+		
 	return o;	
+}
+
+float4 clipfunc2(float4 i)
+{
+	float4 o = i;
+// 	o.a = 1;
+	o.r = i.r >= 1 ? 0: i.r;
+	o.g = i.g >= 1 ? 0: i.g;
+	o.b = i.b >= 1 ? 0: i.b;
+
+	o.r = i.r > 0.1 ? 1: i.r;
+	o.g = i.g > 0.1 ? 1: i.g;
+	o.b = i.b > 0.1 ? 1: i.b;
+	
+	return o;
+}
+
+float4 multiview6(float2 tex : TEXCOORD0) : COLOR
+{
+	float4 mask = tex2D(s0, tex);
+	
+	float4 c1 = tex2D(s1, tex);
+	float4 c2 = tex2D(s2, tex);
+	float4 c3 = tex2D(s3, tex);
+	float4 c4 = tex2D(s4, tex);
+	float4 c5 = tex2D(s5, tex);
+	float4 c6 = tex2D(s6, tex);
+		
+	float4 f1 = clamp(mask*7, 1, 2) - 1;
+	float4 f2 = clamp(mask*7, 2, 3) - 2;
+	float4 f3 = clamp(mask*7, 3, 4) - 3;
+	float4 f4 = clamp(mask*7, 4, 5) - 4;
+	float4 f5 = clamp(mask*7, 5, 6) - 5;
+	float4 f6 = clamp(mask*7, 6, 7) - 6;
+	
+	f1 = clipfunc2(f1);
+	f2 = clipfunc2(f2);
+	f3 = clipfunc2(f3);
+	f4 = clipfunc2(f4);
+	f3 = clipfunc2(f5);
+	f4 = clipfunc2(f6);
+	
+	float4 o = 0;
+	o  = c1 * f1;
+	o += c2 * f2;
+	o += c3 * f3;
+	o += c4 * f4;
+	o += c5 * f5;
+	o += c6 * f6;
+		
+	return o;
 }

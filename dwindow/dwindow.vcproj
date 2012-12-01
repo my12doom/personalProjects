@@ -205,7 +205,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector;nologin"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
@@ -717,14 +717,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\lrtb\mySink.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\lrtb\mySink.h"
-				>
-			</File>
-			<File
 				RelativePath=".\resource.h"
 				>
 			</File>
@@ -742,18 +734,6 @@
 			</File>
 			<File
 				RelativePath=".\TCPTest.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\update.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\update.h"
-				>
-			</File>
-			<File
-				RelativePath="..\renderer_prototype\YV12_to_RGB32.h"
 				>
 			</File>
 		</Filter>
@@ -1035,6 +1015,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\lrtb\mySink.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\lrtb\mySink.h"
+				>
+			</File>
+			<File
 				RelativePath="..\renderer_prototype\TextureAllocator.cpp"
 				>
 			</File>
@@ -1048,6 +1036,10 @@
 			</File>
 			<File
 				RelativePath="..\renderer_prototype\unpack_YUY2.h"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\YV12_to_RGB32.h"
 				>
 			</File>
 		</Filter>
@@ -1144,6 +1136,26 @@
 			</File>
 			<File
 				RelativePath=".\vobsub_renderer.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="update"
+			>
+			<File
+				RelativePath=".\update.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\update.h"
+				>
+			</File>
+			<File
+				RelativePath=".\update_confirm_window.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\update_confirm_window.h"
 				>
 			</File>
 		</Filter>

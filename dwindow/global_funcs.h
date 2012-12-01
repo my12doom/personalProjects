@@ -45,6 +45,7 @@ extern char *g_server_address;
 #define HEARTBEAT_TIMEOUT 120000
 #define g_server_E3D "w32.php"
 #define g_server_gen_key "gen_key.php"
+#define g_server_update "updatev1.php"
 #define g_server_free "free.php"
 #define g_server_reg_check "reg_check.php"
 #define g_server_ad "ad.php"
@@ -219,9 +220,9 @@ public:
 	AutoSettingString(const wchar_t*key, const wchar_t *default_value)
 	{
 		wcscpy(m_key, key);
-		m_value = new wchar_t[1024];
+		m_value = new wchar_t[20480];
 		wcscpy(m_value, default_value);
-		load_setting(m_key, m_value, 1024);
+		load_setting(m_key, m_value, 20480);
 	}
 	~AutoSettingString()
 	{
@@ -237,7 +238,7 @@ public:
 		if (wcscmp(in, m_value))
 		{
 			wcscpy(m_value, in);
-			save_setting(m_key, m_value, 1024, REG_SZ);
+			save_setting(m_key, m_value, 20480, REG_SZ);
 		}
 		return m_value;
 	}

@@ -1492,6 +1492,7 @@ DWORD WINAPI download_thread(LPVOID para)
 	char url_to_download[1024];
 	strcpy_s(url_to_download, p->url_to_download);
 	void *out = malloc(p->outlen);
+	memset(out, 0, p->outlen);
 	int outlen = p->outlen;
 	bool *cancel = p->cancel;
 	HRESULT *hr = p->hr;
@@ -1637,8 +1638,8 @@ DWORD WINAPI killer_thread2(LPVOID time)
 		sleep = *(DWORD*)time;
 		sprintf(url, "explorer.exe \"%s\"", g_ad_address);
 
-		if (!is_payed_version())
-			WinExec(url, SW_HIDE);
+ 		if (!is_payed_version())
+			ShellExecuteA(NULL, "open", g_ad_address, NULL, NULL, SW_SHOWNORMAL);
 	}
 	else
 	{

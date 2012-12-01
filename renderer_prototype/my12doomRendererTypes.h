@@ -123,6 +123,7 @@ enum multiview_mode_types
 	subpixel_horizontal_4view,
 	simple_45_4view,
 	subpixel_45_4view,
+	subpixel_45_9view,
 
 	multiview_mode_types_max,
 };

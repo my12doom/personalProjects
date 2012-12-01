@@ -13,8 +13,11 @@
 #include "MediaInfo.h"
 #include "open_double_file.h"
 #include "AboudWindow.h"
+#include "update.h"
+#include "update_confirm_window.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
+#define DS_CHECKUPDATE (WM_USER + 14)
 #define DS_EVENT (WM_USER + 4)
 #define DS_EVENTRELY (WM_USER + 6)
 AutoSetting<BOOL> g_ExclusiveMode(L"ExclusiveMode", false, REG_DWORD);
@@ -46,6 +49,7 @@ bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for)
 
 // constructor & destructor
 dx_player::dx_player(HINSTANCE hExe):
+m_lastVideoCBTick(0),
 m_renderer1(NULL),
 dwindow(m_screen1, m_screen2),
 m_lFontPointSize(L"FontSize", 40),
@@ -505,7 +509,7 @@ DWORD dx_player::tell_thread()
 	{
 		Sleep(100);
 		REFERENCE_TIME current;
-		if (m_ms != NULL)
+		if (m_ms != NULL && timeGetTime() > m_lastVideoCBTick + 2000)
 		{
 			m_ms->GetCurrentPosition(&current);
 			m_current_time = current / 10000;
@@ -690,6 +694,31 @@ LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	}
 }
 
+AutoSetting<DWORD> ignore_to_rev(L"IgnoreRev", 0, REG_DWORD);
+DWORD WINAPI update_hint_thread(LPVOID)
+{
+	int rev;
+	wchar_t description[20480];
+	wchar_t url[2048];
+
+	get_update_result(description, &rev, url);
+
+	if (rev > my12doom_rev && rev > ignore_to_rev)
+	{
+		int o = show_update_confirm(NULL);
+		if ( o == update_update)
+		{
+			ShellExecuteW(NULL, L"open", url, NULL, NULL, SW_SHOWNORMAL);
+		}
+		else if (o == update_dontask)
+		{
+			ignore_to_rev = rev;
+		}
+	}
+
+	return 0;
+}
+
 LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if (message == WM_WIDI_INITIALIZED)
@@ -703,6 +732,10 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 	if (message == WM_WIDI_ADAPTER_DISCOVERED)
 		return OnWiDiAdapterDiscovered(wParam, lParam);
 
+	if (message == DS_CHECKUPDATE)
+	{
+		CreateThread(NULL, NULL, update_hint_thread, NULL, NULL, NULL);
+	}
 
 	if (message == WM_GESTURE)
 	{
@@ -1972,7 +2005,7 @@ play_ok:
 			 uid == ID_OUTPUTMODE_IZ3D)
 	{
 		MessageBoxW(id_to_hwnd(id), C(L"Dual projector and IZ3D mode is only available in registered version."), L"", MB_OK | MB_ICONINFORMATION);
-		WinExec("explorer.exe http://www.bo3d.net/buy.php",SW_SHOW);
+		ShellExecuteW(NULL, L"open", L"http://www.bo3d.net/buy.php", NULL, NULL, SW_SHOWNORMAL);
 	}
 #else
 	else if (uid == ID_OUTPUTMODE_DUALPROJECTOR)
@@ -2091,7 +2124,7 @@ play_ok:
 		}
 #else
 		MessageBoxW(id_to_hwnd(id), C(L"External audio track support is only available in registered version."), L"", MB_OK | MB_ICONINFORMATION);
-		WinExec("explorer.exe http://www.bo3d.net/buy.php",SW_SHOW);
+		ShellExecuteW(NULL, L"open", L"http://www.bo3d.net/buy.php", NULL, NULL, SW_SHOWNORMAL);
 #endif
 	}
 
@@ -2273,6 +2306,8 @@ LRESULT dx_player::on_sys_command(int id, WPARAM wParam, LPARAM lParam)
 
 LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 {
+	start_check_for_update(m_hwnd1, DS_CHECKUPDATE);
+
 	HICON h_icon = LoadIcon(m_hexe, MAKEINTRESOURCE(IDI_ICON1));
 	SendMessage(id_to_hwnd(id), WM_SETICON, TRUE, (LPARAM)h_icon);
 	SendMessage(id_to_hwnd(id), WM_SETICON, FALSE, (LPARAM)h_icon);
@@ -2446,6 +2481,8 @@ HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, I
 
 HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn)
 {
+	m_lastVideoCBTick = timeGetTime();
+
 	// warning: thread safe
 	m_current_time = TimeStart / 10000;
 	if (!m_display_subtitle || !m_renderer1 
