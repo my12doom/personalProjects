@@ -99,16 +99,11 @@ inline DWORD BigNumberShiftRight(DWORD a[], const DWORD *b, DWORD x, DWORD nSize
 
 inline int BigNumberMultiplyHelper(DWORD p[2], const DWORD x, const DWORD y)
 {
-	__asm
-	{
-		mov eax, x
-			xor edx, edx
-			mul y
-			; Product in edx:eax
-			mov ebx, p
-			mov dword ptr [ebx], eax
-			mov dword ptr [ebx+4], edx
-	}
+	__int64 o = x;
+	o *= y;
+	p[0] = o &0xffffffff;
+	p[1] = (o &0xffffffff00000000)>>32;
+	return p[0];
 }
 
 
