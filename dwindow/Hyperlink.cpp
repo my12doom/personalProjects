@@ -119,7 +119,7 @@ bool CHyperlink::create(RECT rect, const char *url, HWND parent)
 									rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, 
 									parent, NULL, NULL, NULL);
 
-	::SetWindowLong( m_hWnd, GWL_USERDATA, (LONG)this);
+	::SetWindowLong( m_hWnd, GWLP_USERDATA, (LONG)this);
 
 	return m_hWnd != NULL;
 }
@@ -138,7 +138,7 @@ bool CHyperlink::create(int x1, int y1, int x2, int y2, const char *url, HWND pa
 
 int CHyperlink::WndProc(HWND hwnd,WORD wMsg,WPARAM wParam,LPARAM lParam)
 {
-	CHyperlink *hl = (CHyperlink*)GetWindowLong(hwnd, GWL_USERDATA);
+	CHyperlink *hl = (CHyperlink*)GetWindowLong(hwnd, GWLP_USERDATA);
 
 	switch (wMsg)  
 	{

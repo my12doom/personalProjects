@@ -2802,7 +2802,7 @@ HRESULT dx_player::playlist_play_pos(int pos)
 	return hr;
 }
 
-HRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
+LRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 {
 
 	if (count == 1)
@@ -3000,6 +3000,8 @@ connecting:
 	return S_OK;
 }
 
+AutoSettingString daemon_drive(L"DaemonDrive", L"dt,0");
+AutoSettingString daemon_exe(L"DaemonExe", L"C:\\Program Files\\DAEMON Tools Lite\\DTLite.exe");
 HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = false */, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
 {
 	wchar_t file_to_play[MAX_PATH];
@@ -3008,8 +3010,6 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	// detect ISO files
 	if (wcs_endwith_nocase(pathname, L".iso"))
 	{
-		AutoSettingString daemon_drive(L"DaemonDrive", L"dt,0");
-		AutoSettingString daemon_exe(L"DaemonExe", L"C:\\Program Files\\DAEMON Tools Lite\\DTLite.exe");
 
 		wchar_t cmdline[MAX_PATH];
 		swprintf(cmdline, L"-get_letter %s", (wchar_t*)daemon_drive);

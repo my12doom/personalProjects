@@ -103,7 +103,7 @@ DWORD MediaInfoWindow::pump()
 	if (!hwnd) 
 		return -2;
 
-	SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR)this);
+	SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
 
 	ShowWindow(hwnd, SW_SHOW);
 	UpdateWindow(hwnd);
@@ -134,7 +134,7 @@ DWORD MediaInfoWindow::pump()
 }
 LRESULT CALLBACK MediaInfoWindow::DummyMainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	MediaInfoWindow *_this = (MediaInfoWindow*)GetWindowLongPtr(hWnd, GWL_USERDATA);
+	MediaInfoWindow *_this = (MediaInfoWindow*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (!_this)
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	return _this->MainWndProc(hWnd, message, wParam, lParam);

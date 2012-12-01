@@ -12,7 +12,7 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 {
 	LRESULT lr = S_FALSE;
 	dwindow *_this = NULL;
-	_this = (dwindow*)GetWindowLongPtr(hWnd, GWL_USERDATA);
+	_this = (dwindow*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (!_this)
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	int id = _this->hwnd_to_id(hWnd);
@@ -179,7 +179,7 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 
 	if (!hwnd) 
 		return FALSE; 
-	SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR)((window_proc_param*)lpParame)->that);
+	SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)((window_proc_param*)lpParame)->that);
 
 	ShowWindow(hwnd, SW_HIDE);
 	UpdateWindow(hwnd);
@@ -202,7 +202,7 @@ DWORD WINAPI dwindow::WindowThread(LPVOID lpParame)
 
 	if (!hwnd) 
 		return FALSE; 
-	SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR)((window_proc_param*)lpParame)->that);
+	SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)((window_proc_param*)lpParame)->that);
 
 	ShowWindow(hwnd, SW_HIDE);
 	UpdateWindow(hwnd);

@@ -154,10 +154,10 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 			SendMessage(hVolume, TBM_SETRANGEMAX, (WPARAM)TRUE, (LPARAM)1000);
 
 			// override sliders' proc
-			g_OldVolumeProc = GetWindowLongPtr(hVolume, GWL_WNDPROC);
-			LONG rtn = SetWindowLongPtr(hVolume, GWL_WNDPROC, (LONG_PTR)VolumeProc);
-			g_OldProgressProc = GetWindowLongPtr(hProgress, GWL_WNDPROC);
-			rtn = SetWindowLongPtr(hProgress, GWL_WNDPROC, (LONG_PTR)ProgressProc);
+			g_OldVolumeProc = GetWindowLongPtr(hVolume, GWLP_WNDPROC);
+			LONG rtn = SetWindowLongPtr(hVolume, GWLP_WNDPROC, (LONG_PTR)VolumeProc);
+			g_OldProgressProc = GetWindowLongPtr(hProgress, GWLP_WNDPROC);
+			rtn = SetWindowLongPtr(hProgress, GWLP_WNDPROC, (LONG_PTR)ProgressProc);
 
 			// position
 			SetWindowPos(hDlg, NULL, 320, 240, 0, 0, SWP_NOSIZE);
