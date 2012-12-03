@@ -7,7 +7,8 @@
 #include "vobsub_parser.h"
 #include "MediaInfo.h"
 #include <locale.h>
-#include "StackWalker.h"
+#include <Dbghelp.h>
+#pragma comment(lib, "DbgHelp")
 
 ICommandReciever *command_reciever;
 
@@ -45,6 +46,8 @@ extern HRESULT dwindow_dll_go(HINSTANCE inst, HWND owner, Iplayer *p);
 
 DWORD WINAPI pre_read_thread(LPVOID k)
 {
+	return 0;
+
 	wchar_t *p = (wchar_t*)k;
 
 	wchar_t *tmp = new wchar_t[102400];
@@ -92,7 +95,9 @@ DWORD WINAPI pre_read_thread(LPVOID k)
 int TCPTest();
 DWORD WINAPI TCPThread(LPVOID k)
 {
+#ifndef VSTAR
 	TCPTest();
+#endif
 	return 0;
 }
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
@@ -198,30 +203,6 @@ retry:
 	return 0;
 }
 
-
-typedef DWORD ADDR;
-
-int test()
-{
-	VobSubParser p;
-	int max_lang_id = p.max_lang_id(L"D:\\Users\\my12doom\\Documents\\DVDFab\\mkv\\RED_BIRD_3D_F2\\RED_BIRD_3D_F2.Title852.idx");
-
-	printf("max langid: %d.\n", max_lang_id);
-
-	p.load_file(L"D:\\Users\\my12doom\\Documents\\DVDFab\\mkv\\RED_BIRD_3D_F2\\RED_BIRD_3D_F2.Title852.idx", 0, 
-		L"D:\\Users\\my12doom\\Documents\\DVDFab\\mkv\\RED_BIRD_3D_F2\\RED_BIRD_3D_F2.Title852.sub");
-
-	
-	vobsub_subtitle *sub = p.m_subtitles+4;
-	p.decode(sub);
-	FILE *f = fopen("Z:\\sub.raw", "wb");
-	fwrite(sub->rgb, 1, 4*sub->width*sub->height, f);
-	fclose(f);
-
-	return 0;
-}
-
-
 int main()
 {
 	__try 
@@ -237,126 +218,23 @@ int main()
 	WinMain(GetModuleHandle(NULL), 0, "", SW_SHOW);
 }
 
-#include <Tlhelp32.h>
-
-MODULEENTRY32W *me32 = NULL;
-int me32_count = 0;
-void format_addr(char *out, ADDR addr)
-{
-	USES_CONVERSION;
-	sprintf(out, "(Unkown)0x%08x", addr);
-	
-	for(int i=0; i<me32_count; i++)
-	{
-		if (ADDR(me32[i].modBaseAddr) <= addr && addr <= ADDR(me32[i].modBaseAddr) + ADDR(me32[i].modBaseSize))
-		{
-			sprintf(out, "0x%08x(%s+0x%08x)", addr, W2A(me32[i].szModule), int(addr - ADDR(me32[i].modBaseAddr)));
-		}
-	}
-}
-
-// Simple implementation of an additional output to the console:
-class MyStackWalker : public StackWalker
-{
-public:
-	MyStackWalker() : StackWalker() {}
-	MyStackWalker(DWORD dwProcessId, HANDLE hProcess) : StackWalker(dwProcessId, hProcess) {}
-	virtual void OnOutput(LPCSTR szText) { printf(szText); StackWalker::OnOutput(szText); }
-	virtual void OnSymInit(LPCSTR szSearchPath, DWORD symOptions, LPCSTR szUserName){return;}
-	virtual void OnLoadModule(LPCSTR img, LPCSTR mod, DWORD64 baseAddr, DWORD size, DWORD result, LPCSTR symType, LPCSTR pdbName, ULONGLONG fileVersion){return;}
-	//virtual void OnCallstackEntry(CallstackEntryType eType, CallstackEntry &entry){return;}
-	virtual void OnDbgHelpErr(LPCSTR szFuncName, DWORD gle, DWORD64 addr){return;}
-};
-
-#include <Dbghelp.h>
-#pragma comment( lib, "DbgHelp" )
 LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 {
+	// mini dump
+	wchar_t tmp[MAX_PATH];
+	GetTempPathW(MAX_PATH, tmp);
+	wcscat(tmp, L"DumpFile.dmp");
+	HANDLE lhDumpFile = CreateFileW(tmp, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
 
-	{
-		wchar_t tmp[MAX_PATH];
-		GetTempPathW(MAX_PATH, tmp);
-		wcscat(tmp, L"DumpFile.dmp");
-		HANDLE lhDumpFile = CreateFileW(tmp, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
+	MINIDUMP_EXCEPTION_INFORMATION loExceptionInfo;
+	loExceptionInfo.ExceptionPointers = ExceptionInfo;
+	loExceptionInfo.ThreadId = GetCurrentThreadId();
+	loExceptionInfo.ClientPointers = TRUE;
+	MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),lhDumpFile, MiniDumpNormal, &loExceptionInfo, NULL, NULL);
 
-		MINIDUMP_EXCEPTION_INFORMATION loExceptionInfo;
-		loExceptionInfo.ExceptionPointers = ExceptionInfo;
-		loExceptionInfo.ThreadId = GetCurrentThreadId();
-		loExceptionInfo.ClientPointers = TRUE;
-		MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),lhDumpFile, MiniDumpNormal, &loExceptionInfo, NULL, NULL);
+	CloseHandle(lhDumpFile);
 
-		CloseHandle(lhDumpFile);
-
-		HANDLE hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-		THREADENTRY32 te32; 
-		te32.dwSize = sizeof(THREADENTRY32 ); 
-		if( Thread32First( hThreadSnap, &te32 ) ) 
-		{
-			MyStackWalker sw; 
-			do 
-			{ 
-				if( te32.th32OwnerProcessID == GetCurrentProcessId() )
-				{
-					printf( "THREAD ID      = 0x%08X%s\n", te32.th32ThreadID, te32.th32ThreadID == GetCurrentThreadId() ? "(Current Thread)" : ""); 
-					printf( "base priority  = %d\n", te32.tpBasePri ); 
-					printf( "delta priority = %d\n", te32.tpDeltaPri ); 
-
-					HANDLE hThread = te32.th32ThreadID == GetCurrentThreadId() ? GetCurrentThread() : OpenThread(THREAD_ALL_ACCESS , FALSE, te32.th32ThreadID);
-// 						TerminateThread(hThread, -1);
-// 						printf("Terminated.\n\n");
-
-					sw.ShowCallstack(hThread);
-					CloseHandle(hThread);
-					printf("---------------------\r\n");
-					fflush(stdout);
-				}
-			} while( Thread32Next(hThreadSnap, &te32 ) ); 
-		}
-	}
-
-
-	printf("EXCEPTION CODE: %08x\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
-
-	if (me32 == NULL)
-		me32 = (MODULEENTRY32W*)malloc(1024*sizeof(MODULEENTRY32W)); 
-
-	HANDLE hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, 0);
-	me32[0].dwSize = sizeof( MODULEENTRY32W);
-	int i = 0;
-	if (Module32FirstW(hThreadSnap, &me32[i++]))
-	{
-		do 
-		{
-			//wprintf_s(L"%s \t\t(%08x)\n", me32[i-1].szModule, me32[i-1].modBaseAddr);
-
-
-			me32[i].dwSize = sizeof(MODULEENTRY32W);
-		} while(Module32NextW(hThreadSnap, &me32[i++]));
-	}
-
-	me32_count = i-1;
-
-
-
-	long			StackIndex				= 0;
-	ADDR			block[63];
-	memset(block,0,sizeof(block));
-	USHORT frames = CaptureStackBackTrace(0,59,(void**)block,NULL);
-
-
-	for (int i = 0; i < frames ; i++)
-	{
-		ADDR			InstructionPtr = (ADDR)block[i];
-
-		char tmp[1024];
-		format_addr(tmp, InstructionPtr);
-		printf("%s\n", tmp);
-		StackIndex++;
-	}
-
-	fflush(stdout);
-
-	//TerminateThread(GetCurrentThread(), -1);
+	// reset and suicide
 	wchar_t reset_exe[MAX_PATH];
 	wcscpy(reset_exe, g_apppath);
 	wcscat(reset_exe, L"reset.exe");
