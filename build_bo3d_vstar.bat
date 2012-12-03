@@ -7,16 +7,12 @@ D:
 cd D:\private
 
 #build
-%dev2008% mySplitter\mySplitter.sln /build "Release_mt"
+del dwindow\ico\ico.ico
+copy dwindow\ico\icoVSTAR.ico dwindow\ico\ico.ico
 %dev2008% dwindow\dwindow.sln /build "Release_vstar"
-%dev2003% dwindow_launcher\dwindow_launcher.sln /build "Release"
-%dev2003% pd10\pd10.sln /build "Release"
-%dev2008% ssifavs\ssifavs.sln /build "Release_mt"
-%dev2008% coreavs\coreavs.sln /build "Release_mt"
-%dev2008% MCavs\mcavs.sln /build "Release_mt"
-%dev2008% SsifSource\SsifSource.sln /build "Release Filter"
-%dev2008% 3dvSource\3dvSource.sln /build "Release"
 %dev2008% my12doomSource\my12doomSource.sln /build "Release Filter"
+del dwindow\ico\ico.ico
+copy dwindow\ico\ico_normal.ico dwindow\ico\ico.ico
 
 #copy
 copy/y dwindow\dwindow.ini dwindow_NSIS
@@ -38,4 +34,4 @@ F:\NSIS\makensisw.exe dwindow_NSIS\dwindowVSTAR.nsi
 cd dwindow_NSIS
 set v=%DATE:~2,2%%DATE:~5,2%%DATE:~8,2%
 del 3dvplayer%v%.exe
-ren dwindow_setup.exe (pro)bo3d%v%.exe
+ren dwindow_setup.exe 3dvplayer%v%.exe

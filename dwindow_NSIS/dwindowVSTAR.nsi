@@ -21,16 +21,17 @@ SetCompressor /SOLID lzma
 
 ; The name of the installer
 Name "3DVPlayer"
+Icon "..\dwindow\ico\icoVSTAR.ico"
 
 ; The file to write
 OutFile "dwindow_setup.exe"
 
 ; The default installation directory
-InstallDir $PROGRAMFILES\DWindow
+InstallDir $PROGRAMFILES\3DVPlayer
 
 ; Registry key to check for directory (so if you install again, it will 
 ; overwrite the old one automatically)
-InstallDirRegKey HKLM "Software\DWindow" "Install_Dir"
+InstallDirRegKey HKLM "Software\3DVPlayer" "Install_Dir"
 
 ; Request application privileges for Windows Vista
 RequestExecutionLevel admin
@@ -45,7 +46,7 @@ RequestExecutionLevel admin
 
   ;Remember the installer language
   !define MUI_LANGDLL_REGISTRY_ROOT "HKCU" 
-  !define MUI_LANGDLL_REGISTRY_KEY "Software\DWindow" 
+  !define MUI_LANGDLL_REGISTRY_KEY "Software\3DVPlayer" 
   !define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
 
 ;--------------------------------
@@ -156,13 +157,13 @@ Section $(MAINPROGRAM_LANG)
   SetOutPath $INSTDIR
 
   ; Write the installation path into the registry
-  WriteRegStr HKLM SOFTWARE\DWindow "Install_Dir" "$INSTDIR"
+  WriteRegStr HKLM SOFTWARE\3DVPlayer "Install_Dir" "$INSTDIR"
   
   ; Write the uninstall keys for Windows
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow" "DisplayName" "3DVPlayer"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow" "UninstallString" '"$INSTDIR\uninstall.exe"'
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow" "NoModify" 1
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow" "NoRepair" 1
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\3DVPlayer" "DisplayName" "3DVPlayer"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\3DVPlayer" "UninstallString" '"$INSTDIR\uninstall.exe"'
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\3DVPlayer" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\3DVPlayer" "NoRepair" 1
   WriteUninstaller "uninstall.exe"
   
 SectionEnd
@@ -174,7 +175,7 @@ Section $(STARTMENU_LANG)
 
   CreateDirectory "$SMPROGRAMS\3DVPlayer"
   CreateShortCut "$SMPROGRAMS\3DVPlayer\3DVPlayer.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer.exe" 0
-  CreateShortCut "$SMPROGRAMS\3D”∞“Ù\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+  CreateShortCut "$SMPROGRAMS\3DVPlayer\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
   
 SectionEnd
 
@@ -221,8 +222,8 @@ SectionEnd
 Section "Uninstall"
   
   ; Remove registry keys
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow"
-  DeleteRegKey HKCU "SOFTWARE\DWindow"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\3DVPlayer"
+  DeleteRegKey HKCU "SOFTWARE\3DVPlayer"
 
   ; Remove files and uninstaller
   Delete $INSTDIR\codec\*.dll
@@ -245,10 +246,10 @@ Section "Uninstall"
   ; Remove shortcuts, if any
   Delete "$SMPROGRAMS\3DVPlayer\*.*"
   RMDir "$SMPROGRAMS\3DVPlayer"
-  Delete "$DESKTOP\DWindow.lnk"
+  Delete "$DESKTOP\3DVPlayer.lnk"
 
   ; Remove directories used
-  RMDir "$SMPROGRAMS\DWindow"
+  RMDir "$SMPROGRAMS\3DVPlayer"
   RMDir "$INSTDIR\codec"
   RMDir "$INSTDIR\Language"
   RMDir "$INSTDIR"

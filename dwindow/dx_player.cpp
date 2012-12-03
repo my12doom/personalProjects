@@ -1085,6 +1085,9 @@ HRESULT dx_player::popup_menu(HWND owner)
 #ifdef nologin
 	DeleteMenu(menu, ID_LOGOUT, MF_BYCOMMAND);
 #endif
+#ifdef VSTAR
+	DeleteMenu(menu, ID_LOGOUT, MF_BYCOMMAND);
+#endif
 	// list monitors
 	for(int i=0; i<get_mixed_monitor_count(true, true); i++)
 	{

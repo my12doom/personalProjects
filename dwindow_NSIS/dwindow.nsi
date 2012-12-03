@@ -147,8 +147,6 @@ Section "3DÓ°ÒôÖ÷³ÌÐò(required)"
   File "ILU.dll"
   SetOutPath $INSTDIR\codec
   File "codec\*"
-  SetOutPath $INSTDIR\skin
-  File "skin\*"
   SetOutPath $INSTDIR\Language
   File "Language\*"
   SetOutPath $INSTDIR
