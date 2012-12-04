@@ -1057,6 +1057,9 @@ __time64_t mytime(bool reset)
 HRESULT load_passkey()
 {
 #ifdef VSTAR
+	AutoSetting<BOOL> expired(L"VSTAR", FALSE, REG_DWORD);
+	if (expired)
+		return S_FALSE;
 	DWORD vstar_passkey[32] = {0xb3ff38a8, 0xb802596d, 0x33ccd0cf, 0x1a1b55c2, 0x792b7d66, 0xb1072c0d, 0x25ef439a, 0xb4052bcf, 0x72aec6b2, 0x3bfe8416, 0xbc49fb4, 0x73f625b1, 0xb02820f7, 0x14978e4e, 0x59842dd, 0x122acbf3, 0xd2fbbef1, 0x5534581b, 0x4816ccaa, 0xd2a2dc81, 0xbafc006d, 0x64422a9d, 0x51d90b83, 0x2d73ac, 0x508bc7de, 0x507c919, 0xd3dce3f7, 0x8aabe640, 0xfd4d9bf8, 0x904f8d65, 0xf3eb4185, 0x397a4eca};
 	memcpy(g_passkey_big, vstar_passkey, 128);
 	return S_OK;

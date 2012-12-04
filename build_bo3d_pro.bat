@@ -1,11 +1,10 @@
 call revision_silent.bat
 
 #build
-set dev2003="C:\Program Files (x86)\Microsoft Visual Studio .NET 2003\Common7\IDE\devenv"
-set dev2008="C:\Program Files (x86)\Microsoft Visual Studio 9.0\Common7\IDE\devenv"
-E:
-cd\
-cd E:\private_projects
+set dev2003="D:\Program Files (x86)\Microsoft Visual Studio .NET 2003\Common7\IDE\devenv"
+set dev2008="D:\Program Files (x86)\Microsoft Visual Studio 9.0\Common7\IDE\devenv"
+D:
+cd D:\private
 
 #build
 %dev2008% mySplitter\mySplitter.sln /build "Release_mt"
@@ -25,8 +24,6 @@ copy/y dwindow\alpha.raw dwindow_NSIS
 copy/y dwindow\logo.raw dwindow_NSIS
 copy/y dwindow\release_personal\StereoPlayer.exe dwindow_NSIS
 del/q dwindow_NSIS\codec\*.*
-del/q dwindow_NSIS\skin\*.*
-copy/y dwindow\skin\*.* dwindow_NSIS\skin
 copy/y dwindow\xvidcore.dll dwindow_NSIS
 copy/y 3rdFilter\*.* dwindow_NSIS\codec
 copy/y mySplitter\release_mt\mySplitter.ax dwindow_NSIS\codec

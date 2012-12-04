@@ -192,8 +192,20 @@ LangString ASSOC_LANG ${LANG_ENGLISH} "File association"
 LangString ASSOC_LANG ${LANG_SIMPCHINESE} "文件关联"
 SectionGroup /e $(ASSOC_LANG)
 
+Section "3dv"
+!insertmacro Assoc 3dv "3dv" "3dv file" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
+
+Section "mkv3d"
+!insertmacro Assoc mkv3d "mkv3d" "3D MKV File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
+
 Section "mkv"
 !insertmacro Assoc mkv "mkv" "MKV File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
+
+Section "mp4"
+!insertmacro Assoc mp4 "mp4" "MP4 File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
 SectionEnd
 
 Section "mkv3d"
@@ -208,6 +220,19 @@ Section "mpls"
 !insertmacro Assoc mpls "mpls" "MPLS Playlist" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
 SectionEnd
 
+Section "ts/m2ts"
+!insertmacro Assoc ts "ts" "Transport Stream File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+!insertmacro Assoc m2ts "m2ts" "Transport Stream File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
+
+Section "rmvb"
+!insertmacro Assoc rmvb "rmvb" "RMVB File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+!insertmacro Assoc rm "rm" "RMVB File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
+
+Section "avi"
+!insertmacro Assoc avi "avi" "AVI File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+SectionEnd
 
 SectionGroupEnd
 
@@ -223,7 +248,7 @@ Section "Uninstall"
   
   ; Remove registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\3DVPlayer"
-  DeleteRegKey HKCU "SOFTWARE\3DVPlayer"
+  DeleteRegKey HKCU "SOFTWARE\DWindow"
 
   ; Remove files and uninstaller
   Delete $INSTDIR\codec\*.dll
@@ -259,6 +284,13 @@ Section "Uninstall"
   !insertmacro UnAssoc mkv3d
   !insertmacro UnAssoc ssif
   !insertmacro UnAssoc mpls
+  !insertmacro UnAssoc 3dv
+  !insertmacro UnAssoc mp4
+  !insertmacro UnAssoc rm
+  !insertmacro UnAssoc rmvb
+  !insertmacro UnAssoc ts
+  !insertmacro UnAssoc m2ts
+  !insertmacro UnAssoc avi
 
   System::Call 'Shell32::SHChangeNotify(i ${SHCNE_ASSOCCHANGED}, i ${SHCNF_IDLIST}, i 0, i 0)'
 

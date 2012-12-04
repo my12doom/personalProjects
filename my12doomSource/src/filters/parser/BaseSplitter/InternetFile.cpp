@@ -178,7 +178,15 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 		if (this_round_got == 0)
 		{
 			if (m_downloading_thread_state == 0)
-				break;
+			{
+				LARGE_INTEGER li;
+				li.QuadPart = m_pos;
+				wchar_t URL[MAX_PATH];
+				wcscpy(URL, m_URL);
+				SetFilePointerEx(li, &li, SEEK_SET);
+				wcscpy(m_URL, URL);
+				continue;
+			}
 			Sleep(1);
 		}
 	}
@@ -232,9 +240,9 @@ BOOL InternetFile::SetFilePointerEx(__in LARGE_INTEGER liDistanceToMove, __out_o
 			break;
 	}
 
-	if (lpNewFilePointer->QuadPart != m_pos)
+// 	if (lpNewFilePointer->QuadPart != m_pos)
 	{
-		if (lpNewFilePointer->QuadPart < m_buffer_start || lpNewFilePointer->QuadPart >= m_buffer_start + buffer_size * buffer_count)
+// 		if (lpNewFilePointer->QuadPart < m_buffer_start || lpNewFilePointer->QuadPart >= m_buffer_start + buffer_size * buffer_count)
 		{
 			__int64 size = m_size;
 			wchar_t URL[MAX_PATH];

@@ -134,7 +134,18 @@ retry:
 #ifdef nologin
 			int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), NULL, register_proc );
 #else
+#ifdef VSTAR
+			AutoSetting<BOOL> expired(L"VSTAR", FALSE, REG_DWORD);
+
+			if (expired)
+			{
+			MessageBoxW(NULL, C(L"This version is marked as expired, please vist http://bo3d.net/download and download the latest version."), C(L"New Update ..."), MB_OK);
+			ShellExecuteW(NULL, L"open", L"http://bo3d.net/download", NULL, NULL, SW_SHOWNORMAL);
+			ExitProcess(-1);
+			}
+#else
 			int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID_PAYED), NULL, register_proc );
+#endif
 #endif
 			if (!is_trial_version())
 				return 0;

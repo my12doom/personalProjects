@@ -40,7 +40,7 @@ HRESULT get_update_result(wchar_t *description, int *new_rev, wchar_t *url)
 
 DWORD WINAPI check_update_thread(LPVOID)
 {
-	OutputDebugStringW(latest_description);
+	Sleep(30*1000);
 
 	int buffersize = 1024*1024;
 	char *data = (char*)malloc(buffersize);

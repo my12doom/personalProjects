@@ -44,6 +44,9 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 	for(int i=0; i<32; i++)
 		message.random_AES_key[i] = rand() & 0xff;
 
+#ifdef VSTAR
+	message.client_rev = my12doom_rev | 0x4000;
+#endif
 	unsigned char encrypted_message[128];
 	RSA_dwindow_network_public(&message, encrypted_message);
 
@@ -71,8 +74,21 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 	if (strstr(result, "E_FAIL"))
 		hr = E_FAIL;
 
+#ifdef DEBUG
+	OutputDebugStringA(url);
+	OutputDebugStringA("\n");
+	OutputDebugStringA(result);
+	OutputDebugStringA("\n");
+	OutputDebugStringA(result + 5);
+#endif
+
+
 #ifdef VSTAR
-	return 0;
+	if (strstr(result, "VSTAR") != NULL)
+	{
+		AutoSetting<BOOL> expired(L"VSTAR", FALSE, REG_DWORD);
+		expired = TRUE;
+	}
 #endif
 
 	if (hr != S_OK)
@@ -99,12 +115,6 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 	{
 
 		char *downloaded = result + 5;
-#ifdef DEBUG
-		OutputDebugStringA(url);
-		OutputDebugStringA("\n");
-		OutputDebugStringA(downloaded);
-#endif
-
 		if (strlen(downloaded) == 256)
 		{
 			unsigned char new_key[256];
