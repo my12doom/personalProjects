@@ -745,6 +745,17 @@ HRESULT set_lav_audio_bitstreaming(IBaseFilter *filter, bool active)
 	return hr;
 }
 
+enum bitsteaming_support_types
+{
+	bitsteaming_support_AC3 = 1,
+	bitsteaming_support_EAC3 = 2,
+	bitsteaming_support_DTS = 4,
+	bitsteaming_support_DTSHD = 8,
+	bitsteaming_support_TRUEHD = 0x10,
+};
+
+AutoSetting<DWORD> bitsteaming_support(L"BitstreamingSetting", 0xf);		// ac3¡¢eac3¡¢dts¡¢dtshm£¬ no truehd
+
 HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active)
 {
 	if (filter == NULL)
@@ -756,13 +767,24 @@ HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active)
 
 	HRESULT hr = S_OK;
 	int enable = active ? 1 : 0;
-	//hr = cfg->putParam(IDFF_aoutAC3EncodeMode, enable);
-	hr = cfg->putParam(IDFF_aoutpassthroughAC3, enable);
-	hr = cfg->putParam(IDFF_aoutpassthroughDTS, enable);
-	hr = cfg->putParam(IDFF_aoutpassthroughTRUEHD, enable);
-	hr = cfg->putParam(IDFF_aoutpassthroughDTSHD, enable);
-	hr = cfg->putParam(IDFF_aoutpassthroughEAC3, enable);
-	hr = cfg->putParam(IDFF_aoutAC3EncodeMode, enable);
+	hr = cfg->putParam(IDFF_aoutpassthroughAC3, enable && (bitsteaming_support & bitsteaming_support_AC3));
+	hr = cfg->putParam(IDFF_aoutpassthroughDTS, enable && (bitsteaming_support & bitsteaming_support_DTS));
+	hr = cfg->putParam(IDFF_aoutpassthroughTRUEHD, enable && (bitsteaming_support & bitsteaming_support_TRUEHD));
+	hr = cfg->putParam(IDFF_aoutpassthroughDTSHD, enable && (bitsteaming_support & bitsteaming_support_DTSHD));
+	hr = cfg->putParam(IDFF_aoutpassthroughEAC3, enable && (bitsteaming_support & bitsteaming_support_EAC3));
+
+
+	// disabled bitstreaming types will use AC3 encode mode, ffdshow do the decoding and then encode to AC3
+	if (active)
+	{
+		hr = cfg->putParam(IDFF_aoutAC3EncodeMode, enable);
+		hr = cfg->putParam(IDFF_isMixer, 1);			// do mixing
+		hr = cfg->putParam(IDFF_mixerOut, 13);			// mix to 5.1
+		hr = cfg->putParam(IDFF_isResample, 1);			// do resample
+		hr = cfg->putParam(IDFF_resampleFreq, 48000);	// 48000Hz
+		hr = cfg->putParam(IDFF_resampleMode, 2);		// libavcodec highest quality
+		hr = cfg->putParam(IDFF_resampleIf, 0);			// always resample
+	}
 
 	return hr;
 }
@@ -811,7 +833,6 @@ HRESULT set_ff_output_channel(IBaseFilter *filter, int channel)	// channel=0: no
 	if (channel == -1)
 	{
 		hr = set_ff_audio_bitstreaming(filter, true);
-		hr = cfg->putParam(IDFF_isMixer, 0);
 		return hr;
 	}
 

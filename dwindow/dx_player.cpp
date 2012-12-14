@@ -2716,6 +2716,11 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname, const wc
 	hr = end_loading();
 	if (FAILED(hr))
 		goto fail;
+	if (m_channel == -1) // bitstreaming workaround
+	{
+		seek(1000);
+		seek(0);
+	}
 	play();
 
 	// search and load subtitles
