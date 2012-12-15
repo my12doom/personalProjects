@@ -80,8 +80,8 @@ int srt_parser::time_to_decimal(wchar_t *str)
 	{
 		return 0;
 	}
-	c-=3;
-	while (c--)
+	ms *= 1000;
+	while (c-->0)
 		ms /= 10;
 
 	return h*3600000 + m*60000 +s*1000 +ms;
