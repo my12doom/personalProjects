@@ -138,6 +138,7 @@ Section "3DÓ°ÒôÖ÷³ÌÐò(required)"
   
   ; Put file there
   File "StereoPlayer.exe"
+  File "reset.exe"
   File "dwindow.ini"
   File "alpha.raw"
   File "logo.raw"
@@ -242,6 +243,7 @@ Section "Uninstall"
   Delete $INSTDIR\codec\*.ax
   Delete $INSTDIR\dwindow.exe
   Delete $INSTDIR\StereoPlayer.exe
+  Delete $INSTDIR\reset.exe
   Delete $INSTDIR\detoured.dll
   Delete $INSTDIR\kill_ssaver.dll
   Delete $INSTDIR\launcher.exe

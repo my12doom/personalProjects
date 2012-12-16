@@ -68,7 +68,7 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		break;
 
 	case WM_DISPLAYCHANGE:
-		lr = _this->on_display_change();
+		lr = _this->on_display_change(id);
 		break;
 
 	case WM_NCMOUSEMOVE:

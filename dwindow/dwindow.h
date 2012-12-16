@@ -48,7 +48,7 @@ protected:
 	virtual LRESULT on_double_click(int id, int button, int x, int y){return S_OK;}
 	virtual LRESULT on_key_down(int id, int key){return S_OK;}
 	virtual LRESULT on_close(int id){return S_OK;}
-	virtual LRESULT on_display_change(){return S_OK;}
+	virtual LRESULT on_display_change(int id){return S_OK;}
 	virtual LRESULT on_paint(int id, HDC hdc){return S_OK;}
 	virtual LRESULT on_timer(int id){return S_OK;}
 	virtual LRESULT on_size(int id, int type, int x, int y){return S_OK;}

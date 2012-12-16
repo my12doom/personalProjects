@@ -104,6 +104,7 @@ m_widi_resolution_width(L"WidiScreenWidth", 0, REG_DWORD),
 m_widi_resolution_height(L"WidiScreenHeight", 0, REG_DWORD),
 m_toolbar_background(NULL),
 m_UI_logo(NULL),
+m_dragging_window(0),
 #ifdef VSTAR
 #endif
 m_simple_audio_switching(L"SimpleAudioSwitching", false)
@@ -190,6 +191,14 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	CreateThread(0,0,tell_thread_entry, this, NULL, NULL);
 }
 
+typedef struct
+{
+	RECT monitor_rect[16];
+} monitor_rect_t;
+
+monitor_rect_t zero_monitor_rect = {0};
+AutoSetting<monitor_rect_t> g_saved_monitor_rects(L"MonitorRects", zero_monitor_rect);
+
 HRESULT dx_player::detect_monitors()
 {
 	::detect_monitors();
@@ -208,8 +217,24 @@ HRESULT dx_player::detect_monitors()
 			saved_screen2_exist = true;
 	}
 
+	bool monitor_changed = false;
+	for(int i=0; i<get_mixed_monitor_count(false, false); i++)
+	{
+		RECT t;
+		get_mixed_monitor_by_id(i, &t, NULL);
+
+		if (memcmp(&((monitor_rect_t)g_saved_monitor_rects).monitor_rect[i], &t, sizeof(RECT)) != 0)
+		{
+			monitor_changed = true;
+			break;
+		}
+	}
+
+
 	if (compare_rect(m_saved_screen1, rect_zero) || compare_rect(m_saved_screen2, rect_zero) ||
-		!saved_screen1_exist || !saved_screen2_exist)
+		!saved_screen1_exist || !saved_screen2_exist
+		|| monitor_changed
+		)
 	{
 		// reset position if monitor changed.
 		log_line(L"monitor changed, resetting.\n");
@@ -223,6 +248,16 @@ HRESULT dx_player::detect_monitors()
 
 		m_saved_rect1 = rect_zero;
 		m_saved_rect2 = rect_zero;
+
+		monitor_rect_t rect_t;
+		for(int i=0; i<get_mixed_monitor_count(false, false); i++)
+		{
+			RECT t;
+			get_mixed_monitor_by_id(i, &t, NULL);
+
+			rect_t.monitor_rect[i] = t;
+		}
+		g_saved_monitor_rects = rect_t;
 	}
 
 	m_saved_screen1 = m_screen1;
@@ -810,14 +845,24 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 }
 
 
-LRESULT dx_player::on_display_change()
+LRESULT dx_player::on_display_change(int id)
 {
-	OutputDebugStringA("DISPLAY CHANGE!\n");
-	init_done_flag = 0;
-	detect_monitors();
-	init_window_size_positions();
-	init_done_flag = 0x12345678;
-
+	if (id == 1)
+	{
+		OutputDebugStringA("DISPLAY CHANGE!\n");
+		bool toggle = false;
+		if (m_full1)
+		{
+			toggle = true;
+			toggle_fullscreen();
+		}
+		init_done_flag = 0;
+		detect_monitors();
+		init_window_size_positions();
+		init_done_flag = 0x12345678;
+		if (toggle)
+			toggle_fullscreen();
+	}
 	return S_OK;
 }
 extern AutoSetting<double> g_scale;
@@ -1440,8 +1485,10 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		else if (type < 0 && !m_full1 && (!m_renderer1 || !m_renderer1->get_fullscreen()))
 		{
 			// move this window
+			m_dragging_window = id;
 			ReleaseCapture();
 			SendMessage(id_to_hwnd(id), WM_NCLBUTTONDOWN, HTCAPTION, 0);
+			m_dragging_window = 0;
 		}
 		else if (m_full1 || m_renderer1->get_fullscreen())
 		{
@@ -1585,20 +1632,20 @@ LRESULT dx_player::on_timer(int id)
 
 LRESULT dx_player::on_move(int id, int x, int y)
 {
-	if (id == 1 && init_done_flag == 0x12345678 && !m_full1)
+	if (id == 1 && m_dragging_window == 1 && !m_full1)
 	{
 		RECT rect1;
 		GetWindowRect(id_to_hwnd(1), &rect1);
 		m_saved_rect1 = rect1;
 	}
-	if (id == 2 && init_done_flag == 0x12345678 && !m_full1)
+	if (id == 2 && m_dragging_window == 2 && !m_full1)
 	{
 		RECT rect2;
 		GetWindowRect(id_to_hwnd(2), &rect2);
 		m_saved_rect2 = rect2;
 	}
 
-	if (id == 1 && is_visible(2) && init_done_flag == 0x12345678 && !m_full1)
+	if (id == 1 && is_visible(2) && m_dragging_window == 1 && !m_full1)
 	{
 		RECT rect1;
 		GetWindowRect(id_to_hwnd(1), &rect1);
@@ -1607,7 +1654,7 @@ LRESULT dx_player::on_move(int id, int x, int y)
 		SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + x, m_screen2.top + y, 0, 0, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOSIZE);
 	}
 
-	else if (id == 2 && is_visible(1) && init_done_flag == 0x12345678 && !m_full2)
+	else if (id == 2 && is_visible(1) && m_dragging_window == 2 && !m_full2)
 	{
 		RECT rect2;
 		GetWindowRect(id_to_hwnd(2), &rect2);

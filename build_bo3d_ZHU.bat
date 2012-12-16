@@ -12,6 +12,7 @@ cd E:\private_projects
 %dev2008% dwindow\dwindow.sln /build "Release_zhu"
 %dev2003% dwindow_launcher\dwindow_launcher.sln /build "Release"
 %dev2003% pd10\pd10.sln /build "Release"
+%dev2008% reset\reset.sln /build "Release"
 %dev2008% ssifavs\ssifavs.sln /build "Release_mt"
 %dev2008% coreavs\coreavs.sln /build "Release_mt"
 %dev2008% MCavs\mcavs.sln /build "Release_mt"
@@ -24,6 +25,7 @@ copy/y dwindow\dwindow.ini dwindow_NSIS
 copy/y dwindow\alpha.raw dwindow_NSIS
 copy/y dwindow\logo.raw dwindow_NSIS
 copy/y dwindow\Release_zhu\StereoPlayer.exe dwindow_NSIS
+copy/y reset\Release\reset.exe dwindow_NSIS
 del/q dwindow_NSIS\codec\*.*
 del/q dwindow_NSIS\skin\*.*
 copy/y dwindow\skin\*.* dwindow_NSIS\skin
