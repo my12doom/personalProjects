@@ -323,6 +323,7 @@ float4 color_adjust(float2 tex : TEXCOORD0) : COLOR
 {
 	float4 rgb = tex2D(s0, tex);
 	float4 yuv = rgb2yuv2(rgb);
+	float final_alpha = rgb[3];
 	
 	float sat = exp((saturation - 0.5)*(saturation>0.5?3:3));	// 
 	float lum = luminance - 0.5;	// 
@@ -352,8 +353,8 @@ float4 color_adjust(float2 tex : TEXCOORD0) : COLOR
 	rgb.g = 0.5 + (rgb.g-0.5) * con;
 	rgb.b = 0.5 + (rgb.b-0.5) * con;
 	
-	// set Alpha to 1.0
-	rgb[3] = 1.0;
+	// reset alpha
+	rgb[3] = final_alpha;
 	
 	return rgb;
 }
