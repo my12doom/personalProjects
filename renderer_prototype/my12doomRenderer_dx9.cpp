@@ -44,7 +44,8 @@ enum helper_sample_format
 int lockrect_surface = 0;
 int lockrect_texture = 0;
 __int64 lockrect_texture_cycle = 0;
-const int BIG_TEXTURE_SIZE = 2048;
+const int MAX_TEXTURE_SIZE = 8192;
+AutoSetting<DWORD> TEXTURE_SIZE(L"TextureSize", 2048, REG_DWORD);
 AutoSetting<BOOL> GPUIdle(L"GPUIdle", true, REG_DWORD);
 AutoSetting<int> MovieResizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD);
 AutoSetting<int> SubtitleResizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD);
@@ -1502,11 +1503,11 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 
 	// textures
 	FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
-	FAIL_RET( m_Device->CreateTexture(BIG_TEXTURE_SIZE, BIG_TEXTURE_SIZE, 0, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
+	FAIL_RET( m_Device->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, 0, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_bmp, NULL));
 	if(m_tex_bmp_mem == NULL)
 	{
 		// only first time, so we don't need lock CritSec
-		FAIL_RET( m_Device->CreateOffscreenPlainSurface(BIG_TEXTURE_SIZE, BIG_TEXTURE_SIZE, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM,	&m_tex_bmp_mem, NULL));
+		FAIL_RET( m_Device->CreateOffscreenPlainSurface(TEXTURE_SIZE, TEXTURE_SIZE, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM,	&m_tex_bmp_mem, NULL));
 		m_tex_bmp_mem->LockRect(&m_bmp_locked_rect, NULL, NULL);
 		m_bmp_changed = false;
 	}
@@ -1694,7 +1695,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		m_tex_bmp_mem->UnlockRect();
 
 		CComPtr<IDirect3DSurface9> dst;
-		RECT src = {0,0,min(m_bmp_width+100, BIG_TEXTURE_SIZE), min(m_bmp_height+100, BIG_TEXTURE_SIZE)};
+		RECT src = {0,0,min(m_bmp_width+100, TEXTURE_SIZE), min(m_bmp_height+100, TEXTURE_SIZE)};
 
 		FAIL_RET(m_tex_bmp->GetSurfaceLevel(0, &dst));
 
@@ -2716,7 +2717,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 	{
 		CAutoLock lck(&m_pool_lock);
 		CPooledTexture *tmp1 = NULL;
-		hr = m_pool->CreateTexture(BIG_TEXTURE_SIZE, BIG_TEXTURE_SIZE, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tmp1);
+		hr = m_pool->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tmp1);
 		if (FAILED(hr))
 		{
 			safe_delete(tmp1);
@@ -2806,14 +2807,14 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			vertex[i].w = 1.0f;
 		}
 
-		vertex[0].tu = (float)0 / BIG_TEXTURE_SIZE;
-		vertex[0].tv = (float)0 / BIG_TEXTURE_SIZE;
-		vertex[1].tu = (float)width_d / BIG_TEXTURE_SIZE;
-		vertex[1].tv = (float)0 / BIG_TEXTURE_SIZE;
-		vertex[2].tu = (float)0 / BIG_TEXTURE_SIZE;
-		vertex[2].tv = (float)height_s / BIG_TEXTURE_SIZE;
-		vertex[3].tu = (float)width_d / BIG_TEXTURE_SIZE;
-		vertex[3].tv = (float)height_s / BIG_TEXTURE_SIZE;
+		vertex[0].tu = (float)0 / TEXTURE_SIZE;
+		vertex[0].tv = (float)0 / TEXTURE_SIZE;
+		vertex[1].tu = (float)width_d / TEXTURE_SIZE;
+		vertex[1].tv = (float)0 / TEXTURE_SIZE;
+		vertex[2].tu = (float)0 / TEXTURE_SIZE;
+		vertex[2].tv = (float)height_s / TEXTURE_SIZE;
+		vertex[3].tu = (float)width_d / TEXTURE_SIZE;
+		vertex[3].tv = (float)height_s / TEXTURE_SIZE;
 
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
@@ -2821,7 +2822,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		ps[1] = (float)height_d/height_s;
 		ps[1] = ps[1] > 0 ? ps[1] : -ps[1];
 		ps[1] = ps[1] > 1 ? 1 : ps[1];
-		ps[2] = ps[3] = BIG_TEXTURE_SIZE;
+		ps[2] = ps[3] = TEXTURE_SIZE;
 		m_Device->SetPixelShaderConstantF(0, ps, 1);
 		if (height_s != height_d)
 			m_Device->SetPixelShader(m_lanczosY);
@@ -3357,7 +3358,7 @@ HRESULT my12doomRenderer::generate_mask()
 			mylog("lua cost time %d\n", timeGetTime() - lua_time);
 
 
-			for(int y = 0; y < m_active_pp.BackBufferHeight; y+=h)
+			for(int y = 0; y < m_active_pp.BackBufferHeight; y++)
 			{
 				DWORD * d = (DWORD*)(dst+locked.Pitch*y);
 				for(int x = 0; x < m_active_pp.BackBufferWidth; x+=w)
@@ -3412,9 +3413,9 @@ HRESULT my12doomRenderer::generate_mask()
 			{D3DCOLOR_XRGB(63,127,191), D3DCOLOR_XRGB(255,63,127), D3DCOLOR_XRGB(191,255,63), D3DCOLOR_XRGB(127,191,255)},
 		};
 
-		DWORD four_line[4][BIG_TEXTURE_SIZE];
+		DWORD four_line[4][MAX_TEXTURE_SIZE];
 		for(DWORD y=0; y<4; y++)
-		for(DWORD x=0; x<BIG_TEXTURE_SIZE; x++)
+		for(DWORD x=0; x<TEXTURE_SIZE; x++)
 		{
 			four_line[y][x] = color_table[y%4][x%4];
 		}
@@ -3428,8 +3429,8 @@ HRESULT my12doomRenderer::generate_mask()
 	else if (m_mask_mode == row_interlace)
 	{
 		// init row mask texture
-		D3DCOLOR one_line[BIG_TEXTURE_SIZE];
-		for(DWORD i=0; i<BIG_TEXTURE_SIZE; i++)
+		D3DCOLOR one_line[MAX_TEXTURE_SIZE];
+		for(DWORD i=0; i<TEXTURE_SIZE; i++)
 			one_line[i] = i%2 == 0 ? 0 : D3DCOLOR_ARGB(255,255,255,255);
 
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
@@ -3449,8 +3450,8 @@ HRESULT my12doomRenderer::generate_mask()
 	else if (m_mask_mode == checkboard_interlace)
 	{
 		// init row mask texture
-		D3DCOLOR one_line[BIG_TEXTURE_SIZE];
-		for(DWORD i=0; i<BIG_TEXTURE_SIZE; i++)
+		D3DCOLOR one_line[MAX_TEXTURE_SIZE];
+		for(DWORD i=0; i<TEXTURE_SIZE; i++)
 			one_line[i] = i%2 == 0 ? 0 : D3DCOLOR_ARGB(255,255,255,255);
 
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
@@ -3461,8 +3462,8 @@ HRESULT my12doomRenderer::generate_mask()
 	}
 	else if (m_mask_mode == subpixel_row_interlace)
 	{
-		D3DCOLOR one_line[BIG_TEXTURE_SIZE];
-		for(DWORD i=0; i<BIG_TEXTURE_SIZE; i++)
+		D3DCOLOR one_line[MAX_TEXTURE_SIZE];
+		for(DWORD i=0; i<TEXTURE_SIZE; i++)
 			one_line[i] = i%2 == 0 ? D3DCOLOR_ARGB(255,255,0,255) : D3DCOLOR_ARGB(255,0,255,0);
 
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
@@ -3473,8 +3474,8 @@ HRESULT my12doomRenderer::generate_mask()
 	}
 	else if (m_mask_mode == subpixel_45_interlace)
 	{
-		D3DCOLOR one_line[6][BIG_TEXTURE_SIZE];
-		for(DWORD i=0; i<BIG_TEXTURE_SIZE; i++)
+		D3DCOLOR one_line[6][MAX_TEXTURE_SIZE];
+		for(DWORD i=0; i<TEXTURE_SIZE; i++)
 		{
 			one_line[0][i] = i%2 == 0 ? D3DCOLOR_ARGB(255,255,255,255) : D3DCOLOR_ARGB(255,0,0,0);
 			one_line[1][i] = i%2 == 0 ? D3DCOLOR_ARGB(255,255,255,0) : D3DCOLOR_ARGB(255,0,0,255);
@@ -3494,9 +3495,9 @@ HRESULT my12doomRenderer::generate_mask()
 	{
 		// RGB - RGB - RGB - RGB
 		// 112 - 211 - 221 - 122
-		D3DCOLOR one_line[BIG_TEXTURE_SIZE+6];
+		D3DCOLOR one_line[MAX_TEXTURE_SIZE+6];
 		D3DCOLOR line_table[4] = {D3DCOLOR_ARGB(255, 255, 255, 0), D3DCOLOR_ARGB(255, 0, 255, 255), D3DCOLOR_ARGB(255, 0, 0, 255), D3DCOLOR_ARGB(255,255,0,0)};
-		for(DWORD i=0; i<BIG_TEXTURE_SIZE+6; i++)
+		for(DWORD i=0; i<MAX_TEXTURE_SIZE+6; i++)
 		{
 			one_line[i] = line_table[(i+m_mask_parameter)%4];
 		}
@@ -3932,14 +3933,14 @@ HRESULT my12doomRenderer::set_bmp(void* data, int width, int height, float fwidt
 			CAutoLock lck2(&m_bmp_lock);
 			BYTE *src = (BYTE*)data;
 			BYTE *dst = (BYTE*) m_bmp_locked_rect.pBits;
-			for(int y=0; y<min(BIG_TEXTURE_SIZE,height); y++)
+			for(int y=0; y<min(TEXTURE_SIZE,height); y++)
 			{
 				memset(dst, 0, m_bmp_locked_rect.Pitch);
 				memcpy(dst, src, width*4);
 				dst += m_bmp_locked_rect.Pitch;
 				src += width*4;
 			}
-			memset(dst, 0, m_bmp_locked_rect.Pitch * (BIG_TEXTURE_SIZE-min(BIG_TEXTURE_SIZE,height)));
+			memset(dst, 0, m_bmp_locked_rect.Pitch * (TEXTURE_SIZE-min(TEXTURE_SIZE,height)));
 			m_bmp_changed = true;
 		}
 
