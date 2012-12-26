@@ -166,6 +166,7 @@ public:
 	HRESULT reset();
 	int hittest(int x, int y, double*outv){CAutoLock lck(&m_uidrawer_cs);int o = -1; if(m_uidrawer) m_uidrawer->hittest(x, y, &o, outv); return o;}
 	HRESULT screenshot(const wchar_t*file);	// movie only
+	HRESULT get_movie_desc(int *width, int*height);
 
 
 	// settings SET function
@@ -330,7 +331,7 @@ protected:
 #ifdef DEBUG
 	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_ARGB(0, 0, 0, 0));
 #else
-	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_XRGB(0,0,0));
+	HRESULT clear(IDirect3DSurface9 *surface, DWORD color = D3DCOLOR_ARGB(0,0,0,0));
 #endif
 
 	HRESULT render(bool forced = false);

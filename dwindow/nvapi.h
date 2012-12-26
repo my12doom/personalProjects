@@ -1,44 +1,39 @@
- /***************************************************************************\
-|*                                                                           *|
-|*      Copyright 2005-2010 NVIDIA Corporation.  All rights reserved.        *|
-|*                                                                           *|     
-|*   NOTICE TO USER:                                                         *|                 
-|*                                                                           *|
-|*   This source code is subject to NVIDIA ownership rights under U.S.       *|
-|*   and international Copyright laws.  Users and possessors of this         *| 
-|*   source code are hereby granted a nonexclusive, royalty-free             *|
-|*   license to use this code in individual and commercial software.         *|
-|*                                                                           *|
-|*   NVIDIA MAKES NO REPRESENTATION ABOUT THE SUITABILITY OF THIS SOURCE     *|
-|*   CODE FOR ANY PURPOSE. IT IS PROVIDED "AS IS" WITHOUT EXPRESS OR         *|
-|*   IMPLIED WARRANTY OF ANY KIND. NVIDIA DISCLAIMS ALL WARRANTIES WITH      *|
-|*   REGARD TO THIS SOURCE CODE, INCLUDING ALL IMPLIED WARRANTIES OF         *|
-|*   MERCHANTABILITY, NONINFRINGEMENT, AND FITNESS FOR A PARTICULAR          *|
-|*   PURPOSE. IN NO EVENT SHALL NVIDIA BE LIABLE FOR ANY SPECIAL,            *|
-|*   INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES          *|
-|*   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN      *|
-|*   AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING     *|
-|*   OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOURCE      *| 
-|*   CODE.                                                                   *|
-|*                                                                           *|
-|*   U.S. Government End Users. This source code is a "commercial item"      *|
-|*   as that term is defined at 48 C.F.R. 2.101 (OCT 1995), consisting       *|
-|*   of "commercial computer  software" and "commercial computer software    *|
-|*   documentation" as such terms are used in 48 C.F.R. 12.212 (SEPT 1995)   *|
-|*   and is provided to the U.S. Government only as a commercial end item.   *|
-|*   Consistent with 48 C.F.R.12.212 and 48 C.F.R. 227.7202-1 through        *|
-|*   227.7202-4 (JUNE 1995), all U.S. Government End Users acquire the       *|
-|*   source code with only those rights set forth herein.                    *|
-|*                                                                           *|
-|*   Any use of this source code in individual and commercial software must  *| 
-|*   include, in the user documentation and internal comments to the code,   *| 
-|*   the above Disclaimer and U.S. Government End Users Notice.              *|
-|*                                                                           *|
-|*                                                                           *|
- \***************************************************************************/
+ /************************************************************************************************************************************\
+|*                                                                                                                                    *|
+|*     Copyright © 2012 NVIDIA Corporation.  All rights reserved.                                                                     *|
+|*                                                                                                                                    *|
+|*  NOTICE TO USER:                                                                                                                   *|
+|*                                                                                                                                    *|
+|*  This software is subject to NVIDIA ownership rights under U.S. and international Copyright laws.                                  *|
+|*                                                                                                                                    *|
+|*  This software and the information contained herein are PROPRIETARY and CONFIDENTIAL to NVIDIA                                     *|
+|*  and are being provided solely under the terms and conditions of an NVIDIA software license agreement.                             *|
+|*  Otherwise, you have no rights to use or access this software in any manner.                                                       *|
+|*                                                                                                                                    *|
+|*  If not covered by the applicable NVIDIA software license agreement:                                                               *|
+|*  NVIDIA MAKES NO REPRESENTATION ABOUT THE SUITABILITY OF THIS SOFTWARE FOR ANY PURPOSE.                                            *|
+|*  IT IS PROVIDED "AS IS" WITHOUT EXPRESS OR IMPLIED WARRANTY OF ANY KIND.                                                           *|
+|*  NVIDIA DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,                                                                     *|
+|*  INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY, NONINFRINGEMENT, AND FITNESS FOR A PARTICULAR PURPOSE.                       *|
+|*  IN NO EVENT SHALL NVIDIA BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES,                               *|
+|*  OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,  WHETHER IN AN ACTION OF CONTRACT,                         *|
+|*  NEGLIGENCE OR OTHER TORTIOUS ACTION,  ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOURCE CODE.            *|
+|*                                                                                                                                    *|
+|*  U.S. Government End Users.                                                                                                        *|
+|*  This software is a "commercial item" as that term is defined at 48 C.F.R. 2.101 (OCT 1995),                                       *|
+|*  consisting  of "commercial computer  software"  and "commercial computer software documentation"                                  *|
+|*  as such terms are  used in 48 C.F.R. 12.212 (SEPT 1995) and is provided to the U.S. Government only as a commercial end item.     *|
+|*  Consistent with 48 C.F.R.12.212 and 48 C.F.R. 227.7202-1 through 227.7202-4 (JUNE 1995),                                          *|
+|*  all U.S. Government End Users acquire the software with only those rights set forth herein.                                       *|
+|*                                                                                                                                    *|
+|*  Any use of this software in individual and commercial software must include,                                                      *|
+|*  in the user documentation and internal comments to the code,                                                                      *|
+|*  the above Disclaimer (as applicable) and U.S. Government End Users Notice.                                                        *|
+|*                                                                                                                                    *|
+ \************************************************************************************************************************************/
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Date: Apr 9, 2012
+// Date: Sep 26, 2012
 // File: nvapi.h
 //
 // NvAPI provides an interface to NVIDIA devices. This file contains the 
@@ -1127,15 +1122,17 @@ typedef enum _NvAPI_Status
     NVAPI_INCOMPATIBLE_AUDIO_DRIVER             = -189,    //!< Older audio driver version than required
     NVAPI_VALUE_ALREADY_SET                     = -190,    //!< Value already set, setting again not allowed.
     NVAPI_TIMEOUT                               = -191,    //!< Requested operation timed out 
+    NVAPI_GPU_WORKSTATION_FEATURE_INCOMPLETE    = -192,    //!< The requested workstation feature set has incomplete driver internal allocation resources
+    NVAPI_STEREO_INIT_ACTIVATION_NOT_DONE       = -193,    //!< Call failed because InitActivation was not called.
 } NvAPI_Status;
+
+//! @}
 
 //!   \ingroup nvapistatus 
 #define NVAPI_API_NOT_INTIALIZED        NVAPI_API_NOT_INITIALIZED       //!< Fix typo in error code
 
 //!   \ingroup nvapistatus 
 #define NVAPI_INVALID_USER_PRIVILEDGE   NVAPI_INVALID_USER_PRIVILEGE    //!< Fix typo in error code
-
-
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1190,10 +1187,6 @@ NVAPI_INTERFACE NvAPI_Initialize();
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_Unload();
 
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // FUNCTION NAME: NvAPI_GetErrorMessage
@@ -1233,6 +1226,963 @@ NVAPI_INTERFACE NvAPI_GetErrorMessage(NvAPI_Status nr,NvAPI_ShortString szDesc);
 //! \ingroup nvapifunctions
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_GetInterfaceVersionString(NvAPI_ShortString szDesc);
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//              All display port related data types definition starts
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// This category is intentionally added before the #ifdef. The #endif should also be in the same scope
+#ifndef DISPLAYPORT_STRUCTS_DEFINED
+#define DISPLAYPORT_STRUCTS_DEFINED
+
+//! \ingroup dispcontrol
+//! Used in NV_DISPLAY_PORT_INFO.
+typedef enum
+{
+    NV_DP_1_62GBPS            = 6,
+    NV_DP_2_70GBPS            = 0xA,
+} NV_DP_LINK_RATE;
+
+
+//! \ingroup dispcontrol
+//! Used in NV_DISPLAY_PORT_INFO.
+typedef enum
+{
+    NV_DP_1_LANE              = 1,
+    NV_DP_2_LANE              = 2,
+    NV_DP_4_LANE              = 4,
+} NV_DP_LANE_COUNT;
+
+
+//! \ingroup dispcontrol
+//! Used in NV_DISPLAY_PORT_INFO.
+typedef enum
+{
+    NV_DP_COLOR_FORMAT_RGB     = 0,
+    NV_DP_COLOR_FORMAT_YCbCr422,
+    NV_DP_COLOR_FORMAT_YCbCr444,
+} NV_DP_COLOR_FORMAT;
+
+
+//! \ingroup dispcontrol
+//! Used in NV_DISPLAY_PORT_INFO.
+typedef enum
+{
+    NV_DP_COLORIMETRY_RGB     = 0,
+    NV_DP_COLORIMETRY_YCbCr_ITU601,
+    NV_DP_COLORIMETRY_YCbCr_ITU709,
+} NV_DP_COLORIMETRY;
+
+
+//! \ingroup dispcontrol
+//! Used in NV_DISPLAY_PORT_INFO.
+typedef enum
+{
+    NV_DP_DYNAMIC_RANGE_VESA  = 0,
+    NV_DP_DYNAMIC_RANGE_CEA,
+} NV_DP_DYNAMIC_RANGE;
+
+
+//! \ingroup dispcontrol
+//! Used in NV_DISPLAY_PORT_INFO.
+typedef enum
+{
+    NV_DP_BPC_DEFAULT         = 0,
+    NV_DP_BPC_6,
+    NV_DP_BPC_8,
+    NV_DP_BPC_10,
+    NV_DP_BPC_12,
+    NV_DP_BPC_16,
+} NV_DP_BPC;
+
+#endif  //#ifndef DISPLAYPORT_STRUCTS_DEFINED
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//              All display port related data types definitions end
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetEDID
+//
+//! \fn NvAPI_GPU_GetEDID(NvPhysicalGpuHandle hPhysicalGpu, NvU32 displayOutputId, NV_EDID *pEDID)
+//!  This function returns the EDID data for the specified GPU handle and connection bit mask.
+//!  displayOutputId should have exactly 1 bit set to indicate a single display. See \ref handles.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 85
+//!
+//! \retval    NVAPI_INVALID_ARGUMENT              pEDID is NULL; displayOutputId has 0 or > 1 bits set
+//! \retval    NVAPI_OK                           *pEDID contains valid data.
+//! \retval    NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval    NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \retval    NVAPI_DATA_NOT_FOUND                The requested display does not contain an EDID.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+
+//! \ingroup gpu
+//! @{
+
+#define NV_EDID_V1_DATA_SIZE   256
+
+#define NV_EDID_DATA_SIZE      NV_EDID_V1_DATA_SIZE
+
+typedef struct
+{
+    NvU32   version;        //structure version
+    NvU8    EDID_Data[NV_EDID_DATA_SIZE];
+} NV_EDID_V1;
+
+//! Used in NvAPI_GPU_GetEDID()
+typedef struct
+{
+    NvU32   version;        //!< Structure version
+    NvU8    EDID_Data[NV_EDID_DATA_SIZE];
+    NvU32   sizeofEDID;
+} NV_EDID_V2;
+
+//! Used in NvAPI_GPU_GetEDID()
+typedef struct
+{
+    NvU32   version;        //!< Structure version
+    NvU8    EDID_Data[NV_EDID_DATA_SIZE];
+    NvU32   sizeofEDID;
+    NvU32   edidId;     //!< ID which always returned in a monotonically increasing counter.
+                       //!< Across a split-EDID read we need to verify that all calls returned the same edidId.
+                       //!< This counter is incremented if we get the updated EDID. 
+    NvU32   offset;    //!< Which 256-byte page of the EDID we want to read. Start at 0.
+                       //!< If the read succeeds with edidSize > NV_EDID_DATA_SIZE,
+                       //!< call back again with offset+256 until we have read the entire buffer
+} NV_EDID_V3;
+
+typedef NV_EDID_V3    NV_EDID;
+
+#define NV_EDID_VER1    MAKE_NVAPI_VERSION(NV_EDID_V1,1)
+#define NV_EDID_VER2    MAKE_NVAPI_VERSION(NV_EDID_V2,2)
+#define NV_EDID_VER3    MAKE_NVAPI_VERSION(NV_EDID_V3,3)
+#define NV_EDID_VER   NV_EDID_VER3
+
+//! @}
+
+//! \ingroup gpu
+NVAPI_INTERFACE NvAPI_GPU_GetEDID(NvPhysicalGpuHandle hPhysicalGpu, NvU32 displayOutputId, NV_EDID *pEDID);
+
+//! \ingroup gpu
+//! Used in NV_GPU_CONNECTOR_DATA
+typedef enum _NV_GPU_CONNECTOR_TYPE
+{
+    NVAPI_GPU_CONNECTOR_VGA_15_PIN                      = 0x00000000,
+    NVAPI_GPU_CONNECTOR_TV_COMPOSITE                    = 0x00000010,
+    NVAPI_GPU_CONNECTOR_TV_SVIDEO                       = 0x00000011,
+    NVAPI_GPU_CONNECTOR_TV_HDTV_COMPONENT               = 0x00000013,
+    NVAPI_GPU_CONNECTOR_TV_SCART                        = 0x00000014,
+    NVAPI_GPU_CONNECTOR_TV_COMPOSITE_SCART_ON_EIAJ4120  = 0x00000016,
+    NVAPI_GPU_CONNECTOR_TV_HDTV_EIAJ4120                = 0x00000017,
+    NVAPI_GPU_CONNECTOR_PC_POD_HDTV_YPRPB               = 0x00000018,
+    NVAPI_GPU_CONNECTOR_PC_POD_SVIDEO                   = 0x00000019,
+    NVAPI_GPU_CONNECTOR_PC_POD_COMPOSITE                = 0x0000001A,
+    NVAPI_GPU_CONNECTOR_DVI_I_TV_SVIDEO                 = 0x00000020,
+    NVAPI_GPU_CONNECTOR_DVI_I_TV_COMPOSITE              = 0x00000021,
+    NVAPI_GPU_CONNECTOR_DVI_I                           = 0x00000030,
+    NVAPI_GPU_CONNECTOR_DVI_D                           = 0x00000031,
+    NVAPI_GPU_CONNECTOR_ADC                             = 0x00000032,
+    NVAPI_GPU_CONNECTOR_LFH_DVI_I_1                     = 0x00000038,
+    NVAPI_GPU_CONNECTOR_LFH_DVI_I_2                     = 0x00000039,
+    NVAPI_GPU_CONNECTOR_SPWG                            = 0x00000040,
+    NVAPI_GPU_CONNECTOR_OEM                             = 0x00000041,
+    NVAPI_GPU_CONNECTOR_DISPLAYPORT_EXTERNAL            = 0x00000046,
+    NVAPI_GPU_CONNECTOR_DISPLAYPORT_INTERNAL            = 0x00000047,
+    NVAPI_GPU_CONNECTOR_DISPLAYPORT_MINI_EXT            = 0x00000048,
+    NVAPI_GPU_CONNECTOR_HDMI_A                          = 0x00000061,
+    NVAPI_GPU_CONNECTOR_HDMI_C_MINI                     = 0x00000063,
+    NVAPI_GPU_CONNECTOR_LFH_DISPLAYPORT_1               = 0x00000064,
+    NVAPI_GPU_CONNECTOR_LFH_DISPLAYPORT_2               = 0x00000065,    
+    NVAPI_GPU_CONNECTOR_UNKNOWN                         = 0xFFFFFFFF,
+} NV_GPU_CONNECTOR_TYPE;
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// NvAPI_TVOutput Information
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup tvapi
+//! Used in NV_DISPLAY_TV_OUTPUT_INFO
+typedef enum _NV_DISPLAY_TV_FORMAT
+{
+    NV_DISPLAY_TV_FORMAT_NONE         = 0,
+    NV_DISPLAY_TV_FORMAT_SD_NTSCM     = 0x00000001,
+    NV_DISPLAY_TV_FORMAT_SD_NTSCJ     = 0x00000002,
+    NV_DISPLAY_TV_FORMAT_SD_PALM      = 0x00000004,
+    NV_DISPLAY_TV_FORMAT_SD_PALBDGH   = 0x00000008,
+    NV_DISPLAY_TV_FORMAT_SD_PALN      = 0x00000010,
+    NV_DISPLAY_TV_FORMAT_SD_PALNC     = 0x00000020,
+    NV_DISPLAY_TV_FORMAT_SD_576i      = 0x00000100,
+    NV_DISPLAY_TV_FORMAT_SD_480i      = 0x00000200,
+    NV_DISPLAY_TV_FORMAT_ED_480p      = 0x00000400,
+    NV_DISPLAY_TV_FORMAT_ED_576p      = 0x00000800,
+    NV_DISPLAY_TV_FORMAT_HD_720p      = 0x00001000,
+    NV_DISPLAY_TV_FORMAT_HD_1080i     = 0x00002000,
+    NV_DISPLAY_TV_FORMAT_HD_1080p     = 0x00004000,
+    NV_DISPLAY_TV_FORMAT_HD_720p50    = 0x00008000,
+    NV_DISPLAY_TV_FORMAT_HD_1080p24   = 0x00010000,
+    NV_DISPLAY_TV_FORMAT_HD_1080i50   = 0x00020000,
+    NV_DISPLAY_TV_FORMAT_HD_1080p50   = 0x00040000,
+
+    NV_DISPLAY_TV_FORMAT_SD_OTHER     = 0x01000000,
+    NV_DISPLAY_TV_FORMAT_ED_OTHER     = 0x02000000,
+    NV_DISPLAY_TV_FORMAT_HD_OTHER     = 0x04000000,
+
+    NV_DISPLAY_TV_FORMAT_ANY          = 0x80000000,
+
+} NV_DISPLAY_TV_FORMAT;
+
+
+//! \ingroup dispcontrol
+//! @{
+#define NVAPI_MAX_VIEW_TARGET  2
+#define NVAPI_ADVANCED_MAX_VIEW_TARGET 4
+
+#ifndef _NV_TARGET_VIEW_MODE_
+#define _NV_TARGET_VIEW_MODE_
+
+//! Used in NvAPI_SetView().
+typedef enum _NV_TARGET_VIEW_MODE
+{
+    NV_VIEW_MODE_STANDARD  = 0,
+    NV_VIEW_MODE_CLONE     = 1,
+    NV_VIEW_MODE_HSPAN     = 2,
+    NV_VIEW_MODE_VSPAN     = 3,
+    NV_VIEW_MODE_DUALVIEW  = 4,
+    NV_VIEW_MODE_MULTIVIEW = 5,
+} NV_TARGET_VIEW_MODE;
+#endif
+
+//! @}
+
+
+// Following definitions are used in NvAPI_SetViewEx.
+
+//! Scaling modes - used in NvAPI_SetViewEx().
+//! \ingroup dispcontrol
+typedef enum _NV_SCALING
+{
+    NV_SCALING_DEFAULT          = 0,        //!< No change
+
+    // New Scaling Declarations
+    NV_SCALING_GPU_SCALING_TO_CLOSEST                   = 1,  //!< Balanced  - Full Screen
+    NV_SCALING_GPU_SCALING_TO_NATIVE                    = 2,  //!< Force GPU - Full Screen
+    NV_SCALING_GPU_SCANOUT_TO_NATIVE                    = 3,  //!< Force GPU - Centered\No Scaling
+    NV_SCALING_GPU_SCALING_TO_ASPECT_SCANOUT_TO_NATIVE  = 5,  //!< Force GPU - Aspect Ratio
+    NV_SCALING_GPU_SCALING_TO_ASPECT_SCANOUT_TO_CLOSEST = 6,  //!< Balanced  - Aspect Ratio
+    NV_SCALING_GPU_SCANOUT_TO_CLOSEST                   = 7,  //!< Balanced  - Centered\No Scaling
+    
+    // Legacy Declarations
+    NV_SCALING_MONITOR_SCALING                          = NV_SCALING_GPU_SCALING_TO_CLOSEST,
+    NV_SCALING_ADAPTER_SCALING                          = NV_SCALING_GPU_SCALING_TO_NATIVE,
+    NV_SCALING_CENTERED                                 = NV_SCALING_GPU_SCANOUT_TO_NATIVE,
+    NV_SCALING_ASPECT_SCALING                           = NV_SCALING_GPU_SCALING_TO_ASPECT_SCANOUT_TO_NATIVE,
+
+    NV_SCALING_CUSTOMIZED       = 255       //!< For future use
+} NV_SCALING;
+
+//! Rotate modes- used in NvAPI_SetViewEx().
+//! \ingroup dispcontrol
+typedef enum _NV_ROTATE
+{
+    NV_ROTATE_0           = 0,
+    NV_ROTATE_90          = 1,
+    NV_ROTATE_180         = 2,
+    NV_ROTATE_270         = 3,
+    NV_ROTATE_IGNORED     = 4,
+} NV_ROTATE;
+
+//! Color formats- used in NvAPI_SetViewEx().
+//! \ingroup dispcontrol
+#define NVFORMAT_MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
+                         ((NvU32)(NvU8)(ch0) | ((NvU32)(NvU8)(ch1) << 8) |   \
+                     ((NvU32)(NvU8)(ch2) << 16) | ((NvU32)(NvU8)(ch3) << 24 ))
+
+
+
+//! Color formats- used in NvAPI_SetViewEx().
+//! \ingroup dispcontrol
+typedef enum _NV_FORMAT
+{
+    NV_FORMAT_UNKNOWN           =  0,       //!< unknown. Driver will choose one as following value.
+    NV_FORMAT_P8                = 41,       //!< for 8bpp mode
+    NV_FORMAT_R5G6B5            = 23,       //!< for 16bpp mode
+    NV_FORMAT_A8R8G8B8          = 21,       //!< for 32bpp mode
+    NV_FORMAT_A16B16G16R16F     = 113,      //!< for 64bpp(floating point) mode.
+
+} NV_FORMAT;
+
+// TV standard
+
+
+typedef enum _NV_TIMING_OVERRIDE
+{
+    NV_TIMING_OVERRIDE_CURRENT = 0,          //!< get the current timing
+    NV_TIMING_OVERRIDE_AUTO,                 //!< the timing the driver will use based the current policy
+    NV_TIMING_OVERRIDE_EDID,                 //!< EDID timing
+    NV_TIMING_OVERRIDE_DMT,                  //!< VESA DMT timing
+    NV_TIMING_OVERRIDE_DMT_RB,               //!< VESA DMT timing with reduced blanking
+    NV_TIMING_OVERRIDE_CVT,                  //!< VESA CVT timing
+    NV_TIMING_OVERRIDE_CVT_RB,               //!< VESA CVT timing with reduced blanking
+    NV_TIMING_OVERRIDE_GTF,                  //!< VESA GTF timing
+    NV_TIMING_OVERRIDE_EIA861,               //!< EIA 861x pre-defined timing
+    NV_TIMING_OVERRIDE_ANALOG_TV,            //!< analog SD/HDTV timing
+    NV_TIMING_OVERRIDE_CUST,                 //!< NV custom timings
+    NV_TIMING_OVERRIDE_NV_PREDEFINED,        //!< NV pre-defined timing (basically the PsF timings)
+    NV_TIMING_OVERRIDE_NV_PSF                = NV_TIMING_OVERRIDE_NV_PREDEFINED,
+    NV_TIMING_OVERRIDE_NV_ASPR,
+    NV_TIMING_OVERRIDE_SDI,                  //!< Override for SDI timing
+
+    NV_TIMING_OVRRIDE_MAX,                   
+}NV_TIMING_OVERRIDE;
+
+
+#ifndef NV_TIMING_STRUCTS_DEFINED
+#define NV_TIMING_STRUCTS_DEFINED
+
+//***********************
+// The Timing Structure
+//***********************
+//
+//! \ingroup dispcontrol
+//!  NVIDIA-specific timing extras \n
+//! Used in NV_TIMING.
+typedef struct tagNV_TIMINGEXT
+{
+    NvU32   flag;          //!< Reserved for NVIDIA hardware-based enhancement, such as double-scan.
+    NvU16   rr;            //!< Logical refresh rate to present
+    NvU32   rrx1k;         //!< Physical vertical refresh rate in 0.001Hz
+    NvU32   aspect;        //!< Display aspect ratio Hi(aspect):horizontal-aspect, Low(aspect):vertical-aspect
+    NvU16   rep;           //!< Bit-wise pixel repetition factor: 0x1:no pixel repetition; 0x2:each pixel repeats twice horizontally,..
+    NvU32   status;        //!< Timing standard 
+    NvU8    name[40];      //!< Timing name
+}NV_TIMINGEXT;
+
+
+
+//! \ingroup dispcontrol
+//!The very basic timing structure based on the VESA standard:
+//! \code
+//!            |<----------------------------htotal--------------------------->| 
+//!             ---------"active" video-------->|<-------blanking------>|<-----  
+//!            |<-------hvisible-------->|<-hb->|<-hfp->|<-hsw->|<-hbp->|<-hb->| 
+//! --------- -+-------------------------+      |       |       |       |      | 
+//!   A      A |                         |      |       |       |       |      | 
+//!   :      : |                         |      |       |       |       |      | 
+//!   :      : |                         |      |       |       |       |      | 
+//!   :vertical|    addressable video    |      |       |       |       |      | 
+//!   : visible|                         |      |       |       |       |      | 
+//!   :      : |                         |      |       |       |       |      | 
+//!   :      : |                         |      |       |       |       |      | 
+//! vertical V |                         |      |       |       |       |      | 
+//!  total   --+-------------------------+      |       |       |       |      | 
+//!   :      vb         border                  |       |       |       |      | 
+//!   :      -----------------------------------+       |       |       |      |  
+//!   :      vfp        front porch                     |       |       |      |  
+//!   :      -------------------------------------------+       |       |      | 
+//!   :      vsw        sync width                              |       |      | 
+//!   :      ---------------------------------------------------+       |      | 
+//!   :      vbp        back porch                                      |      | 
+//!   :      -----------------------------------------------------------+      | 
+//!   V      vb         border                                                 | 
+//! ---------------------------------------------------------------------------+ 
+//! \endcode
+typedef struct tagNV_TIMING
+{
+    // VESA scan out timing parameters:
+    NvU16 HVisible;         //!< horizontal visible 
+    NvU16 HBorder;          //!< horizontal border 
+    NvU16 HFrontPorch;      //!< horizontal front porch
+    NvU16 HSyncWidth;       //!< horizontal sync width
+    NvU16 HTotal;           //!< horizontal total
+    NvU8  HSyncPol;         //!< horizontal sync polarity: 1-negative, 0-positive
+
+    NvU16 VVisible;         //!< vertical visible
+    NvU16 VBorder;          //!< vertical border
+    NvU16 VFrontPorch;      //!< vertical front porch
+    NvU16 VSyncWidth;       //!< vertical sync width
+    NvU16 VTotal;           //!< vertical total
+    NvU8  VSyncPol;         //!< vertical sync polarity: 1-negative, 0-positive
+    
+    NvU16 interlaced;       //!< 1-interlaced, 0-progressive
+    NvU32 pclk;             //!< pixel clock in 10KHz
+
+    //other timing related extras
+    NV_TIMINGEXT etc;          
+}NV_TIMING;
+#endif //NV_TIMING_STRUCTS_DEFINED
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_SetView
+//
+//! \fn NvAPI_SetView(NvDisplayHandle hNvDisplay, NV_VIEW_TARGET_INFO *pTargetInfo, NV_TARGET_VIEW_MODE targetView)
+//!  This function lets the caller modify the target display arrangement of the selected source display handle in any nView mode.
+//!  It can also modify or extend the source display in Dualview mode.
+//!  \note Maps the selected source to the associated target Ids.
+//!  \note Display PATH with this API is limited to single GPU. DUALVIEW across GPUs cannot be enabled with this API. 
+//!
+//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_DISP_SetDisplayConfig.
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 90
+//!
+//! \param [in]  hNvDisplay       NVIDIA Display selection. #NVAPI_DEFAULT_HANDLE is not allowed, it has to be a handle enumerated with NvAPI_EnumNVidiaDisplayHandle().
+//! \param [in]  pTargetInfo      Pointer to array of NV_VIEW_TARGET_INFO, specifying device properties in this view.
+//!                               The first device entry in the array is the physical primary.
+//!                               The device entry with the lowest source id is the desktop primary.
+//! \param [in]  targetCount      Count of target devices specified in pTargetInfo.
+//! \param [in]  targetView       Target view selected from NV_TARGET_VIEW_MODE.
+//!
+//! \retval  NVAPI_OK               Completed request
+//! \retval  NVAPI_ERROR            Miscellaneous error occurred
+//! \retval  NVAPI_INVALID_ARGUMENT Invalid input parameter.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup dispcontrol
+//! Used in NvAPI_SetView() and NvAPI_GetView()
+typedef struct
+{
+    NvU32 version;     //!< (IN) structure version
+    NvU32 count;       //!< (IN) target count
+    struct 
+    {
+        NvU32 deviceMask;    //!< (IN/OUT) Device mask
+        NvU32 sourceId;      //!< (IN/OUT) Source ID - values will be based on the number of heads exposed per GPU.
+        NvU32 bPrimary:1;    //!< (OUT) Indicates if this is the GPU's primary view target. This is not the desktop GDI primary.
+                             //!< NvAPI_SetView automatically selects the first target in NV_VIEW_TARGET_INFO index 0 as the GPU's primary view.
+        NvU32 bInterlaced:1; //!< (IN/OUT) Indicates if the timing being used on this monitor is interlaced.
+        NvU32 bGDIPrimary:1; //!< (IN/OUT) Indicates if this is the desktop GDI primary.
+        NvU32 bForceModeSet:1;//!< (IN) Used only on Win7 and higher during a call to NvAPI_SetView(). Turns off optimization & forces OS to set supplied mode.
+    } target[NVAPI_MAX_VIEW_TARGET];
+} NV_VIEW_TARGET_INFO; 
+
+//! \ingroup dispcontrol
+#define NV_VIEW_TARGET_INFO_VER  MAKE_NVAPI_VERSION(NV_VIEW_TARGET_INFO,2)
+
+
+//! \ingroup dispcontrol
+__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_DISP_SetDisplayConfig.")
+NVAPI_INTERFACE NvAPI_SetView(NvDisplayHandle hNvDisplay, NV_VIEW_TARGET_INFO *pTargetInfo, NV_TARGET_VIEW_MODE targetView);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_SetViewEx
+//
+//!  \fn NvAPI_SetViewEx(NvDisplayHandle hNvDisplay, NV_DISPLAY_PATH_INFO *pPathInfo, NV_TARGET_VIEW_MODE displayView)
+//!  This function lets caller to modify the display arrangement for selected source display handle in any of the nview modes.
+//!  It also allows to modify or extend the source display in dualview mode.
+//!   \note Maps the selected source to the associated target Ids.
+//!   \note Display PATH with this API is limited to single GPU. DUALVIEW across GPUs cannot be enabled with this API. 
+//!
+//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_DISP_SetDisplayConfig.
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 95
+//!
+//! \param [in]  hNvDisplay   NVIDIA Display selection. #NVAPI_DEFAULT_HANDLE is not allowed, it has to be a handle enumerated with 
+//!                           NvAPI_EnumNVidiaDisplayHandle().
+//! \param [in]  pPathInfo    Pointer to array of NV_VIEW_PATH_INFO, specifying device properties in this view.
+//!                           The first device entry in the array is the physical primary.
+//!                           The device entry with the lowest source id is the desktop primary.
+//! \param [in]  pathCount    Count of paths specified in pPathInfo.
+//! \param [in]  displayView  Display view selected from NV_TARGET_VIEW_MODE.
+//!
+//! \retval  NVAPI_OK                Completed request
+//! \retval  NVAPI_ERROR             Miscellaneous error occurred
+//! \retval  NVAPI_INVALID_ARGUMENT  Invalid input parameter.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup dispcontrol
+#define NVAPI_MAX_DISPLAY_PATH  NVAPI_MAX_VIEW_TARGET
+
+//! \ingroup dispcontrol
+#define NVAPI_ADVANCED_MAX_DISPLAY_PATH  NVAPI_ADVANCED_MAX_VIEW_TARGET
+
+
+
+//! \ingroup dispcontrol
+//! Used in NV_DISPLAY_PATH_INFO.
+typedef struct
+{
+    NvU32                   deviceMask;     //!< (IN) Device mask
+    NvU32                   sourceId;       //!< (IN) Values will be based on the number of heads exposed per GPU(0, 1?)
+    NvU32                   bPrimary:1;     //!< (IN/OUT) Indicates if this is the GPU's primary view target. This is not the desktop GDI primary.
+                                            //!< NvAPI_SetViewEx() automatically selects the first target in NV_DISPLAY_PATH_INFO index 0 as the GPU's primary view.
+    NV_GPU_CONNECTOR_TYPE   connector;      //!< (IN) Specify connector type. For TV only.
+
+    // source mode information
+    NvU32                   width;          //!< (IN) Width of the mode
+    NvU32                   height;         //!< (IN) Height of the mode
+    NvU32                   depth;          //!< (IN) Depth of the mode
+    NV_FORMAT               colorFormat;    //!<      Color format if it needs to be specified. Not used now.
+
+    //rotation setting of the mode
+    NV_ROTATE               rotation;       //!< (IN) Rotation setting.
+
+    // the scaling mode
+    NV_SCALING              scaling;        //!< (IN) Scaling setting
+
+    // Timing info
+    NvU32                   refreshRate;    //!< (IN) Refresh rate of the mode
+    NvU32                   interlaced:1;   //!< (IN) Interlaced mode flag
+
+    NV_DISPLAY_TV_FORMAT    tvFormat;       //!< (IN) To choose the last TV format set this value to NV_DISPLAY_TV_FORMAT_NONE
+
+    // Windows desktop position
+    NvU32                   posx;           //!< (IN/OUT) X-offset of this display on the Windows desktop
+    NvU32                   posy;           //!< (IN/OUT) Y-offset of this display on the Windows desktop
+    NvU32                   bGDIPrimary:1;  //!< (IN/OUT) Indicates if this is the desktop GDI primary.
+
+    NvU32                   bForceModeSet:1;//!< (IN) Used only on Win7 and higher during a call to NvAPI_SetViewEx(). Turns off optimization & forces OS to set supplied mode.
+    NvU32                   bFocusDisplay:1;//!< (IN) If set, this display path should have the focus after the GPU topology change
+    NvU32                   gpuId:24;       //!< (IN) the physical display/target Gpu id which is the owner of the scan out (for SLI multimon, display from the slave Gpu)
+
+} NV_DISPLAY_PATH;
+
+//! \ingroup dispcontrol
+//! Used in NvAPI_SetViewEx() and NvAPI_GetViewEx().
+typedef struct
+{
+    NvU32 version;     //!< (IN) Structure version
+    NvU32 count;       //!< (IN) Path count
+    NV_DISPLAY_PATH path[NVAPI_MAX_DISPLAY_PATH];
+} NV_DISPLAY_PATH_INFO_V3; 
+
+//! \ingroup dispcontrol
+//! Used in NvAPI_SetViewEx() and NvAPI_GetViewEx().
+typedef struct
+{
+    NvU32 version;     //!< (IN) Structure version
+    NvU32 count;       //!< (IN) Path count
+    NV_DISPLAY_PATH path[NVAPI_ADVANCED_MAX_DISPLAY_PATH];
+} NV_DISPLAY_PATH_INFO; 
+
+//! \addtogroup dispcontrol
+//! Macro for constructing the version fields of NV_DISPLAY_PATH_INFO
+//! @{
+#define NV_DISPLAY_PATH_INFO_VER  NV_DISPLAY_PATH_INFO_VER4
+#define NV_DISPLAY_PATH_INFO_VER4 MAKE_NVAPI_VERSION(NV_DISPLAY_PATH_INFO,4)
+#define NV_DISPLAY_PATH_INFO_VER3 MAKE_NVAPI_VERSION(NV_DISPLAY_PATH_INFO,3)
+#define NV_DISPLAY_PATH_INFO_VER2 MAKE_NVAPI_VERSION(NV_DISPLAY_PATH_INFO,2)
+#define NV_DISPLAY_PATH_INFO_VER1 MAKE_NVAPI_VERSION(NV_DISPLAY_PATH_INFO,1)
+//! @}
+
+
+//! \ingroup dispcontrol
+__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_DISP_SetDisplayConfig.")
+NVAPI_INTERFACE NvAPI_SetViewEx(NvDisplayHandle hNvDisplay, NV_DISPLAY_PATH_INFO *pPathInfo, NV_TARGET_VIEW_MODE displayView);
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// SetDisplayConfig/GetDisplayConfig
+///////////////////////////////////////////////////////////////////////////////
+
+
+//! \ingroup dispcontrol
+typedef struct _NV_POSITION
+{
+    NvS32   x;
+    NvS32   y;
+} NV_POSITION;
+
+//! \ingroup dispcontrol
+typedef struct _NV_RESOLUTION
+{
+    NvU32   width;
+    NvU32   height;
+    NvU32   colorDepth;
+} NV_RESOLUTION;
+
+//! \ingroup dispcontrol
+typedef struct _NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_V1
+{
+    NvU32                   version;
+
+    // Rotation and Scaling
+    NV_ROTATE               rotation;       //!< (IN) rotation setting.
+    NV_SCALING              scaling;        //!< (IN) scaling setting.
+
+    // Refresh Rate
+    NvU32                   refreshRate1K;  //!< (IN) Non-interlaced Refresh Rate of the mode, multiplied by 1000, 0 = ignored
+                                            //!< This is the value which driver reports to the OS.
+    // Flags
+    NvU32                   interlaced:1;   //!< (IN) Interlaced mode flag, ignored if refreshRate == 0
+    NvU32                   primary:1;      //!< (IN) Declares primary display in clone configuration. This is *NOT* GDI Primary.
+                                            //!< Only one target can be primary per source. If no primary is specified, the first 
+                                            //!< target will automatically be primary.
+#ifdef NV_PAN_AND_SCAN_DEFINED 
+    NvU32                   isPanAndScanTarget:1; //!< Whether on this target Pan and Scan is enabled or has to be enabled. Valid only 
+	                                              //!< when the target is part of clone topology.
+    NvU32                   reserved:29;  
+#else
+    NvU32                   reserved:30;  
+#endif
+    // TV format information
+    NV_GPU_CONNECTOR_TYPE   connector;      //!< Specify connector type. For TV only, ignored if tvFormat == NV_DISPLAY_TV_FORMAT_NONE
+    NV_DISPLAY_TV_FORMAT    tvFormat;       //!< (IN) to choose the last TV format set this value to NV_DISPLAY_TV_FORMAT_NONE
+
+    // Backend (raster) timing standard
+    NV_TIMING_OVERRIDE      timingOverride;     //!< Ignored if timingOverride == NV_TIMING_OVERRIDE_CURRENT
+    NV_TIMING               timing;             //!< Scan out timing, valid only if timingOverride == NV_TIMING_OVERRIDE_CUST
+                                                //!< The value NV_TIMING::NV_TIMINGEXT::rrx1k is obtained from the EDID. The driver may 
+                                                //!< tweak this value for HDTV, stereo, etc., before reporting it to the OS. 
+} NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_V1;
+
+//! \ingroup dispcontrol
+typedef NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_V1 NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO;
+
+//! \ingroup dispcontrol
+#define NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_VER1     MAKE_NVAPI_VERSION(NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_V1,1)
+
+//! \ingroup dispcontrol
+#define NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_VER      NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_VER1
+
+//! \ingroup dispcontrol
+typedef struct _NV_DISPLAYCONFIG_PATH_TARGET_INFO_V1
+{
+    NvU32                                           displayId;  //!< Display ID
+    NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO*     details;    //!< May be NULL if no advanced settings are required. NULL for Non-NVIDIA Display.
+} NV_DISPLAYCONFIG_PATH_TARGET_INFO_V1;
+
+//! \ingroup dispcontrol
+typedef struct _NV_DISPLAYCONFIG_PATH_TARGET_INFO_V2
+{
+    NvU32                                           displayId;  //!< Display ID
+    NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO*     details;    //!< May be NULL if no advanced settings are required
+    NvU32                                           targetId;   //!< Windows CCD target ID. Must be present only for non-NVIDIA adapter, for NVIDIA adapter this parameter is ignored.
+} NV_DISPLAYCONFIG_PATH_TARGET_INFO_V2;
+
+
+//! \ingroup dispcontrol
+//! As version is not defined for this structure we will be using version of NV_DISPLAYCONFIG_PATH_INFO
+typedef NV_DISPLAYCONFIG_PATH_TARGET_INFO_V2 NV_DISPLAYCONFIG_PATH_TARGET_INFO; 
+
+
+//! \ingroup dispcontrol
+typedef enum _NV_DISPLAYCONFIG_SPANNING_ORIENTATION
+{
+    NV_DISPLAYCONFIG_SPAN_NONE          = 0,
+    NV_DISPLAYCONFIG_SPAN_HORIZONTAL    = 1,
+    NV_DISPLAYCONFIG_SPAN_VERTICAL      = 2,
+} NV_DISPLAYCONFIG_SPANNING_ORIENTATION;
+
+//! \ingroup dispcontrol
+typedef struct _NV_DISPLAYCONFIG_SOURCE_MODE_INFO_V1
+{
+    NV_RESOLUTION                           resolution;
+    NV_FORMAT                               colorFormat;                //!< Ignored at present, must be NV_FORMAT_UNKNOWN (0)
+    NV_POSITION                             position;                   //!< Is all positions are 0 or invalid, displays will be automatically
+                                                                        //!< positioned from left to right with GDI Primary at 0,0, and all
+                                                                        //!< other displays in the order of the path array.
+    NV_DISPLAYCONFIG_SPANNING_ORIENTATION   spanningOrientation;        //!< Spanning is only supported on XP
+    NvU32                                   bGDIPrimary : 1;
+    NvU32                                   bSLIFocus : 1;
+    NvU32                                   reserved : 30;              //!< Must be 0
+} NV_DISPLAYCONFIG_SOURCE_MODE_INFO_V1;
+
+//! \ingroup dispcontrol
+//! As version is not defined for this structure we will be using version of NV_DISPLAYCONFIG_PATH_INFO
+typedef NV_DISPLAYCONFIG_SOURCE_MODE_INFO_V1 NV_DISPLAYCONFIG_SOURCE_MODE_INFO; 
+
+//! \ingroup dispcontrol
+typedef struct _NV_DISPLAYCONFIG_PATH_INFO_V1
+{
+    NvU32                                   version;
+    NvU32                                   reserved_sourceId;     //!< This field is reserved. There is ongoing debate if we need this field.
+                                                                        //!< Identifies sourceIds used by Windows. If all sourceIds are 0, 
+                                                                        //!< these will be computed automatically.
+    NvU32                                   targetInfoCount;            //!< Number of elements in targetInfo array
+    NV_DISPLAYCONFIG_PATH_TARGET_INFO_V1*   targetInfo;
+    NV_DISPLAYCONFIG_SOURCE_MODE_INFO*      sourceModeInfo;             //!< May be NULL if mode info is not important
+} NV_DISPLAYCONFIG_PATH_INFO_V1;
+
+//! \ingroup dispcontrol
+//! This define is temporary and must be removed once DVS failure is fixed.
+#define _NV_DISPLAYCONFIG_PATH_INFO_V2 _NV_DISPLAYCONFIG_PATH_INFO
+
+//! \ingroup dispcontrol
+typedef struct _NV_DISPLAYCONFIG_PATH_INFO_V2
+{
+    NvU32                                   version;
+    union {
+        NvU32                                   sourceId;            //!< Identifies sourceId used by Windows CCD. This can be optionally set.
+        NvU32                                   reserved_sourceId;      //!< Only for compatibility
+    };
+
+    NvU32                                   targetInfoCount;            //!< Number of elements in targetInfo array
+    NV_DISPLAYCONFIG_PATH_TARGET_INFO*      targetInfo;
+    NV_DISPLAYCONFIG_SOURCE_MODE_INFO*      sourceModeInfo;             //!< May be NULL if mode info is not important
+    NvU32                                   IsNonNVIDIAAdapter : 1;     //!< True for non-NVIDIA adapter.
+    NvU32                                   reserved : 31;              //!< Must be 0
+    void                                    *pOSAdapterID;              //!< Used by Non-NVIDIA adapter for pointer to OS Adapter of LUID 
+                                                                        //!< type, type casted to void *.
+} NV_DISPLAYCONFIG_PATH_INFO_V2;
+
+//! \ingroup dispcontrol
+typedef NV_DISPLAYCONFIG_PATH_INFO_V2 NV_DISPLAYCONFIG_PATH_INFO;
+
+//! \ingroup dispcontrol
+#define NV_DISPLAYCONFIG_PATH_INFO_VER1                 MAKE_NVAPI_VERSION(NV_DISPLAYCONFIG_PATH_INFO_V1,1)
+
+//! \ingroup dispcontrol
+#define NV_DISPLAYCONFIG_PATH_INFO_VER2                 MAKE_NVAPI_VERSION(NV_DISPLAYCONFIG_PATH_INFO_V2,2)
+
+//! \ingroup dispcontrol
+#define NV_DISPLAYCONFIG_PATH_INFO_VER                  NV_DISPLAYCONFIG_PATH_INFO_VER2
+
+//! \ingroup dispcontrol
+typedef enum _NV_DISPLAYCONFIG_FLAGS
+{
+    NV_DISPLAYCONFIG_VALIDATE_ONLY          = 0x00000001,
+    NV_DISPLAYCONFIG_SAVE_TO_PERSISTENCE    = 0x00000002, 
+    NV_DISPLAYCONFIG_DRIVER_RELOAD_ALLOWED  = 0x00000004,               //!< Driver reload is permitted if necessary
+    NV_DISPLAYCONFIG_FORCE_MODE_ENUMERATION = 0x00000008,               //!< Refresh OS mode list.
+} NV_DISPLAYCONFIG_FLAGS;
+
+
+///////////////////////////////////////////////////////////////////////////////
+// FUNCTION NAME:   NvAPI_DISP_GetDisplayConfig
+//
+//! DESCRIPTION:     This API lets caller retrieve the current global display
+//!                  configuration.  \n
+//!       USAGE:     The caller might have to call this three times to fetch all the required configuration details as follows: \n 
+//!                  First  Pass: Caller should Call NvAPI_DISP_GetDisplayConfig() with pathInfo set to NULL to fetch pathInfoCount. \n
+//!                  Second Pass: Allocate memory for pathInfo with respect to the number of pathInfoCount(from First Pass) to fetch //!   //!                               targetInfoCount. If sourceModeInfo is needed allocate memory or it can be initialized to NULL. \n
+//!             Third  Pass(Optional, only required if target information is required): Allocate memory for targetInfo with respect 
+//!                               to number of targetInfoCount(from Second Pass).               
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \param [in,out]  pathInfoCount    Number of elements in pathInfo array, returns number of valid topologies, this cannot be null.
+//! \param [in,out]  pathInfo         Array of path information
+//!
+//! \return    This API can return any of the error codes enumerated in #NvAPI_Status. If there are return error codes with 
+//!            specific meaning for this API, they are listed below.
+//!
+//! \retval    NVAPI_INVALID_ARGUMENT  -   Invalid input parameter. Following can be the reason for this return value:
+//!                                        -# pathInfoCount is NULL.
+//!                                        -# *pathInfoCount is 0 and pathInfo is not NULL.
+//!                                        -# *pathInfoCount is not 0 and pathInfo is NULL.
+//!
+//! \ingroup dispcontrol
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_DISP_GetDisplayConfig(__inout NvU32 *pathInfoCount, __out_ecount_full_opt(*pathInfoCount) NV_DISPLAYCONFIG_PATH_INFO *pathInfo);
+
+
+
+
+
+
+
+
+
+
+//! \addtogroup drsapi
+//! @{
+
+// GPU Profile APIs
+
+#define NVAPI_UNICODE_STRING_MAX                             2048
+#define NVAPI_BINARY_DATA_MAX                                4096
+#define NVAPI_SETTING_MAX_VALUES                             100
+
+NV_DECLARE_HANDLE(NvDRSSessionHandle);
+NV_DECLARE_HANDLE(NvDRSProfileHandle);
+
+#define NVAPI_DRS_GLOBAL_PROFILE                             ((NvDRSProfileHandle) -1)
+
+typedef NvU16 NvAPI_UnicodeString[NVAPI_UNICODE_STRING_MAX];
+
+typedef enum _NVDRS_SETTING_TYPE
+{
+     NVDRS_DWORD_TYPE,
+     NVDRS_BINARY_TYPE,
+     NVDRS_STRING_TYPE,
+     NVDRS_WSTRING_TYPE
+} NVDRS_SETTING_TYPE;
+
+typedef enum _NVDRS_SETTING_LOCATION
+{
+     NVDRS_CURRENT_PROFILE_LOCATION,
+     NVDRS_GLOBAL_PROFILE_LOCATION,
+     NVDRS_BASE_PROFILE_LOCATION
+} NVDRS_SETTING_LOCATION;
+
+
+typedef struct _NVDRS_GPU_SUPPORT
+{
+    NvU32 geforce    :  1;
+    NvU32 quadro     :  1;
+    NvU32 nvs        :  1;
+    NvU32 reserved4  :  1;
+    NvU32 reserved5  :  1;
+    NvU32 reserved6  :  1;
+    NvU32 reserved7  :  1;
+    NvU32 reserved8  :  1;
+    NvU32 reserved9  :  1;
+    NvU32 reserved10 :  1;
+    NvU32 reserved11 :  1;
+    NvU32 reserved12 :  1;
+    NvU32 reserved13 :  1;
+    NvU32 reserved14 :  1;
+    NvU32 reserved15 :  1;
+    NvU32 reserved16 :  1;
+    NvU32 reserved17 :  1;
+    NvU32 reserved18 :  1;
+    NvU32 reserved19 :  1;
+    NvU32 reserved20 :  1;
+    NvU32 reserved21 :  1;
+    NvU32 reserved22 :  1;
+    NvU32 reserved23 :  1;
+    NvU32 reserved24 :  1;
+    NvU32 reserved25 :  1;
+    NvU32 reserved26 :  1;
+    NvU32 reserved27 :  1;
+    NvU32 reserved28 :  1;
+    NvU32 reserved29 :  1;
+    NvU32 reserved30 :  1;
+    NvU32 reserved31 :  1;
+    NvU32 reserved32 :  1;
+} NVDRS_GPU_SUPPORT;
+
+//! Enum to decide on the datatype of setting value.
+typedef struct _NVDRS_BINARY_SETTING 
+{
+     NvU32                valueLength;               //!< valueLength should always be in number of bytes.
+     NvU8                 valueData[NVAPI_BINARY_DATA_MAX];
+} NVDRS_BINARY_SETTING;
+
+typedef struct _NVDRS_SETTING_VALUES
+{
+     NvU32                      version;                //!< Structure Version
+     NvU32                      numSettingValues;       //!< Total number of values available in a setting.
+     NVDRS_SETTING_TYPE         settingType;            //!< Type of setting value.  
+     union                                              //!< Setting can hold either DWORD or Binary value or string. Not mixed types.
+     {
+         NvU32                      u32DefaultValue;    //!< Accessing default DWORD value of this setting.
+         NVDRS_BINARY_SETTING       binaryDefaultValue; //!< Accessing default Binary value of this setting.
+                                                        //!< Must be allocated by caller with valueLength specifying buffer size, or only valueLength will be filled in.
+         NvAPI_UnicodeString        wszDefaultValue;    //!< Accessing default unicode string value of this setting.
+     };
+     union                                                //!< Setting values can be of either DWORD, Binary values or String type,
+     {                                                    //!< NOT mixed types.
+         NvU32                      u32Value;           //!< All possible DWORD values for a setting
+         NVDRS_BINARY_SETTING       binaryValue;        //!< All possible Binary values for a setting
+         NvAPI_UnicodeString        wszValue;           //!< Accessing current unicode string value of this setting.
+     }settingValues[NVAPI_SETTING_MAX_VALUES];
+} NVDRS_SETTING_VALUES;
+
+//! Macro for constructing the version field of ::_NVDRS_SETTING_VALUES
+#define NVDRS_SETTING_VALUES_VER    MAKE_NVAPI_VERSION(NVDRS_SETTING_VALUES,1)
+     
+typedef struct _NVDRS_SETTING
+{
+     NvU32                      version;                //!< Structure Version
+     NvAPI_UnicodeString        settingName;            //!< String name of setting
+     NvU32                      settingId;              //!< 32 bit setting Id
+     NVDRS_SETTING_TYPE         settingType;            //!< Type of setting value.  
+     NVDRS_SETTING_LOCATION     settingLocation;        //!< Describes where the value in CurrentValue comes from. 
+     NvU32                      isCurrentPredefined;    //!< It is different than 0 if the currentValue is a predefined Value, 
+                                                        //!< 0 if the currentValue is a user value. 
+     NvU32                      isPredefinedValid;      //!< It is different than 0 if the PredefinedValue union contains a valid value. 
+     union                                              //!< Setting can hold either DWORD or Binary value or string. Not mixed types.
+     {
+         NvU32                      u32PredefinedValue;    //!< Accessing default DWORD value of this setting.
+         NVDRS_BINARY_SETTING       binaryPredefinedValue; //!< Accessing default Binary value of this setting.
+                                                           //!< Must be allocated by caller with valueLength specifying buffer size, 
+                                                           //!< or only valueLength will be filled in.
+         NvAPI_UnicodeString        wszPredefinedValue;    //!< Accessing default unicode string value of this setting.
+     };
+     union                                              //!< Setting can hold either DWORD or Binary value or string. Not mixed types.
+     {
+         NvU32                      u32CurrentValue;    //!< Accessing current DWORD value of this setting.
+         NVDRS_BINARY_SETTING       binaryCurrentValue; //!< Accessing current Binary value of this setting.
+                                                        //!< Must be allocated by caller with valueLength specifying buffer size, 
+                                                        //!< or only valueLength will be filled in.
+         NvAPI_UnicodeString        wszCurrentValue;    //!< Accessing current unicode string value of this setting.
+     };                                                 
+} NVDRS_SETTING;
+
+//! Macro for constructing the version field of ::_NVDRS_SETTING
+#define NVDRS_SETTING_VER        MAKE_NVAPI_VERSION(NVDRS_SETTING,1)
+
+typedef struct _NVDRS_APPLICATION_V1
+{
+     NvU32                      version;            //!< Structure Version
+     NvU32                      isPredefined;       //!< Is the application userdefined/predefined
+     NvAPI_UnicodeString        appName;            //!< String name of the Application
+     NvAPI_UnicodeString        userFriendlyName;   //!< UserFriendly name of the Application
+     NvAPI_UnicodeString        launcher;           //!< Indicates the name (if any) of the launcher that starts the application  
+} NVDRS_APPLICATION_V1;
+
+typedef struct _NVDRS_APPLICATION_V2
+{
+     NvU32                      version;            //!< Structure Version
+     NvU32                      isPredefined;       //!< Is the application userdefined/predefined
+     NvAPI_UnicodeString        appName;            //!< String name of the Application
+     NvAPI_UnicodeString        userFriendlyName;   //!< UserFriendly name of the Application
+     NvAPI_UnicodeString        launcher;           //!< Indicates the name (if any) of the launcher that starts the Application
+     NvAPI_UnicodeString        fileInFolder;       //!< Select this application only if this file is found.
+                                                    //!< When specifying multiple files, separate them using the ':' character.
+} NVDRS_APPLICATION_V2;
+
+#define NVDRS_APPLICATION_VER_V1        MAKE_NVAPI_VERSION(NVDRS_APPLICATION_V1,1)
+#define NVDRS_APPLICATION_VER_V2        MAKE_NVAPI_VERSION(NVDRS_APPLICATION_V2,2)
+
+typedef NVDRS_APPLICATION_V2 NVDRS_APPLICATION;
+#define NVDRS_APPLICATION_VER NVDRS_APPLICATION_VER_V2
+
+typedef struct _NVDRS_PROFILE
+{
+     NvU32                      version;            //!< Structure Version
+     NvAPI_UnicodeString        profileName;        //!< String name of the Profile
+     NVDRS_GPU_SUPPORT          gpuSupport;         //!< This read-only flag indicates the profile support on either
+                                                    //!< Quadro, or Geforce, or both.
+     NvU32                      isPredefined;       //!< Is the Profile user-defined, or predefined
+     NvU32                      numOfApps;          //!< Total number of applications that belong to this profile. Read-only
+     NvU32                      numOfSettings;      //!< Total number of settings applied for this Profile. Read-only
+} NVDRS_PROFILE;
+
+//! Macro for constructing the version field of ::_NVDRS_PROFILE
+#define NVDRS_PROFILE_VER        MAKE_NVAPI_VERSION(NVDRS_PROFILE,1)
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_DRS_CreateSession
+//
+//!   DESCRIPTION: This API allocates memory and initializes the session.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \param [out]  *phSession Return pointer to the session handle.
+//!                
+//! \retval ::NVAPI_OK SUCCESS
+//! \retval ::NVAPI_ERROR: For miscellaneous errors.
+//
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_DRS_CreateSession(NvDRSSessionHandle *phSession);
+
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -1298,59 +2248,195 @@ NVAPI_INTERFACE NvAPI_SYS_GetDriverAndBranchVersion(NvU32* pDriverVersion, NvAPI
 
 
 
+
+
+
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_EnumNvidiaDisplayHandle
+// FUNCTION NAME: NvAPI_OGL_ExpertModeSet[Get]
 //
-//! This function returns the handle of the NVIDIA display specified by the enum 
-//!                index (thisEnum). The client should keep enumerating until it
-//!                returns NVAPI_END_ENUMERATION.
+//! \name NvAPI_OGL_ExpertModeSet[Get] Functions
+//@{
+//!  This function configures OpenGL Expert Mode, an API usage feedback and
+//!  advice reporting mechanism. The effects of this call are
+//!  applied only to the current context, and are reset to the
+//!  defaults when the context is destroyed.
 //!
-//!                Note: Display handles can get invalidated on a modeset, so the calling applications need to
-//!                renum the handles after every modeset.
+//!  \note  This feature is valid at runtime only when GLExpert
+//!         functionality has been built into the OpenGL driver
+//!         installed on the system. All Windows Vista OpenGL
+//!         drivers provided by NVIDIA have this instrumentation
+//!         included by default. Windows XP, however, requires a
+//!         special display driver available with the NVIDIA
+//!         PerfSDK found at developer.nvidia.com.
+//!
+//!  \note These functions are valid only for the current OpenGL
+//!        context. Calling these functions prior to creating a
+//!        context and calling MakeCurrent with it will result
+//!        in errors and undefined behavior.
 //!
 //! SUPPORTED OS:  Windows XP and higher
 //!
 //!
 //! \since Release: 80
 //!
-//! \param [in]  thisEnum      The index of the NVIDIA display.   
-//! \param [out] pNvDispHandle Pointer to the NVIDIA display handle.
+//! \param   expertDetailMask  Mask made up of NVAPI_OGLEXPERT_DETAIL bits,
+//!                            this parameter specifies the detail level in
+//!                            the feedback stream.
 //!
-//! \retval NVAPI_INVALID_ARGUMENT        Either the handle pointer is NULL or enum index too big
-//! \retval NVAPI_OK                      Return a valid NvDisplayHandle based on the enum index
-//! \retval NVAPI_NVIDIA_DEVICE_NOT_FOUND No NVIDIA device found in the system
-//! \retval NVAPI_END_ENUMERATION         No more display device to enumerate
-//! \ingroup disphandle
+//! \param   expertReportMask  Mask made up of NVAPI_OGLEXPERT_REPORT bits,
+//!                            this parameter specifies the areas of
+//!                            functional interest.
+//!
+//! \param   expertOutputMask  Mask made up of NVAPI_OGLEXPERT_OUTPUT bits,
+//!                            this parameter specifies the feedback output
+//!                            location.
+//!
+//! \param   expertCallback    Used in conjunction with OUTPUT_TO_CALLBACK,
+//!                            this is a simple callback function the user
+//!                            may use to obtain the feedback stream. The
+//!                            function will be called once per fully
+//!                            qualified feedback stream extry.
+//!
+//! \retval  NVAPI_API_NOT_INTIALIZED          NVAPI not initialized
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND     No NVIDIA GPU found
+//! \retval  NVAPI_OPENGL_CONTEXT_NOT_CURRENT  No NVIDIA OpenGL context
+//!                                            which supports GLExpert
+//!                                            has been made current
+//! \retval  NVAPI_ERROR                       OpenGL driver failed to load properly
+//! \retval  NVAPI_OK                          Success
+//
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_EnumNvidiaDisplayHandle(NvU32 thisEnum, NvDisplayHandle *pNvDispHandle);
 
+//! \addtogroup oglapi
+//! @{
+#define NVAPI_OGLEXPERT_DETAIL_NONE                 0x00000000
+#define NVAPI_OGLEXPERT_DETAIL_ERROR                0x00000001
+#define NVAPI_OGLEXPERT_DETAIL_SWFALLBACK           0x00000002
+#define NVAPI_OGLEXPERT_DETAIL_BASIC_INFO           0x00000004
+#define NVAPI_OGLEXPERT_DETAIL_DETAILED_INFO        0x00000008
+#define NVAPI_OGLEXPERT_DETAIL_PERFORMANCE_WARNING  0x00000010
+#define NVAPI_OGLEXPERT_DETAIL_QUALITY_WARNING      0x00000020
+#define NVAPI_OGLEXPERT_DETAIL_USAGE_WARNING        0x00000040
+#define NVAPI_OGLEXPERT_DETAIL_ALL                  0xFFFFFFFF
+
+#define NVAPI_OGLEXPERT_REPORT_NONE                 0x00000000
+#define NVAPI_OGLEXPERT_REPORT_ERROR                0x00000001
+#define NVAPI_OGLEXPERT_REPORT_SWFALLBACK           0x00000002
+#define NVAPI_OGLEXPERT_REPORT_PIPELINE_VERTEX      0x00000004
+#define NVAPI_OGLEXPERT_REPORT_PIPELINE_GEOMETRY    0x00000008
+#define NVAPI_OGLEXPERT_REPORT_PIPELINE_XFB         0x00000010
+#define NVAPI_OGLEXPERT_REPORT_PIPELINE_RASTER      0x00000020
+#define NVAPI_OGLEXPERT_REPORT_PIPELINE_FRAGMENT    0x00000040
+#define NVAPI_OGLEXPERT_REPORT_PIPELINE_ROP         0x00000080
+#define NVAPI_OGLEXPERT_REPORT_PIPELINE_FRAMEBUFFER 0x00000100
+#define NVAPI_OGLEXPERT_REPORT_PIPELINE_PIXEL       0x00000200
+#define NVAPI_OGLEXPERT_REPORT_PIPELINE_TEXTURE     0x00000400
+#define NVAPI_OGLEXPERT_REPORT_OBJECT_BUFFEROBJECT  0x00000800
+#define NVAPI_OGLEXPERT_REPORT_OBJECT_TEXTURE       0x00001000
+#define NVAPI_OGLEXPERT_REPORT_OBJECT_PROGRAM       0x00002000
+#define NVAPI_OGLEXPERT_REPORT_OBJECT_FBO           0x00004000
+#define NVAPI_OGLEXPERT_REPORT_FEATURE_SLI          0x00008000
+#define NVAPI_OGLEXPERT_REPORT_ALL                  0xFFFFFFFF
+
+
+#define NVAPI_OGLEXPERT_OUTPUT_TO_NONE       0x00000000
+#define NVAPI_OGLEXPERT_OUTPUT_TO_CONSOLE    0x00000001
+#define NVAPI_OGLEXPERT_OUTPUT_TO_DEBUGGER   0x00000004
+#define NVAPI_OGLEXPERT_OUTPUT_TO_CALLBACK   0x00000008
+#define NVAPI_OGLEXPERT_OUTPUT_TO_ALL        0xFFFFFFFF
+
+//! @}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_EnumNvidiaUnAttachedDisplayHandle
+// FUNCTION TYPE: NVAPI_OGLEXPERT_CALLBACK
 //
-//! This function returns the handle of the NVIDIA unattached display specified by the enum 
-//!                index (thisEnum). The client should keep enumerating until it
-//!                returns error.
-//!                Note: Display handles can get invalidated on a modeset, so the calling applications need to
-//!                renum the handles after every modeset.
+//!   DESCRIPTION: Used in conjunction with OUTPUT_TO_CALLBACK, this is a simple 
+//!                callback function the user may use to obtain the feedback 
+//!                stream. The function will be called once per fully qualified 
+//!                feedback stream entry.
+//!
+//!   \param   categoryId    Contains the bit from the NVAPI_OGLEXPERT_REPORT 
+//!                          mask that corresponds to the current message
+//!   \param   messageId     Unique ID for the current message
+//!   \param   detailLevel   Contains the bit from the NVAPI_OGLEXPERT_DETAIL
+//!                          mask that corresponds to the current message
+//!   \param   objectId      Unique ID of the object that corresponds to the
+//!                          current message
+//!   \param   messageStr    Text string from the current message
+//!
+//!   \ingroup oglapi
+///////////////////////////////////////////////////////////////////////////////
+typedef void (* NVAPI_OGLEXPERT_CALLBACK) (unsigned int categoryId, unsigned int messageId, unsigned int detailLevel, int objectId, const char *messageStr);
+
+
+
+//! \ingroup oglapi
+//! SUPPORTED OS:  Windows XP and higher
+//!
+NVAPI_INTERFACE NvAPI_OGL_ExpertModeSet(NvU32 expertDetailLevel,
+                                        NvU32 expertReportMask,
+                                        NvU32 expertOutputMask,
+                     NVAPI_OGLEXPERT_CALLBACK expertCallback);
+
+//! \addtogroup oglapi
+//! SUPPORTED OS:  Windows XP and higher
+//!
+NVAPI_INTERFACE NvAPI_OGL_ExpertModeGet(NvU32 *pExpertDetailLevel,
+                                        NvU32 *pExpertReportMask,
+                                        NvU32 *pExpertOutputMask,
+                     NVAPI_OGLEXPERT_CALLBACK *pExpertCallback);
+
+//@}
+///////////////////////////////////////////////////////////////////////////////
+//
+//! \name NvAPI_OGL_ExpertModeDefaultsSet[Get] Functions
+//!
+//@{
+//!  This function configures OpenGL Expert Mode global defaults. These settings
+//!  apply to any OpenGL application which starts up after these
+//!  values are applied (i.e. these settings *do not* apply to
+//!  currently running applications).
 //!
 //! SUPPORTED OS:  Windows XP and higher
 //!
 //!
 //! \since Release: 80
 //!
-//! \param [in]  thisEnum                  The index of the NVIDIA display.
-//! \param [out] pNvUnAttachedDispHandle   Pointer to the NVIDIA display handle of the unattached display.
+//! \param   expertDetailLevel Value which specifies the detail level in
+//!                            the feedback stream. This is a mask made up
+//!                            of NVAPI_OGLEXPERT_LEVEL bits.
 //!
-//! \retval NVAPI_INVALID_ARGUMENT         Either the handle pointer is NULL or enum index too big
-//! \retval NVAPI_OK                       Return a valid NvDisplayHandle based on the enum index
-//! \retval NVAPI_NVIDIA_DEVICE_NOT_FOUND  No NVIDIA device found in the system
-//! \retval NVAPI_END_ENUMERATION          No more display device to enumerate.
-//! \ingroup disphandle
+//! \param   expertReportMask  Mask made up of NVAPI_OGLEXPERT_REPORT bits,
+//!                            this parameter specifies the areas of
+//!                            functional interest.
+//!
+//! \param   expertOutputMask  Mask made up of NVAPI_OGLEXPERT_OUTPUT bits,
+//!                            this parameter specifies the feedback output
+//!                            location. Note that using OUTPUT_TO_CALLBACK
+//!                            here is meaningless and has no effect, but
+//!                            using it will not cause an error.
+//!
+//! \return  ::NVAPI_ERROR or ::NVAPI_OK
+//
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_EnumNvidiaUnAttachedDisplayHandle(NvU32 thisEnum, NvUnAttachedDisplayHandle *pNvUnAttachedDispHandle);
+
+//! \ingroup oglapi
+//! SUPPORTED OS:  Windows XP and higher
+//!
+NVAPI_INTERFACE NvAPI_OGL_ExpertModeDefaultsSet(NvU32 expertDetailLevel,
+                                                NvU32 expertReportMask,
+                                                NvU32 expertOutputMask);
+
+//! \addtogroup oglapi
+//! SUPPORTED OS:  Windows XP and higher
+//!
+NVAPI_INTERFACE NvAPI_OGL_ExpertModeDefaultsGet(NvU32 *pExpertDetailLevel,
+                                                NvU32 *pExpertReportMask,
+                                                NvU32 *pExpertOutputMask);
+//@}
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1466,25 +2552,7 @@ NVAPI_INTERFACE NvAPI_GetPhysicalGPUsFromDisplay(NvDisplayHandle hNvDisp, NvPhys
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_GetPhysicalGPUFromUnAttachedDisplay(NvUnAttachedDisplayHandle hNvUnAttachedDisp, NvPhysicalGpuHandle *pPhysicalGpu);
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_CreateDisplayFromUnAttachedDisplay
-//
-//! This function converts the unattached display handle to an active attached display handle.
-//!
-//! At least one GPU must be present in the system and running an NVIDIA display driver.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 80
-//!
-//! \retval NVAPI_INVALID_ARGUMENT         hNvUnAttachedDisp is not valid or pNvDisplay is NULL.
-//! \retval NVAPI_OK                       One or more handles were returned
-//! \retval NVAPI_NVIDIA_DEVICE_NOT_FOUND  No NVIDIA GPU driving a display was found
-//! \ingroup dispcontrol
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_CreateDisplayFromUnAttachedDisplay(NvUnAttachedDisplayHandle hNvUnAttachedDisp, NvDisplayHandle *pNvDisplay);
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -1524,7 +2592,7 @@ NVAPI_INTERFACE NvAPI_GetLogicalGPUFromDisplay(NvDisplayHandle hNvDisp, NvLogica
 //! \ingroup gpu
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_GetLogicalGPUFromPhysicalGPU(NvPhysicalGpuHandle hPhysicalGPU, NvLogicalGpuHandle *pLogicalGPU);
-   
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 // FUNCTION NAME: NvAPI_GetPhysicalGPUsFromLogicalGPU
@@ -1548,6 +2616,2261 @@ NVAPI_INTERFACE NvAPI_GetLogicalGPUFromPhysicalGPU(NvPhysicalGpuHandle hPhysical
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_GetPhysicalGPUsFromLogicalGPU(NvLogicalGpuHandle hLogicalGPU,NvPhysicalGpuHandle hPhysicalGPU[NVAPI_MAX_PHYSICAL_GPUS], NvU32 *pGpuCount);
    
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetGpuCoreCount
+//
+//!   DESCRIPTION: Retrieves the total number of cores defined for a GPU.
+//!                Returns 0 on architectures that don't define GPU cores.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \retval ::NVAPI_INVALID_ARGUMENT              pCount is NULL
+//! \retval ::NVAPI_OK                            *pCount is set
+//! \retval ::NVAPI_NVIDIA_DEVICE_NOT_FOUND       no NVIDIA GPU driving a display was found
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
+//! \retval ::NVAPI_NOT_SUPPORTED                 API call is not supported on current architecture
+//!
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetGpuCoreCount(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pCount);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetAllOutputs
+//
+//!  This function returns set of all GPU-output identifiers as a bitmask.
+//!
+//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetAllDisplayIds.
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 85
+//!
+//! \retval   NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL.
+//! \retval   NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers.
+//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetAllDisplayIds.")
+NVAPI_INTERFACE NvAPI_GPU_GetAllOutputs(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pOutputsMask);
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetConnectedOutputs
+//
+//! This function is the same as NvAPI_GPU_GetAllOutputs() but returns only the set of GPU output 
+//! identifiers that are connected to display devices.
+//!
+//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 80
+//!
+//! \retval   NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL.
+//! \retval   NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers.
+//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.")
+NVAPI_INTERFACE NvAPI_GPU_GetConnectedOutputs(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pOutputsMask);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetConnectedSLIOutputs
+//
+//!   DESCRIPTION: This function is the same as NvAPI_GPU_GetConnectedOutputs() but returns only the set of GPU-output 
+//!                identifiers that can be selected in an SLI configuration. 
+//!                 NOTE: This function matches NvAPI_GPU_GetConnectedOutputs()
+//!                 - On systems which are not SLI capable.
+//!                 - If the queried GPU is not part of a valid SLI group.
+//!
+//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 170
+//!
+//! \retval   NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL
+//! \retval   NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers
+//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
+//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE: hPhysicalGpu was not a physical GPU handle
+//! 
+//! \ingroup gpu  
+///////////////////////////////////////////////////////////////////////////////
+__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.")
+NVAPI_INTERFACE NvAPI_GPU_GetConnectedSLIOutputs(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pOutputsMask);
+
+
+
+
+//! \ingroup gpu
+typedef enum
+{
+    NV_MONITOR_CONN_TYPE_UNINITIALIZED = 0,
+    NV_MONITOR_CONN_TYPE_VGA,
+    NV_MONITOR_CONN_TYPE_COMPONENT,
+    NV_MONITOR_CONN_TYPE_SVIDEO,
+    NV_MONITOR_CONN_TYPE_HDMI,
+    NV_MONITOR_CONN_TYPE_DVI,
+    NV_MONITOR_CONN_TYPE_LVDS,
+    NV_MONITOR_CONN_TYPE_DP,
+    NV_MONITOR_CONN_TYPE_COMPOSITE,
+    NV_MONITOR_CONN_TYPE_UNKNOWN =  -1
+} NV_MONITOR_CONN_TYPE;
+
+
+
+//! \addtogroup gpu
+//! @{
+#define NV_GPU_CONNECTED_IDS_FLAG_UNCACHED          NV_BIT(0) //!< Get uncached connected devices
+#define NV_GPU_CONNECTED_IDS_FLAG_SLI               NV_BIT(1) //!< Get devices such that those can be selected in an SLI configuration
+#define NV_GPU_CONNECTED_IDS_FLAG_LIDSTATE          NV_BIT(2) //!< Get devices such that to reflect the Lid State
+#define NV_GPU_CONNECTED_IDS_FLAG_FAKE              NV_BIT(3) //!< Get devices that includes the fake connected monitors
+#define NV_GPU_CONNECTED_IDS_FLAG_EXCLUDE_MST       NV_BIT(4) //!< Excludes devices that are part of the multi stream topology.               
+//! @}
+
+//! \ingroup gpu
+typedef struct _NV_GPU_DISPLAYIDS
+{
+    NvU32    version;
+    NV_MONITOR_CONN_TYPE connectorType; //!< out: vga, tv, dvi, hdmi and dp. This is reserved for future use and clients should not rely on this information. Instead get the 
+                                        //!< GPU connector type from NvAPI_GPU_GetConnectorInfo/NvAPI_GPU_GetConnectorInfoEx
+    NvU32    displayId;                 //!< this is a unique identifier for each device
+    NvU32    isDynamic:1;               //!< if bit is set then this display is part of MST topology and it's a dynamic
+    NvU32    isMultiStreamRootNode:1;   //!< if bit is set then this displayID belongs to a multi stream enabled connector(root node). Note that when multi stream is enabled and 
+                                        //!< a single multi stream capable monitor is connected to it, the monitor will share the display id with the RootNode. 
+                                        //!< When there is more than one monitor connected in a multi stream topology, then the root node will have a separate displayId.
+    NvU32    isActive:1;                //!< if bit is set then this display is being actively driven
+    NvU32    isCluster:1;               //!< if bit is set then this display is the representative display for a stream clone
+    NvU32    isOSVisible:1;             //!< if bit is set, then this display is reported to the OS   
+    NvU32    reserved: 27;              //!< must be zero
+} NV_GPU_DISPLAYIDS;
+
+//! \ingroup gpu
+//! Macro for constructing the version field of ::_NV_GPU_DISPLAYIDS
+#define NV_GPU_DISPLAYIDS_VER          MAKE_NVAPI_VERSION(NV_GPU_DISPLAYIDS,1)
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetConnectedDisplayIds
+//
+//! \code
+//!   DESCRIPTION: Due to space limitation NvAPI_GPU_GetConnectedOutputs can return maximum 32 devices, but 
+//!                this is no longer true for DPMST. NvAPI_GPU_GetConnectedDisplayIds will return all 
+//!                the connected display devices in the form of displayIds for the associated hPhysicalGpu.
+//!                This function can accept set of flags to request cached, uncached, sli and lid to get the connected devices.
+//!                Default value for flags will be cached .
+//! HOW TO USE: 1) for each PhysicalGpu, make a call to get the number of connected displayId's 
+//!                using NvAPI_GPU_GetConnectedDisplayIds by passing the pDisplayIds as NULL
+//!                On call success:
+//!             2) Allocate memory based on pDisplayIdCount then make a call NvAPI_GPU_GetConnectedDisplayIds to populate DisplayIds
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//! PARAMETERS:     hPhysicalGpu (IN)  - GPU selection
+//!                 flags        (IN)  - One or more defines from NV_GPU_CONNECTED_IDS_FLAG_* as valid flags. 
+//!                 pDisplayIds  (IN/OUT) - Pointer to an NV_GPU_DISPLAYIDS struct, each entry represents a one displayID and its attributes
+//!                 pDisplayIdCount(OUT)- Number of displayId's.
+//!
+//! RETURN STATUS: NVAPI_INVALID_ARGUMENT: hPhysicalGpu or pDisplayIds or pDisplayIdCount is NULL
+//!                NVAPI_OK: *pDisplayIds contains a set of GPU-output identifiers
+//!                NVAPI_NVIDIA_DEVICE_NOT_FOUND: no NVIDIA GPU driving a display was found
+//!                NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE: hPhysicalGpu was not a physical GPU handle
+//! \endcode
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetConnectedDisplayIds(__in NvPhysicalGpuHandle hPhysicalGpu,  __out_ecount_part_opt(*pDisplayIdCount, *pDisplayIdCount) NV_GPU_DISPLAYIDS* pDisplayIds, __inout NvU32* pDisplayIdCount, __in NvU32 flags);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetAllDisplayIds
+//
+//!   DESCRIPTION: This API returns display IDs for all possible outputs on the GPU.
+//!                For DPMST connector, it will return display IDs for all the video sinks in the topology. \n
+//! HOW TO USE: 1. The first call should be made to get the all display ID count. To get the display ID count, send in \n
+//!                  a) hPhysicalGpu    - a valid GPU handle(enumerated using NvAPI_EnumPhysicalGPUs()) as input,      \n
+//!                  b) pDisplayIds     - NULL, as we just want to get the display ID count.                           \n 
+//!                  c) pDisplayIdCount - a valid pointer to NvU32, whose value is set to ZERO.                        \n
+//!                If all parameters are correct and this call is successful, this call will return the display ID's count. \n
+//!             2. To get the display ID array, make the second call to NvAPI_GPU_GetAllDisplayIds() with              \n
+//!                  a) hPhysicalGpu    - should be same value which was sent in first call,                           \n
+//!                  b) pDisplayIds     - pointer to the display ID array allocated by caller based on display ID count,    \n 
+//!                                       eg. malloc(sizeof(NV_GPU_DISPLAYIDS) * pDisplayIdCount).                     \n
+//!                  c) pDisplayIdCount - a valid pointer to NvU32. This indicates for how many display IDs            \n
+//!                                       the memory is allocated(pDisplayIds) by the caller.                          \n
+//!                If all parameters are correct and this call is successful, this call will return the display ID array and actual
+//!                display ID count (which was obtained in the first call to NvAPI_GPU_GetAllDisplayIds). If the input display ID count is
+//!                less than the actual display ID count, it will overwrite the input and give the pDisplayIdCount as actual count and the
+//!                API will return NVAPI_INSUFFICIENT_BUFFER.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \param [in]     hPhysicalGpu         GPU selection.
+//! \param [in,out] DisplayIds           Pointer to an array of NV_GPU_DISPLAYIDS structures, each entry represents one displayID 
+//!                                      and its attributes.
+//! \param [in,out] pDisplayIdCount      As input, this parameter indicates the number of display's id's for which caller has 
+//!                                      allocated the memory. As output, it will return the actual number of display IDs.
+//!
+//! \return  This API can return any of the error codes enumerated in #NvAPI_Status. If there are return error codes with 
+//!          specific meaning for this API, they are listed below.
+//!
+//! \retval  NVAPI_INSUFFICIENT_BUFFER  When the input buffer(pDisplayIds) is less than the actual number of display IDs, this API 
+//!                                     will return NVAPI_INSUFFICIENT_BUFFER. 
+//!
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetAllDisplayIds(__in NvPhysicalGpuHandle hPhysicalGpu, __out_ecount_part_opt(*pDisplayIdCount, *pDisplayIdCount) NV_GPU_DISPLAYIDS* pDisplayIds, __inout NvU32* pDisplayIdCount);
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetConnectedOutputsWithLidState
+//
+//!  This function is similar to NvAPI_GPU_GetConnectedOutputs(), and returns the connected display identifiers that are connected 
+//!  as an output mask but unlike NvAPI_GPU_GetConnectedOutputs() this API "always" reflects the Lid State in the output mask.
+//!  Thus if you expect the LID close state to be available in the connection mask use this API.
+//!  - If LID is closed then this API will remove the LID panel from the connected display identifiers. 
+//!  - If LID is open then this API will reflect the LID panel in the connected display identifiers. 
+//!
+//! \note This API should be used on notebook systems and on systems where the LID state is required in the connection 
+//!       output mask. On desktop systems the returned identifiers will match NvAPI_GPU_GetConnectedOutputs().
+//!
+//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 95
+//!
+//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL
+//! \retval  NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.")
+NVAPI_INTERFACE NvAPI_GPU_GetConnectedOutputsWithLidState(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pOutputsMask);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetConnectedSLIOutputsWithLidState
+//
+//!   DESCRIPTION: This function is the same as NvAPI_GPU_GetConnectedOutputsWithLidState() but returns only the set
+//!                of GPU-output identifiers that can be selected in an SLI configuration. With SLI disabled,
+//!                this function matches NvAPI_GPU_GetConnectedOutputsWithLidState().
+//!
+//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 170
+//!
+//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL
+//! \retval  NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
+//!
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.")
+NVAPI_INTERFACE NvAPI_GPU_GetConnectedSLIOutputsWithLidState(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pOutputsMask);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetSystemType
+//
+//! \fn NvAPI_GPU_GetSystemType(NvPhysicalGpuHandle hPhysicalGpu, NV_SYSTEM_TYPE *pSystemType)
+//!  This function identifies whether the GPU is a notebook GPU or a desktop GPU.
+//!       
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 95
+//!         
+//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL
+//! \retval  NVAPI_OK                           *pSystemType contains the GPU system type
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE: hPhysicalGpu was not a physical GPU handle
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup gpu
+//! Used in NvAPI_GPU_GetSystemType()
+typedef enum
+{
+    NV_SYSTEM_TYPE_UNKNOWN = 0,
+    NV_SYSTEM_TYPE_LAPTOP  = 1,
+    NV_SYSTEM_TYPE_DESKTOP = 2,
+
+} NV_SYSTEM_TYPE;
+
+
+
+//! \ingroup gpu
+NVAPI_INTERFACE NvAPI_GPU_GetSystemType(NvPhysicalGpuHandle hPhysicalGpu, NV_SYSTEM_TYPE *pSystemType);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetActiveOutputs
+//
+//!  This function is the same as NvAPI_GPU_GetAllOutputs but returns only the set of GPU output 
+//!  identifiers that are actively driving display devices.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 85
+//!
+//! \retval    NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL.
+//! \retval    NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers.
+//! \retval    NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval    NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetActiveOutputs(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pOutputsMask);
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_SetEDID
+//
+//!  Thus function sets the EDID data for the specified GPU handle and connection bit mask.
+//!  displayOutputId should have exactly 1 bit set to indicate a single display. See \ref handles.
+//!  \note The EDID will be cached across the boot session and will be enumerated to the OS in this call.
+//!        To remove the EDID set sizeofEDID to zero.
+//!        OS and NVAPI connection status APIs will reflect the newly set or removed EDID dynamically.
+//!
+//!                This feature will NOT be supported on the following boards:
+//!                - GeForce
+//!                - Quadro VX 
+//!                - Tesla  
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 100
+//!
+//! \retval  NVAPI_INVALID_ARGUMENT              pEDID is NULL; displayOutputId has 0 or > 1 bits set
+//! \retval  NVAPI_OK                           *pEDID data was applied to the requested displayOutputId.
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE: hPhysicalGpu was not a physical GPU handle.
+//! \retval  NVAPI_NOT_SUPPORTED                 For the above mentioned GPUs
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_SetEDID(NvPhysicalGpuHandle hPhysicalGpu, NvU32 displayOutputId, NV_EDID *pEDID);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetOutputType
+//
+//! \fn NvAPI_GPU_GetOutputType(NvPhysicalGpuHandle hPhysicalGpu, NvU32 outputId, NV_GPU_OUTPUT_TYPE *pOutputType)
+//!  This function returns the output type for a specific physical GPU handle and outputId (exactly 1 bit set - see \ref handles).
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \Version Earliest supported ForceWare version: 82.61
+//!
+//! \retval     NVAPI_INVALID_ARGUMENT              hPhysicalGpu, outputId, or pOutputsMask is NULL; or outputId has > 1 bit set
+//! \retval     NVAPI_OK                           *pOutputType contains a NvGpuOutputType value
+//! \retval     NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
+//! \retval     NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup gpu
+//! used in NvAPI_GPU_GetOutputType()
+typedef enum _NV_GPU_OUTPUT_TYPE
+{
+    NVAPI_GPU_OUTPUT_UNKNOWN  = 0,
+    NVAPI_GPU_OUTPUT_CRT      = 1,     //!<  CRT display device
+    NVAPI_GPU_OUTPUT_DFP      = 2,     //!<  Digital Flat Panel display device
+    NVAPI_GPU_OUTPUT_TV       = 3,     //!<  TV display device
+} NV_GPU_OUTPUT_TYPE;
+
+
+
+
+//! \ingroup gpu
+NVAPI_INTERFACE NvAPI_GPU_GetOutputType(NvPhysicalGpuHandle hPhysicalGpu, NvU32 outputId, NV_GPU_OUTPUT_TYPE *pOutputType);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_ValidateOutputCombination
+//
+//!  This function determines if a set of GPU outputs can be active 
+//!  simultaneously.  While a GPU may have <n> outputs, typically they cannot 
+//!  all be active at the same time due to internal resource sharing.
+//!
+//!  Given a physical GPU handle and a mask of candidate outputs, this call
+//!  will return NVAPI_OK if all of the specified outputs can be driven
+//!  simultaneously.  It will return NVAPI_INVALID_COMBINATION if they cannot.
+//!                
+//!  Use NvAPI_GPU_GetAllOutputs() to determine which outputs are candidates.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 85
+//!
+//! \retval  NVAPI_OK                            Combination of outputs in outputsMask are valid (can be active simultaneously).
+//! \retval  NVAPI_INVALID_COMBINATION           Combination of outputs in outputsMask are NOT valid.
+//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or outputsMask does not have at least 2 bits set.
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_ValidateOutputCombination(NvPhysicalGpuHandle hPhysicalGpu, NvU32 outputsMask);
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetFullName
+//
+//!  This function retrieves the full GPU name as an ASCII string - for example, "Quadro FX 1400".
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 90
+//!
+//! \return  NVAPI_ERROR or NVAPI_OK
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetFullName(NvPhysicalGpuHandle hPhysicalGpu, NvAPI_ShortString szName);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetPCIIdentifiers
+//
+//!  This function returns the PCI identifiers associated with this GPU.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 90
+//!
+//! \param   DeviceId      The internal PCI device identifier for the GPU.
+//! \param   SubSystemId   The internal PCI subsystem identifier for the GPU.
+//! \param   RevisionId    The internal PCI device-specific revision identifier for the GPU.
+//! \param   ExtDeviceId   The external PCI device identifier for the GPU.
+//!
+//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or an argument is NULL
+//! \retval  NVAPI_OK                            Arguments are populated with PCI identifiers
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetPCIIdentifiers(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pDeviceId,NvU32 *pSubSystemId,NvU32 *pRevisionId,NvU32 *pExtDeviceId);
+    
+
+
+
+//! \ingroup gpu
+//! Used in NvAPI_GPU_GetGPUType().    
+typedef enum _NV_GPU_TYPE
+{
+    NV_SYSTEM_TYPE_GPU_UNKNOWN     = 0, 
+    NV_SYSTEM_TYPE_IGPU            = 1, //!< Integrated GPU
+    NV_SYSTEM_TYPE_DGPU            = 2, //!< Discrete GPU
+} NV_GPU_TYPE; 
+
+
+/////////////////////////////////////////////////////////////////////////////// 
+// 
+// FUNCTION NAME: NvAPI_GPU_GetGPUType 
+// 
+//!  DESCRIPTION: This function returns the GPU type (integrated or discrete).
+//!               See ::NV_GPU_TYPE. 
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 173
+//!
+//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu 
+//! \retval  NVAPI_OK                           *pGpuType contains the GPU type 
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found 
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE: hPhysicalGpu was not a physical GPU handle 
+//!
+//!  \ingroup gpu 
+///////////////////////////////////////////////////////////////////////////////     
+NVAPI_INTERFACE NvAPI_GPU_GetGPUType(__in NvPhysicalGpuHandle hPhysicalGpu, __out NV_GPU_TYPE *pGpuType);
+
+
+
+
+//! \ingroup gpu
+//! Used in NvAPI_GPU_GetBusType()
+typedef enum _NV_GPU_BUS_TYPE
+{
+    NVAPI_GPU_BUS_TYPE_UNDEFINED    = 0,
+    NVAPI_GPU_BUS_TYPE_PCI          = 1,
+    NVAPI_GPU_BUS_TYPE_AGP          = 2,
+    NVAPI_GPU_BUS_TYPE_PCI_EXPRESS  = 3,
+    NVAPI_GPU_BUS_TYPE_FPCI         = 4,
+    NVAPI_GPU_BUS_TYPE_AXI          = 5,
+} NV_GPU_BUS_TYPE;
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetBusType
+//
+//!  This function returns the type of bus associated with this GPU.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 90
+//!
+//! \return      This API can return any of the error codes enumerated in #NvAPI_Status. If there are return error codes with 
+//!              specific meaning for this API, they are listed below.
+//! \retval      NVAPI_INVALID_ARGUMENT             hPhysicalGpu or pBusType is NULL.
+//! \retval      NVAPI_OK                          *pBusType contains bus identifier.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetBusType(NvPhysicalGpuHandle hPhysicalGpu,NV_GPU_BUS_TYPE *pBusType);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetBusId
+//
+//!   DESCRIPTION: Returns the ID of the bus associated with this GPU.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 167
+//!
+//!  \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pBusId is NULL.
+//!  \retval  NVAPI_OK                           *pBusId contains the bus ID.
+//!  \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//!  \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//!
+//!  \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetBusId(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pBusId);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetBusSlotId
+//
+//!   DESCRIPTION: Returns the ID of the bus slot associated with this GPU.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 167
+//!
+//!  \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pBusSlotId is NULL.
+//!  \retval  NVAPI_OK                           *pBusSlotId contains the bus slot ID.
+//!  \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//!  \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//!
+//!  \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetBusSlotId(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pBusSlotId);
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetIRQ
+//
+//!  This function returns the interrupt number associated with this GPU.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 90
+//!
+//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pIRQ is NULL.
+//! \retval  NVAPI_OK                           *pIRQ contains interrupt number.
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetIRQ(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pIRQ);
+    
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetVbiosRevision
+//
+//!  This function returns the revision of the video BIOS associated with this GPU.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 90
+//!
+//! \retval    NVAPI_INVALID_ARGUMENT               hPhysicalGpu or pBiosRevision is NULL.
+//! \retval    NVAPI_OK                            *pBiosRevision contains revision number.
+//! \retval    NVAPI_NVIDIA_DEVICE_NOT_FOUND        No NVIDIA GPU driving a display was found.
+//! \retval    NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE   hPhysicalGpu was not a physical GPU handle.
+//! \ingroup   gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetVbiosRevision(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pBiosRevision);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetVbiosOEMRevision
+//
+//!  This function returns the OEM revision of the video BIOS associated with this GPU.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 90
+//!
+//! \retval    NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pBiosRevision is NULL
+//! \retval    NVAPI_OK                           *pBiosRevision contains revision number
+//! \retval    NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
+//! \retval    NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
+//! \ingroup   gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetVbiosOEMRevision(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pBiosRevision);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetVbiosVersionString
+//
+//!  This function returns the full video BIOS version string in the form of xx.xx.xx.xx.yy where
+//!  - xx numbers come from NvAPI_GPU_GetVbiosRevision() and 
+//!  - yy comes from NvAPI_GPU_GetVbiosOEMRevision().
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 90
+//!
+//! \retval   NVAPI_INVALID_ARGUMENT              hPhysicalGpu is NULL.
+//! \retval   NVAPI_OK                            szBiosRevision contains version string.
+//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetVbiosVersionString(NvPhysicalGpuHandle hPhysicalGpu,NvAPI_ShortString szBiosRevision);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetAGPAperture
+//
+//!  This function returns the AGP aperture in megabytes.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 90
+//!
+//! \retval   NVAPI_INVALID_ARGUMENT              pSize is NULL.
+//! \retval   NVAPI_OK                            Call successful.
+//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetAGPAperture(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pSize);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetCurrentAGPRate
+//
+//!  This function returns the current AGP Rate (0 = AGP not present, 1 = 1x, 2 = 2x, etc.).
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 90
+//!
+//! \retval   NVAPI_INVALID_ARGUMENT              pRate is NULL.
+//! \retval   NVAPI_OK                            Call successful.
+//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetCurrentAGPRate(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pRate);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetCurrentPCIEDownstreamWidth
+//
+//!  This function returns the number of PCIE lanes being used for the PCIE interface 
+//!  downstream from the GPU.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 90
+//!
+//! \retval  NVAPI_INVALID_ARGUMENT              pWidth is NULL.
+//! \retval  NVAPI_OK                            Call successful.
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetCurrentPCIEDownstreamWidth(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pWidth);
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetPhysicalFrameBufferSize
+//
+//!   This function returns the physical size of framebuffer in KB.  This does NOT include any
+//!   system RAM that may be dedicated for use by the GPU.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 90
+//!
+//! \retval  NVAPI_INVALID_ARGUMENT              pSize is NULL
+//! \retval  NVAPI_OK                            Call successful
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetPhysicalFrameBufferSize(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pSize);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetVirtualFrameBufferSize
+//
+//!  This function returns the virtual size of framebuffer in KB.  This includes the physical RAM plus any
+//!  system RAM that has been dedicated for use by the GPU.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 90
+//!
+//! \retval  NVAPI_INVALID_ARGUMENT              pSize is NULL.
+//! \retval  NVAPI_OK                            Call successful.
+//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
+//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetVirtualFrameBufferSize(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pSize);
+
+
+ 
+
+
+//! \ingroup gpu
+typedef struct _NV_BOARD_INFO
+{
+    NvU32 version;                   //!< structure version
+    NvU8 BoardNum[16];               //!< Board Serial Number
+
+}NV_BOARD_INFO_V1;
+
+//! \ingroup gpu
+typedef NV_BOARD_INFO_V1    NV_BOARD_INFO;
+//! \ingroup gpu
+#define NV_BOARD_INFO_VER1  MAKE_NVAPI_VERSION(NV_BOARD_INFO_V1,1)
+//! \ingroup gpu
+#define NV_BOARD_INFO_VER   NV_BOARD_INFO_VER1
+
+//! SUPPORTED OS:  Windows XP and higher
+//!
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetBoardInfo
+//
+//!   DESCRIPTION: This API Retrieves the Board information (a unique GPU Board Serial Number) stored in the InfoROM.
+//!
+//! \param [in]      hPhysicalGpu       Physical GPU Handle.
+//! \param [in,out]  NV_BOARD_INFO      Board Information.
+//!
+//! \retval ::NVAPI_OK                     completed request
+//! \retval ::NVAPI_ERROR                  miscellaneous error occurred
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  handle passed is not a physical GPU handle
+//! \retval ::NVAPI_API_NOT_INTIALIZED            NVAPI not initialized
+//! \retval ::NVAPI_INVALID_POINTER               pBoardInfo is NULL
+//! \retval ::NVAPI_INCOMPATIBLE_STRUCT_VERSION   the version of the INFO struct is not supported
+//! 
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetBoardInfo(NvPhysicalGpuHandle hPhysicalGpu, NV_BOARD_INFO *pBoardInfo);
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  GPU Clock Control
+//
+//  These APIs allow the user to get and set individual clock domains
+//  on a per-GPU basis.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+
+//! \ingroup gpuclock
+//! @{
+#define NVAPI_MAX_GPU_CLOCKS 32
+#define NVAPI_MAX_GPU_PUBLIC_CLOCKS     32
+#define NVAPI_MAX_GPU_PERF_CLOCKS       32
+#define NVAPI_MAX_GPU_PERF_VOLTAGES     16
+#define NVAPI_MAX_GPU_PERF_PSTATES      16
+//! @}
+
+//! \ingroup gpuclock
+typedef enum _NV_GPU_PUBLIC_CLOCK_ID
+{
+    NVAPI_GPU_PUBLIC_CLOCK_GRAPHICS  = 0,
+    NVAPI_GPU_PUBLIC_CLOCK_MEMORY    = 4,
+    NVAPI_GPU_PUBLIC_CLOCK_PROCESSOR = 7,
+    NVAPI_GPU_PUBLIC_CLOCK_UNDEFINED = NVAPI_MAX_GPU_PUBLIC_CLOCKS,
+} NV_GPU_PUBLIC_CLOCK_ID;
+
+
+//! \ingroup gpuclock
+typedef enum _NV_GPU_PERF_VOLTAGE_INFO_DOMAIN_ID
+{
+    NVAPI_GPU_PERF_VOLTAGE_INFO_DOMAIN_CORE      = 0,
+    NVAPI_GPU_PERF_VOLTAGE_INFO_DOMAIN_UNDEFINED = NVAPI_MAX_GPU_PERF_VOLTAGES,
+} NV_GPU_PERF_VOLTAGE_INFO_DOMAIN_ID;
+
+
+//! \addtogroup gpupstate
+//! @{
+
+typedef enum _NV_GPU_PERF_PSTATE_ID
+{
+    NVAPI_GPU_PERF_PSTATE_P0 = 0,
+    NVAPI_GPU_PERF_PSTATE_P1,
+    NVAPI_GPU_PERF_PSTATE_P2,
+    NVAPI_GPU_PERF_PSTATE_P3,
+    NVAPI_GPU_PERF_PSTATE_P4,
+    NVAPI_GPU_PERF_PSTATE_P5,
+    NVAPI_GPU_PERF_PSTATE_P6,
+    NVAPI_GPU_PERF_PSTATE_P7,
+    NVAPI_GPU_PERF_PSTATE_P8,
+    NVAPI_GPU_PERF_PSTATE_P9,
+    NVAPI_GPU_PERF_PSTATE_P10,
+    NVAPI_GPU_PERF_PSTATE_P11,
+    NVAPI_GPU_PERF_PSTATE_P12,
+    NVAPI_GPU_PERF_PSTATE_P13,
+    NVAPI_GPU_PERF_PSTATE_P14,
+    NVAPI_GPU_PERF_PSTATE_P15,
+    NVAPI_GPU_PERF_PSTATE_UNDEFINED = NVAPI_MAX_GPU_PERF_PSTATES,
+    NVAPI_GPU_PERF_PSTATE_ALL,
+
+} NV_GPU_PERF_PSTATE_ID;
+
+//! @}
+
+
+
+//! \ingroup gpupstate
+//! Used in NvAPI_GPU_GetPstatesInfoEx()
+typedef struct
+{
+    NvU32   version;
+    NvU32   flags;           //!< - bit 0 indicates if perfmon is enabled or not
+                             //!< - bit 1 indicates if dynamic Pstate is capable or not
+                             //!< - bit 2 indicates if dynamic Pstate is enable or not
+                             //!< - all other bits must be set to 0
+    NvU32   numPstates;      //!< The number of available p-states 
+    NvU32   numClocks;       //!< The number of clock domains supported by each P-State
+    struct
+    {
+        NV_GPU_PERF_PSTATE_ID   pstateId; //!< ID of the p-state.  
+        NvU32                   flags;    //!< - bit 0 indicates if the PCIE limit is GEN1 or GEN2
+                                          //!< - bit 1 indicates if the Pstate is overclocked or not
+                                          //!< - bit 2 indicates if the Pstate is overclockable or not
+                                          //!< - all other bits must be set to 0
+        struct
+        {
+            NV_GPU_PUBLIC_CLOCK_ID           domainId;  //!< ID of the clock domain   
+            NvU32                               flags;  //!< Reserved. Must be set to 0
+            NvU32                                freq;  //!< Clock frequency in kHz
+
+        } clocks[NVAPI_MAX_GPU_PERF_CLOCKS];
+    } pstates[NVAPI_MAX_GPU_PERF_PSTATES];
+
+} NV_GPU_PERF_PSTATES_INFO_V1;
+
+
+//! \ingroup gpupstate
+typedef struct
+{
+    NvU32   version;
+    NvU32   flags;             //!< - bit 0 indicates if perfmon is enabled or not
+                               //!< - bit 1 indicates if dynamic Pstate is capable or not
+                               //!< - bit 2 indicates if dynamic Pstate is enable or not
+                               //!< - all other bits must be set to 0
+    NvU32   numPstates;        //!< The number of available p-states 
+    NvU32   numClocks;         //!< The number of clock domains supported by each P-State   
+    NvU32   numVoltages; 
+    struct
+    {
+        NV_GPU_PERF_PSTATE_ID   pstateId;  //!< ID of the p-state. 
+        NvU32                   flags;     //!< - bit 0 indicates if the PCIE limit is GEN1 or GEN2
+                                           //!< - bit 1 indicates if the Pstate is overclocked or not
+                                           //!< - bit 2 indicates if the Pstate is overclockable or not
+                                           //!< - all other bits must be set to 0
+        struct
+        {
+            NV_GPU_PUBLIC_CLOCK_ID            domainId;       
+            NvU32                                flags; //!< bit 0 indicates if this clock is overclockable
+                                                        //!< all other bits must be set to 0
+            NvU32                                 freq;
+
+        } clocks[NVAPI_MAX_GPU_PERF_CLOCKS];
+        struct
+        {
+            NV_GPU_PERF_VOLTAGE_INFO_DOMAIN_ID domainId; //!< ID of the voltage domain, containing flags and mvolt info 
+            NvU32                       flags;           //!< Reserved for future use. Must be set to 0
+            NvU32                       mvolt;           //!< Voltage in mV  
+
+        } voltages[NVAPI_MAX_GPU_PERF_VOLTAGES];
+
+    } pstates[NVAPI_MAX_GPU_PERF_PSTATES];  //!< Valid index range is 0 to numVoltages-1
+
+} NV_GPU_PERF_PSTATES_INFO_V2;
+
+//! \ingroup gpupstate
+typedef  NV_GPU_PERF_PSTATES_INFO_V2 NV_GPU_PERF_PSTATES_INFO;
+
+
+//! \ingroup gpupstate
+//! @{
+
+//! Macro for constructing the version field of NV_GPU_PERF_PSTATES_INFO_V1 
+#define NV_GPU_PERF_PSTATES_INFO_VER1  MAKE_NVAPI_VERSION(NV_GPU_PERF_PSTATES_INFO_V1,1)
+
+//! Macro for constructing the version field of NV_GPU_PERF_PSTATES_INFO_V2 
+#define NV_GPU_PERF_PSTATES_INFO_VER2  MAKE_NVAPI_VERSION(NV_GPU_PERF_PSTATES_INFO_V2,2)
+
+//! Macro for constructing the version field of NV_GPU_PERF_PSTATES_INFO 
+#define NV_GPU_PERF_PSTATES_INFO_VER   NV_GPU_PERF_PSTATES_INFO_VER2
+
+//! @}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_GPU_GetPstatesInfoEx
+//
+//! DESCRIPTION:     This API retrieves all performance states (P-States) information. This is the same as
+//!                  NvAPI_GPU_GetPstatesInfo(), but supports an input flag for various options.
+//!
+//!                  P-States are GPU active/executing performance capability and power consumption states.
+//!
+//!                  P-States ranges from P0 to P15, with P0 being the highest performance/power state, and
+//!                  P15 being the lowest performance/power state. Each P-State, if available, maps to a
+//!                  performance level. Not all P-States are available on a given system. The definitions
+//!                  of each P-State are currently as follows: \n
+//!                  - P0/P1 - Maximum 3D performance
+//!                  - P2/P3 - Balanced 3D performance-power
+//!                  - P8 - Basic HD video playback
+//!                  - P10 - DVD playback
+//!                  - P12 - Minimum idle power consumption
+//!
+//! \deprecated  Do not use this function - it is deprecated in release 304. Instead, use NvAPI_GPU_GetPstates20.
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \param [in]     hPhysicalGPU       GPU selection.
+//! \param [out]    pPerfPstatesInfo   P-States information retrieved, as detailed below: \n
+//!                  - flags is reserved for future use.
+//!                  - numPstates is the number of available P-States
+//!                  - numClocks is the number of clock domains supported by each P-State
+//!                  - pstates has valid index range from 0 to numPstates - 1
+//!                  - pstates[i].pstateId is the ID of the P-State,
+//!                      containing the following info:
+//!                    - pstates[i].flags containing the following info:
+//!                        - bit 0 indicates if the PCIE limit is GEN1 or GEN2
+//!                        - bit 1 indicates if the Pstate is overclocked or not
+//!                        - bit 2 indicates if the Pstate is overclockable or not
+//!                    - pstates[i].clocks has valid index range from 0 to numClocks -1
+//!                    - pstates[i].clocks[j].domainId is the public ID of the clock domain,
+//!                        containing the following info:
+//!                      - pstates[i].clocks[j].flags containing the following info:
+//!                          bit 0 indicates if the clock domain is overclockable or not
+//!                      - pstates[i].clocks[j].freq is the clock frequency in kHz
+//!                    - pstates[i].voltages has a valid index range from 0 to numVoltages - 1
+//!                    - pstates[i].voltages[j].domainId is the ID of the voltage domain,
+//!                        containing the following info:
+//!                      - pstates[i].voltages[j].flags is reserved for future use.
+//!                      - pstates[i].voltages[j].mvolt is the voltage in mV
+//!                  inputFlags(IN)   - This can be used to select various options:
+//!                    - if bit 0 is set, pPerfPstatesInfo would contain the default settings
+//!                        instead of the current, possibily overclocked settings.
+//!                    - if bit 1 is set, pPerfPstatesInfo would contain the maximum clock 
+//!                        frequencies instead of the nominal frequencies.
+//!                    - if bit 2 is set, pPerfPstatesInfo would contain the minimum clock 
+//!                        frequencies instead of the nominal frequencies.
+//!                    - all other bits must be set to 0.
+//!
+//! \retval ::NVAPI_OK                            Completed request
+//! \retval ::NVAPI_ERROR                         Miscellaneous error occurred
+//! \retval ::NVAPI_HANDLE_INVALIDATED            Handle passed has been invalidated (see user guide)
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  Handle passed is not a physical GPU handle
+//! \retval ::NVAPI_INCOMPATIBLE_STRUCT_VERSION   The version of the NV_GPU_PERF_PSTATES struct is not supported
+//!
+//! \ingroup gpupstate 
+///////////////////////////////////////////////////////////////////////////////
+__nvapi_deprecated_function("Do not use this function - it is deprecated in release 304. Instead, use NvAPI_GPU_GetPstates20.")
+NVAPI_INTERFACE NvAPI_GPU_GetPstatesInfoEx(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_PERF_PSTATES_INFO *pPerfPstatesInfo, NvU32 inputFlags);
+
+
+//! \addtogroup gpupstate
+//! @{
+
+#define NVAPI_MAX_GPU_PSTATE20_PSTATES          16
+#define NVAPI_MAX_GPU_PSTATE20_CLOCKS           8
+#define NVAPI_MAX_GPU_PSTATE20_BASE_VOLTAGES    4
+
+//! Used to identify clock type
+typedef enum
+{
+    //! Clock domains that use single frequency value within given pstate
+    NVAPI_GPU_PERF_PSTATE20_CLOCK_TYPE_SINGLE = 0,
+
+    //! Clock domains that allow range of frequency values within given pstate
+    NVAPI_GPU_PERF_PSTATE20_CLOCK_TYPE_RANGE,
+} NV_GPU_PERF_PSTATE20_CLOCK_TYPE_ID;
+
+//! Used to describe both voltage and frequency deltas
+typedef struct
+{
+	//! Value of parameter delta (in respective units [kHz, uV])
+    NvS32       value;
+
+    struct
+    {
+        //! Min value allowed for parameter delta (in respective units [kHz, uV])
+        NvS32   min;
+
+        //! Max value allowed for parameter delta (in respective units [kHz, uV])
+        NvS32   max;
+    } valueRange;
+} NV_GPU_PERF_PSTATES20_PARAM_DELTA;
+
+//! Used to describe single clock entry
+typedef struct
+{
+	//! ID of the clock domain
+    NV_GPU_PUBLIC_CLOCK_ID                      domainId;
+
+    //! Clock type ID
+    NV_GPU_PERF_PSTATE20_CLOCK_TYPE_ID          typeId;
+    NvU32                                       bIsEditable:1;
+
+    //! These bits are reserved for future use (must be always 0)
+    NvU32                                       reserved:31;
+
+	//! Current frequency delta from nominal settings in [kHz]
+    NV_GPU_PERF_PSTATES20_PARAM_DELTA           freqDelta_kHz;
+
+    //! Clock domain type dependant information
+    union
+    {
+        struct
+        {
+            //! Clock frequency within given pstate in [kHz]
+            NvU32                               freq_kHz;
+        } single;
+
+        struct
+        {
+            //! Min clock frequency within given pstate in [kHz]
+            NvU32                               minFreq_kHz;
+
+            //! Max clock frequency within given pstate in [kHz]
+            NvU32                               maxFreq_kHz;
+
+            //! Voltage domain ID and value range (in [uV]) required for this clock
+            NV_GPU_PERF_VOLTAGE_INFO_DOMAIN_ID  domainId;
+            NvU32                               minVoltage_uV;
+            NvU32                               maxVoltage_uV;
+        } range;
+    } data;
+} NV_GPU_PSTATE20_CLOCK_ENTRY_V1;
+
+//! Used to describe single base voltage entry
+typedef struct
+{
+    //! ID of the voltage domain
+    NV_GPU_PERF_VOLTAGE_INFO_DOMAIN_ID  domainId;
+    NvU32                               bIsEditable:1;
+
+    //! These bits are reserved for future use (must be always 0)
+    NvU32                               reserved:31;
+
+    //! Current base voltage settings in [uV]
+    NvU32                               volt_uV;
+
+    NV_GPU_PERF_PSTATES20_PARAM_DELTA   voltDelta_uV; // Current base voltage delta from nominal settings in [uV]
+} NV_GPU_PSTATE20_BASE_VOLTAGE_ENTRY_V1;
+
+//! Used in NvAPI_GPU_GetPstates20() interface call.
+
+typedef struct
+{
+    //! Version info of the structure (NV_GPU_PERF_PSTATES20_INFO_VER<n>)
+    NvU32   version; 
+
+    NvU32   bIsEditable:1;
+
+    //! These bits are reserved for future use (must be always 0)
+    NvU32   reserved:31;
+
+    //! Number of populated pstates
+    NvU32   numPstates;
+
+	//! Number of populated clocks (per pstate)
+	NvU32   numClocks;
+
+    //! Number of populated base voltages (per pstate)
+	NvU32   numBaseVoltages;
+
+    //! Performance state (P-State) settings
+    //! Valid index range is 0 to numPstates-1
+    struct
+    {
+    //! ID of the P-State
+        NV_GPU_PERF_PSTATE_ID                   pstateId;
+
+        NvU32                                   bIsEditable:1;
+
+        //! These bits are reserved for future use (must be always 0)
+        NvU32                                   reserved:31;
+
+        //! Array of clock entries
+        //! Valid index range is 0 to numClocks-1
+        NV_GPU_PSTATE20_CLOCK_ENTRY_V1          clocks[NVAPI_MAX_GPU_PSTATE20_CLOCKS];
+
+        //! Array of baseVoltage entries
+        //! Valid index range is 0 to numBaseVoltages-1
+        NV_GPU_PSTATE20_BASE_VOLTAGE_ENTRY_V1   baseVoltages[NVAPI_MAX_GPU_PSTATE20_BASE_VOLTAGES];
+    } pstates[NVAPI_MAX_GPU_PSTATE20_PSTATES];
+} NV_GPU_PERF_PSTATES20_INFO_V1;
+
+typedef NV_GPU_PERF_PSTATES20_INFO_V1   NV_GPU_PERF_PSTATES20_INFO;
+
+//! Macro for constructing the version field of NV_GPU_PERF_PSTATES20_INFO_V1
+#define NV_GPU_PERF_PSTATES20_INFO_VER1 MAKE_NVAPI_VERSION(NV_GPU_PERF_PSTATES20_INFO_V1,1)
+
+//! Macro for constructing the version field of NV_GPU_PERF_PSTATES20_INFO
+#define NV_GPU_PERF_PSTATES20_INFO_VER  NV_GPU_PERF_PSTATES20_INFO_VER1
+
+//! @}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_GPU_GetPstates20
+//
+//! DESCRIPTION:    This API retrieves all performance states (P-States) 2.0 information.
+//!
+//!                 P-States are GPU active/executing performance capability states.
+//!                 They range from P0 to P15, with P0 being the highest performance state,
+//!                 and P15 being the lowest performance state. Each P-State, if available,
+//!                 maps to a performance level. Not all P-States are available on a given system.
+//!                 The definition of each P-States are currently as follow:
+//!                 - P0/P1 - Maximum 3D performance
+//!                 - P2/P3 - Balanced 3D performance-power
+//!                 - P8 - Basic HD video playback
+//!                 - P10 - DVD playback
+//!                 - P12 - Minimum idle power consumption
+//!
+//! \since Release: 295
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \param [in]   hPhysicalGPU  GPU selection
+//! \param [out]  pPstatesInfo  P-States information retrieved, as documented in declaration above
+//!
+//! \return  This API can return any of the error codes enumerated in #NvAPI_Status. 
+//!          If there are return error codes with specific meaning for this API, 
+//!          they are listed below.
+//!
+//! \ingroup gpupstate
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetPstates20(__in NvPhysicalGpuHandle hPhysicalGpu, __out NV_GPU_PERF_PSTATES20_INFO *pPstatesInfo);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_GPU_GetCurrentPstate
+//
+//! DESCRIPTION:     This function retrieves the current performance state (P-State).
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 165
+//!
+//! \param [in]      hPhysicalGPU     GPU selection
+//! \param [out]     pCurrentPstate   The ID of the current P-State of the GPU - see \ref NV_GPU_PERF_PSTATES.
+//!
+//! \retval    NVAPI_OK                             Completed request
+//! \retval    NVAPI_ERROR                          Miscellaneous error occurred.
+//! \retval    NVAPI_HANDLE_INVALIDATED             Handle passed has been invalidated (see user guide).
+//! \retval    NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE   Handle passed is not a physical GPU handle.
+//! \retval    NVAPI_NOT_SUPPORTED                  P-States is not supported on this setup.
+//!
+//! \ingroup   gpupstate
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetCurrentPstate(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_PERF_PSTATE_ID *pCurrentPstate);
+
+
+
+
+//! \ingroup gpupstate
+#define NVAPI_MAX_GPU_UTILIZATIONS 8
+
+
+
+//! \ingroup gpupstate
+//! Used in NvAPI_GPU_GetDynamicPstatesInfoEx().
+typedef struct
+{
+    NvU32       version;        //!< Structure version
+    NvU32       flags;          //!< bit 0 indicates if the dynamic Pstate is enabled or not
+    struct
+    {
+        NvU32   bIsPresent:1;   //!< Set if this utilization domain is present on this GPU
+        NvU32   percentage;     //!< Percentage of time where the domain is considered busy in the last 1 second interval
+    } utilization[NVAPI_MAX_GPU_UTILIZATIONS];
+} NV_GPU_DYNAMIC_PSTATES_INFO_EX;
+
+//! \ingroup gpupstate
+//! Macro for constructing the version field of NV_GPU_DYNAMIC_PSTATES_INFO_EX
+#define NV_GPU_DYNAMIC_PSTATES_INFO_EX_VER MAKE_NVAPI_VERSION(NV_GPU_DYNAMIC_PSTATES_INFO_EX,1)
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetDynamicPstatesInfoEx
+//
+//! DESCRIPTION:   This API retrieves the NV_GPU_DYNAMIC_PSTATES_INFO_EX structure for the specified physical GPU.
+//!                Each domain's info is indexed in the array.  For example: 
+//!                - pDynamicPstatesInfo->utilization[NVAPI_GPU_UTILIZATION_DOMAIN_GPU] holds the info for the GPU domain. \p
+//!                There are currently 4 domains for which GPU utilization and dynamic P-State thresholds can be retrieved:
+//!                   graphic engine (GPU), frame buffer (FB), video engine (VID), and bus interface (BUS).
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 185
+//! 
+//! \retval ::NVAPI_OK 
+//! \retval ::NVAPI_ERROR 
+//! \retval ::NVAPI_INVALID_ARGUMENT  pDynamicPstatesInfo is NULL
+//! \retval ::NVAPI_HANDLE_INVALIDATED 
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE 
+//! \retval ::NVAPI_INCOMPATIBLE_STRUCT_VERSION The version of the INFO struct is not supported
+//!
+//! \ingroup gpupstate
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetDynamicPstatesInfoEx(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_DYNAMIC_PSTATES_INFO_EX *pDynamicPstatesInfoEx);
+
+
+///////////////////////////////////////////////////////////////////////////////////
+//  Thermal API
+//  Provides ability to get temperature levels from the various thermal sensors associated with the GPU
+
+//! \ingroup gputhermal
+#define NVAPI_MAX_THERMAL_SENSORS_PER_GPU 3
+
+//! \ingroup gputhermal
+//! Used in NV_GPU_THERMAL_SETTINGS
+typedef enum 
+{
+    NVAPI_THERMAL_TARGET_NONE          = 0,
+    NVAPI_THERMAL_TARGET_GPU           = 1,     //!< GPU core temperature requires NvPhysicalGpuHandle
+    NVAPI_THERMAL_TARGET_MEMORY        = 2,     //!< GPU memory temperature requires NvPhysicalGpuHandle
+    NVAPI_THERMAL_TARGET_POWER_SUPPLY  = 4,     //!< GPU power supply temperature requires NvPhysicalGpuHandle
+    NVAPI_THERMAL_TARGET_BOARD         = 8,     //!< GPU board ambient temperature requires NvPhysicalGpuHandle
+    NVAPI_THERMAL_TARGET_VCD_BOARD     = 9,     //!< Visual Computing Device Board temperature requires NvVisualComputingDeviceHandle
+    NVAPI_THERMAL_TARGET_VCD_INLET     = 10,    //!< Visual Computing Device Inlet temperature requires NvVisualComputingDeviceHandle
+    NVAPI_THERMAL_TARGET_VCD_OUTLET    = 11,    //!< Visual Computing Device Outlet temperature requires NvVisualComputingDeviceHandle
+
+    NVAPI_THERMAL_TARGET_ALL           = 15,
+    NVAPI_THERMAL_TARGET_UNKNOWN       = -1,
+} NV_THERMAL_TARGET;
+
+//! \ingroup gputhermal
+//! Used in NV_GPU_THERMAL_SETTINGS
+typedef enum
+{
+    NVAPI_THERMAL_CONTROLLER_NONE = 0,
+    NVAPI_THERMAL_CONTROLLER_GPU_INTERNAL,  
+    NVAPI_THERMAL_CONTROLLER_ADM1032,
+    NVAPI_THERMAL_CONTROLLER_MAX6649,       
+    NVAPI_THERMAL_CONTROLLER_MAX1617,      
+    NVAPI_THERMAL_CONTROLLER_LM99,      
+    NVAPI_THERMAL_CONTROLLER_LM89,         
+    NVAPI_THERMAL_CONTROLLER_LM64,         
+    NVAPI_THERMAL_CONTROLLER_ADT7473,
+    NVAPI_THERMAL_CONTROLLER_SBMAX6649,
+    NVAPI_THERMAL_CONTROLLER_VBIOSEVT,  
+    NVAPI_THERMAL_CONTROLLER_OS,    
+    NVAPI_THERMAL_CONTROLLER_UNKNOWN = -1,
+} NV_THERMAL_CONTROLLER;
+
+//! \ingroup gputhermal
+//! Used in NvAPI_GPU_GetThermalSettings()
+typedef struct
+{
+    NvU32   version;                //!< structure version 
+    NvU32   count;                  //!< number of associated thermal sensors
+    struct 
+    {
+        NV_THERMAL_CONTROLLER       controller;        //!< internal, ADM1032, MAX6649...
+        NvU32                       defaultMinTemp;    //!< The min default temperature value of the thermal sensor in degrees centigrade 
+        NvU32                       defaultMaxTemp;    //!< The max default temperature value of the thermal sensor in degrees centigrade 
+        NvU32                       currentTemp;       //!< The current temperature value of the thermal sensor in degrees centigrade 
+        NV_THERMAL_TARGET           target;            //!< Thermal sensor targeted @ GPU, memory, chipset, powersupply, Visual Computing Device, etc.
+    } sensor[NVAPI_MAX_THERMAL_SENSORS_PER_GPU];
+
+} NV_GPU_THERMAL_SETTINGS_V1;
+
+//! \ingroup gputhermal
+typedef struct
+{
+    NvU32   version;                //!< structure version
+    NvU32   count;                  //!< number of associated thermal sensors
+    struct
+    {
+        NV_THERMAL_CONTROLLER       controller;         //!< internal, ADM1032, MAX6649...
+        NvS32                       defaultMinTemp;     //!< Minimum default temperature value of the thermal sensor in degrees C
+        NvS32                       defaultMaxTemp;     //!< Maximum default temperature value of the thermal sensor in degrees C
+        NvS32                       currentTemp;        //!< Current temperature value of the thermal sensor in degrees C
+        NV_THERMAL_TARGET           target;             //!< Thermal sensor targeted - GPU, memory, chipset, powersupply, Visual Computing Device, etc
+    } sensor[NVAPI_MAX_THERMAL_SENSORS_PER_GPU];
+
+} NV_GPU_THERMAL_SETTINGS_V2;
+
+//! \ingroup gputhermal
+typedef NV_GPU_THERMAL_SETTINGS_V2  NV_GPU_THERMAL_SETTINGS;
+
+//! \ingroup gputhermal
+//! @{
+
+//! Macro for constructing the version field of NV_GPU_THERMAL_SETTINGS_V1
+#define NV_GPU_THERMAL_SETTINGS_VER_1   MAKE_NVAPI_VERSION(NV_GPU_THERMAL_SETTINGS_V1,1)
+
+//! Macro for constructing the version field of NV_GPU_THERMAL_SETTINGS_V2
+#define NV_GPU_THERMAL_SETTINGS_VER_2   MAKE_NVAPI_VERSION(NV_GPU_THERMAL_SETTINGS_V2,2)
+
+//! Macro for constructing the version field of NV_GPU_THERMAL_SETTINGS
+#define NV_GPU_THERMAL_SETTINGS_VER     NV_GPU_THERMAL_SETTINGS_VER_2
+//! @}
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_GPU_GetThermalSettings
+//
+//!  This function retrieves the thermal information of all thermal sensors or specific thermal sensor associated with the selected GPU.
+//!  Thermal sensors are indexed 0 to NVAPI_MAX_THERMAL_SENSORS_PER_GPU-1.
+//!
+//!  - To retrieve specific thermal sensor info, set the sensorIndex to the required thermal sensor index. 
+//!  - To retrieve info for all sensors, set sensorIndex to NVAPI_THERMAL_TARGET_ALL. 
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 85
+//!
+//! \param [in]   hPhysicalGPU      GPU selection.
+//! \param [in]   sensorIndex       Explicit thermal sensor index selection. 
+//! \param [out]  pThermalSettings  Array of thermal settings.
+//!
+//! \retval   NVAPI_OK                           Completed request
+//! \retval   NVAPI_ERROR                        Miscellaneous error occurred.
+//! \retval   NVAPI_INVALID_ARGUMENT             pThermalInfo is NULL.
+//! \retval   NVAPI_HANDLE_INVALIDATED           Handle passed has been invalidated (see user guide).
+//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE Handle passed is not a physical GPU handle.
+//! \retval   NVAPI_INCOMPATIBLE_STRUCT_VERSION  The version of the INFO struct is not supported.
+//! \ingroup gputhermal
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetThermalSettings(NvPhysicalGpuHandle hPhysicalGpu, NvU32 sensorIndex, NV_GPU_THERMAL_SETTINGS *pThermalSettings);
+
+
+///////////////////////////////////////////////////////////////////////////////////
+//  I2C API
+//  Provides ability to read or write data using I2C protocol.
+//  These APIs allow I2C access only to DDC monitors
+
+
+//! \addtogroup i2capi
+//! @{
+#define NVAPI_MAX_SIZEOF_I2C_DATA_BUFFER    4096
+#define NVAPI_MAX_SIZEOF_I2C_REG_ADDRESS       4
+#define NVAPI_DISPLAY_DEVICE_MASK_MAX         24
+#define NVAPI_I2C_SPEED_DEPRECATED        0xFFFF
+
+typedef enum
+{
+    NVAPI_I2C_SPEED_DEFAULT,    //!< Set i2cSpeedKhz to I2C_SPEED_DEFAULT if default I2C speed is to be chosen, ie.use the current frequency setting.
+    NVAPI_I2C_SPEED_3KHZ,
+    NVAPI_I2C_SPEED_10KHZ,
+    NVAPI_I2C_SPEED_33KHZ,
+    NVAPI_I2C_SPEED_100KHZ,
+    NVAPI_I2C_SPEED_200KHZ,
+    NVAPI_I2C_SPEED_400KHZ,
+} NV_I2C_SPEED;
+
+//! Used in NvAPI_I2CRead() and NvAPI_I2CWrite()
+typedef struct
+{
+    NvU32                   version;            //!< The structure version.
+    NvU32                   displayMask;        //!< The Display Mask of the concerned display.
+    NvU8                    bIsDDCPort;         //!< This flag indicates either the DDC port (TRUE) or the communication port
+                                                //!< (FALSE) of the concerned display.
+    NvU8                    i2cDevAddress;      //!< The address of the I2C slave.  The address should be shifted left by one.  For
+                                                //!< example, the I2C address 0x50, often used for reading EDIDs, would be stored
+                                                //!< here as 0xA0.  This matches the position within the byte sent by the master, as
+                                                //!< the last bit is reserved to specify the read or write direction.
+    NvU8*                   pbI2cRegAddress;    //!< The I2C target register address.  May be NULL, which indicates no register
+                                                //!< address should be sent.
+    NvU32                   regAddrSize;        //!< The size in bytes of target register address.  If pbI2cRegAddress is NULL, this
+                                                //!< field must be 0.
+    NvU8*                   pbData;             //!< The buffer of data which is to be read or written (depending on the command).
+    NvU32                   cbSize;             //!< The size of the data buffer, pbData, to be read or written.
+    NvU32                   i2cSpeed;           //!< The target speed of the transaction (between 28kbps to 40kbps; not guaranteed).
+} NV_I2C_INFO_V1;
+
+//! Used in NvAPI_I2CRead() and NvAPI_I2CWrite()
+typedef struct
+{
+    NvU32                   version;            //!< The structure version.
+    NvU32                   displayMask;        //!< The Display Mask of the concerned display.
+    NvU8                    bIsDDCPort;         //!< This flag indicates either the DDC port (TRUE) or the communication port
+                                                //!< (FALSE) of the concerned display.
+    NvU8                    i2cDevAddress;      //!< The address of the I2C slave.  The address should be shifted left by one.  For
+                                                //!< example, the I2C address 0x50, often used for reading EDIDs, would be stored
+                                                //!< here as 0xA0.  This matches the position within the byte sent by the master, as
+                                                //!< the last bit is reserved to specify the read or write direction.
+    NvU8*                   pbI2cRegAddress;    //!< The I2C target register address.  May be NULL, which indicates no register
+                                                //!< address should be sent.
+    NvU32                   regAddrSize;        //!< The size in bytes of target register address.  If pbI2cRegAddress is NULL, this
+                                                //!< field must be 0.
+    NvU8*                   pbData;             //!< The buffer of data which is to be read or written (depending on the command).
+    NvU32                   cbSize;             //!< The size of the data buffer, pbData, to be read or written.
+    NvU32                   i2cSpeed;           //!< Deprecated, Must be set to NVAPI_I2C_SPEED_DEPRECATED.
+    NV_I2C_SPEED            i2cSpeedKhz;        //!< The target speed of the transaction in KHz (Chosen from the enum NV_I2C_SPEED).
+} NV_I2C_INFO_V2;
+
+//! Used in NvAPI_I2CRead() and NvAPI_I2CWrite()
+typedef struct
+{
+    NvU32                   version;            //!< The structure version.
+    NvU32                   displayMask;        //!< The Display Mask of the concerned display.
+    NvU8                    bIsDDCPort;         //!< This flag indicates either the DDC port (TRUE) or the communication port
+                                                //!< (FALSE) of the concerned display.
+    NvU8                    i2cDevAddress;      //!< The address of the I2C slave.  The address should be shifted left by one.  For
+                                                //!< example, the I2C address 0x50, often used for reading EDIDs, would be stored
+                                                //!< here as 0xA0.  This matches the position within the byte sent by the master, as
+                                                //!< the last bit is reserved to specify the read or write direction.
+    NvU8*                   pbI2cRegAddress;    //!< The I2C target register address.  May be NULL, which indicates no register
+                                                //!< address should be sent.
+    NvU32                   regAddrSize;        //!< The size in bytes of target register address.  If pbI2cRegAddress is NULL, this
+                                                //!< field must be 0.
+    NvU8*                   pbData;             //!< The buffer of data which is to be read or written (depending on the command).
+    NvU32                   cbSize;             //!< The size of the data buffer, pbData, to be read or written.
+    NvU32                   i2cSpeed;           //!< Deprecated, Must be set to NVAPI_I2C_SPEED_DEPRECATED.
+    NV_I2C_SPEED            i2cSpeedKhz;        //!< The target speed of the transaction in KHz (Chosen from the enum NV_I2C_SPEED).
+    NvU8                    portId;             //!< The portid on which device is connected (remember to set bIsPortIdSet if this value is set)
+                                                //!< Optional for pre-Kepler
+    NvU32                   bIsPortIdSet;       //!< set this flag on if and only if portid value is set
+} NV_I2C_INFO_V3;
+
+typedef NV_I2C_INFO_V3                     NV_I2C_INFO;
+
+#define NV_I2C_INFO_VER3  MAKE_NVAPI_VERSION(NV_I2C_INFO_V3,3)
+#define NV_I2C_INFO_VER2  MAKE_NVAPI_VERSION(NV_I2C_INFO_V2,2)
+#define NV_I2C_INFO_VER1  MAKE_NVAPI_VERSION(NV_I2C_INFO_V1,1)
+
+#define NV_I2C_INFO_VER  NV_I2C_INFO_VER3
+//! @}
+
+/***********************************************************************************/
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:  NvAPI_I2CRead
+//
+//!  This function reads the data buffer from the I2C port.
+//!                 The I2C request must be for a DDC port: pI2cInfo->bIsDDCPort = 1.
+//!
+//!                 A data buffer size larger than 16 bytes may be rejected if a register address is specified.  In such a case,
+//!                 NVAPI_ARGUMENT_EXCEED_MAX_SIZE would be returned.
+//!
+//!                 If a register address is specified (i.e. regAddrSize is positive), then the transaction will be performed in
+//!                 the combined format described in the I2C specification.  The register address will be written, followed by
+//!                 reading into the data buffer.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 85
+//!
+//! \param [in]   hPhysicalGPU     GPU selection.
+//! \param [out]  NV_I2C_INFO     *pI2cInfo The I2C data input structure
+//!
+//! \retval   NVAPI_OK                            Completed request
+//! \retval   NVAPI_ERROR                         Miscellaneous error occurred.
+//! \retval   NVAPI_HANDLE_INVALIDATED            Handle passed has been invalidated (see user guide).
+//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  Handle passed is not a physical GPU handle.
+//! \retval   NVAPI_INCOMPATIBLE_STRUCT_VERSION   Structure version is not supported.
+//! \retval   NVAPI_INVALID_ARGUMENT - argument does not meet specified requirements
+//! \retval   NVAPI_ARGUMENT_EXCEED_MAX_SIZE - an argument exceeds the maximum 
+//!
+//! \ingroup i2capi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_I2CRead(NvPhysicalGpuHandle hPhysicalGpu, NV_I2C_INFO *pI2cInfo);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:  NvAPI_I2CWrite
+//
+//!  This function writes the data buffer to the I2C port.
+//!
+//!                 The I2C request must be for a DDC port: pI2cInfo->bIsDDCPort = 1.
+//!
+//!                 A data buffer size larger than 16 bytes may be rejected if a register address is specified.  In such a case,
+//!                 NVAPI_ARGUMENT_EXCEED_MAX_SIZE would be returned.
+//!
+//!                 If a register address is specified (i.e. regAddrSize is positive), then the register address will be written
+//!                 and the data buffer will immediately follow without a restart.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 85
+//!
+//! \param [in]   hPhysicalGPU     GPU selection.
+//! \param [in]   pI2cInfo         The I2C data input structure
+//!
+//! \retval   NVAPI_OK                            Completed request
+//! \retval   NVAPI_ERROR                         Miscellaneous error occurred.
+//! \retval   NVAPI_HANDLE_INVALIDATED            Handle passed has been invalidated (see user guide).
+//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  Handle passed is not a physical GPU handle.
+//! \retval   NVAPI_INCOMPATIBLE_STRUCT_VERSION    Structure version is not supported.
+//! \retval   NVAPI_INVALID_ARGUMENT              Argument does not meet specified requirements
+//! \retval   NVAPI_ARGUMENT_EXCEED_MAX_SIZE      Argument exceeds the maximum 
+//!
+//! \ingroup i2capi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_I2CWrite(NvPhysicalGpuHandle hPhysicalGpu, NV_I2C_INFO *pI2cInfo);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_WorkstationFeatureSetup
+//
+//! \fn NvAPI_GPU_WorkstationFeatureSetup(NvPhysicalGpuHandle hPhysicalGpu, NvU32 featureEnableMask, NvU32 featureDisableMask)
+//!   DESCRIPTION: This API configures the driver for a set of workstation features.
+//!                The driver can allocate the memory resources accordingly.
+//!
+//! SUPPORTED OS:  Windows 7
+//!
+//!
+//! \param [in]   hPhysicalGpu       Physical GPU Handle of the display adapter to be configured. GPU handles may be retrieved
+//!                                  using NvAPI_EnumPhysicalGPUs. A value of NULL is permitted and applies the same operation
+//!                                  to all GPU handles enumerated by NvAPI_EnumPhysicalGPUs.
+//! \param [in]   featureEnableMask  Mask of features the caller requests to enable for use
+//! \param [in]   featureDisableMask Mask of features the caller requests to disable 
+//!
+//!                As a general rule, features in the enable and disable masks are expected to be disjoint, although the disable 
+//!                mask has precedence and a feature flagged in both masks will be disabled.
+//!
+//! \retval ::NVAPI_OK                            configuration request succeeded
+//! \retval ::NVAPI_ERROR                         configuration request failed
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu is not a physical GPU handle.
+//! \retval ::NVAPI_GPU_WORKSTATION_FEATURE_INCOMPLETE  requested feature set does not have all resources allocated for completeness.
+//! \retval ::NVAPI_NO_IMPLEMENTATION             only implemented for Win7
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup gpu 
+typedef enum
+{
+    NVAPI_GPU_WORKSTATION_FEATURE_MASK_SWAPGROUP     = 0x00000001,
+    NVAPI_GPU_WORKSTATION_FEATURE_MASK_STEREO        = 0x00000010,
+    NVAPI_GPU_WORKSTATION_FEATURE_MASK_WARPING       = 0x00000100,
+    NVAPI_GPU_WORKSTATION_FEATURE_MASK_PIXINTENSITY  = 0x00000200,
+    NVAPI_GPU_WORKSTATION_FEATURE_MASK_GRAYSCALE     = 0x00000400,
+    NVAPI_GPU_WORKSTATION_FEATURE_MASK_BPC10         = 0x00001000
+} NVAPI_GPU_WORKSTATION_FEATURE_MASK;
+
+//! \ingroup gpu
+NVAPI_INTERFACE NvAPI_GPU_WorkstationFeatureSetup(__in NvPhysicalGpuHandle hPhysicalGpu, __in NvU32 featureEnableMask, __in NvU32 featureDisableMask);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_WorkstationFeatureQuery
+//
+//!   DESCRIPTION: This API queries the current set of workstation features.
+//!
+//! SUPPORTED OS:  Windows 7
+//!
+//!
+//! \param [in]   hPhysicalGpu       Physical GPU Handle of the display adapter to be configured. GPU handles may be retrieved
+//!                                  using NvAPI_EnumPhysicalGPUs. 
+//! \param [out]  pConfiguredFeatureMask  Mask of features requested for use by client drivers
+//! \param [out]  pConsistentFeatureMask  Mask of features that have all resources allocated for completeness.
+//!
+//! \retval ::NVAPI_OK                            configuration request succeeded
+//! \retval ::NVAPI_ERROR                         configuration request failed
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu is not a physical GPU handle.
+//! \retval ::NVAPI_NO_IMPLEMENTATION             only implemented for Win7
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup gpu
+NVAPI_INTERFACE NvAPI_GPU_WorkstationFeatureQuery(__in NvPhysicalGpuHandle hPhysicalGpu, __out NvU32 *pConfiguredFeatureMask, __out NvU32 *pConsistentFeatureMask);
+
+/////////////////////////////////////////////////////////////////////////////// 
+// 
+// FUNCTION NAME: NvAPI_GPU_GetHDCPSupportStatus 
+//
+//! \fn NvAPI_GPU_GetHDCPSupportStatus(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_GET_HDCP_SUPPORT_STATUS *pGetHDCPSupportStatus)
+//! DESCRIPTION: This function returns a GPU's HDCP support status. 
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 175
+//!
+//!  \retval ::NVAPI_OK 
+//!  \retval ::NVAPI_ERROR 
+//!  \retval ::NVAPI_INVALID_ARGUMENT 
+//!  \retval ::NVAPI_HANDLE_INVALIDATED 
+//!  \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE 
+//!  \retval ::NVAPI_INCOMPATIBLE_STRUCT_VERSION 
+// 
+////////////////////////////////////////////////////////////////////////////////
+    
+
+//! \addtogroup gpu
+//! @{
+
+
+//! HDCP fuse states - used in NV_GPU_GET_HDCP_SUPPORT_STATUS
+typedef enum _NV_GPU_HDCP_FUSE_STATE
+{
+    NV_GPU_HDCP_FUSE_STATE_UNKNOWN  = 0,
+    NV_GPU_HDCP_FUSE_STATE_DISABLED = 1,
+    NV_GPU_HDCP_FUSE_STATE_ENABLED  = 2,
+} NV_GPU_HDCP_FUSE_STATE;
+
+
+//! HDCP key sources - used in NV_GPU_GET_HDCP_SUPPORT_STATUS
+typedef enum _NV_GPU_HDCP_KEY_SOURCE
+{
+    NV_GPU_HDCP_KEY_SOURCE_UNKNOWN    = 0,
+    NV_GPU_HDCP_KEY_SOURCE_NONE       = 1,
+    NV_GPU_HDCP_KEY_SOURCE_CRYPTO_ROM = 2,
+    NV_GPU_HDCP_KEY_SOURCE_SBIOS      = 3,
+    NV_GPU_HDCP_KEY_SOURCE_I2C_ROM    = 4,
+    NV_GPU_HDCP_KEY_SOURCE_FUSES      = 5,
+} NV_GPU_HDCP_KEY_SOURCE;
+
+
+//! HDCP key source states - used in NV_GPU_GET_HDCP_SUPPORT_STATUS
+typedef enum _NV_GPU_HDCP_KEY_SOURCE_STATE
+{
+    NV_GPU_HDCP_KEY_SOURCE_STATE_UNKNOWN = 0,
+    NV_GPU_HDCP_KEY_SOURCE_STATE_ABSENT  = 1,
+    NV_GPU_HDCP_KEY_SOURCE_STATE_PRESENT = 2,
+} NV_GPU_HDCP_KEY_SOURCE_STATE;
+
+
+//! HDPC support status - used in NvAPI_GPU_GetHDCPSupportStatus()
+typedef struct 
+{
+    NvU32                        version;               //! Structure version constucted by macro #NV_GPU_GET_HDCP_SUPPORT_STATUS
+    NV_GPU_HDCP_FUSE_STATE       hdcpFuseState;         //! GPU's HDCP fuse state
+    NV_GPU_HDCP_KEY_SOURCE       hdcpKeySource;         //! GPU's HDCP key source
+    NV_GPU_HDCP_KEY_SOURCE_STATE hdcpKeySourceState;    //! GPU's HDCP key source state    
+} NV_GPU_GET_HDCP_SUPPORT_STATUS;
+
+
+//! Macro for constructing the version for structure NV_GPU_GET_HDCP_SUPPORT_STATUS
+#define NV_GPU_GET_HDCP_SUPPORT_STATUS_VER MAKE_NVAPI_VERSION(NV_GPU_GET_HDCP_SUPPORT_STATUS,1)
+
+
+//! @}
+
+
+//!  \ingroup gpu 
+NVAPI_INTERFACE NvAPI_GPU_GetHDCPSupportStatus(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_GET_HDCP_SUPPORT_STATUS *pGetHDCPSupportStatus);
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetTachReading
+//
+//!   DESCRIPTION: This API retrieves the fan speed tachometer reading for the specified physical GPU.
+//!
+//!   HOW TO USE:   
+//!                 - NvU32 Value = 0;
+//!                 - ret = NvAPI_GPU_GetTachReading(hPhysicalGpu, &Value);  
+//!                 - On call success:
+//!                 - Value contains the tachometer reading
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \param [in]    hPhysicalGpu   GPU selection.
+//! \param [out]   pValue         Pointer to a variable to get the tachometer reading
+//!
+//! \retval ::NVAPI_OK - completed request
+//! \retval ::NVAPI_ERROR - miscellaneous error occurred
+//! \retval ::NVAPI_NOT_SUPPORTED - functionality not supported 
+//! \retval ::NVAPI_API_NOT_INTIALIZED - nvapi not initialized
+//! \retval ::NVAPI_INVALID_ARGUMENT - invalid argument passed
+//! \retval ::NVAPI_HANDLE_INVALIDATED - handle passed has been invalidated (see user guide)
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE - handle passed is not a physical GPU handle
+//!
+//! \ingroup gpucooler
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetTachReading(NvPhysicalGpuHandle hPhysicalGPU, NvU32 *pValue);
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_GPU_GetECCStatusInfo
+//
+//! \fn NvAPI_GPU_GetECCStatusInfo(NvPhysicalGpuHandle hPhysicalGpu, 
+//!                                           NV_GPU_ECC_STATUS_INFO *pECCStatusInfo);
+//! DESCRIPTION:     This function returns ECC memory status information.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \param [in]      hPhysicalGpu      A handle identifying the physical GPU for which ECC 
+//!                                    status information is to be retrieved.
+//! \param [out]     pECCStatusInfo    A pointer to an ECC status structure.
+//! 
+//! \retval ::NVAPI_OK                  The request was completed successfully.
+//! \retval ::NVAPI_ERROR               An unknown error occurred.
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE The provided GPU handle is not a physical GPU handle.
+//! \retval ::NVAPI_INVALID_HANDLE      The provided GPU handle is invalid.
+//! \retval ::NVAPI_HANDLE_INVALIDATED  The provided GPU handle is no longer valid.
+//! \retval ::NVAPI_INVALID_POINTER     An invalid argument pointer was provided.
+//! \retval ::NVAPI_NOT_SUPPORTED       The request is not supported.
+//! \retval ::NVAPI_API_NOT_INTIALIZED  NvAPI was not yet initialized.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \addtogroup gpuecc
+//! Used in NV_GPU_ECC_STATUS_INFO.
+typedef enum _NV_ECC_CONFIGURATION
+{
+    NV_ECC_CONFIGURATION_NOT_SUPPORTED = 0,
+    NV_ECC_CONFIGURATION_DEFERRED,           //!< Changes require a POST to take effect
+    NV_ECC_CONFIGURATION_IMMEDIATE,          //!< Changes can optionally be made to take effect immediately
+} NV_ECC_CONFIGURATION;
+
+//! \ingroup gpuecc
+//! Used in NvAPI_GPU_GetECCStatusInfo().
+typedef struct
+{
+    NvU32                 version;               //!< Structure version
+    NvU32                 isSupported : 1;       //!< ECC memory feature support
+    NV_ECC_CONFIGURATION  configurationOptions;  //!< Supported ECC memory feature configuration options
+    NvU32                 isEnabled : 1;         //!< Active ECC memory setting
+} NV_GPU_ECC_STATUS_INFO;
+
+//! \ingroup gpuecc
+//! Macro for constructing the version field of NV_GPU_ECC_STATUS_INFO
+#define NV_GPU_ECC_STATUS_INFO_VER MAKE_NVAPI_VERSION(NV_GPU_ECC_STATUS_INFO,1)
+
+//! \ingroup gpuecc
+NVAPI_INTERFACE NvAPI_GPU_GetECCStatusInfo(NvPhysicalGpuHandle hPhysicalGpu, 
+                                           NV_GPU_ECC_STATUS_INFO *pECCStatusInfo);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_GPU_GetECCErrorInfo
+//
+//! \fn NvAPI_GPU_GetECCErrorInfo(NvPhysicalGpuHandle hPhysicalGpu, 
+//!                                          NV_GPU_ECC_ERROR_INFO *pECCErrorInfo);
+//!
+//! DESCRIPTION:     This function returns ECC memory error information.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \param [in]      hPhysicalGpu  A handle identifying the physical GPU for
+//!                                which ECC error information is to be
+//!                                retrieved.
+//! \param [out]     pECCErrorInfo A pointer to an ECC error structure.
+//! 
+//! \retval ::NVAPI_OK  The request was completed successfully.
+//! \retval ::NVAPI_ERROR  An unknown error occurred.
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  The provided GPU handle is not a physical GPU handle.
+//! \retval ::NVAPI_INVALID_ARGUMENT  incorrect param value
+//! \retval ::NVAPI_INVALID_POINTER  An invalid argument pointer was provided.
+//! \retval ::NVAPI_INCOMPATIBLE_STRUCT_VERSION  structure version is not supported, initialize to NV_GPU_ECC_ERROR_INFO_VER.
+//! \retval ::NVAPI_HANDLE_INVALIDATED  The provided GPU handle is no longer valid.
+//! \retval ::NVAPI_NOT_SUPPORTED  The request is not supported.
+//! \retval ::NVAPI_API_NOT_INTIALIZED  NvAPI was not yet initialized.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+
+//! \ingroup gpuecc
+//! Used in NvAPI_GPU_GetECCErrorInfo()/
+typedef struct
+{
+    NvU32   version;             //!< Structure version
+    struct {
+        NvU64  singleBitErrors;  //!< Number of single-bit ECC errors detected since last boot
+        NvU64  doubleBitErrors;  //!< Number of double-bit ECC errors detected since last boot
+    } current;
+    struct {
+        NvU64  singleBitErrors;  //!< Number of single-bit ECC errors detected since last counter reset
+        NvU64  doubleBitErrors;  //!< Number of double-bit ECC errors detected since last counter reset
+    } aggregate;
+} NV_GPU_ECC_ERROR_INFO;
+
+//! \ingroup gpuecc
+//! Macro for constructing the version field of NV_GPU_ECC_ERROR_INFO
+#define NV_GPU_ECC_ERROR_INFO_VER MAKE_NVAPI_VERSION(NV_GPU_ECC_ERROR_INFO,1)
+
+//! \ingroup gpuecc
+NVAPI_INTERFACE NvAPI_GPU_GetECCErrorInfo(NvPhysicalGpuHandle hPhysicalGpu, 
+                                          NV_GPU_ECC_ERROR_INFO *pECCErrorInfo);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_GPU_ResetECCErrorInfo
+//
+//! DESCRIPTION:     This function resets ECC memory error counters.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \param [in]     hPhysicalGpu     A handle identifying the physical GPU for
+//!                                  which ECC error information is to be
+//!                                  cleared.
+//! \param [in]     bResetCurrent    Reset the current ECC error counters.
+//! \param [in]     bResetAggregate  Reset the aggregate ECC error counters.
+//! 
+//! \retval ::NVAPI_OK  The request was completed successfully.
+//! \retval ::NVAPI_ERROR  An unknown error occurred.
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  The provided GPU handle is not a physical GPU handle.
+//! \retval ::NVAPI_INVALID_HANDLE  The provided GPU handle is invalid.
+//! \retval ::NVAPI_HANDLE_INVALIDATED  The provided GPU handle is no longer valid.
+//! \retval ::NVAPI_NOT_SUPPORTED  The request is not supported.
+//! \retval ::NVAPI_API_NOT_INTIALIZED  NvAPI was not yet initialized.
+//!
+//! \ingroup gpuecc
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_ResetECCErrorInfo(NvPhysicalGpuHandle hPhysicalGpu, NvU8 bResetCurrent,
+                                            NvU8 bResetAggregate);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_GPU_GetECCConfigurationInfo
+//
+//! \fn NvAPI_GPU_GetECCConfigurationInfo(NvPhysicalGpuHandle hPhysicalGpu, 
+//!                             NV_GPU_ECC_CONFIGURATION_INFO *pECCConfigurationInfo);
+//! DESCRIPTION:     This function returns ECC memory configuration information.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \param [in]      hPhysicalGpu  A handle identifying the physical GPU for
+//!                                which ECC configuration information
+//!                               is to be retrieved.
+//! \param [out]     pECCConfigurationInfo  A pointer to an ECC 
+//!                                                configuration structure.
+//! 
+//! \retval ::NVAPI_OK  The request was completed successfully.
+//! \retval ::NVAPI_ERROR  An unknown error occurred.
+//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  The provided GPU handle is not a physical GPU handle.
+//! \retval ::NVAPI_INVALID_HANDLE  The provided GPU handle is invalid.
+//! \retval ::NVAPI_HANDLE_INVALIDATED  The provided GPU handle is no longer valid.
+//! \retval ::NVAPI_INVALID_POINTER  An invalid argument pointer was provided.
+//! \retval ::NVAPI_NOT_SUPPORTED  The request is not supported.
+//! \retval ::NVAPI_API_NOT_INTIALIZED  NvAPI was not yet initialized.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup gpuecc
+//! Used in NvAPI_GPU_GetECCConfigurationInfo(). 
+typedef struct
+{
+    NvU32  version;                 //! Structure version
+    NvU32  isEnabled : 1;           //! Current ECC configuration stored in non-volatile memory
+    NvU32  isEnabledByDefault : 1;  //! Factory default ECC configuration (static)
+} NV_GPU_ECC_CONFIGURATION_INFO;
+
+//! \ingroup gpuecc
+//! Macro for consstructing the verion field of NV_GPU_ECC_CONFIGURATION_INFO
+#define NV_GPU_ECC_CONFIGURATION_INFO_VER MAKE_NVAPI_VERSION(NV_GPU_ECC_CONFIGURATION_INFO,1)
+
+//! \ingroup gpuecc
+NVAPI_INTERFACE NvAPI_GPU_GetECCConfigurationInfo(NvPhysicalGpuHandle hPhysicalGpu, 
+                                                  NV_GPU_ECC_CONFIGURATION_INFO *pECCConfigurationInfo);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_GPU_SetECCConfiguration
+//
+//! DESCRIPTION:     This function updates the ECC memory configuration setting.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \param [in]      hPhysicalGpu    A handle identifying the physical GPU for
+//!                                  which to update the ECC configuration
+//!                                  setting.
+//! \param [in]      bEnable         The new ECC configuration setting.
+//! \param [in]      bEnableImmediately   Request that the new setting take effect immediately.
+//! 
+//! \return  This API can return any of the error codes enumerated in #NvAPI_Status. If there are return error codes with 
+//!          specific meaning for this API, they are listed below.
+//! \retval ::NVAPI_INVALID_CONFIGURATION  Possibly SLI is enabled. Disable SLI and retry.
+//!
+//! \ingroup gpuecc
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_SetECCConfiguration(NvPhysicalGpuHandle hPhysicalGpu, NvU8 bEnable,
+                                              NvU8 bEnableImmediately);
+
+
+//! Used in NvAPI_GPU_GetPerfDecreaseInfo.
+//! Bit masks for knowing the exact reason for performance decrease
+typedef enum _NVAPI_GPU_PERF_DECREASE
+{
+    NV_GPU_PERF_DECREASE_NONE                        = 0,          //!< No Slowdown detected
+    NV_GPU_PERF_DECREASE_REASON_THERMAL_PROTECTION   = 0x00000001, //!< Thermal slowdown/shutdown/POR thermal protection
+    NV_GPU_PERF_DECREASE_REASON_POWER_CONTROL        = 0x00000002, //!< Power capping / pstate cap 
+    NV_GPU_PERF_DECREASE_REASON_AC_BATT              = 0x00000004, //!< AC->BATT event
+    NV_GPU_PERF_DECREASE_REASON_API_TRIGGERED        = 0x00000008, //!< API triggered slowdown
+    NV_GPU_PERF_DECREASE_REASON_INSUFFICIENT_POWER   = 0x00000010, //!< Power connector missing
+    NV_GPU_PERF_DECREASE_REASON_UNKNOWN              = 0x80000000, //!< Unknown reason
+} NVAPI_GPU_PERF_DECREASE;
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetPerfDecreaseInfo
+//
+//! DESCRIPTION:   This function retrieves - in NvU32 variable - reasons for the current performance decrease.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//! \param [in]      hPhysicalGPU    (IN)    - GPU for which performance decrease is to be evaluated.
+//! \param [out]  pPerfDecrInfo    (OUT)    - Pointer to a NvU32 variable containing performance decrease info
+//!
+//! \return      This API can return any of the error codes enumerated in #NvAPI_Status. 
+//!
+//! \ingroup gpu
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_GPU_GetPerfDecreaseInfo(__in NvPhysicalGpuHandle hPhysicalGpu, __inout NvU32 *pPerfDecrInfo);
+
+//! \ingroup gpu
+typedef enum _NV_GPU_ILLUMINATION_ATTRIB
+{
+    NV_GPU_IA_LOGO_BRIGHTNESS  = 0,
+    NV_GPU_IA_SLI_BRIGHTNESS   = 1,
+} NV_GPU_ILLUMINATION_ATTRIB;
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_QueryIlluminationSupport
+//
+//! \fn NvAPI_GPU_QueryIlluminationSupport(__inout  NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM *pIlluminationSupportInfo)
+//! DESCRIPTION:   This function reports if the specified illumination attribute is supported.
+//!
+//! \note Only a single GPU can manage an given attribute on a given HW element,
+//!       regardless of how many are attatched. I.E. only one GPU will be used to control
+//!       the brightness of the LED on an SLI bridge, regardless of how many are physicaly attached.
+//!       You should enumerate thru the GPUs with this call to determine which GPU is managing the attribute.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//! \since Version: 300.05
+//!
+//! \param [in]  hPhysicalGpu        Physical GPU handle
+//! \param       Attribute           An enumeration value specifying the Illumination attribute to be querried
+//! \param [out] pSupported          A boolean indicating if the attribute is supported.
+//! 
+//! \return See \ref nvapistatus for the list of possible return values.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup gpu                 
+typedef struct _NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_V1 {
+
+    // IN
+    NvU32   version;						//!< Version of this structure
+    NvPhysicalGpuHandle hPhysicalGpu;		//!< The handle of the GPU that you are checking for the specified attribute.
+                                            //!< note that this is the GPU that is managing the attribute.
+                                            //!< Only a single GPU can manage an given attribute on a given HW element,
+                                            //!< regardless of how many are attatched.
+                                            //!< I.E. only one GPU will be used to control the brightness of the LED on an SLI bridge,
+                                            //!< regardless of how many are physicaly attached.
+                                            //!< You enumerate thru the GPUs with this call to determine which GPU is managing the attribute.
+    NV_GPU_ILLUMINATION_ATTRIB Attribute;   //!< An enumeration value specifying the Illumination attribute to be querried.
+                                            //!<     refer to enum \ref NV_GPU_ILLUMINATION_ATTRIB.
+    
+    // OUT
+    NvU32    bSupported;                    //!< A boolean indicating if the attribute is supported.
+                                    
+} NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_V1;
+
+//! \ingroup gpu 
+typedef NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_V1      NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM;
+//! \ingroup gpu 
+#define NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_VER_1   MAKE_NVAPI_VERSION(NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_V1,1)
+//! \ingroup gpu 
+#define NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_VER     NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_VER_1
+
+//! \ingroup gpu 
+NVAPI_INTERFACE NvAPI_GPU_QueryIlluminationSupport(__inout  NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM *pIlluminationSupportInfo);
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_GetIllumination
+//
+//! \fn NvAPI_GPU_GetIllumination(NV_GPU_GET_ILLUMINATION_PARM *pIlluminationInfo)
+//! DESCRIPTION:   This function reports value of the specified illumination attribute.
+//!
+//! \note Only a single GPU can manage an given attribute on a given HW element,
+//!       regardless of how many are attatched. I.E. only one GPU will be used to control
+//!       the brightness of the LED on an SLI bridge, regardless of how many are physicaly attached.
+//!       You should enumerate thru the GPUs with the \ref NvAPI_GPU_QueryIlluminationSupport call to
+//!       determine which GPU is managing the attribute.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//! \since Version: 300.05
+//!
+//! \param [in]  hPhysicalGpu        Physical GPU handle
+//! \param       Attribute           An enumeration value specifying the Illumination attribute to be querried
+//! \param [out] Value               A DWORD containing the current value for the specified attribute.
+//!                                  This is specified as a percentage of the full range of the attribute
+//!                                  (0-100; 0 = off, 100 = full brightness)
+//! 
+//! \return See \ref nvapistatus for the list of possible return values. Return values of special interest are:
+//!             NVAPI_INVALID_ARGUMENT The specified attibute is not known to the driver.
+//!             NVAPI_NOT_SUPPORTED:   The specified attribute is not supported on the specified GPU
+//
+//////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup gpu                 
+typedef struct _NV_GPU_GET_ILLUMINATION_PARM_V1 {
+
+    // IN
+    NvU32   version;						//!< Version of this structure
+    NvPhysicalGpuHandle hPhysicalGpu;		//!< The handle of the GPU that you are checking for the specified attribute.
+                                            //!< Note that this is the GPU that is managing the attribute.
+                                            //!< Only a single GPU can manage an given attribute on a given HW element,
+                                            //!< regardless of how many are attatched.
+                                            //!< I.E. only one GPU will be used to control the brightness of the LED on an SLI bridge,
+                                            //!< regardless of how many are physicaly attached.
+                                            //!< You enumerate thru the GPUs with this call to determine which GPU is managing the attribute.
+    NV_GPU_ILLUMINATION_ATTRIB Attribute;   //!< An enumeration value specifying the Illumination attribute to be querried.
+                                            //!< refer to enum \ref NV_GPU_ILLUMINATION_ATTRIB.
+    
+    // OUT
+    NvU32    Value;                         //!< A DWORD that will contain the current value of the specified attribute.
+                                            //! This is specified as a percentage of the full range of the attribute
+                                            //! (0-100; 0 = off, 100 = full brightness)
+                                    
+} NV_GPU_GET_ILLUMINATION_PARM_V1;
+
+//! \ingroup gpu 
+typedef NV_GPU_GET_ILLUMINATION_PARM_V1      NV_GPU_GET_ILLUMINATION_PARM;
+//! \ingroup gpu 
+#define NV_GPU_GET_ILLUMINATION_PARM_VER_1   MAKE_NVAPI_VERSION(NV_GPU_GET_ILLUMINATION_PARM_V1,1)
+//! \ingroup gpu 
+#define NV_GPU_GET_ILLUMINATION_PARM_VER     NV_GPU_GET_ILLUMINATION_PARM_VER_1
+
+//! \ingroup gpu 
+NVAPI_INTERFACE NvAPI_GPU_GetIllumination(NV_GPU_GET_ILLUMINATION_PARM *pIlluminationInfo);
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GPU_SetIllumination
+//
+//! \fn NvAPI_GPU_SetIllumination(NV_GPU_SET_ILLUMINATION_PARM *pIlluminationInfo)
+//! DESCRIPTION:   This function sets the value of the specified illumination attribute.
+//!
+//! \note Only a single GPU can manage an given attribute on a given HW element,
+//!       regardless of how many are attatched. I.E. only one GPU will be used to control
+//!       the brightness of the LED on an SLI bridge, regardless of how many are physicaly attached.
+//!       You should enumerate thru the GPUs with the \ref NvAPI_GPU_QueryIlluminationSupport call to
+//!       determine which GPU is managing the attribute.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//! \since Version: 300.05
+//!
+//! \param [in]  hPhysicalGpu        Physical GPU handle
+//! \param       Attribute           An enumeration value specifying the Illumination attribute to be set
+//! \param       Value               The new value for the specified attribute.
+//!                                  This should be specified as a percentage of the full range of the attribute
+//!                                  (0-100; 0 = off, 100 = full brightness)
+//!                                  If a value is specified outside this range, NVAPI_INVALID_ARGUMENT will be returned.
+//! 
+//! \return See \ref nvapistatus for the list of possible return values. Return values of special interest are:
+//!             NVAPI_INVALID_ARGUMENT	The specified attibute is not known to the driver, or the specified value is out of range.
+//!             NVAPI_NOT_SUPPORTED     The specified attribute is not supported on the specified GPU.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup gpu                
+typedef struct _NV_GPU_SET_ILLUMINATION_PARM_V1 {
+
+    // IN
+    NvU32   version;						//!< Version of this structure
+    NvPhysicalGpuHandle hPhysicalGpu;		//!< The handle of the GPU that you are checking for the specified attribute.
+                                            //!< Note that this is the GPU that is managing the attribute.
+                                            //!< Only a single GPU can manage an given attribute on a given HW element,
+                                            //!< regardless of how many are attatched.
+                                            //!< I.E. only one GPU will be used to control the brightness of the LED on an SLI bridge,
+                                            //!< regardless of how many are physicaly attached.
+                                            //!< You enumerate thru the GPUs with this call to determine which GPU is managing the attribute.
+    NV_GPU_ILLUMINATION_ATTRIB Attribute;   //!< An enumeration value specifying the Illumination attribute to be querried.
+                                            //!< refer to enum \ref NV_GPU_ILLUMINATION_ATTRIB.
+    NvU32    Value;                         //!< A DWORD containing the new value for the specified attribute.
+                                            //!< This should be specified as a percentage of the full range of the attribute
+                                            //!< (0-100; 0 = off, 100 = full brightness)
+                                            //!< If a value is specified outside this range, NVAPI_INVALID_ARGUMENT will be returned.
+    
+    // OUT
+                                    
+} NV_GPU_SET_ILLUMINATION_PARM_V1;
+
+//! \ingroup gpu 
+typedef NV_GPU_SET_ILLUMINATION_PARM_V1      NV_GPU_SET_ILLUMINATION_PARM;
+//! \ingroup gpu 
+#define NV_GPU_SET_ILLUMINATION_PARM_VER_1   MAKE_NVAPI_VERSION(NV_GPU_SET_ILLUMINATION_PARM_V1,1)
+//! \ingroup gpu 
+#define NV_GPU_SET_ILLUMINATION_PARM_VER     NV_GPU_SET_ILLUMINATION_PARM_VER_1
+
+//! \ingroup gpu 
+NVAPI_INTERFACE NvAPI_GPU_SetIllumination(NV_GPU_SET_ILLUMINATION_PARM *pIlluminationInfo);
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_EnumNvidiaDisplayHandle
+//
+//! This function returns the handle of the NVIDIA display specified by the enum 
+//!                index (thisEnum). The client should keep enumerating until it
+//!                returns NVAPI_END_ENUMERATION.
+//!
+//!                Note: Display handles can get invalidated on a modeset, so the calling applications need to
+//!                renum the handles after every modeset.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 80
+//!
+//! \param [in]  thisEnum      The index of the NVIDIA display.   
+//! \param [out] pNvDispHandle Pointer to the NVIDIA display handle.
+//!
+//! \retval NVAPI_INVALID_ARGUMENT        Either the handle pointer is NULL or enum index too big
+//! \retval NVAPI_OK                      Return a valid NvDisplayHandle based on the enum index
+//! \retval NVAPI_NVIDIA_DEVICE_NOT_FOUND No NVIDIA device found in the system
+//! \retval NVAPI_END_ENUMERATION         No more display device to enumerate
+//! \ingroup disphandle
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_EnumNvidiaDisplayHandle(NvU32 thisEnum, NvDisplayHandle *pNvDispHandle);
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_EnumNvidiaUnAttachedDisplayHandle
+//
+//! This function returns the handle of the NVIDIA unattached display specified by the enum 
+//!                index (thisEnum). The client should keep enumerating until it
+//!                returns error.
+//!                Note: Display handles can get invalidated on a modeset, so the calling applications need to
+//!                renum the handles after every modeset.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 80
+//!
+//! \param [in]  thisEnum                  The index of the NVIDIA display.
+//! \param [out] pNvUnAttachedDispHandle   Pointer to the NVIDIA display handle of the unattached display.
+//!
+//! \retval NVAPI_INVALID_ARGUMENT         Either the handle pointer is NULL or enum index too big
+//! \retval NVAPI_OK                       Return a valid NvDisplayHandle based on the enum index
+//! \retval NVAPI_NVIDIA_DEVICE_NOT_FOUND  No NVIDIA device found in the system
+//! \retval NVAPI_END_ENUMERATION          No more display device to enumerate.
+//! \ingroup disphandle
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_EnumNvidiaUnAttachedDisplayHandle(NvU32 thisEnum, NvUnAttachedDisplayHandle *pNvUnAttachedDispHandle);
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_CreateDisplayFromUnAttachedDisplay
+//
+//! This function converts the unattached display handle to an active attached display handle.
+//!
+//! At least one GPU must be present in the system and running an NVIDIA display driver.
+//!
+//! SUPPORTED OS:  Windows XP and higher
+//!
+//!
+//! \since Release: 80
+//!
+//! \retval NVAPI_INVALID_ARGUMENT         hNvUnAttachedDisp is not valid or pNvDisplay is NULL.
+//! \retval NVAPI_OK                       One or more handles were returned
+//! \retval NVAPI_NVIDIA_DEVICE_NOT_FOUND  No NVIDIA GPU driving a display was found
+//! \ingroup dispcontrol
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_CreateDisplayFromUnAttachedDisplay(NvUnAttachedDisplayHandle hNvUnAttachedDisp, NvDisplayHandle *pNvDisplay);
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 // FUNCTION NAME: NvAPI_GetAssociatedNVidiaDisplayHandle
@@ -1625,7 +4948,6 @@ NVAPI_INTERFACE NvAPI_GetAssociatedNvidiaDisplayName(NvDisplayHandle NvDispHandl
 //! \ingroup dispcontrol
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_GetUnAttachedAssociatedDisplayName(NvUnAttachedDisplayHandle hNvUnAttachedDisp, NvAPI_ShortString szDisplayName);
-
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1730,75 +5052,6 @@ NVAPI_INTERFACE NvAPI_SetRefreshRateOverride(NvDisplayHandle hNvDisplay, NvU32 o
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_GetAssociatedDisplayOutputId(NvDisplayHandle hNvDisplay, NvU32 *pOutputId);
 
-
-#ifndef DISPLAYPORT_STRUCTS_DEFINED
-#define DISPLAYPORT_STRUCTS_DEFINED
-
-//! \ingroup dispcontrol
-//! Used in NV_DISPLAY_PORT_INFO.
-typedef enum
-{
-    NV_DP_1_62GBPS            = 6,
-    NV_DP_2_70GBPS            = 0xA,
-} NV_DP_LINK_RATE;
-
-
-//! \ingroup dispcontrol
-//! Used in NV_DISPLAY_PORT_INFO.
-typedef enum
-{
-    NV_DP_1_LANE              = 1,
-    NV_DP_2_LANE              = 2,
-    NV_DP_4_LANE              = 4,
-} NV_DP_LANE_COUNT;
-
-
-//! \ingroup dispcontrol
-//! Used in NV_DISPLAY_PORT_INFO.
-typedef enum
-{
-    NV_DP_COLOR_FORMAT_RGB     = 0,
-    NV_DP_COLOR_FORMAT_YCbCr422,
-    NV_DP_COLOR_FORMAT_YCbCr444,
-} NV_DP_COLOR_FORMAT;
-
-
-//! \ingroup dispcontrol
-//! Used in NV_DISPLAY_PORT_INFO.
-typedef enum
-{
-    NV_DP_COLORIMETRY_RGB     = 0,
-    NV_DP_COLORIMETRY_YCbCr_ITU601,
-    NV_DP_COLORIMETRY_YCbCr_ITU709,
-} NV_DP_COLORIMETRY;
-
-
-//! \ingroup dispcontrol
-//! Used in NV_DISPLAY_PORT_INFO.
-typedef enum
-{
-    NV_DP_DYNAMIC_RANGE_VESA  = 0,
-    NV_DP_DYNAMIC_RANGE_CEA,
-} NV_DP_DYNAMIC_RANGE;
-
-
-//! \ingroup dispcontrol
-//! Used in NV_DISPLAY_PORT_INFO.
-typedef enum
-{
-    NV_DP_BPC_DEFAULT         = 0,
-    NV_DP_BPC_6,
-    NV_DP_BPC_8,
-    NV_DP_BPC_10,
-    NV_DP_BPC_12,
-    NV_DP_BPC_16,
-} NV_DP_BPC;
-
-#endif  //#ifndef DISPLAYPORT_STRUCTS_DEFINED
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//              All display port related data types definitions end
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //! \ingroup dispcontrol
 //! Used in NvAPI_GetDisplayPortInfo().
@@ -1912,7 +5165,13 @@ typedef struct
 //! \ingroup          dispcontrol
 NVAPI_INTERFACE NvAPI_SetDisplayPort(NvDisplayHandle hNvDisplay, NvU32 outputId, NV_DISPLAY_PORT_CONFIG *pCfg);
 
-////////////////////////////////////////DP MST SIMULATION APIs/////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION NAME:   NvAPI_GetHDMISupportInfo
@@ -2451,6 +5710,12 @@ NVAPI_INTERFACE NvAPI_Disp_InfoFrameControl(NvU32 displayId, NV_INFOFRAME_DATA *
 
 
 
+
+
+
+
+
+
 //! \ingroup dispcontrol
 //! @{
 ///////////////////////////////////////////////////////////////////////////////
@@ -2524,2005 +5789,6 @@ NVAPI_INTERFACE NvAPI_Disp_ColorControl(NvU32 displayId, NV_COLOR_DATA *pColorDa
 #define NV_COLOR_DATA_VER   MAKE_NVAPI_VERSION(NV_COLOR_DATA,1)
 
 //! @}
-
-
-//-----------------------------------------------------------------------------
-// DirectX APIs
-//-----------------------------------------------------------------------------
-
-
-//! \ingroup dx
-//! Used in NvAPI_D3D10_GetCurrentSLIState(), and NvAPI_D3D_GetCurrentSLIState().
-typedef struct
-{
-    NvU32 version;                    //!< Structure version
-    NvU32 maxNumAFRGroups;            //!< [OUT] The maximum possible value of numAFRGroups
-    NvU32 numAFRGroups;               //!< [OUT] The number of AFR groups enabled in the system
-    NvU32 currentAFRIndex;            //!< [OUT] The AFR group index for the frame currently being rendered
-    NvU32 nextFrameAFRIndex;          //!< [OUT] What the AFR group index will be for the next frame (i.e. after calling Present)
-    NvU32 previousFrameAFRIndex;      //!< [OUT] The AFR group index that was used for the previous frame (~0 if more than one frame has not been rendered yet)
-    NvU32 bIsCurAFRGroupNew;          //!< [OUT] Boolean: Is this frame the first time running on the current AFR group
-
-} NV_GET_CURRENT_SLI_STATE;
-
-//! \ingroup dx
-#define NV_GET_CURRENT_SLI_STATE_VER  MAKE_NVAPI_VERSION(NV_GET_CURRENT_SLI_STATE,1)
-
-
-
-
-#if defined(_D3D9_H_) || defined(__d3d10_h__) || defined(__d3d11_h__)
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:   NvAPI_D3D_GetCurrentSLIState
-//
-//! DESCRIPTION:     This function returns the current SLI state for the specified device.  The structure
-//!                  contains the number of AFR groups, the current AFR group index,
-//!                  and what the AFR group index will be for the next frame. \p
-//!                  pDevice can be either a IDirect3DDevice9 or ID3D10Device pointer.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 173
-//!
-//! \retval         NVAPI_OK     Completed request
-//! \retval         NVAPI_ERROR  Error occurred
-//!
-//! \ingroup  dx
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_D3D_GetCurrentSLIState(IUnknown *pDevice, NV_GET_CURRENT_SLI_STATE *pSliState);
-
-#endif //if defined(_D3D9_H_) || defined(__d3d10_h__) || defined(__d3d11_h__)
-
-#if defined(_D3D9_H_)
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:   NvAPI_D3D9_RegisterResource
-//
-//! DESCRIPTION:    This API binds a resource (surface/texture) so that it can be retrieved
-//!                 internally by NVAPI.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//! \param [in]     pResource      surface/texture
-//!
-//! \return ::NVAPI_OK, ::NVAPI_ERROR 
-//!
-//! \ingroup dx
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_D3D9_RegisterResource(IDirect3DResource9* pResource);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:   NvAPI_D3D9_UnregisterResource
-//
-//! DESCRIPTION:     This API unbinds a resource (surface/texture) after use.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//! 
-//! \param [in]     pResource    surface/texture
-//!
-//! \return ::NVAPI_OK, ::NVAPI_ERROR 
-//!
-//! \ingroup dx
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_D3D9_UnregisterResource(IDirect3DResource9* pResource);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_D3D9_AliasSurfaceAsTexture
-//
-//! \fn NvAPI_D3D9_AliasSurfaceAsTexture(IDirect3DDevice9* pDev,
-//!                                              IDirect3DSurface9* pSurface,
-//!                                              IDirect3DTexture9 **ppTexture,
-//!                                              DWORD dwFlag);
-//!   DESCRIPTION: Create a texture that is an alias of a surface registered with NvAPI.  The
-//!                new texture can be bound with IDirect3DDevice9::SetTexture().  Note that the texture must
-//!                be unbound before drawing to the surface again.
-//!                Unless the USE_SUPER flag is passed, MSAA surfaces will be resolved before
-//!                being used as a texture.  MSAA depth buffers are resolved with a point filter,
-//!                and non-depth MSAA surfaces are resolved with a linear filter.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \param [in]    pDev         The D3D device that owns the objects
-//! \param [in]    pSurface     Pointer to a surface that has been registered with NvAPI 
-//!                             to which a texture alias is to be provided
-//! \param [out]   ppTexture    Fill with the texture created
-//! \param [in]    dwFlag       NVAPI_ALIAS_SURFACE_FLAG to describe how to handle the texture
-//!
-//! \retval ::NVAPI_OK                  completed request
-//! \retval ::NVAPI_INVALID_POINTER     A null pointer was passed as an argument
-//! \retval ::NVAPI_INVALID_ARGUMENT    One of the arguments was invalid, probably dwFlag.
-//! \retval ::NVAPI_UNREGISTERED_RESOURCE pSurface has not been registered with NvAPI
-//! \retval ::NVAPI_ERROR               error occurred
-//
-///////////////////////////////////////////////////////////////////////////////
-
-
-//! \ingroup dx
-//! See NvAPI_D3D9_AliasSurfaceAsTexture().
-typedef enum {
-    NVAPI_ALIAS_SURFACE_FLAG_NONE                     = 0x00000000,
-    NVAPI_ALIAS_SURFACE_FLAG_USE_SUPER                = 0x00000001,  //!< Use the surface's msaa buffer directly as a texture, rather than resolving. (This is much slower, but potentially has higher quality.)
-    NVAPI_ALIAS_SURFACE_FLAG_MASK                     = 0x00000001
-} NVAPI_ALIAS_SURFACE_FLAG;
-
-
-//! \ingroup dx
-NVAPI_INTERFACE NvAPI_D3D9_AliasSurfaceAsTexture(IDirect3DDevice9* pDev,
-                                                 IDirect3DSurface9* pSurface,
-                                                 IDirect3DTexture9 **ppTexture,
-                                                 DWORD dwFlag);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:   NvAPI_D3D9_StretchRectEx
-//
-//! DESCRIPTION:     This API copies the contents of the source resource to the destination
-//!                  resource.  This function can convert
-//!                  between a wider range of surfaces than
-//!                  IDirect3DDevice9::StretchRect.  For example, it can copy
-//!                  from a depth/stencil surface to a texture.
-//!
-//!                  The source and destination resources *must* be registered
-//!                  with NvAPI before being used with NvAPI_D3D9_StretchRectEx().
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \param [in]     pDevice             The D3D device that owns the objects.
-//! \param [in]     pSourceResource     Pointer to the source resource.
-//! \param [in]     pSrcRect            Defines the rectangle on the source to copy from.  If NULL, copy from the entire resource.
-//! \param [in]     pDestResource       Pointer to the destination resource.
-//! \param [in]     pDstRect            Defines the rectangle on the destination to copy to.  If NULL, copy to the entire resource.
-//! \param [in]     Filter              Choose a filtering method: D3DTEXF_NONE, D3DTEXF_POINT, D3DTEXF_LINEAR.
-//!
-//! \retval ::NVAPI_OK                       completed request
-//! \retval ::NVAPI_INVALID_POINTER          An invalid pointer was passed as an argument (probably NULL)
-//! \retval ::NVAPI_INVALID_ARGUMENT         One of the arguments was invalid
-//! \retval ::NVAPI_UNREGISTERED_RESOURCE    a resource was passed in without being registered
-//! \retval ::NVAPI_ERROR                    error occurred
-//!
-//! \ingroup dx
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_D3D9_StretchRectEx(IDirect3DDevice9 * pDevice,
-                                         IDirect3DResource9 * pSourceResource,
-                                         CONST RECT * pSourceRect,
-                                         IDirect3DResource9 * pDestResource,
-                                         CONST RECT * pDestRect,
-                                         D3DTEXTUREFILTERTYPE Filter);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:   NvAPI_D3D9_ClearRT
-//
-//! DESCRIPTION:     This API Clears the currently bound render target(s) with the 
-//!                  given color
-//!
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \param [in]     pDevice             The D3D device that owns the objects.
-//! \param [in]     dwNumRects          The no of rectangles to clear. If 0, clear the entire surface (clipped to viewport)
-//! \param [in]     pRects              Defines the rectangles to clear.  Should be NULL if dwNumRects == 0
-//! \param [in]     r                   red component of the clear color
-//! \param [in]     g                   green component of the clear color
-//! \param [in]     b                   blue component of the clear color
-//! \param [in]     a                   alpha component of the clear color
-//!
-//! \return This API can return any of the error codes enumerated in #NvAPI_Status. 
-//!
-//! \ingroup dx
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_D3D9_ClearRT(IDirect3DDevice9 * pDevice,
-                                   NvU32 dwNumRects,
-                                   CONST RECT * pRects,
-                                   float r, float g, float b, float a);
-
-#endif //if defined(_D3D9_H_)
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetGpuCoreCount
-//
-//!   DESCRIPTION: Retrieves the total number of cores defined for a GPU.
-//!                Returns 0 on architectures that don't define GPU cores.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \retval ::NVAPI_INVALID_ARGUMENT              pCount is NULL
-//! \retval ::NVAPI_OK                            *pCount is set
-//! \retval ::NVAPI_NVIDIA_DEVICE_NOT_FOUND       no NVIDIA GPU driving a display was found
-//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
-//! \retval ::NVAPI_NOT_SUPPORTED                 API call is not supported on current architecture
-//!
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetGpuCoreCount(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pCount);
-
-
-
-
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetAllOutputs
-//
-//!  This function returns set of all GPU-output identifiers as a bitmask.
-//!
-//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetAllDisplayIds.
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 85
-//!
-//! \retval   NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL.
-//! \retval   NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers.
-//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetAllDisplayIds.")
-NVAPI_INTERFACE NvAPI_GPU_GetAllOutputs(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pOutputsMask);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetConnectedOutputs
-//
-//! This function is the same as NvAPI_GPU_GetAllOutputs() but returns only the set of GPU output 
-//! identifiers that are connected to display devices.
-//!
-//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 80
-//!
-//! \retval   NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL.
-//! \retval   NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers.
-//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.")
-NVAPI_INTERFACE NvAPI_GPU_GetConnectedOutputs(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pOutputsMask);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetConnectedSLIOutputs
-//
-//!   DESCRIPTION: This function is the same as NvAPI_GPU_GetConnectedOutputs() but returns only the set of GPU-output 
-//!                identifiers that can be selected in an SLI configuration. 
-//!                 NOTE: This function matches NvAPI_GPU_GetConnectedOutputs()
-//!                 - On systems which are not SLI capable.
-//!                 - If the queried GPU is not part of a valid SLI group.
-//!
-//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 170
-//!
-//! \retval   NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL
-//! \retval   NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers
-//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
-//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE: hPhysicalGpu was not a physical GPU handle
-//! 
-//! \ingroup gpu  
-///////////////////////////////////////////////////////////////////////////////
-__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.")
-NVAPI_INTERFACE NvAPI_GPU_GetConnectedSLIOutputs(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pOutputsMask);
-
-
-
-
-//! \ingroup gpu
-typedef enum
-{
-    NV_MONITOR_CONN_TYPE_UNINITIALIZED = 0,
-    NV_MONITOR_CONN_TYPE_VGA,
-    NV_MONITOR_CONN_TYPE_COMPONENT,
-    NV_MONITOR_CONN_TYPE_SVIDEO,
-    NV_MONITOR_CONN_TYPE_HDMI,
-    NV_MONITOR_CONN_TYPE_DVI,
-    NV_MONITOR_CONN_TYPE_LVDS,
-    NV_MONITOR_CONN_TYPE_DP,
-    NV_MONITOR_CONN_TYPE_COMPOSITE,
-    NV_MONITOR_CONN_TYPE_UNKNOWN =  -1
-} NV_MONITOR_CONN_TYPE;
-
-
-
-//! \addtogroup gpu
-//! @{
-#define NV_GPU_CONNECTED_IDS_FLAG_UNCACHED          NV_BIT(0) //!< Get uncached connected devices
-#define NV_GPU_CONNECTED_IDS_FLAG_SLI               NV_BIT(1) //!< Get devices such that those can be selected in an SLI configuration
-#define NV_GPU_CONNECTED_IDS_FLAG_LIDSTATE          NV_BIT(2) //!< Get devices such that to reflect the Lid State
-#define NV_GPU_CONNECTED_IDS_FLAG_FAKE              NV_BIT(3) //!< Get devices that includes the fake connected monitors
-#define NV_GPU_CONNECTED_IDS_FLAG_EXCLUDE_MST       NV_BIT(4) //!< Excludes devices that are part of the multi stream topology.               
-//! @}
-
-//! \ingroup gpu
-typedef struct _NV_GPU_DISPLAYIDS
-{
-    NvU32    version;
-    NV_MONITOR_CONN_TYPE connectorType; //!< out: vga, tv, dvi, hdmi and dp. This is reserved for future use and clients should not rely on this information. Instead get the 
-                                        //!< GPU connector type from NvAPI_GPU_GetConnectorInfo/NvAPI_GPU_GetConnectorInfoEx
-    NvU32    displayId;                 //!< this is a unique identifier for each device
-    NvU32    isDynamic:1;               //!< if bit is set then this display is part of MST topology and it's a dynamic
-    NvU32    isMultiStreamRootNode:1;   //!< if bit is set then this displayID belongs to a multi stream enabled connector(root node). Note that when multi stream is enabled and 
-                                        //!< a single multi stream capable monitor is connected to it, the monitor will share the display id with the RootNode. 
-                                        //!< When there is more than one monitor connected in a multi stream topology, then the root node will have a separate displayId.
-    NvU32    isActive:1;                //!< if bit is set then this display is being actively driven
-    NvU32    isCluster:1;               //!< if bit is set then this display is the representative display for a stream clone
-    NvU32    isOSVisible:1;             //!< if bit is set, then this display is reported to the OS   
-    NvU32    reserved: 27;              //!< must be zero
-} NV_GPU_DISPLAYIDS;
-
-//! \ingroup gpu
-//! Macro for constructing the version field of ::_NV_GPU_DISPLAYIDS
-#define NV_GPU_DISPLAYIDS_VER          MAKE_NVAPI_VERSION(NV_GPU_DISPLAYIDS,1)
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetConnectedDisplayIds
-//
-//! \code
-//!   DESCRIPTION: Since due to space limitation NvAPI_GPU_GetConnectedOutputs can max return 32 devices but 
-//!                this is no longer will sufficient for DPMST NvAPI_GPU_GetConnectedDisplayIds will return all 
-//!                the connected display devices in the form of displayIds for the associated hPhysicalGpu.
-//!                This function can accept set of flags to request cached, uncached, sli and lid to get the connected devices.
-//!                Default value for flags will be cached 
-//! HOW TO USE: 1) for each PhysicalGpu, make a call to get the number of connected displayId's 
-//!                using NvAPI_GPU_GetConnectedDisplayIds by passing the pDisplayIds as NULL
-//!                On call success:
-//!             2) Allocate memory based on pDisplayIdCount then make a call NvAPI_GPU_GetConnectedDisplayIds to populate DisplayIds
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//! PARAMETERS:     hPhysicalGpu (IN)  - GPU selection
-//!                 flags        (IN)  - One or more defines from NV_GPU_CONNECTED_IDS_FLAG_* as valid flags. 
-//!                 pDisplayIds  (IN/OUT) - Pointer to an NV_GPU_DISPLAYIDS struct, each entry represents a one displayID and its attributes
-//!                 pDisplayIdCount(OUT)- Number of displayId's.
-//!
-//! RETURN STATUS: NVAPI_INVALID_ARGUMENT: hPhysicalGpu or pDisplayIds or pDisplayIdCount is NULL
-//!                NVAPI_OK: *pDisplayIds contains a set of GPU-output identifiers
-//!                NVAPI_NVIDIA_DEVICE_NOT_FOUND: no NVIDIA GPU driving a display was found
-//!                NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE: hPhysicalGpu was not a physical GPU handle
-//! \endcode
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetConnectedDisplayIds(__in NvPhysicalGpuHandle hPhysicalGpu,  __out_ecount_part_opt(*pDisplayIdCount, *pDisplayIdCount) NV_GPU_DISPLAYIDS* pDisplayIds, __inout NvU32* pDisplayIdCount, __in NvU32 flags);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetAllDisplayIds
-//
-//!   DESCRIPTION: This API returns display IDs for all possible outputs on the GPU.
-//!                For DPMST connector, it will return display IDs for all the video sinks in the topology. \n
-//! HOW TO USE: 1. The first call should be made to get the all display ID count. To get the display ID count, send in \n
-//!                  a) hPhysicalGpu    - a valid GPU handle(enumerated using NvAPI_EnumPhysicalGPUs()) as input,      \n
-//!                  b) pDisplayIds     - NULL, as we just want to get the display ID count.                           \n 
-//!                  c) pDisplayIdCount - a valid pointer to NvU32.                                                    \n
-//!                If all parameters are correct and this call is successful, this call will return the display ID's count. \n
-//!             2. To get the display ID array, make the second call to NvAPI_GPU_GetAllDisplayIds() with              \n
-//!                  a) hPhysicalGpu    - should be same value which was sent in first call,                           \n
-//!                  b) pDisplayIds     - pointer to the display ID array allocated by caller based on display ID count,    \n 
-//!                                       eg. malloc(sizeof(NV_GPU_DISPLAYIDS) * pDisplayIdCount).                     \n
-//!                  c) pDisplayIdCount - a valid pointer to NvU32. This indicates for how many display IDs            \n
-//!                                       the memory is allocated(pDisplayIds) by the caller.                          \n
-//!                If all parameters are correct and this call is successful, this call will return the display ID array and actual
-//!                display ID count (which was obtained in the first call to NvAPI_GPU_GetAllDisplayIds). If the input display ID count is
-//!                less than the actual display ID count, it will overwrite the input and give the pDisplayIdCount as actual count and the
-//!                API will return NVAPI_INSUFFICIENT_BUFFER.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \param [in]     hPhysicalGpu         GPU selection.
-//! \param [in,out] DisplayIds           Pointer to an array of NV_GPU_DISPLAYIDS structures, each entry represents one displayID 
-//!                                      and its attributes.
-//! \param [in,out] pDisplayIdCount      As input, this parameter indicates the number of display's id's for which caller has 
-//!                                      allocated the memory. As output, it will return the actual number of display IDs.
-//!
-//! \return  This API can return any of the error codes enumerated in #NvAPI_Status. If there are return error codes with 
-//!          specific meaning for this API, they are listed below.
-//!
-//! \retval  NVAPI_INSUFFICIENT_BUFFER  When the input buffer(pDisplayIds) is less than the actual number of display IDs, this API 
-//!                                     will return NVAPI_INSUFFICIENT_BUFFER. 
-//!
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetAllDisplayIds(__in NvPhysicalGpuHandle hPhysicalGpu, __out_ecount_part_opt(*pDisplayIdCount, *pDisplayIdCount) NV_GPU_DISPLAYIDS* pDisplayIds, __inout NvU32* pDisplayIdCount);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetConnectedOutputsWithLidState
-//
-//!  This function is similar to NvAPI_GPU_GetConnectedOutputs(), and returns the connected display identifiers that are connected 
-//!  as an output mask but unlike NvAPI_GPU_GetConnectedOutputs() this API "always" reflects the Lid State in the output mask.
-//!  Thus if you expect the LID close state to be available in the connection mask use this API.
-//!  - If LID is closed then this API will remove the LID panel from the connected display identifiers. 
-//!  - If LID is open then this API will reflect the LID panel in the connected display identifiers. 
-//!
-//! \note This API should be used on notebook systems and on systems where the LID state is required in the connection 
-//!       output mask. On desktop systems the returned identifiers will match NvAPI_GPU_GetConnectedOutputs().
-//!
-//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 95
-//!
-//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL
-//! \retval  NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.")
-NVAPI_INTERFACE NvAPI_GPU_GetConnectedOutputsWithLidState(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pOutputsMask);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetConnectedSLIOutputsWithLidState
-//
-//!   DESCRIPTION: This function is the same as NvAPI_GPU_GetConnectedOutputsWithLidState() but returns only the set
-//!                of GPU-output identifiers that can be selected in an SLI configuration. With SLI disabled,
-//!                this function matches NvAPI_GPU_GetConnectedOutputsWithLidState().
-//!
-//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 170
-//!
-//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL
-//! \retval  NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
-//!
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_GPU_GetConnectedDisplayIds.")
-NVAPI_INTERFACE NvAPI_GPU_GetConnectedSLIOutputsWithLidState(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pOutputsMask);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetSystemType
-//
-//! \fn NvAPI_GPU_GetSystemType(NvPhysicalGpuHandle hPhysicalGpu, NV_SYSTEM_TYPE *pSystemType)
-//!  This function identifies whether the GPU is a notebook GPU or a desktop GPU.
-//!       
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 95
-//!         
-//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL
-//! \retval  NVAPI_OK                           *pSystemType contains the GPU system type
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE: hPhysicalGpu was not a physical GPU handle
-//
-///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup gpu
-//! Used in NvAPI_GPU_GetSystemType()
-typedef enum
-{
-    NV_SYSTEM_TYPE_UNKNOWN = 0,
-    NV_SYSTEM_TYPE_LAPTOP  = 1,
-    NV_SYSTEM_TYPE_DESKTOP = 2,
-
-} NV_SYSTEM_TYPE;
-
-
-
-//! \ingroup gpu
-NVAPI_INTERFACE NvAPI_GPU_GetSystemType(NvPhysicalGpuHandle hPhysicalGpu, NV_SYSTEM_TYPE *pSystemType);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetActiveOutputs
-//
-//!  This function is the same as NvAPI_GPU_GetAllOutputs but returns only the set of GPU output 
-//!  identifiers that are actively driving display devices.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 85
-//!
-//! \retval    NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pOutputsMask is NULL.
-//! \retval    NVAPI_OK                           *pOutputsMask contains a set of GPU-output identifiers.
-//! \retval    NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval    NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetActiveOutputs(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pOutputsMask);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetEDID
-//
-//! \fn NvAPI_GPU_GetEDID(NvPhysicalGpuHandle hPhysicalGpu, NvU32 displayOutputId, NV_EDID *pEDID)
-//!  This function returns the EDID data for the specified GPU handle and connection bit mask.
-//!  displayOutputId should have exactly 1 bit set to indicate a single display. See \ref handles.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 85
-//!
-//! \retval    NVAPI_INVALID_ARGUMENT              pEDID is NULL; displayOutputId has 0 or > 1 bits set
-//! \retval    NVAPI_OK                           *pEDID contains valid data.
-//! \retval    NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval    NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \retval    NVAPI_DATA_NOT_FOUND                The requested display does not contain an EDID.
-//
-///////////////////////////////////////////////////////////////////////////////
-
-
-//! \ingroup gpu
-//! @{
-
-#define NV_EDID_V1_DATA_SIZE   256
-
-#define NV_EDID_DATA_SIZE      NV_EDID_V1_DATA_SIZE
-
-typedef struct
-{
-    NvU32   version;        //structure version
-    NvU8    EDID_Data[NV_EDID_DATA_SIZE];
-} NV_EDID_V1;
-
-//! Used in NvAPI_GPU_GetEDID()
-typedef struct
-{
-    NvU32   version;        //!< Structure version
-    NvU8    EDID_Data[NV_EDID_DATA_SIZE];
-    NvU32   sizeofEDID;
-} NV_EDID_V2;
-
-//! Used in NvAPI_GPU_GetEDID()
-typedef struct
-{
-    NvU32   version;        //!< Structure version
-    NvU8    EDID_Data[NV_EDID_DATA_SIZE];
-    NvU32   sizeofEDID;
-    NvU32   edidId;     //!< ID which always returned in a monotonically increasing counter.
-                       //!< Across a split-EDID read we need to verify that all calls returned the same edidId.
-                       //!< This counter is incremented if we get the updated EDID. 
-    NvU32   offset;    //!< Which 256-byte page of the EDID we want to read. Start at 0.
-                       //!< If the read succeeds with edidSize > NV_EDID_DATA_SIZE,
-                       //!< call back again with offset+256 until we have read the entire buffer
-} NV_EDID_V3;
-
-
-
-typedef NV_EDID_V3    NV_EDID;
-
-#define NV_EDID_VER1    MAKE_NVAPI_VERSION(NV_EDID_V1,1)
-#define NV_EDID_VER2    MAKE_NVAPI_VERSION(NV_EDID_V2,2)
-#define NV_EDID_VER3    MAKE_NVAPI_VERSION(NV_EDID_V3,3)
-#define NV_EDID_VER   NV_EDID_VER3
-
-//! @}
-
-
-
-//! \ingroup gpu
-NVAPI_INTERFACE NvAPI_GPU_GetEDID(NvPhysicalGpuHandle hPhysicalGpu, NvU32 displayOutputId, NV_EDID *pEDID);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_SetEDID
-//
-//!  Thus function sets the EDID data for the specified GPU handle and connection bit mask.
-//!  displayOutputId should have exactly 1 bit set to indicate a single display. See \ref handles.
-//!  \note The EDID will be cached across the boot session and will be enumerated to the OS in this call.
-//!        To remove the EDID set sizeofEDID to zero.
-//!        OS and NVAPI connection status APIs will reflect the newly set or removed EDID dynamically.
-//!
-//!                This feature will NOT be supported on the following boards:
-//!                - GeForce
-//!                - Quadro VX 
-//!                - Tesla  
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 100
-//!
-//! \retval  NVAPI_INVALID_ARGUMENT              pEDID is NULL; displayOutputId has 0 or > 1 bits set
-//! \retval  NVAPI_OK                           *pEDID data was applied to the requested displayOutputId.
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE: hPhysicalGpu was not a physical GPU handle.
-//! \retval  NVAPI_NOT_SUPPORTED                 For the above mentioned GPUs
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_SetEDID(NvPhysicalGpuHandle hPhysicalGpu, NvU32 displayOutputId, NV_EDID *pEDID);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetOutputType
-//
-//! \fn NvAPI_GPU_GetOutputType(NvPhysicalGpuHandle hPhysicalGpu, NvU32 outputId, NV_GPU_OUTPUT_TYPE *pOutputType)
-//!  This function returns the output type for a specific physical GPU handle and outputId (exactly 1 bit set - see \ref handles).
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \Version Earliest supported ForceWare version: 82.61
-//!
-//! \retval     NVAPI_INVALID_ARGUMENT              hPhysicalGpu, outputId, or pOutputsMask is NULL; or outputId has > 1 bit set
-//! \retval     NVAPI_OK                           *pOutputType contains a NvGpuOutputType value
-//! \retval     NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
-//! \retval     NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
-//
-///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup gpu
-//! used in NvAPI_GPU_GetOutputType()
-typedef enum _NV_GPU_OUTPUT_TYPE
-{
-    NVAPI_GPU_OUTPUT_UNKNOWN  = 0,
-    NVAPI_GPU_OUTPUT_CRT      = 1,     //!<  CRT display device
-    NVAPI_GPU_OUTPUT_DFP      = 2,     //!<  Digital Flat Panel display device
-    NVAPI_GPU_OUTPUT_TV       = 3,     //!<  TV display device
-} NV_GPU_OUTPUT_TYPE;
-
-
-
-
-//! \ingroup gpu
-NVAPI_INTERFACE NvAPI_GPU_GetOutputType(NvPhysicalGpuHandle hPhysicalGpu, NvU32 outputId, NV_GPU_OUTPUT_TYPE *pOutputType);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_ValidateOutputCombination
-//
-//!  This function determines if a set of GPU outputs can be active 
-//!  simultaneously.  While a GPU may have <n> outputs, typically they cannot 
-//!  all be active at the same time due to internal resource sharing.
-//!
-//!  Given a physical GPU handle and a mask of candidate outputs, this call
-//!  will return NVAPI_OK if all of the specified outputs can be driven
-//!  simultaneously.  It will return NVAPI_INVALID_COMBINATION if they cannot.
-//!                
-//!  Use NvAPI_GPU_GetAllOutputs() to determine which outputs are candidates.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 85
-//!
-//! \retval  NVAPI_OK                            Combination of outputs in outputsMask are valid (can be active simultaneously).
-//! \retval  NVAPI_INVALID_COMBINATION           Combination of outputs in outputsMask are NOT valid.
-//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or outputsMask does not have at least 2 bits set.
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_ValidateOutputCombination(NvPhysicalGpuHandle hPhysicalGpu, NvU32 outputsMask);
-
-
-
-
-//! \ingroup gpu
-//! Used in NV_GPU_CONNECTOR_DATA
-typedef enum _NV_GPU_CONNECTOR_TYPE
-{
-    NVAPI_GPU_CONNECTOR_VGA_15_PIN                      = 0x00000000,
-    NVAPI_GPU_CONNECTOR_TV_COMPOSITE                    = 0x00000010,
-    NVAPI_GPU_CONNECTOR_TV_SVIDEO                       = 0x00000011,
-    NVAPI_GPU_CONNECTOR_TV_HDTV_COMPONENT               = 0x00000013,
-    NVAPI_GPU_CONNECTOR_TV_SCART                        = 0x00000014,
-    NVAPI_GPU_CONNECTOR_TV_COMPOSITE_SCART_ON_EIAJ4120  = 0x00000016,
-    NVAPI_GPU_CONNECTOR_TV_HDTV_EIAJ4120                = 0x00000017,
-    NVAPI_GPU_CONNECTOR_PC_POD_HDTV_YPRPB               = 0x00000018,
-    NVAPI_GPU_CONNECTOR_PC_POD_SVIDEO                   = 0x00000019,
-    NVAPI_GPU_CONNECTOR_PC_POD_COMPOSITE                = 0x0000001A,
-    NVAPI_GPU_CONNECTOR_DVI_I_TV_SVIDEO                 = 0x00000020,
-    NVAPI_GPU_CONNECTOR_DVI_I_TV_COMPOSITE              = 0x00000021,
-    NVAPI_GPU_CONNECTOR_DVI_I                           = 0x00000030,
-    NVAPI_GPU_CONNECTOR_DVI_D                           = 0x00000031,
-    NVAPI_GPU_CONNECTOR_ADC                             = 0x00000032,
-    NVAPI_GPU_CONNECTOR_LFH_DVI_I_1                     = 0x00000038,
-    NVAPI_GPU_CONNECTOR_LFH_DVI_I_2                     = 0x00000039,
-    NVAPI_GPU_CONNECTOR_SPWG                            = 0x00000040,
-    NVAPI_GPU_CONNECTOR_OEM                             = 0x00000041,
-    NVAPI_GPU_CONNECTOR_DISPLAYPORT_EXTERNAL            = 0x00000046,
-    NVAPI_GPU_CONNECTOR_DISPLAYPORT_INTERNAL            = 0x00000047,
-    NVAPI_GPU_CONNECTOR_DISPLAYPORT_MINI_EXT            = 0x00000048,
-    NVAPI_GPU_CONNECTOR_HDMI_A                          = 0x00000061,
-    NVAPI_GPU_CONNECTOR_HDMI_C_MINI                     = 0x00000063,
-    NVAPI_GPU_CONNECTOR_LFH_DISPLAYPORT_1               = 0x00000064,
-    NVAPI_GPU_CONNECTOR_LFH_DISPLAYPORT_2               = 0x00000065,    
-    NVAPI_GPU_CONNECTOR_UNKNOWN                         = 0xFFFFFFFF,
-} NV_GPU_CONNECTOR_TYPE;
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetFullName
-//
-//!  This function retrieves the full GPU name as an ASCII string - for example, "Quadro FX 1400".
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 90
-//!
-//! \return  NVAPI_ERROR or NVAPI_OK
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetFullName(NvPhysicalGpuHandle hPhysicalGpu, NvAPI_ShortString szName);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetPCIIdentifiers
-//
-//!  This function returns the PCI identifiers associated with this GPU.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 90
-//!
-//! \param   DeviceId      The internal PCI device identifier for the GPU.
-//! \param   SubSystemId   The internal PCI subsystem identifier for the GPU.
-//! \param   RevisionId    The internal PCI device-specific revision identifier for the GPU.
-//! \param   ExtDeviceId   The external PCI device identifier for the GPU.
-//!
-//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or an argument is NULL
-//! \retval  NVAPI_OK                            Arguments are populated with PCI identifiers
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetPCIIdentifiers(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pDeviceId,NvU32 *pSubSystemId,NvU32 *pRevisionId,NvU32 *pExtDeviceId);
-    
-
-
-
-//! \ingroup gpu
-//! Used in NvAPI_GPU_GetGPUType().    
-typedef enum _NV_GPU_TYPE
-{
-    NV_SYSTEM_TYPE_GPU_UNKNOWN     = 0, 
-    NV_SYSTEM_TYPE_IGPU            = 1, //!< Integrated GPU
-    NV_SYSTEM_TYPE_DGPU            = 2, //!< Discrete GPU
-} NV_GPU_TYPE; 
-
-
-/////////////////////////////////////////////////////////////////////////////// 
-// 
-// FUNCTION NAME: NvAPI_GPU_GetGPUType 
-// 
-//!  DESCRIPTION: This function returns the GPU type (integrated or discrete).
-//!               See ::NV_GPU_TYPE. 
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 173
-//!
-//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu 
-//! \retval  NVAPI_OK                           *pGpuType contains the GPU type 
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found 
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE: hPhysicalGpu was not a physical GPU handle 
-//!
-//!  \ingroup gpu 
-///////////////////////////////////////////////////////////////////////////////     
-NVAPI_INTERFACE NvAPI_GPU_GetGPUType(__in NvPhysicalGpuHandle hPhysicalGpu, __out NV_GPU_TYPE *pGpuType);
-
-
-
-
-//! \ingroup gpu
-//! Used in NvAPI_GPU_GetBusType()
-typedef enum _NV_GPU_BUS_TYPE
-{
-    NVAPI_GPU_BUS_TYPE_UNDEFINED    = 0,
-    NVAPI_GPU_BUS_TYPE_PCI          = 1,
-    NVAPI_GPU_BUS_TYPE_AGP          = 2,
-    NVAPI_GPU_BUS_TYPE_PCI_EXPRESS  = 3,
-    NVAPI_GPU_BUS_TYPE_FPCI         = 4,
-    NVAPI_GPU_BUS_TYPE_AXI          = 5,
-} NV_GPU_BUS_TYPE;
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetBusType
-//
-//!  This function returns the type of bus associated with this GPU.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 90
-//!
-//! \return      This API can return any of the error codes enumerated in #NvAPI_Status. If there are return error codes with 
-//!              specific meaning for this API, they are listed below.
-//! \retval      NVAPI_INVALID_ARGUMENT             hPhysicalGpu or pBusType is NULL.
-//! \retval      NVAPI_OK                          *pBusType contains bus identifier.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetBusType(NvPhysicalGpuHandle hPhysicalGpu,NV_GPU_BUS_TYPE *pBusType);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetBusId
-//
-//!   DESCRIPTION: Returns the ID of the bus associated with this GPU.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 167
-//!
-//!  \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pBusId is NULL.
-//!  \retval  NVAPI_OK                           *pBusId contains the bus ID.
-//!  \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//!  \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//!
-//!  \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetBusId(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pBusId);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetBusSlotId
-//
-//!   DESCRIPTION: Returns the ID of the bus slot associated with this GPU.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 167
-//!
-//!  \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pBusSlotId is NULL.
-//!  \retval  NVAPI_OK                           *pBusSlotId contains the bus slot ID.
-//!  \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//!  \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//!
-//!  \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetBusSlotId(NvPhysicalGpuHandle hPhysicalGpu, NvU32 *pBusSlotId);
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetIRQ
-//
-//!  This function returns the interrupt number associated with this GPU.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 90
-//!
-//! \retval  NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pIRQ is NULL.
-//! \retval  NVAPI_OK                           *pIRQ contains interrupt number.
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetIRQ(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pIRQ);
-    
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetVbiosRevision
-//
-//!  This function returns the revision of the video BIOS associated with this GPU.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 90
-//!
-//! \retval    NVAPI_INVALID_ARGUMENT               hPhysicalGpu or pBiosRevision is NULL.
-//! \retval    NVAPI_OK                            *pBiosRevision contains revision number.
-//! \retval    NVAPI_NVIDIA_DEVICE_NOT_FOUND        No NVIDIA GPU driving a display was found.
-//! \retval    NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE   hPhysicalGpu was not a physical GPU handle.
-//! \ingroup   gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetVbiosRevision(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pBiosRevision);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetVbiosOEMRevision
-//
-//!  This function returns the OEM revision of the video BIOS associated with this GPU.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 90
-//!
-//! \retval    NVAPI_INVALID_ARGUMENT              hPhysicalGpu or pBiosRevision is NULL
-//! \retval    NVAPI_OK                           *pBiosRevision contains revision number
-//! \retval    NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
-//! \retval    NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
-//! \ingroup   gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetVbiosOEMRevision(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pBiosRevision);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetVbiosVersionString
-//
-//!  This function returns the full video BIOS version string in the form of xx.xx.xx.xx.yy where
-//!  - xx numbers come from NvAPI_GPU_GetVbiosRevision() and 
-//!  - yy comes from NvAPI_GPU_GetVbiosOEMRevision().
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 90
-//!
-//! \retval   NVAPI_INVALID_ARGUMENT              hPhysicalGpu is NULL.
-//! \retval   NVAPI_OK                            szBiosRevision contains version string.
-//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetVbiosVersionString(NvPhysicalGpuHandle hPhysicalGpu,NvAPI_ShortString szBiosRevision);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetAGPAperture
-//
-//!  This function returns the AGP aperture in megabytes.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 90
-//!
-//! \retval   NVAPI_INVALID_ARGUMENT              pSize is NULL.
-//! \retval   NVAPI_OK                            Call successful.
-//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetAGPAperture(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pSize);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetCurrentAGPRate
-//
-//!  This function returns the current AGP Rate (0 = AGP not present, 1 = 1x, 2 = 2x, etc.).
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 90
-//!
-//! \retval   NVAPI_INVALID_ARGUMENT              pRate is NULL.
-//! \retval   NVAPI_OK                            Call successful.
-//! \retval   NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetCurrentAGPRate(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pRate);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetCurrentPCIEDownstreamWidth
-//
-//!  This function returns the number of PCIE lanes being used for the PCIE interface 
-//!  downstream from the GPU.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 90
-//!
-//! \retval  NVAPI_INVALID_ARGUMENT              pWidth is NULL.
-//! \retval  NVAPI_OK                            Call successful.
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetCurrentPCIEDownstreamWidth(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pWidth);
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetPhysicalFrameBufferSize
-//
-//!   This function returns the physical size of framebuffer in KB.  This does NOT include any
-//!   system RAM that may be dedicated for use by the GPU.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 90
-//!
-//! \retval  NVAPI_INVALID_ARGUMENT              pSize is NULL
-//! \retval  NVAPI_OK                            Call successful
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetPhysicalFrameBufferSize(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pSize);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetVirtualFrameBufferSize
-//
-//!  This function returns the virtual size of framebuffer in KB.  This includes the physical RAM plus any
-//!  system RAM that has been dedicated for use by the GPU.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 90
-//!
-//! \retval  NVAPI_INVALID_ARGUMENT              pSize is NULL.
-//! \retval  NVAPI_OK                            Call successful.
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND       No NVIDIA GPU driving a display was found.
-//! \retval  NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  hPhysicalGpu was not a physical GPU handle.
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetVirtualFrameBufferSize(NvPhysicalGpuHandle hPhysicalGpu,NvU32 *pSize);
-
-
- 
-
-
-//! \ingroup gpu
-typedef struct _NV_BOARD_INFO
-{
-    NvU32 version;                   //!< structure version
-    NvU8 BoardNum[16];               //!< Board Serial Number
-
-}NV_BOARD_INFO_V1;
-
-//! \ingroup gpu
-typedef NV_BOARD_INFO_V1    NV_BOARD_INFO;
-//! \ingroup gpu
-#define NV_BOARD_INFO_VER1  MAKE_NVAPI_VERSION(NV_BOARD_INFO_V1,1)
-//! \ingroup gpu
-#define NV_BOARD_INFO_VER   NV_BOARD_INFO_VER1
-
-//! SUPPORTED OS:  Windows XP and higher
-//!
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetBoardInfo
-//
-//!   DESCRIPTION: This API Retrieves the Board information (a unique GPU Board Serial Number) stored in the InfoROM.
-//!
-//! \param [in]      hPhysicalGpu       Physical GPU Handle.
-//! \param [in,out]  NV_BOARD_INFO      Board Information.
-//!
-//! \retval ::NVAPI_OK                     completed request
-//! \retval ::NVAPI_ERROR                  miscellaneous error occurred
-//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  handle passed is not a physical GPU handle
-//! \retval ::NVAPI_API_NOT_INTIALIZED            NVAPI not initialized
-//! \retval ::NVAPI_INVALID_POINTER               pBoardInfo is NULL
-//! \retval ::NVAPI_INCOMPATIBLE_STRUCT_VERSION   the version of the INFO struct is not supported
-//! 
-//! \ingroup gpu
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetBoardInfo(NvPhysicalGpuHandle hPhysicalGpu, NV_BOARD_INFO *pBoardInfo);
-
-
-
-
-
-
-//! \ingroup gpupstate
-#define NVAPI_MAX_GPU_UTILIZATIONS 8
-
-
-
-//! \ingroup gpupstate
-//! Used in NvAPI_GPU_GetDynamicPstatesInfoEx().
-typedef struct
-{
-    NvU32       version;        //!< Structure version
-    NvU32       flags;          //!< bit 0 indicates if the dynamic Pstate is enabled or not
-    struct
-    {
-        NvU32   bIsPresent:1;   //!< Set if this utilization domain is present on this GPU
-        NvU32   percentage;     //!< Percentage of time where the domain is considered busy in the last 1 second interval
-    } utilization[NVAPI_MAX_GPU_UTILIZATIONS];
-} NV_GPU_DYNAMIC_PSTATES_INFO_EX;
-
-//! \ingroup gpupstate
-//! Macro for constructing the version field of NV_GPU_DYNAMIC_PSTATES_INFO_EX
-#define NV_GPU_DYNAMIC_PSTATES_INFO_EX_VER MAKE_NVAPI_VERSION(NV_GPU_DYNAMIC_PSTATES_INFO_EX,1)
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_GetDynamicPstatesInfoEx
-//
-//! DESCRIPTION:   This API retrieves the NV_GPU_DYNAMIC_PSTATES_INFO_EX structure for the specified physical GPU.
-//!                Each domain's info is indexed in the array.  For example: 
-//!                - pDynamicPstatesInfo->utilization[NVAPI_GPU_UTILIZATION_DOMAIN_GPU] holds the info for the GPU domain. \p
-//!                There are currently 4 domains for which GPU utilization and dynamic P-State thresholds can be retrieved:
-//!                   graphic engine (GPU), frame buffer (FB), video engine (VID), and bus interface (BUS).
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 185
-//! 
-//! \retval ::NVAPI_OK 
-//! \retval ::NVAPI_ERROR 
-//! \retval ::NVAPI_INVALID_ARGUMENT  pDynamicPstatesInfo is NULL
-//! \retval ::NVAPI_HANDLE_INVALIDATED 
-//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE 
-//! \retval ::NVAPI_INCOMPATIBLE_STRUCT_VERSION The version of the INFO struct is not supported
-//!
-//! \ingroup gpupstate
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetDynamicPstatesInfoEx(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_DYNAMIC_PSTATES_INFO_EX *pDynamicPstatesInfoEx);
-
-
-///////////////////////////////////////////////////////////////////////////////////
-//  Thermal API
-//  Provides ability to get temperature levels from the various thermal sensors associated with the GPU
-
-//! \ingroup gputhermal
-#define NVAPI_MAX_THERMAL_SENSORS_PER_GPU 3
-
-//! \ingroup gputhermal
-//! Used in NV_GPU_THERMAL_SETTINGS
-typedef enum 
-{
-    NVAPI_THERMAL_TARGET_NONE          = 0,
-    NVAPI_THERMAL_TARGET_GPU           = 1,     //!< GPU core temperature requires NvPhysicalGpuHandle
-    NVAPI_THERMAL_TARGET_MEMORY        = 2,     //!< GPU memory temperature requires NvPhysicalGpuHandle
-    NVAPI_THERMAL_TARGET_POWER_SUPPLY  = 4,     //!< GPU power supply temperature requires NvPhysicalGpuHandle
-    NVAPI_THERMAL_TARGET_BOARD         = 8,     //!< GPU board ambient temperature requires NvPhysicalGpuHandle
-    NVAPI_THERMAL_TARGET_VCD_BOARD     = 9,     //!< Visual Computing Device Board temperature requires NvVisualComputingDeviceHandle
-    NVAPI_THERMAL_TARGET_VCD_INLET     = 10,    //!< Visual Computing Device Inlet temperature requires NvVisualComputingDeviceHandle
-    NVAPI_THERMAL_TARGET_VCD_OUTLET    = 11,    //!< Visual Computing Device Outlet temperature requires NvVisualComputingDeviceHandle
-
-    NVAPI_THERMAL_TARGET_ALL           = 15,
-    NVAPI_THERMAL_TARGET_UNKNOWN       = -1,
-} NV_THERMAL_TARGET;
-
-//! \ingroup gputhermal
-//! Used in NV_GPU_THERMAL_SETTINGS
-typedef enum
-{
-    NVAPI_THERMAL_CONTROLLER_NONE = 0,
-    NVAPI_THERMAL_CONTROLLER_GPU_INTERNAL,  
-    NVAPI_THERMAL_CONTROLLER_ADM1032,
-    NVAPI_THERMAL_CONTROLLER_MAX6649,       
-    NVAPI_THERMAL_CONTROLLER_MAX1617,      
-    NVAPI_THERMAL_CONTROLLER_LM99,      
-    NVAPI_THERMAL_CONTROLLER_LM89,         
-    NVAPI_THERMAL_CONTROLLER_LM64,         
-    NVAPI_THERMAL_CONTROLLER_ADT7473,
-    NVAPI_THERMAL_CONTROLLER_SBMAX6649,
-    NVAPI_THERMAL_CONTROLLER_VBIOSEVT,  
-    NVAPI_THERMAL_CONTROLLER_OS,    
-    NVAPI_THERMAL_CONTROLLER_UNKNOWN = -1,
-} NV_THERMAL_CONTROLLER;
-
-//! \ingroup gputhermal
-//! Used in NvAPI_GPU_GetThermalSettings()
-typedef struct
-{
-    NvU32   version;                //!< structure version 
-    NvU32   count;                  //!< number of associated thermal sensors
-    struct 
-    {
-        NV_THERMAL_CONTROLLER       controller;        //!< internal, ADM1032, MAX6649...
-        NvU32                       defaultMinTemp;    //!< The min default temperature value of the thermal sensor in degrees centigrade 
-        NvU32                       defaultMaxTemp;    //!< The max default temperature value of the thermal sensor in degrees centigrade 
-        NvU32                       currentTemp;       //!< The current temperature value of the thermal sensor in degrees centigrade 
-        NV_THERMAL_TARGET           target;            //!< Thermal sensor targeted @ GPU, memory, chipset, powersupply, Visual Computing Device, etc.
-    } sensor[NVAPI_MAX_THERMAL_SENSORS_PER_GPU];
-
-} NV_GPU_THERMAL_SETTINGS_V1;
-
-//! \ingroup gputhermal
-typedef struct
-{
-    NvU32   version;                //!< structure version
-    NvU32   count;                  //!< number of associated thermal sensors
-    struct
-    {
-        NV_THERMAL_CONTROLLER       controller;         //!< internal, ADM1032, MAX6649...
-        NvS32                       defaultMinTemp;     //!< Minimum default temperature value of the thermal sensor in degrees C
-        NvS32                       defaultMaxTemp;     //!< Maximum default temperature value of the thermal sensor in degrees C
-        NvS32                       currentTemp;        //!< Current temperature value of the thermal sensor in degrees C
-        NV_THERMAL_TARGET           target;             //!< Thermal sensor targeted - GPU, memory, chipset, powersupply, Visual Computing Device, etc
-    } sensor[NVAPI_MAX_THERMAL_SENSORS_PER_GPU];
-
-} NV_GPU_THERMAL_SETTINGS_V2;
-
-//! \ingroup gputhermal
-typedef NV_GPU_THERMAL_SETTINGS_V2  NV_GPU_THERMAL_SETTINGS;
-
-//! \ingroup gputhermal
-//! @{
-
-//! Macro for constructing the version field of NV_GPU_THERMAL_SETTINGS_V1
-#define NV_GPU_THERMAL_SETTINGS_VER_1   MAKE_NVAPI_VERSION(NV_GPU_THERMAL_SETTINGS_V1,1)
-
-//! Macro for constructing the version field of NV_GPU_THERMAL_SETTINGS_V2
-#define NV_GPU_THERMAL_SETTINGS_VER_2   MAKE_NVAPI_VERSION(NV_GPU_THERMAL_SETTINGS_V2,2)
-
-//! Macro for constructing the version field of NV_GPU_THERMAL_SETTINGS
-#define NV_GPU_THERMAL_SETTINGS_VER     NV_GPU_THERMAL_SETTINGS_VER_2
-//! @}
-
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:   NvAPI_GPU_GetThermalSettings
-//
-//!  This function retrieves the thermal information of all thermal sensors or specific thermal sensor associated with the selected GPU.
-//!  Thermal sensors are indexed 0 to NVAPI_MAX_THERMAL_SENSORS_PER_GPU-1.
-//!
-//!  - To retrieve specific thermal sensor info, set the sensorIndex to the required thermal sensor index. 
-//!  - To retrieve info for all sensors, set sensorIndex to NVAPI_THERMAL_TARGET_ALL. 
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 85
-//!
-//! \param [in]   hPhysicalGPU      GPU selection.
-//! \param [in]   sensorIndex       Explicit thermal sensor index selection. 
-//! \param [out]  pThermalSettings  Array of thermal settings.
-//!
-//! \retval   NVAPI_OK                           Completed request
-//! \retval   NVAPI_ERROR                        Miscellaneous error occurred.
-//! \retval   NVAPI_INVALID_ARGUMENT             pThermalInfo is NULL.
-//! \retval   NVAPI_HANDLE_INVALIDATED           Handle passed has been invalidated (see user guide).
-//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE Handle passed is not a physical GPU handle.
-//! \retval   NVAPI_INCOMPATIBLE_STRUCT_VERSION  The version of the INFO struct is not supported.
-//! \ingroup gputhermal
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetThermalSettings(NvPhysicalGpuHandle hPhysicalGpu, NvU32 sensorIndex, NV_GPU_THERMAL_SETTINGS *pThermalSettings);
-
-
-////////////////////////////////////////////////////////////////////////////////
-//
-// NvAPI_TVOutput Information
-//
-///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup tvapi
-//! Used in NV_DISPLAY_TV_OUTPUT_INFO
-typedef enum _NV_DISPLAY_TV_FORMAT
-{
-    NV_DISPLAY_TV_FORMAT_NONE         = 0,
-    NV_DISPLAY_TV_FORMAT_SD_NTSCM     = 0x00000001,
-    NV_DISPLAY_TV_FORMAT_SD_NTSCJ     = 0x00000002,
-    NV_DISPLAY_TV_FORMAT_SD_PALM      = 0x00000004,
-    NV_DISPLAY_TV_FORMAT_SD_PALBDGH   = 0x00000008,
-    NV_DISPLAY_TV_FORMAT_SD_PALN      = 0x00000010,
-    NV_DISPLAY_TV_FORMAT_SD_PALNC     = 0x00000020,
-    NV_DISPLAY_TV_FORMAT_SD_576i      = 0x00000100,
-    NV_DISPLAY_TV_FORMAT_SD_480i      = 0x00000200,
-    NV_DISPLAY_TV_FORMAT_ED_480p      = 0x00000400,
-    NV_DISPLAY_TV_FORMAT_ED_576p      = 0x00000800,
-    NV_DISPLAY_TV_FORMAT_HD_720p      = 0x00001000,
-    NV_DISPLAY_TV_FORMAT_HD_1080i     = 0x00002000,
-    NV_DISPLAY_TV_FORMAT_HD_1080p     = 0x00004000,
-    NV_DISPLAY_TV_FORMAT_HD_720p50    = 0x00008000,
-    NV_DISPLAY_TV_FORMAT_HD_1080p24   = 0x00010000,
-    NV_DISPLAY_TV_FORMAT_HD_1080i50   = 0x00020000,
-    NV_DISPLAY_TV_FORMAT_HD_1080p50   = 0x00040000,
-
-    NV_DISPLAY_TV_FORMAT_SD_OTHER     = 0x01000000,
-    NV_DISPLAY_TV_FORMAT_ED_OTHER     = 0x02000000,
-    NV_DISPLAY_TV_FORMAT_HD_OTHER     = 0x04000000,
-
-    NV_DISPLAY_TV_FORMAT_ANY          = 0x80000000,
-
-} NV_DISPLAY_TV_FORMAT;
-
-///////////////////////////////////////////////////////////////////////////////////
-//  I2C API
-//  Provides ability to read or write data using I2C protocol.
-//  These APIs allow I2C access only to DDC monitors
-
-
-//! \addtogroup i2capi
-//! @{
-#define NVAPI_MAX_SIZEOF_I2C_DATA_BUFFER    4096
-#define NVAPI_MAX_SIZEOF_I2C_REG_ADDRESS       4
-#define NVAPI_DISPLAY_DEVICE_MASK_MAX         24
-#define NVAPI_I2C_SPEED_DEPRECATED        0xFFFF
-
-typedef enum
-{
-    NVAPI_I2C_SPEED_DEFAULT,    //!< Set i2cSpeedKhz to I2C_SPEED_DEFAULT if default I2C speed is to be chosen, ie.use the current frequency setting.
-    NVAPI_I2C_SPEED_3KHZ,
-    NVAPI_I2C_SPEED_10KHZ,
-    NVAPI_I2C_SPEED_33KHZ,
-    NVAPI_I2C_SPEED_100KHZ,
-    NVAPI_I2C_SPEED_200KHZ,
-    NVAPI_I2C_SPEED_400KHZ,
-} NV_I2C_SPEED;
-
-//! Used in NvAPI_I2CRead() and NvAPI_I2CWrite()
-typedef struct
-{
-    NvU32                   version;            //!< The structure version.
-    NvU32                   displayMask;        //!< The Display Mask of the concerned display.
-    NvU8                    bIsDDCPort;         //!< This flag indicates either the DDC port (TRUE) or the communication port
-                                                //!< (FALSE) of the concerned display.
-    NvU8                    i2cDevAddress;      //!< The address of the I2C slave.  The address should be shifted left by one.  For
-                                                //!< example, the I2C address 0x50, often used for reading EDIDs, would be stored
-                                                //!< here as 0xA0.  This matches the position within the byte sent by the master, as
-                                                //!< the last bit is reserved to specify the read or write direction.
-    NvU8*                   pbI2cRegAddress;    //!< The I2C target register address.  May be NULL, which indicates no register
-                                                //!< address should be sent.
-    NvU32                   regAddrSize;        //!< The size in bytes of target register address.  If pbI2cRegAddress is NULL, this
-                                                //!< field must be 0.
-    NvU8*                   pbData;             //!< The buffer of data which is to be read or written (depending on the command).
-    NvU32                   cbSize;             //!< The size of the data buffer, pbData, to be read or written.
-    NvU32                   i2cSpeed;           //!< The target speed of the transaction (between 28kbps to 40kbps; not guaranteed).
-} NV_I2C_INFO_V1;
-
-//! Used in NvAPI_I2CRead() and NvAPI_I2CWrite()
-typedef struct
-{
-    NvU32                   version;            //!< The structure version.
-    NvU32                   displayMask;        //!< The Display Mask of the concerned display.
-    NvU8                    bIsDDCPort;         //!< This flag indicates either the DDC port (TRUE) or the communication port
-                                                //!< (FALSE) of the concerned display.
-    NvU8                    i2cDevAddress;      //!< The address of the I2C slave.  The address should be shifted left by one.  For
-                                                //!< example, the I2C address 0x50, often used for reading EDIDs, would be stored
-                                                //!< here as 0xA0.  This matches the position within the byte sent by the master, as
-                                                //!< the last bit is reserved to specify the read or write direction.
-    NvU8*                   pbI2cRegAddress;    //!< The I2C target register address.  May be NULL, which indicates no register
-                                                //!< address should be sent.
-    NvU32                   regAddrSize;        //!< The size in bytes of target register address.  If pbI2cRegAddress is NULL, this
-                                                //!< field must be 0.
-    NvU8*                   pbData;             //!< The buffer of data which is to be read or written (depending on the command).
-    NvU32                   cbSize;             //!< The size of the data buffer, pbData, to be read or written.
-    NvU32                   i2cSpeed;           //!< Deprecated, Must be set to NVAPI_I2C_SPEED_DEPRECATED.
-    NV_I2C_SPEED            i2cSpeedKhz;        //!< The target speed of the transaction in KHz (Chosen from the enum NV_I2C_SPEED).
-} NV_I2C_INFO_V2;
-
-//! Used in NvAPI_I2CRead() and NvAPI_I2CWrite()
-typedef struct
-{
-    NvU32                   version;            //!< The structure version.
-    NvU32                   displayMask;        //!< The Display Mask of the concerned display.
-    NvU8                    bIsDDCPort;         //!< This flag indicates either the DDC port (TRUE) or the communication port
-                                                //!< (FALSE) of the concerned display.
-    NvU8                    i2cDevAddress;      //!< The address of the I2C slave.  The address should be shifted left by one.  For
-                                                //!< example, the I2C address 0x50, often used for reading EDIDs, would be stored
-                                                //!< here as 0xA0.  This matches the position within the byte sent by the master, as
-                                                //!< the last bit is reserved to specify the read or write direction.
-    NvU8*                   pbI2cRegAddress;    //!< The I2C target register address.  May be NULL, which indicates no register
-                                                //!< address should be sent.
-    NvU32                   regAddrSize;        //!< The size in bytes of target register address.  If pbI2cRegAddress is NULL, this
-                                                //!< field must be 0.
-    NvU8*                   pbData;             //!< The buffer of data which is to be read or written (depending on the command).
-    NvU32                   cbSize;             //!< The size of the data buffer, pbData, to be read or written.
-    NvU32                   i2cSpeed;           //!< Deprecated, Must be set to NVAPI_I2C_SPEED_DEPRECATED.
-    NV_I2C_SPEED            i2cSpeedKhz;        //!< The target speed of the transaction in KHz (Chosen from the enum NV_I2C_SPEED).
-    NvU8                    portId;             //!< The portid on which device is connected (remember to set bIsPortIdSet if this value is set)
-    NvU32                   bIsPortIdSet;       //!< set this flag on iff  portid value is set
-} NV_I2C_INFO_V3;
-
-typedef NV_I2C_INFO_V3                     NV_I2C_INFO;
-
-#define NV_I2C_INFO_VER3  MAKE_NVAPI_VERSION(NV_I2C_INFO_V3,3)
-#define NV_I2C_INFO_VER2  MAKE_NVAPI_VERSION(NV_I2C_INFO_V2,2)
-#define NV_I2C_INFO_VER1  MAKE_NVAPI_VERSION(NV_I2C_INFO_V1,1)
-
-#define NV_I2C_INFO_VER  NV_I2C_INFO_VER3
-//! @}
-
-/***********************************************************************************/
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:  NvAPI_I2CRead
-//
-//!  This function reads the data buffer from the I2C port.
-//!                 The I2C request must be for a DDC port: pI2cInfo->bIsDDCPort = 1.
-//!
-//!                 A data buffer size larger than 16 bytes may be rejected if a register address is specified.  In such a case,
-//!                 NVAPI_ARGUMENT_EXCEED_MAX_SIZE would be returned.
-//!
-//!                 If a register address is specified (i.e. regAddrSize is positive), then the transaction will be performed in
-//!                 the combined format described in the I2C specification.  The register address will be written, followed by
-//!                 reading into the data buffer.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 85
-//!
-//! \param [in]   hPhysicalGPU     GPU selection.
-//! \param [out]  NV_I2C_INFO     *pI2cInfo The I2C data input structure
-//!
-//! \retval   NVAPI_OK                            Completed request
-//! \retval   NVAPI_ERROR                         Miscellaneous error occurred.
-//! \retval   NVAPI_HANDLE_INVALIDATED            Handle passed has been invalidated (see user guide).
-//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  Handle passed is not a physical GPU handle.
-//! \retval   NVAPI_INCOMPATIBLE_STRUCT_VERSION   Structure version is not supported.
-//! \retval   NVAPI_INVALID_ARGUMENT - argument does not meet specified requirements
-//! \retval   NVAPI_ARGUMENT_EXCEED_MAX_SIZE - an argument exceeds the maximum 
-//!
-//! \ingroup i2capi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_I2CRead(NvPhysicalGpuHandle hPhysicalGpu, NV_I2C_INFO *pI2cInfo);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:  NvAPI_I2CWrite
-//
-//!  This function writes the data buffer to the I2C port.
-//!
-//!                 The I2C request must be for a DDC port: pI2cInfo->bIsDDCPort = 1.
-//!
-//!                 A data buffer size larger than 16 bytes may be rejected if a register address is specified.  In such a case,
-//!                 NVAPI_ARGUMENT_EXCEED_MAX_SIZE would be returned.
-//!
-//!                 If a register address is specified (i.e. regAddrSize is positive), then the register address will be written
-//!                 and the data buffer will immediately follow without a restart.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 85
-//!
-//! \param [in]   hPhysicalGPU     GPU selection.
-//! \param [in]   pI2cInfo         The I2C data input structure
-//!
-//! \retval   NVAPI_OK                            Completed request
-//! \retval   NVAPI_ERROR                         Miscellaneous error occurred.
-//! \retval   NVAPI_HANDLE_INVALIDATED            Handle passed has been invalidated (see user guide).
-//! \retval   NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  Handle passed is not a physical GPU handle.
-//! \retval   NVAPI_INCOMPATIBLE_STRUCT_VERSION    Structure version is not supported.
-//! \retval   NVAPI_INVALID_ARGUMENT              Argument does not meet specified requirements
-//! \retval   NVAPI_ARGUMENT_EXCEED_MAX_SIZE      Argument exceeds the maximum 
-//!
-//! \ingroup i2capi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_I2CWrite(NvPhysicalGpuHandle hPhysicalGpu, NV_I2C_INFO *pI2cInfo);
-
-
-
-
-//! \addtogroup sysgeneral
-//! @{
-
-typedef struct
-{
-    NvU32               version;            //!< structure version
-    NvU32               vendorId;           //!< Chipset vendor identification
-    NvU32               deviceId;           //!< Chipset device identification
-    NvAPI_ShortString   szVendorName;       //!< Chipset vendor Name
-    NvAPI_ShortString   szChipsetName;      //!< Chipset device Name
-    NvU32               flags;              //!< Chipset info flags - obsolete
-    NvU32               subSysVendorId;     //!< Chipset subsystem vendor identification
-    NvU32               subSysDeviceId;     //!< Chipset subsystem device identification 
-    NvAPI_ShortString   szSubSysVendorName; //!< subsystem vendor Name
-    NvU32               HBvendorId;         //!< Host bridge vendor identification
-    NvU32               HBdeviceId;         //!< Host bridge device identification
-    NvU32               HBsubSysVendorId;   //!< Host bridge subsystem vendor identification
-    NvU32               HBsubSysDeviceId;   //!< Host bridge subsystem device identification
-
-} NV_CHIPSET_INFO_v4;
-
-typedef struct
-{
-    NvU32               version;            //!< structure version
-    NvU32               vendorId;           //!< vendor ID
-    NvU32               deviceId;           //!< device ID
-    NvAPI_ShortString   szVendorName;       //!< vendor Name
-    NvAPI_ShortString   szChipsetName;      //!< device Name
-    NvU32               flags;              //!< Chipset info flags - obsolete
-    NvU32               subSysVendorId;     //!< subsystem vendor ID
-    NvU32               subSysDeviceId;     //!< subsystem device ID
-    NvAPI_ShortString   szSubSysVendorName; //!< subsystem vendor Name
-} NV_CHIPSET_INFO_v3;
-
-typedef enum
-{
-    NV_CHIPSET_INFO_HYBRID          = 0x00000001,
-} NV_CHIPSET_INFO_FLAGS;
-
-typedef struct
-{
-    NvU32               version;        //!< structure version
-    NvU32               vendorId;       //!< vendor ID
-    NvU32               deviceId;       //!< device ID
-    NvAPI_ShortString   szVendorName;   //!< vendor Name
-    NvAPI_ShortString   szChipsetName;  //!< device Name
-    NvU32               flags;          //!< Chipset info flags
-} NV_CHIPSET_INFO_v2;
-
-typedef struct
-{
-    NvU32               version;        //structure version
-    NvU32               vendorId;       //vendor ID
-    NvU32               deviceId;       //device ID
-    NvAPI_ShortString   szVendorName;   //vendor Name
-    NvAPI_ShortString   szChipsetName;  //device Name
-} NV_CHIPSET_INFO_v1;
-
-#define NV_CHIPSET_INFO_VER_1  MAKE_NVAPI_VERSION(NV_CHIPSET_INFO_v1,1)
-#define NV_CHIPSET_INFO_VER_2   MAKE_NVAPI_VERSION(NV_CHIPSET_INFO_v2,2)
-#define NV_CHIPSET_INFO_VER_3   MAKE_NVAPI_VERSION(NV_CHIPSET_INFO_v3,3)
-#define NV_CHIPSET_INFO_VER_4   MAKE_NVAPI_VERSION(NV_CHIPSET_INFO_v4,4)
-
-#define NV_CHIPSET_INFO         NV_CHIPSET_INFO_v4
-#define NV_CHIPSET_INFO_VER     NV_CHIPSET_INFO_VER_4
-
-//! @}
-
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_SYS_GetChipSetInfo
-//
-//!  This function returns information about the system's chipset.
-//!
-//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
-//!
-//!
-//! \since Release: 95
-//!
-//! \retval  NVAPI_INVALID_ARGUMENT              pChipSetInfo is NULL.
-//! \retval  NVAPI_OK                           *pChipSetInfo is now set.
-//! \retval  NVAPI_INCOMPATIBLE_STRUCT_VERSION   NV_CHIPSET_INFO version not compatible with driver.
-//! \ingroup sysgeneral
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_SYS_GetChipSetInfo(NV_CHIPSET_INFO *pChipSetInfo);
-
-
-
-//! \ingroup sysgeneral
-//! Lid and dock information - used in NvAPI_GetLidDockInfo()
-typedef struct 
-{
-    NvU32 version;    //! Structure version, constructed from the macro #NV_LID_DOCK_PARAMS_VER
-    NvU32 currentLidState;
-    NvU32 currentDockState;
-    NvU32 currentLidPolicy;
-    NvU32 currentDockPolicy;
-    NvU32 forcedLidMechanismPresent;
-    NvU32 forcedDockMechanismPresent;
-}NV_LID_DOCK_PARAMS;
-
-
-//! ingroup sysgeneral
-#define NV_LID_DOCK_PARAMS_VER  MAKE_NVAPI_VERSION(NV_LID_DOCK_PARAMS,1)
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GetLidDockInfo
-//
-//! DESCRIPTION: This function returns the current lid and dock information.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 177
-//!
-//! \retval ::NVAPI_OK  
-//! \retval ::NVAPI_ERROR
-//! \retval ::NVAPI_NOT_SUPPORTED
-//! \retval ::NVAPI_HANDLE_INVALIDATED
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//!
-//! \ingroup sysgeneral
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_SYS_GetLidAndDockInfo(NV_LID_DOCK_PARAMS *pLidAndDock);
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_OGL_ExpertModeSet[Get]
-//
-//! \name NvAPI_OGL_ExpertModeSet[Get] Functions
-//@{
-//!  This function configures OpenGL Expert Mode, an API usage feedback and
-//!  advice reporting mechanism. The effects of this call are
-//!  applied only to the current context, and are reset to the
-//!  defaults when the context is destroyed.
-//!
-//!  \note  This feature is valid at runtime only when GLExpert
-//!         functionality has been built into the OpenGL driver
-//!         installed on the system. All Windows Vista OpenGL
-//!         drivers provided by NVIDIA have this instrumentation
-//!         included by default. Windows XP, however, requires a
-//!         special display driver available with the NVIDIA
-//!         PerfSDK found at developer.nvidia.com.
-//!
-//!  \note These functions are valid only for the current OpenGL
-//!        context. Calling these functions prior to creating a
-//!        context and calling MakeCurrent with it will result
-//!        in errors and undefined behavior.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 80
-//!
-//! \param   expertDetailMask  Mask made up of NVAPI_OGLEXPERT_DETAIL bits,
-//!                            this parameter specifies the detail level in
-//!                            the feedback stream.
-//!
-//! \param   expertReportMask  Mask made up of NVAPI_OGLEXPERT_REPORT bits,
-//!                            this parameter specifies the areas of
-//!                            functional interest.
-//!
-//! \param   expertOutputMask  Mask made up of NVAPI_OGLEXPERT_OUTPUT bits,
-//!                            this parameter specifies the feedback output
-//!                            location.
-//!
-//! \param   expertCallback    Used in conjunction with OUTPUT_TO_CALLBACK,
-//!                            this is a simple callback function the user
-//!                            may use to obtain the feedback stream. The
-//!                            function will be called once per fully
-//!                            qualified feedback stream extry.
-//!
-//! \retval  NVAPI_API_NOT_INTIALIZED          NVAPI not initialized
-//! \retval  NVAPI_NVIDIA_DEVICE_NOT_FOUND     No NVIDIA GPU found
-//! \retval  NVAPI_OPENGL_CONTEXT_NOT_CURRENT  No NVIDIA OpenGL context
-//!                                            which supports GLExpert
-//!                                            has been made current
-//! \retval  NVAPI_ERROR                       OpenGL driver failed to load properly
-//! \retval  NVAPI_OK                          Success
-//
-///////////////////////////////////////////////////////////////////////////////
-
-//! \addtogroup oglapi
-//! @{
-#define NVAPI_OGLEXPERT_DETAIL_NONE                 0x00000000
-#define NVAPI_OGLEXPERT_DETAIL_ERROR                0x00000001
-#define NVAPI_OGLEXPERT_DETAIL_SWFALLBACK           0x00000002
-#define NVAPI_OGLEXPERT_DETAIL_BASIC_INFO           0x00000004
-#define NVAPI_OGLEXPERT_DETAIL_DETAILED_INFO        0x00000008
-#define NVAPI_OGLEXPERT_DETAIL_PERFORMANCE_WARNING  0x00000010
-#define NVAPI_OGLEXPERT_DETAIL_QUALITY_WARNING      0x00000020
-#define NVAPI_OGLEXPERT_DETAIL_USAGE_WARNING        0x00000040
-#define NVAPI_OGLEXPERT_DETAIL_ALL                  0xFFFFFFFF
-
-#define NVAPI_OGLEXPERT_REPORT_NONE                 0x00000000
-#define NVAPI_OGLEXPERT_REPORT_ERROR                0x00000001
-#define NVAPI_OGLEXPERT_REPORT_SWFALLBACK           0x00000002
-#define NVAPI_OGLEXPERT_REPORT_PIPELINE_VERTEX      0x00000004
-#define NVAPI_OGLEXPERT_REPORT_PIPELINE_GEOMETRY    0x00000008
-#define NVAPI_OGLEXPERT_REPORT_PIPELINE_XFB         0x00000010
-#define NVAPI_OGLEXPERT_REPORT_PIPELINE_RASTER      0x00000020
-#define NVAPI_OGLEXPERT_REPORT_PIPELINE_FRAGMENT    0x00000040
-#define NVAPI_OGLEXPERT_REPORT_PIPELINE_ROP         0x00000080
-#define NVAPI_OGLEXPERT_REPORT_PIPELINE_FRAMEBUFFER 0x00000100
-#define NVAPI_OGLEXPERT_REPORT_PIPELINE_PIXEL       0x00000200
-#define NVAPI_OGLEXPERT_REPORT_PIPELINE_TEXTURE     0x00000400
-#define NVAPI_OGLEXPERT_REPORT_OBJECT_BUFFEROBJECT  0x00000800
-#define NVAPI_OGLEXPERT_REPORT_OBJECT_TEXTURE       0x00001000
-#define NVAPI_OGLEXPERT_REPORT_OBJECT_PROGRAM       0x00002000
-#define NVAPI_OGLEXPERT_REPORT_OBJECT_FBO           0x00004000
-#define NVAPI_OGLEXPERT_REPORT_FEATURE_SLI          0x00008000
-#define NVAPI_OGLEXPERT_REPORT_ALL                  0xFFFFFFFF
-
-
-#define NVAPI_OGLEXPERT_OUTPUT_TO_NONE       0x00000000
-#define NVAPI_OGLEXPERT_OUTPUT_TO_CONSOLE    0x00000001
-#define NVAPI_OGLEXPERT_OUTPUT_TO_DEBUGGER   0x00000004
-#define NVAPI_OGLEXPERT_OUTPUT_TO_CALLBACK   0x00000008
-#define NVAPI_OGLEXPERT_OUTPUT_TO_ALL        0xFFFFFFFF
-
-//! @}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION TYPE: NVAPI_OGLEXPERT_CALLBACK
-//
-//!   DESCRIPTION: Used in conjunction with OUTPUT_TO_CALLBACK, this is a simple 
-//!                callback function the user may use to obtain the feedback 
-//!                stream. The function will be called once per fully qualified 
-//!                feedback stream entry.
-//!
-//!   \param   categoryId    Contains the bit from the NVAPI_OGLEXPERT_REPORT 
-//!                          mask that corresponds to the current message
-//!   \param   messageId     Unique ID for the current message
-//!   \param   detailLevel   Contains the bit from the NVAPI_OGLEXPERT_DETAIL
-//!                          mask that corresponds to the current message
-//!   \param   objectId      Unique ID of the object that corresponds to the
-//!                          current message
-//!   \param   messageStr    Text string from the current message
-//!
-//!   \ingroup oglapi
-///////////////////////////////////////////////////////////////////////////////
-typedef void (* NVAPI_OGLEXPERT_CALLBACK) (unsigned int categoryId, unsigned int messageId, unsigned int detailLevel, int objectId, const char *messageStr);
-
-
-
-//! \ingroup oglapi
-//! SUPPORTED OS:  Windows XP and higher
-//!
-NVAPI_INTERFACE NvAPI_OGL_ExpertModeSet(NvU32 expertDetailLevel,
-                                        NvU32 expertReportMask,
-                                        NvU32 expertOutputMask,
-                     NVAPI_OGLEXPERT_CALLBACK expertCallback);
-
-//! \addtogroup oglapi
-//! SUPPORTED OS:  Windows XP and higher
-//!
-NVAPI_INTERFACE NvAPI_OGL_ExpertModeGet(NvU32 *pExpertDetailLevel,
-                                        NvU32 *pExpertReportMask,
-                                        NvU32 *pExpertOutputMask,
-                     NVAPI_OGLEXPERT_CALLBACK *pExpertCallback);
-
-//@}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-//! \name NvAPI_OGL_ExpertModeDefaultsSet[Get] Functions
-//!
-//@{
-//!  This function configures OpenGL Expert Mode global defaults. These settings
-//!  apply to any OpenGL application which starts up after these
-//!  values are applied (i.e. these settings *do not* apply to
-//!  currently running applications).
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 80
-//!
-//! \param   expertDetailLevel Value which specifies the detail level in
-//!                            the feedback stream. This is a mask made up
-//!                            of NVAPI_OGLEXPERT_LEVEL bits.
-//!
-//! \param   expertReportMask  Mask made up of NVAPI_OGLEXPERT_REPORT bits,
-//!                            this parameter specifies the areas of
-//!                            functional interest.
-//!
-//! \param   expertOutputMask  Mask made up of NVAPI_OGLEXPERT_OUTPUT bits,
-//!                            this parameter specifies the feedback output
-//!                            location. Note that using OUTPUT_TO_CALLBACK
-//!                            here is meaningless and has no effect, but
-//!                            using it will not cause an error.
-//!
-//! \return  ::NVAPI_ERROR or ::NVAPI_OK
-//
-///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup oglapi
-//! SUPPORTED OS:  Windows XP and higher
-//!
-NVAPI_INTERFACE NvAPI_OGL_ExpertModeDefaultsSet(NvU32 expertDetailLevel,
-                                                NvU32 expertReportMask,
-                                                NvU32 expertOutputMask);
-
-//! \addtogroup oglapi
-//! SUPPORTED OS:  Windows XP and higher
-//!
-NVAPI_INTERFACE NvAPI_OGL_ExpertModeDefaultsGet(NvU32 *pExpertDetailLevel,
-                                                NvU32 *pExpertReportMask,
-                                                NvU32 *pExpertOutputMask);
-//@}
-
-
-//! \ingroup dispcontrol
-//! @{
-#define NVAPI_MAX_VIEW_TARGET  2
-#define NVAPI_ADVANCED_MAX_VIEW_TARGET 4
-
-#ifndef _NV_TARGET_VIEW_MODE_
-#define _NV_TARGET_VIEW_MODE_
-
-//! Used in NvAPI_SetView().
-typedef enum _NV_TARGET_VIEW_MODE
-{
-    NV_VIEW_MODE_STANDARD  = 0,
-    NV_VIEW_MODE_CLONE     = 1,
-    NV_VIEW_MODE_HSPAN     = 2,
-    NV_VIEW_MODE_VSPAN     = 3,
-    NV_VIEW_MODE_DUALVIEW  = 4,
-    NV_VIEW_MODE_MULTIVIEW = 5,
-} NV_TARGET_VIEW_MODE;
-#endif
-
-
-//! @}
-
-
-
-// Following definitions are used in NvAPI_SetViewEx.
-
-//! Scaling modes - used in NvAPI_SetViewEx().
-//! \ingroup dispcontrol
-typedef enum _NV_SCALING
-{
-    NV_SCALING_DEFAULT          = 0,        //!< No change
-
-    // New Scaling Declarations
-    NV_SCALING_GPU_SCALING_TO_CLOSEST                   = 1,  //!< Balanced  - Full Screen
-    NV_SCALING_GPU_SCALING_TO_NATIVE                    = 2,  //!< Force GPU - Full Screen
-    NV_SCALING_GPU_SCANOUT_TO_NATIVE                    = 3,  //!< Force GPU - Centered\No Scaling
-    NV_SCALING_GPU_SCALING_TO_ASPECT_SCANOUT_TO_NATIVE  = 5,  //!< Force GPU - Aspect Ratio
-    NV_SCALING_GPU_SCALING_TO_ASPECT_SCANOUT_TO_CLOSEST = 6,  //!< Balanced  - Aspect Ratio
-    NV_SCALING_GPU_SCANOUT_TO_CLOSEST                   = 7,  //!< Balanced  - Centered\No Scaling
-    
-    // Legacy Declarations
-    NV_SCALING_MONITOR_SCALING                          = NV_SCALING_GPU_SCALING_TO_CLOSEST,
-    NV_SCALING_ADAPTER_SCALING                          = NV_SCALING_GPU_SCALING_TO_NATIVE,
-    NV_SCALING_CENTERED                                 = NV_SCALING_GPU_SCANOUT_TO_NATIVE,
-    NV_SCALING_ASPECT_SCALING                           = NV_SCALING_GPU_SCALING_TO_ASPECT_SCANOUT_TO_NATIVE,
-
-    NV_SCALING_CUSTOMIZED       = 255       //!< For future use
-} NV_SCALING;
-
-//! Rotate modes- used in NvAPI_SetViewEx().
-//! \ingroup dispcontrol
-typedef enum _NV_ROTATE
-{
-    NV_ROTATE_0           = 0,
-    NV_ROTATE_90          = 1,
-    NV_ROTATE_180         = 2,
-    NV_ROTATE_270         = 3,
-    NV_ROTATE_IGNORED     = 4,
-} NV_ROTATE;
-
-//! Color formats- used in NvAPI_SetViewEx().
-//! \ingroup dispcontrol
-#define NVFORMAT_MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
-                         ((NvU32)(NvU8)(ch0) | ((NvU32)(NvU8)(ch1) << 8) |   \
-                     ((NvU32)(NvU8)(ch2) << 16) | ((NvU32)(NvU8)(ch3) << 24 ))
-
-
-
-//! Color formats- used in NvAPI_SetViewEx().
-//! \ingroup dispcontrol
-typedef enum _NV_FORMAT
-{
-    NV_FORMAT_UNKNOWN           =  0,       //!< unknown. Driver will choose one as following value.
-    NV_FORMAT_P8                = 41,       //!< for 8bpp mode
-    NV_FORMAT_R5G6B5            = 23,       //!< for 16bpp mode
-    NV_FORMAT_A8R8G8B8          = 21,       //!< for 32bpp mode
-    NV_FORMAT_A16B16G16R16F     = 113,      //!< for 64bpp(floating point) mode.
-
-} NV_FORMAT;
-
-// TV standard
-
-
-typedef enum _NV_TIMING_OVERRIDE
-{
-    NV_TIMING_OVERRIDE_CURRENT = 0,          //!< get the current timing
-    NV_TIMING_OVERRIDE_AUTO,                 //!< the timing the driver will use based the current policy
-    NV_TIMING_OVERRIDE_EDID,                 //!< EDID timing
-    NV_TIMING_OVERRIDE_DMT,                  //!< VESA DMT timing
-    NV_TIMING_OVERRIDE_DMT_RB,               //!< VESA DMT timing with reduced blanking
-    NV_TIMING_OVERRIDE_CVT,                  //!< VESA CVT timing
-    NV_TIMING_OVERRIDE_CVT_RB,               //!< VESA CVT timing with reduced blanking
-    NV_TIMING_OVERRIDE_GTF,                  //!< VESA GTF timing
-    NV_TIMING_OVERRIDE_EIA861,               //!< EIA 861x pre-defined timing
-    NV_TIMING_OVERRIDE_ANALOG_TV,            //!< analog SD/HDTV timing
-    NV_TIMING_OVERRIDE_CUST,                 //!< NV custom timings
-    NV_TIMING_OVERRIDE_NV_PREDEFINED,        //!< NV pre-defined timing (basically the PsF timings)
-    NV_TIMING_OVERRIDE_NV_PSF                = NV_TIMING_OVERRIDE_NV_PREDEFINED,
-    NV_TIMING_OVERRIDE_NV_ASPR,
-    NV_TIMING_OVERRIDE_SDI,                  //!< Override for SDI timing
-
-    NV_TIMING_OVRRIDE_MAX,                   
-}NV_TIMING_OVERRIDE;
-
-
-#ifndef NV_TIMING_STRUCTS_DEFINED
-#define NV_TIMING_STRUCTS_DEFINED
-
-//***********************
-// The Timing Structure
-//***********************
-//
-//! \ingroup dispcontrol
-//!  NVIDIA-specific timing extras \n
-//! Used in NV_TIMING.
-typedef struct tagNV_TIMINGEXT
-{
-    NvU32   flag;          //!< Reserved for NVIDIA hardware-based enhancement, such as double-scan.
-    NvU16   rr;            //!< Logical refresh rate to present
-    NvU32   rrx1k;         //!< Physical vertical refresh rate in 0.001Hz
-    NvU32   aspect;        //!< Display aspect ratio Hi(aspect):horizontal-aspect, Low(aspect):vertical-aspect
-    NvU16   rep;           //!< Bit-wise pixel repetition factor: 0x1:no pixel repetition; 0x2:each pixel repeats twice horizontally,..
-    NvU32   status;        //!< Timing standard 
-    NvU8    name[40];      //!< Timing name
-}NV_TIMINGEXT;
-
-
-
-//! \ingroup dispcontrol
-//!The very basic timing structure based on the VESA standard:
-//! \code
-//!            |<----------------------------htotal--------------------------->| 
-//!             ---------"active" video-------->|<-------blanking------>|<-----  
-//!            |<-------hvisible-------->|<-hb->|<-hfp->|<-hsw->|<-hbp->|<-hb->| 
-//! --------- -+-------------------------+      |       |       |       |      | 
-//!   A      A |                         |      |       |       |       |      | 
-//!   :      : |                         |      |       |       |       |      | 
-//!   :      : |                         |      |       |       |       |      | 
-//!   :vertical|    addressable video    |      |       |       |       |      | 
-//!   : visible|                         |      |       |       |       |      | 
-//!   :      : |                         |      |       |       |       |      | 
-//!   :      : |                         |      |       |       |       |      | 
-//! vertical V |                         |      |       |       |       |      | 
-//!  total   --+-------------------------+      |       |       |       |      | 
-//!   :      vb         border                  |       |       |       |      | 
-//!   :      -----------------------------------+       |       |       |      |  
-//!   :      vfp        front porch                     |       |       |      |  
-//!   :      -------------------------------------------+       |       |      | 
-//!   :      vsw        sync width                              |       |      | 
-//!   :      ---------------------------------------------------+       |      | 
-//!   :      vbp        back porch                                      |      | 
-//!   :      -----------------------------------------------------------+      | 
-//!   V      vb         border                                                 | 
-//! ---------------------------------------------------------------------------+ 
-//! \endcode
-typedef struct tagNV_TIMING
-{
-    // VESA scan out timing parameters:
-    NvU16 HVisible;         //!< horizontal visible 
-    NvU16 HBorder;          //!< horizontal border 
-    NvU16 HFrontPorch;      //!< horizontal front porch
-    NvU16 HSyncWidth;       //!< horizontal sync width
-    NvU16 HTotal;           //!< horizontal total
-    NvU8  HSyncPol;         //!< horizontal sync polarity: 1-negative, 0-positive
-
-    NvU16 VVisible;         //!< vertical visible
-    NvU16 VBorder;          //!< vertical border
-    NvU16 VFrontPorch;      //!< vertical front porch
-    NvU16 VSyncWidth;       //!< vertical sync width
-    NvU16 VTotal;           //!< vertical total
-    NvU8  VSyncPol;         //!< vertical sync polarity: 1-negative, 0-positive
-    
-    NvU16 interlaced;       //!< 1-interlaced, 0-progressive
-    NvU32 pclk;             //!< pixel clock in 10KHz
-
-    //other timing related extras
-    NV_TIMINGEXT etc;          
-}NV_TIMING;
-#endif //NV_TIMING_STRUCTS_DEFINED
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4642,61 +5908,6 @@ typedef struct _NV_MONITOR_CAPABILITIES
 NVAPI_INTERFACE NvAPI_DISP_GetMonitorCapabilities(NvU32 displayId, NV_MONITOR_CAPABILITIES *pMonitorCapabilities);
 
 ///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:   NvAPI_SetView
-//
-//! \fn NvAPI_SetView(NvDisplayHandle hNvDisplay, NV_VIEW_TARGET_INFO *pTargetInfo, NV_TARGET_VIEW_MODE targetView)
-//!  This function lets the caller modify the target display arrangement of the selected source display handle in any nView mode.
-//!  It can also modify or extend the source display in Dualview mode.
-//!  \note Maps the selected source to the associated target Ids.
-//!  \note Display PATH with this API is limited to single GPU. DUALVIEW across GPUs cannot be enabled with this API. 
-//!
-//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_DISP_SetDisplayConfig.
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 90
-//!
-//! \param [in]  hNvDisplay       NVIDIA Display selection. #NVAPI_DEFAULT_HANDLE is not allowed, it has to be a handle enumerated with NvAPI_EnumNVidiaDisplayHandle().
-//! \param [in]  pTargetInfo      Pointer to array of NV_VIEW_TARGET_INFO, specifying device properties in this view.
-//!                               The first device entry in the array is the physical primary.
-//!                               The device entry with the lowest source id is the desktop primary.
-//! \param [in]  targetCount      Count of target devices specified in pTargetInfo.
-//! \param [in]  targetView       Target view selected from NV_TARGET_VIEW_MODE.
-//!
-//! \retval  NVAPI_OK               Completed request
-//! \retval  NVAPI_ERROR            Miscellaneous error occurred
-//! \retval  NVAPI_INVALID_ARGUMENT Invalid input parameter.
-//
-///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup dispcontrol
-//! Used in NvAPI_SetView() and NvAPI_GetView()
-typedef struct
-{
-    NvU32 version;     //!< (IN) structure version
-    NvU32 count;       //!< (IN) target count
-    struct 
-    {
-        NvU32 deviceMask;    //!< (IN/OUT) Device mask
-        NvU32 sourceId;      //!< (IN/OUT) Source ID - values will be based on the number of heads exposed per GPU.
-        NvU32 bPrimary:1;    //!< (OUT) Indicates if this is the GPU's primary view target. This is not the desktop GDI primary.
-                             //!< NvAPI_SetView automatically selects the first target in NV_VIEW_TARGET_INFO index 0 as the GPU's primary view.
-        NvU32 bInterlaced:1; //!< (IN/OUT) Indicates if the timing being used on this monitor is interlaced.
-        NvU32 bGDIPrimary:1; //!< (IN/OUT) Indicates if this is the desktop GDI primary.
-        NvU32 bForceModeSet:1;//!< (IN) Used only on Win7 and higher during a call to NvAPI_SetView(). Turns off optimization & forces OS to set supplied mode.
-    } target[NVAPI_MAX_VIEW_TARGET];
-} NV_VIEW_TARGET_INFO; 
-
-//! \ingroup dispcontrol
-#define NV_VIEW_TARGET_INFO_VER  MAKE_NVAPI_VERSION(NV_VIEW_TARGET_INFO,2)
-
-
-//! \ingroup dispcontrol
-__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_DISP_SetDisplayConfig.")
-NVAPI_INTERFACE NvAPI_SetView(NvDisplayHandle hNvDisplay, NV_VIEW_TARGET_INFO *pTargetInfo, NV_TARGET_VIEW_MODE targetView);
-
-///////////////////////////////////////////////////////////////////////////////
 // FUNCTION NAME:   NvAPI_GetView
 //
 //! This API lets caller retrieve the target display arrangement for selected source display handle.
@@ -4724,115 +5935,11 @@ NVAPI_INTERFACE NvAPI_SetView(NvDisplayHandle hNvDisplay, NV_VIEW_TARGET_INFO *p
 __nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_DISP_GetDisplayConfig.")
 NVAPI_INTERFACE NvAPI_GetView(NvDisplayHandle hNvDisplay, NV_VIEW_TARGET_INFO *pTargets, NvU32 *pTargetMaskCount, NV_TARGET_VIEW_MODE *pTargetView);
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:   NvAPI_SetViewEx
-//
-//!  \fn NvAPI_SetViewEx(NvDisplayHandle hNvDisplay, NV_DISPLAY_PATH_INFO *pPathInfo, NV_TARGET_VIEW_MODE displayView)
-//!  This function lets caller to modify the display arrangement for selected source display handle in any of the nview modes.
-//!  It also allows to modify or extend the source display in dualview mode.
-//!   \note Maps the selected source to the associated target Ids.
-//!   \note Display PATH with this API is limited to single GPU. DUALVIEW across GPUs cannot be enabled with this API. 
-//!
-//! \deprecated  Do not use this function - it is deprecated in release 290. Instead, use NvAPI_DISP_SetDisplayConfig.
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 95
-//!
-//! \param [in]  hNvDisplay   NVIDIA Display selection. #NVAPI_DEFAULT_HANDLE is not allowed, it has to be a handle enumerated with 
-//!                           NvAPI_EnumNVidiaDisplayHandle().
-//! \param [in]  pPathInfo    Pointer to array of NV_VIEW_PATH_INFO, specifying device properties in this view.
-//!                           The first device entry in the array is the physical primary.
-//!                           The device entry with the lowest source id is the desktop primary.
-//! \param [in]  pathCount    Count of paths specified in pPathInfo.
-//! \param [in]  displayView  Display view selected from NV_TARGET_VIEW_MODE.
-//!
-//! \retval  NVAPI_OK                Completed request
-//! \retval  NVAPI_ERROR             Miscellaneous error occurred
-//! \retval  NVAPI_INVALID_ARGUMENT  Invalid input parameter.
-//
-///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup dispcontrol
-#define NVAPI_MAX_DISPLAY_PATH  NVAPI_MAX_VIEW_TARGET
-
-//! \ingroup dispcontrol
-#define NVAPI_ADVANCED_MAX_DISPLAY_PATH  NVAPI_ADVANCED_MAX_VIEW_TARGET
 
 
 
-//! \ingroup dispcontrol
-//! Used in NV_DISPLAY_PATH_INFO.
-typedef struct
-{
-    NvU32                   deviceMask;     //!< (IN) Device mask
-    NvU32                   sourceId;       //!< (IN) Values will be based on the number of heads exposed per GPU(0, 1?)
-    NvU32                   bPrimary:1;     //!< (IN/OUT) Indicates if this is the GPU's primary view target. This is not the desktop GDI primary.
-                                            //!< NvAPI_SetViewEx() automatically selects the first target in NV_DISPLAY_PATH_INFO index 0 as the GPU's primary view.
-    NV_GPU_CONNECTOR_TYPE   connector;      //!< (IN) Specify connector type. For TV only.
-
-    // source mode information
-    NvU32                   width;          //!< (IN) Width of the mode
-    NvU32                   height;         //!< (IN) Height of the mode
-    NvU32                   depth;          //!< (IN) Depth of the mode
-    NV_FORMAT               colorFormat;    //!<      Color format if it needs to be specified. Not used now.
-
-    //rotation setting of the mode
-    NV_ROTATE               rotation;       //!< (IN) Rotation setting.
-
-    // the scaling mode
-    NV_SCALING              scaling;        //!< (IN) Scaling setting
-
-    // Timing info
-    NvU32                   refreshRate;    //!< (IN) Refresh rate of the mode
-    NvU32                   interlaced:1;   //!< (IN) Interlaced mode flag
-
-    NV_DISPLAY_TV_FORMAT    tvFormat;       //!< (IN) To choose the last TV format set this value to NV_DISPLAY_TV_FORMAT_NONE
-
-    // Windows desktop position
-    NvU32                   posx;           //!< (IN/OUT) X-offset of this display on the Windows desktop
-    NvU32                   posy;           //!< (IN/OUT) Y-offset of this display on the Windows desktop
-    NvU32                   bGDIPrimary:1;  //!< (IN/OUT) Indicates if this is the desktop GDI primary.
-
-    NvU32                   bForceModeSet:1;//!< (IN) Used only on Win7 and higher during a call to NvAPI_SetViewEx(). Turns off optimization & forces OS to set supplied mode.
-    NvU32                   bFocusDisplay:1;//!< (IN) If set, this display path should have the focus after the GPU topology change
-    NvU32                   gpuId:24;       //!< (IN) the physical display/target Gpu id which is the owner of the scan out (for SLI multimon, display from the slave Gpu)
-
-} NV_DISPLAY_PATH;
-
-//! \ingroup dispcontrol
-//! Used in NvAPI_SetViewEx() and NvAPI_GetViewEx().
-typedef struct
-{
-    NvU32 version;     //!< (IN) Structure version
-    NvU32 count;       //!< (IN) Path count
-    NV_DISPLAY_PATH path[NVAPI_MAX_DISPLAY_PATH];
-} NV_DISPLAY_PATH_INFO_V3; 
-
-//! \ingroup dispcontrol
-//! Used in NvAPI_SetViewEx() and NvAPI_GetViewEx().
-typedef struct
-{
-    NvU32 version;     //!< (IN) Structure version
-    NvU32 count;       //!< (IN) Path count
-    NV_DISPLAY_PATH path[NVAPI_ADVANCED_MAX_DISPLAY_PATH];
-} NV_DISPLAY_PATH_INFO; 
-
-//! \addtogroup dispcontrol
-//! Macro for constructing the version fields of NV_DISPLAY_PATH_INFO
-//! @{
-#define NV_DISPLAY_PATH_INFO_VER  NV_DISPLAY_PATH_INFO_VER4
-#define NV_DISPLAY_PATH_INFO_VER4 MAKE_NVAPI_VERSION(NV_DISPLAY_PATH_INFO,4)
-#define NV_DISPLAY_PATH_INFO_VER3 MAKE_NVAPI_VERSION(NV_DISPLAY_PATH_INFO,3)
-#define NV_DISPLAY_PATH_INFO_VER2 MAKE_NVAPI_VERSION(NV_DISPLAY_PATH_INFO,2)
-#define NV_DISPLAY_PATH_INFO_VER1 MAKE_NVAPI_VERSION(NV_DISPLAY_PATH_INFO,1)
-//! @}
 
 
-//! \ingroup dispcontrol
-__nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_DISP_SetDisplayConfig.")
-NVAPI_INTERFACE NvAPI_SetViewEx(NvDisplayHandle hNvDisplay, NV_DISPLAY_PATH_INFO *pPathInfo, NV_TARGET_VIEW_MODE displayView);
 
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION NAME:   NvAPI_GetViewEx
@@ -4885,6 +5992,86 @@ NVAPI_INTERFACE NvAPI_GetViewEx(NvDisplayHandle hNvDisplay, NV_DISPLAY_PATH_INFO
 //! \ingroup dispcontrol
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_GetSupportedViews(NvDisplayHandle hNvDisplay, NV_TARGET_VIEW_MODE *pTargetViews, NvU32 *pViewCount);
+
+
+//! SUPPORTED OS:  Windows XP and higher
+//!
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_DISP_GetDisplayIdByDisplayName
+//
+//! DESCRIPTION:     This API retrieves the Display Id of a given display by
+//!                  display name. The display must be active to retrieve the
+//!                  displayId. In the case of clone mode or Surround gaming,
+//!                  the primary or top-left display will be returned.
+//!
+//! \param [in]     displayName  Name of display (Eg: "\\DISPLAY1" to
+//!                              retrieve the displayId for.
+//! \param [out]    displayId    Display ID of the requested display.
+//!
+//! retval ::NVAPI_OK:                          Capabilties have been returned.
+//! retval ::NVAPI_INVALID_ARGUMENT:            One or more args passed in are invalid.
+//! retval ::NVAPI_API_NOT_INTIALIZED:          The NvAPI API needs to be initialized first
+//! retval ::NVAPI_NO_IMPLEMENTATION:           This entrypoint not available
+//! retval ::NVAPI_ERROR:                       Miscellaneous error occurred
+//!
+//! \ingroup dispcontrol
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_DISP_GetDisplayIdByDisplayName(const char *displayName, NvU32* displayId);
+
+
+
+//! SUPPORTED OS:  Windows XP and higher
+//!
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME:   NvAPI_DISP_GetGDIPrimaryDisplayId
+//
+//! DESCRIPTION:     This API returns the Display ID of the GDI Primary.
+//!
+//! \param [out]     displayId   Display ID of the GDI Primary display.
+//!
+//! \retval ::NVAPI_OK:                          Capabilties have been returned.
+//! \retval ::NVAPI_NVIDIA_DEVICE_NOT_FOUND:     GDI Primary not on an NVIDIA GPU.
+//! \retval ::NVAPI_INVALID_ARGUMENT:            One or more args passed in are invalid.
+//! \retval ::NVAPI_API_NOT_INTIALIZED:          The NvAPI API needs to be initialized first
+//! \retval ::NVAPI_NO_IMPLEMENTATION:           This entrypoint not available
+//! \retval ::NVAPI_ERROR:                       Miscellaneous error occurred
+//!
+//! \ingroup dispcontrol
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_DISP_GetGDIPrimaryDisplayId(NvU32* displayId);
+
+///////////////////////////////////////////////////////////////////////////////
+// FUNCTION NAME:   NvAPI_DISP_SetDisplayConfig
+//
+//
+//! DESCRIPTION:     This API lets caller apply a global display configuration
+//!                  across multiple GPUs.
+//!
+//!                  If all sourceIds are zero, then NvAPI will pick up sourceId's based on the following criteria :
+//!                  - If user provides sourceModeInfo then we are trying to assign 0th sourceId always to GDIPrimary. 
+//!                     This is needed since active windows always moves along with 0th sourceId.
+//!                  - For rest of the paths, we are incrementally assigning the sourceId per adapter basis.
+//!                  - If user doesn't provide sourceModeInfo then NVAPI just picks up some default sourceId's in incremental order.
+//!                  Note : NVAPI will not intelligently choose the sourceIDs for any configs that does not need a modeset.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \param [in]      pathInfoCount   Number of supplied elements in pathInfo
+//! \param [in]      pathInfo        Array of path information
+//! \param [in]      flags           Flags for applying settings
+//! 
+//! \retval ::NVAPI_OK - completed request
+//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized
+//! \retval ::NVAPI_ERROR - miscellaneous error occurred
+//! \retval ::NVAPI_INVALID_ARGUMENT - Invalid input parameter.
+//!
+//! \ingroup dispcontrol
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_DISP_SetDisplayConfig(__in NvU32 pathInfoCount, __in_ecount(pathInfoCount) NV_DISPLAYCONFIG_PATH_INFO* pathInfo, __in NvU32 flags);
+
 
 
 
@@ -5725,1058 +6912,238 @@ NVAPI_INTERFACE NvAPI_SetCurrentMosaicTopology(NV_MOSAIC_TOPOLOGY *pMosaicTopo);
 NVAPI_INTERFACE NvAPI_EnableCurrentMosaicTopology(NvU32 enable);
 
 
+//-----------------------------------------------------------------------------
+// DirectX APIs
+//-----------------------------------------------------------------------------
 
 
-/////////////////////////////////////////////////////////////////////////////// 
-// 
-// FUNCTION NAME: NvAPI_GPU_GetHDCPSupportStatus 
-//
-//! \fn NvAPI_GPU_GetHDCPSupportStatus(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_GET_HDCP_SUPPORT_STATUS *pGetHDCPSupportStatus)
-//! DESCRIPTION: This function returns a GPU's HDCP support status. 
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \since Release: 175
-//!
-//!  \retval ::NVAPI_OK 
-//!  \retval ::NVAPI_ERROR 
-//!  \retval ::NVAPI_INVALID_ARGUMENT 
-//!  \retval ::NVAPI_HANDLE_INVALIDATED 
-//!  \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE 
-//!  \retval ::NVAPI_INCOMPATIBLE_STRUCT_VERSION 
-// 
-////////////////////////////////////////////////////////////////////////////////
-    
-
-//! \addtogroup gpu
-//! @{
-
-
-//! HDCP fuse states - used in NV_GPU_GET_HDCP_SUPPORT_STATUS
-typedef enum _NV_GPU_HDCP_FUSE_STATE
+//! \ingroup dx
+//! Used in NvAPI_D3D10_GetCurrentSLIState(), and NvAPI_D3D_GetCurrentSLIState().
+typedef struct
 {
-    NV_GPU_HDCP_FUSE_STATE_UNKNOWN  = 0,
-    NV_GPU_HDCP_FUSE_STATE_DISABLED = 1,
-    NV_GPU_HDCP_FUSE_STATE_ENABLED  = 2,
-} NV_GPU_HDCP_FUSE_STATE;
+    NvU32 version;                    //!< Structure version
+    NvU32 maxNumAFRGroups;            //!< [OUT] The maximum possible value of numAFRGroups
+    NvU32 numAFRGroups;               //!< [OUT] The number of AFR groups enabled in the system
+    NvU32 currentAFRIndex;            //!< [OUT] The AFR group index for the frame currently being rendered
+    NvU32 nextFrameAFRIndex;          //!< [OUT] What the AFR group index will be for the next frame (i.e. after calling Present)
+    NvU32 previousFrameAFRIndex;      //!< [OUT] The AFR group index that was used for the previous frame (~0 if more than one frame has not been rendered yet)
+    NvU32 bIsCurAFRGroupNew;          //!< [OUT] Boolean: Is this frame the first time running on the current AFR group
+
+} NV_GET_CURRENT_SLI_STATE;
+
+//! \ingroup dx
+#define NV_GET_CURRENT_SLI_STATE_VER  MAKE_NVAPI_VERSION(NV_GET_CURRENT_SLI_STATE,1)
 
 
-//! HDCP key sources - used in NV_GPU_GET_HDCP_SUPPORT_STATUS
-typedef enum _NV_GPU_HDCP_KEY_SOURCE
-{
-    NV_GPU_HDCP_KEY_SOURCE_UNKNOWN    = 0,
-    NV_GPU_HDCP_KEY_SOURCE_NONE       = 1,
-    NV_GPU_HDCP_KEY_SOURCE_CRYPTO_ROM = 2,
-    NV_GPU_HDCP_KEY_SOURCE_SBIOS      = 3,
-    NV_GPU_HDCP_KEY_SOURCE_I2C_ROM    = 4,
-    NV_GPU_HDCP_KEY_SOURCE_FUSES      = 5,
-} NV_GPU_HDCP_KEY_SOURCE;
-
-
-//! HDCP key source states - used in NV_GPU_GET_HDCP_SUPPORT_STATUS
-typedef enum _NV_GPU_HDCP_KEY_SOURCE_STATE
-{
-    NV_GPU_HDCP_KEY_SOURCE_STATE_UNKNOWN = 0,
-    NV_GPU_HDCP_KEY_SOURCE_STATE_ABSENT  = 1,
-    NV_GPU_HDCP_KEY_SOURCE_STATE_PRESENT = 2,
-} NV_GPU_HDCP_KEY_SOURCE_STATE;
-
-
-//! HDPC support status - used in NvAPI_GPU_GetHDCPSupportStatus()
-typedef struct 
-{
-    NvU32                        version;               //! Structure version constucted by macro #NV_GPU_GET_HDCP_SUPPORT_STATUS
-    NV_GPU_HDCP_FUSE_STATE       hdcpFuseState;         //! GPU's HDCP fuse state
-    NV_GPU_HDCP_KEY_SOURCE       hdcpKeySource;         //! GPU's HDCP key source
-    NV_GPU_HDCP_KEY_SOURCE_STATE hdcpKeySourceState;    //! GPU's HDCP key source state    
-} NV_GPU_GET_HDCP_SUPPORT_STATUS;
-
-
-//! Macro for constructing the version for structure NV_GPU_GET_HDCP_SUPPORT_STATUS
-#define NV_GPU_GET_HDCP_SUPPORT_STATUS_VER MAKE_NVAPI_VERSION(NV_GPU_GET_HDCP_SUPPORT_STATUS,1)
-
-
-//! @}
-
-
-//!  \ingroup gpu 
-NVAPI_INTERFACE NvAPI_GPU_GetHDCPSupportStatus(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_GET_HDCP_SUPPORT_STATUS *pGetHDCPSupportStatus);
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_CreateConfigurationProfileRegistryKey
-//
-//! \fn NvAPI_Stereo_CreateConfigurationProfileRegistryKey(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType)
-//!
-//! DESCRIPTION:   Creates new configuration registry key for current application.
-//!
-//!                If there is no configuration profile prior to the function call,
-//!                this API tries to create a new configuration profile registry key
-//!                for a given application and fill it with the default values.
-//!                If an application already has a configuration profile registry key, the API does nothing.
-//!                The name of the key is automatically set to the name of the executable that calls this function.
-//!                Because of this, the executable should have a distinct and unique name.
-//!                If the application is using only one version of DirectX, then the default profile type will be appropriate.
-//!                If the application is using more than one version of DirectX from the same executable,
-//!                it should use the appropriate profile type for each configuration profile.
-//!
-//! HOW TO USE:    When there is a need for an application to have default stereo parameter values,
-//!                use this function to create a key to store the values.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]    registryProfileType  Type of profile the application wants to create. It should be one of the symbolic constants defined in
-//!                                     ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value will cause function to do nothing and return
-//!                                     ::NV_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED.
-//!
-//! \retval ::NVAPI_OK                                           Key exists in the registry.
-//! \retval ::NVAPI_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED   This profile type is not supported.
-//! \retval ::NVAPI_STEREO_REGISTRY_ACCESS_FAILED                Access to registry failed.
-//! \retval ::NVAPI_API_NOT_INTIALIZED           
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED                       Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-///////////////////////////////////////////////////////////////////////////////
-
-
-//! \ingroup stereoapi
-//! Used in NvAPI_Stereo_CreateConfigurationProfileRegistryKey() 
-typedef enum _NV_StereoRegistryProfileType
-{
-    NVAPI_STEREO_DEFAULT_REGISTRY_PROFILE, //!< Default registry configuration profile.
-    NVAPI_STEREO_DX9_REGISTRY_PROFILE,     //!< Separate registry configuration profile for a DirectX 9 executable.
-    NVAPI_STEREO_DX10_REGISTRY_PROFILE     //!< Separate registry configuration profile for a DirectX 10 executable.
-} NV_STEREO_REGISTRY_PROFILE_TYPE;
-
-
-//! \ingroup stereoapi
-NVAPI_INTERFACE NvAPI_Stereo_CreateConfigurationProfileRegistryKey(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_DeleteConfigurationProfileRegistryKey
-//
-//! DESCRIPTION:   Removes configuration registry key for current application.
-//!
-//!                If an application already has a configuration profile prior to this function call,
-//!                the function attempts to remove the application's configuration profile registry key from the registry.
-//!                If there is no configuration profile registry key prior to the function call,
-//!                the function does nothing and does not report an error.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]   registryProfileType   Type of profile that the application wants to delete. This should be one of the symbolic 
-//!                                     constants defined in ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value will cause the function 
-//!                                     to do nothing and return ::NV_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED.
-//!
-//! \retval ::NVAPI_OK                                           Key does not exist in the registry any more.
-//! \retval ::NVAPI_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED   This profile type is not supported.
-//! \retval ::NVAPI_STEREO_REGISTRY_ACCESS_FAILED                Access to registry failed.
-//! \retval ::NVAPI_API_NOT_INTIALIZED                           NVAPI is not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED                       Stereo part of NVAPI is not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_DeleteConfigurationProfileRegistryKey(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_SetConfigurationProfileValue
-//
-//! \fn NvAPI_Stereo_SetConfigurationProfileValue(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType, NV_STEREO_REGISTRY_ID valueRegistryID, void *pValue)
-//!
-//! DESCRIPTION:   This API sets the given parameter value under the application's registry key.
-//!
-//!                If the value does not exist under the application's registry key,
-//!                the value will be created under the key.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]     registryProfileType  The type of profile the application wants to access. It should be one of the 
-//!                                      symbolic constants defined in ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value 
-//!                                      will cause function to do nothing and return ::NV_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED.
-//! \param [in]     valueRegistryID      ID of the value that is being set. It should be one of the symbolic constants defined in
-//!                                      ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value will cause function to do nothing
-//!                                      and return ::NVAPI_STEREO_REGISTRY_VALUE_NOT_SUPPORTED.
-//! \param [in]     pValue               Address of the value that is being set. It should be either address of a DWORD or of a float,
-//!                                      dependent on the type of the stereo parameter whose value is being set. The API will then cast that
-//!                                      address to DWORD* and write whatever is in those 4 bytes as a DWORD to the registry.
-//!
-//! \retval ::NVAPI_OK                                           Value is written to registry.
-//! \retval ::NVAPI_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED   This profile type is not supported.
-//! \retval ::NVAPI_STEREO_REGISTRY_VALUE_NOT_SUPPORTED          This value is not supported.
-//! \retval ::NVAPI_STEREO_REGISTRY_ACCESS_FAILED                Access to registry failed.
-//! \retval ::NVAPI_API_NOT_INTIALIZED                           NVAPI is not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED                       Stereo part of NVAPI is not initialized.
-//! \retval ::NVAPI_ERROR                                        Something is wrong (generic error).
-//
-///////////////////////////////////////////////////////////////////////////////
-
-
-//! \ingroup stereoapi
-//! Used in NvAPI_Stereo_SetConfigurationProfileValue()
-typedef enum _NV_StereoRegistryID
-{
-    NVAPI_CONVERGENCE_ID,         //!< Symbolic constant for convergence registry ID.
-    NVAPI_FRUSTUM_ADJUST_MODE_ID, //!< Symbolic constant for frustum adjust mode registry ID.
-} NV_STEREO_REGISTRY_ID;
-
-
-//! \ingroup stereoapi
-NVAPI_INTERFACE NvAPI_Stereo_SetConfigurationProfileValue(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType, NV_STEREO_REGISTRY_ID valueRegistryID, void *pValue);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_DeleteConfigurationProfileValue
-//
-//! DESCRIPTION:   This API removes the given value from the application's configuration profile registry key.
-//!                If there is no such value, the function does nothing and does not report an error.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]     registryProfileType   The type of profile the application wants to access. It should be one of the 
-//!                                       symbolic constants defined in ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value will 
-//!                                       cause function to do nothing and return ::NV_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED.
-//! \param [in]     valueRegistryID       ID of the value that is being deleted. It should be one of the symbolic constants defined in
-//!                                       ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value will cause function to do nothing and return
-//!                                       ::NVAPI_STEREO_REGISTRY_VALUE_NOT_SUPPORTED.
-//!
-//! \retval ::NVAPI_OK                                           Value does not exist in registry any more.
-//! \retval ::NVAPI_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED   This profile type is not supported.
-//! \retval ::NVAPI_STEREO_REGISTRY_VALUE_NOT_SUPPORTED          This value is not supported.
-//! \retval ::NVAPI_STEREO_REGISTRY_ACCESS_FAILED                Access to registry failed.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED                       Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_DeleteConfigurationProfileValue(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType, NV_STEREO_REGISTRY_ID valueRegistryID);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_Enable
-//
-//! DESCRIPTION:   This APU enables stereo mode in the registry.
-//!                Calls to this function affect the entire system.
-//!                If stereo is not enabled, then calls to functions that require that stereo is enabled have no effect,
-//!                and will return the appropriate error code.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \retval ::NVAPI_OK                      Stereo is now enabled.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED  Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_Enable(void);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_Disable
-//
-//! DESCRIPTION:   This API disables stereo mode in the registry.
-//!                Calls to this function affect the entire system.
-//!                If stereo is not enabled, then calls to functions that require that stereo is enabled have no effect,
-//!                and will return the appropriate error code.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \retval ::NVAPI_OK                     Stereo is now disabled.
-//! \retval ::NVAPI_API_NOT_INTIALIZED  
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi 
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_Disable(void);
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_IsEnabled
-//
-//! DESCRIPTION:   This API checks if stereo mode is enabled in the registry.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [out]     pIsStereoEnabled   Address where the result of the inquiry will be placed.
-//!
-//! \retval ::NVAPI_OK                       Check was sucessfully completed and result reflects current state of stereo availability.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED   Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_IsEnabled(NvU8 *pIsStereoEnabled);
 
 
 #if defined(_D3D9_H_) || defined(__d3d10_h__) || defined(__d3d11_h__)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_Stereo_CreateHandleFromIUnknown
+// FUNCTION NAME:   NvAPI_D3D_GetCurrentSLIState
 //
-//! DESCRIPTION:   This API creates a stereo handle that is used in subsequent calls related to a given device interface.
-//!                This must be called before any other NvAPI_Stereo_ function for that handle.
-//!                Multiple devices can be used at one time using multiple calls to this function (one per each device). 
+//! DESCRIPTION:     This function returns the current SLI state for the specified device.  The structure
+//!                  contains the number of AFR groups, the current AFR group index,
+//!                  and what the AFR group index will be for the next frame. \p
+//!                  pDevice can be either a IDirect3DDevice9 or ID3D10Device pointer.
 //!
-//! HOW TO USE:    After the Direct3D device is created, create the stereo handle.
-//!                On call success:
-//!                -# Use all other NvAPI_Stereo_ functions that have stereo handle as first parameter.
-//!                -# After the device interface that corresponds to the the stereo handle is destroyed,
-//!                the application should call NvAPI_DestroyStereoHandle() for that stereo handle. 
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
+//! SUPPORTED OS:  Windows XP and higher
 //!
 //!
-//! \since Release: 180
+//! \since Release: 173
 //!
-//! \param [in]     pDevice        Pointer to IUnknown interface that is IDirect3DDevice9* in DX9, ID3D10Device*.
-//! \param [out]    pStereoHandle  Pointer to the newly created stereo handle.
+//! \retval         NVAPI_OK     Completed request
+//! \retval         NVAPI_ERROR  Error occurred
 //!
-//! \retval ::NVAPI_OK                       Stereo handle is created for given device interface.
-//! \retval ::NVAPI_INVALID_ARGUMENT         Provided device interface is invalid.
-//! \retval ::NVAPI_API_NOT_INTIALIZED  
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED   Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
+//! \ingroup  dx
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_CreateHandleFromIUnknown(IUnknown *pDevice, StereoHandle *pStereoHandle);
+NVAPI_INTERFACE NvAPI_D3D_GetCurrentSLIState(IUnknown *pDevice, NV_GET_CURRENT_SLI_STATE *pSliState);
+#endif //if defined(_D3D9_H_) || defined(__d3d10_h__) || defined(__d3d11_h__)
 
-#endif // defined(_D3D9_H_) || defined(__d3d10_h__)
-
-
+#if defined(_D3D9_H_)
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_Stereo_DestroyHandle
+// FUNCTION NAME:   NvAPI_D3D9_RegisterResource
 //
-//! DESCRIPTION:   This API destroys the stereo handle created with one of the NvAPI_Stereo_CreateHandleFrom() functions.
-//!                This should be called after the device corresponding to the handle has been destroyed.
+//! DESCRIPTION:    This API binds a resource (surface/texture) so that it can be retrieved
+//!                 internally by NVAPI.
 //!
-//! SUPPORTED OS:  Windows Vista and higher
+//! SUPPORTED OS:  Windows XP and higher
 //!
+//! \param [in]     pResource      surface/texture
 //!
-//! \since Release: 180
+//! \return ::NVAPI_OK, ::NVAPI_ERROR 
 //!
-//! \param [in]     stereoHandle  Stereo handle that is to be destroyed.
-//!
-//! \retval ::NVAPI_OK                      Stereo handle is destroyed.
-//! \retval ::NVAPI_API_NOT_INTIALIZED      
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED  Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR                   
-//!
-//! \ingroup stereoapi
+//! \ingroup dx
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_DestroyHandle(StereoHandle stereoHandle);
-
-
+NVAPI_INTERFACE NvAPI_D3D9_RegisterResource(IDirect3DResource9* pResource);
+#endif //defined(_D3D9_H_)
+#if defined(_D3D9_H_)
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_Stereo_Activate
+// FUNCTION NAME:   NvAPI_D3D9_UnregisterResource
 //
-//! DESCRIPTION:   This API activates stereo for the device interface corresponding to the given stereo handle.
-//!                Activating stereo is possible only if stereo was enabled previously in the registry.
-//!                If stereo is not activated, then calls to functions that require that stereo is activated have no effect,
-//!                and will return the appropriate error code. 
+//! DESCRIPTION:     This API unbinds a resource (surface/texture) after use.
 //!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//! SUPPORTED OS:  Windows XP and higher
 //!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]    stereoHandle  Stereo handle corresponding to the device interface.
-//!
-//! \retval ::NVAPI_OK                                Stereo is turned on.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE   Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED            Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_Activate(StereoHandle stereoHandle);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_Deactivate
-//
-//! DESCRIPTION:   This API deactivates stereo for the given device interface.
-//!                If stereo is not activated, then calls to functions that require that stereo is activated have no effect,
-//!                and will return the appropriate error code. 
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]     stereoHandle  Stereo handle that corresponds to the device interface.
-//!
-//! \retval ::NVAPI_OK                               Stereo is turned off.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_Deactivate(StereoHandle stereoHandle);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_IsActivated
-//
-//! DESCRIPTION:   This API checks if stereo is activated for the given device interface. 
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]    stereoHandle  Stereo handle that corresponds to the device interface.
-//! \param [in]    pIsStereoOn   Address where result of the inquiry will be placed.
 //! 
-//! \retval ::NVAPI_OK - Check was sucessfully completed and result reflects current state of stereo (on/off).
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE - Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR - Something is wrong (generic error).
+//! \param [in]     pResource    surface/texture
 //!
-//! \ingroup stereoapi
+//! \return ::NVAPI_OK, ::NVAPI_ERROR 
+//!
+//! \ingroup dx
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_IsActivated(StereoHandle stereoHandle, NvU8 *pIsStereoOn);
+NVAPI_INTERFACE NvAPI_D3D9_UnregisterResource(IDirect3DResource9* pResource);
+
+#endif //defined(_D3D9_H_)
 
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_GetSeparation
-//
-//! DESCRIPTION:   This API gets current separation value (in percents). 
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]     stereoHandle           Stereo handle that corresponds to the device interface.
-//! \param [out]    pSeparationPercentage  Address of @c float type variable to store current separation percentage in.
-//!
-//! \retval ::NVAPI_OK                                Retrieval of separation percentage was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE   Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED  
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED            Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR  
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_GetSeparation(StereoHandle stereoHandle, float *pSeparationPercentage);
 
-
+#if defined(_D3D9_H_)
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_Stereo_SetSeparation
+// FUNCTION NAME: NvAPI_D3D9_AliasSurfaceAsTexture
 //
-//! DESCRIPTION:   This API sets separation to given percentage. 
+//! \fn NvAPI_D3D9_AliasSurfaceAsTexture(IDirect3DDevice9* pDev,
+//!                                              IDirect3DSurface9* pSurface,
+//!                                              IDirect3DTexture9 **ppTexture,
+//!                                              DWORD dwFlag);
+//!   DESCRIPTION: Create a texture that is an alias of a surface registered with NvAPI.  The
+//!                new texture can be bound with IDirect3DDevice9::SetTexture().  Note that the texture must
+//!                be unbound before drawing to the surface again.
+//!                Unless the USE_SUPER flag is passed, MSAA surfaces will be resolved before
+//!                being used as a texture.  MSAA depth buffers are resolved with a point filter,
+//!                and non-depth MSAA surfaces are resolved with a linear filter.
 //!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
+//! SUPPORTED OS:  Windows XP and higher
 //!
 //!
-//! \since Release: 180
+//! \param [in]    pDev         The D3D device that owns the objects
+//! \param [in]    pSurface     Pointer to a surface that has been registered with NvAPI 
+//!                             to which a texture alias is to be provided
+//! \param [out]   ppTexture    Fill with the texture created
+//! \param [in]    dwFlag       NVAPI_ALIAS_SURFACE_FLAG to describe how to handle the texture
 //!
-//! \param [in]     stereoHandle             Stereo handle that corresponds to the device interface.
-//! \param [in]     newSeparationPercentage  New value for separation percentage.
-//!
-//! \retval ::NVAPI_OK                               Setting of separation percentage was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED               NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_PARAMETER_OUT_OF_RANGE    Given separation percentage is out of [0..100] range.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_SetSeparation(StereoHandle stereoHandle, float newSeparationPercentage);
-
-
-///////////////////////////////////////////////////////////////////////////////
+//! \retval ::NVAPI_OK                  completed request
+//! \retval ::NVAPI_INVALID_POINTER     A null pointer was passed as an argument
+//! \retval ::NVAPI_INVALID_ARGUMENT    One of the arguments was invalid, probably dwFlag.
+//! \retval ::NVAPI_UNREGISTERED_RESOURCE pSurface has not been registered with NvAPI
+//! \retval ::NVAPI_ERROR               error occurred
 //
-// FUNCTION NAME: NvAPI_Stereo_DecreaseSeparation
-//
-//! DESCRIPTION:   This API decreases separation for the given device interface (just like the Ctrl+F3 hotkey). 
-//!
-//! WHEN TO USE:   After the stereo handle for device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]   stereoHandle  Stereo handle that corresponds to the device interface.
-//!
-//! \retval ::NVAPI_OK - Decrease of separation percentage was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE - Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR - Something is wrong (generic error).
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_DecreaseSeparation(StereoHandle stereoHandle);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_IncreaseSeparation
-//
-//! DESCRIPTION:   This API increases separation for the given device interface (just like the Ctrl+F4 hotkey).
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]    stereoHandle  Stereo handle that corresponds to the device interface.
-//!
-//! \retval ::NVAPI_OK                               Increase of separation percentage was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED               NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR                            Something is wrong (generic error).
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_IncreaseSeparation(StereoHandle stereoHandle);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_GetConvergence
-//
-//! DESCRIPTION:   This API gets the current convergence value.
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]     stereoHandle   Stereo handle that corresponds to the device interface.
-//! \param [out]    pConvergence   Address of @c float type variable to store current convergence value in.
-//!
-//! \retval ::NVAPI_OK                               Retrieval of convergence value was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED  
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_GetConvergence(StereoHandle stereoHandle, float *pConvergence);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_SetConvergence
-//
-//! DESCRIPTION:   This API sets convergence to the given value.
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]     stereoHandle              Stereo handle that corresponds to the device interface.
-//! \param [in]     newConvergence            New value for convergence.
-//! 
-//! \retval ::NVAPI_OK                                Setting of convergence value was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE   Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED  
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED            Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_SetConvergence(StereoHandle stereoHandle, float newConvergence);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_DecreaseConvergence
-//
-//! DESCRIPTION:   This API decreases convergence for the given device interface (just like the Ctrl+F5 hotkey). 
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]     stereoHandle  Stereo handle that corresponds to the device interface.
-//!
-//! \retval ::NVAPI_OK - Decrease of convergence was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE - Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR - Something is wrong (generic error).
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_DecreaseConvergence(StereoHandle stereoHandle);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_IncreaseConvergence
-//
-//! DESCRIPTION:   This API increases convergence for given the device interface (just like the Ctrl+F5 hotkey). 
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]    stereoHandle  Stereo handle that corresponds to the device interface.
-//!
-//! \retval ::NVAPI_OK                               Increase of convergence was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_IncreaseConvergence(StereoHandle stereoHandle);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_GetFrustumAdjustMode
-//
-//! \fn NvAPI_Stereo_GetFrustumAdjustMode(StereoHandle stereoHandle, NV_FRUSTUM_ADJUST_MODE *pFrustumAdjustMode)
-//! DESCRIPTION:   This API gets the current frustum adjust mode value. 
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]     stereoHandle         Stereo handle that corresponds to the device interface.
-//! \param [out]    pFrustumAdjustMode   Address of the NV_FRUSTUM_ADJUST_MODE type variable to store current frustum value in.
-//!
-//! \retval ::NVAPI_OK - Retrieval of frustum adjust mode was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE - Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR - Something is wrong (generic error).
-//!
 ///////////////////////////////////////////////////////////////////////////////
 
-//! \ingroup stereoapi
-//! Used in NvAPI_Stereo_GetFrustumAdjustMode().
-typedef enum _NV_FrustumAdjustMode
-{
-    NVAPI_NO_FRUSTUM_ADJUST,    //!< Do not adjust frustum.
-    NVAPI_FRUSTUM_STRETCH,      //!< Stretch images in X.
-    NVAPI_FRUSTUM_CLEAR_EDGES   //!< Clear corresponding edges for each eye.
-} NV_FRUSTUM_ADJUST_MODE;
 
-//! \ingroup stereoapi
-NVAPI_INTERFACE NvAPI_Stereo_GetFrustumAdjustMode(StereoHandle stereoHandle, NV_FRUSTUM_ADJUST_MODE *pFrustumAdjustMode);
+//! \ingroup dx
+//! See NvAPI_D3D9_AliasSurfaceAsTexture().
+typedef enum {
+    NVAPI_ALIAS_SURFACE_FLAG_NONE                     = 0x00000000,
+    NVAPI_ALIAS_SURFACE_FLAG_USE_SUPER                = 0x00000001,  //!< Use the surface's msaa buffer directly as a texture, rather than resolving. (This is much slower, but potentially has higher quality.)
+    NVAPI_ALIAS_SURFACE_FLAG_MASK                     = 0x00000001
+} NVAPI_ALIAS_SURFACE_FLAG;
 
 
+//! \ingroup dx
+NVAPI_INTERFACE NvAPI_D3D9_AliasSurfaceAsTexture(IDirect3DDevice9* pDev,
+                                                 IDirect3DSurface9* pSurface,
+                                                 IDirect3DTexture9 **ppTexture,
+                                                 DWORD dwFlag);
+#endif //defined(_D3D9_H_)
+#if defined(_D3D9_H_)
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_Stereo_SetFrustumAdjustMode
+// FUNCTION NAME:   NvAPI_D3D9_StretchRectEx
 //
-//! DESCRIPTION:   This API sets the current frustum adjust mode value. 
+//! DESCRIPTION:     This API copies the contents of the source resource to the destination
+//!                  resource.  This function can convert
+//!                  between a wider range of surfaces than
+//!                  IDirect3DDevice9::StretchRect.  For example, it can copy
+//!                  from a depth/stencil surface to a texture.
 //!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!                  The source and destination resources *must* be registered
+//!                  with NvAPI before being used with NvAPI_D3D9_StretchRectEx().
 //!
-//! SUPPORTED OS:  Windows Vista and higher
+//! SUPPORTED OS:  Windows XP and higher
 //!
 //!
-//! \since Release: 180
+//! \param [in]     pDevice             The D3D device that owns the objects.
+//! \param [in]     pSourceResource     Pointer to the source resource.
+//! \param [in]     pSrcRect            Defines the rectangle on the source to copy from.  If NULL, copy from the entire resource.
+//! \param [in]     pDestResource       Pointer to the destination resource.
+//! \param [in]     pDstRect            Defines the rectangle on the destination to copy to.  If NULL, copy to the entire resource.
+//! \param [in]     Filter              Choose a filtering method: D3DTEXF_NONE, D3DTEXF_POINT, D3DTEXF_LINEAR.
 //!
-//! \param [in]     stereoHandle                Stereo handle that corresponds to the device interface.
-//! \param [in]     newFrustumAdjustModeValue   New value for frustum adjust mode. It should be one of the symbolic constants defined in
-//!                                             ::NV_FRUSTUM_ADJUST_MODE. Any other value will cause function to do nothing and return
-//!                                             ::NVAPI_STEREO_FRUSTUM_ADJUST_MODE_NOT_SUPPORTED.
+//! \retval ::NVAPI_OK                       completed request
+//! \retval ::NVAPI_INVALID_POINTER          An invalid pointer was passed as an argument (probably NULL)
+//! \retval ::NVAPI_INVALID_ARGUMENT         One of the arguments was invalid
+//! \retval ::NVAPI_UNREGISTERED_RESOURCE    a resource was passed in without being registered
+//! \retval ::NVAPI_ERROR                    error occurred
 //!
-//! \retval ::NVAPI_OK                                         Retrieval of frustum adjust mode was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE            Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED                     Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_FRUSTUM_ADJUST_MODE_NOT_SUPPORTED   Given frustum adjust mode is not supported.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
+//! \ingroup dx
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_SetFrustumAdjustMode(StereoHandle stereoHandle, NV_FRUSTUM_ADJUST_MODE newFrustumAdjustModeValue);
+NVAPI_INTERFACE NvAPI_D3D9_StretchRectEx(IDirect3DDevice9 * pDevice,
+                                         IDirect3DResource9 * pSourceResource,
+                                         CONST RECT * pSourceRect,
+                                         IDirect3DResource9 * pDestResource,
+                                         CONST RECT * pDestRect,
+                                         D3DTEXTUREFILTERTYPE Filter);
 
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_CaptureJpegImage
-//
-//! DESCRIPTION:   This API captures the current stereo image in JPEG stereo format with the given quality.
-//!                Only the last capture call per flip will be effective. 
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//! \param [in]     stereoHandle  Stereo handle that corresponds to the device interface.
-//! \param [in]     quality        Quality of the JPEG image to be captured. Integer value betweeen 0 and 100.
-//! 
-//! \retval ::NVAPI_OK                              Image captured.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED 
-//! \retval ::NVAPI_STEREO_PARAMETER_OUT_OF_RANGE   Given quality is out of [0..100] range.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_CaptureJpegImage(StereoHandle stereoHandle, NvU32 quality);
-
-
+#endif //defined(_D3D9_H_)
+#if defined(_D3D9_H_)
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_Stereo_CapturePngImage
+// FUNCTION NAME:   NvAPI_D3D9_ClearRT
 //
-//! DESCRIPTION:   This API captures the current stereo image in PNG stereo format.
-//!                Only the last capture call per flip will be effective. 
-//!
-//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
+//! DESCRIPTION:     This API Clears the currently bound render target(s) with the 
+//!                  given color
 //!
 //!
-//! \since Release: 180
+//! SUPPORTED OS:  Windows XP and higher
 //!
-//! \param [in]     stereoHandle  Stereo handle corresponding to the device interface.
 //!
-//! \retval ::NVAPI_OK                               Image captured.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
+//! \param [in]     pDevice             The D3D device that owns the objects.
+//! \param [in]     dwNumRects          The no of rectangles to clear. If 0, clear the entire surface (clipped to viewport)
+//! \param [in]     pRects              Defines the rectangles to clear.  Should be NULL if dwNumRects == 0
+//! \param [in]     r                   red component of the clear color
+//! \param [in]     g                   green component of the clear color
+//! \param [in]     b                   blue component of the clear color
+//! \param [in]     a                   alpha component of the clear color
 //!
-//! \ingroup stereoapi
+//! \return This API can return any of the error codes enumerated in #NvAPI_Status. 
+//!
+//! \ingroup dx
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_CapturePngImage(StereoHandle stereoHandle);
+NVAPI_INTERFACE NvAPI_D3D9_ClearRT(IDirect3DDevice9 * pDevice,
+                                   NvU32 dwNumRects,
+                                   CONST RECT * pRects,
+                                   float r, float g, float b, float a);
+#endif //if defined(_D3D9_H_)
 
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_ReverseStereoBlitControl
-//
-//! DESCRIPTION:   This API turns on/off reverse stereo blit.
-//!
-//! HOW TO USE:    Use after the stereo handle for the device interface is created via successfull call to the appropriate 
-//!                NvAPI_Stereo_CreateHandleFrom() function.
-//!                After reversed stereo blit control is turned on, blits from the stereo surface will
-//!                produce the right-eye image in the left side of the destination surface and the left-eye
-//!                image in the right side of the destination surface.
-//!
-//!                In DirectX 9, the destination surface must be created as the render target, and StretchRect must be used.
-//!                Conditions:
-//!                - DstWidth == 2*SrcWidth
-//!                - DstHeight == SrcHeight
-//!                - Src surface is the stereo surface.
-//!                - SrcRect must be {0,0,SrcWidth,SrcHeight}
-//!                - DstRect must be {0,0,DstWidth,DstHeight}
-//!
-//!                In DirectX 10, ResourceCopyRegion must be used. 
-//!                Conditions:
-//!                - DstWidth == 2*SrcWidth
-//!                - DstHeight == SrcHeight
-//!                - dstX == 0,
-//!                - dstY == 0,
-//!                - dstZ == 0,
-//!                - SrcBox: left=top=front==0; right==SrcWidth; bottom==SrcHeight; back==1;
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 185
-//!
-//! \param [in]    stereoHandle  Stereo handle corresponding to the device interface.
-//! \param [in]    TurnOn         != 0 : Turns on \n 
-//!                               == 0 : Turns off 
-//!
-//!
-//! \retval ::NVAPI_OK                                Retrieval of frustum adjust mode was successfull.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE   Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED            Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_ReverseStereoBlitControl(StereoHandle hStereoHandle, NvU8 TurnOn);
 
-
+#if defined(_D3D9_H_) || defined(__d3d10_h__) || defined(__d3d10_1_h__) || defined(__d3d11_h__)
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_Stereo_SetNotificationMessage
+// FUNCTION NAME: NvAPI_D3D_SetFPSIndicatorState
 //
-//! DESCRIPTION:   This API is a Setup notification message that the stereo driver uses to notify the application
-//!                when the user changes the stereo driver state. 
+//!   DESCRIPTION: Display an overlay that tracks the number of times the app presents per second, or,   
+//!      the number of frames-per-second (FPS)
 //!
-//!                When the user changes the stereo state (Activated or Deactivated, separation or conversion)
-//!                the stereo driver posts a defined message with the following parameters:
+//! SUPPORTED OS:  Windows XP and higher
 //!
-//!                lParam  is the current conversion. (Actual conversion is *(float*)&lParam )
-//!          
-//!                wParam == MAKEWPARAM(l, h) where
-//!                - l == 0 if stereo is deactivated
-//!                - l == 1 if stereo is deactivated
-//!                - h is the current separation. (Actual separation is float(h*100.f/0xFFFF)  
+//!
+//! \param [in] bool    Whether or not to enable the fps indicator.
 //!                
-//!                Call this API with NULL hWnd to prohibit notification.
+//! \return ::NVAPI_OK, 
+//!         ::NVAPI_ERROR
 //!
-//! WHEN TO USE:   Use after the stereo handle for device interface is created via successful call to appropriate
-//!                NvAPI_Stereo_CreateHandleFrom() function.
-//!                
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \since Release: 180
-//!
-//!
-//! \param [in]     stereoHandle  Stereo handle corresponding to the device interface.
-//! \param [in]     hWnd          Window HWND that will be notified when the user changes the stereo driver state.
-//!                               Actual HWND must be cast to an NvU64.
-//! \param [in]     messageID     MessageID of the message that will be posted to hWnd
-//!
-//! \retval ::NVAPI_OK                                Notification set.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE   Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED            Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR 
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_SetNotificationMessage(StereoHandle hStereoHandle, NvU64 hWnd,NvU64 messageID);
+//! \ingroup dx 
+/////////////////////////////////////////////////////////////////////////////// 
+NVAPI_INTERFACE NvAPI_D3D_SetFPSIndicatorState(IUnknown *pDev, NvU8 doEnable);
 
+#endif //if defined(_D3D9_H_) || defined(__d3d10_h__) || defined(__d3d10_1_h__) || defined(__d3d11_h__)
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_SetActiveEye
-//
-//! \fn NvAPI_Stereo_SetActiveEye(StereoHandle hStereoHandle, NV_STEREO_ACTIVE_EYE StereoEye);
-//! DESCRIPTION:   This API sets the back buffer to left or right in Direct stereo mode.
-//!                  
-//! HOW TO USE:    After the stereo handle for device interface is created via successfull call to appropriate 
-//!                NvAPI_Stereo_CreateHandleFrom function.
-//!
-//! \since Release: 285
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \param [in]   stereoHandle  Stereo handle that corresponds to the device interface.
-//! \param [in]   StereoEye     Defines active eye in Direct stereo mode
-//!
-//! \retval ::NVAPI_OK - Active eye is set.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE - Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_INVALID_ARGUMENT - StereoEye parameter has not allowed value.
-//! \retval ::NVAPI_SET_NOT_ALLOWED  - Current stereo mode is not Direct
-//! \retval ::NVAPI_ERROR - Something is wrong (generic error).
-//
-///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup stereoapi
-typedef enum _NV_StereoActiveEye
-{
-    NVAPI_STEREO_EYE_RIGHT = 1,
-    NVAPI_STEREO_EYE_LEFT = 2,
-    NVAPI_STEREO_EYE_MONO = 3,
-} NV_STEREO_ACTIVE_EYE;
-
-//! \ingroup stereoapi
-NVAPI_INTERFACE NvAPI_Stereo_SetActiveEye(StereoHandle hStereoHandle, NV_STEREO_ACTIVE_EYE StereoEye);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_SetDriverMode
-//
-//! \fn NvAPI_Stereo_SetDriverMode( NV_STEREO_DRIVER_MODE mode );
-//! DESCRIPTION:   This API sets the 3D stereo driver mode: Direct or Automatic
-//!                  
-//! HOW TO USE:    This API must be called before the device is created.
-//!                Applies to DirectX 9 and higher.
-//!
-//! \since Release: 285
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!      
-//! \param [in]    mode       Defines the 3D stereo driver mode: Direct or Automatic
-//!
-//! \retval ::NVAPI_OK                      Active eye is set.
-//! \retval ::NVAPI_API_NOT_INTIALIZED      NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED  Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_INVALID_ARGUMENT        mode parameter has not allowed value.
-//! \retval ::NVAPI_ERROR                   Something is wrong (generic error).
-//
-///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup stereoapi
-typedef enum _NV_StereoDriverMode
-{
-    NVAPI_STEREO_DRIVER_MODE_AUTOMATIC = 0,
-    NVAPI_STEREO_DRIVER_MODE_DIRECT    = 2,
-} NV_STEREO_DRIVER_MODE;
-
-//! \ingroup stereoapi
-NVAPI_INTERFACE NvAPI_Stereo_SetDriverMode( NV_STEREO_DRIVER_MODE mode );
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_GetEyeSeparation
-//
-//! DESCRIPTION:   This API returns eye separation as a ratio of <between eye distance>/<physical screen width>.
-//! 
-//! HOW TO USE:    After the stereo handle for device interface is created via successfull call to appropriate API. Applies only to DirectX 9 and up.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \param [in]   stereoHandle  Stereo handle that corresponds to the device interface.
-//! \param [out]  pSeparation   Eye separation.
-//!
-//! \retval ::NVAPI_OK                               Active eye is set.
-//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
-//! \retval ::NVAPI_API_NOT_INTIALIZED               NVAPI not initialized.
-//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
-//! \retval ::NVAPI_ERROR  (generic error).
-//!
-//! \ingroup stereoapi
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_Stereo_GetEyeSeparation(StereoHandle hStereoHandle,  float *pSeparation );
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_SetSurfaceCreationMode
-//
-//! \function NvAPI_Stereo_SetSurfaceCreationMode(StereoHandle hStereoHandle, NVAPI_STEREO_SURFACECREATEMODE creationMode)
-//! \param [in]   hStereoHandle   Stereo handle that corresponds to the device interface.
-//! \param [in]   creationMode    New surface creation mode for this device interface.
-//!
-//! \since Release: 285
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! DESCRIPTION: This API sets surface creation mode for this device interface.
-//!
-//! WHEN TO USE: After the stereo handle for device interface is created via successful call to appropriate NvAPI_Stereo_CreateHandleFrom function.
-//!
-//! \return      This API can return any of the error codes enumerated in #NvAPI_Status. 
-//!              There are no return error codes with specific meaning for this API.
-//!
-///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup stereoapi
-typedef enum _NVAPI_STEREO_SURFACECREATEMODE 
-{
-    NVAPI_STEREO_SURFACECREATEMODE_AUTO,        //!< Use driver registry profile settings for surface creation mode. 
-    NVAPI_STEREO_SURFACECREATEMODE_FORCESTEREO, //!< Always create stereo surfaces. 
-    NVAPI_STEREO_SURFACECREATEMODE_FORCEMONO    //!< Always create mono surfaces. 
-} NVAPI_STEREO_SURFACECREATEMODE; 
-
-//! \ingroup stereoapi
-NVAPI_INTERFACE NvAPI_Stereo_SetSurfaceCreationMode(__in StereoHandle hStereoHandle, __in NVAPI_STEREO_SURFACECREATEMODE creationMode);
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_Stereo_GetSurfaceCreationMode
-//
-//! \function NvAPI_Stereo_GetSurfaceCreationMode(StereoHandle hStereoHandle, NVAPI_STEREO_SURFACECREATEMODE* pCreationMode)
-//! \param [in]   hStereoHandle   Stereo handle that corresponds to the device interface.
-//! \param [out]   pCreationMode   The current creation mode for this device interface.
-//!
-//! \since Release: 295
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! DESCRIPTION: This API gets surface creation mode for this device interface.
-//!
-//! WHEN TO USE: After the stereo handle for device interface is created via successful call to appropriate NvAPI_Stereo_CreateHandleFrom function.
-//!
-//! \return      This API can return any of the error codes enumerated in #NvAPI_Status. 
-//!              There are no return error codes with specific meaning for this API.
-//!
-///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup stereoapi
-NVAPI_INTERFACE NvAPI_Stereo_GetSurfaceCreationMode(__in StereoHandle hStereoHandle, __in NVAPI_STEREO_SURFACECREATEMODE* pCreationMode);
 
 
 
@@ -7445,8 +7812,8 @@ typedef struct _NVVIOCOMPOSITERANGE
                                   NVVIOCONFIG_RGB_DATA              | \
                                   NVVIOCONFIG_RESERVED_SDIOUTPUTENABLE | \
                                   NVVIOCONFIG_STREAMS               | \
-                                  NVVIOCONFIG_ANC_PARITY_COMPUTATION| \
-								  NVVIOCONFIG_ANC_AUDIO_REPEAT)
+                                  NVVIOCONFIG_ANC_PARITY_COMPUTATION | \
+								  NVVIOCONFIG_ANC_AUDIO_REPEAT )
 
 #define NVVIOCONFIG_VALIDFIELDS  ( NVVIOCONFIG_SIGNALFORMAT          | \
                                    NVVIOCONFIG_DATAFORMAT            | \
@@ -7474,7 +7841,7 @@ typedef struct _NVVIOCOMPOSITERANGE
                                    NVVIOCONFIG_RGB_DATA              | \
                                    NVVIOCONFIG_RESERVED_SDIOUTPUTENABLE | \
                                    NVVIOCONFIG_STREAMS               | \
-                                   NVVIOCONFIG_ANC_PARITY_COMPUTATION| \
+                                   NVVIOCONFIG_ANC_PARITY_COMPUTATION | \
 								   NVVIOCONFIG_ANC_AUDIO_REPEAT)
 
 #define NVVIOCONFIG_DRIVERFIELDS ( NVVIOCONFIG_OUTPUTREGION          | \
@@ -7674,7 +8041,6 @@ typedef struct _NVVIOCONFIG_V3
         NVVIOOUTPUTCONFIG_V3 outConfig;                        //!< Output device configuration
     }vioConfig;
 } NVVIOCONFIG_V3;
-
 typedef NVVIOOUTPUTCONFIG_V3 NVVIOOUTPUTCONFIG;
 typedef NVVIOCONFIG_V3 NVVIOCONFIG;
 
@@ -7682,7 +8048,6 @@ typedef NVVIOCONFIG_V3 NVVIOCONFIG;
 #define NVVIOCONFIG_VER2  MAKE_NVAPI_VERSION(NVVIOCONFIG_V2,2)
 #define NVVIOCONFIG_VER3  MAKE_NVAPI_VERSION(NVVIOCONFIG_V3,3)
 #define NVVIOCONFIG_VER   NVVIOCONFIG_VER3
-
 
 
 typedef struct
@@ -7740,6 +8105,7 @@ typedef struct _NV_VIO_TOPOLOGY
 NVAPI_INTERFACE NvAPI_VIO_GetCapabilities(NvVioHandle     hVioHandle,
                                           NVVIOCAPS       *pAdapterCaps);
 
+
 ////////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_Open
 //!  
@@ -7768,7 +8134,6 @@ NVAPI_INTERFACE NvAPI_VIO_Open(NvVioHandle       hVioHandle,
                                NvU32             vioClass,
                                NVVIOOWNERTYPE    ownerType);
 
-
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_Close
 //!  
@@ -7793,7 +8158,6 @@ NVAPI_INTERFACE NvAPI_VIO_Open(NvVioHandle       hVioHandle,
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_VIO_Close(NvVioHandle       hVioHandle,
                                 NvU32             bRelease);
-
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_Status
 //!  
@@ -7817,7 +8181,6 @@ NVAPI_INTERFACE NvAPI_VIO_Close(NvVioHandle       hVioHandle,
 NVAPI_INTERFACE NvAPI_VIO_Status(NvVioHandle     hVioHandle, 
                                  NVVIOSTATUS     *pStatus);
 
-
 ////////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_SyncFormatDetect
 //!  
@@ -7840,7 +8203,6 @@ NVAPI_INTERFACE NvAPI_VIO_Status(NvVioHandle     hVioHandle,
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_VIO_SyncFormatDetect(NvVioHandle hVioHandle,
                                            NvU32       *pWait);
-
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_GetConfig
 //!  
@@ -7863,7 +8225,6 @@ NVAPI_INTERFACE NvAPI_VIO_SyncFormatDetect(NvVioHandle hVioHandle,
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_VIO_GetConfig(NvVioHandle        hVioHandle,
                                     NVVIOCONFIG        *pConfig); 
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_SetConfig
@@ -7888,7 +8249,6 @@ NVAPI_INTERFACE NvAPI_VIO_GetConfig(NvVioHandle        hVioHandle,
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_VIO_SetConfig(NvVioHandle            hVioHandle,
                                     const NVVIOCONFIG      *pConfig);
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_SetCSC
@@ -7915,7 +8275,6 @@ NVAPI_INTERFACE NvAPI_VIO_SetConfig(NvVioHandle            hVioHandle,
 __nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_VIO_SetConfig.")
 NVAPI_INTERFACE NvAPI_VIO_SetCSC(NvVioHandle           hVioHandle,
                                  NVVIOCOLORCONVERSION  *pCSC);
-
 ////////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_GetCSC
 //! 
@@ -7940,7 +8299,6 @@ NVAPI_INTERFACE NvAPI_VIO_SetCSC(NvVioHandle           hVioHandle,
 __nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_VIO_GetConfig.")
 NVAPI_INTERFACE NvAPI_VIO_GetCSC(NvVioHandle           hVioHandle,
                                  NVVIOCOLORCONVERSION  *pCSC);
-
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_SetGamma
 //! 
@@ -7967,7 +8325,6 @@ __nvapi_deprecated_function("Do not use this function - it is deprecated in rele
 NVAPI_INTERFACE NvAPI_VIO_SetGamma(NvVioHandle           hVioHandle,
                                    NVVIOGAMMACORRECTION  *pGamma);
 
-
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_GetGamma
 //! 
@@ -7992,7 +8349,6 @@ NVAPI_INTERFACE NvAPI_VIO_SetGamma(NvVioHandle           hVioHandle,
 __nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_VIO_GetConfig.")
 NVAPI_INTERFACE NvAPI_VIO_GetGamma(NvVioHandle           hVioHandle,
                                    NVVIOGAMMACORRECTION* pGamma);
- 
 ////////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_SetSyncDelay
 //! 
@@ -8018,7 +8374,6 @@ __nvapi_deprecated_function("Do not use this function - it is deprecated in rele
 NVAPI_INTERFACE NvAPI_VIO_SetSyncDelay(NvVioHandle            hVioHandle,
                                        const NVVIOSYNCDELAY   *pSyncDelay);
 
-
 ////////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_GetSyncDelay
 //! 
@@ -8042,7 +8397,6 @@ NVAPI_INTERFACE NvAPI_VIO_SetSyncDelay(NvVioHandle            hVioHandle,
 __nvapi_deprecated_function("Do not use this function - it is deprecated in release 290. Instead, use NvAPI_VIO_GetConfig.")
 NVAPI_INTERFACE NvAPI_VIO_GetSyncDelay(NvVioHandle      hVioHandle,
                                        NVVIOSYNCDELAY   *pSyncDelay);
-
 
 typedef enum _NVVIOPCILINKRATE
 {
@@ -8099,7 +8453,6 @@ typedef NVVIOPCIINFO_V1                                         NVVIOPCIINFO;
 NVAPI_INTERFACE NvAPI_VIO_GetPCIInfo(__in NvVioHandle hVioHandle, 
                                             __out NVVIOPCIINFO* pVioPCIInfo);
 
-
 ////////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_IsRunning
 //! 
@@ -8116,7 +8469,6 @@ NVAPI_INTERFACE NvAPI_VIO_GetPCIInfo(__in NvVioHandle hVioHandle,
 //! \retval ::NVAPI_DRIVER_NOTRUNNING     Video I/O not running
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_VIO_IsRunning(NvVioHandle   hVioHandle);
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_Start
@@ -8139,7 +8491,6 @@ NVAPI_INTERFACE NvAPI_VIO_IsRunning(NvVioHandle   hVioHandle);
 //! \retval ::NVAPI_DEVICE_BUSY                  Access denied for requested access
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_VIO_Start(NvVioHandle     hVioHandle);
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_Stop
@@ -8164,7 +8515,6 @@ NVAPI_INTERFACE NvAPI_VIO_Start(NvVioHandle     hVioHandle);
 NVAPI_INTERFACE NvAPI_VIO_Stop(NvVioHandle     hVioHandle);
 
 
-                                               
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_IsFrameLockModeCompatible
 //! 
@@ -8190,7 +8540,6 @@ NVAPI_INTERFACE NvAPI_VIO_IsFrameLockModeCompatible(NvVioHandle              hVi
                                                     NvU32                    srcEnumIndex,
                                                     NvU32                    destEnumIndex,
                                                     NvU32*                   pbCompatible);
-
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -8260,7 +8609,7 @@ NVAPI_INTERFACE NvAPI_VIO_QueryTopology(NV_VIO_TOPOLOGY   *pNvVIOTopology);
 NVAPI_INTERFACE NvAPI_VIO_EnumSignalFormats(NvVioHandle              hVioHandle,
                                             NvU32                    enumIndex,
                                             NVVIOSIGNALFORMATDETAIL  *pSignalFormatDetail);
-                                            
+
 ///////////////////////////////////////////////////////////////////////////////
 //!   Function:    NvAPI_VIO_EnumDataFormats
 //! 
@@ -8288,594 +8637,1110 @@ NVAPI_INTERFACE NvAPI_VIO_EnumDataFormats(NvVioHandle            hVioHandle,
 
 
 
+
+///////////////////////////////////////////////////////////////////////////////////
+//  CAMERA TEST API
+//  These APIs allows test apps to perform low level camera tests
+
+//! \addtogroup vidio
+//! @{
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_GPU_GetTachReading
+// FUNCTION NAME: NvAPI_Stereo_CreateConfigurationProfileRegistryKey
 //
-//!   DESCRIPTION: This API retrieves the fan speed tachometer reading for the specified physical GPU.
+//! \fn NvAPI_Stereo_CreateConfigurationProfileRegistryKey(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType)
 //!
-//!   HOW TO USE:   
-//!                 - NvU32 Value = 0;
-//!                 - ret = NvAPI_GPU_GetTachReading(hPhysicalGpu, &Value);  
-//!                 - On call success:
-//!                 - Value contains the tachometer reading
+//! DESCRIPTION:   Creates new configuration registry key for current application.
 //!
-//! SUPPORTED OS:  Windows XP and higher
+//!                If there is no configuration profile prior to the function call,
+//!                this API tries to create a new configuration profile registry key
+//!                for a given application and fill it with the default values.
+//!                If an application already has a configuration profile registry key, the API does nothing.
+//!                The name of the key is automatically set to the name of the executable that calls this function.
+//!                Because of this, the executable should have a distinct and unique name.
+//!                If the application is using only one version of DirectX, then the default profile type will be appropriate.
+//!                If the application is using more than one version of DirectX from the same executable,
+//!                it should use the appropriate profile type for each configuration profile.
+//!
+//! HOW TO USE:    When there is a need for an application to have default stereo parameter values,
+//!                use this function to create a key to store the values.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
 //!
 //!
-//! \param [in]    hPhysicalGpu   GPU selection.
-//! \param [out]   pValue         Pointer to a variable to get the tachometer reading
+//! \since Release: 180
 //!
-//! \retval ::NVAPI_OK - completed request
-//! \retval ::NVAPI_ERROR - miscellaneous error occurred
-//! \retval ::NVAPI_NOT_SUPPORTED - functionality not supported 
-//! \retval ::NVAPI_API_NOT_INTIALIZED - nvapi not initialized
-//! \retval ::NVAPI_INVALID_ARGUMENT - invalid argument passed
-//! \retval ::NVAPI_HANDLE_INVALIDATED - handle passed has been invalidated (see user guide)
-//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE - handle passed is not a physical GPU handle
+//! \param [in]    registryProfileType  Type of profile the application wants to create. It should be one of the symbolic constants defined in
+//!                                     ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value will cause function to do nothing and return
+//!                                     ::NV_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED.
 //!
-//! \ingroup gpucooler
+//! \retval ::NVAPI_OK                                           Key exists in the registry.
+//! \retval ::NVAPI_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED   This profile type is not supported.
+//! \retval ::NVAPI_STEREO_REGISTRY_ACCESS_FAILED                Access to registry failed.
+//! \retval ::NVAPI_API_NOT_INTIALIZED           
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED                       Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetTachReading(NvPhysicalGpuHandle hPhysicalGPU, NvU32 *pValue);
 
 
+//! \ingroup stereoapi
+//! Used in NvAPI_Stereo_CreateConfigurationProfileRegistryKey() 
+typedef enum _NV_StereoRegistryProfileType
+{
+    NVAPI_STEREO_DEFAULT_REGISTRY_PROFILE, //!< Default registry configuration profile.
+    NVAPI_STEREO_DX9_REGISTRY_PROFILE,     //!< Separate registry configuration profile for a DirectX 9 executable.
+    NVAPI_STEREO_DX10_REGISTRY_PROFILE     //!< Separate registry configuration profile for a DirectX 10 executable.
+} NV_STEREO_REGISTRY_PROFILE_TYPE;
 
 
+//! \ingroup stereoapi
+NVAPI_INTERFACE NvAPI_Stereo_CreateConfigurationProfileRegistryKey(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType);
 
 
-
-
-
-//
-// NV_GET_SCALING_CAPS
-//
-// Interface structure used in NvAPI_GetScalingCaps call.
-//
-// This NvAPI_GetScalingCaps returns scaling capability info for the specified display device
-//
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-// FUNCTION NAME:   NvAPI_SYS_GetDisplayIdFromGpuAndOutputId
-//
-//! DESCRIPTION:     This API converts a Physical GPU handle and output ID to a
-//!                  display ID.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \param [in]     hPhysicalGpu   Handle to the physical GPU
-//! \param [in]     outputId       Connected display output ID on the 
-//!                                target GPU - must only have one bit set
-//! \param [out]    displayId      Pointer to an NvU32 which contains
-//!                                 the display ID
-//!
-//! \retval  ::NVAPI_OK - completed request
-//! \retval  ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized
-//! \retval  ::NVAPI_ERROR - miscellaneous error occurred
-//! \retval  ::NVAPI_INVALID_ARGUMENT - Invalid input parameter.
-//!
-//! \ingroup sysgeneral
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_SYS_GetDisplayIdFromGpuAndOutputId(NvPhysicalGpuHandle hPhysicalGpu, NvU32 outputId, NvU32* displayId);
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// FUNCTION NAME:   NvAPI_SYS_GetGpuAndOutputIdFromDisplayId
 //
-//! DESCRIPTION:     This API converts a display ID to a Physical GPU handle and output ID.
+// FUNCTION NAME: NvAPI_Stereo_DeleteConfigurationProfileRegistryKey
+//
+//! DESCRIPTION:   Removes configuration registry key for current application.
 //!
-//! SUPPORTED OS:  Windows XP and higher
+//!                If an application already has a configuration profile prior to this function call,
+//!                the function attempts to remove the application's configuration profile registry key from the registry.
+//!                If there is no configuration profile registry key prior to the function call,
+//!                the function does nothing and does not report an error.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
 //!
 //!
-//! \param [in]     displayId       Display ID of display to retrieve 
-//!                                 GPU and outputId for
-//! \param [out]    hPhysicalGpu    Handle to the physical GPU
-//! \param [out]    outputId )      Connected display output ID on the 
-//!                                 target GPU will only have one bit set.
+//! \since Release: 180
 //!
-//! \retval ::NVAPI_OK 
+//! \param [in]   registryProfileType   Type of profile that the application wants to delete. This should be one of the symbolic 
+//!                                     constants defined in ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value will cause the function 
+//!                                     to do nothing and return ::NV_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED.
+//!
+//! \retval ::NVAPI_OK                                           Key does not exist in the registry any more.
+//! \retval ::NVAPI_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED   This profile type is not supported.
+//! \retval ::NVAPI_STEREO_REGISTRY_ACCESS_FAILED                Access to registry failed.
+//! \retval ::NVAPI_API_NOT_INTIALIZED                           NVAPI is not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED                       Stereo part of NVAPI is not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_DeleteConfigurationProfileRegistryKey(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_SetConfigurationProfileValue
+//
+//! \fn NvAPI_Stereo_SetConfigurationProfileValue(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType, NV_STEREO_REGISTRY_ID valueRegistryID, void *pValue)
+//!
+//! DESCRIPTION:   This API sets the given parameter value under the application's registry key.
+//!
+//!                If the value does not exist under the application's registry key,
+//!                the value will be created under the key.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     registryProfileType  The type of profile the application wants to access. It should be one of the 
+//!                                      symbolic constants defined in ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value 
+//!                                      will cause function to do nothing and return ::NV_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED.
+//! \param [in]     valueRegistryID      ID of the value that is being set. It should be one of the symbolic constants defined in
+//!                                      ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value will cause function to do nothing
+//!                                      and return ::NVAPI_STEREO_REGISTRY_VALUE_NOT_SUPPORTED.
+//! \param [in]     pValue               Address of the value that is being set. It should be either address of a DWORD or of a float,
+//!                                      dependent on the type of the stereo parameter whose value is being set. The API will then cast that
+//!                                      address to DWORD* and write whatever is in those 4 bytes as a DWORD to the registry.
+//!
+//! \retval ::NVAPI_OK                                           Value is written to registry.
+//! \retval ::NVAPI_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED   This profile type is not supported.
+//! \retval ::NVAPI_STEREO_REGISTRY_VALUE_NOT_SUPPORTED          This value is not supported.
+//! \retval ::NVAPI_STEREO_REGISTRY_ACCESS_FAILED                Access to registry failed.
+//! \retval ::NVAPI_API_NOT_INTIALIZED                           NVAPI is not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED                       Stereo part of NVAPI is not initialized.
+//! \retval ::NVAPI_ERROR                                        Something is wrong (generic error).
+//
+///////////////////////////////////////////////////////////////////////////////
+
+
+//! \ingroup stereoapi
+//! Used in NvAPI_Stereo_SetConfigurationProfileValue()
+typedef enum _NV_StereoRegistryID
+{
+    NVAPI_CONVERGENCE_ID,         //!< Symbolic constant for convergence registry ID.
+    NVAPI_FRUSTUM_ADJUST_MODE_ID, //!< Symbolic constant for frustum adjust mode registry ID.
+} NV_STEREO_REGISTRY_ID;
+
+
+//! \ingroup stereoapi
+NVAPI_INTERFACE NvAPI_Stereo_SetConfigurationProfileValue(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType, NV_STEREO_REGISTRY_ID valueRegistryID, void *pValue);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_DeleteConfigurationProfileValue
+//
+//! DESCRIPTION:   This API removes the given value from the application's configuration profile registry key.
+//!                If there is no such value, the function does nothing and does not report an error.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     registryProfileType   The type of profile the application wants to access. It should be one of the 
+//!                                       symbolic constants defined in ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value will 
+//!                                       cause function to do nothing and return ::NV_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED.
+//! \param [in]     valueRegistryID       ID of the value that is being deleted. It should be one of the symbolic constants defined in
+//!                                       ::NV_STEREO_REGISTRY_PROFILE_TYPE. Any other value will cause function to do nothing and return
+//!                                       ::NVAPI_STEREO_REGISTRY_VALUE_NOT_SUPPORTED.
+//!
+//! \retval ::NVAPI_OK                                           Value does not exist in registry any more.
+//! \retval ::NVAPI_STEREO_REGISTRY_PROFILE_TYPE_NOT_SUPPORTED   This profile type is not supported.
+//! \retval ::NVAPI_STEREO_REGISTRY_VALUE_NOT_SUPPORTED          This value is not supported.
+//! \retval ::NVAPI_STEREO_REGISTRY_ACCESS_FAILED                Access to registry failed.
 //! \retval ::NVAPI_API_NOT_INTIALIZED 
-//! \retval ::NVAPI_ID_OUT_OF_RANGE    The DisplayId corresponds to a 
-//!                                    display which is not within the
-//!                                    normal outputId range.
-//! \retval ::NVAPI_ERROR   
-//! \retval ::NVAPI_INVALID_ARGUMENT 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED                       Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
 //!
-//! \ingroup sysgeneral
+//! \ingroup stereoapi
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_SYS_GetGpuAndOutputIdFromDisplayId(NvU32 displayId, NvPhysicalGpuHandle *hPhysicalGpu, NvU32 *outputId);
+NVAPI_INTERFACE NvAPI_Stereo_DeleteConfigurationProfileValue(NV_STEREO_REGISTRY_PROFILE_TYPE registryProfileType, NV_STEREO_REGISTRY_ID valueRegistryID);
 
-
-//! SUPPORTED OS:  Windows XP and higher
-//!
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME:   NvAPI_DISP_GetDisplayIdByDisplayName
+// FUNCTION NAME: NvAPI_Stereo_Enable
 //
-//! DESCRIPTION:     This API retrieves the Display Id of a given display by
-//!                  display name. The display must be active to retrieve the
-//!                  displayId. In the case of clone mode or Surround gaming,
-//!                  the primary or top-left display will be returned.
-//!
-//! \param [in]     displayName  Name of display (Eg: "\\DISPLAY1" to
-//!                              retrieve the displayId for.
-//! \param [out]    displayId    Display ID of the requested display.
-//!
-//! retval ::NVAPI_OK:                          Capabilties have been returned.
-//! retval ::NVAPI_INVALID_ARGUMENT:            One or more args passed in are invalid.
-//! retval ::NVAPI_API_NOT_INTIALIZED:          The NvAPI API needs to be initialized first
-//! retval ::NVAPI_NO_IMPLEMENTATION:           This entrypoint not available
-//! retval ::NVAPI_ERROR:                       Miscellaneous error occurred
-//!
-//! \ingroup dispcontrol
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_DISP_GetDisplayIdByDisplayName(const char *displayName, NvU32* displayId);
-
-
-
-//! SUPPORTED OS:  Windows XP and higher
-//!
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME:   NvAPI_DISP_GetGDIPrimaryDisplayId
-//
-//! DESCRIPTION:     This API returns the Display ID of the GDI Primary.
-//!
-//! \param [out]     displayId   Display ID of the GDI Primary display.
-//!
-//! \retval ::NVAPI_OK:                          Capabilties have been returned.
-//! \retval ::NVAPI_NVIDIA_DEVICE_NOT_FOUND:     GDI Primary not on an NVIDIA GPU.
-//! \retval ::NVAPI_INVALID_ARGUMENT:            One or more args passed in are invalid.
-//! \retval ::NVAPI_API_NOT_INTIALIZED:          The NvAPI API needs to be initialized first
-//! \retval ::NVAPI_NO_IMPLEMENTATION:           This entrypoint not available
-//! \retval ::NVAPI_ERROR:                       Miscellaneous error occurred
-//!
-//! \ingroup dispcontrol
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_DISP_GetGDIPrimaryDisplayId(NvU32* displayId);
-
-
-///////////////////////////////////////////////////////////////////////////////
-// SetDisplayConfig/GetDisplayConfig
-///////////////////////////////////////////////////////////////////////////////
-
-
-//! \ingroup dispcontrol
-typedef struct _NV_POSITION
-{
-    NvS32   x;
-    NvS32   y;
-} NV_POSITION;
-
-//! \ingroup dispcontrol
-typedef struct _NV_RESOLUTION
-{
-    NvU32   width;
-    NvU32   height;
-    NvU32   colorDepth;
-} NV_RESOLUTION;
-
-//! \ingroup dispcontrol
-typedef struct _NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_V1
-{
-    NvU32                   version;
-
-    // Rotation and Scaling
-    NV_ROTATE               rotation;       //!< (IN) rotation setting.
-    NV_SCALING              scaling;        //!< (IN) scaling setting.
-
-    // Refresh Rate
-    NvU32                   refreshRate1K;  //!< (IN) Non-interlaced Refresh Rate of the mode, multiplied by 1000, 0 = ignored
-                                            //!< This is the value which driver reports to the OS.
-    // Flags
-    NvU32                   interlaced:1;   //!< (IN) Interlaced mode flag, ignored if refreshRate == 0
-    NvU32                   primary:1;      //!< (IN) Declares primary display in clone configuration. This is *NOT* GDI Primary.
-                                            //!< Only one target can be primary per source. If no primary is specified, the first 
-                                            //!< target will automatically be primary.
-#ifdef NV_PAN_AND_SCAN_DEFINED 
-    NvU32                   isPanAndScanTarget:1; //!< Whether on this target Pan and Scan is enabled or has to be enabled. Valid only 
-	                                              //!< when the target is part of clone topology.
-    NvU32                   reserved:29;  
-#else
-    NvU32                   reserved:30;  
-#endif
-    // TV format information
-    NV_GPU_CONNECTOR_TYPE   connector;      //!< Specify connector type. For TV only, ignored if tvFormat == NV_DISPLAY_TV_FORMAT_NONE
-    NV_DISPLAY_TV_FORMAT    tvFormat;       //!< (IN) to choose the last TV format set this value to NV_DISPLAY_TV_FORMAT_NONE
-
-    // Backend (raster) timing standard
-    NV_TIMING_OVERRIDE      timingOverride;     //!< Ignored if timingOverride == NV_TIMING_OVERRIDE_CURRENT
-    NV_TIMING               timing;             //!< Scan out timing, valid only if timingOverride == NV_TIMING_OVERRIDE_CUST
-                                                //!< The value NV_TIMING::NV_TIMINGEXT::rrx1k is obtained from the EDID. The driver may 
-                                                //!< tweak this value for HDTV, stereo, etc., before reporting it to the OS. 
-} NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_V1;
-
-//! \ingroup dispcontrol
-typedef NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_V1 NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO;
-
-//! \ingroup dispcontrol
-#define NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_VER1     MAKE_NVAPI_VERSION(NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_V1,1)
-
-//! \ingroup dispcontrol
-#define NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_VER      NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO_VER1
-
-//! \ingroup dispcontrol
-typedef struct _NV_DISPLAYCONFIG_PATH_TARGET_INFO_V1
-{
-    NvU32                                           displayId;  //!< Display ID
-    NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO*     details;    //!< May be NULL if no advanced settings are required. NULL for Non-NVIDIA Display.
-} NV_DISPLAYCONFIG_PATH_TARGET_INFO_V1;
-
-//! \ingroup dispcontrol
-typedef struct _NV_DISPLAYCONFIG_PATH_TARGET_INFO_V2
-{
-    NvU32                                           displayId;  //!< Display ID
-    NV_DISPLAYCONFIG_PATH_ADVANCED_TARGET_INFO*     details;    //!< May be NULL if no advanced settings are required
-    NvU32                                           targetId;   //!< Windows CCD target ID. Must be present only for non-NVIDIA adapter, for NVIDIA adapter this parameter is ignored.
-} NV_DISPLAYCONFIG_PATH_TARGET_INFO_V2;
-
-
-//! \ingroup dispcontrol
-//! As version is not defined for this structure we will be using version of NV_DISPLAYCONFIG_PATH_INFO
-typedef NV_DISPLAYCONFIG_PATH_TARGET_INFO_V2 NV_DISPLAYCONFIG_PATH_TARGET_INFO; 
-
-
-//! \ingroup dispcontrol
-typedef enum _NV_DISPLAYCONFIG_SPANNING_ORIENTATION
-{
-    NV_DISPLAYCONFIG_SPAN_NONE          = 0,
-    NV_DISPLAYCONFIG_SPAN_HORIZONTAL    = 1,
-    NV_DISPLAYCONFIG_SPAN_VERTICAL      = 2,
-} NV_DISPLAYCONFIG_SPANNING_ORIENTATION;
-
-//! \ingroup dispcontrol
-typedef struct _NV_DISPLAYCONFIG_SOURCE_MODE_INFO_V1
-{
-    NV_RESOLUTION                           resolution;
-    NV_FORMAT                               colorFormat;                //!< Ignored at present, must be NV_FORMAT_UNKNOWN (0)
-    NV_POSITION                             position;                   //!< Is all positions are 0 or invalid, displays will be automatically
-                                                                        //!< positioned from left to right with GDI Primary at 0,0, and all
-                                                                        //!< other displays in the order of the path array.
-    NV_DISPLAYCONFIG_SPANNING_ORIENTATION   spanningOrientation;        //!< Spanning is only supported on XP
-    NvU32                                   bGDIPrimary : 1;
-    NvU32                                   bSLIFocus : 1;
-    NvU32                                   reserved : 30;              //!< Must be 0
-} NV_DISPLAYCONFIG_SOURCE_MODE_INFO_V1;
-
-//! \ingroup dispcontrol
-//! As version is not defined for this structure we will be using version of NV_DISPLAYCONFIG_PATH_INFO
-typedef NV_DISPLAYCONFIG_SOURCE_MODE_INFO_V1 NV_DISPLAYCONFIG_SOURCE_MODE_INFO; 
-
-//! \ingroup dispcontrol
-typedef struct _NV_DISPLAYCONFIG_PATH_INFO_V1
-{
-    NvU32                                   version;
-    NvU32                                   reserved_sourceId;     //!< This field is reserved. There is ongoing debate if we need this field.
-                                                                        //!< Identifies sourceIds used by Windows. If all sourceIds are 0, 
-                                                                        //!< these will be computed automatically.
-    NvU32                                   targetInfoCount;            //!< Number of elements in targetInfo array
-    NV_DISPLAYCONFIG_PATH_TARGET_INFO_V1*   targetInfo;
-    NV_DISPLAYCONFIG_SOURCE_MODE_INFO*      sourceModeInfo;             //!< May be NULL if mode info is not important
-} NV_DISPLAYCONFIG_PATH_INFO_V1;
-
-//! \ingroup dispcontrol
-//! This define is temporary and must be removed once DVS failure is fixed.
-#define _NV_DISPLAYCONFIG_PATH_INFO_V2 _NV_DISPLAYCONFIG_PATH_INFO
-
-//! \ingroup dispcontrol
-typedef struct _NV_DISPLAYCONFIG_PATH_INFO_V2
-{
-    NvU32                                   version;
-    union {
-        NvU32                                   sourceId;            //!< Identifies sourceId used by Windows CCD. This can be optionally set.
-        NvU32                                   reserved_sourceId;      //!< Only for compatibility
-    };
-
-    NvU32                                   targetInfoCount;            //!< Number of elements in targetInfo array
-    NV_DISPLAYCONFIG_PATH_TARGET_INFO*      targetInfo;
-    NV_DISPLAYCONFIG_SOURCE_MODE_INFO*      sourceModeInfo;             //!< May be NULL if mode info is not important
-    NvU32                                   IsNonNVIDIAAdapter : 1;     //!< True for non-NVIDIA adapter.
-    NvU32                                   reserved : 31;              //!< Must be 0
-    void                                    *pOSAdapterID;              //!< Used by Non-NVIDIA adapter for pointer to OS Adapter of LUID 
-                                                                        //!< type, type casted to void *.
-} NV_DISPLAYCONFIG_PATH_INFO_V2;
-
-//! \ingroup dispcontrol
-typedef NV_DISPLAYCONFIG_PATH_INFO_V2 NV_DISPLAYCONFIG_PATH_INFO;
-
-//! \ingroup dispcontrol
-#define NV_DISPLAYCONFIG_PATH_INFO_VER1                 MAKE_NVAPI_VERSION(NV_DISPLAYCONFIG_PATH_INFO_V1,1)
-
-//! \ingroup dispcontrol
-#define NV_DISPLAYCONFIG_PATH_INFO_VER2                 MAKE_NVAPI_VERSION(NV_DISPLAYCONFIG_PATH_INFO_V2,2)
-
-//! \ingroup dispcontrol
-#define NV_DISPLAYCONFIG_PATH_INFO_VER                  NV_DISPLAYCONFIG_PATH_INFO_VER2
-
-//! \ingroup dispcontrol
-typedef enum _NV_DISPLAYCONFIG_FLAGS
-{
-    NV_DISPLAYCONFIG_VALIDATE_ONLY          = 0x00000001,
-    NV_DISPLAYCONFIG_SAVE_TO_PERSISTENCE    = 0x00000002, 
-    NV_DISPLAYCONFIG_DRIVER_RELOAD_ALLOWED  = 0x00000004,               //!< Driver reload is permitted if necessary
-    NV_DISPLAYCONFIG_FORCE_MODE_ENUMERATION = 0x00000008,               //!< Refresh OS mode list.
-} NV_DISPLAYCONFIG_FLAGS;
-
-
-///////////////////////////////////////////////////////////////////////////////
-// FUNCTION NAME:   NvAPI_DISP_GetDisplayConfig
-//
-//! DESCRIPTION:     This API lets caller retrieve the current global display
-//!                  configuration.  \n
-//!       USAGE:     The caller might have to call this three times to fetch all the required configuration details as follows: \n 
-//!                  First  Pass: Caller should Call NvAPI_DISP_GetDisplayConfig() with pathInfo set to NULL to fetch pathInfoCount. \n
-//!                  Second Pass: Allocate memory for pathInfo with respect to the number of pathInfoCount(from First Pass) to fetch //!   //!                               targetInfoCount. If sourceModeInfo is needed allocate memory or it can be initialized to NULL. \n
-//!             Third  Pass(Optional, only required if target information is required): Allocate memory for targetInfo with respect 
-//!                               to number of targetInfoCount(from Second Pass).               
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//!
-//! \param [in,out]  pathInfoCount    Number of elements in pathInfo array, returns number of valid topologies, this cannot be null.
-//! \param [in,out]  pathInfo         Array of path information
-//!
-//! \return    This API can return any of the error codes enumerated in #NvAPI_Status. If there are return error codes with 
-//!            specific meaning for this API, they are listed below.
-//!
-//! \retval    NVAPI_INVALID_ARGUMENT  -   Invalid input parameter. Following can be the reason for this return value:
-//!                                        -# pathInfoCount is NULL.
-//!                                        -# *pathInfoCount is 0 and pathInfo is not NULL.
-//!                                        -# *pathInfoCount is not 0 and pathInfo is NULL.
-//!
-//! \ingroup dispcontrol
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_DISP_GetDisplayConfig(__inout NvU32 *pathInfoCount, __out_ecount_full_opt(*pathInfoCount) NV_DISPLAYCONFIG_PATH_INFO *pathInfo);
-
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-// FUNCTION NAME:   NvAPI_DISP_SetDisplayConfig
-//
-//
-//! DESCRIPTION:     This API lets caller apply a global display configuration
-//!                  across multiple GPUs.
-//!
-//!                  If all sourceIds are zero, then NvAPI will pick up sourceId's based on the following criteria :
-//!                  - If user provides sourceModeInfo then we are trying to assign 0th sourceId always to GDIPrimary. 
-//!                     This is needed since active windows always moves along with 0th sourceId.
-//!                  - For the rest of paths we are incremementally assigning the sourceId per adapter basis.
-//!                  - If user doesn't provide sourceModeInfo then NVAPI just picks up some default sourceId's in incremental order. \p
-//!                  Note : NVAPI will not intelligently choose the sourceIDs for any configs that does not need a modeset.
+//! DESCRIPTION:   This APU enables stereo mode in the registry.
+//!                Calls to this function affect the entire system.
+//!                If stereo is not enabled, then calls to functions that require that stereo is enabled have no effect,
+//!                and will return the appropriate error code.
 //!
 //! SUPPORTED OS:  Windows Vista and higher
 //!
 //!
-//! \param [in]      pathInfoCount   Number of supplied elements in pathInfo
-//! \param [in]      pathInfo        Array of path information
-//! \param [in]      flags           Flags for applying settings
-//! 
-//! \retval ::NVAPI_OK - completed request
-//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized
-//! \retval ::NVAPI_ERROR - miscellaneous error occurred
-//! \retval ::NVAPI_INVALID_ARGUMENT - Invalid input parameter.
+//! \since Release: 180
 //!
-//! \ingroup dispcontrol
+//! \retval ::NVAPI_OK                      Stereo is now enabled.
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED  Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_DISP_SetDisplayConfig(__in NvU32 pathInfoCount, __in_ecount(pathInfoCount) NV_DISPLAYCONFIG_PATH_INFO* pathInfo, __in NvU32 flags);
-
-
+NVAPI_INTERFACE NvAPI_Stereo_Enable(void);
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME:   NvAPI_GPU_GetECCStatusInfo
+// FUNCTION NAME: NvAPI_Stereo_Disable
 //
-//! \fn NvAPI_GPU_GetECCStatusInfo(NvPhysicalGpuHandle hPhysicalGpu, 
-//!                                           NV_GPU_ECC_STATUS_INFO *pECCStatusInfo);
-//! DESCRIPTION:     This function returns ECC memory status information.
+//! DESCRIPTION:   This API disables stereo mode in the registry.
+//!                Calls to this function affect the entire system.
+//!                If stereo is not enabled, then calls to functions that require that stereo is enabled have no effect,
+//!                and will return the appropriate error code.
 //!
-//! SUPPORTED OS:  Windows XP and higher
+//! SUPPORTED OS:  Windows Vista and higher
 //!
 //!
-//! \param [in]      hPhysicalGpu      A handle identifying the physical GPU for which ECC 
-//!                                    status information is to be retrieved.
-//! \param [out]     pECCStatusInfo    A pointer to an ECC status structure.
-//! 
-//! \retval ::NVAPI_OK                  The request was completed successfully.
-//! \retval ::NVAPI_ERROR               An unknown error occurred.
-//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE The provided GPU handle is not a physical GPU handle.
-//! \retval ::NVAPI_INVALID_HANDLE      The provided GPU handle is invalid.
-//! \retval ::NVAPI_HANDLE_INVALIDATED  The provided GPU handle is no longer valid.
-//! \retval ::NVAPI_INVALID_POINTER     An invalid argument pointer was provided.
-//! \retval ::NVAPI_NOT_SUPPORTED       The request is not supported.
-//! \retval ::NVAPI_API_NOT_INTIALIZED  NvAPI was not yet initialized.
-//
+//! \since Release: 180
+//!
+//! \retval ::NVAPI_OK                     Stereo is now disabled.
+//! \retval ::NVAPI_API_NOT_INTIALIZED  
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi 
 ///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_Disable(void);
 
-//! \addtogroup gpuecc
-//! Used in NV_GPU_ECC_STATUS_INFO.
-typedef enum _NV_ECC_CONFIGURATION
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_IsEnabled
+//
+//! DESCRIPTION:   This API checks if stereo mode is enabled in the registry.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [out]     pIsStereoEnabled   Address where the result of the inquiry will be placed.
+//!
+//! \retval ::NVAPI_OK                       Check was sucessfully completed and result reflects current state of stereo availability.
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED   Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_IsEnabled(NvU8 *pIsStereoEnabled);
+
+
+
+
+//! \addtogroup stereoapi
+//! @{
+
+typedef struct _NVAPI_STEREO_CAPS
 {
-    NV_ECC_CONFIGURATION_NOT_SUPPORTED = 0,
-    NV_ECC_CONFIGURATION_DEFERRED,           //!< Changes require a POST to take effect
-    NV_ECC_CONFIGURATION_IMMEDIATE,          //!< Changes can optionally be made to take effect immediately
-} NV_ECC_CONFIGURATION;
+    NvU32 version;
+    NvU32 supportsWindowedModeOff        : 1;
+    NvU32 supportsWindowedModeAutomatic  : 1;
+    NvU32 supportsWindowedModePersistent : 1;
+    NvU32 reserved                       : 29;  // must be 0
+    NvU32 reserved2[3];                         // must be 0
+} NVAPI_STEREO_CAPS_V1;
 
-//! \ingroup gpuecc
-//! Used in NvAPI_GPU_GetECCStatusInfo().
-typedef struct
+#define NVAPI_STEREO_CAPS_VER1  MAKE_NVAPI_VERSION(NVAPI_STEREO_CAPS,1)
+#define NVAPI_STEREO_CAPS_VER   NVAPI_STEREO_CAPS_VER1
+
+typedef NVAPI_STEREO_CAPS_V1    NVAPI_STEREO_CAPS;
+
+//! @}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_GetStereoSupport
+//
+//! DESCRIPTION:  This API checks what kind of stereo support is currently supported on a particular display.
+//!               If the the display is prohibited from showing stereo (e.g. secondary in a multi-mon setup), we will 
+//!               return 0 for all stereo modes (full screen exclusive, automatic windowed, persistent windowed).
+//!               Otherwise, we will check which stereo mode is supported. On 120Hz display, this will be what
+//!               the user chooses in control panel. On HDMI 1.4 display, persistent windowed mode is always assumed to be
+//!               supported. Note that this function does not check if the CURRENT RESOLUTION/REFRESH RATE can support
+//!               stereo. For HDMI 1.4, it is the app's responsibility to change the resolution/refresh rate to one that is
+//!               3D compatible. For 120Hz, the driver will ALWAYS force 120Hz anyway.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 304
+//!
+//! \param [in]     hMonitor handle to monitor that app is going to run on
+//! \param [out]    pCaps    Address where the result of the inquiry will be placed.
+//!                          *pCaps is defined in NVAPI_STEREO_CAPS.
+//! \return       This API can return any of the following error codes enumerated in #NvAPI_Status
+//! \retval ::NVAPI_OK
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_GetStereoSupport(__in NvMonitorHandle hMonitor, __out NVAPI_STEREO_CAPS *pCaps);
+
+
+#if defined(_D3D9_H_) || defined(__d3d10_h__) || defined(__d3d11_h__)
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_CreateHandleFromIUnknown
+//
+//! DESCRIPTION:   This API creates a stereo handle that is used in subsequent calls related to a given device interface.
+//!                This must be called before any other NvAPI_Stereo_ function for that handle.
+//!                Multiple devices can be used at one time using multiple calls to this function (one per each device). 
+//!
+//! HOW TO USE:    After the Direct3D device is created, create the stereo handle.
+//!                On call success:
+//!                -# Use all other NvAPI_Stereo_ functions that have stereo handle as first parameter.
+//!                -# After the device interface that corresponds to the the stereo handle is destroyed,
+//!                the application should call NvAPI_DestroyStereoHandle() for that stereo handle. 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     pDevice        Pointer to IUnknown interface that is IDirect3DDevice9* in DX9, ID3D10Device*.
+//! \param [out]    pStereoHandle  Pointer to the newly created stereo handle.
+//!
+//! \retval ::NVAPI_OK                       Stereo handle is created for given device interface.
+//! \retval ::NVAPI_INVALID_ARGUMENT         Provided device interface is invalid.
+//! \retval ::NVAPI_API_NOT_INTIALIZED  
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED   Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_CreateHandleFromIUnknown(IUnknown *pDevice, StereoHandle *pStereoHandle);
+
+#endif // defined(_D3D9_H_) || defined(__d3d10_h__)
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_DestroyHandle
+//
+//! DESCRIPTION:   This API destroys the stereo handle created with one of the NvAPI_Stereo_CreateHandleFrom() functions.
+//!                This should be called after the device corresponding to the handle has been destroyed.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle  Stereo handle that is to be destroyed.
+//!
+//! \retval ::NVAPI_OK                      Stereo handle is destroyed.
+//! \retval ::NVAPI_API_NOT_INTIALIZED      
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED  Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR                   
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_DestroyHandle(StereoHandle stereoHandle);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_Activate
+//
+//! DESCRIPTION:   This API activates stereo for the device interface corresponding to the given stereo handle.
+//!                Activating stereo is possible only if stereo was enabled previously in the registry.
+//!                If stereo is not activated, then calls to functions that require that stereo is activated have no effect,
+//!                and will return the appropriate error code. 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]    stereoHandle  Stereo handle corresponding to the device interface.
+//!
+//! \retval ::NVAPI_OK                                Stereo is turned on.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE   Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED            Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_Activate(StereoHandle stereoHandle);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_Deactivate
+//
+//! DESCRIPTION:   This API deactivates stereo for the given device interface.
+//!                If stereo is not activated, then calls to functions that require that stereo is activated have no effect,
+//!                and will return the appropriate error code. 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle  Stereo handle that corresponds to the device interface.
+//!
+//! \retval ::NVAPI_OK                               Stereo is turned off.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_Deactivate(StereoHandle stereoHandle);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_IsActivated
+//
+//! DESCRIPTION:   This API checks if stereo is activated for the given device interface. 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]    stereoHandle  Stereo handle that corresponds to the device interface.
+//! \param [in]    pIsStereoOn   Address where result of the inquiry will be placed.
+//! 
+//! \retval ::NVAPI_OK - Check was sucessfully completed and result reflects current state of stereo (on/off).
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE - Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR - Something is wrong (generic error).
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_IsActivated(StereoHandle stereoHandle, NvU8 *pIsStereoOn);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_GetSeparation
+//
+//! DESCRIPTION:   This API gets current separation value (in percents). 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle           Stereo handle that corresponds to the device interface.
+//! \param [out]    pSeparationPercentage  Address of @c float type variable to store current separation percentage in.
+//!
+//! \retval ::NVAPI_OK                                Retrieval of separation percentage was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE   Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED  
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED            Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR  
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_GetSeparation(StereoHandle stereoHandle, float *pSeparationPercentage);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_SetSeparation
+//
+//! DESCRIPTION:   This API sets separation to given percentage. 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle             Stereo handle that corresponds to the device interface.
+//! \param [in]     newSeparationPercentage  New value for separation percentage.
+//!
+//! \retval ::NVAPI_OK                               Setting of separation percentage was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED               NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_PARAMETER_OUT_OF_RANGE    Given separation percentage is out of [0..100] range.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_SetSeparation(StereoHandle stereoHandle, float newSeparationPercentage);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_DecreaseSeparation
+//
+//! DESCRIPTION:   This API decreases separation for the given device interface (just like the Ctrl+F3 hotkey). 
+//!
+//! WHEN TO USE:   After the stereo handle for device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]   stereoHandle  Stereo handle that corresponds to the device interface.
+//!
+//! \retval ::NVAPI_OK - Decrease of separation percentage was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE - Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR - Something is wrong (generic error).
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_DecreaseSeparation(StereoHandle stereoHandle);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_IncreaseSeparation
+//
+//! DESCRIPTION:   This API increases separation for the given device interface (just like the Ctrl+F4 hotkey).
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]    stereoHandle  Stereo handle that corresponds to the device interface.
+//!
+//! \retval ::NVAPI_OK                               Increase of separation percentage was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED               NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR                            Something is wrong (generic error).
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_IncreaseSeparation(StereoHandle stereoHandle);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_GetConvergence
+//
+//! DESCRIPTION:   This API gets the current convergence value.
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle   Stereo handle that corresponds to the device interface.
+//! \param [out]    pConvergence   Address of @c float type variable to store current convergence value in.
+//!
+//! \retval ::NVAPI_OK                               Retrieval of convergence value was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED  
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_GetConvergence(StereoHandle stereoHandle, float *pConvergence);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_SetConvergence
+//
+//! DESCRIPTION:   This API sets convergence to the given value.
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle              Stereo handle that corresponds to the device interface.
+//! \param [in]     newConvergence            New value for convergence.
+//! 
+//! \retval ::NVAPI_OK                                Setting of convergence value was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE   Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED  
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED            Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_SetConvergence(StereoHandle stereoHandle, float newConvergence);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_DecreaseConvergence
+//
+//! DESCRIPTION:   This API decreases convergence for the given device interface (just like the Ctrl+F5 hotkey). 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle  Stereo handle that corresponds to the device interface.
+//!
+//! \retval ::NVAPI_OK - Decrease of convergence was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE - Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR - Something is wrong (generic error).
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_DecreaseConvergence(StereoHandle stereoHandle);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_IncreaseConvergence
+//
+//! DESCRIPTION:   This API increases convergence for given the device interface (just like the Ctrl+F5 hotkey). 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]    stereoHandle  Stereo handle that corresponds to the device interface.
+//!
+//! \retval ::NVAPI_OK                               Increase of convergence was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_IncreaseConvergence(StereoHandle stereoHandle);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_GetFrustumAdjustMode
+//
+//! \fn NvAPI_Stereo_GetFrustumAdjustMode(StereoHandle stereoHandle, NV_FRUSTUM_ADJUST_MODE *pFrustumAdjustMode)
+//! DESCRIPTION:   This API gets the current frustum adjust mode value. 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle         Stereo handle that corresponds to the device interface.
+//! \param [out]    pFrustumAdjustMode   Address of the NV_FRUSTUM_ADJUST_MODE type variable to store current frustum value in.
+//!
+//! \retval ::NVAPI_OK - Retrieval of frustum adjust mode was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE - Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR - Something is wrong (generic error).
+//!
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup stereoapi
+//! Used in NvAPI_Stereo_GetFrustumAdjustMode().
+typedef enum _NV_FrustumAdjustMode
 {
-    NvU32                 version;               //!< Structure version
-    NvU32                 isSupported : 1;       //!< ECC memory feature support
-    NV_ECC_CONFIGURATION  configurationOptions;  //!< Supported ECC memory feature configuration options
-    NvU32                 isEnabled : 1;         //!< Active ECC memory setting
-} NV_GPU_ECC_STATUS_INFO;
+    NVAPI_NO_FRUSTUM_ADJUST,    //!< Do not adjust frustum.
+    NVAPI_FRUSTUM_STRETCH,      //!< Stretch images in X.
+    NVAPI_FRUSTUM_CLEAR_EDGES   //!< Clear corresponding edges for each eye.
+} NV_FRUSTUM_ADJUST_MODE;
 
-//! \ingroup gpuecc
-//! Macro for constructing the version field of NV_GPU_ECC_STATUS_INFO
-#define NV_GPU_ECC_STATUS_INFO_VER MAKE_NVAPI_VERSION(NV_GPU_ECC_STATUS_INFO,1)
+//! \ingroup stereoapi
+NVAPI_INTERFACE NvAPI_Stereo_GetFrustumAdjustMode(StereoHandle stereoHandle, NV_FRUSTUM_ADJUST_MODE *pFrustumAdjustMode);
 
-//! \ingroup gpuecc
-NVAPI_INTERFACE NvAPI_GPU_GetECCStatusInfo(NvPhysicalGpuHandle hPhysicalGpu, 
-                                           NV_GPU_ECC_STATUS_INFO *pECCStatusInfo);
+
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME:   NvAPI_GPU_GetECCErrorInfo
+// FUNCTION NAME: NvAPI_Stereo_SetFrustumAdjustMode
 //
-//! \fn NvAPI_GPU_GetECCErrorInfo(NvPhysicalGpuHandle hPhysicalGpu, 
-//!                                          NV_GPU_ECC_ERROR_INFO *pECCErrorInfo);
+//! DESCRIPTION:   This API sets the current frustum adjust mode value. 
 //!
-//! DESCRIPTION:     This function returns ECC memory error information.
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
 //!
-//! SUPPORTED OS:  Windows XP and higher
+//! SUPPORTED OS:  Windows Vista and higher
 //!
 //!
-//! \param [in]      hPhysicalGpu  A handle identifying the physical GPU for
-//!                                which ECC error information is to be
-//!                                retrieved.
-//! \param [out]     pECCErrorInfo A pointer to an ECC error structure.
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle                Stereo handle that corresponds to the device interface.
+//! \param [in]     newFrustumAdjustModeValue   New value for frustum adjust mode. It should be one of the symbolic constants defined in
+//!                                             ::NV_FRUSTUM_ADJUST_MODE. Any other value will cause function to do nothing and return
+//!                                             ::NVAPI_STEREO_FRUSTUM_ADJUST_MODE_NOT_SUPPORTED.
+//!
+//! \retval ::NVAPI_OK                                         Retrieval of frustum adjust mode was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE            Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED                     Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_FRUSTUM_ADJUST_MODE_NOT_SUPPORTED   Given frustum adjust mode is not supported.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_SetFrustumAdjustMode(StereoHandle stereoHandle, NV_FRUSTUM_ADJUST_MODE newFrustumAdjustModeValue);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_CaptureJpegImage
+//
+//! DESCRIPTION:   This API captures the current stereo image in JPEG stereo format with the given quality.
+//!                Only the last capture call per flip will be effective. 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle  Stereo handle that corresponds to the device interface.
+//! \param [in]     quality        Quality of the JPEG image to be captured. Integer value betweeen 0 and 100.
 //! 
-//! \retval ::NVAPI_OK  The request was completed successfully.
-//! \retval ::NVAPI_ERROR  An unknown error occurred.
-//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  The provided GPU handle is not a physical GPU handle.
-//! \retval ::NVAPI_INVALID_ARGUMENT  incorrect param value
-//! \retval ::NVAPI_INVALID_POINTER  An invalid argument pointer was provided.
-//! \retval ::NVAPI_INCOMPATIBLE_STRUCT_VERSION  structure version is not supported, initialize to NV_GPU_ECC_ERROR_INFO_VER.
-//! \retval ::NVAPI_HANDLE_INVALIDATED  The provided GPU handle is no longer valid.
-//! \retval ::NVAPI_NOT_SUPPORTED  The request is not supported.
-//! \retval ::NVAPI_API_NOT_INTIALIZED  NvAPI was not yet initialized.
+//! \retval ::NVAPI_OK                              Image captured.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED 
+//! \retval ::NVAPI_STEREO_PARAMETER_OUT_OF_RANGE   Given quality is out of [0..100] range.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_CaptureJpegImage(StereoHandle stereoHandle, NvU32 quality);
+
+///////////////////////////////////////////////////////////////////////////////
 //
+// FUNCTION NAME: NvAPI_Stereo_InitActivation
+//
+//! DESCRIPTION:   This API allows an application to enable stereo viewing, without the need of a GUID/Key pair
+//!				   This API cannot be used to enable stereo viewing on 3DTV.
+//!
+//! HOW TO USE:    Call this function immediately after device creation, then follow with a reset. \n 
+//!                Very generically:
+//!                Create Device->Create Stereo Handle->InitActivation->Reset Device
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//! \since Release: 302
+//!
+//! \param [in]   stereoHandle            Stereo handle corresponding to the device interface.
+//! \param [in]   bDelayed				  Use delayed activation
+//!
+//! \return This API can return any of the error codes enumerated in #NvAPI_Status. 
+//!         If there are return error codes with specific meaning for this API, 
+//!         they are listed below.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
+//!
+//! \ingroup stereoapi
 ///////////////////////////////////////////////////////////////////////////////
 
+//! \addtogroup stereoapi
+//! @{
 
-//! \ingroup gpuecc
-//! Used in NvAPI_GPU_GetECCErrorInfo()/
-typedef struct
+//! InitActivation Flags
+typedef enum _NVAPI_STEREO_INIT_ACTIVATION_FLAGS
 {
-    NvU32   version;             //!< Structure version
-    struct {
-        NvU64  singleBitErrors;  //!< Number of single-bit ECC errors detected since last boot
-        NvU64  doubleBitErrors;  //!< Number of double-bit ECC errors detected since last boot
-    } current;
-    struct {
-        NvU64  singleBitErrors;  //!< Number of single-bit ECC errors detected since last counter reset
-        NvU64  doubleBitErrors;  //!< Number of double-bit ECC errors detected since last counter reset
-    } aggregate;
-} NV_GPU_ECC_ERROR_INFO;
+	NVAPI_STEREO_INIT_ACTIVATION_IMMEDIATE = 0X00,
+    NVAPI_STEREO_INIT_ACTIVATION_DELAYED = 0x01,
+} NVAPI_STEREO_INIT_ACTIVATION_FLAGS;
 
-//! \ingroup gpuecc
-//! Macro for constructing the version field of NV_GPU_ECC_ERROR_INFO
-#define NV_GPU_ECC_ERROR_INFO_VER MAKE_NVAPI_VERSION(NV_GPU_ECC_ERROR_INFO,1)
+NVAPI_INTERFACE NvAPI_Stereo_InitActivation(__in StereoHandle hStereoHandle, __in NVAPI_STEREO_INIT_ACTIVATION_FLAGS flags);
 
-//! \ingroup gpuecc
-NVAPI_INTERFACE NvAPI_GPU_GetECCErrorInfo(NvPhysicalGpuHandle hPhysicalGpu, 
-                                          NV_GPU_ECC_ERROR_INFO *pECCErrorInfo);
+//! @}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_Trigger_Activation
+//
+//! DESCRIPTION:   This API allows an application to trigger creation of a stereo desktop, 
+//!				   in case the creation was stopped on application launch. 
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//! \since Release: 302
+//!
+//! \param [in]   stereoHandle   Stereo handle that corresponds to the device interface.
+//!
+//! \return This API can return any of the error codes enumerated in #NvAPI_Status. 
+//!         If there are return error codes with specific meaning for this API, 
+//!         they are listed below.
+//! \retval ::NVAPI_STEREO_INIT_ACTIVATION_NOT_DONE - Stereo InitActivation not called.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_Trigger_Activation(__in StereoHandle hStereoHandle);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_CapturePngImage
+//
+//! DESCRIPTION:   This API captures the current stereo image in PNG stereo format.
+//!                Only the last capture call per flip will be effective. 
+//!
+//! WHEN TO USE:   After the stereo handle for the device interface is created via successfull call to the appropriate NvAPI_Stereo_CreateHandleFrom() function.
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \since Release: 180
+//!
+//! \param [in]     stereoHandle  Stereo handle corresponding to the device interface.
+//!
+//! \retval ::NVAPI_OK                               Image captured.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_CapturePngImage(StereoHandle stereoHandle);
 
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME:   NvAPI_GPU_ResetECCErrorInfo
+// FUNCTION NAME: NvAPI_Stereo_ReverseStereoBlitControl
 //
-//! DESCRIPTION:     This function resets ECC memory error counters.
+//! DESCRIPTION:   This API turns on/off reverse stereo blit.
 //!
-//! SUPPORTED OS:  Windows XP and higher
+//! HOW TO USE:    Use after the stereo handle for the device interface is created via successfull call to the appropriate 
+//!                NvAPI_Stereo_CreateHandleFrom() function.
+//!                After reversed stereo blit control is turned on, blits from the stereo surface will
+//!                produce the right-eye image in the left side of the destination surface and the left-eye
+//!                image in the right side of the destination surface.
+//!
+//!                In DirectX 9, the destination surface must be created as the render target, and StretchRect must be used.
+//!                Conditions:
+//!                - DstWidth == 2*SrcWidth
+//!                - DstHeight == SrcHeight
+//!                - Src surface is the stereo surface.
+//!                - SrcRect must be {0,0,SrcWidth,SrcHeight}
+//!                - DstRect must be {0,0,DstWidth,DstHeight}
+//!
+//!                In DirectX 10, ResourceCopyRegion must be used. 
+//!                Conditions:
+//!                - DstWidth == 2*SrcWidth
+//!                - DstHeight == SrcHeight
+//!                - dstX == 0,
+//!                - dstY == 0,
+//!                - dstZ == 0,
+//!                - SrcBox: left=top=front==0; right==SrcWidth; bottom==SrcHeight; back==1;
+//!
+//! SUPPORTED OS:  Windows Vista and higher
 //!
 //!
-//! \param [in]     hPhysicalGpu     A handle identifying the physical GPU for
-//!                                  which ECC error information is to be
-//!                                  cleared.
-//! \param [in]     bResetCurrent    Reset the current ECC error counters.
-//! \param [in]     bResetAggregate  Reset the aggregate ECC error counters.
-//! 
-//! \retval ::NVAPI_OK  The request was completed successfully.
-//! \retval ::NVAPI_ERROR  An unknown error occurred.
-//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  The provided GPU handle is not a physical GPU handle.
-//! \retval ::NVAPI_INVALID_HANDLE  The provided GPU handle is invalid.
-//! \retval ::NVAPI_HANDLE_INVALIDATED  The provided GPU handle is no longer valid.
-//! \retval ::NVAPI_NOT_SUPPORTED  The request is not supported.
-//! \retval ::NVAPI_API_NOT_INTIALIZED  NvAPI was not yet initialized.
+//! \since Release: 185
 //!
-//! \ingroup gpuecc
+//! \param [in]    stereoHandle  Stereo handle corresponding to the device interface.
+//! \param [in]    TurnOn         != 0 : Turns on \n 
+//!                               == 0 : Turns off 
+//!
+//!
+//! \retval ::NVAPI_OK                                Retrieval of frustum adjust mode was successfull.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE   Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED            Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_ResetECCErrorInfo(NvPhysicalGpuHandle hPhysicalGpu, NvU8 bResetCurrent,
-                                            NvU8 bResetAggregate);
+NVAPI_INTERFACE NvAPI_Stereo_ReverseStereoBlitControl(StereoHandle hStereoHandle, NvU8 TurnOn);
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME:   NvAPI_GPU_GetECCConfigurationInfo
+// FUNCTION NAME: NvAPI_Stereo_SetNotificationMessage
 //
-//! \fn NvAPI_GPU_GetECCConfigurationInfo(NvPhysicalGpuHandle hPhysicalGpu, 
-//!                             NV_GPU_ECC_CONFIGURATION_INFO *pECCConfigurationInfo);
-//! DESCRIPTION:     This function returns ECC memory configuration information.
+//! DESCRIPTION:   This API is a Setup notification message that the stereo driver uses to notify the application
+//!                when the user changes the stereo driver state. 
 //!
-//! SUPPORTED OS:  Windows XP and higher
+//!                When the user changes the stereo state (Activated or Deactivated, separation or conversion)
+//!                the stereo driver posts a defined message with the following parameters:
+//!
+//!                lParam  is the current conversion. (Actual conversion is *(float*)&lParam )
+//!          
+//!                wParam == MAKEWPARAM(l, h) where
+//!                - l == 0 if stereo is deactivated
+//!                - l == 1 if stereo is deactivated
+//!                - h is the current separation. (Actual separation is float(h*100.f/0xFFFF)  
+//!                
+//!                Call this API with NULL hWnd to prohibit notification.
+//!
+//! WHEN TO USE:   Use after the stereo handle for device interface is created via successful call to appropriate
+//!                NvAPI_Stereo_CreateHandleFrom() function.
+//!                
+//!
+//! SUPPORTED OS:  Windows Vista and higher
 //!
 //!
-//! \param [in]      hPhysicalGpu  A handle identifying the physical GPU for
-//!                                which ECC configuration information
-//!                               is to be retrieved.
-//! \param [out]     pECCConfigurationInfo  A pointer to an ECC 
-//!                                                configuration structure.
-//! 
-//! \retval ::NVAPI_OK  The request was completed successfully.
-//! \retval ::NVAPI_ERROR  An unknown error occurred.
-//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  The provided GPU handle is not a physical GPU handle.
-//! \retval ::NVAPI_INVALID_HANDLE  The provided GPU handle is invalid.
-//! \retval ::NVAPI_HANDLE_INVALIDATED  The provided GPU handle is no longer valid.
-//! \retval ::NVAPI_INVALID_POINTER  An invalid argument pointer was provided.
-//! \retval ::NVAPI_NOT_SUPPORTED  The request is not supported.
-//! \retval ::NVAPI_API_NOT_INTIALIZED  NvAPI was not yet initialized.
+//! \since Release: 180
+//!
+//!
+//! \param [in]     stereoHandle  Stereo handle corresponding to the device interface.
+//! \param [in]     hWnd          Window HWND that will be notified when the user changes the stereo driver state.
+//!                               Actual HWND must be cast to an NvU64.
+//! \param [in]     messageID     MessageID of the message that will be posted to hWnd
+//!
+//! \retval ::NVAPI_OK                                Notification set.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE   Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED            Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR 
+//!
+//! \ingroup stereoapi
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_Stereo_SetNotificationMessage(StereoHandle hStereoHandle, NvU64 hWnd,NvU64 messageID);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_SetActiveEye
+//
+//! \fn NvAPI_Stereo_SetActiveEye(StereoHandle hStereoHandle, NV_STEREO_ACTIVE_EYE StereoEye);
+//! DESCRIPTION:   This API sets the back buffer to left or right in Direct stereo mode.
+//!                  
+//! HOW TO USE:    After the stereo handle for device interface is created via successfull call to appropriate 
+//!                NvAPI_Stereo_CreateHandleFrom function.
+//!
+//! \since Release: 285
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \param [in]   stereoHandle  Stereo handle that corresponds to the device interface.
+//! \param [in]   StereoEye     Defines active eye in Direct stereo mode
+//!
+//! \retval ::NVAPI_OK - Active eye is set.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE - Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED - Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_INVALID_ARGUMENT - StereoEye parameter has not allowed value.
+//! \retval ::NVAPI_SET_NOT_ALLOWED  - Current stereo mode is not Direct
+//! \retval ::NVAPI_ERROR - Something is wrong (generic error).
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-//! \ingroup gpuecc
-//! Used in NvAPI_GPU_GetECCConfigurationInfo(). 
-typedef struct
+//! \ingroup stereoapi
+typedef enum _NV_StereoActiveEye
 {
-    NvU32  version;                 //! Structure version
-    NvU32  isEnabled : 1;           //! Current ECC configuration stored in non-volatile memory
-    NvU32  isEnabledByDefault : 1;  //! Factory default ECC configuration (static)
-} NV_GPU_ECC_CONFIGURATION_INFO;
+    NVAPI_STEREO_EYE_RIGHT = 1,
+    NVAPI_STEREO_EYE_LEFT = 2,
+    NVAPI_STEREO_EYE_MONO = 3,
+} NV_STEREO_ACTIVE_EYE;
 
-//! \ingroup gpuecc
-//! Macro for consstructing the verion field of NV_GPU_ECC_CONFIGURATION_INFO
-#define NV_GPU_ECC_CONFIGURATION_INFO_VER MAKE_NVAPI_VERSION(NV_GPU_ECC_CONFIGURATION_INFO,1)
-
-//! \ingroup gpuecc
-NVAPI_INTERFACE NvAPI_GPU_GetECCConfigurationInfo(NvPhysicalGpuHandle hPhysicalGpu, 
-                                                  NV_GPU_ECC_CONFIGURATION_INFO *pECCConfigurationInfo);
+//! \ingroup stereoapi
+NVAPI_INTERFACE NvAPI_Stereo_SetActiveEye(StereoHandle hStereoHandle, NV_STEREO_ACTIVE_EYE StereoEye);
 
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME:   NvAPI_GPU_SetECCConfiguration
+// FUNCTION NAME: NvAPI_Stereo_SetDriverMode
 //
-//! DESCRIPTION:     This function updates the ECC memory configuration setting.
+//! \fn NvAPI_Stereo_SetDriverMode( NV_STEREO_DRIVER_MODE mode );
+//! DESCRIPTION:   This API sets the 3D stereo driver mode: Direct or Automatic
+//!                  
+//! HOW TO USE:    This API must be called before the device is created.
+//!                Applies to DirectX 9 and higher.
 //!
-//! SUPPORTED OS:  Windows XP and higher
+//! \since Release: 285
 //!
+//! SUPPORTED OS:  Windows Vista and higher
 //!
-//! \param [in]      hPhysicalGpu    A handle identifying the physical GPU for
-//!                                  which to update the ECC configuration
-//!                                  setting.
-//! \param [in]      bEnable         The new ECC configuration setting.
-//! \param [in]      bEnableImmediately   Request that the new setting take effect immediately.
+//!      
+//! \param [in]    mode       Defines the 3D stereo driver mode: Direct or Automatic
+//!
+//! \retval ::NVAPI_OK                      Active eye is set.
+//! \retval ::NVAPI_API_NOT_INTIALIZED      NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED  Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_INVALID_ARGUMENT        mode parameter has not allowed value.
+//! \retval ::NVAPI_ERROR                   Something is wrong (generic error).
+//
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup stereoapi
+typedef enum _NV_StereoDriverMode
+{
+    NVAPI_STEREO_DRIVER_MODE_AUTOMATIC = 0,
+    NVAPI_STEREO_DRIVER_MODE_DIRECT    = 2,
+} NV_STEREO_DRIVER_MODE;
+
+//! \ingroup stereoapi
+NVAPI_INTERFACE NvAPI_Stereo_SetDriverMode( NV_STEREO_DRIVER_MODE mode );
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_GetEyeSeparation
+//
+//! DESCRIPTION:   This API returns eye separation as a ratio of <between eye distance>/<physical screen width>.
 //! 
-//! \retval ::NVAPI_OK  The request was completed successfully.
-//! \retval ::NVAPI_ERROR  An unknown error occurred.
-//! \retval ::NVAPI_EXPECTED_PHYSICAL_GPU_HANDLE  The provided GPU handle is not a physical GPU handle.
-//! \retval ::NVAPI_INVALID_HANDLE  The provided GPU handle is invalid.
-//! \retval ::NVAPI_HANDLE_INVALIDATED  The provided GPU handle is no longer valid.
-//! \retval ::NVAPI_NOT_SUPPORTED  The request is not supported.
-//! \retval ::NVAPI_API_NOT_INTIALIZED  NvAPI was not yet initialized.
+//! HOW TO USE:    After the stereo handle for device interface is created via successfull call to appropriate API. Applies only to DirectX 9 and up.
 //!
-//! \ingroup gpuecc
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! \param [in]   stereoHandle  Stereo handle that corresponds to the device interface.
+//! \param [out]  pSeparation   Eye separation.
+//!
+//! \retval ::NVAPI_OK                               Active eye is set.
+//! \retval ::NVAPI_STEREO_INVALID_DEVICE_INTERFACE  Device interface is not valid. Create again, then attach again.
+//! \retval ::NVAPI_API_NOT_INTIALIZED               NVAPI not initialized.
+//! \retval ::NVAPI_STEREO_NOT_INITIALIZED           Stereo part of NVAPI not initialized.
+//! \retval ::NVAPI_ERROR  (generic error).
+//!
+//! \ingroup stereoapi
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_SetECCConfiguration(NvPhysicalGpuHandle hPhysicalGpu, NvU8 bEnable,
-                                              NvU8 bEnableImmediately);
-                                                                                     
+NVAPI_INTERFACE NvAPI_Stereo_GetEyeSeparation(StereoHandle hStereoHandle,  float *pSeparation );
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_SetSurfaceCreationMode
+//
+//! \function NvAPI_Stereo_SetSurfaceCreationMode(StereoHandle hStereoHandle, NVAPI_STEREO_SURFACECREATEMODE creationMode)
+//! \param [in]   hStereoHandle   Stereo handle that corresponds to the device interface.
+//! \param [in]   creationMode    New surface creation mode for this device interface.
+//!
+//! \since Release: 285
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! DESCRIPTION: This API sets surface creation mode for this device interface.
+//!
+//! WHEN TO USE: After the stereo handle for device interface is created via successful call to appropriate NvAPI_Stereo_CreateHandleFrom function.
+//!
+//! \return      This API can return any of the error codes enumerated in #NvAPI_Status. 
+//!              There are no return error codes with specific meaning for this API.
+//!
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup stereoapi
+typedef enum _NVAPI_STEREO_SURFACECREATEMODE 
+{
+    NVAPI_STEREO_SURFACECREATEMODE_AUTO,        //!< Use driver registry profile settings for surface creation mode. 
+    NVAPI_STEREO_SURFACECREATEMODE_FORCESTEREO, //!< Always create stereo surfaces. 
+    NVAPI_STEREO_SURFACECREATEMODE_FORCEMONO    //!< Always create mono surfaces. 
+} NVAPI_STEREO_SURFACECREATEMODE; 
+
+//! \ingroup stereoapi
+NVAPI_INTERFACE NvAPI_Stereo_SetSurfaceCreationMode(__in StereoHandle hStereoHandle, __in NVAPI_STEREO_SURFACECREATEMODE creationMode);
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_Stereo_GetSurfaceCreationMode
+//
+//! \function NvAPI_Stereo_GetSurfaceCreationMode(StereoHandle hStereoHandle, NVAPI_STEREO_SURFACECREATEMODE* pCreationMode)
+//! \param [in]   hStereoHandle   Stereo handle that corresponds to the device interface.
+//! \param [out]   pCreationMode   The current creation mode for this device interface.
+//!
+//! \since Release: 295
+//!
+//! SUPPORTED OS:  Windows Vista and higher
+//!
+//!
+//! DESCRIPTION: This API gets surface creation mode for this device interface.
+//!
+//! WHEN TO USE: After the stereo handle for device interface is created via successful call to appropriate NvAPI_Stereo_CreateHandleFrom function.
+//!
+//! \return      This API can return any of the error codes enumerated in #NvAPI_Status. 
+//!              There are no return error codes with specific meaning for this API.
+//!
+///////////////////////////////////////////////////////////////////////////////
+
+//! \ingroup stereoapi
+NVAPI_INTERFACE NvAPI_Stereo_GetSurfaceCreationMode(__in StereoHandle hStereoHandle, __in NVAPI_STEREO_SURFACECREATEMODE* pCreationMode);
+
+
+
+
 
 //! \ingroup stereoapi
 #define NVAPI_STEREO_QUADBUFFERED_API_VERSION   0x2
@@ -8961,217 +9826,7 @@ NVAPI_INTERFACE NvAPI_D3D9_CreateSwapChain(StereoHandle hStereoHandle,
                                            NV_STEREO_SWAPCHAIN_MODE mode);
 #endif //if defined(_D3D9_H_)
 
-#if defined(_D3D9_H_) || defined(__d3d10_h__) || defined(__d3d10_1_h__) || defined(__d3d11_h__)
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_D3D_SetFPSIndicatorState
-//
-//!   DESCRIPTION: Display an overlay that tracks the number of times the app presents per second, or,   
-//!      the number of frames-per-second (FPS)
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \param [in] bool    Whether or not to enable the fps indicator.
-//!                
-//! \return ::NVAPI_OK, 
-//!         ::NVAPI_ERROR
-//!
-//! \ingroup dx 
-/////////////////////////////////////////////////////////////////////////////// 
-NVAPI_INTERFACE NvAPI_D3D_SetFPSIndicatorState(IUnknown *pDev, NvU8 doEnable);
 
-#endif //if defined(_D3D9_H_) || defined(__d3d10_h__) || defined(__d3d10_1_h__) || defined(__d3d11_h__)
-
-
-
-
-//! \addtogroup drsapi
-//! @{
-
-// GPU Profile APIs
-
-#define NVAPI_UNICODE_STRING_MAX                             2048
-#define NVAPI_BINARY_DATA_MAX                                4096
-#define NVAPI_SETTING_MAX_VALUES                             100
-
-NV_DECLARE_HANDLE(NvDRSSessionHandle);
-NV_DECLARE_HANDLE(NvDRSProfileHandle);
-
-#define NVAPI_DRS_GLOBAL_PROFILE                             ((NvDRSProfileHandle) -1)
-
-typedef NvU16 NvAPI_UnicodeString[NVAPI_UNICODE_STRING_MAX];
-
-typedef enum _NVDRS_SETTING_TYPE
-{
-     NVDRS_DWORD_TYPE,
-     NVDRS_BINARY_TYPE,
-     NVDRS_STRING_TYPE,
-     NVDRS_WSTRING_TYPE
-} NVDRS_SETTING_TYPE;
-
-typedef enum _NVDRS_SETTING_LOCATION
-{
-     NVDRS_CURRENT_PROFILE_LOCATION,
-     NVDRS_GLOBAL_PROFILE_LOCATION,
-     NVDRS_BASE_PROFILE_LOCATION
-} NVDRS_SETTING_LOCATION;
-
-
-typedef struct _NVDRS_GPU_SUPPORT
-{
-    NvU32 geforce    :  1;
-    NvU32 quadro     :  1;
-    NvU32 nvs        :  1;
-    NvU32 reserved4  :  1;
-    NvU32 reserved5  :  1;
-    NvU32 reserved6  :  1;
-    NvU32 reserved7  :  1;
-    NvU32 reserved8  :  1;
-    NvU32 reserved9  :  1;
-    NvU32 reserved10 :  1;
-    NvU32 reserved11 :  1;
-    NvU32 reserved12 :  1;
-    NvU32 reserved13 :  1;
-    NvU32 reserved14 :  1;
-    NvU32 reserved15 :  1;
-    NvU32 reserved16 :  1;
-    NvU32 reserved17 :  1;
-    NvU32 reserved18 :  1;
-    NvU32 reserved19 :  1;
-    NvU32 reserved20 :  1;
-    NvU32 reserved21 :  1;
-    NvU32 reserved22 :  1;
-    NvU32 reserved23 :  1;
-    NvU32 reserved24 :  1;
-    NvU32 reserved25 :  1;
-    NvU32 reserved26 :  1;
-    NvU32 reserved27 :  1;
-    NvU32 reserved28 :  1;
-    NvU32 reserved29 :  1;
-    NvU32 reserved30 :  1;
-    NvU32 reserved31 :  1;
-    NvU32 reserved32 :  1;
-} NVDRS_GPU_SUPPORT;
-
-//! Enum to decide on the datatype of setting value.
-typedef struct _NVDRS_BINARY_SETTING 
-{
-     NvU32                valueLength;               //!< valueLength should always be in number of bytes.
-     NvU8                 valueData[NVAPI_BINARY_DATA_MAX];
-} NVDRS_BINARY_SETTING;
-
-typedef struct _NVDRS_SETTING_VALUES
-{
-     NvU32                      version;                //!< Structure Version
-     NvU32                      numSettingValues;       //!< Total number of values available in a setting.
-     NVDRS_SETTING_TYPE         settingType;            //!< Type of setting value.  
-     union                                              //!< Setting can hold either DWORD or Binary value or string. Not mixed types.
-     {
-         NvU32                      u32DefaultValue;    //!< Accessing default DWORD value of this setting.
-         NVDRS_BINARY_SETTING       binaryDefaultValue; //!< Accessing default Binary value of this setting.
-                                                        //!< Must be allocated by caller with valueLength specifying buffer size, or only valueLength will be filled in.
-         NvAPI_UnicodeString        wszDefaultValue;    //!< Accessing default unicode string value of this setting.
-     };
-     union                                                //!< Setting values can be of either DWORD, Binary values or String type,
-     {                                                    //!< NOT mixed types.
-         NvU32                      u32Value;           //!< All possible DWORD values for a setting
-         NVDRS_BINARY_SETTING       binaryValue;        //!< All possible Binary values for a setting
-         NvAPI_UnicodeString        wszValue;           //!< Accessing current unicode string value of this setting.
-     }settingValues[NVAPI_SETTING_MAX_VALUES];
-} NVDRS_SETTING_VALUES;
-
-//! Macro for constructing the version field of ::_NVDRS_SETTING_VALUES
-#define NVDRS_SETTING_VALUES_VER    MAKE_NVAPI_VERSION(NVDRS_SETTING_VALUES,1)
-     
-typedef struct _NVDRS_SETTING
-{
-     NvU32                      version;                //!< Structure Version
-     NvAPI_UnicodeString        settingName;            //!< String name of setting
-     NvU32                      settingId;              //!< 32 bit setting Id
-     NVDRS_SETTING_TYPE         settingType;            //!< Type of setting value.  
-     NVDRS_SETTING_LOCATION     settingLocation;        //!< Describes where the value in CurrentValue comes from. 
-     NvU32                      isCurrentPredefined;    //!< It is different than 0 if the currentValue is a predefined Value, 
-                                                        //!< 0 if the currentValue is a user value. 
-     NvU32                      isPredefinedValid;      //!< It is different than 0 if the PredefinedValue union contains a valid value. 
-     union                                              //!< Setting can hold either DWORD or Binary value or string. Not mixed types.
-     {
-         NvU32                      u32PredefinedValue;    //!< Accessing default DWORD value of this setting.
-         NVDRS_BINARY_SETTING       binaryPredefinedValue; //!< Accessing default Binary value of this setting.
-                                                           //!< Must be allocated by caller with valueLength specifying buffer size, 
-                                                           //!< or only valueLength will be filled in.
-         NvAPI_UnicodeString        wszPredefinedValue;    //!< Accessing default unicode string value of this setting.
-     };
-     union                                              //!< Setting can hold either DWORD or Binary value or string. Not mixed types.
-     {
-         NvU32                      u32CurrentValue;    //!< Accessing current DWORD value of this setting.
-         NVDRS_BINARY_SETTING       binaryCurrentValue; //!< Accessing current Binary value of this setting.
-                                                        //!< Must be allocated by caller with valueLength specifying buffer size, 
-                                                        //!< or only valueLength will be filled in.
-         NvAPI_UnicodeString        wszCurrentValue;    //!< Accessing current unicode string value of this setting.
-     };                                                 
-} NVDRS_SETTING;
-
-//! Macro for constructing the version field of ::_NVDRS_SETTING
-#define NVDRS_SETTING_VER        MAKE_NVAPI_VERSION(NVDRS_SETTING,1)
-
-typedef struct _NVDRS_APPLICATION_V1
-{
-     NvU32                      version;            //!< Structure Version
-     NvU32                      isPredefined;       //!< Is the application userdefined/predefined
-     NvAPI_UnicodeString        appName;            //!< String name of the Application
-     NvAPI_UnicodeString        userFriendlyName;   //!< UserFriendly name of the Application
-     NvAPI_UnicodeString        launcher;           //!< Indicates the name (if any) of the launcher that starts the application  
-} NVDRS_APPLICATION_V1;
-
-typedef struct _NVDRS_APPLICATION_V2
-{
-     NvU32                      version;            //!< Structure Version
-     NvU32                      isPredefined;       //!< Is the application userdefined/predefined
-     NvAPI_UnicodeString        appName;            //!< String name of the Application
-     NvAPI_UnicodeString        userFriendlyName;   //!< UserFriendly name of the Application
-     NvAPI_UnicodeString        launcher;           //!< Indicates the name (if any) of the launcher that starts the Application
-     NvAPI_UnicodeString        fileInFolder;       //!< Select this application only if this file is found.
-                                                    //!< When specifying multiple files, separate them using the ':' character.
-} NVDRS_APPLICATION_V2;
-
-#define NVDRS_APPLICATION_VER_V1        MAKE_NVAPI_VERSION(NVDRS_APPLICATION_V1,1)
-#define NVDRS_APPLICATION_VER_V2        MAKE_NVAPI_VERSION(NVDRS_APPLICATION_V2,2)
-
-typedef NVDRS_APPLICATION_V2 NVDRS_APPLICATION;
-#define NVDRS_APPLICATION_VER NVDRS_APPLICATION_VER_V2
-
-typedef struct _NVDRS_PROFILE
-{
-     NvU32                      version;            //!< Structure Version
-     NvAPI_UnicodeString        profileName;        //!< String name of the Profile
-     NVDRS_GPU_SUPPORT          gpuSupport;         //!< This read-only flag indicates the profile support on either
-                                                    //!< Quadro, or Geforce, or both.
-     NvU32                      isPredefined;       //!< Is the Profile user-defined, or predefined
-     NvU32                      numOfApps;          //!< Total number of applications that belong to this profile. Read-only
-     NvU32                      numOfSettings;      //!< Total number of settings applied for this Profile. Read-only
-} NVDRS_PROFILE;
-
-//! Macro for constructing the version field of ::_NVDRS_PROFILE
-#define NVDRS_PROFILE_VER        MAKE_NVAPI_VERSION(NVDRS_PROFILE,1)
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_DRS_CreateSession
-//
-//!   DESCRIPTION: This API allocates memory and initializes the session.
-//!
-//! SUPPORTED OS:  Windows XP and higher
-//!
-//!
-//! \param [out]  *phSession Return pointer to the session handle.
-//!                
-//! \retval ::NVAPI_OK SUCCESS
-//! \retval ::NVAPI_ERROR: For miscellaneous errors.
-//
-///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_DRS_CreateSession(NvDRSSessionHandle *phSession);
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -9285,7 +9940,6 @@ NVAPI_INTERFACE NvAPI_DRS_SaveSettingsToFile(NvDRSSessionHandle hSession, NvAPI_
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_DRS_CreateProfile(NvDRSSessionHandle hSession, NVDRS_PROFILE *pProfileInfo, NvDRSProfileHandle *phProfile);
 
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // FUNCTION NAME: NvAPI_DRS_DeleteProfile
@@ -9323,7 +9977,6 @@ NVAPI_INTERFACE NvAPI_DRS_DeleteProfile(NvDRSSessionHandle hSession, NvDRSProfil
 //! \ingroup drsapi
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_DRS_SetCurrentGlobalProfile(NvDRSSessionHandle hSession, NvAPI_UnicodeString wszGlobalProfileName);
-
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -9365,7 +10018,6 @@ NVAPI_INTERFACE NvAPI_DRS_GetCurrentGlobalProfile(NvDRSSessionHandle hSession, N
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_DRS_GetProfileInfo(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, NVDRS_PROFILE *pProfileInfo);
 
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // FUNCTION NAME: NvAPI_DRS_SetProfileInfo
@@ -9387,7 +10039,6 @@ NVAPI_INTERFACE NvAPI_DRS_GetProfileInfo(NvDRSSessionHandle hSession, NvDRSProfi
 //! \ingroup drsapi
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_DRS_SetProfileInfo(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, NVDRS_PROFILE *pProfileInfo);
-
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -9496,7 +10147,6 @@ NVAPI_INTERFACE NvAPI_DRS_CreateApplication(NvDRSSessionHandle hSession, NvDRSPr
 NVAPI_INTERFACE NvAPI_DRS_DeleteApplicationEx(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, NVDRS_APPLICATION *pApp);
 
 
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // FUNCTION NAME: NvAPI_DRS_DeleteApplication
@@ -9547,7 +10197,6 @@ NVAPI_INTERFACE NvAPI_DRS_DeleteApplication(NvDRSSessionHandle hSession, NvDRSPr
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_DRS_GetApplicationInfo(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, NvAPI_UnicodeString appName, NVDRS_APPLICATION *pApplication);
 
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // FUNCTION NAME: NvAPI_DRS_EnumApplications
@@ -9571,7 +10220,6 @@ NVAPI_INTERFACE NvAPI_DRS_GetApplicationInfo(NvDRSSessionHandle hSession, NvDRSP
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_DRS_EnumApplications(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, NvU32 startIndex, NvU32 *appCount, NVDRS_APPLICATION *pApplication);
 
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // FUNCTION NAME: NvAPI_DRS_FindApplicationByName
@@ -9585,7 +10233,7 @@ NVAPI_INTERFACE NvAPI_DRS_EnumApplications(NvDRSSessionHandle hSession, NvDRSPro
 //!
 //! \param [in]   hSession       Input to the hSession handle
 //! \param [in]   appName        Input appName. For best results, provide a fully qualified path of the type
-//!                                         c:\\Folder1\\Folder2\\App.exe
+//!                              c:/Folder1/Folder2/App.exe
 //! \param [out]  *phProfile     Returns profile handle.
 //! \param [out]  *pApplication  Returns NVDRS_APPLICATION struct pointer.
 //!                
@@ -9598,7 +10246,6 @@ NVAPI_INTERFACE NvAPI_DRS_EnumApplications(NvDRSSessionHandle hSession, NvDRSPro
 //! \ingroup drsapi
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_DRS_FindApplicationByName(NvDRSSessionHandle hSession, NvAPI_UnicodeString appName, NvDRSProfileHandle *phProfile, NVDRS_APPLICATION *pApplication);
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -9640,7 +10287,6 @@ NVAPI_INTERFACE NvAPI_DRS_SetSetting(NvDRSSessionHandle hSession, NvDRSProfileHa
 //! \ingroup drsapi
 ///////////////////////////////////////////////////////////////////////////////
 NVAPI_INTERFACE NvAPI_DRS_GetSetting(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, NvU32 settingId, NVDRS_SETTING *pSetting);
-
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -9849,233 +10495,199 @@ NVAPI_INTERFACE NvAPI_DRS_RestoreProfileDefaultSetting(NvDRSSessionHandle hSessi
 NVAPI_INTERFACE NvAPI_DRS_GetBaseProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle *phProfile);
 
 
-//! Used in NvAPI_GPU_GetPerfDecreaseInfo.
-//! Bit masks for knowing the exact reason for performance decrease
-typedef enum _NVAPI_GPU_PERF_DECREASE
+
+
+//! \addtogroup sysgeneral
+//! @{
+
+typedef struct
 {
-    NV_GPU_PERF_DECREASE_NONE                        = 0,          //!< No Slowdown detected
-    NV_GPU_PERF_DECREASE_REASON_THERMAL_PROTECTION   = 0x00000001, //!< Thermal slowdown/shutdown/POR thermal protection
-    NV_GPU_PERF_DECREASE_REASON_POWER_CONTROL        = 0x00000002, //!< Power capping / pstate cap 
-    NV_GPU_PERF_DECREASE_REASON_AC_BATT              = 0x00000004, //!< AC->BATT event
-    NV_GPU_PERF_DECREASE_REASON_API_TRIGGERED        = 0x00000008, //!< API triggered slowdown
-    NV_GPU_PERF_DECREASE_REASON_INSUFFICIENT_POWER   = 0x00000010, //!< Power connector missing
-    NV_GPU_PERF_DECREASE_REASON_UNKNOWN              = 0x80000000, //!< Unknown reason
-} NVAPI_GPU_PERF_DECREASE;
+    NvU32               version;            //!< structure version
+    NvU32               vendorId;           //!< Chipset vendor identification
+    NvU32               deviceId;           //!< Chipset device identification
+    NvAPI_ShortString   szVendorName;       //!< Chipset vendor Name
+    NvAPI_ShortString   szChipsetName;      //!< Chipset device Name
+    NvU32               flags;              //!< Chipset info flags - obsolete
+    NvU32               subSysVendorId;     //!< Chipset subsystem vendor identification
+    NvU32               subSysDeviceId;     //!< Chipset subsystem device identification 
+    NvAPI_ShortString   szSubSysVendorName; //!< subsystem vendor Name
+    NvU32               HBvendorId;         //!< Host bridge vendor identification
+    NvU32               HBdeviceId;         //!< Host bridge device identification
+    NvU32               HBsubSysVendorId;   //!< Host bridge subsystem vendor identification
+    NvU32               HBsubSysDeviceId;   //!< Host bridge subsystem device identification
+
+} NV_CHIPSET_INFO_v4;
+
+typedef struct
+{
+    NvU32               version;            //!< structure version
+    NvU32               vendorId;           //!< vendor ID
+    NvU32               deviceId;           //!< device ID
+    NvAPI_ShortString   szVendorName;       //!< vendor Name
+    NvAPI_ShortString   szChipsetName;      //!< device Name
+    NvU32               flags;              //!< Chipset info flags - obsolete
+    NvU32               subSysVendorId;     //!< subsystem vendor ID
+    NvU32               subSysDeviceId;     //!< subsystem device ID
+    NvAPI_ShortString   szSubSysVendorName; //!< subsystem vendor Name
+} NV_CHIPSET_INFO_v3;
+
+typedef enum
+{
+    NV_CHIPSET_INFO_HYBRID          = 0x00000001,
+} NV_CHIPSET_INFO_FLAGS;
+
+typedef struct
+{
+    NvU32               version;        //!< structure version
+    NvU32               vendorId;       //!< vendor ID
+    NvU32               deviceId;       //!< device ID
+    NvAPI_ShortString   szVendorName;   //!< vendor Name
+    NvAPI_ShortString   szChipsetName;  //!< device Name
+    NvU32               flags;          //!< Chipset info flags
+} NV_CHIPSET_INFO_v2;
+
+typedef struct
+{
+    NvU32               version;        //structure version
+    NvU32               vendorId;       //vendor ID
+    NvU32               deviceId;       //device ID
+    NvAPI_ShortString   szVendorName;   //vendor Name
+    NvAPI_ShortString   szChipsetName;  //device Name
+} NV_CHIPSET_INFO_v1;
+
+#define NV_CHIPSET_INFO_VER_1  MAKE_NVAPI_VERSION(NV_CHIPSET_INFO_v1,1)
+#define NV_CHIPSET_INFO_VER_2   MAKE_NVAPI_VERSION(NV_CHIPSET_INFO_v2,2)
+#define NV_CHIPSET_INFO_VER_3   MAKE_NVAPI_VERSION(NV_CHIPSET_INFO_v3,3)
+#define NV_CHIPSET_INFO_VER_4   MAKE_NVAPI_VERSION(NV_CHIPSET_INFO_v4,4)
+
+#define NV_CHIPSET_INFO         NV_CHIPSET_INFO_v4
+#define NV_CHIPSET_INFO_VER     NV_CHIPSET_INFO_VER_4
+
+//! @}
+
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// FUNCTION NAME: NvAPI_GPU_GetPerfDecreaseInfo
+// FUNCTION NAME: NvAPI_SYS_GetChipSetInfo
 //
-//! DESCRIPTION:   This function retrieves - in NvU32 variable - reasons for the current performance decrease.
+//!  This function returns information about the system's chipset.
+//!
+//! SUPPORTED OS:  Windows XP and higher,  Mac OS X
+//!
+//!
+//! \since Release: 95
+//!
+//! \retval  NVAPI_INVALID_ARGUMENT              pChipSetInfo is NULL.
+//! \retval  NVAPI_OK                           *pChipSetInfo is now set.
+//! \retval  NVAPI_INCOMPATIBLE_STRUCT_VERSION   NV_CHIPSET_INFO version not compatible with driver.
+//! \ingroup sysgeneral
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_SYS_GetChipSetInfo(NV_CHIPSET_INFO *pChipSetInfo);
+
+
+
+
+
+
+
+
+//! \ingroup sysgeneral
+//! Lid and dock information - used in NvAPI_GetLidDockInfo()
+typedef struct 
+{
+    NvU32 version;    //! Structure version, constructed from the macro #NV_LID_DOCK_PARAMS_VER
+    NvU32 currentLidState;
+    NvU32 currentDockState;
+    NvU32 currentLidPolicy;
+    NvU32 currentDockPolicy;
+    NvU32 forcedLidMechanismPresent;
+    NvU32 forcedDockMechanismPresent;
+}NV_LID_DOCK_PARAMS;
+
+
+//! ingroup sysgeneral
+#define NV_LID_DOCK_PARAMS_VER  MAKE_NVAPI_VERSION(NV_LID_DOCK_PARAMS,1)
+///////////////////////////////////////////////////////////////////////////////
+//
+// FUNCTION NAME: NvAPI_GetLidDockInfo
+//
+//! DESCRIPTION: This function returns the current lid and dock information.
 //!
 //! SUPPORTED OS:  Windows XP and higher
 //!
-//! \param [in]      hPhysicalGPU    (IN)    - GPU for which performance decrease is to be evaluated.
-//! \param [out]  pPerfDecrInfo    (OUT)    - Pointer to a NvU32 variable containing performance decrease info
 //!
-//! \return      This API can return any of the error codes enumerated in #NvAPI_Status. 
+//! \since Release: 177
 //!
-//! \ingroup gpu
+//! \retval ::NVAPI_OK  
+//! \retval ::NVAPI_ERROR
+//! \retval ::NVAPI_NOT_SUPPORTED
+//! \retval ::NVAPI_HANDLE_INVALIDATED
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//!
+//! \ingroup sysgeneral
 ///////////////////////////////////////////////////////////////////////////////
-NVAPI_INTERFACE NvAPI_GPU_GetPerfDecreaseInfo(__in NvPhysicalGpuHandle hPhysicalGpu, __inout NvU32 *pPerfDecrInfo);
-
-//! \ingroup gpu
-typedef enum _NV_GPU_ILLUMINATION_ATTRIB
-{
-    NV_GPU_IA_LOGO_BRIGHTNESS  = 0,
-    NV_GPU_IA_SLI_BRIGHTNESS   = 1,
-} NV_GPU_ILLUMINATION_ATTRIB;
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// FUNCTION NAME: NvAPI_GPU_QueryIlluminationSupport
-//
-//! \fn NvAPI_GPU_QueryIlluminationSupport(__inout  NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM *pIlluminationSupportInfo)
-//! DESCRIPTION:   This function reports if the specified illumination attribute is supported.
-//!
-//! \note Only a single GPU can manage an given attribute on a given HW element,
-//!       regardless of how many are attatched. I.E. only one GPU will be used to control
-//!       the brightness of the LED on an SLI bridge, regardless of how many are physicaly attached.
-//!       You should enumerate thru the GPUs with this call to determine which GPU is managing the attribute.
-//!
-//! SUPPORTED OS:  Windows Vista and higher
-//!
-//! \since Version: 300.05
-//!
-//! \param [in]  hPhysicalGpu        Physical GPU handle
-//! \param       Attribute           An enumeration value specifying the Illumination attribute to be querried
-//! \param [out] pSupported          A boolean indicating if the attribute is supported.
-//! 
-//! \return See \ref nvapistatus for the list of possible return values.
-//
-//////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup gpu                 
-typedef struct _NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_V1 {
-
-    // IN
-    NvU32   version;						//!< Version of this structure
-    NvPhysicalGpuHandle hPhysicalGpu;		//!< The handle of the GPU that you are checking for the specified attribute.
-                                            //!< note that this is the GPU that is managing the attribute.
-                                            //!< Only a single GPU can manage an given attribute on a given HW element,
-                                            //!< regardless of how many are attatched.
-                                            //!< I.E. only one GPU will be used to control the brightness of the LED on an SLI bridge,
-                                            //!< regardless of how many are physicaly attached.
-                                            //!< You enumerate thru the GPUs with this call to determine which GPU is managing the attribute.
-    NV_GPU_ILLUMINATION_ATTRIB Attribute;   //!< An enumeration value specifying the Illumination attribute to be querried.
-                                            //!<     refer to enum \ref NV_GPU_ILLUMINATION_ATTRIB.
-    
-    // OUT
-    NvU32    bSupported;                    //!< A boolean indicating if the attribute is supported.
-                                    
-} NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_V1;
-
-//! \ingroup gpu 
-typedef NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_V1      NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM;
-//! \ingroup gpu 
-#define NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_VER_1   MAKE_NVAPI_VERSION(NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_V1,1)
-//! \ingroup gpu 
-#define NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_VER     NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM_VER_1
-
-//! \ingroup gpu 
-NVAPI_INTERFACE NvAPI_GPU_QueryIlluminationSupport(__inout  NV_GPU_QUERY_ILLUMINATION_SUPPORT_PARM *pIlluminationSupportInfo);
+NVAPI_INTERFACE NvAPI_SYS_GetLidAndDockInfo(NV_LID_DOCK_PARAMS *pLidAndDock);
 
 
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// FUNCTION NAME:   NvAPI_SYS_GetDisplayIdFromGpuAndOutputId
 //
-// FUNCTION NAME: NvAPI_GPU_GetIllumination
-//
-//! \fn NvAPI_GPU_GetIllumination(NV_GPU_GET_ILLUMINATION_PARM *pIlluminationInfo)
-//! DESCRIPTION:   This function reports value of the specified illumination attribute.
+//! DESCRIPTION:     This API converts a Physical GPU handle and output ID to a
+//!                  display ID.
 //!
-//! \note Only a single GPU can manage an given attribute on a given HW element,
-//!       regardless of how many are attatched. I.E. only one GPU will be used to control
-//!       the brightness of the LED on an SLI bridge, regardless of how many are physicaly attached.
-//!       You should enumerate thru the GPUs with the \ref NvAPI_GPU_QueryIlluminationSupport call to
-//!       determine which GPU is managing the attribute.
+//! SUPPORTED OS:  Windows XP and higher
 //!
-//! SUPPORTED OS:  Windows Vista and higher
 //!
-//! \since Version: 300.05
+//! \param [in]     hPhysicalGpu   Handle to the physical GPU
+//! \param [in]     outputId       Connected display output ID on the 
+//!                                target GPU - must only have one bit set
+//! \param [out]    displayId      Pointer to an NvU32 which contains
+//!                                 the display ID
 //!
-//! \param [in]  hPhysicalGpu        Physical GPU handle
-//! \param       Attribute           An enumeration value specifying the Illumination attribute to be querried
-//! \param [out] Value               A DWORD containing the current value for the specified attribute.
-//!                                  This is specified as a percentage of the full range of the attribute
-//!                                  (0-100; 0 = off, 100 = full brightness)
-//! 
-//! \return See \ref nvapistatus for the list of possible return values. Return values of special interest are:
-//!             NVAPI_INVALID_ARGUMENT The specified attibute is not known to the driver.
-//!             NVAPI_NOT_SUPPORTED:   The specified attribute is not supported on the specified GPU
-//
-//////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup gpu                 
-typedef struct _NV_GPU_GET_ILLUMINATION_PARM_V1 {
-
-    // IN
-    NvU32   version;						//!< Version of this structure
-    NvPhysicalGpuHandle hPhysicalGpu;		//!< The handle of the GPU that you are checking for the specified attribute.
-                                            //!< Note that this is the GPU that is managing the attribute.
-                                            //!< Only a single GPU can manage an given attribute on a given HW element,
-                                            //!< regardless of how many are attatched.
-                                            //!< I.E. only one GPU will be used to control the brightness of the LED on an SLI bridge,
-                                            //!< regardless of how many are physicaly attached.
-                                            //!< You enumerate thru the GPUs with this call to determine which GPU is managing the attribute.
-    NV_GPU_ILLUMINATION_ATTRIB Attribute;   //!< An enumeration value specifying the Illumination attribute to be querried.
-                                            //!< refer to enum \ref NV_GPU_ILLUMINATION_ATTRIB.
-    
-    // OUT
-    NvU32    Value;                         //!< A DWORD that will contain the current value of the specified attribute.
-                                            //! This is specified as a percentage of the full range of the attribute
-                                            //! (0-100; 0 = off, 100 = full brightness)
-                                    
-} NV_GPU_GET_ILLUMINATION_PARM_V1;
-
-//! \ingroup gpu 
-typedef NV_GPU_GET_ILLUMINATION_PARM_V1      NV_GPU_GET_ILLUMINATION_PARM;
-//! \ingroup gpu 
-#define NV_GPU_GET_ILLUMINATION_PARM_VER_1   MAKE_NVAPI_VERSION(NV_GPU_GET_ILLUMINATION_PARM_V1,1)
-//! \ingroup gpu 
-#define NV_GPU_GET_ILLUMINATION_PARM_VER     NV_GPU_GET_ILLUMINATION_PARM_VER_1
-
-//! \ingroup gpu 
-NVAPI_INTERFACE NvAPI_GPU_GetIllumination(NV_GPU_GET_ILLUMINATION_PARM *pIlluminationInfo);
-
-
+//! \retval  ::NVAPI_OK - completed request
+//! \retval  ::NVAPI_API_NOT_INTIALIZED - NVAPI not initialized
+//! \retval  ::NVAPI_ERROR - miscellaneous error occurred
+//! \retval  ::NVAPI_INVALID_ARGUMENT - Invalid input parameter.
+//!
+//! \ingroup sysgeneral
+///////////////////////////////////////////////////////////////////////////////
+NVAPI_INTERFACE NvAPI_SYS_GetDisplayIdFromGpuAndOutputId(NvPhysicalGpuHandle hPhysicalGpu, NvU32 outputId, NvU32* displayId);
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// FUNCTION NAME:   NvAPI_SYS_GetGpuAndOutputIdFromDisplayId
 //
-// FUNCTION NAME: NvAPI_GPU_SetIllumination
-//
-//! \fn NvAPI_GPU_SetIllumination(NV_GPU_SET_ILLUMINATION_PARM *pIlluminationInfo)
-//! DESCRIPTION:   This function sets the value of the specified illumination attribute.
+//! DESCRIPTION:     This API converts a display ID to a Physical GPU handle and output ID.
 //!
-//! \note Only a single GPU can manage an given attribute on a given HW element,
-//!       regardless of how many are attatched. I.E. only one GPU will be used to control
-//!       the brightness of the LED on an SLI bridge, regardless of how many are physicaly attached.
-//!       You should enumerate thru the GPUs with the \ref NvAPI_GPU_QueryIlluminationSupport call to
-//!       determine which GPU is managing the attribute.
+//! SUPPORTED OS:  Windows XP and higher
 //!
-//! SUPPORTED OS:  Windows Vista and higher
 //!
-//! \since Version: 300.05
+//! \param [in]     displayId       Display ID of display to retrieve 
+//!                                 GPU and outputId for
+//! \param [out]    hPhysicalGpu    Handle to the physical GPU
+//! \param [out]    outputId )      Connected display output ID on the 
+//!                                 target GPU will only have one bit set.
 //!
-//! \param [in]  hPhysicalGpu        Physical GPU handle
-//! \param       Attribute           An enumeration value specifying the Illumination attribute to be set
-//! \param       Value               The new value for the specified attribute.
-//!                                  This should be specified as a percentage of the full range of the attribute
-//!                                  (0-100; 0 = off, 100 = full brightness)
-//!                                  If a value is specified outside this range, NVAPI_INVALID_ARGUMENT will be returned.
-//! 
-//! \return See \ref nvapistatus for the list of possible return values. Return values of special interest are:
-//!             NVAPI_INVALID_ARGUMENT	The specified attibute is not known to the driver, or the specified value is out of range.
-//!             NVAPI_NOT_SUPPORTED     The specified attribute is not supported on the specified GPU.
-//
+//! \retval ::NVAPI_OK 
+//! \retval ::NVAPI_API_NOT_INTIALIZED 
+//! \retval ::NVAPI_ID_OUT_OF_RANGE    The DisplayId corresponds to a 
+//!                                    display which is not within the
+//!                                    normal outputId range.
+//! \retval ::NVAPI_ERROR   
+//! \retval ::NVAPI_INVALID_ARGUMENT 
+//!
+//! \ingroup sysgeneral
 ///////////////////////////////////////////////////////////////////////////////
-
-//! \ingroup gpu                
-typedef struct _NV_GPU_SET_ILLUMINATION_PARM_V1 {
-
-    // IN
-    NvU32   version;						//!< Version of this structure
-    NvPhysicalGpuHandle hPhysicalGpu;		//!< The handle of the GPU that you are checking for the specified attribute.
-                                            //!< Note that this is the GPU that is managing the attribute.
-                                            //!< Only a single GPU can manage an given attribute on a given HW element,
-                                            //!< regardless of how many are attatched.
-                                            //!< I.E. only one GPU will be used to control the brightness of the LED on an SLI bridge,
-                                            //!< regardless of how many are physicaly attached.
-                                            //!< You enumerate thru the GPUs with this call to determine which GPU is managing the attribute.
-    NV_GPU_ILLUMINATION_ATTRIB Attribute;   //!< An enumeration value specifying the Illumination attribute to be querried.
-                                            //!< refer to enum \ref NV_GPU_ILLUMINATION_ATTRIB.
-    NvU32    Value;                         //!< A DWORD containing the new value for the specified attribute.
-                                            //!< This should be specified as a percentage of the full range of the attribute
-                                            //!< (0-100; 0 = off, 100 = full brightness)
-                                            //!< If a value is specified outside this range, NVAPI_INVALID_ARGUMENT will be returned.
-    
-    // OUT
-                                    
-} NV_GPU_SET_ILLUMINATION_PARM_V1;
-
-//! \ingroup gpu 
-typedef NV_GPU_SET_ILLUMINATION_PARM_V1      NV_GPU_SET_ILLUMINATION_PARM;
-//! \ingroup gpu 
-#define NV_GPU_SET_ILLUMINATION_PARM_VER_1   MAKE_NVAPI_VERSION(NV_GPU_SET_ILLUMINATION_PARM_V1,1)
-//! \ingroup gpu 
-#define NV_GPU_SET_ILLUMINATION_PARM_VER     NV_GPU_SET_ILLUMINATION_PARM_VER_1
-
-//! \ingroup gpu 
-NVAPI_INTERFACE NvAPI_GPU_SetIllumination(NV_GPU_SET_ILLUMINATION_PARM *pIlluminationInfo);
+NVAPI_INTERFACE NvAPI_SYS_GetGpuAndOutputIdFromDisplayId(NvU32 displayId, NvPhysicalGpuHandle *hPhysicalGpu, NvU32 *outputId);
 
 
 
 #if (((defined(WIN32) || defined(_WIN32)) && defined(_MSC_VER) && (_MSC_VER <= 1399) && !defined(NVAPI_INTERNAL)) || defined(NVAPI_DEPRECATED_OLD))
-#pragma deprecated( NvAPI_GetDisplayDriverVersion, NvAPI_GPU_GetAllOutputs, NvAPI_GPU_GetConnectedOutputs, NvAPI_GPU_GetConnectedSLIOutputs, NvAPI_GPU_GetConnectedOutputsWithLidState, NvAPI_GPU_GetConnectedSLIOutputsWithLidState, NvAPI_SetView, NvAPI_GetView, NvAPI_SetViewEx, NvAPI_GetViewEx, NvAPI_VIO_SetCSC, NvAPI_VIO_GetCSC, NvAPI_VIO_SetGamma, NvAPI_VIO_GetGamma, NvAPI_VIO_SetSyncDelay, NvAPI_VIO_GetSyncDelay )
+#pragma deprecated( NvAPI_SetView, NvAPI_SetViewEx, NvAPI_GetDisplayDriverVersion, NvAPI_GPU_GetAllOutputs, NvAPI_GPU_GetConnectedOutputs, NvAPI_GPU_GetConnectedSLIOutputs, NvAPI_GPU_GetConnectedOutputsWithLidState, NvAPI_GPU_GetConnectedSLIOutputsWithLidState, NvAPI_GPU_GetPstatesInfoEx, NvAPI_GetView, NvAPI_GetViewEx, NvAPI_VIO_SetCSC, NvAPI_VIO_GetCSC, NvAPI_VIO_SetGamma, NvAPI_VIO_GetGamma, NvAPI_VIO_SetSyncDelay, NvAPI_VIO_GetSyncDelay )
 #endif
 
 #ifndef __NVAPI_EMPTY_SAL

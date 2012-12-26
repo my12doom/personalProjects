@@ -162,7 +162,7 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 		decoded_size = ilGetInteger(IL_IMAGE_SIZE_OF_DATA);
 		int width2 = ilGetInteger(IL_IMAGE_WIDTH);
 		int height2 = ilGetInteger(IL_IMAGE_HEIGHT);
-		ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE);
+		ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
 		data = (char*)ilGetData();
 		dst = m_decoded_data + width*4;
 		for(int y=0; y<height2; y++)

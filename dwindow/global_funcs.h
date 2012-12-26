@@ -215,7 +215,7 @@ class AutoSettingString
 public:
 	void save()
 	{
-		save_setting(m_key, m_value, 1024, REG_SZ);
+		save_setting(m_key, m_value, 20480, REG_SZ);
 	}
 	AutoSettingString(const wchar_t*key, const wchar_t *default_value)
 	{
@@ -223,6 +223,7 @@ public:
 		m_value = new wchar_t[20480];
 		wcscpy(m_value, default_value);
 		load_setting(m_key, m_value, 20480);
+		save_setting(m_key, m_value, 20480, REG_SZ);
 	}
 	~AutoSettingString()
 	{

@@ -105,6 +105,7 @@ m_widi_resolution_height(L"WidiScreenHeight", 0, REG_DWORD),
 m_toolbar_background(NULL),
 m_UI_logo(NULL),
 m_dragging_window(0),
+m_resize_window_on_open(L"OnOpen", FALSE, REG_DWORD),
 #ifdef VSTAR
 #endif
 m_simple_audio_switching(L"SimpleAudioSwitching", false)
@@ -2768,6 +2769,12 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname, const wc
 		seek(1000);
 		seek(0);
 	}
+	int w,h;
+	RECT rect;
+	m_renderer1->get_movie_desc(&w, &h);
+	GetClientRect(id_to_hwnd(1), &rect);
+	if ((BOOL)m_resize_window_on_open)
+		set_window_client_rect(1, w, h);
 	play();
 
 	// search and load subtitles

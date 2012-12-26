@@ -198,6 +198,7 @@ protected:
 	AutoSetting<bool> m_force_2d;
 	AutoSetting<double> m_movie_pos_y;
 	AutoSetting<double> m_movie_pos_x;
+	AutoSetting<BOOL> m_resize_window_on_open;	// FALSE
 	double m_parallax;
 	bool m_is_remux_file;
 	CComPtr<IStereoLayout> m_stereo_layout;

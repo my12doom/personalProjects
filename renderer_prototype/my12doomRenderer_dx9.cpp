@@ -25,6 +25,7 @@
 #include <math.h>
 #include <assert.h>
 #include "..\dwindow\global_funcs.h"
+#include "..\lua\my12doom_lua.h"
 
 enum helper_sample_format
 {
@@ -92,6 +93,7 @@ my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/):
 m_left_queue(_T("left queue")),
 m_right_queue(_T("right queue"))
 {
+	timeBeginPeriod(1);
 
 	typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)(UINT, IDirect3D9Ex**);
 
@@ -137,11 +139,9 @@ m_right_queue(_T("right queue"))
 	HMODULE h = LoadLibrary( L"d3d9.dll" );
 	if ( h )
 	{
-		typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)( UINT, 
-			IDirect3D9Ex**);
+		typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)( UINT, IDirect3D9Ex**);
 
-		LPDIRECT3DCREATE9EX func = (LPDIRECT3DCREATE9EX)GetProcAddress( h, 
-			"Direct3DCreate9Ex" );
+		LPDIRECT3DCREATE9EX func = (LPDIRECT3DCREATE9EX)GetProcAddress( h, "Direct3DCreate9Ex" );
 
 		if ( func )
 			func( D3D_SDK_VERSION, &m_D3DEx );
@@ -1104,6 +1104,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		}
 
 		UINT AdapterToUse=D3DADAPTER_DEFAULT;
+		char adapter_used_desc[512];	// debug only
 		D3DDEVTYPE DeviceType=D3DDEVTYPE_HAL;
 
 		D3DADAPTER_IDENTIFIER9  id1, id2; 
@@ -1130,10 +1131,12 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 
 			AdapterToUse = Adapter;
+			strcpy(adapter_used_desc, Identifier.Description);
 #ifdef PERFHUD
 			if (strstr(Identifier.Description,"PerfHUD") != 0) 
 			{ 
 				AdapterToUse=Adapter; 
+				strcpy(adapter_used_desc, Identifier.Description);
 				DeviceType=D3DDEVTYPE_REF; 
 
 				break; 
@@ -1144,6 +1147,8 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		CAutoLock lck(&m_frame_lock);
 
 		FAIL_RET(intel_get_caps());
+
+		mylog("using adapter %s\n", adapter_used_desc);
 
 		if (m_D3DEx)
 		{
@@ -1707,7 +1712,14 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	// set render target to back buffer
 	CComPtr<IDirect3DSurface9> back_buffer;
+	CComPtr<IDirect3DSurface9> test[2];
 	if (m_swap1) hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer);
+	if (m_swap1) hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &test[0]);
+	if (m_swap1) hr = m_swap1->GetBackBuffer(1, D3DBACKBUFFER_TYPE_MONO, &test[1]);
+
+	mylog("back buffer: %08x, %08x\n", test[0].p, test[1].p);
+
+
 
 	clear(back_buffer, D3DCOLOR_ARGB(255, 0, 0, 0));
 
@@ -1812,7 +1824,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		// copy right to nv3d surface
 		if (m_nv_version.drvVersion>28500)
 		{
-			//NvAPI_Stereo_SetActiveEye(m_nv3d_handle, NVAPI_STEREO_EYE_RIGHT);
+			NvAPI_Status res = NvAPI_Stereo_SetActiveEye(m_nv3d_handle, NVAPI_STEREO_EYE_RIGHT);
 			hr = m_Device->StretchRect(right_surface, NULL, back_buffer, NULL, D3DTEXF_NONE);
 			NvAPI_Stereo_SetActiveEye(m_nv3d_handle, NVAPI_STEREO_EYE_LEFT);
 
@@ -2220,7 +2232,7 @@ presant:
 		hr = DDERR_WASSTILLDRAWING;
 		while (hr == DDERR_WASSTILLDRAWING)
 			hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, NULL);
-// 		if (timeGetTime()-l2 > 9) printf("Presant() cost %dms.\n", timeGetTime() - l2);
+// 		if (timeGetTime()-l2 > 9) mylog("Presant() cost %dms.\n", timeGetTime() - l2);
 		if (FAILED(hr))
 			set_device_state(device_lost);
 
@@ -3075,6 +3087,18 @@ HRESULT my12doomRenderer::screenshot(const wchar_t*file)
 	return m_last_rendered_sample1->convert_to_RGB32_CPU(file);
 }
 
+HRESULT my12doomRenderer::get_movie_desc(int *width, int*height)
+{
+	if (width)
+		*width = m_lVidWidth;
+
+	if (height)
+		*height = m_lVidHeight;
+
+	return S_OK;
+}
+
+
 input_layout_types my12doomRenderer::get_active_input_layout()
 {
 	if (m_input_layout != input_layout_auto)
@@ -3260,6 +3284,7 @@ HRESULT my12doomRenderer::calculate_subtitle_position(RECTF *postion, bool left_
 	return E_NOTIMPL;
 }
 
+AutoSettingString g_mask_shader_file(L"MaskShaderFile", L"C:\\mask.lua");
 
 HRESULT my12doomRenderer::generate_mask()
 {
@@ -3280,7 +3305,76 @@ HRESULT my12doomRenderer::generate_mask()
 
 	BYTE *dst = (BYTE*) locked.pBits;
 
-	if (m_output_mode == multiview)
+	if (g_mask_shader_file[0] != NULL)
+	{
+		USES_CONVERSION;
+		luaL_loadfile(L, W2A(g_mask_shader_file));
+		int status = lua_pcall(L, 0, 0, 0);
+		lua_getglobal(L, "GetCellSize");
+		int w = 0;
+		int h = 0;
+		bool lua_ready = false;
+		if (lua_isfunction(L, -1))
+		{
+			lua_pcall(L, 0, 2, 0);
+			w = lua_tointeger(L, -2);
+			h = lua_tointeger(L, -1);
+			lua_settop(L, 0);
+
+			lua_getglobal(L, "Main");
+			if (w>0 && h > 0 && lua_isfunction(L, -1))
+			{
+
+				lua_ready = true;
+			}
+			lua_settop(L, 0);
+		}
+
+		if (lua_ready)
+		{
+			DWORD *atom = new DWORD[w*h];
+			int lua_time = timeGetTime();
+			for(int i=0; i<1000; i++)
+			for(int y = 0; y < h; y++)
+			{
+				DWORD * d = (DWORD*)(atom+w*y);
+				for(int x = 0; x < w; x++)
+				{
+					lua_getglobal(L, "Main");
+					lua_pushinteger(L, x%w);
+					lua_pushinteger(L, y%h);
+					lua_pcall(L, 2, 4, 0);
+					int R = lua_isnil(L, -4) ? 0 : lua_tointeger(L, -4);
+					int G = lua_isnil(L, -3) ? 0 : lua_tointeger(L, -3);
+					int B = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+					int A = lua_isnil(L, -1) ? 255 : lua_tointeger(L, -1);
+ 					lua_pop(L, 4);
+
+					d[x] = D3DCOLOR_ARGB(A, R,G,B);
+				}
+			}
+			lua_checkstack(L, 1);
+			mylog("lua cost time %d\n", timeGetTime() - lua_time);
+
+
+			for(int y = 0; y < m_active_pp.BackBufferHeight; y+=h)
+			{
+				DWORD * d = (DWORD*)(dst+locked.Pitch*y);
+				for(int x = 0; x < m_active_pp.BackBufferWidth; x+=w)
+				{
+					memcpy(d+x,atom + (y%h)*w + x%w, min(w, m_active_pp.BackBufferWidth - x) * sizeof(DWORD));
+				}
+			}
+
+			delete [] atom;
+		}
+		else
+		{
+			memset(dst, 0, locked.Pitch * m_active_pp.BackBufferHeight);
+		}
+
+	}
+	else if (m_output_mode == multiview)
 	{
 /*		// 412341234123
 		// 341234123412
@@ -3393,6 +3487,23 @@ HRESULT my12doomRenderer::generate_mask()
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
 		{
 			memcpy(dst, one_line[(i+m_mask_parameter)%6], m_active_pp.BackBufferWidth*4);
+			dst += locked.Pitch;
+		}
+	}
+	else if (m_mask_mode == subpixel_x2_interlace || m_mask_mode == subpixel_x2_45_interlace || m_mask_mode == subpixel_x2_minus45_interlace)
+	{
+		// RGB - RGB - RGB - RGB
+		// 112 - 211 - 221 - 122
+		D3DCOLOR one_line[BIG_TEXTURE_SIZE+6];
+		D3DCOLOR line_table[4] = {D3DCOLOR_ARGB(255, 255, 255, 0), D3DCOLOR_ARGB(255, 0, 255, 255), D3DCOLOR_ARGB(255, 0, 0, 255), D3DCOLOR_ARGB(255,255,0,0)};
+		for(DWORD i=0; i<BIG_TEXTURE_SIZE+6; i++)
+		{
+			one_line[i] = line_table[(i+m_mask_parameter)%4];
+		}
+
+		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
+		{
+			memcpy(dst, one_line + (m_mask_mode == subpixel_x2_45_interlace ? i : (m_mask_mode == subpixel_x2_minus45_interlace ? -i : 0) ) %4, m_active_pp.BackBufferWidth*4);
 			dst += locked.Pitch;
 		}
 	}

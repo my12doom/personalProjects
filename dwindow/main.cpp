@@ -6,6 +6,7 @@
 #include "resource.h"
 #include "vobsub_parser.h"
 #include "MediaInfo.h"
+#include "..\lua\my12doom_lua.h"
 #include <locale.h>
 #include <Dbghelp.h>
 #pragma comment(lib, "DbgHelp")
@@ -181,6 +182,7 @@ retry:
 	}
 	
 
+	dwindow_lua_init();
 	dx_player *test = new dx_player(hinstance);
 	BringWindowToTop(test->m_hwnd1);
 

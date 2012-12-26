@@ -16,6 +16,7 @@ public:
 	HRESULT show_window(int id, bool show);
 	HRESULT show_mouse(bool show);
 	HRESULT set_window_text(int id, const wchar_t *text);
+	HRESULT set_window_client_rect(int id, int width, int height);
 	bool m_full1;
 	bool m_full2;
 	HWND m_hwnd1;
@@ -53,7 +54,7 @@ protected:
 	virtual LRESULT on_timer(int id){return S_OK;}
 	virtual LRESULT on_size(int id, int type, int x, int y){return S_OK;}
 	virtual LRESULT on_dropfile(int id, int count, wchar_t **filenames){return S_OK;}
-	virtual LRESULT on_init_dialog(int id, WPARAM wParam, LPARAM lParam){return S_OK;}	// buged
+	virtual LRESULT on_init_dialog(int id, WPARAM wParam, LPARAM lParam){return S_OK;}
 
 	// helper function
 	virtual HWND id_to_hwnd(int id);
@@ -74,5 +75,8 @@ protected:
 	RECT m_screen1;
 	RECT m_screen2;
 	bool m_show_mouse;
+	int m_border_width;
+	int m_caption_height;
+	int m_border_height;
 };
 

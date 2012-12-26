@@ -171,6 +171,17 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		return S_JPG;
 	}
 
+	CASE(L"set_mask_parameter")
+	{
+		hr = m_renderer1->set_mask_parameter(myInt(args[0], m_renderer1->get_mask_parameter()));
+	}
+	CASE(L"get_mask_parameter")
+	{
+		int o = m_renderer1->get_mask_parameter();
+		wcscpy2(out, myInt(o));
+		hr = S_OK;
+	}
+
 	CASE(L"auth")
 	{
 		AutoSettingString password(L"DWindowNetworkPassword", L"TestCode");

@@ -114,6 +114,9 @@ enum mask_mode_types
 	checkboard_interlace,
 	subpixel_row_interlace,
 	subpixel_45_interlace,
+	subpixel_x2_interlace,
+	subpixel_x2_45_interlace,
+	subpixel_x2_minus45_interlace,
 	mask_mode_types_max,
 };
 

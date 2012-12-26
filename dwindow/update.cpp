@@ -40,7 +40,7 @@ HRESULT get_update_result(wchar_t *description, int *new_rev, wchar_t *url)
 
 DWORD WINAPI check_update_thread(LPVOID)
 {
-	Sleep(30*1000);
+ 	Sleep(30*1000);
 
 	int buffersize = 1024*1024;
 	char *data = (char*)malloc(buffersize);
@@ -55,14 +55,15 @@ DWORD WINAPI check_update_thread(LPVOID)
 	memset(data, 0, buffersize);
 	memset(data2, 0, buffersize);
 	memset(dataw, 0, buffersize*sizeof(wchar_t));
-	download_url(url, data, buffersize);
+ 	download_url(url, data, buffersize);
 	strcat(data, "\r\n");
 	ConvertToUTF8(data, strlen(data)+1, data2, buffersize);
 
 	MultiByteToWideChar(CP_UTF8, 0, data2, buffersize, dataw, buffersize);
 
 	wchar_t *exploded[3] = {0};
-	wcsexplode(dataw, L"\n", exploded, 3);
+	if (wcsexplode(dataw, L"\n", exploded, 3)<3)
+		return -1;
 
 	latest_rev = _wtoi(exploded[0]);
 	latest_url = exploded[1];

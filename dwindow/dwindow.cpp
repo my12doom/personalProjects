@@ -251,6 +251,14 @@ HRESULT dwindow::set_window_text(int id, const wchar_t *text)
 	return S_OK;
 }
 
+HRESULT dwindow::set_window_client_rect(int id, int width, int height)
+{
+	SetWindowPos(id_to_hwnd(id), NULL, 0, 0,
+		width+m_border_width*2, height+m_border_height+m_caption_height, SWP_NOMOVE );
+
+	return S_OK;
+}
+
 HRESULT dwindow::reset_timer(int id, int new_interval)
 {
 	KillTimer(m_hwnd1, id);
@@ -400,6 +408,15 @@ dwindow::dwindow(RECT screen1, RECT screen2)
 	m_exstyle1 = GetWindowLongPtr(m_hwnd1, GWL_EXSTYLE);
 	m_style2 = GetWindowLongPtr(m_hwnd2, GWL_STYLE);
 	m_exstyle2 = GetWindowLongPtr(m_hwnd2, GWL_EXSTYLE);
+
+	RECT rect;
+	RECT client;
+	GetWindowRect(m_hwnd1, &rect);
+	GetClientRect(m_hwnd1, &client);
+
+	m_border_width = m_border_height = ((rect.right-rect.left)-(client.right - client.left))/2;
+	m_caption_height = ((rect.bottom-rect.top)-(client.bottom - client.top)) - m_border_height;
+
 }
 
 
