@@ -1,0 +1,201 @@
+checking whether windres works... yes
+x264 configure script
+Command line options: "--enable-static" "--enable-win32thread" "--disable-interlaced" "--enable-strip"
+
+checking whether gcc works... yes
+checking whether gcc supports for( int i = 0; i < 9; i++ ); with -std=gnu99... yes
+checking whether yasm supports vpperm xmm0, xmm0, xmm0, xmm0... yes
+checking whether gcc supports __asm__("pabsw %xmm0, %xmm0");... yes
+checking for return log2f(2); in math.h... yes
+checking for sws_init_context(0,0,0); in libswscale/swscale.h... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99  -lswscale -lavutil   -Wl,--large-address-aware -o conftest
+conftest.c:1:32: ÖÂÃü´íÎó£ºlibswscale/swscale.h£ºNo such file or directory
+±àÒëÖÐ¶Ï¡£
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+#include <libswscale/swscale.h>
+int main () { sws_init_context(0,0,0); return 0; }
+--------------------------------------------------
+checking for -lpostproc... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99 -lpostproc   -Wl,--large-address-aware -o conftest
+c:/mingw/bin/../lib/gcc/mingw32/4.6.1/../../../../mingw32/bin/ld.exe: cannot find -lpostproc
+collect2: ld ·µ»Ø 1
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+int main () {  return 0; }
+--------------------------------------------------
+checking for -lavcodec... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99 -lavcodec   -Wl,--large-address-aware -o conftest
+c:/mingw/bin/../lib/gcc/mingw32/4.6.1/../../../../mingw32/bin/ld.exe: cannot find -lavcodec
+collect2: ld ·µ»Ø 1
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+int main () {  return 0; }
+--------------------------------------------------
+checking for -lavcore... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99 -lavcore   -Wl,--large-address-aware -o conftest
+c:/mingw/bin/../lib/gcc/mingw32/4.6.1/../../../../mingw32/bin/ld.exe: cannot find -lavcore
+collect2: ld ·µ»Ø 1
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+int main () {  return 0; }
+--------------------------------------------------
+checking for -lswscale... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99 -lswscale   -Wl,--large-address-aware -o conftest
+c:/mingw/bin/../lib/gcc/mingw32/4.6.1/../../../../mingw32/bin/ld.exe: cannot find -lswscale
+collect2: ld ·µ»Ø 1
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+int main () {  return 0; }
+--------------------------------------------------
+checking for -lavutil... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99 -lavutil   -Wl,--large-address-aware -o conftest
+c:/mingw/bin/../lib/gcc/mingw32/4.6.1/../../../../mingw32/bin/ld.exe: cannot find -lavutil
+collect2: ld ·µ»Ø 1
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+int main () {  return 0; }
+--------------------------------------------------
+checking for -lm... yes
+checking for -lz... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99 -lz   -Wl,--large-address-aware -o conftest
+c:/mingw/bin/../lib/gcc/mingw32/4.6.1/../../../../mingw32/bin/ld.exe: cannot find -lz
+collect2: ld ·µ»Ø 1
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+int main () {  return 0; }
+--------------------------------------------------
+checking for -lbz2... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99 -lbz2   -Wl,--large-address-aware -o conftest
+c:/mingw/bin/../lib/gcc/mingw32/4.6.1/../../../../mingw32/bin/ld.exe: cannot find -lbz2
+collect2: ld ·µ»Ø 1
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+int main () {  return 0; }
+--------------------------------------------------
+checking for -lavifil32... yes
+checking for avformat_find_stream_info(0,0); avcodec_open2(0,0,0); in libavformat/avformat.h... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99  -L. -lavformat -lm -lavifil32   -Wl,--large-address-aware -o conftest
+conftest.c:1:34: ÖÂÃü´íÎó£ºlibavformat/avformat.h£ºNo such file or directory
+±àÒëÖÐ¶Ï¡£
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+#include <libavformat/avformat.h>
+int main () { avformat_find_stream_info(0,0); avcodec_open2(0,0,0); return 0; }
+--------------------------------------------------
+checking for FFMS_DestroyVideoSource(0); in ffms.h... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99  -lffms2   -Wl,--large-address-aware -o conftest
+conftest.c:1:18: ÖÂÃü´íÎó£ºffms.h£ºNo such file or directory
+±àÒëÖÐ¶Ï¡£
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+#include <ffms.h>
+int main () { FFMS_DestroyVideoSource(0); return 0; }
+--------------------------------------------------
+checking for FFMS_DestroyVideoSource(0); in ffms.h... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99  -lffms2 -lstdc++ -L. -lavformat -lm -lavifil32   -Wl,--large-address-aware -o conftest
+conftest.c:1:18: ÖÂÃü´íÎó£ºffms.h£ºNo such file or directory
+±àÒëÖÐ¶Ï¡£
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+#include <ffms.h>
+int main () { FFMS_DestroyVideoSource(0); return 0; }
+--------------------------------------------------
+checking for -lz... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99 -lz   -Wl,--large-address-aware -o conftest
+c:/mingw/bin/../lib/gcc/mingw32/4.6.1/../../../../mingw32/bin/ld.exe: cannot find -lz
+collect2: ld ·µ»Ø 1
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+int main () {  return 0; }
+--------------------------------------------------
+checking for gpac/isomedia.h... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99 -lgpac_static -lwinmm   -Wl,--large-address-aware -o conftest
+conftest.c:1:27: ÖÂÃü´íÎó£ºgpac/isomedia.h£ºNo such file or directory
+±àÒëÖÐ¶Ï¡£
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+#include <gpac/isomedia.h>
+int main () {  return 0; }
+--------------------------------------------------
+checking for uint32_t test_vec __attribute__ ((vector_size (16))) = {0,1,2,3}; in stdint.h... yes
+checking for -fno-tree-vectorize... yes
+checking for -fno-zero-initialized-in-bss... yes
+checking for fseeko(stdin,0,0); in stdio.h... no
+Failed commandline was:
+--------------------------------------------------
+gcc conftest.c -O3 -ffast-math  -Wall -I. -I$(SRCPATH) -march=i686 -mfpmath=sse -msse -std=gnu99 -fomit-frame-pointer -s -fno-tree-vectorize -fno-zero-initialized-in-bss    -Wl,--large-address-aware -s -o conftest
+conftest.c: ÔÚº¯Êý¡®main¡¯ÖÐ:
+conftest.c:2:1: ¾¯¸æ£ºÒþÊ½ÉùÃ÷º¯Êý¡®fseeko¡¯ [-Wimplicit-function-declaration]
+D:\Users\kkk\AppData\Local\Temp\ccaFhthi.o:conftest.c:(.text.startup+0x27): undefined reference to `fseeko'
+collect2: ld ·µ»Ø 1
+--------------------------------------------------
+Failed program was:
+--------------------------------------------------
+#include <stdio.h>
+int main () { fseeko(stdin,0,0); return 0; }
+--------------------------------------------------
+checking for fseeko64(stdin,0,0); in stdio.h... yes
+checking for -Wshadow... yes
+
+platform:      X86
+system:        WINDOWS
+cli:           yes
+libx264:       internal
+shared:        no
+static:        yes
+asm:           yes
+interlaced:    no
+avs:           yes
+lavf:          no
+ffms:          no
+gpac:          no
+gpl:           yes
+thread:        win32
+filters:       crop select_every 
+debug:         no
+gprof:         no
+strip:         yes
+PIC:           no
+visualize:     no
+bit depth:     8
+chroma format: all
