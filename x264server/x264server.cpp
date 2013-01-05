@@ -43,7 +43,7 @@ void convertBGR2YUV420(IplImage *in, unsigned char* out_y, unsigned char* out_u,
 
 // camera variables
 CvCapture* pCapture = NULL;
-IplImage *yuv = NULL;
+IplImage *yuvFrame = NULL;
 
 // x264 variables
 uint8_t *yuv_buffer = NULL;
@@ -96,7 +96,7 @@ int x264_init()
 	param.b_cabac = 1;
 	param.b_annexb = 1;
 	param.rc.i_rc_method = X264_RC_ABR;
-	param.rc.i_bitrate = 150;
+	param.rc.i_bitrate = 1500;
 
 
 	encoder = x264_encoder_open(&param);
@@ -124,6 +124,7 @@ int x264_capture(int sock/* = -1*/)
 	x264_nal_t *nals;
 	int nnal;
 	int frame_size = 0;
+	bool isIDR = false;
 	camera_capture();
 	pic_in.i_pts = i_pts++;
 	x264_encoder_encode(encoder, &nals, &nnal, &pic_in, &pic_out);
@@ -141,8 +142,11 @@ int x264_capture(int sock/* = -1*/)
 		else
 			send(sock, (char*)nal->p_payload, nal->i_payload, NULL);
 		frame_size += nal->i_payload;
+		if (nal->i_type == 5)
+			isIDR = true;
 	}
 
+	printf("frame is %s IDR\n", isIDR ? "" : "not");
 	return 0;
 }
 
@@ -174,7 +178,7 @@ int camera_init()
 {
 	pCapture = cvCreateCameraCapture(-1);
 
-	yuv = cvCreateImage(cvSize(640,480), 8, 3);
+	yuvFrame = cvCreateImage(cvSize(640,480), 8, 3);
 	return 0;
 }
 
@@ -182,15 +186,6 @@ int camera_capture()
 {
 	IplImage* pFrame = cvQueryFrame( pCapture );
 
-	// RGB -> YUV
-// 	cvCvtColor(pFrame, gray, CV_BGR2GRAY);
-// 
-// 	for(int i=0; i<480; i++)
-// 	{
-// 		memcpy(yuv_buffer + 640 * i, gray->imageData + 640 * i, 640);
-// 	}
-// 
-// 	memset(yuv_buffer + 640*480, 128, 640*480/2);
 	convertBGR2YUV420(pFrame, yuv_buffer, yuv_buffer + 640*480, yuv_buffer + 640*480*5/4);
 
 	return 0;
@@ -198,7 +193,7 @@ int camera_capture()
 
 int camera_close()
 {
-	cvReleaseImage( &yuv );
+	cvReleaseImage( &yuvFrame );
 	cvReleaseCapture(&pCapture);
 	return 0;
 }
@@ -230,12 +225,6 @@ DWORD WINAPI handler_thread(LPVOID param)
 	x264_init();
 	int numbytes;
 	char buf[1024];
-	memset(buf, 0, sizeof(buf));
-// 	const char *welcome_string = "DWindow Network v0.0.1";
-// 	send(acc_socket, welcome_string, strlen(welcome_string), 0);
-// 	send(acc_socket, "\n", 1, 0);
-	char line[1024];
-	int p = 0;
 	while ((numbytes=recv(acc_socket, buf, sizeof(buf)-1, 0)) > 0) 
 	{
 		x264_capture(acc_socket);
@@ -249,7 +238,6 @@ DWORD WINAPI handler_thread(LPVOID param)
 		memset(buf, 0, sizeof(buf));
 	}
 	closesocket(acc_socket);
-
 
 	return 0;
 }
@@ -297,6 +285,9 @@ int TCPTest()
 	while(!server_stopping)
 	{
 		int acc_socket = accept(tmp_socket, (SOCKADDR*)&user_socket, &sock_size);
+		int buf = 0;
+// 		setsockopt(acc_socket, SOL_SOCKET, SO_SNDBUF, (char*)&buf, sizeof(buf));
+// 		setsockopt(acc_socket, SOL_SOCKET, SO_RCVBUF, (char*)&buf, sizeof(buf));
 
 		if (server_stopping)
 			break;
@@ -319,7 +310,7 @@ int TCPTest()
 void convertBGR2YUV420(IplImage *in, unsigned char* out_y, unsigned char* out_u, unsigned char* out_v)  
 {  
 	// first, convert the input image into YCbCr 
-	cvCvtColor(in, yuv, CV_BGR2YCrCb); 
+	cvCvtColor(in, yuvFrame, CV_BGR2YCrCb); 
 	/*  
 	* widthStep = channel number * width  
 	* if width%4 == 0  
@@ -339,16 +330,16 @@ void convertBGR2YUV420(IplImage *in, unsigned char* out_y, unsigned char* out_u,
 		{ 
 			// We use the chroma sample here, and put it into the out buffer 
 			// take the luminance sample 
-			out_y[idx_out_y++] = yuv->imageData[idx_in + i + 0]; // Y 
-			out_y[idx_out_y++] = yuv->imageData[idx_in + i + 3]; // Y 
-			out_y[idx_out_y++] = yuv->imageData[idx_in + i + 6]; // Y 
-			out_y[idx_out_y++] = yuv->imageData[idx_in + i + 9]; // Y 
+			out_y[idx_out_y++] = yuvFrame->imageData[idx_in + i + 0]; // Y 
+			out_y[idx_out_y++] = yuvFrame->imageData[idx_in + i + 3]; // Y 
+			out_y[idx_out_y++] = yuvFrame->imageData[idx_in + i + 6]; // Y 
+			out_y[idx_out_y++] = yuvFrame->imageData[idx_in + i + 9]; // Y 
 			if((j % 2) == 0) { 
 				// take the blue-difference and red-difference chroma components sample  
-				out_u[idx_out_u++] = yuv->imageData[idx_in + i + 1]; // Cr U  
-				out_u[idx_out_u++] = yuv->imageData[idx_in + i + 7]; // Cr U  
-				out_v[idx_out_v++] = yuv->imageData[idx_in + i + 2]; // Cb V  
-				out_v[idx_out_v++] = yuv->imageData[idx_in + i + 8]; // Cb V 
+				out_u[idx_out_u++] = yuvFrame->imageData[idx_in + i + 1]; // Cr U  
+				out_u[idx_out_u++] = yuvFrame->imageData[idx_in + i + 7]; // Cr U  
+				out_v[idx_out_v++] = yuvFrame->imageData[idx_in + i + 2]; // Cb V  
+				out_v[idx_out_v++] = yuvFrame->imageData[idx_in + i + 8]; // Cb V 
 			}  
 		}    
 	}

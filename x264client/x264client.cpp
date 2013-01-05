@@ -143,10 +143,8 @@ static void video_decode_example()
     AVCodec *codec;
     AVCodecContext *c= NULL;
     int frame, got_picture, len;
-    FILE *f;
     AVFrame *picture;
     uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
-    char buf[1024];
     AVPacket avpkt;
 
 	avcodec_register_all();
@@ -282,6 +280,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	return DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG1), NULL, about_window_proc);
 }
+/*
 
 int clip(int i)
 {
@@ -323,7 +322,7 @@ RGBQUAD RGB2YUV(RGBQUAD i)	// YUV is stored in RGB
 
 	return o;
 }
-
+*/
 
 void connect()
 {
@@ -356,10 +355,10 @@ void connect()
 	if(connect(sockfd,(struct sockaddr *)(&server_addr),sizeof(struct sockaddr))==-1)//¡¨Ω”Õ¯’æ         
 	{               
 		fprintf(stderr,"Connect Error:%s\a\n",strerror(errno));         
-		exit(1);                
+		exit(1);
 	}
 
-
-	char cmd[500] = "auth|TestCode\r\n";
-	send(sockfd, cmd, strlen(cmd), 0);
+	int buf = 0;
+// 	setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (char*)&buf, sizeof(buf));
+// 	setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, (char*)&buf, sizeof(buf));
 }
