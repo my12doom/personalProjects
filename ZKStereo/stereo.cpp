@@ -69,7 +69,7 @@ void CStereo::FindDisparityMap(CImage *Img0, CImage *Img1, int MinDisparity, int
 
 	// Create 2D arrays to store the disparity values and output images
 	m_DisparityValues = new CImage(m_Cols, m_Rows, 2);
-	m_DisplayImage = new CImage(m_Cols, m_Rows, 1);
+	m_DisplayImage = new CImage(m_Cols, m_Rows, 2);
 
 	// Compute the L0 values
 	ComputeL0Values(Img0, Img1, WinRadL0, MaxScaler, USE_SAD);
@@ -642,7 +642,7 @@ void CStereo::DisplayConfidenceValues()
 			if(val > 255.0)
 				val = 255.0;
 
-			m_DisplayImage->setValue(r, c, 0, val);
+			m_DisplayImage->setValue(r, c, 1, val);
 		}
 }
 

@@ -24,7 +24,7 @@ sq2sbs ::sq2sbs(PClip _child, IScriptEnvironment *env)
 		env->ThrowError("only YV12 is supported for now");
 
 	timeBeginPeriod(1);
-	vi.width /= 2;
+	vi.width;
 
 	vi.pixel_type = vi.CS_YV12;
 }
@@ -34,13 +34,19 @@ sq2sbs ::~sq2sbs()
 }
 
 
+BYTE clip(float v)
+{
+	v = max(0, v);
+	v = min(v, 255);
+	return (BYTE)v;
+}
 
 PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
 {
 	PVideoFrame src = child->GetFrame(n, env);
 	PVideoFrame dstFrame = env->NewVideoFrame(vi);
 
-	int width = vi.width;
+	int width = vi.width/2;
 	int height = vi.height;
 
 	const BYTE * p = src->GetReadPtr(PLANAR_Y);
@@ -63,20 +69,18 @@ PVideoFrame __stdcall sq2sbs::GetFrame(int n, IScriptEnvironment* env)
 
 	int a = GetTickCount();
 	xxxx.FindDisparityMap(&left, &right, -20, 20, 1, 2, 1, 8, 0.97, TRUE);
+	xxxx.DisplayConfidenceValues();
 	int b = GetTickCount() - a;
 
 	BYTE *dst = dstFrame->GetWritePtr(PLANAR_Y);
-	memset(dst + width * height, 128, width * height / 2);
+	memset(dst + width * height*2, 128, width * height);
 
 	for(int y=0; y<height; y++)
 	{
 		for(int x=0; x<width; x++)
 		{
-			BYTE &pixel = dst[(y)*width +x];
-			float vv = xxxx.m_DisplayImage->getValue(y, x, 0);
-			vv = max(0, vv);
-			vv = min(vv, 255);
-			pixel = vv;
+			dst[(y)*width*2 +x + width] = 255 - clip(xxxx.m_DisplayImage->getValue(y, x, 0));
+			dst[(y)*width*2 +x + 0    ] = clip(xxxx.m_DisplayImage->getValue(y, x, 1));
 		}
 	}
 	xxxx.Delete();
