@@ -47,6 +47,7 @@ int dwindow_lua_init () {
   lua_setglobal(L, "GetTickCount");
   lua_pushcfunction(L, &execute_luafile);
   lua_setglobal(L, "execute_luafile");
+
   result = lua_toboolean(L, -1);  /* get result */
 
   return 0;
@@ -54,7 +55,7 @@ int dwindow_lua_init () {
 
 int dwindow_lua_simple_test()
 {
-  luaL_loadfile(L, "Z:\\test.lua");
+	luaL_loadfile(L, "D:\\private\\render.lua");
   int status = lua_pcall(L, 0, 0, 0);
   lua_getglobal(L, "main");
   if (lua_isfunction(L, -1))

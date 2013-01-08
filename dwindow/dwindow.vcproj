@@ -46,7 +46,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;VSTAR;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -1675,6 +1675,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\renderer_prototype\my12doomRenderer_lua.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\my12doomRenderer_lua.h"
+				>
+			</File>
+			<File
 				RelativePath="..\renderer_prototype\my12doomRenderer_UI.cpp"
 				>
 			</File>
@@ -2084,6 +2092,26 @@
 			</File>
 			<File
 				RelativePath="..\lua\my12doom_lua.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="My Amplifier Results"
+			>
+			<File
+				RelativePath=".\My Amplifier Results\r000lw\r000lw.ampl"
+				>
+			</File>
+			<File
+				RelativePath=".\My Amplifier Results\r001hs\r001hs.ampl"
+				>
+			</File>
+			<File
+				RelativePath=".\My Amplifier Results\r002hs\r002hs.ampl"
+				>
+			</File>
+			<File
+				RelativePath=".\My Amplifier Results\r003hs\r003hs.ampl"
 				>
 			</File>
 		</Filter>

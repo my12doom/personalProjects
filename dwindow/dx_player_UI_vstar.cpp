@@ -87,9 +87,6 @@ HRESULT dx_player::invalidate_gpu()
 	safe_decommit(m_volume_base);
 	safe_decommit(m_volume_button);
 
-
-	m_ps_UI = NULL;
-	m_vertex = NULL;
 	m_ui_logo_gpu = NULL;
 	m_ui_tex_gpu = NULL;
 	m_ui_background_gpu = NULL;

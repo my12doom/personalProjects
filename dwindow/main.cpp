@@ -9,6 +9,7 @@
 #include "..\lua\my12doom_lua.h"
 #include <locale.h>
 #include <Dbghelp.h>
+#include "..\renderer_prototype\my12doomRenderer_lua.h"
 #pragma comment(lib, "DbgHelp")
 
 ICommandReciever *command_reciever;
@@ -183,6 +184,7 @@ retry:
 	
 
 	dwindow_lua_init();
+	my12doomRenderer_lua_init();
 	dx_player *test = new dx_player(hinstance);
 	BringWindowToTop(test->m_hwnd1);
 

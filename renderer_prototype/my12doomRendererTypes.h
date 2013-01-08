@@ -159,3 +159,17 @@ enum deinterlace_types
 	inverse_telecine,
 	telecide,
 };
+
+
+typedef struct resource_userdata_tag
+{
+	enum
+	{
+		RESOURCE_TYPE_GPU_SAMPLE,
+
+		TYPE_FORCE_DWORD = 0xffffffff,
+	} resource_type;
+
+	bool managed;
+	void *pointer;
+} resource_userdata;

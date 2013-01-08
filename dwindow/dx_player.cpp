@@ -26,6 +26,7 @@ LOGFONTW empty_logfontw = {0};
 
 #include "bomb_network.h"
 
+my12doomRenderer *g_renderer = NULL;
 
 wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for);
 bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for)
@@ -2388,7 +2389,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	if (id == 1)
 	{
 		widi_initialize();
-		m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
+		g_renderer = m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
 		m_renderer1->set_ui_drawer(this);
 		unsigned char passkey_big_decrypted[128];
 		RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);

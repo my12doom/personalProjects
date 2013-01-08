@@ -13,7 +13,6 @@
 #include "my12doomAutoShader.h"
 #include "gpu_sample.h"
 
-
 void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName);
 
 // this renderer must have a valid first window, if not, connection will fail.
@@ -509,8 +508,12 @@ protected:
 	ui_drawer_base *m_uidrawer;
 public:
 
+	// for ui_drawer class
 	HRESULT loadBitmap(gpu_sample **out, wchar_t *file);
 	HRESULT Draw(IDirect3DSurface9 *rt, gpu_sample *resource, RECTF *src, RECTF *dst, float alpha);
 
+	
+	// for lua useage
+	HRESULT get_resource(int arg, resource_userdata *resource);
+	HRESULT paint(int left, int top, int right, int bottom, resource_userdata *resource);
 };
-

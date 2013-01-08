@@ -2357,13 +2357,13 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 		src_rect = views[view];
 
 		// 9view
-// 		if (view <0 || view >= 9)
-// 			return E_NOTIMPL;
-// 		int x = view%3;
-// 		int y = view/3;
-// 		RECT r = {m_lVidWidth*x/3, m_lVidHeight*y/3, m_lVidWidth*(x+1)/3, m_lVidHeight*(y+1)/3};
-// 
-// 		src_rect = r;
+		if (view <0 || view >= 9)
+			return E_NOTIMPL;
+		int x = view%3;
+		int y = view/3;
+		RECT r = {m_lVidWidth*x/3, m_lVidHeight*y/3, m_lVidWidth*(x+1)/3, m_lVidHeight*(y+1)/3};
+
+		src_rect = r;
 		
 	}
 
@@ -2425,6 +2425,15 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 	if (!surface)
 		return E_POINTER;
 
+	lua_getglobal(L, "RenderUI");
+	if (lua_isfunction(L, -1))
+	{
+		lua_pcall(L, 0, 0, 0);
+		lua_settop(L, 0);
+	}
+	else
+		lua_pop(L, 1);
+
 	CAutoLock lck(&m_uidrawer_cs);
 	return m_uidrawer == NULL ? E_FAIL : m_uidrawer->draw_ui(surface, m_dsr0->m_State == State_Running);
 }
@@ -2443,6 +2452,32 @@ HRESULT my12doomRenderer::Draw(IDirect3DSurface9 *rt, gpu_sample *resource, RECT
 {
 	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 	return resize_surface(NULL, resource, rt, src, dst, bilinear_no_mipmap, alpha);
+}
+
+HRESULT my12doomRenderer::paint(int left, int top, int right, int bottom, resource_userdata *resource)
+{
+	CComPtr<IDirect3DSurface9> rt;
+	m_Device->GetRenderTarget(0, &rt);
+	RECT dst_rect = {left, top, right,bottom};
+
+	if (resource && resource->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
+	{
+		gpu_sample * sample = (gpu_sample*)resource->pointer;
+		if (sample != NULL )
+			sample->commit();
+		resize_surface(NULL, sample, rt, NULL, &dst_rect, bilinear_no_mipmap, 1.0f );
+	}
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::get_resource(int arg, resource_userdata *resource)
+{
+	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
+	resource->pointer = m_last_rendered_sample1;
+	resource->managed = true;
+
+	return S_OK;
 }
 
 
@@ -2886,7 +2921,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			shader_yuv = m_alpha_multiply;
 		}
 
-		float shader_alpha_parameter[8] = {0,0,0,0,0,0,alpha};
+		float shader_alpha_parameter[8] = {desc.Width, desc.Height, desc.Width/2, desc.Height, (float)m_last_reset_time/100000, (float)timeGetTime()/100000, alpha};
 
 		float mip_lod = (method == bilinear_mipmap_minus_one) ?  -1.0f : 0.0f;
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
@@ -3328,11 +3363,10 @@ HRESULT my12doomRenderer::generate_mask()
 			lua_getglobal(L, "Main");
 			if (w>0 && h > 0 && lua_isfunction(L, -1))
 			{
-
 				lua_ready = true;
 			}
-			lua_settop(L, 0);
 		}
+		lua_settop(L, 0);
 
 		if (lua_ready)
 		{
@@ -3501,7 +3535,7 @@ HRESULT my12doomRenderer::generate_mask()
 		// RGB - RGB - RGB - RGB
 		// 112 - 211 - 221 - 122
 		D3DCOLOR one_line[MAX_TEXTURE_SIZE+6];
-#define BGR
+//#define BGR
 #ifndef BGR
 		D3DCOLOR line_table[4] = {D3DCOLOR_XRGB(255, 255, 0), D3DCOLOR_XRGB(0, 255, 255), D3DCOLOR_XRGB(0, 0, 255), D3DCOLOR_XRGB(255,0,0)};
 #else
