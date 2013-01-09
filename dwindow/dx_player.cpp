@@ -15,6 +15,7 @@
 #include "AboudWindow.h"
 #include "update.h"
 #include "update_confirm_window.h"
+#include "..\renderer_prototype\my12doomRenderer_lua.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_CHECKUPDATE (WM_USER + 14)
@@ -892,6 +893,10 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 	case '4':
 		m_renderer1->set_mask_parameter(m_renderer1->get_mask_parameter()-1);
+		break;
+
+	case VK_F5:
+		my12doomRenderer_lua_loadscript();
 		break;
 
 	case VK_LEFT:

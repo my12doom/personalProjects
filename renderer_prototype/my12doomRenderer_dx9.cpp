@@ -1465,6 +1465,8 @@ HRESULT my12doomRenderer::test_PC_level()
 HRESULT my12doomRenderer::restore_gpu_objects()
 {
 	HRESULT hr;
+	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 	m_red_blue.set_source(m_Device, g_code_anaglyph, sizeof(g_code_anaglyph), true, (DWORD*)m_key);
 	m_ps_masking.set_source(m_Device, g_code_masking, sizeof(g_code_masking), true, (DWORD*)m_key);
@@ -2425,16 +2427,20 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 	if (!surface)
 		return E_POINTER;
 
-	lua_getglobal(L, "RenderUI");
-	if (lua_isfunction(L, -1))
+	CAutoLock lck(&g_csL);
+	lua_getglobal(g_L, "RenderUI");
+	if (lua_isfunction(g_L, -1))
 	{
-		lua_pcall(L, 0, 0, 0);
-		lua_settop(L, 0);
+		lua_pushinteger(g_L, m_active_pp.BackBufferWidth);
+		lua_pushinteger(g_L, m_active_pp.BackBufferHeight);
+		lua_pushinteger(g_L, 0);
+		lua_pcall(g_L, 3, 0, 0);
+		lua_settop(g_L, 0);
 	}
 	else
-		lua_pop(L, 1);
+		lua_pop(g_L, 1);
 
-	CAutoLock lck(&m_uidrawer_cs);
+	CAutoLock lck2(&m_uidrawer_cs);
 	return m_uidrawer == NULL ? E_FAIL : m_uidrawer->draw_ui(surface, m_dsr0->m_State == State_Running);
 }
 
@@ -2458,14 +2464,17 @@ HRESULT my12doomRenderer::paint(int left, int top, int right, int bottom, resour
 {
 	CComPtr<IDirect3DSurface9> rt;
 	m_Device->GetRenderTarget(0, &rt);
-	RECT dst_rect = {left, top, right,bottom};
+	RECTF dst_rect = {left, top, right,bottom};
 
 	if (resource && resource->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
 	{
 		gpu_sample * sample = (gpu_sample*)resource->pointer;
 		if (sample != NULL )
+		{
 			sample->commit();
-		resize_surface(NULL, sample, rt, NULL, &dst_rect, bilinear_no_mipmap, 1.0f );
+			m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+			resize_surface(NULL, sample, rt, NULL, &dst_rect, bilinear_no_mipmap, 1.0f );
+		}
 	}
 
 	return S_OK;
@@ -3347,26 +3356,27 @@ HRESULT my12doomRenderer::generate_mask()
 	if (g_mask_shader_file[0] != NULL)
 	{
 		USES_CONVERSION;
-		luaL_loadfile(L, W2A(g_mask_shader_file));
-		int status = lua_pcall(L, 0, 0, 0);
-		lua_getglobal(L, "GetCellSize");
+		CAutoLock lck(&g_csL);
+		luaL_loadfile(g_L, W2A(g_mask_shader_file));
+		int status = lua_pcall(g_L, 0, 0, 0);
+		lua_getglobal(g_L, "GetCellSize");
 		int w = 0;
 		int h = 0;
 		bool lua_ready = false;
-		if (lua_isfunction(L, -1))
+		if (lua_isfunction(g_L, -1))
 		{
-			lua_pcall(L, 0, 2, 0);
-			w = lua_tointeger(L, -2);
-			h = lua_tointeger(L, -1);
-			lua_settop(L, 0);
+			lua_pcall(g_L, 0, 2, 0);
+			w = lua_tointeger(g_L, -2);
+			h = lua_tointeger(g_L, -1);
+			lua_settop(g_L, 0);
 
-			lua_getglobal(L, "Main");
-			if (w>0 && h > 0 && lua_isfunction(L, -1))
+			lua_getglobal(g_L, "Main");
+			if (w>0 && h > 0 && lua_isfunction(g_L, -1))
 			{
 				lua_ready = true;
 			}
 		}
-		lua_settop(L, 0);
+		lua_settop(g_L, 0);
 
 		if (lua_ready)
 		{
@@ -3378,20 +3388,20 @@ HRESULT my12doomRenderer::generate_mask()
 				DWORD * d = (DWORD*)(atom+w*y);
 				for(int x = 0; x < w; x++)
 				{
-					lua_getglobal(L, "Main");
-					lua_pushinteger(L, x%w);
-					lua_pushinteger(L, y%h);
-					lua_pcall(L, 2, 4, 0);
-					int R = lua_isnil(L, -4) ? 0 : lua_tointeger(L, -4);
-					int G = lua_isnil(L, -3) ? 0 : lua_tointeger(L, -3);
-					int B = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
-					int A = lua_isnil(L, -1) ? 255 : lua_tointeger(L, -1);
- 					lua_pop(L, 4);
+					lua_getglobal(g_L, "Main");
+					lua_pushinteger(g_L, x%w);
+					lua_pushinteger(g_L, y%h);
+					lua_pcall(g_L, 2, 4, 0);
+					int R = lua_isnil(g_L, -4) ? 0 : lua_tointeger(g_L, -4);
+					int G = lua_isnil(g_L, -3) ? 0 : lua_tointeger(g_L, -3);
+					int B = lua_isnil(g_L, -2) ? 0 : lua_tointeger(g_L, -2);
+					int A = lua_isnil(g_L, -1) ? 255 : lua_tointeger(g_L, -1);
+ 					lua_pop(g_L, 4);
 
 					d[x] = D3DCOLOR_ARGB(A, R,G,B);
 				}
 			}
-			lua_checkstack(L, 1);
+			lua_checkstack(g_L, 1);
 			mylog("lua cost time %d\n", timeGetTime() - lua_time);
 
 

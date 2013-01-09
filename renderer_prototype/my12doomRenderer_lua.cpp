@@ -8,7 +8,7 @@ extern my12doomRenderer *g_renderer;
 
 int my12doomRenderer_lua_loadscript();
 
-static int paint(lua_State *L)
+static int paint_core(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
 	int left = lua_tointeger(L, parameter_count+0);
@@ -115,26 +115,27 @@ static int myprint(lua_State *L)
 
 int my12doomRenderer_lua_init()
 {
-	lua_pushcfunction(L, &paint);
-	lua_setglobal(L, "paint");
+	CAutoLock lck(&g_csL);
+	lua_pushcfunction(g_L, &paint_core);
+	lua_setglobal(g_L, "paint_core");
 
-	lua_pushcfunction(L, &get_resource);
-	lua_setglobal(L, "get_resource");
+	lua_pushcfunction(g_L, &get_resource);
+	lua_setglobal(g_L, "get_resource");
 
-	lua_pushcfunction(L, &load_bitmap_core);
-	lua_setglobal(L, "load_bitmap_core");
+	lua_pushcfunction(g_L, &load_bitmap_core);
+	lua_setglobal(g_L, "load_bitmap_core");
 
-	lua_pushcfunction(L, &release_resource_core);
-	lua_setglobal(L, "release_resource_core");
+	lua_pushcfunction(g_L, &release_resource_core);
+	lua_setglobal(g_L, "release_resource_core");
 
-	lua_pushcfunction(L, &commit_resource_core);
-	lua_setglobal(L, "commit_resource_core");
+	lua_pushcfunction(g_L, &commit_resource_core);
+	lua_setglobal(g_L, "commit_resource_core");
 
-	lua_pushcfunction(L, &decommit_resource_core);
-	lua_setglobal(L, "decommit_resource_core");
+	lua_pushcfunction(g_L, &decommit_resource_core);
+	lua_setglobal(g_L, "decommit_resource_core");
 
-	lua_pushcfunction(L, &myprint);
-	lua_setglobal(L, "print");
+	//lua_pushcfunction(L, &myprint);
+	//lua_setglobal(L, "print");
 
 	my12doomRenderer_lua_loadscript();
 
@@ -143,13 +144,14 @@ int my12doomRenderer_lua_init()
 
 int my12doomRenderer_lua_loadscript()
 {
-	if (LUA_OK == luaL_loadfile(L, "D:\\private\\render.lua"))
-		lua_pcall(L, 0, 0, 0);
+	CAutoLock lck(&g_csL);
+	if (LUA_OK == luaL_loadfile(g_L, "D:\\private\\render.lua"))
+		lua_pcall(g_L, 0, 0, 0);
 	else
 	{
-		const char * result = lua_tostring(L, -1);
+		const char * result = lua_tostring(g_L, -1);
 		printf("failed loading renderer lua script : %s\n", result);
-		lua_settop(L, 0);
+		lua_settop(g_L, 0);
 	}
 
 	return 0;

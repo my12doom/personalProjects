@@ -118,6 +118,8 @@ AutoSetting<double> g_scale(L"UIScale", 1.0);
 
 HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 {
+	return S_OK;
+
 	const double button_size = 40 * g_scale * g_scale;
 	const double margin_button_right = 32 * g_scale;
 	const double margin_button_bottom = 8 * g_scale;
@@ -141,9 +143,6 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 	const double numbers_height = 20 * g_scale;
 	const double numbers_bottom_margin = 26;
 	const double hidden_progress_width = 72 * g_scale;
-
-	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 	// calculate alpha
 	bool showui = m_show_ui && m_theater_owner == NULL;
@@ -319,6 +318,8 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 
 HRESULT dx_player::draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye)
 {
+	return S_OK;
+
 	int client_width = m_width;
 	int client_height = m_height;
 

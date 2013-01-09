@@ -9,21 +9,41 @@ local root
 local b
 local c
 local d
-local width = 500
-local height = 500
+local g_width = 500
+local g_height = 500
 local tbl ={}
 
 local bitmapcache = {}
 
-if begin_paint == nil then begin_paint = function() end end
-if end_paint == nil then end_paint = function() end end
-if paint == nil then paint = function() end end
+if paint_core == nil then paint_core = function() end end
 if get_resource == nil then get_resource = function() end end
 if load_bitmap_core == nil then load_bitmap_core = function() end end
 
+print("Hello!!!")
 
 function getname(frame)
 	return tbl[frame] or tostring(frame)
+end
+
+
+
+function clip(v, _min, _max)
+	if v > _max then
+		return _max
+	elseif v < _min then
+		return _min
+	else
+		return v
+	end
+end
+
+function paint(left, top, right, bottom, res)
+	left = clip(left+x, x, x+cx)
+	right = clip(right+x, x, x+cx)
+	top = clip(top+y, y, y+cy)
+	bottom = clip(bottom+y, y, y+cy)
+
+	return paint_core(left, top, right, bottom, res)
 end
 
 function BeginChild(left, top, right, bottom)
@@ -53,7 +73,7 @@ BaseFrame =
 }
 
 function debug(...)
-	print("--DEBUG", ...)
+	--print("--DEBUG", ...)
 end
 
 function BaseFrame:Create(o)
@@ -81,29 +101,11 @@ function BaseFrame:render(arg)
 	EndChild(self:GetClientRect())
 end
 
-function clip(v, _min, _max)
-	if v > _max then
-		return _max
-	elseif v < _min then
-		return _min
-	else
-		return v
-	end
-end
 
 function BaseFrame:RenderThis(arg)
-	local left, top, right, bottom = self:GetRect();
-	left = clip(left+x, x, x+cx)
-	right = clip(right+x, x, x+cx)
-	top = clip(top+y, y, y+cy)
-	bottom = clip(bottom+y, y, y+cy)
+	local left, top, right, bottom = self:GetRect()
 	debug("default rendering", getname(self), " at", left, top, right, bottom, x, y, cx, cy)
-
 	local resource = get_resource(0)
-	res = get_bitmap("Z:\\00013.bmp")
-
-	if self == root then resource = res end
-	print("resource=", resource, res)
 	paint(left, top, right, bottom, resource)
 end
 
@@ -178,17 +180,7 @@ function BaseFrame:GetAnchorPoint()
 end
 
 function BaseFrame:GetRect()
-	local left,right,top,bottom;
-	if self.parent == nil then
-		left, top, right, bottom = 200,200,200+width,200+height;
-	else
-		local l, t, r, b = self.parent:GetRect()
-		local w = r-l
-		local h = b-t
-		left, top, right, bottom = w/4,h/4,w*3/4,h*3/4
-	end
-	debug("default GetRect()", left, top, right, bottom)
-	return left, top, right, bottom
+	return 0,0,g_width,g_height
 end
 
 function BaseFrame:GetClientRect()
@@ -211,6 +203,7 @@ end
 root = BaseFrame:Create()
 b = BaseFrame:Create()
 c = BaseFrame:Create()
+logo = BaseFrame:Create()
 
 
 function root:RenderThis(arg)
@@ -228,6 +221,14 @@ function c:RenderThis(arg)
 	BaseFrame.RenderThis(self, arg)
 end
 
+function logo:GetRect()
+	return 0,0,g_width,g_height
+end
+
+function logo:RenderThis(arg)
+	paint_core(g_width/2 - 960, g_height/2 - 540, g_width/2 + 960, g_height/2 + 540, get_bitmap("Z:\\skin\\3d.png"))
+end
+
 
 d = BaseFrame:Create({RenderThis = function(self,arg)
 	--print("--rendering D")
@@ -240,7 +241,7 @@ tbl[c] = "C"
 tbl[d] = "D"
 
 function b:GetRect()
-	return 100,100,200,200
+	return 0,0,200,200
 end
 
 
@@ -260,10 +261,11 @@ function list_frame(frame, n)
 end
 
 -- layout testing
-root:AddChild(d)
-root:AddChild(b)
 root:AddChild(c)
+c:AddChild(d)
+d:AddChild(b)
 root:AddChild(d)
+root:AddChild(logo)
 --list_frame(root)
 --root:render()
 
@@ -291,18 +293,16 @@ print("ADDED c to D")
 --list_frame(root)
 --root:render()
 ]]--
-print(b:GetRect())
 
-function RenderUI(view)
-	releaseCache(true)
-	width = GetTickCount() % 1000
-	if width > 500 then width = 1000 - width end
-	width = 200+width * 300 / 500
-	height = width
-	--print("RenderUI")
+-- the Main Render function
+function RenderUI(width, height, view)
+	g_width = width
+	g_height = height
 	root:render()
 end
 
+
+-- GPU resource management
 function onInitCPU()
 	-- load resources here (optional)
 end
@@ -311,13 +311,13 @@ function onInitGPU()
 	-- commit them to GPU (optional)
 end
 
-function onInvalidateGPU()
-	-- decommit all GPU objects (must)
+function onReleaseGPU()
+	-- decommit all GPU resources (must)
 	releaseCache(true)
 end
 
-function onInvalidateCPU()
-	-- release all objects (must)
+function onReleaseCPU()
+	-- release all resources (must)
 	releaseCache(false)
 end
 
