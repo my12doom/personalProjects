@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opencv_core243.lib opencv_imgproc243.lib opencv_highgui243.lib opencv_ml243.lib opencv_video243.lib opencv_features2d243.lib opencv_calib3d243.lib opencv_objdetect243.lib opencv_contrib243.lib opencv_legacy243.lib opencv_flann243.lib"
+				AdditionalDependencies="opencv_core243d.lib opencv_imgproc243d.lib opencv_highgui243d.lib opencv_ml243d.lib opencv_video243d.lib opencv_features2d243d.lib opencv_calib3d243.lib opencv_objdetect243.lib opencv_contrib243.lib opencv_legacy243.lib opencv_flann243.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="x264;opencv/lib"
 				GenerateDebugInformation="true"
@@ -204,6 +204,34 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+		</Filter>
+		<Filter
+			Name="streaming"
+			>
+			<File
+				RelativePath=".\allocator.h"
+				>
+			</File>
+			<File
+				RelativePath=".\frame.h"
+				>
+			</File>
+			<File
+				RelativePath=".\session.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\session.h"
+				>
+			</File>
+			<File
+				RelativePath=".\session_manager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\session_manager.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

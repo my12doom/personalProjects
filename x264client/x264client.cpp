@@ -119,7 +119,7 @@ int get_h264_frame(void *buf)
 
 	int frame_size = 0;
 	if (recv(sockfd, (char*)&frame_size, 4, NULL) != 4)
-		return 0;
+		return -1;
 
 	char *dst = (char*)buf;
 	int recieved = 0;
@@ -185,8 +185,11 @@ static void video_decode_example()
 	int frame_read = 0;
     for(;;) {
         avpkt.size = get_h264_frame(inbuf);
-        if (avpkt.size == 0)
+        if (avpkt.size < 0)
             break;
+		frame_read ++;
+		if (avpkt.size == 0)
+			continue;
 
         /* NOTE1: some codecs are stream based (mpegvideo, mpegaudio)
            and this is the only method to use them because you cannot
@@ -222,7 +225,6 @@ static void video_decode_example()
             avpkt.size -= len;
             avpkt.data += len;
         }
-		frame_read ++;
     }
 
     /* some codecs, such as MPEG, transmit the I and P frame with a
@@ -334,7 +336,7 @@ void connect()
 	}
 
 	struct hostent *host;
-	if((host=gethostbyname("192.168.1.199"))==NULL)                              //取得主机IP地址               
+	if((host=gethostbyname("192.168.10.199"))==NULL)                              //取得主机IP地址               
 	{               
 		fprintf(stderr,"Gethostname error, %s\n", strerror(errno));             
 		exit(1);                
