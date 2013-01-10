@@ -22,8 +22,8 @@ void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName);
 class Imy12doomRendererCallback
 {
 public:
-	virtual HRESULT SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn) = 0;
-	virtual HRESULT PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn) = 0;
+	virtual HRESULT SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn, int stream_id) = 0;
+	virtual HRESULT PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn, int stream_id) = 0;
 };
 
 class my12doomRenderer;

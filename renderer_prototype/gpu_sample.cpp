@@ -784,6 +784,7 @@ gpu_sample::gpu_sample(const wchar_t *filename, CTextureAllocator *allocator)
 	return;
 
 clearup:
+	m_ready = false;
 	safe_delete(m_tex_RGB32);
 	safe_delete(m_tex_Y);
 	safe_delete(m_tex_YV12_UV);

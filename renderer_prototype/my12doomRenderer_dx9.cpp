@@ -453,8 +453,8 @@ HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 	bool should_render = true;
 	REFERENCE_TIME start=0, end=0;
 	media_sample->GetTime(&start, &end);
-	if (m_cb && id == 0)
-		m_cb->SampleCB(start + m_dsr0->m_thisstream, end + m_dsr0->m_thisstream, media_sample);
+	if (m_cb)
+		m_cb->SampleCB(start + m_dsr0->m_thisstream, end + m_dsr0->m_thisstream, media_sample, id);
 	if (id == 0)
 	{
 		m_first_PTS = m_first_PTS != 0 ? m_first_PTS : start;
@@ -608,8 +608,8 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 
 	REFERENCE_TIME start, end;
 	media_sample->GetTime(&start, &end);
-	if (m_cb && id == 0)
-		m_cb->PrerollCB(start + m_dsr0->m_thisstream, end + m_dsr0->m_thisstream, media_sample);
+	if (m_cb)
+		m_cb->PrerollCB(start + m_dsr0->m_thisstream, end + m_dsr0->m_thisstream, media_sample, id);
 
 
 	int l1 = timeGetTime();
@@ -2449,7 +2449,17 @@ HRESULT my12doomRenderer::loadBitmap(gpu_sample **out, wchar_t *file)
 		return E_POINTER;
 
 	CAutoLock lck(&m_pool_lock);
-	*out = new gpu_sample(file, m_pool);
+	gpu_sample *sample = new gpu_sample(file, m_pool);
+	if (!sample)
+		return E_OUTOFMEMORY;
+	if (!sample->m_ready)
+	{
+		delete sample;
+		return E_FAIL;
+	}
+
+	*out = sample;
+
 	return S_OK;
 }
 
@@ -3346,7 +3356,7 @@ HRESULT my12doomRenderer::calculate_subtitle_position(RECTF *postion, bool left_
 	return E_NOTIMPL;
 }
 
-AutoSettingString g_mask_shader_file(L"MaskShaderFile", L"C:\\mask.lua");
+AutoSettingString g_mask_shader_file(L"MaskShaderFile", L"");
 
 HRESULT my12doomRenderer::generate_mask()
 {

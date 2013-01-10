@@ -2490,11 +2490,11 @@ HRESULT dx_player::exit_direct_show()
 	return S_OK;
 }
 
-HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn)
+HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn, int stream_id)
 {
 	// warning: thread safe
 
-	if (!m_display_subtitle || !m_renderer1)
+	if (!m_display_subtitle || !m_renderer1 || stream_id != 0)
 		return S_OK;
 
 	// latency and ratio
@@ -2540,8 +2540,11 @@ HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, I
 	return S_OK;
 }
 
-HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn)
+HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IMediaSample *pIn, int stream_id)
 {
+	if (stream_id != 0)
+		return S_OK;
+
 	m_lastVideoCBTick = timeGetTime();
 
 	// warning: thread safe
@@ -3477,7 +3480,7 @@ HRESULT dx_player::draw_subtitle()
 	REFERENCE_TIME t = (REFERENCE_TIME)m_lastCBtime * 10000;
 	m_lastCBtime = -1;
 
-	HRESULT hr =  SampleCB(t, t, NULL);
+	HRESULT hr =  SampleCB(t, t, NULL, 0);
 	m_lastCBtime = t / 10000;
 	return hr;
 }
