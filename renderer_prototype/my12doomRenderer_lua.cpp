@@ -55,7 +55,11 @@ static int load_bitmap_core(lua_State *L)
 	USES_CONVERSION;
 	gpu_sample *sample = NULL;
 	if (FAILED(g_renderer->loadBitmap(&sample, A2W(filename))) || sample == NULL)
-		return 0;
+	{
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "failed loading bitmap file");
+		return 2;
+	}
 
 	resource_userdata *resource = new resource_userdata;
 	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
@@ -144,7 +148,7 @@ int my12doomRenderer_lua_init()
 int my12doomRenderer_lua_loadscript()
 {
 	CAutoLock lck(&g_csL);
-	if (LUA_OK == luaL_loadfile(g_L, "D:\\private\\render.lua"))
+	if (LUA_OK == luaL_loadfile(g_L, "E:\\private_projects\\render.lua"))
 		lua_pcall(g_L, 0, 0, 0);
 	else
 	{

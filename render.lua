@@ -220,7 +220,7 @@ end
 
 function logo:RenderThis(arg)
 	if not movie_loaded then
-		local 	res = get_bitmap("Z:\\skin\\logo2.jpg")
+		local 	res = get_bitmap("Z:\\skin\\logo2.bmp")
 
 		paint(g_width/2 - 960, g_height/2 - 540, g_width/2 + 960, g_height/2 + 540, res)
 	end
@@ -320,7 +320,9 @@ end
 
 function get_bitmap(filename)
 	if bitmapcache[filename] == nil then
-		bitmapcache[filename] = dwindow.load_bitmap_core(filename)
+		local msg
+		bitmapcache[filename], msg = dwindow.load_bitmap_core(filename)
+		if msg then debug(msg, filename) end
 	end
 	return bitmapcache[filename]
 end
