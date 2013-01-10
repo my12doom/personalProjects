@@ -118,8 +118,6 @@ AutoSetting<double> g_scale(L"UIScale", 1.0);
 
 HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 {
-	return S_OK;
-
 	const double button_size = 40 * g_scale * g_scale;
 	const double margin_button_right = 32 * g_scale;
 	const double margin_button_bottom = 8 * g_scale;
@@ -318,8 +316,6 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 
 HRESULT dx_player::draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye)
 {
-	return S_OK;
-
 	int client_width = m_width;
 	int client_height = m_height;
 

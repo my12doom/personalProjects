@@ -64,6 +64,7 @@ public:
 	~subtitle_file_handler();
 };
 
+class lua_drawer;
 class dx_player : protected Imy12doomRendererCallback, public dwindow, protected IColorAdjustCB, public Iplayer, public ui_drawer_base
 {
 public:
@@ -412,5 +413,18 @@ protected:
 	gpu_sample *m_volume_base;
 	gpu_sample *m_volume_button;
 
+	lua_drawer *m_lua;
 //#endif
+};
+
+class lua_drawer : public ui_drawer_base
+{
+public:
+	virtual HRESULT init_gpu(int width, int height, IDirect3DDevice9 *device);
+	virtual HRESULT init_cpu(int width, int height, IDirect3DDevice9 *device);
+	virtual HRESULT invalidate_gpu();
+	virtual HRESULT invalidate_cpu();
+	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, bool running);
+	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye);
+	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL);
 };

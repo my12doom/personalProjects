@@ -23,6 +23,19 @@ static int paint_core(lua_State *L)
 	return 1;
 }
 
+static int set_clip_rect_core(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	int left = lua_tointeger(L, parameter_count+0);
+	int top = lua_tointeger(L, parameter_count+1);
+	int right = lua_tointeger(L, parameter_count+2);
+	int bottom = lua_tointeger(L, parameter_count+3);
+
+	g_renderer->set_clip_rect(left, top, right, bottom);
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
 static int get_resource(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
@@ -115,27 +128,13 @@ static int myprint(lua_State *L)
 
 int my12doomRenderer_lua_init()
 {
-	CAutoLock lck(&g_csL);
-	lua_pushcfunction(g_L, &paint_core);
-	lua_setglobal(g_L, "paint_core");
-
-	lua_pushcfunction(g_L, &get_resource);
-	lua_setglobal(g_L, "get_resource");
-
-	lua_pushcfunction(g_L, &load_bitmap_core);
-	lua_setglobal(g_L, "load_bitmap_core");
-
-	lua_pushcfunction(g_L, &release_resource_core);
-	lua_setglobal(g_L, "release_resource_core");
-
-	lua_pushcfunction(g_L, &commit_resource_core);
-	lua_setglobal(g_L, "commit_resource_core");
-
-	lua_pushcfunction(g_L, &decommit_resource_core);
-	lua_setglobal(g_L, "decommit_resource_core");
-
-	//lua_pushcfunction(L, &myprint);
-	//lua_setglobal(L, "print");
+	g_lua_manager->get_variable("paint_core") = &paint_core;
+	g_lua_manager->get_variable("set_clip_rect_core") = &set_clip_rect_core;
+	g_lua_manager->get_variable("get_resource") = &get_resource;
+	g_lua_manager->get_variable("load_bitmap_core") = &load_bitmap_core;
+	g_lua_manager->get_variable("release_resource_core") = &release_resource_core;
+	g_lua_manager->get_variable("commit_resource_core") = &commit_resource_core;
+	g_lua_manager->get_variable("decommit_resource_core") = &decommit_resource_core;
 
 	my12doomRenderer_lua_loadscript();
 

@@ -2286,9 +2286,21 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 
 	if (!m_dsr0->is_connected())
 	{
+		{
+			CAutoLock lck(&g_csL);
+			lua_pushboolean(g_L, FALSE);
+			lua_setglobal(g_L, "movie_loaded");
+		}
+
 		CAutoLock lck(&m_uidrawer_cs);
 		m_last_reset_time = timeGetTime();
 		return m_uidrawer != NULL ? m_uidrawer->draw_nonmovie_bg(surface, left_eye) : E_FAIL;
+	}
+
+	{
+		CAutoLock lck(&g_csL);
+		lua_pushboolean(g_L, TRUE);
+		lua_setglobal(g_L, "movie_loaded");
 	}
 
 	CComPtr<IDirect3DSurface9> src;
@@ -2427,19 +2439,6 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
 	if (!surface)
 		return E_POINTER;
 
-	CAutoLock lck(&g_csL);
-	lua_getglobal(g_L, "RenderUI");
-	if (lua_isfunction(g_L, -1))
-	{
-		lua_pushinteger(g_L, m_active_pp.BackBufferWidth);
-		lua_pushinteger(g_L, m_active_pp.BackBufferHeight);
-		lua_pushinteger(g_L, 0);
-		lua_pcall(g_L, 3, 0, 0);
-		lua_settop(g_L, 0);
-	}
-	else
-		lua_pop(g_L, 1);
-
 	CAutoLock lck2(&m_uidrawer_cs);
 	return m_uidrawer == NULL ? E_FAIL : m_uidrawer->draw_ui(surface, m_dsr0->m_State == State_Running);
 }
@@ -2473,9 +2472,19 @@ HRESULT my12doomRenderer::paint(int left, int top, int right, int bottom, resour
 		{
 			sample->commit();
 			m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			resize_surface(NULL, sample, rt, NULL, &dst_rect, bilinear_no_mipmap, 1.0f );
+			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
+			resize_surface(NULL, sample, rt, NULL, &dst_rect, lanczos, 1.0f );
+			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 		}
 	}
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::set_clip_rect(int left, int top, int right, int bottom)
+{
+	RECT rect = {left, top, right, bottom};
+	m_Device->SetScissorRect(&rect);
 
 	return S_OK;
 }
@@ -2634,6 +2643,8 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 	}
 
 	// RECT caculate;
+	RECT clip;
+	m_Device->GetScissorRect(&clip);
 	D3DSURFACE_DESC desc;
 	dst->GetDesc(&desc);
 	RECTF d = {0,0,(float)desc.Width, (float)desc.Height};
@@ -2838,6 +2849,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 
 		// pass2, Y filter
 		m_Device->SetRenderTarget(0, dst);
+		m_Device->SetScissorRect(&clip);
 		vertex[0].x = (float)d.left;
 		vertex[0].y = (float)d.top;
 		vertex[1].x = (float)d.right;
@@ -2887,6 +2899,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 	{
 		// pass0, 2D filter, rather slow, a little better quality
 		m_Device->SetRenderTarget(0, dst);
+		m_Device->SetScissorRect(&clip);
 
 		// shader
 		IDirect3DPixelShader9 * lanczos_shader = m_lanczos;
@@ -2939,6 +2952,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, (method == bilinear_no_mipmap) ? D3DTEXF_NONE : D3DTEXF_LINEAR );
 
 		m_Device->SetRenderTarget(0, dst);
+		m_Device->SetScissorRect(&clip);
 		m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 		m_Device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
 		m_Device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
@@ -4616,9 +4630,6 @@ HRESULT my12doomRenderer::HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirec
 
 HRESULT my12doomRenderer::set_ui_drawer(ui_drawer_base * new_ui_drawer)
 {
-	if (!new_ui_drawer)
-		return E_POINTER;
-
 	CAutoLock lck(&m_uidrawer_cs);
 	if (NULL != m_uidrawer)
 		m_uidrawer->uninit();

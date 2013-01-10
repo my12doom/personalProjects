@@ -16,6 +16,7 @@
 #include "update.h"
 #include "update_confirm_window.h"
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
+#include "..\lua\my12doom_lua.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_CHECKUPDATE (WM_USER + 14)
@@ -896,7 +897,9 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case VK_F5:
+ 		m_renderer1->set_ui_drawer(NULL);
 		my12doomRenderer_lua_loadscript();
+		m_renderer1->set_ui_drawer(m_lua);
 		break;
 
 	case VK_LEFT:
@@ -2396,6 +2399,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		widi_initialize();
 		g_renderer = m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
 		m_renderer1->set_ui_drawer(this);
+		m_renderer1->set_ui_drawer(m_lua = new lua_drawer());
 		unsigned char passkey_big_decrypted[128];
 		RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
 		m_renderer1->m_AES.set_key((unsigned char*)passkey_big_decrypted+64, 256);
@@ -4641,4 +4645,77 @@ LRESULT dx_player::OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam)
 
 	wprintf(L"Found Adapter %s\r\n", id);
 	return S_OK;
+}
+
+HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
+{
+	g_lua_manager->get_variable("width") = width;
+	g_lua_manager->get_variable("height") = height;
+
+	CAutoLock lck(&g_csL);
+	lua_getglobal(g_L, "OnInitGPU");
+	if (lua_isfunction(g_L, -1))
+		lua_pcall(g_L, 0, 0, 0);
+	lua_settop(g_L, 0);
+
+	return S_OK;
+}
+HRESULT lua_drawer::init_cpu(int width, int height, IDirect3DDevice9 *device)
+{
+	g_lua_manager->get_variable("width") = width;
+	g_lua_manager->get_variable("height") = height;
+
+	CAutoLock lck(&g_csL);
+	lua_getglobal(g_L, "OnInitCPU");
+	if (lua_isfunction(g_L, -1))
+		lua_pcall(g_L, 0, 0, 0);
+	lua_settop(g_L, 0);
+
+	return S_OK;
+}
+HRESULT lua_drawer::invalidate_gpu()
+{
+	CAutoLock lck(&g_csL);
+	lua_getglobal(g_L, "OnReleaseGPU");
+	if (lua_isfunction(g_L, -1))
+		lua_pcall(g_L, 0, 0, 0);
+	lua_settop(g_L, 0);
+
+	return S_OK;
+}
+HRESULT lua_drawer::invalidate_cpu()
+{
+	CAutoLock lck(&g_csL);
+	lua_getglobal(g_L, "OnReleaseCPU");
+	if (lua_isfunction(g_L, -1))
+		lua_pcall(g_L, 0, 0, 0);
+	lua_settop(g_L, 0);
+
+	return S_OK;
+}
+HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, bool running)
+{
+	g_lua_manager->get_variable("running") = running;
+
+	CAutoLock lck(&g_csL);
+	lua_getglobal(g_L, "RenderUI");
+	if (lua_isfunction(g_L, -1))
+	{
+		lua_pushinteger(g_L, 0);
+		lua_pcall(g_L, 1, 0, 0);
+		lua_settop(g_L, 0);
+	}
+	else
+		lua_pop(g_L, 1);
+
+	return S_OK;
+}
+HRESULT lua_drawer::draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye)
+{
+	return S_OK;
+}
+
+HRESULT lua_drawer::hittest(int x, int y, int *out, double *outv)
+{
+	return E_FAIL;
 }

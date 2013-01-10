@@ -12,7 +12,6 @@ local d
 local g_width = 500
 local g_height = 500
 local tbl ={}
-
 local bitmapcache = {}
 
 if paint_core == nil then paint_core = function() end end
@@ -20,30 +19,22 @@ if get_resource == nil then get_resource = function() end end
 if load_bitmap_core == nil then load_bitmap_core = function() end end
 
 print("Hello!!!")
+print(dwindow.GetTickCount())
 
 function getname(frame)
 	return tbl[frame] or tostring(frame)
 end
 
 
-
-function clip(v, _min, _max)
-	if v > _max then
-		return _max
-	elseif v < _min then
-		return _min
-	else
-		return v
-	end
-end
-
 function paint(left, top, right, bottom, res)
-	left = clip(left+x, x, x+cx)
-	right = clip(right+x, x, x+cx)
-	top = clip(top+y, y, y+cy)
-	bottom = clip(bottom+y, y, y+cy)
+	left = left+x
+	right = right+x
+	top = top+y
+	bottom = bottom+y
 
-	return paint_core(left, top, right, bottom, res)
+	dwindow.set_clip_rect_core(x,y,x+cx,y+cy)
+
+	return dwindow.paint_core(left, top, right, bottom, res)
 end
 
 function BeginChild(left, top, right, bottom)
@@ -89,16 +80,17 @@ function BaseFrame:render(arg)
 
 	self:RenderThis(self, arg)
 
-	BeginChild(self:GetClientRect())
 
 	for i=1,#self.childs do
 		local v = self.childs[i]
 		if v and v.render then
+			local l,r,t,b = v:GetRect();
+			BeginChild(l,r,t,b)
 			v:render(arg)
+			EndChild(l,r,t,b)
 		end
 	end
 
-	EndChild(self:GetClientRect())
 end
 
 
@@ -106,7 +98,7 @@ function BaseFrame:RenderThis(arg)
 	local left, top, right, bottom = self:GetRect()
 	debug("default rendering", getname(self), " at", left, top, right, bottom, x, y, cx, cy)
 	local resource = get_resource(0)
-	paint(left, top, right, bottom, resource)
+	--paint(left, top, right, bottom, resource)
 end
 
 function BaseFrame:AddChild(frame, pos)
@@ -204,6 +196,7 @@ root = BaseFrame:Create()
 b = BaseFrame:Create()
 c = BaseFrame:Create()
 logo = BaseFrame:Create()
+toolbar_bg = BaseFrame:Create()
 
 
 function root:RenderThis(arg)
@@ -226,15 +219,28 @@ function logo:GetRect()
 end
 
 function logo:RenderThis(arg)
-	paint_core(g_width/2 - 960, g_height/2 - 540, g_width/2 + 960, g_height/2 + 540, get_bitmap("Z:\\skin\\3d.png"))
+	if not movie_loaded then
+		local 	res = get_bitmap("Z:\\skin\\logo2.jpg")
+
+		paint(g_width/2 - 960, g_height/2 - 540, g_width/2 + 960, g_height/2 + 540, res)
+	end
 end
 
+function toolbar_bg:GetRect()
+	local toolbar_height = 65
+	return 0, g_height - toolbar_height, g_width, g_height
+end
 
-d = BaseFrame:Create({RenderThis = function(self,arg)
-	--print("--rendering D")
-	BaseFrame.RenderThis(self, arg)
-end});
+function toolbar_bg:RenderThis(arg)
+	local l,t,r,b = self:GetRect()
+	local res = get_bitmap("Z:\\skin\\toolbar_background.png");
+	paint(0,0,r-l,b-t, res)
+end
 
+d = BaseFrame:Create()
+
+
+-- helper function
 tbl[root] = "ROOT"
 tbl[b] = "B"
 tbl[c] = "C"
@@ -266,69 +272,47 @@ c:AddChild(d)
 d:AddChild(b)
 root:AddChild(d)
 root:AddChild(logo)
---list_frame(root)
---root:render()
-
---[[
-root:RemoveChild(c)
-root:RemoveChild(c)
-c:RemoveFromParent()
-c:RemoveFromParent()
-print("REMOVED c")
---list_frame(root)
---root:render()
-
-d:AddChild(c)
-print("ADDED c to D")
---list_frame(root)
---root:render()
-
---b:RemoveFromParent()
---c:AddChild(b)
---list_frame(root)
---root:render()
-
---c:RemoveFromParent()
---root:AddChild(c)
---list_frame(root)
---root:render()
-]]--
+root:AddChild(toolbar_bg)
 
 -- the Main Render function
-function RenderUI(width, height, view)
-	g_width = width
-	g_height = height
+function RenderUI(view)
+	g_width = dwindow.width
+	g_height = dwindow.height
 	root:render()
 end
 
 
 -- GPU resource management
-function onInitCPU()
+function OnInitCPU()
 	-- load resources here (optional)
+	print("OnInitCPU")
 end
 
-function onInitGPU()
+function OnInitGPU()
+	print("OnInitGPU")
 	-- commit them to GPU (optional)
 end
 
-function onReleaseGPU()
+function OnReleaseGPU()
 	-- decommit all GPU resources (must)
+	print("OnReleaseGPU")
 	releaseCache(true)
 end
 
-function onReleaseCPU()
+function OnReleaseCPU()
 	-- release all resources (must)
+	print("OnReleaseCPU")
 	releaseCache(false)
 end
 
 function releaseCache(is_decommit)
 	if is_decommit then
 		for _,v in pairs(bitmapcache) do
-			decommit_resource_core(v)
+			dwindow.decommit_resource_core(v)
 		end
 	else
 		for _,v in pairs(bitmapcache) do
-			release_resource_core(v)
+			dwindow.release_resource_core(v)
 			bitmapcache = {}
 		end
 	end
@@ -336,7 +320,7 @@ end
 
 function get_bitmap(filename)
 	if bitmapcache[filename] == nil then
-		bitmapcache[filename] = load_bitmap_core(filename)
+		bitmapcache[filename] = dwindow.load_bitmap_core(filename)
 	end
 	return bitmapcache[filename]
 end
@@ -345,9 +329,9 @@ function unload_bitmap(filename, is_decommit)
 	if not bitmapcache[filename] then return end
 
 	if is_decommit then
-		decommit_resource_core(bitmapcache[filename])
+		dwindow.decommit_resource_core(bitmapcache[filename])
 	else
-		release_resource_core()
+		dwindow.release_resource_core()
 		bitmapcache[filename] = nil
 	end
 end
