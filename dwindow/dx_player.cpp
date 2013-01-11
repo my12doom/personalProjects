@@ -4650,6 +4650,9 @@ LRESULT dx_player::OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam)
 	return S_OK;
 }
 
+lua_drawer::lua_drawer()
+{
+}
 HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 {
 	g_lua_manager->get_variable("width") = width;
@@ -4658,7 +4661,7 @@ HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 	CAutoLock lck(&g_csL);
 	lua_getglobal(g_L, "OnInitGPU");
 	if (lua_isfunction(g_L, -1))
-		lua_pcall(g_L, 0, 0, 0);
+		lua_mypcall(g_L, 0, 0, 0);
 	lua_settop(g_L, 0);
 
 	return S_OK;
@@ -4671,7 +4674,7 @@ HRESULT lua_drawer::init_cpu(int width, int height, IDirect3DDevice9 *device)
 	CAutoLock lck(&g_csL);
 	lua_getglobal(g_L, "OnInitCPU");
 	if (lua_isfunction(g_L, -1))
-		lua_pcall(g_L, 0, 0, 0);
+		lua_mypcall(g_L, 0, 0, 0);
 	lua_settop(g_L, 0);
 
 	return S_OK;
@@ -4681,7 +4684,7 @@ HRESULT lua_drawer::invalidate_gpu()
 	CAutoLock lck(&g_csL);
 	lua_getglobal(g_L, "OnReleaseGPU");
 	if (lua_isfunction(g_L, -1))
-		lua_pcall(g_L, 0, 0, 0);
+		lua_mypcall(g_L, 0, 0, 0);
 	lua_settop(g_L, 0);
 
 	return S_OK;
@@ -4691,7 +4694,7 @@ HRESULT lua_drawer::invalidate_cpu()
 	CAutoLock lck(&g_csL);
 	lua_getglobal(g_L, "OnReleaseCPU");
 	if (lua_isfunction(g_L, -1))
-		lua_pcall(g_L, 0, 0, 0);
+		lua_mypcall(g_L, 0, 0, 0);
 	lua_settop(g_L, 0);
 
 	return S_OK;
@@ -4705,7 +4708,7 @@ HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, bool running)
 	if (lua_isfunction(g_L, -1))
 	{
 		lua_pushinteger(g_L, 0);
-		lua_pcall(g_L, 1, 0, 0);
+		lua_mypcall(g_L, 1, 0, 0);
 		lua_settop(g_L, 0);
 	}
 	else

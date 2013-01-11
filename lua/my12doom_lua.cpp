@@ -254,3 +254,13 @@ void lua_global_variable::operator=(lua_CFunction func)
 	lua_setfield(L, -2, m_name);
 	lua_pop(L, 1);
 }
+
+int lua_mypcall(lua_State *L, int n, int r, int flag)
+{
+	int o;
+	if (o = lua_pcall(L, n, r, flag))
+	{
+		printf("%s\n", lua_tostring(L, -1));
+	}
+	return o;
+}

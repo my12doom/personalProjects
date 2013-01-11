@@ -420,6 +420,7 @@ protected:
 class lua_drawer : public ui_drawer_base
 {
 public:
+	lua_drawer();
 	virtual HRESULT init_gpu(int width, int height, IDirect3DDevice9 *device);
 	virtual HRESULT init_cpu(int width, int height, IDirect3DDevice9 *device);
 	virtual HRESULT invalidate_gpu();

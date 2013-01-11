@@ -12,6 +12,7 @@ extern "C"
 
 int dwindow_lua_init();
 int dwindow_lua_exit();
+int lua_mypcall(lua_State *L, int n, int r, int flag);
 extern lua_State *g_L;
 extern CCritSec g_csL;
 

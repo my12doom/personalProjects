@@ -2483,7 +2483,7 @@ HRESULT my12doomRenderer::paint(int left, int top, int right, int bottom, resour
 			sample->commit();
 			m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-			resize_surface(NULL, sample, rt, NULL, &dst_rect, lanczos, 1.0f );
+			resize_surface(NULL, sample, rt, NULL, &dst_rect, bilinear_no_mipmap, 1.0f );
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 		}
 	}

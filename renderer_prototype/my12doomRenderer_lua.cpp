@@ -148,9 +148,14 @@ int my12doomRenderer_lua_init()
 int my12doomRenderer_lua_loadscript()
 {
 	CAutoLock lck(&g_csL);
-	if (LUA_OK == luaL_loadfile(g_L, "E:\\private_projects\\render.lua"))
-		lua_pcall(g_L, 0, 0, 0);
-	else
+	if (luaL_loadfile(g_L, "d:\\private\\base_frame.lua") || lua_pcall(g_L, 0, 0, 0))
+	{
+		const char * result = lua_tostring(g_L, -1);
+		printf("failed loading renderer lua script : %s\n", result);
+		lua_settop(g_L, 0);
+	}
+
+	if (luaL_loadfile(g_L, "d:\\private\\render.lua") || lua_pcall(g_L, 0, 0, 0))
 	{
 		const char * result = lua_tostring(g_L, -1);
 		printf("failed loading renderer lua script : %s\n", result);
