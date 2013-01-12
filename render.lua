@@ -1,24 +1,20 @@
  -- global functions and variables
 
 local buttons = {}
-local toolbar_bg
-local progress_bar
-local tbl ={}
 
-print("Hello!!!")
 if require and not BaseFrame then require("base_frame") end
 
 logo = BaseFrame:Create()
 root:AddChild(logo)
+logo:SetRelativeTo(root, CENTER)
 function logo:GetRect()
-	return 0,0,dwindow.width,dwindow.height
+	return 0,0,1920,1080
 end
 
 function logo:RenderThis(arg)
 	if not movie_loaded then
 		local res = get_bitmap("Z:\\skin\\logo2.jpg")
-
-		paint(dwindow.width/2 - 960, dwindow.height/2 - 540, dwindow.width/2 + 960, dwindow.height/2 + 540, res)
+		paint(0,0,1920,1080, res)
 	end
 end
 
@@ -81,12 +77,6 @@ local function button_RenderThis(self)
 end
 
 
--- GPU resource management
-function OnInitCPU()
-	-- load resources here (optional)
-	print("OnInitCPU")
-
-end
 
 function OnInitGPU()
 	print("OnInitGPU")

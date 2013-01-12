@@ -1,9 +1,5 @@
 local x = 0
 local y = 0
-local cx = 99999
-local cy = 99999
-local cxs = {}
-local cys = {}
 local bitmapcache = {}
 
 
@@ -15,37 +11,14 @@ if bit32 == nil then bit32 = require("bit")end
 if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile("D:\\private\\bp.lua")) end
 
 function paint(left, top, right, bottom, res)
-	left = left+x
-	right = right+x
-	top = top+y
-	bottom = bottom+y
-	
-	dwindow.set_clip_rect_core(x,y,x+cx,y+cy)
-
-	return dwindow.paint_core(left, top, right, bottom, res)
+	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, res)
 end
 
 function BeginChild(left, top, right, bottom)
-	x = x + left
-	y = y + top
-	table.insert(cxs, cx)
-	cx = right-left
-	table.insert(cys, cy)
-	cy = bottom - top
-end
-
-function BeginChild2(left, top, right, bottom)
 	x = left
 	y = top
-	cx = right - left
-	cy = bottom - top
-end
-
-function EndChild(left, top, right, bottom)
-	cx = table.remove(cxs)
-	cy = table.remove(cys)
-	x = x - left
-	y = y - top
+	
+	dwindow.set_clip_rect_core(left, top, right, bottom)
 end
 
 -- base class
@@ -82,14 +55,12 @@ function BaseFrame:render(arg)
 
 	self:RenderThis(self, arg)
 
-
 	for i=1,#self.childs do
 		local v = self.childs[i]
 		if v and v.render then
 			local l,r,t,b = v:GetAbsRect();
-			BeginChild2(l,r,t,b)
+			BeginChild(l,r,t,b)
 			v:render(arg)
-			--EndChild(l,r,t,b)
 		end
 	end
 
@@ -98,7 +69,7 @@ end
 
 function BaseFrame:RenderThis(arg)
 	local left, top, right, bottom = self:GetRect()
-	debug("default rendering", self, " at", left, top, right, bottom, x, y, cx, cy)
+	debug("default rendering(draw nothing)", self, " at", left, top, right, bottom, x, y, cx, cy)
 end
 
 function BaseFrame:AddChild(frame, pos)
@@ -113,6 +84,22 @@ function BaseFrame:AddChild(frame, pos)
 		table.insert(self.childs, n, frame)
 	else
 		table.insert(self.childs, frame)
+	end
+end
+
+function BaseFrame:IsParentOf(frame, includeParentParent)
+	if frame == nil then
+		return false
+	end
+	
+	if frame.parent == self then
+		return true
+	end
+		
+	if not includeParentParent then 
+		return false
+	else
+		return self:IsParentOf(frame.parent) 
 	end
 end
 
@@ -154,6 +141,11 @@ function BaseFrame:GetChildCount()
 end
 
 function BaseFrame:SetRelativeTo(frame, point, anchor)
+	if self==frame or self:IsParentOf(frame) then
+		error("SetRelativeTo() failed: target is same or parent of this frame")
+		return
+	end
+
 	self.relative_to = frame;
 	self.relative_point = point;
 	self.anchor = anchor;
@@ -178,14 +170,12 @@ function BaseFrame:GetAbsAnchorPoint(point)
 	return px, py
 end
 
-function BaseFrame:GetAbsRect(debug)
+function BaseFrame:GetAbsRect()
 	local relative = self.relative_to or self.parent				-- use parent as default relative_to frame
 	local l,t,r,b = 0,0,dwindow.width,dwindow.height				-- use screen as default relative_to frame if no parent & relative
 	local relative_point = self.relative_point or TOPLEFT
 	local anchor = self.anchor or relative_point
 	
-	if debug then print(anchor) end
-
 	if relative then
 		local l,t,r,b = relative:GetAbsRect()						-- get their AbsRect
 		local l2,t2,r2,b2 = self:GetRect()							-- get our Rect
@@ -204,10 +194,6 @@ function BaseFrame:GetAbsRect(debug)
 		elseif bit32.band(relative_point, BOTTOM) == BOTTOM then
 			py = t+h
 		end
-		if debug then 
-			print("px, py=", px, py)
-			print(l,t,r,b)
-		end
 
 		local px2, py2 = w2/2, h2/2
 		if bit32.band(anchor, LEFT) == LEFT then
@@ -221,7 +207,6 @@ function BaseFrame:GetAbsRect(debug)
 		elseif bit32.band(anchor, BOTTOM) == BOTTOM then
 			py2 = h2
 		end
-		if debug then print("px2, py2=", px2, py2) end
 
 		return l2+px-px2,t2+py-py2,r2+px-px2,b2+py-py2
 	end
@@ -241,15 +226,27 @@ function RenderUI(view)
 end
 
 
+-- GPU resource management
+function OnInitCPU()
+	debug("OnInitCPU")
+	-- load resources here (optional)
+end
+
+function OnInitGPU()
+	debug("OnInitGPU")
+	-- commit them to GPU (optional)
+	-- handle resize changes here (must)
+end
+
 function OnReleaseGPU()
 	-- decommit all GPU resources (must)
-	print("OnReleaseGPU")
+	debug("OnReleaseGPU")
 	releaseCache(true)
 end
 
 function OnReleaseCPU()
 	-- release all resources (must)
-	print("OnReleaseCPU")
+	debug("OnReleaseCPU")
 	releaseCache(false)
 end
 
@@ -285,5 +282,3 @@ function unload_bitmap(filename, is_decommit)
 		bitmapcache[filename] = nil
 	end
 end
-
-bp()
