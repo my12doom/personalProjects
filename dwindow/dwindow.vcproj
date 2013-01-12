@@ -46,7 +46,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;VSTAR;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE;DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -1594,34 +1594,34 @@
 				RelativePath="..\MPOCodec\MPOParser.h"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="libcrypt"
-			>
-			<File
-				RelativePath="..\libchecksum\basicRSA.cpp"
+			<Filter
+				Name="libcrypt"
 				>
-			</File>
-			<File
-				RelativePath="..\libchecksum\basicRSA.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libchecksum\libchecksum.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libchecksum\SHA1.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libchecksum\SHA1.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libchecksum\video_checksum.cpp"
-				>
-			</File>
+				<File
+					RelativePath="..\libchecksum\basicRSA.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\libchecksum\basicRSA.h"
+					>
+				</File>
+				<File
+					RelativePath="..\libchecksum\libchecksum.h"
+					>
+				</File>
+				<File
+					RelativePath="..\libchecksum\SHA1.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\libchecksum\SHA1.h"
+					>
+				</File>
+				<File
+					RelativePath="..\libchecksum\video_checksum.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Renderer"
@@ -1700,6 +1700,10 @@
 			</File>
 			<File
 				RelativePath="..\lrtb\mySink.h"
+				>
+			</File>
+			<File
+				RelativePath="..\render.lua"
 				>
 			</File>
 			<File
@@ -2115,6 +2119,14 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath="..\base_frame.lua"
+			>
+		</File>
+		<File
+			RelativePath="..\bp.lua"
+			>
+		</File>
 		<File
 			RelativePath=".\dwindow.manifest"
 			>

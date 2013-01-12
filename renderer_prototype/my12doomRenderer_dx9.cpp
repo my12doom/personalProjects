@@ -1722,7 +1722,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	if (m_swap1) hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &test[0]);
 	if (m_swap1) hr = m_swap1->GetBackBuffer(1, D3DBACKBUFFER_TYPE_MONO, &test[1]);
 
-	mylog("back buffer: %08x, %08x\n", test[0].p, test[1].p);
+// 	mylog("back buffer: %08x, %08x\n", test[0].p, test[1].p);
 
 
 

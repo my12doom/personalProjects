@@ -897,9 +897,12 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case VK_F5:
+		{
+		ui_drawer_base *p = m_renderer1->get_ui_drawer();
  		m_renderer1->set_ui_drawer(NULL);
 		my12doomRenderer_lua_loadscript();
-		m_renderer1->set_ui_drawer(m_lua);
+		m_renderer1->set_ui_drawer(p == (ui_drawer_base *)this ? m_lua : (ui_drawer_base *)this);
+		}
 		break;
 
 	case VK_LEFT:
@@ -2399,7 +2402,8 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		widi_initialize();
 		g_renderer = m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
 		m_renderer1->set_ui_drawer(this);
-		m_renderer1->set_ui_drawer(m_lua = new lua_drawer());
+		//m_renderer1->set_ui_drawer();
+		m_lua = new lua_drawer();
 		unsigned char passkey_big_decrypted[128];
 		RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
 		m_renderer1->m_AES.set_key((unsigned char*)passkey_big_decrypted+64, 256);

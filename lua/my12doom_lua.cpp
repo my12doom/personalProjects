@@ -24,11 +24,20 @@ static int execute_luafile(lua_State *L)
 		result = lua_tostring(L, -1);
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, result);
+
+		OutputDebugStringA(result);
+		OutputDebugStringA("\nD:\\private\\bp.lua(19,1): error X3000: attempt to call global 'module' (a nil value)");
+
 		return 2;
 	}
 
 	lua_pushboolean(L, 1);
 	return 1;
+}
+
+static int track_back(lua_State *L)
+{
+	return 0;
 }
 
 
@@ -53,6 +62,7 @@ int dwindow_lua_init () {
   g_lua_manager = new lua_manager(g_L, &g_csL);
   g_lua_manager->get_variable("GetTickCount") = &lua_GetTickCount;
   g_lua_manager->get_variable("execute_luafile") = &execute_luafile;
+  g_lua_manager->get_variable("track_back") = &track_back;
 
   return 0;
 }

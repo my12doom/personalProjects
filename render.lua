@@ -6,7 +6,7 @@ local progress_bar
 local tbl ={}
 
 print("Hello!!!")
-if require then require("base_frame") end
+if require and not BaseFrame then require("base_frame") end
 
 logo = BaseFrame:Create()
 root:AddChild(logo)
@@ -175,7 +175,7 @@ end
 
 function number_current:RenderThis()
 	local ms = self.t % 1000
-	local s = self.t / 1000
+	local s = (self.t+dwindow.GetTickCount()) / 1000
 	local h = (s / 3600) % 100
 	local h1 = h/10
 	local h2 = h%10
@@ -198,6 +198,7 @@ function number_current:RenderThis()
 end
 
 number_total = BaseFrame:Create({RenderThis = number_current.RenderThis})
+root:AddChild(number_total)
 number_total.t = 23456000
 number_total.x = numbers_left_margin + 500
 function number_total:GetRect()
@@ -207,7 +208,62 @@ function number_total:GetRect()
 			dwindow.height - numbers_bottom_margin
 end
 
-root:AddChild(number_total)
 
-print(number_current, number_total, number_current.parent, number_total.parent)
+test = BaseFrame:Create()
+root:AddChild(test)
+test.relative_point = TOP
+function test:GetRect()
+	return 0,0,40,40
+end
 
+function test:RenderThis()
+	return paint(0,0,40,40, get_bitmap("Z:\\skin\\fullscreen.png"))
+end
+
+test2 = BaseFrame:Create()
+root:AddChild(test2)
+test2.relative_point = LEFT
+test2.relative_to = test
+test2.anchor = RIGHT
+function test2:GetRect()
+	return 0,0,40,40
+end
+
+function test2:RenderThis()
+	return paint(0,0,40,40, get_bitmap("Z:\\skin\\play.png"))
+end
+
+test3 = BaseFrame:Create()
+root:AddChild(test3)
+test3.relative_point = BOTTOM
+test3.relative_to = test
+test3.anchor = TOP
+function test3:GetRect()
+	local dy = dwindow.GetTickCount()%10000
+	if dy > 5000 then dy = 10000- dy end
+	dy = dy * 500 / 5000
+	return 0,dy,40,40+dy
+end
+
+function test3:RenderThis()
+	return paint(0,0,40,40, get_bitmap("Z:\\skin\\stop.png"))
+end
+
+test4 = BaseFrame:Create()
+root:AddChild(test4)
+test4.relative_point = BOTTOMRIGHT
+test4.relative_to = test3
+test4.anchor = BOTTOMLEFT
+--test4:SetRelativeTo(test3, BOTTOMRIGHT, BOTTOMLEFT)
+function test4:GetRect()
+	local dx = (dwindow.GetTickCount())%1000
+	dx = math.sin(dx/360)*50
+	return dx,0,40+dx,40
+end
+
+function test4:RenderThis()
+	return paint(0,0,40,40, get_bitmap("Z:\\skin\\volume.png"))
+end
+
+print(test2:GetAbsRect(1))
+print(test2)
