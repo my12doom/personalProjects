@@ -200,8 +200,8 @@ end
 
 
 test = BaseFrame:Create()
+test:SetRelativeTo(root, TOPLEFT)
 root:AddChild(test)
-test.relative_point = TOP
 function test:GetRect()
 	return 0,0,40,40
 end
@@ -211,10 +211,8 @@ function test:RenderThis()
 end
 
 test2 = BaseFrame:Create()
+test2:SetRelativeTo(test, RIGHT, LEFT)
 root:AddChild(test2)
-test2.relative_point = LEFT
-test2.relative_to = test
-test2.anchor = RIGHT
 function test2:GetRect()
 	return 0,0,40,40
 end
@@ -224,10 +222,8 @@ function test2:RenderThis()
 end
 
 test3 = BaseFrame:Create()
+test3:SetRelativeTo(test, BOTTOM, TOP)
 root:AddChild(test3)
-test3.relative_point = BOTTOM
-test3.relative_to = test
-test3.anchor = TOP
 function test3:GetRect()
 	local dy = dwindow.GetTickCount()%10000
 	if dy > 5000 then dy = 10000- dy end
@@ -241,13 +237,10 @@ end
 
 test4 = BaseFrame:Create()
 root:AddChild(test4)
-test4.relative_point = BOTTOMRIGHT
-test4.relative_to = test3
-test4.anchor = BOTTOMLEFT
---test4:SetRelativeTo(test3, BOTTOMRIGHT, BOTTOMLEFT)
+test4:SetRelativeTo(test3, BOTTOMRIGHT, BOTTOMLEFT)
 function test4:GetRect()
-	local dx = (dwindow.GetTickCount())%1000
-	dx = math.sin(dx/360)*50
+	local dx = (dwindow.GetTickCount())
+	dx = math.sin(dx/360)*50+40
 	return dx,0,40+dx,40
 end
 
@@ -255,5 +248,7 @@ function test4:RenderThis()
 	return paint(0,0,40,40, get_bitmap("Z:\\skin\\volume.png"))
 end
 
-print(test2:GetAbsRect(1))
-print(test2)
+--print(test2:GetAbsRect(1))
+--print(test2)
+--RenderUI()
+if dwindow and dwindow.execute_luafile then dwindow.execute_luafile("D:\\private\\tetris.lua") end

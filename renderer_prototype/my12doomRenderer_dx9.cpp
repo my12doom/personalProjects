@@ -2469,12 +2469,12 @@ HRESULT my12doomRenderer::Draw(IDirect3DSurface9 *rt, gpu_sample *resource, RECT
 	return resize_surface(NULL, resource, rt, src, dst, bilinear_no_mipmap, alpha);
 }
 
-double UIScale2 = 3.4;
+extern double UIScale;
 HRESULT my12doomRenderer::paint(int left, int top, int right, int bottom, resource_userdata *resource)
 {
 	CComPtr<IDirect3DSurface9> rt;
 	m_Device->GetRenderTarget(0, &rt);
-	RECTF dst_rect = {left*UIScale2, top*UIScale2, right*UIScale2,bottom*UIScale2};
+	RECTF dst_rect = {left*UIScale, top*UIScale, right*UIScale,bottom*UIScale};
 
 	if (resource && resource->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
 	{
@@ -2494,7 +2494,7 @@ HRESULT my12doomRenderer::paint(int left, int top, int right, int bottom, resour
 
 HRESULT my12doomRenderer::set_clip_rect(int left, int top, int right, int bottom)
 {
-	RECT rect = {left*UIScale2, top*UIScale2, right*UIScale2, bottom*UIScale2};
+	RECT rect = {left*UIScale, top*UIScale, right*UIScale, bottom*UIScale};
 	m_Device->SetScissorRect(&rect);
 
 	return S_OK;

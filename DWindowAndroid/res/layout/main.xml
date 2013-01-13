@@ -66,7 +66,7 @@
             android:layout_width="fill_parent"
             android:layout_height="50dip"
             android:text="@string/FullScreen"
-            android:visibility="gone"
+            android:visibility="visible"
             android:layout_marginTop="0dp" />
         <Button
             android:id="@+id/btn_playpause"

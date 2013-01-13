@@ -873,6 +873,22 @@ extern AutoSetting<double> g_scale;
 
 LRESULT dx_player::on_key_down(int id, int key)
 {
+	{
+		CAutoLock lck(&g_csL);
+		lua_getglobal(g_L, "OnKeyDown");
+		if (lua_isfunction(g_L, -1))
+		{
+			lua_pushinteger(g_L, key);
+			lua_pushinteger(g_L, id);
+			lua_mypcall(g_L, 2, 0, 0);
+			lua_settop(g_L, 0);
+
+			if (key != VK_F5)
+				return S_OK;
+		}
+		lua_settop(g_L, 0);
+	}
+
 	switch (key)
 	{
 	case '1':
@@ -896,6 +912,7 @@ LRESULT dx_player::on_key_down(int id, int key)
 		m_renderer1->set_mask_parameter(m_renderer1->get_mask_parameter()-1);
 		break;
 
+#ifndef ZHUZHU
 	case VK_F5:
 		{
 		ui_drawer_base *p = m_renderer1->get_ui_drawer();
@@ -904,7 +921,7 @@ LRESULT dx_player::on_key_down(int id, int key)
 		m_renderer1->set_ui_drawer(p == (ui_drawer_base *)this ? m_lua : (ui_drawer_base *)this);
 		}
 		break;
-
+#endif
 	case VK_LEFT:
 		{
 			int t;
@@ -4657,10 +4674,11 @@ LRESULT dx_player::OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam)
 lua_drawer::lua_drawer()
 {
 }
+double UIScale = 1.0;
 HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 {
-	g_lua_manager->get_variable("width") = width;
-	g_lua_manager->get_variable("height") = height;
+	g_lua_manager->get_variable("width") = int(width/UIScale);
+	g_lua_manager->get_variable("height") = int(height/UIScale);
 
 	CAutoLock lck(&g_csL);
 	lua_getglobal(g_L, "OnInitGPU");
@@ -4672,8 +4690,8 @@ HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 }
 HRESULT lua_drawer::init_cpu(int width, int height, IDirect3DDevice9 *device)
 {
-	g_lua_manager->get_variable("width") = width;
-	g_lua_manager->get_variable("height") = height;
+	g_lua_manager->get_variable("width") = int(width/UIScale);
+	g_lua_manager->get_variable("height") = int(height/UIScale);
 
 	CAutoLock lck(&g_csL);
 	lua_getglobal(g_L, "OnInitCPU");
