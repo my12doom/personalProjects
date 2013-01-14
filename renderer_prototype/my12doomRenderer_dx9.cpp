@@ -103,6 +103,7 @@ m_right_queue(_T("right queue"))
 	m_nv3d_actived = false;
 	m_nv3d_display = NULL;
 	m_nv3d_display = 0;
+	m_movie_scissor_rect = NULL;
 	NvAPI_Status res = NvAPI_Initialize();
 	if (NVAPI_OK == res)
 	{
@@ -184,6 +185,11 @@ m_right_queue(_T("right queue"))
 
 void my12doomRenderer::init_variables()
 {
+	// movie scissor window
+	if (m_movie_scissor_rect)
+		delete m_movie_scissor_rect;
+	m_movie_scissor_rect = NULL;
+
 	// zoom factor
 	m_zoom_factor = 1.0;
 
@@ -2402,7 +2408,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 
 	// render
 	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-	RECT scissor = {m_active_pp.BackBufferWidth/4, m_active_pp.BackBufferHeight/4, m_active_pp.BackBufferWidth*3/4, m_active_pp.BackBufferHeight*3/4};
+	RECT scissor = get_movie_scissor_rect();
 	m_Device->SetScissorRect(&scissor);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
 	hr = resize_surface(NULL, sample, surface, &src_rect, &target, (resampling_method)(int)MovieResizing);
@@ -2435,7 +2441,7 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, bool left_ey
 	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	RECT scissor = {m_active_pp.BackBufferWidth/4, m_active_pp.BackBufferHeight/4, m_active_pp.BackBufferWidth*3/4, m_active_pp.BackBufferHeight*3/4};
+	RECT scissor = get_movie_scissor_rect();
 	m_Device->SetScissorRect(&scissor);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
 	hr = resize_surface(src, NULL, surface, &src_rect, &dst_rect, (resampling_method)(int)SubtitleResizing);
@@ -3221,10 +3227,7 @@ HRESULT my12doomRenderer::calculate_movie_position_unscaled(RECTF *position)
 		return E_POINTER;
 
 	RECTF &tar = *position;
-	tar.left = m_active_pp.BackBufferWidth/4;
-	tar.top = m_active_pp.BackBufferHeight/4;
-	tar.right = m_active_pp.BackBufferWidth*3/4;
-	tar.bottom = m_active_pp.BackBufferHeight*3/4;
+	tar = get_movie_scissor_rect();
 	float width = tar.right - tar.left;
 	float height = tar.bottom - tar.top;
 
@@ -3985,6 +3988,29 @@ HRESULT my12doomRenderer::set_window(HWND wnd, HWND wnd2)
 	m_hWnd2 = wnd2;
 	handle_device_state();
 	return S_OK;
+}
+
+HRESULT my12doomRenderer::set_movie_scissor_rect(RECTF *scissor)
+{
+	if (m_movie_scissor_rect)
+	{
+		delete m_movie_scissor_rect;
+		m_movie_scissor_rect = NULL;
+	}
+
+	if (scissor)
+	{
+		m_movie_scissor_rect = new RECTF;
+		memcpy(m_movie_scissor_rect, scissor, sizeof(RECTF));
+	}
+	return S_OK;
+}
+RECTF my12doomRenderer::get_movie_scissor_rect()
+{
+	RECTF o = {0,0,m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+	if (m_movie_scissor_rect)
+		o = *m_movie_scissor_rect;
+	return o;
 }
 
 HRESULT my12doomRenderer::repaint_video()

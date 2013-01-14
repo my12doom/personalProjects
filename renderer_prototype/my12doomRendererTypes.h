@@ -38,7 +38,7 @@ typedef struct _RECTF
 	}
 	operator RECT()
 	{
-		RECT r = {left,top,right,bottom};
+		RECT r = {left+0.5,top+0.5,right+0.5,bottom+0.5};
 		return r;
 	}
 

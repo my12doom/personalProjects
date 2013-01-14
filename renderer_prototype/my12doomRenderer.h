@@ -181,6 +181,7 @@ public:
 	HRESULT set_movie_pos(int dimention, double offset);		// dimention1 = x, dimention2 = y, dimention3 = x in pixel, dimention4 = y in pixel
 	HRESULT set_aspect(double aspect);
 	HRESULT set_window(HWND wnd, HWND wnd2);
+	HRESULT set_movie_scissor_rect(RECTF *scissor);
 	HRESULT set_subtitle(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow = false);
 	HRESULT set_subtitle_parallax(double offset);
 	HRESULT set_parallax(double parallax);
@@ -195,6 +196,7 @@ public:
 																									// if you saved these two variables, remember to get it from renderer.
 
 	// settings GET function
+	RECTF get_movie_scissor_rect();
 	ui_drawer_base *get_ui_drawer();
 	DWORD get_mask_color(int id);
 	bool get_swap_eyes();
@@ -236,7 +238,7 @@ protected:
 	REFERENCE_TIME m_last_frame_time;
 	bool m_vertical_sync;
 	float m_zoom_factor;
-	RECTF movie_window;
+	RECTF *m_movie_scissor_rect;
 
 protected:
 	friend class my12doomRendererDShow;
