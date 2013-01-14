@@ -33,6 +33,8 @@ typedef struct _RECTF
 	struct _RECTF operator=(const RECT in)
 	{
 		left = in.left; top = in.top; right = in.right; bottom = in.bottom;
+
+		return *this;
 	}
 	operator RECT()
 	{

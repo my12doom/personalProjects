@@ -1703,10 +1703,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\render.lua"
-				>
-			</File>
-			<File
 				RelativePath="..\renderer_prototype\TextureAllocator.cpp"
 				>
 			</File>
@@ -2246,6 +2242,14 @@
 					AssemblerOutput="2"
 				/>
 			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\render.lua"
+			>
+		</File>
+		<File
+			RelativePath="..\tetris.lua"
+			>
 		</File>
 	</Files>
 	<Globals>

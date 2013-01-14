@@ -18,7 +18,6 @@ local blocks =
 local posx = ww/2
 local posy = 1
 local shape = {}
-local type2shape --func
 
 if bit32 == nil and require then bit32 = require("bit") end
 
@@ -31,42 +30,37 @@ local function check()
 
 			x=posx + shape[k].x;
 			y=posy + shape[k].y;
-			print(x,y,posx,posy,shape[k].x)
 
 			if (x<1 or x>ww or y<1 or y>hh) then
-				return CHECK_HIT;
-			end
+				out = bit32.bor(out, CHECK_HIT)
+			else
+				if (x<=1) then
+					out = bit32.bor(out, CHECK_LEFT);
+				elseif (blocks[(x-1)][y] > 0) then
+					out = bit32.bor(out, CHECK_LEFT);
+				end
 
-			if (x<=1) then
-				out = bit32.bor(out, CHECK_LEFT);
-			elseif (blocks[(x-1)][y] > 0) then
-				out = bit32.bor(out, CHECK_LEFT);
-			end
+				if (x>=ww) then
+					out = bit32.bor(out, CHECK_RIGHT);
+				elseif (blocks[x+1][y] > 0) then
+					out = bit32.bor(out, CHECK_RIGHT);
+				end
 
-			if (x>=ww) then
-				out = bit32.bor(out, CHECK_RIGHT);
-			elseif (blocks[x+1][y] > 0) then
-				out = bit32.bor(out, CHECK_RIGHT);
-			end
+				if (y>=hh) then
+					out = bit32.bor(out, CHECK_BOTTOM);
+				elseif (blocks[x][y+1] > 0) then
+					out = bit32.bor(out, CHECK_BOTTOM);
+				end
 
-			if (y>=hh) then
-				print(57, x,y,shape[k].x,shape[k].y)
-				out = bit32.bor(out, CHECK_BOTTOM);
-			elseif (blocks[x][y+1] > 0) then
-				print(60, x,y,shape[k].x,shape[k].y)
-				out = bit32.bor(out, CHECK_BOTTOM);
-			end
-
-			if (x>0 and x<=ww and y>0 and y<=hh) then
-				if (blocks[x][y] > 0) then
-					print(66, x,y,shape[k].x,shape[k].y)
-					out = bit32.bor(out, CHECK_HIT);
+				if (x>0 and x<=ww and y>0 and y<=hh) then
+					if (blocks[x][y] > 0) then
+						out = bit32.bor(out, CHECK_HIT);
+					end
 				end
 			end
 		end
 	end
 
-	print("check() = ", out)
 	return out;
 end
 
@@ -133,8 +127,8 @@ local function Step()
 		-- check bottom
 		local f = true;
 		for j=hh,1,-1 do
+			f = true;
 			while f do
-				f = true;
 				for i=1,ww do
 					f = f and (blocks[i][j] >0)
 				end
@@ -142,9 +136,6 @@ local function Step()
 				if f then
 					for k=j,2,-1 do
 						for i=1,ww do
-							if not blocks[i][k-1] then
-								print("i,k=", i, k)
-							end
 							blocks[i][k] = blocks[i][k-1]
 						end
 					end
@@ -156,6 +147,7 @@ local function Step()
 		posx = ww/2;
 		type2shape();
 		r = check();
+		print("check=", r)
 		if bit32.band(r,CHECK_BOTTOM) > 0 then
 			-- game over...
 			--DrawBlocks();
@@ -183,7 +175,7 @@ local function rotateBlock()
 
 	--如果有碰撞，旋转回去
 	local r = check();
-	if bit32.band(r,check_hit) > 0 then
+	if bit32.band(r,CHECK_HIT) > 0 then
 		for i=1,max_shape_len do
 			if (shape[i].x>max_dis or shape[i].y>max_dis) then
 			x = shape[i].x *2 -1;
@@ -194,20 +186,6 @@ local function rotateBlock()
 		return -1;
 	end
 	return 0;
-end
-
-function print_blocks()
-	for y=1,hh do
-		local o = ""
-		for x=1,ww do
-			if blocks[x][y] > 0 then
-				o = o .. "X"
-			else
-				o = o .. "-"
-			end
-		end
-		print(o)
-	end
 end
 
 local VK_LEFT = 0x25
@@ -233,15 +211,18 @@ end
 
 
 local old_RenderUI = RenderUI
+local tick = 0
 function RenderUI(...)
+	
+	if dwindow.GetTickCount() - tick > 200 then
+		tick = dwindow.GetTickCount()
+		Step()
+	end
 
 	return old_RenderUI(...)
 end
 
 init()
-print(check())
-
-
 
 local tetris = BaseFrame:Create()
 root:AddChild(tetris)
@@ -251,14 +232,16 @@ end
 
 function tetris:RenderThis()
 	local res = get_bitmap("Z:\\skin\\fullscreen.png")
+	local res2 = get_bitmap("Z:\\skin\\stop.png")
+	set_bitmap_rect(res2, 0,0,100,100)
 
 	-- paint border
 	for i=1,hh+1 do
-		paint(ww*40, (i-1)*40, (ww+1)*40, i*40, res)
+		paint(ww*40, (i-1)*40, (ww+1)*40, i*40, res2)
 	end
 
 	for i=1,ww do
-		paint((i-1)*40, hh*40, i*40, (hh+1)*40, res)
+		paint((i-1)*40, hh*40, i*40, (hh+1)*40, res2)
 	end
 
 	-- paint static blocks
@@ -281,4 +264,20 @@ function tetris:RenderThis()
 			paint((i-1)*40,(j-1)*40,(i)*40,(j)*40,res)
 		end
 	end
+end
+
+local digittest = BaseFrame:Create()
+root:AddChild(digittest)
+digittest:SetRelativeTo(root, TOP)
+function digittest:GetRect()
+	-- 9 pixel widht, 13 pixel height
+	
+	return 0,0,9,14
+end
+
+function digittest:RenderThis()
+	local n = math.floor((dwindow.GetTickCount() / 300) % 10)
+	local res = get_bitmap("Z:\\skin\\digit.bmp")
+	set_bitmap_rect(res, 6+n*9, 0, 15+n*9, 14)
+	paint(0, 0, 9, 14,res)
 end

@@ -17,7 +17,16 @@ static int paint_core(lua_State *L)
 	int bottom = lua_tointeger(L, parameter_count+3);
 	resource_userdata *resource = (resource_userdata*)lua_touserdata(L, parameter_count+4);
 
-	g_renderer->paint(left, top, right, bottom, resource);
+	int s_left = lua_tointeger(L, parameter_count+5);
+	int s_top = lua_tointeger(L, parameter_count+6);
+	int s_right = lua_tointeger(L, parameter_count+7);
+	int s_bottom = lua_tointeger(L, parameter_count+8);
+
+	RECTF dst_rect = {left, top, right, bottom};
+	RECTF src_rect = {s_left, s_top, s_right, s_bottom};
+	bool hasROI = s_left > 0 || s_top > 0 || s_right > 0 || s_bottom > 0;
+
+	g_renderer->paint(&dst_rect, resource, hasROI ? &src_rect : NULL);
 
 	lua_pushboolean(L, 1);
 	return 1;
@@ -66,7 +75,9 @@ static int load_bitmap_core(lua_State *L)
 	resource->pointer = sample;
 	resource->managed = false;
 	lua_pushlightuserdata(L, resource);
-	return 1;
+	lua_pushinteger(L, sample->m_width);
+	lua_pushinteger(L, sample->m_height);
+	return 3;
 }
 
 static int release_resource_core(lua_State *L)

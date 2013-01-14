@@ -510,7 +510,7 @@ HRESULT dx_player::seek(int time)
 
 	REFERENCE_TIME target = (REFERENCE_TIME)time *10000;
 
-	if(m_renderer1) m_renderer1->set_bmp(NULL, 0, 0, 0, 0, 0, 0);				// refresh subtitle on next frame
+	if(m_renderer1) m_renderer1->set_subtitle(NULL, 0, 0, 0, 0, 0, 0);				// refresh subtitle on next frame
 	printf("seeking to %I64d\n", target);
 	HRESULT hr = m_ms->SetPositions(&target, AM_SEEKING_AbsolutePositioning, NULL, NULL);
 	m_ms->GetPositions(&target, NULL);
@@ -883,8 +883,8 @@ LRESULT dx_player::on_key_down(int id, int key)
 			lua_mypcall(g_L, 2, 0, 0);
 			lua_settop(g_L, 0);
 
-			if (key != VK_F5)
-				return S_OK;
+// 			if (key != VK_F5)
+// 				return S_OK;
 		}
 		lua_settop(g_L, 0);
 	}
@@ -2257,7 +2257,7 @@ play_ok:
 		if (m_display_subtitle)
 			set_subtitle_pos(m_subtitle_center_x, m_subtitle_bottom_y);
 		else
-			if (m_renderer1) m_renderer1->set_bmp(NULL, 0, 0, 0, 0, 0, 0);
+			if (m_renderer1) m_renderer1->set_subtitle(NULL, 0, 0, 0, 0, 0, 0);
 	}
 
 	else if (uid == ID_OPENBDFOLDER)
@@ -2476,7 +2476,7 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_callback(this);
 	m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
 	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
-	m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_subtitle_parallax/1920);
+	m_renderer1->set_subtitle_parallax((double)m_internel_offset/1000 + (double)m_user_subtitle_parallax/1920);
 	m_renderer1->set_aspect(m_aspect);
 	m_renderer1->set_aspect_mode(m_aspect_mode);
 	m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
@@ -2590,7 +2590,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		if (SUCCEEDED(hr))
 			movie_has_offset_metadata = true;
 	}
-	if (!m_subtitle_has_offset) m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_subtitle_parallax/1920);
+	if (!m_subtitle_has_offset) m_renderer1->set_subtitle_parallax((double)m_internel_offset/1000 + (double)m_user_subtitle_parallax/1920);
 
 	int ms_start = (int)(TimeStart / 10000.0 + 0.5);
 	int ms_end = (int)(TimeEnd / 10000.0 + 0.5);
@@ -2643,7 +2643,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		// empty result, clear it
 		if( sub.width == 0 || sub.height ==0 || sub.width_pixel==0 || sub.height_pixel == 0 || sub.data == NULL)
 		{
-			m_renderer1->set_bmp(NULL, 0, 0, 0, 0, 0, 0);
+			m_renderer1->set_subtitle(NULL, 0, 0, 0, 0, 0, 0);
 		}
 
 		// draw it
@@ -2651,9 +2651,9 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		{
 			m_subtitle_has_offset = sub.delta_valid;
 			if (sub.delta_valid)
-				hr = m_renderer1->set_bmp_parallax(sub.delta + (double)m_user_subtitle_parallax/1920);
+				hr = m_renderer1->set_subtitle_parallax(sub.delta + (double)m_user_subtitle_parallax/1920);
 
-			hr = m_renderer1->set_bmp(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
+			hr = m_renderer1->set_subtitle(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
 				sub.height,
 				sub.left + (m_subtitle_center_x-0.5),
 				sub.top + (m_subtitle_bottom_y-0.95),
@@ -3501,7 +3501,8 @@ HRESULT dx_player::draw_subtitle()
 	REFERENCE_TIME t = (REFERENCE_TIME)m_lastCBtime * 10000;
 	m_lastCBtime = -1;
 
-	HRESULT hr =  SampleCB(t, t, NULL, 0);
+	HRESULT hr =  PrerollCB(t, t, NULL, 0);
+	hr = SampleCB(t, t, NULL, 0);
 	m_lastCBtime = t / 10000;
 	return hr;
 }
@@ -3509,7 +3510,7 @@ HRESULT dx_player::draw_subtitle()
 HRESULT dx_player::set_subtitle_parallax(int parallax)
 {
 	m_user_subtitle_parallax = parallax;
-	m_renderer1->set_bmp_parallax((double)m_internel_offset/1000 + (double)m_user_subtitle_parallax/1920);
+	m_renderer1->set_subtitle_parallax((double)m_internel_offset/1000 + (double)m_user_subtitle_parallax/1920);
 	draw_subtitle();
 	return S_OK;
 }
@@ -4674,7 +4675,7 @@ LRESULT dx_player::OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam)
 lua_drawer::lua_drawer()
 {
 }
-double UIScale = 1.0;
+double UIScale = 0.2;
 HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 {
 	g_lua_manager->get_variable("width") = int(width/UIScale);

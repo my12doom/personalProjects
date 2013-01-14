@@ -10,15 +10,15 @@ if bit32 == nil then bit32 = require("bit")end
 
 if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile("D:\\private\\bp.lua")) end
 
-function paint(left, top, right, bottom, res)
-	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, res)
-end
-
 function BeginChild(left, top, right, bottom)
 	x = left
 	y = top
 	
 	dwindow.set_clip_rect_core(left, top, right, bottom)
+end
+
+function EndChild(left, top, right, bottom)
+
 end
 
 -- base class
@@ -36,6 +36,10 @@ BOTTOMRIGHT = BOTTOM + RIGHT
 
 function debug(...)
 	--print("--DEBUG", ...)
+end
+
+function info(...)
+	print("--INFO", ...)
 end
 
 function error(...)
@@ -61,6 +65,7 @@ function BaseFrame:render(arg)
 			local l,r,t,b = v:GetAbsRect();
 			BeginChild(l,r,t,b)
 			v:render(arg)
+			EndChild(l,r,t,b)
 		end
 	end
 
@@ -178,9 +183,10 @@ function BaseFrame:GetAbsRect()
 	
 	if relative then
 		local l,t,r,b = relative:GetAbsRect()						-- get their AbsRect
-		local l2,t2,r2,b2 = self:GetRect()							-- get our Rect
+		local l2,t2,r2,b2,dx,dy = self:GetRect()					-- get our Rect
 		local w,h = r-l, b-t										-- their width and height
 		local w2,h2 = r2-l2, b2-t2									-- out width and height
+		dx,dy = dx or 0, dy or 0
 
 		local px, py = l+w/2, t+h/2
 		if bit32.band(relative_point, LEFT) == LEFT then
@@ -208,7 +214,7 @@ function BaseFrame:GetAbsRect()
 			py2 = h2
 		end
 
-		return l2+px-px2,t2+py-py2,r2+px-px2,b2+py-py2
+		return l2+px-px2+dx,t2+py-py2+dy,r2+px-px2+dx,b2+py-py2+dy
 	end
 	
 	return l,t,r,b
@@ -265,20 +271,49 @@ end
 
 function get_bitmap(filename)
 	if bitmapcache[filename] == nil then
-		local msg
-		bitmapcache[filename], msg = dwindow.load_bitmap_core(filename)
-		if msg then error(msg, filename) end
+		local res, width, height = dwindow.load_bitmap_core(filename)		-- width is also used as error msg output.
+		
+		bitmapcache[filename] = {res = res, width = width, height = height}
+		if not res then
+			error(width, filename)
+			bitmapcache[filename].width = nil
+			bitmapcache[filename].error_msg = width
+		end
+		info("loaded", filename, width, height)
 	end
-	return bitmapcache[filename]
+	
+	-- reset ROI
+	local rtn = bitmapcache[filename]
+	rtn.left = 0
+	rtn.right = 0
+	rtn.top = 0
+	rtn.bottom = 0
+	return rtn
 end
 
 function unload_bitmap(filename, is_decommit)
-	if not bitmapcache[filename] then return end
+	local tbl = bitmapcache[filename]
+	if not tbl or not istable(tbl) then return end
 
 	if is_decommit then
-		dwindow.decommit_resource_core(bitmapcache[filename])
+		dwindow.decommit_resource_core(bitmapcache[filename].res)
 	else
-		dwindow.release_resource_core()
+		dwindow.release_resource_core(bitmapcache[filename].res)
 		bitmapcache[filename] = nil
 	end
 end
+
+-- set region of interest
+function set_bitmap_rect(bitmap, left, top, right, bottom)
+	if not bitmap or "table" ~= type(bitmap) then return end
+	bitmap.left = left
+	bitmap.right = right
+	bitmap.top = top
+	bitmap.bottom = bottom
+end
+
+function paint(left, top, right, bottom, bitmap)
+	if not bitmap or not bitmap.res then return end
+	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom)
+end
+

@@ -181,19 +181,18 @@ public:
 	HRESULT set_movie_pos(int dimention, double offset);		// dimention1 = x, dimention2 = y, dimention3 = x in pixel, dimention4 = y in pixel
 	HRESULT set_aspect(double aspect);
 	HRESULT set_window(HWND wnd, HWND wnd2);
-	HRESULT set_bmp(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow = false);
-	HRESULT set_bmp_parallax(double offset);
+	HRESULT set_subtitle(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow = false);
+	HRESULT set_subtitle_parallax(double offset);
 	HRESULT set_parallax(double parallax);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
 	HRESULT set_2dto3d(bool convert){m_convert3d = convert;}
 	HRESULT set_aspect_mode(int mode);
 	HRESULT set_display_orientation(int orientation){m_display_orientation = (display_orientation)orientation; return S_OK;}
 	HRESULT set_vsync(bool on);
-	HRESULT set_zoom_factor(float factor, int zoom_center_x = -99999,
-															int zoom_center_y = -99999);	// the zoom_center is in current screen-space, not movie picture space
-																							// after zooming, zoom_center point's image should stay unmoved.
-																							// m_movie_offset_x and m_movie_offset_y is modified to keep it unmoved.
-																							// if you saved these two variables, remember to get it from renderer.
+	HRESULT set_zoom_factor(float factor, int zoom_center_x = -99999, int zoom_center_y = -99999);	// the zoom_center is in current screen-space, not movie picture space
+																									// after zooming, zoom_center point's image should stay unmoved.
+																									// m_movie_offset_x and m_movie_offset_y is modified to keep it unmoved.
+																									// if you saved these two variables, remember to get it from renderer.
 
 	// settings GET function
 	ui_drawer_base *get_ui_drawer();
@@ -207,7 +206,7 @@ public:
 	double get_movie_pos(int dimention);
 	double get_aspect();
 	bool is_connected(int id){return (id?m_dsr1:m_dsr0)->is_connected();}
-	double get_bmp_parallax(){return m_bmp_parallax;}
+	double get_subtitle_parallax(){return m_subtitle_parallax;}
 	double get_parallax(){return m_parallax;}
 	bool get_2dto3d(){return m_convert3d;}
 	aspect_mode_types get_aspect_mode(){return m_aspect_mode;}
@@ -222,11 +221,11 @@ protected:
 	double m_parallax;
 	bool m_has_subtitle;
 	int m_last_ui_draw;
-	int m_bmp_width, m_bmp_height;
-	float m_bmp_fleft, m_bmp_ftop, m_bmp_fwidth, m_bmp_fheight;
+	int m_subtitle_pixel_width, m_subtitle_pixel_height;
+	float m_subtitle_fleft, m_subtitle_ftop, m_subtitle_fwidth, m_subtitle_fheight;
 	double m_movie_offset_x /*= -0.0*/;
 	double m_movie_offset_y /*= 0.0*/;
-	double m_bmp_parallax;
+	double m_subtitle_parallax;
 	bool m_gpu_shadow;
 	double m_source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
 	double m_forced_aspect /* = -1 */;
@@ -237,6 +236,7 @@ protected:
 	REFERENCE_TIME m_last_frame_time;
 	bool m_vertical_sync;
 	float m_zoom_factor;
+	RECTF movie_window;
 
 protected:
 	friend class my12doomRendererDShow;
@@ -318,7 +318,7 @@ protected:
 	HRESULT restore_cpu_objects();
 	HRESULT render_nolock(bool forced = false);
 	HRESULT draw_movie(IDirect3DSurface9 *surface, int view);		// 0 = left eye, 1 = right eye, others not implemented yet
-	HRESULT draw_bmp(IDirect3DSurface9 *surface, bool left_eye);
+	HRESULT draw_subtitle(IDirect3DSurface9 *surface, bool left_eye);
 	HRESULT draw_ui(IDirect3DSurface9 *surface);
 	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left);
 	// assume dst has D3DUSAGE_RENDERTARGET Flag
@@ -344,8 +344,8 @@ protected:
 	HRESULT set_device_state(device_state new_state);
 	HRESULT test_PC_level();		// test hardware YUV-RGB conversion level
 	DWORD m_PC_level;				// 0
-	HRESULT calculate_movie_position(RECT *position);
-	HRESULT calculate_movie_position_unscaled(RECT *position);
+	HRESULT calculate_movie_position(RECTF *position);
+	HRESULT calculate_movie_position_unscaled(RECTF *position);
 	HRESULT calculate_subtitle_position(RECTF *postion, bool left_eye);
 
 
@@ -365,9 +365,7 @@ protected:
 	HRESULT HD3DMatchResolution();
 	HRESULT HD3DGetAvailable3DModes(D3DDISPLAYMODE *modes, IN OUT int *count);			// count: caller:buffer count, return:modes count
 	HRESULT HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirect3DSurface9 *right_surface, IDirect3DSurface9 *back_buffer);
-	HRESULT HD3DSendStereoCommand(ATIDX9STEREOCOMMAND stereoCommand, BYTE *pOutBuffer, 
-								DWORD dwOutBufferSize, BYTE *pInBuffer, 
-								DWORD dwInBufferSize);
+	HRESULT HD3DSendStereoCommand(ATIDX9STEREOCOMMAND stereoCommand, BYTE *pOutBuffer, DWORD dwOutBufferSize, BYTE *pInBuffer, DWORD dwInBufferSize);
 
 	// Intel S3D support
 	IGFXS3DControl *m_intel_s3d/* = NULL*/;
@@ -443,7 +441,6 @@ protected:
 	CComPtr <IDirect3DPixelShader9> m_ps_test_sbs;
 	CComPtr <IDirect3DPixelShader9> m_ps_test_sbs2;
 	CComPtr <IDirect3DPixelShader9> m_ps_color_adjust;
-	CComPtr <IDirect3DPixelShader9> m_ps_bmp_lanczos;
 	CComPtr <IDirect3DPixelShader9> m_ps_bmp_blur;
 
 
@@ -470,11 +467,11 @@ protected:
 	CComPtr<IDirect3DTexture9> m_mask_temp_left;			// two temp texture, you may need it in some case
 	CComPtr<IDirect3DTexture9> m_mask_temp_right;
 
-	CComPtr<IDirect3DTexture9> m_tex_bmp;
-	CComPtr<IDirect3DSurface9> m_tex_bmp_mem;
-	D3DLOCKED_RECT m_bmp_locked_rect;
-	bool m_bmp_changed;
-	CCritSec m_bmp_lock;
+	CComPtr<IDirect3DTexture9> m_tex_subtitle;
+	CComPtr<IDirect3DSurface9> m_tex_subtitle_mem;
+	D3DLOCKED_RECT m_subtitle_locked_rect;
+	bool m_subtitle_changed;
+	CCritSec m_subtitle_lock;
 
 	CComPtr<IDirect3DSurface9> m_nv3d_surface;				// nv3d temp surface
 
@@ -515,6 +512,6 @@ public:
 	
 	// for lua useage
 	HRESULT get_resource(int arg, resource_userdata *resource);
-	HRESULT paint(int left, int top, int right, int bottom, resource_userdata *resource);
+	HRESULT paint(RECTF *dst, resource_userdata *resource, RECTF*src = NULL);
 	HRESULT set_clip_rect(int left, int top, int right, int bottom);
 };

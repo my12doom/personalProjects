@@ -25,7 +25,7 @@ static int execute_luafile(lua_State *L)
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, result);
 
-		OutputDebugStringA(result);
+		printf("execute_luafile(%s)failed: %s\n", filename, result);
 		OutputDebugStringA("\nD:\\private\\bp.lua(19,1): error X3000: attempt to call global 'module' (a nil value)");
 
 		return 2;

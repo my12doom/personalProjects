@@ -13,16 +13,17 @@ end
 
 function logo:RenderThis(arg)
 	if not movie_loaded then
-		local res = get_bitmap("Z:\\skin\\logo2.jpg")
+		local res = get_bitmap("Z:\\skin\\logo2.png")
 		paint(0,0,1920,1080, res)
 	end
 end
 
-toolbar_bg = toolbar_bg or BaseFrame:Create()
+toolbar_bg = BaseFrame:Create()
 root:AddChild(toolbar_bg)
+toolbar_bg:SetRelativeTo(root, BOTTOM)
 function toolbar_bg:GetRect()
 	local toolbar_height = 65
-	return 0, dwindow.height - toolbar_height, dwindow.width, dwindow.height
+	return 0, 0, dwindow.width, toolbar_height
 end
 
 function toolbar_bg:RenderThis(arg)
@@ -228,7 +229,7 @@ function test3:GetRect()
 	local dy = dwindow.GetTickCount()%10000
 	if dy > 5000 then dy = 10000- dy end
 	dy = dy * 500 / 5000
-	return 0,dy,40,40+dy
+	return 0,0,40,40,0,dy
 end
 
 function test3:RenderThis()
@@ -241,14 +242,11 @@ test4:SetRelativeTo(test3, BOTTOMRIGHT, BOTTOMLEFT)
 function test4:GetRect()
 	local dx = (dwindow.GetTickCount())
 	dx = math.sin(dx/360)*50+40
-	return dx,0,40+dx,40
+	return 0,0,40,40,dx,0
 end
 
 function test4:RenderThis()
 	return paint(0,0,40,40, get_bitmap("Z:\\skin\\volume.png"))
 end
 
---print(test2:GetAbsRect(1))
---print(test2)
---RenderUI()
 if dwindow and dwindow.execute_luafile then dwindow.execute_luafile("D:\\private\\tetris.lua") end
