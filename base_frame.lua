@@ -1,7 +1,6 @@
-local x = 0
-local y = 0
+local rect = {0,0,99999,99999,0,0}
+local rects = {}
 local bitmapcache = {}
-
 
 if paint_core == nil then paint_core = function() end end
 if get_resource == nil then get_resource = function() end end
@@ -11,14 +10,21 @@ if bit32 == nil then bit32 = require("bit")end
 if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile("D:\\private\\bp.lua")) end
 
 function BeginChild(left, top, right, bottom)
-	x = left
-	y = top
+	local left_unclip, top_unclip = left, top
+	left = math.max(rect[1], left)
+	top = math.max(rect[2], top)
+	right = math.min(rect[3], right)
+	bottom = math.min(rect[4], bottom)
+	local new_rect = {left, top, right, bottom, left_unclip, top_unclip}
+	table.insert(rects, rect)
+	rect = new_rect
 	
 	dwindow.set_clip_rect_core(left, top, right, bottom)
 end
 
 function EndChild(left, top, right, bottom)
-
+	rect = table.remove(rects)
+	dwindow.set_clip_rect_core(rects[1], rects[2], rects[3], rects[4])
 end
 
 -- base class
@@ -74,7 +80,7 @@ end
 
 function BaseFrame:RenderThis(arg)
 	local left, top, right, bottom = self:GetRect()
-	debug("default rendering(draw nothing)", self, " at", left, top, right, bottom, x, y, cx, cy)
+	debug("default rendering(draw nothing)", self, " at", left, top, right, bottom, rect[1], rect[2], rect[3], rect[4])
 end
 
 function BaseFrame:AddChild(frame, pos)
@@ -273,7 +279,7 @@ function get_bitmap(filename)
 	if bitmapcache[filename] == nil then
 		local res, width, height = dwindow.load_bitmap_core(filename)		-- width is also used as error msg output.
 		
-		bitmapcache[filename] = {res = res, width = width, height = height}
+		bitmapcache[filename] = {res = res, width = width, height = height, filename=filename}
 		if not res then
 			error(width, filename)
 			bitmapcache[filename].width = nil
@@ -314,6 +320,7 @@ end
 
 function paint(left, top, right, bottom, bitmap)
 	if not bitmap or not bitmap.res then return end
+	local x,y  = rect[5], rect[6]
 	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom)
 end
 

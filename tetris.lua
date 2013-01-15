@@ -225,9 +225,10 @@ end
 init()
 
 local tetris = BaseFrame:Create()
-root:AddChild(tetris)
+tetris:SetRelativeTo(nil, RIGHT)
+logo:AddChild(tetris)
 function tetris:GetRect()
-	return 0,0,40*ww+40,40*hh+40
+	return 0,0,40*ww+40,40*hh+40,200,-50
 end
 
 function tetris:RenderThis()
