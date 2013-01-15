@@ -205,26 +205,42 @@ function OnKeyDown(key, id)
 	elseif key == VK_UP then
 		rotateBlock()
 	else
-		Step()
 	end
 end
 
+function OnMouseDown(x, y, key)
+	local frame = root:GetFrameByPoint(x,y)
+	local name = tostring(frame)
+	if frame then 
+		name = frame.name or name 
+		frame:BringToTop(true)
+	end
+	print("GetFrameByPoint", x, y, name)
+end
 
-local old_RenderUI = RenderUI
 local tick = 0
-function RenderUI(...)
-	
+local px, py = 0, 0
+local function OnUpdate()	
 	if dwindow.GetTickCount() - tick > 200 then
 		tick = dwindow.GetTickCount()
 		Step()
 	end
+	
+	if grow and grow.OnUpdate then grow:OnUpdate() end
+	
+	px,py = dwindow.get_mouse_pos()
+end
 
+local old_RenderUI = RenderUI
+function RenderUI(...)
+	OnUpdate()
 	return old_RenderUI(...)
 end
 
 init()
 
 local tetris = BaseFrame:Create()
+tetris.name = "TETRIS"
 tetris:SetRelativeTo(nil, RIGHT)
 logo:AddChild(tetris)
 function tetris:GetRect()
@@ -281,4 +297,91 @@ function digittest:RenderThis()
 	local res = get_bitmap("Z:\\skin\\digit.bmp")
 	set_bitmap_rect(res, 6+n*9, 0, 15+n*9, 14)
 	paint(0, 0, 9, 14,res)
+end
+
+
+local button_size = 40;
+local margin_button_right = 32;
+local margin_button_bottom = 8;
+local space_of_each_button = 62;
+local toolbar_height = 65;
+local width_progress_left = 5;
+local width_progress_right = 6;
+local margin_progress_right = 460;
+local margin_progress_left = 37;
+local progress_height = 21;
+local progress_margin_bottom = 27;
+local volume_base_width = 84;
+local volume_base_height = 317;
+local volume_margin_right = (156 - 84);
+local volume_margin_bottom = (376 - 317);
+local volume_button_zero_point = 32;
+local volume_bar_height = 265;
+local numbers_left_margin = 21;
+local numbers_right_margin = 455;
+local numbers_width = 12;
+local numbers_height = 20;
+local numbers_bottom_margin = 26;
+local hidden_progress_width = 72;
+
+
+
+grow = BaseFrame:Create()
+local last_in_time = 0
+local last_out_time = 0
+local last_in = false
+local alpha_tick = 0
+grow:SetRelativeTo(nil, BOTTOMLEFT)
+toolbar_bg:AddChild(grow)
+grow.name = "GROW"
+function grow:GetRect()
+	return 0,0,250,250,px-125,125
+end
+
+function grow:OnUpdate()
+	local r,b = toolbar_bg:GetAbsAnchorPoint(BOTTOMRIGHT)
+	r,b = r - margin_button_right, b - margin_button_bottom
+	local l,t = toolbar_bg:GetAbsAnchorPoint(TOPRIGHT)
+	l = l - margin_progress_right
+	if l<=px and px<r and t<=py and py<b then
+		if not last_in then 
+			self:OnEnter()
+		else
+			alpha_tick = alpha_tick + (dwindow.GetTickCount() - last_in_time)+2
+			print("t++")
+		end
+		last_in = true
+		last_in_time = dwindow.GetTickCount()
+	else
+		if last_in then
+			self:OnLeave()
+		else
+			print("t--")
+			alpha_tick = alpha_tick - (dwindow.GetTickCount() - last_out_time)*0.4
+		end
+		last_in = false
+		last_out_time = dwindow.GetTickCount()
+	end
+	
+	alpha_tick = math.max(alpha_tick, 0)
+	alpha_tick = math.min(alpha_tick, 300)
+	print("alpha_tick", alpha_tick)
+end
+
+function grow:OnEnter()
+	print("OnEnter")
+end
+
+function grow:OnLeave()
+	print("OnLeave")
+end
+
+function grow:RenderThis()
+	local res = get_bitmap("Z:\\skin\\grow.png")
+	local alpha = alpha_tick / 200
+	paint(0, 0, 250, 250, res, alpha)
+end
+
+function grow:HitTest()
+	return false
 end

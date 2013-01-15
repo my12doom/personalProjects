@@ -3,6 +3,7 @@
 #include "my12doomRenderer.h"
 #include <windows.h>
 #include <atlbase.h>
+#include "..\dwindow\dx_player.h"
 
 extern my12doomRenderer *g_renderer;
 
@@ -21,12 +22,13 @@ static int paint_core(lua_State *L)
 	int s_top = lua_tointeger(L, parameter_count+6);
 	int s_right = lua_tointeger(L, parameter_count+7);
 	int s_bottom = lua_tointeger(L, parameter_count+8);
+	double alpha = lua_tonumber(L, parameter_count+9);
 
 	RECTF dst_rect = {left, top, right, bottom};
 	RECTF src_rect = {s_left, s_top, s_right, s_bottom};
 	bool hasROI = s_left > 0 || s_top > 0 || s_right > 0 || s_bottom > 0;
 
-	g_renderer->paint(&dst_rect, resource, hasROI ? &src_rect : NULL);
+	g_renderer->paint(&dst_rect, resource, hasROI ? &src_rect : NULL, alpha);
 
 	lua_pushboolean(L, 1);
 	return 1;
@@ -100,6 +102,21 @@ static int release_resource_core(lua_State *L)
 	return 0;
 }
 
+extern Iplayer *g_player;
+extern double UIScale;
+static int get_mouse_pos(lua_State *L)
+{
+	POINT p;
+	GetCursorPos(&p);
+	HWND wnd = g_player->get_window(1);
+	ScreenToClient(wnd, &p);
+
+	lua_pushinteger(L, p.x/UIScale);
+	lua_pushinteger(L, p.y/UIScale);
+
+	return 2;
+}
+
 static int commit_resource_core(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
@@ -150,6 +167,7 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("release_resource_core") = &release_resource_core;
 	g_lua_manager->get_variable("commit_resource_core") = &commit_resource_core;
 	g_lua_manager->get_variable("decommit_resource_core") = &decommit_resource_core;
+	g_lua_manager->get_variable("get_mouse_pos") = &get_mouse_pos;
 
 	my12doomRenderer_lua_loadscript();
 

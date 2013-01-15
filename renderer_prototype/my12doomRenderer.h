@@ -514,6 +514,6 @@ public:
 	
 	// for lua useage
 	HRESULT get_resource(int arg, resource_userdata *resource);
-	HRESULT paint(RECTF *dst, resource_userdata *resource, RECTF*src = NULL);
+	HRESULT paint(RECTF *dst, resource_userdata *resource, RECTF*src = NULL, float alpha = 1.0f);
 	HRESULT set_clip_rect(int left, int top, int right, int bottom);
 };

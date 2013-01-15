@@ -11,6 +11,7 @@
 #include <Dbghelp.h>
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
 #pragma comment(lib, "DbgHelp")
+Iplayer *g_player = NULL;
 
 ICommandReciever *command_reciever;
 
@@ -186,6 +187,7 @@ retry:
 	dwindow_lua_init();
 	my12doomRenderer_lua_init();
 	dx_player *test = new dx_player(hinstance);
+	g_player = test;
 	BringWindowToTop(test->m_hwnd1);
 
 	if (argc>1)

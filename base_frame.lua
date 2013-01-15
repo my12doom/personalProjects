@@ -68,10 +68,10 @@ function BaseFrame:render(arg)
 	for i=1,#self.childs do
 		local v = self.childs[i]
 		if v and v.render then
-			local l,r,t,b = v:GetAbsRect();
-			BeginChild(l,r,t,b)
+			local l,t,r,b = v:GetAbsRect();
+			BeginChild(l,t,r,b)
 			v:render(arg)
-			EndChild(l,r,t,b)
+			EndChild(l,t,r,b)
 		end
 	end
 
@@ -162,19 +162,55 @@ function BaseFrame:SetRelativeTo(frame, point, anchor)
 	self.anchor = anchor;
 end
 
+function BaseFrame:BringToTop(include_parent)
+	if not self.parent then return end
+	local parent = self.parent
+	self:RemoveFromParent()
+	parent:AddChild(self)
+	
+	if include_parent then parent:BringToTop(include_parent) end
+end
+
+function BaseFrame:HitTest(x, y)	-- client point
+	-- default hittest: by Rect
+	local l,t,r,b = self:GetAbsRect()
+	info("HitTest", x, y, self, l, t, r, b)
+	if l<=x and x<r and t<=y and y<b then
+		return true
+	else
+		return false
+	end
+end
+
+function BaseFrame:GetFrameByPoint(x, y) -- abs point
+	local result = nil
+	local l,t,r,b = self:GetAbsRect()
+	if l<=x and x<r and t<=y and y<b then
+		if self:HitTest(x, y) then
+			result = self
+		end
+		for i=1,self:GetChildCount() do
+			result = self:GetChild(i):GetFrameByPoint(x, y) or result
+		end
+		
+	end
+	
+	return result
+end
+
 function BaseFrame:GetAbsAnchorPoint(point)
 	local l, t, r, b = self:GetAbsRect()
 	local w, h = r-l, b-t
 	local px, py = l+w/2, t+h/2
-	if bit32.band(relative_point, LEFT) == LEFT then
+	if bit32.band(point, LEFT) == LEFT then
 		px = l
-	elseif bit32.band(relative_point, RIGHT) == RIGHT then
+	elseif bit32.band(point, RIGHT) == RIGHT then
 		px = l+w
 	end
 
-	if bit32.band(relative_point, TOP) == TOP then
+	if bit32.band(point, TOP) == TOP then
 		py = t
-	elseif bit32.band(relative_point, BOTTOM) == BOTTOM then
+	elseif bit32.band(point, BOTTOM) == BOTTOM then
 		py = t+h
 	end
 	
@@ -231,6 +267,7 @@ function BaseFrame:GetRect()
 end
 
 root = BaseFrame:Create()
+root.name = "ROOT"
 
 -- the Main Render function
 function RenderUI(view)
@@ -318,9 +355,10 @@ function set_bitmap_rect(bitmap, left, top, right, bottom)
 	bitmap.bottom = bottom
 end
 
-function paint(left, top, right, bottom, bitmap)
+function paint(left, top, right, bottom, bitmap, alpha)
 	if not bitmap or not bitmap.res then return end
 	local x,y  = rect[5], rect[6]
-	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom)
+	local a = alpha or 1.0
+	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a)
 end
 

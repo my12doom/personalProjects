@@ -29,6 +29,8 @@ LOGFONTW empty_logfontw = {0};
 #include "bomb_network.h"
 
 my12doomRenderer *g_renderer = NULL;
+double UIScale = .6;
+
 
 wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for);
 bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for)
@@ -1436,6 +1438,22 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	if (!m_gb)
 		return __super::on_mouse_down(id, button, x, y);
 
+	{
+		CAutoLock lck(&g_csL);
+		lua_getglobal(g_L, "OnMouseDown");
+		if (lua_isfunction(g_L, -1))
+		{
+			lua_pushinteger(g_L, x/UIScale);
+			lua_pushinteger(g_L, y/UIScale);
+			lua_pushinteger(g_L, button);
+			lua_mypcall(g_L, 3, 0, 0);
+			lua_settop(g_L, 0);
+
+			// 			if (key != VK_F5)
+			// 				return S_OK;
+		}
+		lua_settop(g_L, 0);
+	}
 
 
 	if ( (button == VK_RBUTTON || (!m_file_loaded && hittest(x, y, id_to_hwnd(id), NULL) == hit_logo) && 
@@ -4675,9 +4693,11 @@ LRESULT dx_player::OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam)
 lua_drawer::lua_drawer()
 {
 }
-double UIScale = 0.2;
 HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 {
+	RECTF f = {0,0,width/2,height/2};
+	g_renderer->set_movie_scissor_rect(&f);
+
 	g_lua_manager->get_variable("width") = int(width/UIScale);
 	g_lua_manager->get_variable("height") = int(height/UIScale);
 

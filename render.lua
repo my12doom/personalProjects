@@ -5,6 +5,7 @@ local buttons = {}
 if require and not BaseFrame then require("base_frame") end
 
 logo = BaseFrame:Create()
+logo.name = "LOGO"
 root:AddChild(logo)
 logo:SetRelativeTo(root, CENTER)
 function logo:GetRect()
@@ -19,6 +20,7 @@ function logo:RenderThis(arg)
 end
 
 toolbar_bg = BaseFrame:Create()
+toolbar_bg.name = "toolbar_bg"
 root:AddChild(toolbar_bg)
 toolbar_bg:SetRelativeTo(root, BOTTOM)
 function toolbar_bg:GetRect()
@@ -69,7 +71,7 @@ local numbers_bottom_margin = 26;
 local hidden_progress_width = 72;
 
 local function button_GetRect(self)
-	return self.x, self.y, self.x+button_size, self.y + button_size
+	return 0, 0, button_size, button_size, self.dx, self.dy
 end
 
 local function button_RenderThis(self)
@@ -84,32 +86,34 @@ function OnInitGPU()
 	-- commit them to GPU (optional)
 	-- handle resize changes here (must)
 
-	local x = dwindow.width - button_size - margin_button_right
-	local y = dwindow.height - button_size - margin_button_bottom
+	local x = - margin_button_right
+	local y = - margin_button_bottom
 
 	for i=1,#button_pictures/2 do
 		local button = buttons[i] or BaseFrame:Create()
 		buttons[i] = button
-		root:AddChild(button)
-		button.x = x
-		button.y = y
+		toolbar_bg:AddChild(button)
+		button.dx = x
+		button.dy = y
 		button.pic = {button_pictures[i*2-1], button_pictures[i*2]}
 		button.GetRect = button_GetRect
 		button.RenderThis = button_RenderThis
+		button.name = button.pic[1]
+		button:SetRelativeTo(nil, BOTTOMRIGHT)
 
 		x = x - space_of_each_button
 	end
 end
 
 progressbar = BaseFrame:Create()
-root:AddChild(progressbar)
+progressbar.name = "progressbar"
+toolbar_bg:AddChild(progressbar)
+progressbar:SetRelativeTo(nil, BOTTOMLEFT)
 function progressbar:GetRect()
-	local x_max = dwindow.width - margin_progress_right
-	local x_min = margin_progress_left
-	local y_min = dwindow.height - progress_margin_bottom
-	local y_max = y_min + progress_height
+	local r = self.parent:GetAbsAnchorPoint(RIGHT) - margin_progress_right	
+	local l = self.parent:GetAbsAnchorPoint(LEFT) + margin_progress_left
 
-	return x_min, y_min, x_max, y_max
+	return 0, 0, r-l, progress_height, margin_progress_left, -progress_margin_bottom+progress_height
 end
 local progress_pic =
 {
@@ -158,10 +162,11 @@ end
 
 number_current = BaseFrame:Create()
 number_current.t = 12345000
-root:AddChild(number_current)
+number_current.name = "number_current"
+toolbar_bg:AddChild(number_current)
+number_current:SetRelativeTo(nil, BOTTOMLEFT)
 function number_current:GetRect()
-	return numbers_left_margin, dwindow.height - numbers_bottom_margin - numbers_height,
-			numbers_left_margin + numbers_width * 8, dwindow.height - numbers_bottom_margin
+	return 0, 0, numbers_width * 8, numbers_height, numbers_left_margin, - numbers_bottom_margin
 end
 
 function number_current:RenderThis()
@@ -189,18 +194,18 @@ function number_current:RenderThis()
 end
 
 number_total = BaseFrame:Create({RenderThis = number_current.RenderThis})
+number_total.name = "number_total"
 root:AddChild(number_total)
+toolbar_bg:AddChild(number_total)
+number_total:SetRelativeTo(nil, BOTTOMRIGHT)
 number_total.t = 23456000
-number_total.x = numbers_left_margin + 500
 function number_total:GetRect()
-	return dwindow.width - numbers_right_margin - numbers_width * 8,
-			dwindow.height - numbers_bottom_margin - numbers_height,
-			dwindow.width - numbers_right_margin,
-			dwindow.height - numbers_bottom_margin
+	return 0, 0, numbers_width * 8, numbers_height, -numbers_right_margin, - numbers_bottom_margin
 end
 
 
 test = BaseFrame:Create()
+test.name = "test"
 test:SetRelativeTo(root, TOPLEFT)
 root:AddChild(test)
 function test:GetRect()
@@ -212,6 +217,7 @@ function test:RenderThis()
 end
 
 test2 = BaseFrame:Create()
+test2.name = "test2"
 test2:SetRelativeTo(test, RIGHT, LEFT)
 root:AddChild(test2)
 function test2:GetRect()
@@ -224,6 +230,7 @@ end
 
 test3 = BaseFrame:Create()
 test3:SetRelativeTo(test, BOTTOM, TOP)
+test3.name = "test3"
 root:AddChild(test3)
 function test3:GetRect()
 	local dy = dwindow.GetTickCount()%10000
@@ -237,12 +244,14 @@ function test3:RenderThis()
 end
 
 test4 = BaseFrame:Create()
+test4.name = "test4"
 root:AddChild(test4)
 test4:SetRelativeTo(test3, BOTTOMRIGHT, BOTTOMLEFT)
 function test4:GetRect()
-	local dx = (dwindow.GetTickCount())
-	dx = math.sin(dx/360)*50+40
-	return 0,0,40,40,dx,0
+	local d = (dwindow.GetTickCount())
+	dx = math.sin(d/360)*50+40
+	dy = math.cos(d/360)*50
+	return 0,0,40,40,dx,dy
 end
 
 function test4:RenderThis()
