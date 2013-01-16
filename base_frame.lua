@@ -1,4 +1,4 @@
-local rect = {0,0,99999,99999,0,0}
+﻿local rect = {0,0,99999,99999,0,0}
 local rects = {}
 local bitmapcache = {}
 
@@ -45,7 +45,7 @@ function debug(...)
 end
 
 function info(...)
-	print("--INFO", ...)
+	--print("--INFO", ...)
 end
 
 function error(...)
@@ -266,8 +266,42 @@ function BaseFrame:GetRect()
 	return 0,0,dwindow.width,dwindow.height
 end
 
+-- time events, usally happen on next render
+function BaseFrame:OnUpdate(time, delta_time) end
+
+-- for these mouse events or focus related events, return anything other than false and nil cause it to be sent to its parents
+function BaseFrame:OnMouseDown(button, x, y) end
+function BaseFrame:OnMouseUp(button, x, y) end
+function BaseFrame:OnClick(button, x, y) end
+function BaseFrame:OnDoubleClick(button, x, y) end
+function BaseFrame:OnMouseOver() end
+function BaseFrame:OnMouseLeave() end
+function BaseFrame:OnMouseMove() end
+function BaseFrame:OnMouseWheel() end
+function BaseFrame:OnKeyDown() end
+function BaseFrame:OnKeyUp() end
+function BaseFrame:OnDropFile(a,b,c)
+	print("BaseFrame:OnDropFile")
+end
+
+
+-- for these mouse events or focus related events, return anything other than false and nil cause it to be sent to its parents
+
+
+-- window or dshow or etc callback
+function OnDirectshowEvents() end
+function OnMove() end
+function OnSize() end
+
+-- some controlling function
+function StartDragging() end
+function StartResizing() end
+
 root = BaseFrame:Create()
 root.name = "ROOT"
+function BaseFrame:OnEvent(event, ...)
+	return (self[event] and self[event](self, ...)) or (self.parent and self.parent:OnEvent(event, ...))
+end
 
 -- the Main Render function
 function RenderUI(view)
@@ -356,6 +390,7 @@ function set_bitmap_rect(bitmap, left, top, right, bottom)
 end
 
 function paint(left, top, right, bottom, bitmap, alpha)
+	--bitmap = get_bitmap("Z:\\skin\\solid.png")
 	if not bitmap or not bitmap.res then return end
 	local x,y  = rect[5], rect[6]
 	local a = alpha or 1.0

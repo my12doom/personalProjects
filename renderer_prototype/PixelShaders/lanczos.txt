@@ -6,6 +6,7 @@ sampler s0 : register(s0);
 sampler s1 : register(s1);
 float4 p0 : register(c0);
 float4 p1 : register(c1);
+float4 p2 : register(c2);
 
 #define rate_x (p0[0])
 #define rate_y (p0[1])
@@ -15,6 +16,7 @@ float4 p1 : register(c1);
 #define TEXTURE_HEIGHT_UV p1[1]
 #define rate_x_UV (p1[2])
 #define rate_y_UV (p1[3])
+#define additional_alpha (p2[0])
 
 #define lobe 4
 #define tap lanczos_kernerl
@@ -147,7 +149,7 @@ float4 lanczosY(float2 tex : TEXCOORD0) : COLOR
 	total_color += weight * color;
   }
   
-  return total_color/total_weight;
+  return total_color/total_weight * additional_alpha;
 }
 
 float4 lanczosCore(sampler s, float2 tex, float2 ps, float2 rates)
@@ -182,7 +184,7 @@ float4 lanczos(float2 tex : TEXCOORD0) : COLOR
 {
 	float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
 	float2 rates = {rate_x, rate_y};
-	return lanczosCore(s0, tex, ps, rates);
+	return lanczosCore(s0, tex, ps, rates) * additional_alpha;
 }
 
 float4 lanczos_YV12(float2 tex : TEXCOORD0) : COLOR
@@ -199,7 +201,7 @@ float4 lanczos_YV12(float2 tex : TEXCOORD0) : COLOR
 	float V = lanczosCore(s1, tex_V, ps, rates)[0];
 	float U = lanczosCore(s1, tex_U, ps, rates)[0];
 	
-	return yuv2rgb(float4(Y,U,V,1));
+	return yuv2rgb(float4(Y,U,V,1)) * additional_alpha;
 }
 
 float4 lanczos_NV12(float2 tex : TEXCOORD0) : COLOR
@@ -212,5 +214,5 @@ float4 lanczos_NV12(float2 tex : TEXCOORD0) : COLOR
 	rates = clamp(rates*2, 0, 1);
 	float4 UV = lanczosCore(s1, tex, ps, rates);
 	
-	return yuv2rgb(float4(Y,UV[0],UV[3],1));
+	return yuv2rgb(float4(Y,UV[0],UV[3],1)) * additional_alpha;
 }

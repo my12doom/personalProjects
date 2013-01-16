@@ -242,7 +242,7 @@ init()
 local tetris = BaseFrame:Create()
 tetris.name = "TETRIS"
 tetris:SetRelativeTo(nil, RIGHT)
-logo:AddChild(tetris)
+root:AddChild(tetris)
 function tetris:GetRect()
 	return 0,0,40*ww+40,40*hh+40,200,-50
 end
@@ -327,6 +327,8 @@ local hidden_progress_width = 72;
 
 
 grow = BaseFrame:Create()
+grow.x = 0
+grow.y  = 0
 local last_in_time = 0
 local last_out_time = 0
 local last_in = false
@@ -334,21 +336,38 @@ local alpha_tick = 0
 grow:SetRelativeTo(nil, BOTTOMLEFT)
 toolbar_bg:AddChild(grow)
 grow.name = "GROW"
+
 function grow:GetRect()
-	return 0,0,250,250,px-125,125
+	return 0,0,250,250,self.x-125,125
+end
+
+function grow:Stick(dt)
+	local frame = root:GetFrameByPoint(px,py)
+	local isbutton = false
+	for _,v in ipairs(buttons) do
+		if v == frame then
+			isbutton = true
+		end
+	end
+	if not isbutton then return end
+	
+	local l,t,r,b = frame:GetAbsRect()
+	local dx = (l+r)/2 - self.x
+	self.x = self.x + 0.82 * dx
 end
 
 function grow:OnUpdate()
 	local r,b = toolbar_bg:GetAbsAnchorPoint(BOTTOMRIGHT)
 	r,b = r - margin_button_right, b - margin_button_bottom
-	local l,t = toolbar_bg:GetAbsAnchorPoint(TOPRIGHT)
-	l = l - margin_progress_right
+	local l,t = toolbar_bg:GetAbsAnchorPoint(BOTTOMRIGHT)
+	l,t = l - margin_progress_right, t - margin_button_bottom - button_size
+	local dt = 0;
 	if l<=px and px<r and t<=py and py<b then
 		if not last_in then 
 			self:OnEnter()
 		else
 			alpha_tick = alpha_tick + (dwindow.GetTickCount() - last_in_time)+2
-			print("t++")
+			dt = dwindow.GetTickCount() - last_in_time
 		end
 		last_in = true
 		last_in_time = dwindow.GetTickCount()
@@ -356,8 +375,8 @@ function grow:OnUpdate()
 		if last_in then
 			self:OnLeave()
 		else
-			print("t--")
-			alpha_tick = alpha_tick - (dwindow.GetTickCount() - last_out_time)*0.4
+			alpha_tick = alpha_tick - (dwindow.GetTickCount() - last_out_time)*0.8
+			dt = dwindow.GetTickCount() - last_out_time
 		end
 		last_in = false
 		last_out_time = dwindow.GetTickCount()
@@ -365,7 +384,8 @@ function grow:OnUpdate()
 	
 	alpha_tick = math.max(alpha_tick, 0)
 	alpha_tick = math.min(alpha_tick, 300)
-	print("alpha_tick", alpha_tick)
+	
+	if dt > 0 then self:Stick(dt) end
 end
 
 function grow:OnEnter()

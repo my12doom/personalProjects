@@ -1953,3 +1953,71 @@ DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter)
 
 	return exit_code;
 }
+
+
+LPWSTR RhymeUTF82WideCharHelper(LPWSTR lpszWideString, LPCSTR lpszUTF8String, size_t nWideCharCount)
+{
+	_ASSERTE(lpszWideString != NULL);
+	_ASSERTE(lpszUTF8String != NULL);
+	_ASSERTE(nWideCharCount <= 0x7fffffff);
+	_ASSERTE(strlen(lpszUTF8String) <= 0x7fffffff);
+
+	size_t nUTF8Length = strlen(lpszUTF8String);
+
+	if(lpszWideString == NULL || lpszUTF8String == NULL ||
+		nWideCharCount > 0x7fffffff ||
+		nUTF8Length > 0x7fffffff)
+	{
+		return NULL;
+	}
+
+	int nConverted = MultiByteToWideChar(
+		CP_UTF8,
+		0,
+		lpszUTF8String,
+		(int)(nUTF8Length),
+		lpszWideString,
+		(int)(nWideCharCount));
+
+	if(nConverted == 0 && ERROR_NO_UNICODE_TRANSLATION == GetLastError())
+	{
+		return NULL;
+	}
+	lpszWideString[nConverted] = L'/0';
+	return lpszWideString;
+}
+
+LPSTR RhymeWideChar2UTF8Helper(LPSTR lpszUTF8String, LPCWSTR lpszWideString, size_t nUTF8ByteCount)
+{
+	_ASSERTE(lpszWideString != NULL);
+	_ASSERTE(lpszUTF8String != NULL);
+	_ASSERTE(nUTF8ByteCount <= 0x7fffffff);
+	_ASSERTE(wcslen(lpszWideString) <= 0x7fffffff);
+
+	size_t nWideCharCount = wcslen(lpszWideString);
+
+	if(lpszWideString == NULL || lpszUTF8String == NULL ||
+		nUTF8ByteCount > 0x7fffffff ||
+		nWideCharCount > 0x7fffffff)
+	{
+		return NULL;
+	}
+
+	int nConverted = WideCharToMultiByte(
+		CP_UTF8,
+		0,
+		lpszWideString,
+		(int)(nWideCharCount),
+		lpszUTF8String,
+		(int)(nUTF8ByteCount),
+		NULL,
+		NULL);
+
+	if(nConverted == 0 && ERROR_NO_UNICODE_TRANSLATION == GetLastError())
+	{
+		return NULL;
+	}
+
+	lpszUTF8String[nConverted] = '/0';
+	return lpszUTF8String;
+}

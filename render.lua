@@ -1,6 +1,6 @@
  -- global functions and variables
 
-local buttons = {}
+buttons = {}
 
 if require and not BaseFrame then require("base_frame") end
 
@@ -17,6 +17,10 @@ function logo:RenderThis(arg)
 		local res = get_bitmap("Z:\\skin\\logo2.png")
 		paint(0,0,1920,1080, res)
 	end
+end
+
+function logo:HitTest()
+	return false
 end
 
 toolbar_bg = BaseFrame:Create()
@@ -71,12 +75,12 @@ local numbers_bottom_margin = 26;
 local hidden_progress_width = 72;
 
 local function button_GetRect(self)
-	return 0, 0, button_size, button_size, self.dx, self.dy
+	return 0, 0, space_of_each_button, button_size, self.dx, self.dy
 end
 
 local function button_RenderThis(self)
 	local filename = ("Z:\\skin\\" .. self.pic[1])
-	paint(0,0,button_size,button_size, get_bitmap(filename))
+	paint(11,0,button_size+11,button_size, get_bitmap(filename))
 end
 
 
@@ -255,7 +259,7 @@ function test4:GetRect()
 end
 
 function test4:RenderThis()
-	return paint(0,0,40,40, get_bitmap("Z:\\skin\\volume.png"))
+	return paint(0,0,40,40, get_bitmap("Z:\\skin\\É´²¼.png"))
 end
 
 if dwindow and dwindow.execute_luafile then dwindow.execute_luafile("D:\\private\\tetris.lua") end

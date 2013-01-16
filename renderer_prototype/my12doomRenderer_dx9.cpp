@@ -2500,7 +2500,7 @@ HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RE
 			sample->commit();
 			m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-			resize_surface(NULL, sample, rt, src_rect, dst_rect, bilinear_no_mipmap, alpha );
+			resize_surface(NULL, sample, rt, src_rect, dst_rect, lanczos_onepass, alpha );
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 		}
 	}
@@ -2840,13 +2840,13 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		vertex[3].tu = (float)s.right / desc.Width;
 		vertex[3].tv = (float)s.bottom / desc.Height;
 
-		float ps[8] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height,
-						desc.Width/2, desc.Height, abs((float)width_d/(width_s/2)), abs((float)height_d/(height_s/2))};
+		float ps[12] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height,
+						desc.Width/2, desc.Height, abs((float)width_d/(width_s/2)), abs((float)height_d/(height_s/2)), alpha};
 		ps[0] = ps[0] > 1 ? 1 : ps[0];
 		ps[1] = ps[1] > 1 ? 1 : ps[1];
 		ps[6] = ps[6] > 1 ? 1 : ps[6];
 		ps[7] = ps[7] > 1 ? 1 : ps[7];
-		m_Device->SetPixelShaderConstantF(0, ps, 2);
+		m_Device->SetPixelShaderConstantF(0, ps, 3);
 
 
 		// shader
@@ -2944,7 +2944,9 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			float ps[4] = {abs((float)width_d/width_s), abs((float)height_d/height_s), desc.Width, desc.Height};
 			ps[0] = ps[0] > 1 ? 1 : ps[0];
 			ps[1] = ps[1] > 1 ? 1 : ps[1];
+			float ps_alpha[4] = {alpha};
 			m_Device->SetPixelShaderConstantF(0, ps, 1);
+			m_Device->SetPixelShaderConstantF(2, ps_alpha, 1);
 			m_Device->SetPixelShader(lanczos_shader);
 		}
 		else
