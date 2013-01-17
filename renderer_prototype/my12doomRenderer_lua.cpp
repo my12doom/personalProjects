@@ -102,20 +102,6 @@ static int release_resource_core(lua_State *L)
 	return 0;
 }
 
-extern Iplayer *g_player;
-extern double UIScale;
-static int get_mouse_pos(lua_State *L)
-{
-	POINT p;
-	GetCursorPos(&p);
-	HWND wnd = g_player->get_window(1);
-	ScreenToClient(wnd, &p);
-
-	lua_pushinteger(L, p.x/UIScale);
-	lua_pushinteger(L, p.y/UIScale);
-
-	return 2;
-}
 
 static int commit_resource_core(lua_State *L)
 {
@@ -158,6 +144,70 @@ static int myprint(lua_State *L)
 	return 0;
 }
 
+
+
+//// IPLayer functions
+
+extern Iplayer *g_player;
+extern double UIScale;
+static int get_mouse_pos(lua_State *L)
+{
+	POINT p;
+	GetCursorPos(&p);
+	HWND wnd = g_player->get_window(1);
+	ScreenToClient(wnd, &p);
+
+	lua_pushinteger(L, p.x/UIScale);
+	lua_pushinteger(L, p.y/UIScale);
+
+	return 2;
+}
+
+static int pause(lua_State *L)
+{
+	g_player->pause();
+
+	return 0;
+}
+
+static int play(lua_State *L)
+{
+	g_player->play();
+
+	return 0;
+}
+
+static int tell(lua_State *L)
+{
+	int t = 0;
+	g_player->tell(&t);
+	lua_pushinteger(L, t);
+
+	return 1;
+}
+
+static int total(lua_State *L)
+{
+	int t = 0;
+	g_player->total(&t);
+	lua_pushinteger(L, t);
+
+	return 1;
+}
+
+static int seek(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	if (parameter_count >= 0)
+		return 0;
+
+	int target = lua_tonumber(L, parameter_count+0);
+	g_player->seek(target);
+
+	lua_pushboolean(L, TRUE);
+	return 1;
+}
+
 int my12doomRenderer_lua_init()
 {
 	g_lua_manager->get_variable("paint_core") = &paint_core;
@@ -168,6 +218,11 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("commit_resource_core") = &commit_resource_core;
 	g_lua_manager->get_variable("decommit_resource_core") = &decommit_resource_core;
 	g_lua_manager->get_variable("get_mouse_pos") = &get_mouse_pos;
+	g_lua_manager->get_variable("play") = &play;
+	g_lua_manager->get_variable("pause") = &pause;
+	g_lua_manager->get_variable("total") = &total;
+	g_lua_manager->get_variable("tell") = &tell;
+	g_lua_manager->get_variable("seek") = &seek;
 
 	my12doomRenderer_lua_loadscript();
 
@@ -193,3 +248,4 @@ int my12doomRenderer_lua_loadscript()
 
 	return 0;
 }
+

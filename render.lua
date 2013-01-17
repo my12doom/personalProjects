@@ -83,6 +83,10 @@ local function button_RenderThis(self)
 	paint(11,0,button_size+11,button_size, get_bitmap(filename))
 end
 
+local function button_OnMouseDown(self)
+	dwindow.pause()
+end
+
 
 
 function OnInitGPU()
@@ -102,6 +106,7 @@ function OnInitGPU()
 		button.pic = {button_pictures[i*2-1], button_pictures[i*2]}
 		button.GetRect = button_GetRect
 		button.RenderThis = button_RenderThis
+		button.OnMouseDown = button_OnMouseDown
 		button.name = button.pic[1]
 		button:SetRelativeTo(nil, BOTTOMRIGHT)
 
@@ -133,14 +138,22 @@ function file(n)
 	return "Z:\\skin\\" .. progress_pic[n]
 end
 
+function progressbar:OnMouseDown(x)
+	local l,_,r = self:GetRect()
+	local fv = x/(r-l)
+	dwindow.seek(dwindow.total()*fv)
+	
+	print("-----------------", x)
+end
+
 function progressbar:RenderThis()
 	local l,t,r,b = self:GetRect()
 	l,r,t,b = 0,r-l,0,b-t
-	local fv = (dwindow.GetTickCount()%1000) / 1000.0
+	local fv = dwindow.tell() / dwindow.total()
 	if fv > 1 then fv = 1 end
 	if fv < 0 then fv = 0 end
 	local v = fv * r
-
+	
 	-- draw bottom
 	paint(0,0, width_progress_left, b, get_bitmap(file(1)))
 	paint(width_progress_left,0, r-width_progress_right, b, get_bitmap(file(2)))
@@ -165,7 +178,6 @@ function progressbar:RenderThis()
 end
 
 number_current = BaseFrame:Create()
-number_current.t = 12345000
 number_current.name = "number_current"
 toolbar_bg:AddChild(number_current)
 number_current:SetRelativeTo(nil, BOTTOMLEFT)
@@ -174,8 +186,10 @@ function number_current:GetRect()
 end
 
 function number_current:RenderThis()
-	local ms = self.t % 1000
-	local s = (self.t+dwindow.GetTickCount()) / 1000
+	local t = dwindow.total()
+	if self.name == "number_current" then t= dwindow.tell() end
+	local ms = t % 1000
+	local s = t / 1000
 	local h = (s / 3600) % 100
 	local h1 = h/10
 	local h2 = h%10

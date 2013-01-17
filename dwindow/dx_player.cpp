@@ -29,7 +29,7 @@ LOGFONTW empty_logfontw = {0};
 #include "bomb_network.h"
 
 my12doomRenderer *g_renderer = NULL;
-double UIScale = .6;
+double UIScale = .60;
 
 
 wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for);
@@ -534,14 +534,8 @@ HRESULT dx_player::tell(int *time)
 	if (time == NULL)
 		return E_POINTER;
 
-	if (m_ms == NULL)
-		return VFW_E_WRONG_STATE;
-
-    REFERENCE_TIME current;
-	HRESULT hr = m_ms->GetCurrentPosition(&current);
-	if(SUCCEEDED(hr))
-		*time = (int)(current / 10000);
-	return hr;
+	*time = m_current_time;
+	return S_OK;
 }
 
 DWORD dx_player::tell_thread()
@@ -554,6 +548,10 @@ DWORD dx_player::tell_thread()
 		{
 			m_ms->GetCurrentPosition(&current);
 			m_current_time = current / 10000;
+
+			REFERENCE_TIME total_time = 0xffffffff;
+			m_ms->GetDuration(&total_time);
+			m_total_time = total_time / 10000;
 		}
 	}
 }

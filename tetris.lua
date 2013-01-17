@@ -214,6 +214,8 @@ function OnMouseDown(x, y, key)
 	if frame then 
 		name = frame.name or name 
 		frame:BringToTop(true)
+		local l,_,t = frame:GetAbsRect()
+		frame:OnMouseDown(x-l, y-t, key)
 	end
 	print("GetFrameByPoint", x, y, name)
 end
