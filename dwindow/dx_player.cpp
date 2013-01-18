@@ -29,7 +29,7 @@ LOGFONTW empty_logfontw = {0};
 #include "bomb_network.h"
 
 my12doomRenderer *g_renderer = NULL;
-double UIScale = .60;
+double UIScale = 1.0;
 
 
 wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for);
@@ -542,7 +542,7 @@ DWORD dx_player::tell_thread()
 {
 	while(true)
 	{
-		Sleep(100);
+		Sleep(1);
 		REFERENCE_TIME current;
 		if (m_ms != NULL && timeGetTime() > m_lastVideoCBTick + 2000)
 		{
@@ -552,6 +552,12 @@ DWORD dx_player::tell_thread()
 			REFERENCE_TIME total_time = 0xffffffff;
 			m_ms->GetDuration(&total_time);
 			m_total_time = total_time / 10000;
+		}
+
+		if (m_mc)
+		{
+			m_filter_state = -1;
+			m_mc->GetState(500, &m_filter_state);
 		}
 	}
 }
@@ -615,17 +621,19 @@ HRESULT dx_player::get_volume(double *volume)
 
 bool dx_player::is_playing()
 {
-	bool is = false;
-
+	if (m_filter_state >= 0)
+	{
+		return m_filter_state == State_Running;
+	}
 	if (m_mc)
 	{
 		OAFilterState state = State_Stopped;
 		m_mc->GetState(500, &state);
 		if (state == State_Running)
-			is = true;
+			return true;
 	}
 
-	return is;
+	return false;
 }
 bool dx_player::is_closed()
 {
@@ -1040,6 +1048,7 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 {
 	POINT mouse;
 	GetCursorPos(&mouse);
+	lua_OnMouseEvent("OnMouseMove", x, y, 0);
 
 	double v;
 	int type = hittest(x, y, id_to_hwnd(id), &v);
@@ -1088,6 +1097,7 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 {
 	m_dragging = -1;
+	lua_OnMouseEvent("OnMouseUp", x, y, button);
 
 	// test for 
 	if (m_mouse_down_point.x > -100  && m_mouse_down_point.y > -100 && m_mouse_down_time > 0)
@@ -1431,27 +1441,30 @@ int dx_player::hittest(int x, int y, HWND hwnd, double *v)
 	return m_renderer1->hittest(x, y, v);
 }
 
+HRESULT dx_player::lua_OnMouseEvent(char *event, int x, int y, int button)
+{
+	CAutoLock lck(&g_csL);
+	lua_getglobal(g_L, "OnMouseEvent");
+	if (lua_isfunction(g_L, -1))
+	{
+		lua_pushstring(g_L, event);
+		lua_pushinteger(g_L, x/UIScale);
+		lua_pushinteger(g_L, y/UIScale);
+		lua_pushinteger(g_L, button);
+		lua_mypcall(g_L, 4, 0, 0);
+		lua_settop(g_L, 0);
+	}
+	lua_settop(g_L, 0);
+
+	return S_OK;
+}
+
 LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 {
 	if (!m_gb)
 		return __super::on_mouse_down(id, button, x, y);
 
-	{
-		CAutoLock lck(&g_csL);
-		lua_getglobal(g_L, "OnMouseDown");
-		if (lua_isfunction(g_L, -1))
-		{
-			lua_pushinteger(g_L, x/UIScale);
-			lua_pushinteger(g_L, y/UIScale);
-			lua_pushinteger(g_L, button);
-			lua_mypcall(g_L, 3, 0, 0);
-			lua_settop(g_L, 0);
-
-			// 			if (key != VK_F5)
-			// 				return S_OK;
-		}
-		lua_settop(g_L, 0);
-	}
+	lua_OnMouseEvent("OnMouseDown", x, y, button);
 
 
 	if ( (button == VK_RBUTTON || (!m_file_loaded && hittest(x, y, id_to_hwnd(id), NULL) == hit_logo) && 
@@ -1745,7 +1758,7 @@ LRESULT dx_player::on_size(int id, int type, int x, int y)
 	}
 
 	if (m_renderer1)
-		m_renderer1->pump();
+		m_renderer1->repaint_video();
 	return S_OK;
 }
 
@@ -4693,9 +4706,6 @@ lua_drawer::lua_drawer()
 }
 HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 {
-	RECTF f = {0,0,width/2,height/2};
-	g_renderer->set_movie_scissor_rect(&f);
-
 	g_lua_manager->get_variable("width") = int(width/UIScale);
 	g_lua_manager->get_variable("height") = int(height/UIScale);
 

@@ -399,3 +399,20 @@ function paint(left, top, right, bottom, bitmap, alpha)
 	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a)
 end
 
+
+
+
+--- default mouse event delivering
+
+function OnMouseEvent(event,x,y,...)
+	local frame = root:GetFrameByPoint(x,y)
+	if frame then
+		frame:BringToTop(true)
+		local l,_,t = frame:GetAbsRect()
+		if frame[event] then frame[event](frame,x-l, y-t, ...) end
+	end
+end
+
+function OnMouseDown(x, y, key)
+	return OnMouseEvent("OnMouseDown",x,y,key)
+end

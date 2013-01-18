@@ -141,9 +141,7 @@ end
 function progressbar:OnMouseDown(x)
 	local l,_,r = self:GetRect()
 	local fv = x/(r-l)
-	dwindow.seek(dwindow.total()*fv)
-	
-	print("-----------------", x)
+	dwindow.seek(dwindow.total()*fv)	
 end
 
 function progressbar:RenderThis()
@@ -221,7 +219,7 @@ function number_total:GetRect()
 	return 0, 0, numbers_width * 8, numbers_height, -numbers_right_margin, - numbers_bottom_margin
 end
 
-
+--[[
 test = BaseFrame:Create()
 test.name = "test"
 test:SetRelativeTo(root, TOPLEFT)
@@ -277,3 +275,4 @@ function test4:RenderThis()
 end
 
 if dwindow and dwindow.execute_luafile then dwindow.execute_luafile("D:\\private\\tetris.lua") end
+]]--

@@ -2114,6 +2114,10 @@
 				RelativePath=".\My Amplifier Results\r003hs\r003hs.ampl"
 				>
 			</File>
+			<File
+				RelativePath=".\My Amplifier Results\r004hs\r004hs.ampl"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath="..\base_frame.lua"
@@ -2125,6 +2129,10 @@
 		</File>
 		<File
 			RelativePath=".\dwindow.manifest"
+			>
+		</File>
+		<File
+			RelativePath="..\legacyUI.lua"
 			>
 		</File>
 		<File

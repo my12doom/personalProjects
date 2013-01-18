@@ -2500,7 +2500,7 @@ HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RE
 			sample->commit();
 			m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-			resize_surface(NULL, sample, rt, src_rect, dst_rect, lanczos_onepass, alpha );
+			resize_surface(NULL, sample, rt, src_rect, dst_rect, bilinear_no_mipmap, alpha );
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 		}
 	}

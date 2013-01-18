@@ -170,6 +170,13 @@ static int pause(lua_State *L)
 	return 0;
 }
 
+static int toggle_fullscreen(lua_State *L)
+{
+	g_player->toggle_fullscreen();
+
+	return 0;
+}
+
 static int play(lua_State *L)
 {
 	g_player->play();
@@ -177,6 +184,12 @@ static int play(lua_State *L)
 	return 0;
 }
 
+static int is_playing(lua_State *L)
+{
+	lua_pushboolean(L, g_player->is_playing());
+
+	return 1;
+}
 static int tell(lua_State *L)
 {
 	int t = 0;
@@ -208,6 +221,48 @@ static int seek(lua_State *L)
 	return 1;
 }
 
+
+static int get_volume(lua_State *L)
+{
+	double v = 0;
+	g_player->get_volume(&v);
+	lua_pushnumber(L, v);
+
+	return 1;
+}
+
+static int set_volume(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	if (parameter_count >= 0)
+		return 0;
+
+	double v = lua_tonumber(L, parameter_count+0);
+	g_player->set_volume(v);
+
+	lua_pushboolean(L, TRUE);
+	return 1;
+}
+
+
+// renderer things
+static int set_movie_rect(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	if (parameter_count > -4)
+		return 0;
+
+	float left = lua_tonumber(L, parameter_count+0);
+	float top = lua_tonumber(L, parameter_count+1);
+	float right = lua_tonumber(L, parameter_count+2);
+	float bottom = lua_tonumber(L, parameter_count+3);
+
+	RECTF rect = {left, top, right, bottom};
+	g_renderer->set_movie_scissor_rect(&rect);
+	lua_pushboolean(L, TRUE);
+	return 1;
+}
+
 int my12doomRenderer_lua_init()
 {
 	g_lua_manager->get_variable("paint_core") = &paint_core;
@@ -219,10 +274,14 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("decommit_resource_core") = &decommit_resource_core;
 	g_lua_manager->get_variable("get_mouse_pos") = &get_mouse_pos;
 	g_lua_manager->get_variable("play") = &play;
+	g_lua_manager->get_variable("is_playing") = &is_playing;
 	g_lua_manager->get_variable("pause") = &pause;
+	g_lua_manager->get_variable("toggle_fullscreen") = &toggle_fullscreen;
 	g_lua_manager->get_variable("total") = &total;
 	g_lua_manager->get_variable("tell") = &tell;
 	g_lua_manager->get_variable("seek") = &seek;
+	g_lua_manager->get_variable("get_volume") = &get_volume;
+	g_lua_manager->get_variable("set_volume") = &set_volume;
 
 	my12doomRenderer_lua_loadscript();
 
@@ -239,7 +298,7 @@ int my12doomRenderer_lua_loadscript()
 		lua_settop(g_L, 0);
 	}
 
-	if (luaL_loadfile(g_L, "d:\\private\\render.lua") || lua_pcall(g_L, 0, 0, 0))
+	if (luaL_loadfile(g_L, "d:\\private\\legacyUI.lua") || lua_pcall(g_L, 0, 0, 0))
 	{
 		const char * result = lua_tostring(g_L, -1);
 		printf("failed loading renderer lua script : %s\n", result);

@@ -208,18 +208,6 @@ function OnKeyDown(key, id)
 	end
 end
 
-function OnMouseDown(x, y, key)
-	local frame = root:GetFrameByPoint(x,y)
-	local name = tostring(frame)
-	if frame then 
-		name = frame.name or name 
-		frame:BringToTop(true)
-		local l,_,t = frame:GetAbsRect()
-		frame:OnMouseDown(x-l, y-t, key)
-	end
-	print("GetFrameByPoint", x, y, name)
-end
-
 local tick = 0
 local px, py = 0, 0
 local function OnUpdate()	

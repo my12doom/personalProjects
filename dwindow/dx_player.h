@@ -221,6 +221,7 @@ protected:
 	wchar_t m_file_to_load2[MAX_PATH];
 	int init_done_flag;
 	int m_dragging_window;
+	HRESULT lua_OnMouseEvent(char *event, int x, int y, int key);  // x,y: UIScale applied inside
 
 
 	// window handler
@@ -276,6 +277,7 @@ protected:
 	POINT m_mouse_down_point;	// = 0
 	int m_mouse_down_time;
 	double m_dragging_value;
+	OAFilterState m_filter_state;
 	AutoSetting<double> m_volume;	// = 1.0
 	AutoSetting<bool> m_useInternalAudioDecoder;		// = true
 	AutoSetting<double> m_normalize_audio;	// = false
