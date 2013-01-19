@@ -117,6 +117,12 @@ public:
 	HRESULT execute_command_adv(wchar_t *command, wchar_t *out, const wchar_t **args, int args_count);
 	HRESULT show_mouse(bool show)
 	{
+		return show_mouse_core(show);
+	}
+	HRESULT show_mouse_core(bool show, bool test = false)
+	{
+		if (!test)
+			return S_OK;
 		GetCursorPos(&m_mouse);
 		return dwindow::show_mouse(show || m_theater_owner);
 	}
@@ -126,7 +132,7 @@ public:
 	HRESULT set_theater(HWND owner){m_theater_owner = owner; return S_OK;}
 	HRESULT popup_menu(HWND owner);
 	bool is_fullsceen(int window_id){return window_id==1?m_full1:m_full2;}
-	HWND get_window(int window_id){return window_id==1?m_hwnd1:m_hwnd2;}
+	HWND get_window(int window_id);
 
 
 	POINT m_mouse;

@@ -82,6 +82,50 @@ static int load_bitmap_core(lua_State *L)
 	return 3;
 }
 
+
+HFONT create_font(const wchar_t *facename = L"ºÚÌå", int font_height = 14)
+{
+	LOGFONTW lf={0};
+	lf.lfHeight = -font_height;
+	lf.lfCharSet = GB2312_CHARSET;
+	lf.lfOutPrecision =  OUT_STROKE_PRECIS;
+	lf.lfClipPrecision = CLIP_STROKE_PRECIS;
+	lf.lfQuality = DEFAULT_QUALITY;
+	lf.lfPitchAndFamily = VARIABLE_PITCH;
+	lf.lfWeight = FW_BOLD*3;
+	lstrcpynW(lf.lfFaceName, facename, 32);
+
+	HFONT rtn = CreateFontIndirectW(&lf); 
+
+	return rtn;
+}
+
+static int draw_font_core(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	const char *text = lua_tostring(L, parameter_count+0);
+
+	USES_CONVERSION;
+	gpu_sample *sample = NULL;
+	RGBQUAD color = {255,255,255,255};
+	if (FAILED(g_renderer->drawFont(&sample, create_font(), A2W(text), color)) || sample == NULL)
+	{
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "failed loading bitmap file");
+		return 2;
+	}
+
+	resource_userdata *resource = new resource_userdata;
+	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
+	resource->pointer = sample;
+	resource->managed = false;
+	lua_pushlightuserdata(L, resource);
+	lua_pushinteger(L, sample->m_width);
+	lua_pushinteger(L, sample->m_height);
+	return 3;
+
+}
+
 static int release_resource_core(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
@@ -148,13 +192,13 @@ static int myprint(lua_State *L)
 
 //// IPLayer functions
 
-extern Iplayer *g_player;
+extern dx_player *g_player;
 extern double UIScale;
 static int get_mouse_pos(lua_State *L)
 {
 	POINT p;
 	GetCursorPos(&p);
-	HWND wnd = g_player->get_window(1);
+	HWND wnd = g_player->get_window((int)g_lua_manager->get_variable("active_view")+1);
 	ScreenToClient(wnd, &p);
 
 	lua_pushinteger(L, p.x/UIScale);
@@ -190,6 +234,14 @@ static int is_playing(lua_State *L)
 
 	return 1;
 }
+
+static int is_fullscreen(lua_State *L)
+{
+	lua_pushboolean(L, g_player->is_fullsceen(1));
+
+	return 1;
+}
+
 static int tell(lua_State *L)
 {
 	int t = 0;
@@ -244,6 +296,25 @@ static int set_volume(lua_State *L)
 	return 1;
 }
 
+static int show_mouse(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	if (parameter_count >= 0)
+		return 0;
+
+	bool v = lua_toboolean(L, parameter_count+0);
+	g_player->show_mouse_core(v,true);
+
+	lua_pushboolean(L, TRUE);
+	return 1;
+}
+static int popup_menu(lua_State *L)
+{
+	g_player->popup_menu(g_player->get_window(1));
+
+	return 0;
+}
+
 
 // renderer things
 static int set_movie_rect(lua_State *L)
@@ -275,6 +346,7 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("get_mouse_pos") = &get_mouse_pos;
 	g_lua_manager->get_variable("play") = &play;
 	g_lua_manager->get_variable("is_playing") = &is_playing;
+	g_lua_manager->get_variable("is_fullscreen") = &is_fullscreen;
 	g_lua_manager->get_variable("pause") = &pause;
 	g_lua_manager->get_variable("toggle_fullscreen") = &toggle_fullscreen;
 	g_lua_manager->get_variable("total") = &total;
@@ -282,6 +354,8 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("seek") = &seek;
 	g_lua_manager->get_variable("get_volume") = &get_volume;
 	g_lua_manager->get_variable("set_volume") = &set_volume;
+	g_lua_manager->get_variable("popup_menu") = &popup_menu;
+	g_lua_manager->get_variable("show_mouse") = &show_mouse;
 
 	my12doomRenderer_lua_loadscript();
 

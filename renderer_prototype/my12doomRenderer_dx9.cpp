@@ -2477,6 +2477,27 @@ HRESULT my12doomRenderer::loadBitmap(gpu_sample **out, wchar_t *file)
 	return S_OK;
 }
 
+HRESULT my12doomRenderer::drawFont(gpu_sample **out, HFONT font, wchar_t *text, RGBQUAD color, RECT *dst_rect /* = NULL */, DWORD flag /* = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL */)
+{
+	if (!out)
+		return E_POINTER;
+
+	CAutoLock lck(&m_pool_lock);
+	gpu_sample *sample = new gpu_sample(m_pool, font, text, color, dst_rect, flag);
+	if (!sample)
+		return E_OUTOFMEMORY;
+	if (!sample->m_ready)
+	{
+		delete sample;
+		return E_FAIL;
+	}
+
+	*out = sample;
+
+	return S_OK;
+}
+
+
 HRESULT my12doomRenderer::Draw(IDirect3DSurface9 *rt, gpu_sample *resource, RECTF *src, RECTF *dst, float alpha)
 {
 	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);

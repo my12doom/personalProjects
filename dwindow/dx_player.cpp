@@ -1050,6 +1050,9 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 	GetCursorPos(&mouse);
 	lua_OnMouseEvent("OnMouseMove", x, y, 0);
 
+	if (GetKeyState(VK_CONTROL) < 0)
+		printf("on_mouse_move");
+
 	double v;
 	int type = hittest(x, y, id_to_hwnd(id), &v);
 	if (type == hit_volume && GetAsyncKeyState(VK_LBUTTON) < 0 && m_dragging == hit_volume)
@@ -1136,6 +1139,15 @@ LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 
 	return S_OK;
 }
+
+HWND dx_player::get_window(int window_id)
+{
+	HWND fore = GetForegroundWindow();
+	if (window_id == -1)
+		return fore == m_hwnd2 ? m_hwnd2 : m_hwnd1;
+	return window_id==1?m_hwnd1:m_hwnd2;
+}
+
 
 HRESULT dx_player::popup_menu(HWND owner)
 {
@@ -1452,7 +1464,6 @@ HRESULT dx_player::lua_OnMouseEvent(char *event, int x, int y, int button)
 		lua_pushinteger(g_L, y/UIScale);
 		lua_pushinteger(g_L, button);
 		lua_mypcall(g_L, 4, 0, 0);
-		lua_settop(g_L, 0);
 	}
 	lua_settop(g_L, 0);
 

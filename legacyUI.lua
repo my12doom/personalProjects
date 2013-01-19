@@ -1,4 +1,7 @@
 ﻿local path = "Z:\\skin2\\"
+local alpha = 0.5
+local UI_fading_time = 500
+local UI_show_time = 2000
 
 -- toolbar background
 local bg = BaseFrame:Create()
@@ -10,7 +13,7 @@ end
 
 function bg:RenderThis()
 	local res = get_bitmap(path.."bg.png")
-	paint(0,0,dwindow.width,64,res)
+	paint(0,0,dwindow.width,64,res,alpha)
 end
 
 function bg:HitTest()
@@ -44,11 +47,30 @@ function logo:HitTest(x, y)
 end
 
 function logo:OnMouseDown()
-	
+	dwindow.popup_menu()
 end
 
 
--- Play button
+local last_mousemove =  0
+function root:OnMouseMove(...)
+	last_mousemove = dwindow.GetTickCount()
+	print("OnMouseMove", ...)
+	print(root:GetAbsRect())
+end
+
+function root:OnUpdate(t, dt)
+	local da = dt/UI_fading_time
+	if t > last_mousemove + UI_show_time then
+		alpha = alpha - da
+	else
+		alpha = alpha + da
+	end
+	alpha = math.min(1, math.max(alpha, 0))
+	dwindow.show_mouse(alpha>0)
+	print("OnUpdate", alpha, da, last_mousemove, t, t - (last_mousemove + UI_show_time))
+end
+
+-- Play/Pause button
 local play = BaseFrame:Create()
 root:AddChild(play)
 play:SetRelativeTo(nil, BOTTOMLEFT)
@@ -63,7 +85,7 @@ function play:RenderThis()
 	else
 		set_bitmap_rect(res, 96,0,96+14,14)
 	end
-	paint(0,0,14,14,res)
+	paint(0,0,14,14,res,alpha)
 end
 
 function play:OnMouseDown()
@@ -81,7 +103,7 @@ end
 function full:RenderThis()
 	local res = get_bitmap(path.."ui.png")
 	set_bitmap_rect(res, 192,0,192+14,14)
-	paint(0,0,14,14,res)
+	paint(0,0,14,14,res,alpha)
 end
 
 function full:OnMouseDown()
@@ -103,9 +125,9 @@ function volume:RenderThis()
 	volume = math.max(volume, 0)
 	local res = get_bitmap(path.."ui.png")
 	set_bitmap_rect(res, 124+34,0,124+34+34,14)
-	paint(0,0,34,14,res)
+	paint(0,0,34,14,res,alpha)
 	set_bitmap_rect(res, 124,0,124+34*volume,14)
-	paint(0,0,34*volume,14,res)
+	paint(0,0,34*volume,14,res,alpha)
 end
 
 -- progress bar
@@ -124,9 +146,9 @@ function progress:RenderThis()
 	
 	local res = get_bitmap(path.."ui.png")
 	set_bitmap_rect(res, 216,0,220,14)
-	paint(3,0,w+3,14,res)
+	paint(3,0,w+3,14,res,alpha)
 	set_bitmap_rect(res, 208,0,212,14)
-	paint(3,0,fv*w+3,14,res)
+	paint(3,0,fv*w+3,14,res,alpha)
 end
 
 function progress:OnMouseDown(x,y,button)
@@ -161,7 +183,7 @@ function number_current:RenderThis()
 
 	local numbers =
 	{
-		h, -1, m1, m2, -1, s1, s2,   -- 10 = : symbol in time
+		h, -1, m1, m2, -1, s1, s2,   -- -1 = : symbol in time
 	}
 
 	local res = get_bitmap(path.."ui.png")
@@ -175,7 +197,7 @@ function number_current:RenderThis()
 		end
 		
 		set_bitmap_rect(res, tex,0,tex+ctex,14)
-		paint(x, 0, x+ctex, 14, res)
+		paint(x, 0, x+ctex, 14, res,alpha)
 		x = x + ctex
 	end
 end

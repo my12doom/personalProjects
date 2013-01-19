@@ -360,54 +360,54 @@ HRESULT gpu_sample::get_strereo_test_result(IDirect3DDevice9 *device, int *out)
 			src += 4;
 		}
 
-		average1 /= stereo_test_texture_size/2*stereo_test_texture_size;
-		average2 /= stereo_test_texture_size/2*stereo_test_texture_size;
+	average1 /= stereo_test_texture_size/2*stereo_test_texture_size;
+	average2 /= stereo_test_texture_size/2*stereo_test_texture_size;
 
-		src = (BYTE*)locked.pBits;
-		for(int y=0; y<stereo_test_texture_size; y++)
-			for(int x=0; x<stereo_test_texture_size; x++)
-			{
-				double &average = x<stereo_test_texture_size/2 ?average1:average2;
-				double &tdelta = x<stereo_test_texture_size/2 ? delta1 : delta2;
+	src = (BYTE*)locked.pBits;
+	for(int y=0; y<stereo_test_texture_size; y++)
+		for(int x=0; x<stereo_test_texture_size; x++)
+		{
+			double &average = x<stereo_test_texture_size/2 ?average1:average2;
+			double &tdelta = x<stereo_test_texture_size/2 ? delta1 : delta2;
 
-				int delta = abs(src[2] - average);
-				tdelta += delta * delta;
-				src += 4;
-			}
+			int delta = abs(src[2] - average);
+			tdelta += delta * delta;
+			src += 4;
+		}
 
 
-			delta1 = sqrt((double)delta1)/(stereo_test_texture_size/2*stereo_test_texture_size-1);
-			delta2 = sqrt((double)delta2)/(stereo_test_texture_size/2*stereo_test_texture_size-1);
+	delta1 = sqrt((double)delta1)/(stereo_test_texture_size/2*stereo_test_texture_size-1);
+	delta2 = sqrt((double)delta2)/(stereo_test_texture_size/2*stereo_test_texture_size-1);
 
-			double times = 0;
-			double var1 = average1 * delta1;
-			double var2 = average2 * delta2;
-			if ( (var1 > 0.001 && var2 > 0.001) || (var1>var2*10000) || (var2>var1*10000))
-				times = var1 > var2 ? var1 / var2 : var2 / var1;
+	double times = 0;
+	double var1 = average1 * delta1;
+	double var2 = average2 * delta2;
+	if ( (var1 > 0.001 && var2 > 0.001) || (var1>var2*10000) || (var2>var1*10000))
+		times = var1 > var2 ? var1 / var2 : var2 / var1;
 
-			printf("%f - %f, %f - %f, %f - %f, %f\r\n", average1, average2, delta1, delta2, var1, var2, times);
+	printf("%f - %f, %f - %f, %f - %f, %f\r\n", average1, average2, delta1, delta2, var1, var2, times);
 
-			if (times > 31.62/2)		// 10^1.5
-			{
-				mylog("stereo(%s).\r\n", var1 > var2 ? "tb" : "sbs");
-				rtn = S_OK;
-				*out = var1>var2 ? top_bottom : side_by_side;
-			}
-			else if ( 1.0 < times && times < 4.68 )
-			{
-				//m_normal ++;
-				mylog("normal.\r\n");
-				rtn = S_OK;
-				*out = mono2d;
-			}
-			else
-			{
-				rtn = S_FALSE;
-				mylog("unkown.\r\n");
-			}
-			m_tex_stereo_test_cpu->texture->UnlockRect(0);
+	if (times > 31.62/2)		// 10^1.5
+	{
+		mylog("stereo(%s).\r\n", var1 > var2 ? "tb" : "sbs");
+		rtn = S_OK;
+		*out = var1>var2 ? top_bottom : side_by_side;
+	}
+	else if ( 1.0 < times && times < 4.68 )
+	{
+		//m_normal ++;
+		mylog("normal.\r\n");
+		rtn = S_OK;
+		*out = mono2d;
+	}
+	else
+	{
+		rtn = S_FALSE;
+		mylog("unkown.\r\n");
+	}
+	m_tex_stereo_test_cpu->texture->UnlockRect(0);
 
-			return rtn;
+	return rtn;
 }
 
 bool gpu_sample::is_ignored_line(int line)
@@ -691,7 +691,6 @@ gpu_sample::gpu_sample(const wchar_t *filename, CTextureAllocator *allocator)
 	int l = timeGetTime();
 
 	m_ready = true;
-	//return;
 
 	m_StretchRect = false;
 
@@ -749,7 +748,7 @@ gpu_sample::gpu_sample(const wchar_t *filename, CTextureAllocator *allocator)
 	int decoded_size = ilGetInteger(IL_IMAGE_SIZE_OF_DATA);
 	m_width = ilGetInteger(IL_IMAGE_WIDTH);
 	m_height = ilGetInteger(IL_IMAGE_HEIGHT);
-	// swap color order: from BGR to RGB
+	ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
 
 	JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_A8R8G8B8,D3DPOOL_SYSTEMMEM,	&m_tex_RGB32));
 
@@ -767,19 +766,7 @@ gpu_sample::gpu_sample(const wchar_t *filename, CTextureAllocator *allocator)
 			src += m_width*4;
 			dst += d3dlr.Pitch;
 		}
-
-		RGBQUAD *p = (RGBQUAD *)d3dlr.pBits;
-		for(int i=0; i<m_width*m_height; i++)
-		{
-			p[i].rgbBlue ^= p[i].rgbRed;
-			p[i].rgbRed ^= p[i].rgbBlue;
-			p[i].rgbBlue ^= p[i].rgbRed;
-		}
 	}
-
-	//prepare_rendering();
-	//if (timeGetTime() - l > 5)
-	//mylog("load():createTexture time:%d ms, load data to GPU cost %d ms.\n", l2- l, timeGetTime()-l2);
 
 	return;
 
@@ -792,3 +779,131 @@ clearup:
 	safe_delete(m_tex_YUY2_UV);
 }
 
+
+HFONT create_font(const wchar_t *facename/* = L"ºÚÌå"*/, int font_height)
+{
+	LOGFONTW lf={0};
+	;
+	lf.lfHeight = -font_height;
+	lf.lfCharSet = GB2312_CHARSET;
+	lf.lfOutPrecision =  OUT_STROKE_PRECIS;
+	lf.lfClipPrecision = CLIP_STROKE_PRECIS;
+	lf.lfQuality = DEFAULT_QUALITY;
+	lf.lfPitchAndFamily = VARIABLE_PITCH;
+	lf.lfWeight = FW_BOLD*3;
+	lstrcpynW(lf.lfFaceName, facename, 32);
+
+	HFONT rtn = CreateFontIndirectW(&lf); 
+
+	return rtn;
+}
+
+gpu_sample::gpu_sample(CTextureAllocator *allocator, HFONT font, const wchar_t *text, RGBQUAD color, RECT *dst_rect /* = NULL */, DWORD flag /* = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL */)
+{
+	font = create_font(L"ºÚÌå", 120);
+	//CAutoLock lck(&g_gpu_lock);
+	m_allocator = allocator;
+	m_interlace_flags = 0;
+	m_tex_RGB32 = m_tex_YUY2_UV = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
+	m_tex_gpu_RGB32 = m_tex_gpu_YUY2_UV = m_tex_gpu_Y = m_tex_gpu_YV12_UV = m_tex_gpu_NV12_UV = NULL;
+	m_surf_YV12 = m_surf_NV12 = m_surf_YUY2 = NULL;
+	m_surf_gpu_YV12 = m_surf_gpu_NV12 = m_surf_gpu_YUY2 = NULL;
+	m_tex_stereo_test = m_tex_stereo_test_cpu = NULL;
+	m_width = 0;
+	m_height = 0;
+	m_ready = false;
+	m_format = MEDIASUBTYPE_RGB32;
+	m_topdown = false;
+	m_prepared_for_rendering = false;
+	m_converted = false;
+	m_cpu_stereo_tested = false;
+	m_cpu_tested_result = input_layout_auto;		// means unknown
+	CAutoLock lck(&g_ILLock);
+	HRESULT hr;
+	if (!allocator)
+		goto clearup;
+
+	int l = timeGetTime();
+
+	m_ready = true;
+
+	m_StretchRect = false;
+
+
+	m_pool = D3DPOOL_SYSTEMMEM;
+	m_ready = true;
+
+
+	int l2 = timeGetTime();
+	HDC hdc = GetDC( NULL );
+	HDC hdcBmp = CreateCompatibleDC(hdc);
+
+	HFONT hOldFont = (HFONT) SelectObject(hdcBmp, font);
+
+
+	RECT rect = {0,0,999999,999999};
+	if (dst_rect && (dst_rect->left != 0 || dst_rect->right !=0 || dst_rect->top != 0 || dst_rect->bottom !=0))
+		rect = *dst_rect;
+	else
+		DrawTextW(hdcBmp, text, (int)wcslen(text), &rect, flag | DT_CALCRECT);
+
+	if (dst_rect)
+		*dst_rect = rect;
+
+	m_width = rect.right - rect.left;
+	m_height = rect.bottom - rect.top;
+	HBITMAP hbm = CreateCompatibleBitmap(hdc, m_width, m_height);
+	HBITMAP hbmOld = (HBITMAP)SelectObject(hdcBmp, hbm);
+
+	RECT rcText;
+	SetRect(&rcText, 0, 0, m_width, m_height);
+	SetBkColor(hdcBmp, RGB(0, 0, 0));					// Pure black background
+	SetTextColor(hdcBmp, RGB(255, 255, 255));			// white text for alpha
+
+	DrawTextW(hdcBmp, text, (int)wcslen(text), &rect, flag);
+
+	RGBQUAD *data = (RGBQUAD *) malloc(m_width * m_height * 4);
+	GetBitmapBits(hbm, m_width * m_height * 4, data);
+
+	for(int y = 0; y<m_height; y++)
+	{
+		for(int x = 0; x<m_width; x++)
+		{
+			BYTE a = data[(y)*m_width+x].rgbRed;
+
+			data[y*m_width+x] = color;
+			data[y*m_width+x].rgbReserved = a;
+		}
+	}
+
+	JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_tex_RGB32));
+
+	// data loading
+	D3DLOCKED_RECT &d3dlr = m_tex_RGB32->locked_rect;
+	BYTE * src = (BYTE*)data;
+	BYTE * dst = (BYTE *)d3dlr.pBits;
+	for(int i=0; i<m_height; i++)
+	{
+		memcpy(dst, src, m_width*4);
+
+		src += m_width*4;
+		dst += d3dlr.Pitch;
+	} 
+
+	free(data);
+
+	DeleteObject(SelectObject(hdcBmp, hbmOld));
+	SelectObject(hdc, hOldFont);
+	DeleteObject(hbm);
+	DeleteDC(hdcBmp);
+	ReleaseDC(NULL, hdc);
+
+	return;
+clearup:
+	m_ready = false;
+	safe_delete(m_tex_RGB32);
+	safe_delete(m_tex_Y);
+	safe_delete(m_tex_YV12_UV);
+	safe_delete(m_tex_NV12_UV);
+	safe_delete(m_tex_YUY2_UV);
+}

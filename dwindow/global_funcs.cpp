@@ -1944,11 +1944,12 @@ DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter)
 	ShExecInfo.nShow = SW_HIDE;
 	ShExecInfo.hInstApp = NULL;	
 	ShExecInfo.lpVerb = _T("open");
+	ShExecInfo.hProcess = INVALID_HANDLE_VALUE;
 
 	ShellExecuteEx(&ShExecInfo);
 
 	DWORD exit_code = STILL_ACTIVE;
-	while(exit_code == STILL_ACTIVE)
+	while(exit_code == STILL_ACTIVE && ShExecInfo.hProcess != INVALID_HANDLE_VALUE && ShExecInfo.hProcess != NULL)
 		GetExitCodeProcess(ShExecInfo.hProcess, &exit_code);
 
 	return exit_code;

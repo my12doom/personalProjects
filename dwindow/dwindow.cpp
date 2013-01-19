@@ -272,15 +272,15 @@ HRESULT dwindow::show_mouse(bool show)
 	if (show && !m_show_mouse)
 	{
 		m_show_mouse = true;
-		SendMessage(m_hwnd1, DS_SHOW_MOUSE, TRUE, NULL);
-		SendMessage(m_hwnd2, DS_SHOW_MOUSE, TRUE, NULL);
+		PostMessage(m_hwnd1, DS_SHOW_MOUSE, TRUE, NULL);
+		PostMessage(m_hwnd2, DS_SHOW_MOUSE, TRUE, NULL);
 	}
 
 	if (!show && m_show_mouse)
 	{
 		m_show_mouse = false;
-		SendMessage(m_hwnd1, DS_SHOW_MOUSE, FALSE, NULL);
-		SendMessage(m_hwnd2, DS_SHOW_MOUSE, FALSE, NULL);
+		PostMessage(m_hwnd1, DS_SHOW_MOUSE, FALSE, NULL);
+		PostMessage(m_hwnd2, DS_SHOW_MOUSE, FALSE, NULL);
 	}
 
 	return S_OK;

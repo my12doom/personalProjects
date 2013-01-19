@@ -11,7 +11,7 @@
 #include <Dbghelp.h>
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
 #pragma comment(lib, "DbgHelp")
-Iplayer *g_player = NULL;
+dx_player *g_player = NULL;
 
 ICommandReciever *command_reciever;
 

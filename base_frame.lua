@@ -265,7 +265,7 @@ function BaseFrame:GetAbsRect()
 end
 
 function BaseFrame:GetRect()
-	return 0,0,dwindow.width,dwindow.height
+	return -99999,-99999,99999,99999
 end
 
 -- time events, usally happen on next render
@@ -305,8 +305,23 @@ function BaseFrame:OnEvent(event, ...)
 	return (self[event] and self[event](self, ...)) or (self.parent and self.parent:OnEvent(event, ...))
 end
 
+function BaseFrame:BroadCastEvent(event, ...)
+	if self[event] then
+		self[event](self, ...)
+	end
+	for _,v in ipairs(self.childs) do
+		v:BroadCastEvent(event, ...)
+	end
+end
+
 -- the Main Render function
+local last_render_time = 0
 function RenderUI(view)
+	local delta_time = 0;
+	if last_render_time > 0 then delta_time = dwindow.GetTickCount() - last_render_time end
+	last_render_time = dwindow.GetTickCount();
+	root:BroadCastEvent("OnUpdate", last_render_time, delta_time)
+	
 	root:render(view)
 end
 
@@ -409,7 +424,7 @@ function OnMouseEvent(event,x,y,...)
 	if frame then
 		frame:BringToTop(true)
 		local l,_,t = frame:GetAbsRect()
-		if frame[event] then frame[event](frame,x-l, y-t, ...) end
+		return frame:OnEvent(event, x-l, y-t, ...)
 	end
 end
 

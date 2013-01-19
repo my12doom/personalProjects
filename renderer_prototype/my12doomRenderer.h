@@ -510,6 +510,7 @@ public:
 	// for ui_drawer class
 	HRESULT loadBitmap(gpu_sample **out, wchar_t *file);
 	HRESULT Draw(IDirect3DSurface9 *rt, gpu_sample *resource, RECTF *src, RECTF *dst, float alpha);
+	HRESULT drawFont(gpu_sample **out, HFONT font, wchar_t *text, RGBQUAD color, RECT *dst_rect = NULL, DWORD flag = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL);
 
 	
 	// for lua useage

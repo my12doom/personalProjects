@@ -3,9 +3,10 @@ class gpu_sample
 {
 public:
 	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test = false, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM, DWORD PC_LEVEL = 0);
-	gpu_sample(const wchar_t *filename, CTextureAllocator *allocator);	// warning: not pooled
+	gpu_sample(const wchar_t *filename, CTextureAllocator *allocator);
+	gpu_sample(CTextureAllocator *allocator, HFONT font, const wchar_t *text, RGBQUAD color, RECT *dst_rect = NULL, DWORD flag = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL);
 	~gpu_sample();
-	HRESULT commit();		// it's just unlock textures
+	HRESULT commit();
 	HRESULT decommit();
 	HRESULT convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2, IDirect3DVertexBuffer9 *vb, int time);
 	HRESULT convert_to_RGB32_CPU(const wchar_t *out);
