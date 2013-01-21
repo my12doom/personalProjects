@@ -333,57 +333,27 @@ HRESULT dx_player::init_cpu(int width, int height, IDirect3DDevice9 *device)
 	m_width = width;
 	m_height = height;
 
-	// creation
-	if (!m_ui_logo_cpu)
-		m_Device->CreateTexture(512, 512, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_ui_logo_cpu, NULL);
-	if (!m_ui_tex_cpu)
-		m_Device->CreateTexture(222, 14, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_ui_tex_cpu, NULL);
-	if (!m_ui_background_cpu)
-		m_Device->CreateTexture(64, 64, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_ui_background_cpu, NULL);
-
-
 	D3DLOCKED_RECT d3dlr;
-
-	// m_ui_background_cpu
-	HRESULT hr = m_ui_background_cpu->LockRect(0, &d3dlr, 0, NULL);
-	for(int i=0; i<64; i++)
-	{
-		DWORD line_color = i>40?D3DCOLOR_ARGB(180,0,0,0) : D3DCOLOR_ARGB(max(0,i-24)*180/16, 0, 0, 0);
-		DWORD* dst = (DWORD*)((BYTE*)d3dlr.pBits + d3dlr.Pitch * i);
-		for(int i=0; i<64; i++)
-		{
-			dst[i] = line_color;
-		}
-	}
-	m_ui_background_cpu->UnlockRect(0);
-
-	// m_ui_tex_cpu
-	hr = m_ui_tex_cpu->LockRect(0, &d3dlr, 0, NULL);
-	BYTE *dst = (BYTE*)d3dlr.pBits;
+	HRESULT hr;
+	BYTE *dst;
+	FILE *f;
 	wchar_t raw[MAX_PATH];
 	wchar_t apppath[MAX_PATH];
 	GetModuleFileNameW(NULL, apppath, MAX_PATH);
 	for(int i=wcslen(apppath)-1; i>0; i--)
+	{
 		if (apppath[i] == L'\\')
 		{
 			apppath[i] = NULL;
 			break;
 		}
-		wcscat(apppath, L"\\");
-		wcscpy(raw, apppath);
-		wcscat(raw, L"alpha.raw");
-		FILE * f = _wfopen(raw, L"rb");
-		if(!f)
-			return E_FAIL;
-		for(int i=0; i<14; i++)
-		{
-			fread(dst, 1, 222*4, f);
-			dst += d3dlr.Pitch;		
-		}
-		fclose(f);
-		m_ui_tex_cpu->UnlockRect(0);
+	}
+	wcscat(apppath, L"\\");
 
-		// m_ui_logo_cpu
+	// creation
+	if (!m_ui_logo_cpu)
+	{
+		m_Device->CreateTexture(512, 512, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_ui_logo_cpu, NULL);
 		hr = m_ui_logo_cpu->LockRect(0, &d3dlr, 0, NULL);
 		dst = (BYTE*)d3dlr.pBits;
 		wcscpy(raw, apppath);
@@ -398,9 +368,48 @@ HRESULT dx_player::init_cpu(int width, int height, IDirect3DDevice9 *device)
 		}
 		fclose(f);
 
-		m_ui_logo_cpu->UnlockRect(0);
+		m_ui_logo_cpu->UnlockRect(0);	
+	}
+	if (!m_ui_tex_cpu)
+	{
+		m_Device->CreateTexture(222, 14, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_ui_tex_cpu, NULL);
+		hr = m_ui_tex_cpu->LockRect(0, &d3dlr, 0, NULL);
+		dst = (BYTE*)d3dlr.pBits;
 
-		return S_OK;
+		wcscpy(raw, apppath);
+		wcscat(raw, L"alpha.raw");
+		f = _wfopen(raw, L"rb");
+		if(!f)
+			return E_FAIL;
+		for(int i=0; i<14; i++)
+		{
+			fread(dst, 1, 222*4, f);
+			dst += d3dlr.Pitch;		
+		}
+		fclose(f);
+		m_ui_tex_cpu->UnlockRect(0);
+	}
+	if (!m_ui_background_cpu)
+	{
+		m_Device->CreateTexture(64, 64, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_ui_background_cpu, NULL);
+		HRESULT hr = m_ui_background_cpu->LockRect(0, &d3dlr, 0, NULL);
+		for(int i=0; i<64; i++)
+		{
+			DWORD line_color = i>40?D3DCOLOR_ARGB(180,0,0,0) : D3DCOLOR_ARGB(max(0,i-24)*180/16, 0, 0, 0);
+			DWORD* dst = (DWORD*)((BYTE*)d3dlr.pBits + d3dlr.Pitch * i);
+			for(int i=0; i<64; i++)
+			{
+				dst[i] = line_color;
+			}
+		}
+		m_ui_background_cpu->UnlockRect(0);
+	}
+
+	m_ui_logo_cpu->AddDirtyRect(NULL);
+	m_ui_tex_cpu->AddDirtyRect(NULL);
+	m_ui_background_cpu->AddDirtyRect(NULL);
+
+	return S_OK;
 }
 
 HRESULT dx_player::invalidate_gpu()
