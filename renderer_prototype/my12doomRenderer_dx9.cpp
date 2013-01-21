@@ -2290,22 +2290,18 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 
 	if (!m_dsr0->is_connected())
 	{
-		{
-			CAutoLock lck(&g_csL);
-			lua_pushboolean(g_L, FALSE);
-			lua_setglobal(g_L, "movie_loaded");
-		}
+		luaState lua_state;
+		lua_pushboolean(lua_state, FALSE);
+		lua_setglobal(lua_state, "movie_loaded");
 
 		CAutoLock lck(&m_uidrawer_cs);
 		m_last_reset_time = timeGetTime();
 		return m_uidrawer != NULL ? m_uidrawer->draw_nonmovie_bg(surface, left_eye) : E_FAIL;
 	}
 
-	{
-		CAutoLock lck(&g_csL);
-		lua_pushboolean(g_L, TRUE);
-		lua_setglobal(g_L, "movie_loaded");
-	}
+	luaState lua_state;
+	lua_pushboolean(lua_state, TRUE);
+	lua_setglobal(lua_state, "movie_loaded");
 
 	CComPtr<IDirect3DSurface9> src;
 
@@ -3419,27 +3415,27 @@ HRESULT my12doomRenderer::generate_mask()
 	if (g_mask_shader_file[0] != NULL)
 	{
 		USES_CONVERSION;
-		CAutoLock lck(&g_csL);
-		luaL_loadfile(g_L, W2A(g_mask_shader_file));
-		int status = lua_pcall(g_L, 0, 0, 0);
-		lua_getglobal(g_L, "GetCellSize");
+		luaState lua_state;
+		luaL_loadfile(lua_state, W2A(g_mask_shader_file));
+		int status = lua_pcall(lua_state, 0, 0, 0);
+		lua_getglobal(lua_state, "GetCellSize");
 		int w = 0;
 		int h = 0;
 		bool lua_ready = false;
-		if (lua_isfunction(g_L, -1))
+		if (lua_isfunction(lua_state, -1))
 		{
-			lua_pcall(g_L, 0, 2, 0);
-			w = lua_tointeger(g_L, -2);
-			h = lua_tointeger(g_L, -1);
-			lua_settop(g_L, 0);
+			lua_pcall(lua_state, 0, 2, 0);
+			w = lua_tointeger(lua_state, -2);
+			h = lua_tointeger(lua_state, -1);
+			lua_settop(lua_state, 0);
 
-			lua_getglobal(g_L, "Main");
-			if (w>0 && h > 0 && lua_isfunction(g_L, -1))
+			lua_getglobal(lua_state, "Main");
+			if (w>0 && h > 0 && lua_isfunction(lua_state, -1))
 			{
 				lua_ready = true;
 			}
 		}
-		lua_settop(g_L, 0);
+		lua_settop(lua_state, 0);
 
 		if (lua_ready)
 		{
@@ -3451,20 +3447,20 @@ HRESULT my12doomRenderer::generate_mask()
 				DWORD * d = (DWORD*)(atom+w*y);
 				for(int x = 0; x < w; x++)
 				{
-					lua_getglobal(g_L, "Main");
-					lua_pushinteger(g_L, x%w);
-					lua_pushinteger(g_L, y%h);
-					lua_pcall(g_L, 2, 4, 0);
-					int R = lua_isnil(g_L, -4) ? 0 : lua_tointeger(g_L, -4);
-					int G = lua_isnil(g_L, -3) ? 0 : lua_tointeger(g_L, -3);
-					int B = lua_isnil(g_L, -2) ? 0 : lua_tointeger(g_L, -2);
-					int A = lua_isnil(g_L, -1) ? 255 : lua_tointeger(g_L, -1);
- 					lua_pop(g_L, 4);
+					lua_getglobal(lua_state, "Main");
+					lua_pushinteger(lua_state, x%w);
+					lua_pushinteger(lua_state, y%h);
+					lua_pcall(lua_state, 2, 4, 0);
+					int R = lua_isnil(lua_state, -4) ? 0 : lua_tointeger(lua_state, -4);
+					int G = lua_isnil(lua_state, -3) ? 0 : lua_tointeger(lua_state, -3);
+					int B = lua_isnil(lua_state, -2) ? 0 : lua_tointeger(lua_state, -2);
+					int A = lua_isnil(lua_state, -1) ? 255 : lua_tointeger(lua_state, -1);
+ 					lua_pop(lua_state, 4);
 
 					d[x] = D3DCOLOR_ARGB(A, R,G,B);
 				}
 			}
-			lua_checkstack(g_L, 1);
+			lua_checkstack(lua_state, 1);
 			mylog("lua cost time %d\n", timeGetTime() - lua_time);
 
 

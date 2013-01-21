@@ -1,10 +1,12 @@
 #include <Windows.h>
 #include "my12doom_lua.h"
+#include <list>
 
 lua_State *g_L = NULL;
 CCritSec g_csL;
 lua_manager *g_lua_manager = NULL;
 const char *table_name = "dwindow";
+std::list<lua_State*> free_threads;
 
 static int lua_GetTickCount (lua_State *L) 
 {
@@ -41,7 +43,8 @@ static int track_back(lua_State *L)
 }
 
 
-int dwindow_lua_init () {
+int dwindow_lua_init () 
+{
   dwindow_lua_exit();
   CAutoLock lck(&g_csL);
   int result;
@@ -65,6 +68,42 @@ int dwindow_lua_init () {
   g_lua_manager->get_variable("track_back") = &track_back;
 
   return 0;
+}
+
+lua_State * dwindow_lua_get_thread()
+{
+	CAutoLock lck(&g_csL);
+	lua_State *rtn = NULL;
+	if (!free_threads.empty())
+	{
+		rtn = free_threads.front();
+		free_threads.pop_front();
+	}
+	else
+	{
+		rtn = lua_newthread(g_L);
+	}
+	return rtn;
+}
+
+void dwindow_lua_release_thread(lua_State * p)
+{
+	CAutoLock lck(&g_csL);
+	free_threads.push_back(p);
+}
+
+luaState::luaState()
+{
+	L =dwindow_lua_get_thread();
+}
+
+luaState::~luaState()
+{
+	dwindow_lua_release_thread(L);
+}
+luaState::operator lua_State*()
+{
+	return L;
 }
 
 int dwindow_lua_exit()

@@ -83,22 +83,7 @@ static int load_bitmap_core(lua_State *L)
 }
 
 
-HFONT create_font(const wchar_t *facename = L"ºÚÌå", int font_height = 14)
-{
-	LOGFONTW lf={0};
-	lf.lfHeight = -font_height;
-	lf.lfCharSet = GB2312_CHARSET;
-	lf.lfOutPrecision =  OUT_STROKE_PRECIS;
-	lf.lfClipPrecision = CLIP_STROKE_PRECIS;
-	lf.lfQuality = DEFAULT_QUALITY;
-	lf.lfPitchAndFamily = VARIABLE_PITCH;
-	lf.lfWeight = FW_BOLD*3;
-	lstrcpynW(lf.lfFaceName, facename, 32);
-
-	HFONT rtn = CreateFontIndirectW(&lf); 
-
-	return rtn;
-}
+extern HFONT create_font(const wchar_t *facename = L"ºÚÌå", int font_height = 14);
 
 static int draw_font_core(lua_State *L)
 {
@@ -364,19 +349,19 @@ int my12doomRenderer_lua_init()
 
 int my12doomRenderer_lua_loadscript()
 {
-	CAutoLock lck(&g_csL);
-	if (luaL_loadfile(g_L, "d:\\private\\base_frame.lua") || lua_pcall(g_L, 0, 0, 0))
+	luaState lua_state;
+	if (luaL_loadfile(lua_state, "d:\\private\\base_frame.lua") || lua_pcall(lua_state, 0, 0, 0))
 	{
-		const char * result = lua_tostring(g_L, -1);
+		const char * result = lua_tostring(lua_state, -1);
 		printf("failed loading renderer lua script : %s\n", result);
-		lua_settop(g_L, 0);
+		lua_settop(lua_state, 0);
 	}
 
-	if (luaL_loadfile(g_L, "d:\\private\\legacyUI.lua") || lua_pcall(g_L, 0, 0, 0))
+	if (luaL_loadfile(lua_state, "d:\\private\\legacyUI.lua") || lua_pcall(lua_state, 0, 0, 0))
 	{
-		const char * result = lua_tostring(g_L, -1);
+		const char * result = lua_tostring(lua_state, -1);
 		printf("failed loading renderer lua script : %s\n", result);
-		lua_settop(g_L, 0);
+		lua_settop(lua_state, 0);
 	}
 
 	return 0;

@@ -881,21 +881,19 @@ extern AutoSetting<double> g_scale;
 
 LRESULT dx_player::on_key_down(int id, int key)
 {
+	luaState lua_state;
+	lua_getglobal(lua_state, "OnKeyDown");
+	if (lua_isfunction(lua_state, -1))
 	{
-		CAutoLock lck(&g_csL);
-		lua_getglobal(g_L, "OnKeyDown");
-		if (lua_isfunction(g_L, -1))
-		{
-			lua_pushinteger(g_L, key);
-			lua_pushinteger(g_L, id);
-			lua_mypcall(g_L, 2, 0, 0);
-			lua_settop(g_L, 0);
+		lua_pushinteger(lua_state, key);
+		lua_pushinteger(lua_state, id);
+		lua_mypcall(lua_state, 2, 0, 0);
+		lua_settop(lua_state, 0);
 
 // 			if (key != VK_F5)
 // 				return S_OK;
-		}
-		lua_settop(g_L, 0);
 	}
+	lua_settop(lua_state, 0);
 
 	switch (key)
 	{
@@ -1455,17 +1453,17 @@ int dx_player::hittest(int x, int y, HWND hwnd, double *v)
 
 HRESULT dx_player::lua_OnMouseEvent(char *event, int x, int y, int button)
 {
-	CAutoLock lck(&g_csL);
-	lua_getglobal(g_L, "OnMouseEvent");
-	if (lua_isfunction(g_L, -1))
+	luaState lua_state;
+	lua_getglobal(lua_state, "OnMouseEvent");
+	if (lua_isfunction(lua_state, -1))
 	{
-		lua_pushstring(g_L, event);
-		lua_pushinteger(g_L, x/UIScale);
-		lua_pushinteger(g_L, y/UIScale);
-		lua_pushinteger(g_L, button);
-		lua_mypcall(g_L, 4, 0, 0);
+		lua_pushstring(lua_state, event);
+		lua_pushinteger(lua_state, x/UIScale);
+		lua_pushinteger(lua_state, y/UIScale);
+		lua_pushinteger(lua_state, button);
+		lua_mypcall(lua_state, 4, 0, 0);
 	}
-	lua_settop(g_L, 0);
+	lua_settop(lua_state, 0);
 
 	return S_OK;
 }
@@ -1769,7 +1767,7 @@ LRESULT dx_player::on_size(int id, int type, int x, int y)
 	}
 
 	if (m_renderer1)
-		m_renderer1->repaint_video();
+		m_renderer1->pump();
 	return S_OK;
 }
 
@@ -4720,11 +4718,11 @@ HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 	g_lua_manager->get_variable("width") = int(width/UIScale);
 	g_lua_manager->get_variable("height") = int(height/UIScale);
 
-	CAutoLock lck(&g_csL);
-	lua_getglobal(g_L, "OnInitGPU");
-	if (lua_isfunction(g_L, -1))
-		lua_mypcall(g_L, 0, 0, 0);
-	lua_settop(g_L, 0);
+	luaState lua_state;
+	lua_getglobal(lua_state, "OnInitGPU");
+	if (lua_isfunction(lua_state, -1))
+		lua_mypcall(lua_state, 0, 0, 0);
+	lua_settop(lua_state, 0);
 
 	return S_OK;
 }
@@ -4733,31 +4731,31 @@ HRESULT lua_drawer::init_cpu(int width, int height, IDirect3DDevice9 *device)
 	g_lua_manager->get_variable("width") = int(width/UIScale);
 	g_lua_manager->get_variable("height") = int(height/UIScale);
 
-	CAutoLock lck(&g_csL);
-	lua_getglobal(g_L, "OnInitCPU");
-	if (lua_isfunction(g_L, -1))
-		lua_mypcall(g_L, 0, 0, 0);
-	lua_settop(g_L, 0);
+	luaState lua_state;
+	lua_getglobal(lua_state, "OnInitCPU");
+	if (lua_isfunction(lua_state, -1))
+		lua_mypcall(lua_state, 0, 0, 0);
+	lua_settop(lua_state, 0);
 
 	return S_OK;
 }
 HRESULT lua_drawer::invalidate_gpu()
 {
-	CAutoLock lck(&g_csL);
-	lua_getglobal(g_L, "OnReleaseGPU");
-	if (lua_isfunction(g_L, -1))
-		lua_mypcall(g_L, 0, 0, 0);
-	lua_settop(g_L, 0);
+	luaState lua_state;
+	lua_getglobal(lua_state, "OnReleaseGPU");
+	if (lua_isfunction(lua_state, -1))
+		lua_mypcall(lua_state, 0, 0, 0);
+	lua_settop(lua_state, 0);
 
 	return S_OK;
 }
 HRESULT lua_drawer::invalidate_cpu()
 {
-	CAutoLock lck(&g_csL);
-	lua_getglobal(g_L, "OnReleaseCPU");
-	if (lua_isfunction(g_L, -1))
-		lua_mypcall(g_L, 0, 0, 0);
-	lua_settop(g_L, 0);
+	luaState lua_state;
+	lua_getglobal(lua_state, "OnReleaseCPU");
+	if (lua_isfunction(lua_state, -1))
+		lua_mypcall(lua_state, 0, 0, 0);
+	lua_settop(lua_state, 0);
 
 	return S_OK;
 }
@@ -4765,16 +4763,16 @@ HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, bool running)
 {
 	g_lua_manager->get_variable("running") = running;
 
-	CAutoLock lck(&g_csL);
-	lua_getglobal(g_L, "RenderUI");
-	if (lua_isfunction(g_L, -1))
+	luaState lua_state;
+	lua_getglobal(lua_state, "RenderUI");
+	if (lua_isfunction(lua_state, -1))
 	{
-		lua_pushinteger(g_L, 0);
-		lua_mypcall(g_L, 1, 0, 0);
-		lua_settop(g_L, 0);
+		lua_pushinteger(lua_state, 0);
+		lua_mypcall(lua_state, 1, 0, 0);
+		lua_settop(lua_state, 0);
 	}
 	else
-		lua_pop(g_L, 1);
+		lua_pop(lua_state, 1);
 
 	return S_OK;
 }

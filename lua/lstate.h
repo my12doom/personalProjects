@@ -6,7 +6,8 @@
 
 #ifndef lstate_h
 #define lstate_h
-
+#include <Windows.h>
+#define LoadString LoadString
 #include "lua.h"
 
 #include "lobject.h"
@@ -145,6 +146,7 @@ typedef struct global_State {
   TString *memerrmsg;  /* memory-error message */
   TString *tmname[TM_N];  /* array with tag-method names */
   struct Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
+  CRITICAL_SECTION lock;
 } global_State;
 
 
