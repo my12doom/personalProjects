@@ -92,6 +92,12 @@ HRESULT gpu_sample::commit()
 		JIF( m_allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_A8L8,D3DPOOL_DEFAULT,	&m_tex_gpu_NV12_UV));
 	}
 
+	else if (m_format == MEDIASUBTYPE_P010 || m_format == MEDIASUBTYPE_P016)
+	{
+		JIF( m_allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L16,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
+		JIF( m_allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_G16R16,D3DPOOL_DEFAULT,	&m_tex_gpu_NV12_UV));
+	}
+
 	else if (m_format == MEDIASUBTYPE_YV12)
 	{
 		JIF( m_allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_Y));
@@ -177,6 +183,7 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 		hr = device->SetPixelShader(NULL);
 		if (m_format == MEDIASUBTYPE_YV12) hr = device->SetPixelShader(ps_yv12);
 		if (m_format == MEDIASUBTYPE_NV12 || m_format == MEDIASUBTYPE_YUY2) hr = device->SetPixelShader(ps_nv12);
+		if (m_format == MEDIASUBTYPE_P010 || m_format == MEDIASUBTYPE_P016) hr = device->SetPixelShader(ps_nv12);
 		float rect_data[8] = {m_width, m_height, m_width/2, m_height, (float)time/100000, (float)timeGetTime()/100000, 1.0f};
 		hr = device->SetPixelShaderConstantF(0, rect_data, 2);
 		hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
@@ -213,7 +220,7 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 		hr = device->SetFVF( FVF_Flags );
 
 		hr = device->SetTexture( 0, m_tex_gpu_Y->texture );
-		hr = device->SetTexture( 1, m_format == MEDIASUBTYPE_NV12 ? m_tex_gpu_NV12_UV->texture : (m_format == MEDIASUBTYPE_YUY2 ? m_tex_gpu_YUY2_UV->texture :m_tex_gpu_YV12_UV->texture));
+		hr = device->SetTexture( 1, (m_format == MEDIASUBTYPE_NV12 || m_format == MEDIASUBTYPE_P010 || m_format == MEDIASUBTYPE_P016) ? m_tex_gpu_NV12_UV->texture : (m_format == MEDIASUBTYPE_YUY2 ? m_tex_gpu_YUY2_UV->texture :m_tex_gpu_YV12_UV->texture));
 		hr = device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex) );
 	}
 
@@ -513,6 +520,11 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 			JIF( allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,pool,	&m_tex_YV12_UV));
 		}
 	}
+	else if (m_format == MEDIASUBTYPE_P010 || m_format == MEDIASUBTYPE_P016)
+	{
+		JIF( allocator->CreateTexture(m_width, m_height, NULL, D3DFMT_L16,pool,	&m_tex_Y));
+		JIF( allocator->CreateTexture(m_width/2, m_height/2, NULL, D3DFMT_G16R16,pool,	&m_tex_NV12_UV));
+	}
 
 	m_pool = pool;
 	m_ready = true;
@@ -596,6 +608,33 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 		memory_sample->GetPointer(&src);
 		if (do_cpu_test) get_layout<BYTE>(src, width, height, (int*)&m_cpu_tested_result);
+	}
+
+	else if (m_format == MEDIASUBTYPE_P010 || m_format == MEDIASUBTYPE_P016)
+	{
+		// loading NV12 image as one L8 texture and one A8L8 texture
+		// load Y
+		D3DLOCKED_RECT &d3dlr = m_tex_Y->locked_rect;
+		dst = (BYTE*)d3dlr.pBits;
+		for(int i=0; i<m_height; i++)
+		{
+			memcpy(dst, src, m_width*2);
+			src += m_width*2;
+			dst += d3dlr.Pitch;
+		}
+
+		// load UV
+		D3DLOCKED_RECT &d3dlr2 = m_tex_NV12_UV->locked_rect;
+		dst = (BYTE*)d3dlr2.pBits;
+		for(int i=0; i<m_height/2; i++)
+		{
+			memcpy(dst, src, m_width*2);
+			src += m_width*2;
+			dst += d3dlr2.Pitch;
+		}
+
+		memory_sample->GetPointer(&src);
+		if (do_cpu_test) get_layout<WORD>(src, width, height, (int*)&m_cpu_tested_result);
 	}
 
 	else if (m_format == MEDIASUBTYPE_YV12)

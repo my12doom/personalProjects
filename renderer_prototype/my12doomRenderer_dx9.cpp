@@ -2792,6 +2792,13 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			shader_yuv = m_ps_nv12;
 		}
 
+		else if (format == MEDIASUBTYPE_P010 || format == MEDIASUBTYPE_P016)
+		{
+			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_y));
+			m_Device->SetTexture(1, helper_get_texture(src2, helper_sample_format_nv12));
+		}
+
+
 		if (format == MEDIASUBTYPE_YUY2)
 		{
 			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_y));
@@ -2872,6 +2879,8 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			lanczos_shader = m_lanczosX_YV12;
 		else if (format == MEDIASUBTYPE_NV12 || format == MEDIASUBTYPE_YUY2)
 			lanczos_shader = m_lanczosX_NV12;
+		else if (format == MEDIASUBTYPE_P010 || format == MEDIASUBTYPE_P016)
+			lanczos_shader = m_lanczosX_NV12;
 		else if (format == MEDIASUBTYPE_RGB32 || format == MEDIASUBTYPE_ARGB32)
 			lanczos_shader = m_lanczosX;
 		if (width_s != width_d)
@@ -2950,6 +2959,8 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		if (format == MEDIASUBTYPE_YV12)
 			lanczos_shader = m_lanczos_YV12;
 		else if (format == MEDIASUBTYPE_NV12 || format == MEDIASUBTYPE_YUY2)
+			lanczos_shader = m_lanczos_NV12;
+		else if (format == MEDIASUBTYPE_P010 || format == MEDIASUBTYPE_P016)
 			lanczos_shader = m_lanczos_NV12;
 		else if (format == MEDIASUBTYPE_RGB32 || format == MEDIASUBTYPE_ARGB32)
 			lanczos_shader = m_lanczos;
