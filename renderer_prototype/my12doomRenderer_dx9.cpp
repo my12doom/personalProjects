@@ -2796,6 +2796,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		{
 			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_y));
 			m_Device->SetTexture(1, helper_get_texture(src2, helper_sample_format_nv12));
+			shader_yuv = m_ps_nv12;
 		}
 
 
