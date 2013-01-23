@@ -143,8 +143,8 @@ HRESULT gpu_sample::decommit()
 	return S_OK;
 }
 
-HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_yuy2,
-									 IDirect3DVertexBuffer9 *vb, int time)
+HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_P016, 
+									 IDirect3DPixelShader9 *ps_yuy2, IDirect3DVertexBuffer9 *vb, int time)
 {
 	CAutoLock lck(&m_sample_lock);
 	if (!m_ready)
@@ -183,7 +183,7 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 		hr = device->SetPixelShader(NULL);
 		if (m_format == MEDIASUBTYPE_YV12) hr = device->SetPixelShader(ps_yv12);
 		if (m_format == MEDIASUBTYPE_NV12 || m_format == MEDIASUBTYPE_YUY2) hr = device->SetPixelShader(ps_nv12);
-		if (m_format == MEDIASUBTYPE_P010 || m_format == MEDIASUBTYPE_P016) hr = device->SetPixelShader(ps_nv12);
+		if (m_format == MEDIASUBTYPE_P010 || m_format == MEDIASUBTYPE_P016) hr = device->SetPixelShader(ps_P016);
 		float rect_data[8] = {m_width, m_height, m_width/2, m_height, (float)time/100000, (float)timeGetTime()/100000, 1.0f};
 		hr = device->SetPixelShaderConstantF(0, rect_data, 2);
 		hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);

@@ -1639,6 +1639,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\renderer_prototype\PixelShaders\LanczosALL.h"
+				>
+			</File>
+			<File
 				RelativePath="..\renderer_prototype\my12doomAutoShader.cpp"
 				>
 			</File>

@@ -452,13 +452,16 @@ protected:
 	my12doom_auto_shader m_lanczosX;
 	my12doom_auto_shader m_lanczosX_YV12;
 	my12doom_auto_shader m_lanczosX_NV12;
+	my12doom_auto_shader m_lanczosX_P016;
 	my12doom_auto_shader m_lanczosY;
 	my12doom_auto_shader m_lanczos;
 	my12doom_auto_shader m_lanczos_YV12;
 	my12doom_auto_shader m_lanczos_NV12;
+	my12doom_auto_shader m_lanczos_P016;
 	my12doom_auto_shader m_multiview4;
 	my12doom_auto_shader m_multiview6;
 	my12doom_auto_shader m_alpha_multiply;
+	my12doom_auto_shader m_ps_P016;
 
 	// TV - PC level test surfaces
 	CComPtr<IDirect3DSurface9> m_PC_level_test;

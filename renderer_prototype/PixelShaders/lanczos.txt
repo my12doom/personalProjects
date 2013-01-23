@@ -146,6 +146,17 @@ float4 lanczosX_NV12(float2 tex : TEXCOORD0) : COLOR
 	return yuv2rgb(float4(Y,UV[0],UV[3],1));
 }
 
+float4 lanczosX_P016(float2 tex : TEXCOORD0) : COLOR
+{
+	float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
+	float Y = lanczosXCore(s0, tex, ps, rate_x)[0];
+	
+	ps *= 2;
+	float4 UV = lanczosXCore(s1, tex, ps, rate_x_UV);
+	
+	return yuv2rgb(float4(Y,UV.r,UV.g,1));
+}
+
 float4 lanczosY(float2 tex : TEXCOORD0) : COLOR
 {
   // assume Y coordinate is pixel perfect
@@ -239,4 +250,16 @@ float4 lanczos_NV12(float2 tex : TEXCOORD0) : COLOR
 	float4 UV = lanczosCore(s1, tex, ps, rates);
 	
 	return yuv2rgb(float4(Y,UV[0],UV[3],1)) * additional_alpha;
+}
+float4 lanczos_P016(float2 tex : TEXCOORD0) : COLOR
+{
+	float2 rates = {rate_x, rate_y};
+	float2 ps = {1.0/TEXTURE_WIDTH, 1.0/TEXTURE_HEIGHT};
+	float Y = lanczosXCore(s0, tex, ps, rates)[0];
+	
+	ps *= 2;	
+	rates = clamp(rates*2, 0, 1);
+	float4 UV = lanczosCore(s1, tex, ps, rates);
+	
+	return yuv2rgb(float4(Y,UV.r,UV.g,1)) * additional_alpha;
 }

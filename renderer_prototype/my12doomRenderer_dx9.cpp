@@ -26,6 +26,7 @@
 #include <assert.h>
 #include "..\dwindow\global_funcs.h"
 #include "..\lua\my12doom_lua.h"
+#include "PixelShaders\P016.h"
 
 enum helper_sample_format
 {
@@ -660,7 +661,7 @@ retry:
 	{
 		CAutoLock frame_lock(&m_frame_lock);
 		int l = timeGetTime();
-		loaded_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, NULL, m_last_reset_time);
+		loaded_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_P016, m_ps_yuy2, NULL, m_last_reset_time);
 		int l2 = timeGetTime();
 		if (need_detect) loaded_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, NULL);
 		mylog("queue size:%d, convert_to_RGB32(): %dms, stereo_test:%dms\n", m_left_queue.GetCount(), l2-l, timeGetTime()-l2);
@@ -1295,13 +1296,16 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_lanczosX.invalid();
 	m_lanczosX_NV12.invalid();
 	m_lanczosX_YV12.invalid();
+	m_lanczosX_P016.invalid();
 	m_lanczosY.invalid();
 	m_lanczos.invalid();
 	m_lanczos_NV12.invalid();
 	m_lanczos_YV12.invalid();
+	m_lanczos_P016.invalid();
 	m_multiview4.invalid();
 	m_multiview6.invalid();
 	m_alpha_multiply.invalid();
+	m_ps_P016.invalid();
 
 	// query
 	//m_d3d_query = NULL;
@@ -1477,14 +1481,17 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	m_ps_masking.set_source(m_Device, g_code_masking, sizeof(g_code_masking), true, (DWORD*)m_key);
 	m_lanczosX.set_source(m_Device, g_code_lanczosX, sizeof(g_code_lanczosX), true, (DWORD*)m_key);
 	m_lanczosX_NV12.set_source(m_Device, g_code_lanczosX_NV12, sizeof(g_code_lanczosX_NV12), true, (DWORD*)m_key);
+	m_lanczosX_P016.set_source(m_Device, g_code_lanczosX_P016, sizeof(g_code_lanczosX_P016), true, (DWORD*)m_key);
 	m_lanczosX_YV12.set_source(m_Device, g_code_lanczosX_YV12, sizeof(g_code_lanczosX_YV12), true, (DWORD*)m_key);
 	m_lanczosY.set_source(m_Device, g_code_lanczosY, sizeof(g_code_lanczosY), true, (DWORD*)m_key);
 	m_lanczos.set_source(m_Device, g_code_lanczos, sizeof(g_code_lanczos), true, (DWORD*)m_key);
 	m_lanczos_NV12.set_source(m_Device, g_code_lanczos_NV12, sizeof(g_code_lanczos_NV12), true, (DWORD*)m_key);
+	m_lanczos_P016.set_source(m_Device, g_code_lanczos_P016, sizeof(g_code_lanczos_P016), true, (DWORD*)m_key);
 	m_lanczos_YV12.set_source(m_Device, g_code_lanczos_YV12, sizeof(g_code_lanczos_YV12), true, (DWORD*)m_key);
 	m_multiview4.set_source(m_Device, g_code_multiview4, sizeof(g_code_multiview4), true, (DWORD*)m_key);
 	m_multiview6.set_source(m_Device, g_code_multiview6, sizeof(g_code_multiview6), true, (DWORD*)m_key);
 	m_alpha_multiply.set_source(m_Device, g_code_alpha_only, sizeof(g_code_alpha_only), true, (DWORD*)m_key);
+	m_ps_P016.set_source(m_Device, g_code_P016toRGB, sizeof(g_code_P016toRGB), true, (DWORD*)m_key);
 
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
@@ -2796,7 +2803,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		{
 			m_Device->SetTexture(0, helper_get_texture(src2, helper_sample_format_y));
 			m_Device->SetTexture(1, helper_get_texture(src2, helper_sample_format_nv12));
-			shader_yuv = m_ps_nv12;
+			shader_yuv = m_ps_P016;
 		}
 
 
@@ -2881,7 +2888,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		else if (format == MEDIASUBTYPE_NV12 || format == MEDIASUBTYPE_YUY2)
 			lanczos_shader = m_lanczosX_NV12;
 		else if (format == MEDIASUBTYPE_P010 || format == MEDIASUBTYPE_P016)
-			lanczos_shader = m_lanczosX_NV12;
+			lanczos_shader = m_lanczosX_P016;
 		else if (format == MEDIASUBTYPE_RGB32 || format == MEDIASUBTYPE_ARGB32)
 			lanczos_shader = m_lanczosX;
 		if (width_s != width_d)
@@ -2962,7 +2969,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		else if (format == MEDIASUBTYPE_NV12 || format == MEDIASUBTYPE_YUY2)
 			lanczos_shader = m_lanczos_NV12;
 		else if (format == MEDIASUBTYPE_P010 || format == MEDIASUBTYPE_P016)
-			lanczos_shader = m_lanczos_NV12;
+			lanczos_shader = m_lanczos_P016;
 		else if (format == MEDIASUBTYPE_RGB32 || format == MEDIASUBTYPE_ARGB32)
 			lanczos_shader = m_lanczos;
 		if ((height_s != height_d || width_s != width_d)
@@ -2996,7 +3003,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		{
 			// nearly all D3D9 cards doesn't support D3DUSAGE_AUTOGENMIPMAP
 			// so if we need to use MIPMAP, then we need convert to RGB32 first;
-			FAIL_RET(src2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, NULL, NULL, m_last_reset_time));
+			FAIL_RET(src2->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_P016, NULL, NULL, m_last_reset_time));
 			m_Device->SetTexture(0, src2->m_tex_gpu_RGB32->texture);
 			shader_yuv = m_alpha_multiply;
 		}
