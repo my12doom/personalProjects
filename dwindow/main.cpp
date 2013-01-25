@@ -201,6 +201,8 @@ retry:
 	command_reciever = test;
 	CreateThread(NULL, NULL, TCPThread, NULL, NULL, NULL);
 
+	while (test->init_done_flag != 0x12345678)
+		Sleep(100);
 	if (is_theeater_version())
 		dwindow_dll_go(hinstance, NULL, test);
 	else

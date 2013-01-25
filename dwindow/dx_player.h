@@ -139,6 +139,7 @@ public:
 
 	// error reporting vars and functions
 	HRESULT log_line(wchar_t *format, ...);
+	int init_done_flag;
 
 protected:
 
@@ -225,7 +226,6 @@ protected:
 	HRESULT m_reset_load_hr;
 	wchar_t m_file_to_load[MAX_PATH];
 	wchar_t m_file_to_load2[MAX_PATH];
-	int init_done_flag;
 	int m_dragging_window;
 	HRESULT lua_OnMouseEvent(char *event, int x, int y, int key);  // x,y: UIScale applied inside
 

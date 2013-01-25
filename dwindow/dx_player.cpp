@@ -167,10 +167,6 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 
 	// size and position
 	init_window_size_positions();
-	
-	// show it!
-	show_window(1, true);
-	show_window(2, m_output_mode == dual_window || m_output_mode == iz3d);
 
 	// to init video zone
 	SendMessage(m_hwnd1, WM_INITDIALOG, 0, 0);
@@ -2459,6 +2455,11 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		m_renderer1->set_ui_drawer(this);
 		//m_renderer1->set_ui_drawer();
 		m_lua = new lua_drawer();
+
+		// show it!
+		show_window(1, true);
+		show_window(2, m_output_mode == dual_window || m_output_mode == iz3d);
+
 		unsigned char passkey_big_decrypted[128];
 		RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
 		m_renderer1->m_AES.set_key((unsigned char*)passkey_big_decrypted+64, 256);
