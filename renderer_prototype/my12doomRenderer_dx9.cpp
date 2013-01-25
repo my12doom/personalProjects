@@ -178,8 +178,9 @@ m_right_queue(_T("right queue"))
 	m_render_thread = INVALID_HANDLE_VALUE;
 	m_render_thread_exit = false;
 
-
 	init_variables();
+
+	pump();
 
 	//CreateThread(0,0,test_thread, this, NULL, NULL);
 }

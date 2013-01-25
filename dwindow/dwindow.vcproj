@@ -1594,34 +1594,6 @@
 				RelativePath="..\MPOCodec\MPOParser.h"
 				>
 			</File>
-			<Filter
-				Name="libcrypt"
-				>
-				<File
-					RelativePath="..\libchecksum\basicRSA.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\libchecksum\basicRSA.h"
-					>
-				</File>
-				<File
-					RelativePath="..\libchecksum\libchecksum.h"
-					>
-				</File>
-				<File
-					RelativePath="..\libchecksum\SHA1.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\libchecksum\SHA1.h"
-					>
-				</File>
-				<File
-					RelativePath="..\libchecksum\video_checksum.cpp"
-					>
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Renderer"
@@ -2120,6 +2092,34 @@
 			</File>
 			<File
 				RelativePath=".\My Amplifier Results\r004hs\r004hs.ampl"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="libcrypt"
+			>
+			<File
+				RelativePath="..\libchecksum\basicRSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libchecksum\basicRSA.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libchecksum\libchecksum.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libchecksum\SHA1.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libchecksum\SHA1.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libchecksum\video_checksum.cpp"
 				>
 			</File>
 		</Filter>
