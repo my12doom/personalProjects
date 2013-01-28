@@ -17,6 +17,7 @@ m_layout(IStereoLayout_Unknown)
 {
 	m_curfile[0] = NULL;
 	m_decoded_data = NULL;
+	m_decoded_data2 = NULL;
 	ASSERT(phr);
 
 	*phr = S_OK;
@@ -24,6 +25,7 @@ m_layout(IStereoLayout_Unknown)
 my12doomImageSource::~my12doomImageSource()
 {
 	safe_delete(m_decoded_data);
+	safe_delete(m_decoded_data2);
 }
 
 STDMETHODIMP my12doomImageSource::NonDelegatingQueryInterface(REFIID riid, void ** ppv)
@@ -136,8 +138,8 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 	int decoded_size = ilGetInteger(IL_IMAGE_SIZE_OF_DATA);
 	int width = ilGetInteger(IL_IMAGE_WIDTH);
 	m_height = ilGetInteger(IL_IMAGE_HEIGHT);
-	m_width = size2>0? width*2 : width;
-	m_decoded_data = new char[decoded_size*2];
+	m_width = width;
+	m_decoded_data = new char[decoded_size];
 	assert(decoded_size >= width * m_height *4);
 	char *data = (char*)ilGetData();
 	char *dst = m_decoded_data;
@@ -159,13 +161,15 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 			safe_delete(m_decoded_data);
 			return VFW_E_INVALID_FILE_FORMAT;
 		}
+		ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
 		decoded_size = ilGetInteger(IL_IMAGE_SIZE_OF_DATA);
 		int width2 = ilGetInteger(IL_IMAGE_WIDTH);
 		int height2 = ilGetInteger(IL_IMAGE_HEIGHT);
-		ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
+		m_decoded_data2 = new char[decoded_size];
+		assert(decoded_size >= width * m_height *4);
 		data = (char*)ilGetData();
-		dst = m_decoded_data + width*4;
-		for(int y=0; y<height2; y++)
+		dst = m_decoded_data2;
+		for(int y=0; y<min(height2,m_height); y++)
 		{
 			memcpy(dst, data, min(width, width2)*4);
 			dst += m_width*4;
@@ -179,6 +183,16 @@ STDMETHODIMP my12doomImageSource::Load(LPCOLESTR pszFileName, __in_opt const AM_
 	{
 		if (need_delete) delete [] data1;
 		return E_OUTOFMEMORY;
+	}
+
+	if (m_decoded_data2)
+	{
+	m_paStreams[1] = new my12doomImageStream(&hr, this, L"Image Out 2", m_decoded_data2, m_width, m_height);
+	if(m_paStreams[1] == NULL)
+	{
+		if (need_delete) delete [] data1;
+		return E_OUTOFMEMORY;
+	}
 	}
 
 	if (need_delete) delete [] data1;

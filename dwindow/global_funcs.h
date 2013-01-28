@@ -457,7 +457,7 @@ __forceinline HRESULT check_passkey()
 	return E_FAIL;
 
 }
-__forceinline void BRC()
+__forceinline void BasicRsaCheck()
 {	
 	mytime();
 	static __int64 delta = timeGetTime()/1000 - _time64(NULL);

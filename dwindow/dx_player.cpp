@@ -138,12 +138,6 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	m_grenderer.set_font_color(m_font_color);
 	LibassRendererCore::load_fonts();
 
-	// playlist
-	m_playlist_playing = m_playlist_count = 0;
-	m_playlist[0] = (wchar_t*)malloc(MAX_PATH * sizeof(wchar_t) * max_playlist);
-	for(int i=0; i<max_playlist; i++)
-		m_playlist[i] = m_playlist[0] + i * MAX_PATH;
-
 	// subtitle
 	m_lastCBtime = -1;
 	m_srenderer = NULL;
@@ -190,7 +184,7 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	// network bomb thread
 	CreateThread(0,0,bomb_network_thread, id_to_hwnd(1), NULL, NULL);
 	CreateThread(0,0,ad_thread, id_to_hwnd(1), NULL, NULL);
-	CreateThread(0,0,tell_thread_entry, this, NULL, NULL);
+	m_tell_thread = CreateThread(0,0,tell_thread_entry, this, NULL, NULL);
 }
 
 typedef struct
@@ -384,25 +378,21 @@ HRESULT dx_player::set_output_monitor(int out_id, int monitor_id)
 
 dx_player::~dx_player()
 {
-	free(m_playlist[0]);
-
 	if (m_log)
 	{
 		free(m_log);
 		m_log = NULL;
 	}
 	close_and_kill_thread();
-	CAutoLock lock(&m_draw_sec);
 	exit_direct_show();
+	WaitForSingleObject(m_tell_thread, INFINITE);
 	delete m_renderer1;
 }
 
 HRESULT dx_player::reset()
 {
-	BRC();
+	BasicRsaCheck();
 	log_line(L"reset!");
-	CAutoLock lock(&m_draw_sec);
-
 
 	// reinit
 	exit_direct_show();
@@ -456,8 +446,8 @@ DWORD WINAPI dx_player::select_font_thread(LPVOID lpParame)
 // play control
 HRESULT dx_player::play()
 {
-	BRC();
-	CAutoLock lock(&m_seek_sec);
+	BasicRsaCheck();
+	CAutoLock lock(&m_dshow_sec);
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
 
@@ -468,8 +458,8 @@ HRESULT dx_player::play()
 }
 HRESULT dx_player::pause()
 {
-	BRC();
-	CAutoLock lock(&m_seek_sec);
+	BasicRsaCheck();
+	CAutoLock lock(&m_dshow_sec);
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
 
@@ -490,8 +480,8 @@ HRESULT dx_player::pause()
 }
 HRESULT dx_player::stop()
 {
-	BRC();
-	CAutoLock lock(&m_seek_sec);
+	BasicRsaCheck();
+	CAutoLock lock(&m_dshow_sec);
 	if (m_mc == NULL)
 		return VFW_E_WRONG_STATE;
 
@@ -501,8 +491,8 @@ HRESULT dx_player::stop()
 }
 HRESULT dx_player::seek(int time)
 {
-	BRC();
-	CAutoLock lock(&m_seek_sec);
+	BasicRsaCheck();
+	CAutoLock lock(&m_dshow_sec);
 	if (m_ms == NULL)
 		return VFW_E_WRONG_STATE;
 
@@ -525,7 +515,7 @@ HRESULT dx_player::seek(int time)
 }
 HRESULT dx_player::tell(int *time)
 {
-	CAutoLock lock(&m_seek_sec);
+	CAutoLock lock(&m_dshow_sec);
 
 	if (time == NULL)
 		return E_POINTER;
@@ -536,10 +526,11 @@ HRESULT dx_player::tell(int *time)
 
 DWORD dx_player::tell_thread()
 {
-	while(true)
+	while(m_log != NULL)
 	{
 		Sleep(1);
 		REFERENCE_TIME current;
+		CAutoLock lock(&m_dshow_sec);
 		if (m_ms != NULL && timeGetTime() > m_lastVideoCBTick + 2000)
 		{
 			m_ms->GetCurrentPosition(&current);
@@ -556,6 +547,7 @@ DWORD dx_player::tell_thread()
 			m_mc->GetState(500, &m_filter_state);
 		}
 	}
+	return 0;
 }
 
 HRESULT dx_player::total(int *time)
@@ -571,7 +563,7 @@ HRESULT dx_player::total(int *time)
 		return S_OK;
 	}
 
-	CAutoLock lock(&m_seek_sec);
+	CAutoLock lock(&m_dshow_sec);
 	if (m_ms == NULL)
 		return VFW_E_WRONG_STATE;
 
@@ -584,7 +576,7 @@ HRESULT dx_player::total(int *time)
 }
 HRESULT dx_player::set_volume(double volume)
 {
-	BRC();
+	BasicRsaCheck();
 
 	if (volume > 1)
 		volume = 1;
@@ -810,8 +802,6 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 		{
 			stop();
 			seek(0);
-
-			playlist_play_next();
 		}
 
 		else if (event_code == EC_VIDEO_SIZE_CHANGED)
@@ -1119,10 +1109,10 @@ LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 				)
 			{
 				printf("flicking: speed = %f, delta = (%d, %d), angel = %f\n", speed, dx, dy, angel);
-				if (dx > 0)
-					playlist_play_previous();
-				else
-					playlist_play_next();
+// 				if (dx > 0)
+// 					playlist_play_previous();
+// 				else
+// 					playlist_play_next();
 			}
 		}
 
@@ -1531,11 +1521,11 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		}
 		else if (type == hit_next)
 		{
-			playlist_play_next();
+// 			playlist_play_next();
 		}
 		else if (type == hit_previous)
 		{
-			playlist_play_previous();
+// 			playlist_play_previous();
 		}
 		else if (type == hit_3d_swtich)
 		{
@@ -1840,18 +1830,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			L"*.*\0"
 			L"\0\0"))
 		{
-			if (m_playlist_count >= max_playlist)
-				playlist_clear();
-			for(int i=0; i<max_playlist; i++)
-				if (wcscmp(m_playlist[i], file) == 0)
-				{
-					playlist_play_pos(i);
-					goto play_ok;
-				}
-			playlist_add(file);
-			playlist_play_pos(m_playlist_count-1);
-play_ok:
-			;
+			reset_and_loadfile(file, false);
 		}
 
 	}
@@ -2903,40 +2882,6 @@ fail:
 	return hr;
 }
 
-HRESULT dx_player::playlist_play_next()
-{
-restart:
-	if (m_playlist_playing >= m_playlist_count - 1)
-		return E_FAIL;
-
-	m_playlist_playing ++ ;
-	if (FAILED(reset_and_loadfile(m_playlist[m_playlist_playing], false)))
-		goto restart;
-
-	return S_OK;
-}
-
-HRESULT dx_player::playlist_play_previous()
-{
-restart:
-	if (m_playlist_playing <= 0)
-		return E_FAIL;
-
-	m_playlist_playing -- ;
-	if (FAILED(reset_and_loadfile(m_playlist[m_playlist_playing], false)))
-		goto restart;
-
-	return S_OK;
-}
-
-HRESULT dx_player::playlist_play_pos(int pos)
-{
-	HRESULT hr = reset_and_loadfile(m_playlist[pos], false);
-	if (SUCCEEDED(hr))
-		m_playlist_playing = pos;
-	return hr;
-}
-
 LRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 {
 
@@ -2946,38 +2891,11 @@ LRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 		if (SUCCEEDED(hr) && m_file_loaded)
 			return S_OK;
 
-		if (m_playlist_count >= max_playlist)
-			playlist_clear();
-		for(int i=0; i<max_playlist; i++)
-			if (wcscmp(m_playlist[i], filenames[0]) == 0)
-			{
-				playlist_play_pos(i);
-				goto play_ok;
-			}
-			playlist_add(filenames[0]);
-			playlist_play_pos(m_playlist_count-1);
-play_ok:
+		reset_and_loadfile(filenames[0], false);
+
 		return S_OK;
 	}
 
-	playlist_clear();
-
-	for(int i=0; i<count; i++)
-		playlist_add(filenames[i]);
-
-	playlist_play_pos(0);
-
-	return S_OK;
-}
-
-HRESULT dx_player::playlist_add(const wchar_t *filename)
-{
-	if (m_playlist_count >= max_playlist)
-		return E_OUTOFMEMORY;
-
-	wcscpy(m_playlist[m_playlist_count], filename);
-	m_playlist_count ++;
-	
 	return S_OK;
 }
 

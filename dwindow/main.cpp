@@ -165,7 +165,7 @@ retry:
 #endif
 	save_passkey();
 
-	BRC();
+	BasicRsaCheck();
 
 	AutoSetting<bool> single_instance(L"SingleInstance", true);
 

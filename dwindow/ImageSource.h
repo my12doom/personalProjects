@@ -30,6 +30,7 @@ protected:
 	int m_height;
 	DWORD m_layout;
 	char *m_decoded_data;
+	char *m_decoded_data2;
 private:
 	my12doomImageSource(LPUNKNOWN lpunk, HRESULT *phr);
 	~my12doomImageSource();

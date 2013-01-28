@@ -1225,7 +1225,6 @@ HRESULT my12doomRenderer::reset()
 {
 	terminate_render_thread();
 	CAutoLock lck(&m_frame_lock);
-	invalidate_gpu_objects();
 	set_device_state(need_reset_object);
 	init_variables();
 
@@ -1250,6 +1249,8 @@ HRESULT my12doomRenderer::reset()
 	}
 
 
+	invalidate_gpu_objects();
+	invalidate_cpu_objects();
 	return S_OK;
 }
 HRESULT my12doomRenderer::create_render_thread()
@@ -1279,8 +1280,10 @@ HRESULT my12doomRenderer::invalidate_cpu_objects()
 		CAutoLock lck(&m_uidrawer_cs);
 		if (m_uidrawer) m_uidrawer->invalidate_cpu();
 	}
+	CAutoLock lck2(&m_pool_lock);
 	if (m_pool) m_pool->DestroyPool(D3DPOOL_MANAGED);
 	if (m_pool) m_pool->DestroyPool(D3DPOOL_SYSTEMMEM);
+	m_tex_subtitle_mem = NULL;
 
 	return S_OK;
 }

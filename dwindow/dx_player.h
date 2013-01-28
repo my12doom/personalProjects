@@ -94,16 +94,6 @@ public:
 	HRESULT get_swap_eyes(bool *swap_eyes) PURE2;
 	HRESULT get_movie_pos(int which, double *out) PURE2;	// which: 0 = x, 1=y
 
-	// playlist
-	HRESULT playlist_add(const wchar_t *filename);
-	HRESULT playlist_clear(){m_playlist_count = 0; return S_OK;}
-	HRESULT playlist_play_next();
-	HRESULT playlist_play_previous();
-	HRESULT playlist_play_pos(int pos);
-	HRESULT playlist_get_item(int id, wchar_t *filename_out) PURE2;
-	int playlist_get_item_count(){return m_playlist_count;}
-	int playlist_get_playing_position(){return m_playlist_playing;}
-
 	// play control functions
 	HRESULT play();
 	HRESULT pause();
@@ -181,11 +171,6 @@ protected:
 	LRESULT OnWiDiDisconnected(WPARAM wParam, LPARAM lParam);
 	LRESULT OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam);
 
-	// playlist	
-	wchar_t *m_playlist[max_playlist];
-	int m_playlist_count;
-	int m_playlist_playing;
-
 	// saved screen settings
 	AutoSetting<RECT> m_saved_screen1;
 	AutoSetting<RECT> m_saved_screen2;
@@ -227,6 +212,7 @@ protected:
 	wchar_t m_file_to_load[MAX_PATH];
 	wchar_t m_file_to_load2[MAX_PATH];
 	int m_dragging_window;
+	HANDLE m_tell_thread;
 	HRESULT lua_OnMouseEvent(char *event, int x, int y, int key);  // x,y: UIScale applied inside
 
 
@@ -275,8 +261,7 @@ protected:
 	int m_total_time;			// a buffer 
 	int m_current_time;			// from SampleSB()
 	DWORD m_lastVideoCBTick;
-	CCritSec m_draw_sec;
-	CCritSec m_seek_sec;
+	CCritSec m_dshow_sec;
 	bool m_show_ui;
 	bool m_show_volume_bar;
 	int m_dragging;	// = 0

@@ -227,13 +227,6 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 	CASE(L"set_movie_pos")
 		hr = set_movie_pos(myDouble(args[0]), myDouble(args[1]));
 
-
-
-	CASE(L"play_next_file")
-		hr = playlist_play_next();
-
-
-
 	CASE(L"play")
 		hr = play();
 
