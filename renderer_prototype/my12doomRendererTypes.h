@@ -20,6 +20,7 @@ const int fade_in_out_time = 500;
 #define safe_delete(x) if(x){delete x;x=NULL;}
 #define safe_decommit(x) if((x))(x)->decommit()
 #define JIF(x) {if(FAILED(hr=x))goto clearup;}
+#define MAX_VIEWS 16
 
 // structures
 

@@ -72,7 +72,7 @@ public:
 	virtual HRESULT init_cpu(int width, int height,IDirect3DDevice9 *device) PURE;
 	virtual HRESULT invalidate_gpu() PURE;
 	virtual HRESULT invalidate_cpu() PURE;
-	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, bool running) PURE;
-	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye) PURE;
+	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, int view, bool running) PURE;
+	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, int view) PURE;
 	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL) PURE;
 };

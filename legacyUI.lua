@@ -24,24 +24,25 @@ local logo = BaseFrame:Create()
 root:AddChild(logo)
 logo:SetRelativeTo(nil, CENTER)
 function logo:GetRect()
-	self.d = math.min(math.min(dwindow.width, dwindow.height-40)*3/5, 512)
-	local d = self.d
-	return 0,0,d,d,0,-20
+	self.w = math.min(math.min(dwindow.width, dwindow.height-40)*3/5, 512)
+	return 0,0,self.w+0.025*self.w,self.w,0.0125*self.w,-20
 end
 
-function logo:RenderThis()
+function logo:RenderThis(view)
 	local d = self.d
-	if not movie_loaded then 
-		paint(0,0,d,d,get_bitmap(path.."logo.png"))
+	if not movie_loaded then
+		print("view", view)
+		local delta = (1-view) * 0.025*self.w
+		paint(0+delta,0,self.w+delta,self.w,get_bitmap(path.."logo.png"))
 	end
 end
 
 function logo:HitTest(x, y)
 	if movie_loaded then return end
 	
-	local r = self.d/2
-	local dx = x-self.d/2
-	local dy = y-self.d/2
+	local r = self.w/2
+	local dx = x-self.w/2
+	local dy = y-self.w/2
 	
 	return dx*dx+dy*dy < r*r
 end

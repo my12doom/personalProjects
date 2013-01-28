@@ -319,10 +319,11 @@ protected:
 	HRESULT restore_gpu_objects();
 	HRESULT restore_cpu_objects();
 	HRESULT render_nolock(bool forced = false);
+	HRESULT render_helper(IDirect3DSurface9 *surfaces[], int nview);
 	HRESULT draw_movie(IDirect3DSurface9 *surface, int view);		// 0 = left eye, 1 = right eye, others not implemented yet
-	HRESULT draw_subtitle(IDirect3DSurface9 *surface, bool left_eye);
-	HRESULT draw_ui(IDirect3DSurface9 *surface);
-	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left);
+	HRESULT draw_subtitle(IDirect3DSurface9 *surface, int view);
+	HRESULT draw_ui(IDirect3DSurface9 *surface, int view);
+	HRESULT adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, int view);
 	// assume dst has D3DUSAGE_RENDERTARGET Flag
 	// assume src is first level of a texture
 	HRESULT resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECT *src_rect = NULL, RECT *dst_rect = NULL,
@@ -348,7 +349,7 @@ protected:
 	DWORD m_PC_level;				// 0
 	HRESULT calculate_movie_position(RECTF *position);
 	HRESULT calculate_movie_position_unscaled(RECTF *position);
-	HRESULT calculate_subtitle_position(RECTF *postion, bool left_eye);
+	HRESULT calculate_subtitle_position(RECTF *postion, int view);
 
 
 	friend class dx_player;
@@ -469,8 +470,6 @@ protected:
 	CComPtr<IDirect3DSurface9> m_deinterlace_surface;		// surface for deinterlace
 	RECT m_window_rect;
 	CComPtr<IDirect3DTexture9> m_tex_mask;					// mask txture
-	CComPtr<IDirect3DTexture9> m_mask_temp_left;			// two temp texture, you may need it in some case
-	CComPtr<IDirect3DTexture9> m_mask_temp_right;
 
 	CComPtr<IDirect3DTexture9> m_tex_subtitle;
 	CComPtr<IDirect3DSurface9> m_tex_subtitle_mem;

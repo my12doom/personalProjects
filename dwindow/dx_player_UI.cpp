@@ -431,7 +431,7 @@ HRESULT dx_player::invalidate_cpu()
 	m_ui_background_cpu = NULL;
 	return S_OK;
 }
-HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
+HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view, bool running)
 {
 	int total = 0;
 	this->total(&total);
@@ -533,7 +533,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
 	return S_OK;
 }
 
-HRESULT dx_player::draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye)
+HRESULT dx_player::draw_nonmovie_bg(IDirect3DSurface9 *surface, int view)
 {
 	HRESULT hr = m_Device->SetRenderTarget(0, surface);
 	m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
@@ -547,7 +547,7 @@ HRESULT dx_player::draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye)
 	hr = m_Device->SetStreamSource( 0, m_vertex, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags );
 	//hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, (!left_eye ? TESTBUTTON : TESTBUTTON2)*4, 2 );
-	hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, quad+ (!left_eye ? TESTBUTTON : TESTBUTTON2), sizeof(MyVertex));
+	hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, quad+ (view == 1 ? TESTBUTTON : TESTBUTTON2), sizeof(MyVertex));
 	return S_OK;
 }
 

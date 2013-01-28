@@ -515,8 +515,6 @@ HRESULT dx_player::seek(int time)
 }
 HRESULT dx_player::tell(int *time)
 {
-	CAutoLock lock(&m_dshow_sec);
-
 	if (time == NULL)
 		return E_POINTER;
 
@@ -552,27 +550,11 @@ DWORD dx_player::tell_thread()
 
 HRESULT dx_player::total(int *time)
 {
-		
-
 	if (time == NULL)
 		return E_POINTER;
 
-	if (m_total_time > 0)
-	{
-		*time = m_total_time;
-		return S_OK;
-	}
-
-	CAutoLock lock(&m_dshow_sec);
-	if (m_ms == NULL)
-		return VFW_E_WRONG_STATE;
-
-	REFERENCE_TIME total;
-	HRESULT hr = m_ms->GetDuration(&total);
-	if(SUCCEEDED(hr))
-		*time = m_total_time = (int)(total / 10000);
-
-	return hr;
+	*time = m_total_time;
+	return S_OK;
 }
 HRESULT dx_player::set_volume(double volume)
 {
@@ -4678,7 +4660,7 @@ HRESULT lua_drawer::invalidate_cpu()
 
 	return S_OK;
 }
-HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, bool running)
+HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, int view, bool running)
 {
 	g_lua_manager->get_variable("running") = running;
 
@@ -4686,7 +4668,7 @@ HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, bool running)
 	lua_getglobal(lua_state, "RenderUI");
 	if (lua_isfunction(lua_state, -1))
 	{
-		lua_pushinteger(lua_state, 0);
+		lua_pushinteger(lua_state, view);
 		lua_mypcall(lua_state, 1, 0, 0);
 		lua_settop(lua_state, 0);
 	}
@@ -4695,7 +4677,7 @@ HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, bool running)
 
 	return S_OK;
 }
-HRESULT lua_drawer::draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye)
+HRESULT lua_drawer::draw_nonmovie_bg(IDirect3DSurface9 *surface, int view)
 {
 	return S_OK;
 }

@@ -116,7 +116,7 @@ HRESULT dx_player::invalidate_cpu()
 
 AutoSetting<double> g_scale(L"UIScale", 1.0);
 
-HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, bool running)
+HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view, bool running)
 {
 	const double button_size = 40 * g_scale * g_scale;
 	const double margin_button_right = 32 * g_scale;

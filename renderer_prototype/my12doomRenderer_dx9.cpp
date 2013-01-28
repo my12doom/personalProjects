@@ -809,8 +809,6 @@ HRESULT my12doomRenderer::delete_render_targets()
 	intel_delete_rendertargets();
 	m_swap1 = NULL;
 	m_swap2 = NULL;
-	m_mask_temp_left = NULL;
-	m_mask_temp_right = NULL;
 	m_nv3d_surface = NULL;
 	m_tex_mask = NULL;
 	return S_OK;
@@ -862,8 +860,6 @@ HRESULT my12doomRenderer::create_render_targets()
 
 
 	FAIL_RET(intel_create_rendertargets());
-	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_left, NULL));
-	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &m_mask_temp_right, NULL));
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_mask, NULL));
 	FAIL_RET( m_Device->CreateRenderTarget(m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight+1, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, TRUE, &m_nv3d_surface, NULL));
 	FAIL_RET(generate_mask());
@@ -1623,6 +1619,27 @@ HRESULT my12doomRenderer::reload_image()
 	return S_OK;
 }
 
+HRESULT my12doomRenderer::render_helper(IDirect3DSurface9 *surfaces[], int nview)
+{
+	HRESULT hr = S_OK;
+	for(int i=0; i<nview; i++)
+	{
+		int view = (i<2&&m_swapeyes)?1-i:i;
+
+		IDirect3DSurface9 *p = surfaces[i];
+		if (!p)
+			continue;
+
+		FAIL_RET(clear(p));
+		FAIL_RET(draw_movie(p, view));
+		FAIL_RET(draw_subtitle(p, view));
+		FAIL_RET(adjust_temp_color(p, view));
+		FAIL_RET(draw_ui(p, i));
+	}
+
+	return hr;
+}
+
 HRESULT my12doomRenderer::render_nolock(bool forced)
 {
 	HRESULT hr;
@@ -1669,9 +1686,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 
 	hr = m_Device->BeginScene();
-	hr = m_Device->SetTexture(0, NULL);
-	hr = m_Device->SetTexture(1, NULL);
-	hr = m_Device->SetTexture(2, NULL);
 
 	// prepare all samples in queue for rendering
 	if(false)
@@ -1730,37 +1744,38 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	hr = m_Device->SetPixelShader(NULL);
 
-	// set render target to back buffer
 	CComPtr<IDirect3DSurface9> back_buffer;
-	CComPtr<IDirect3DSurface9> test[2];
 	if (m_swap1) hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer);
-	if (m_swap1) hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &test[0]);
-	if (m_swap1) hr = m_swap1->GetBackBuffer(1, D3DBACKBUFFER_TYPE_MONO, &test[1]);
 
-// 	mylog("back buffer: %08x, %08x\n", test[0].p, test[1].p);
+	// most rendering mode is 2 views, so we create texture and render it (except for mono2d and pageflipping, which render only one view at a time)
+	CPooledTexture *view0, *view1;
+	CComPtr<IDirect3DSurface9> surf0;
+	CComPtr<IDirect3DSurface9> surf1;
 
+	FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
+	FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view1));
 
+	view0->get_first_level(&surf0);
+	view1->get_first_level(&surf1);
+
+	IDirect3DSurface9 *surfaces[MAX_VIEWS] = {surf0, surf1};
+	CComPtr<IDirect3DSurface9> back_buffer2;
+	if (m_output_mode == dual_window && m_swap2)
+	{
+		m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
+		surfaces[0] = back_buffer;
+		surfaces[1] = back_buffer2;
+	}
+
+	if (m_output_mode != mono && m_output_mode != pageflipping)
+		render_helper(surfaces, 2);
 
 	clear(back_buffer, D3DCOLOR_ARGB(255, 0, 0, 0));
 
-	// reset texture blending stages
-	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
-	m_Device->SetRenderState(D3DRS_LIGHTING, FALSE);
-	m_Device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
-	m_Device->SetTextureStageState( 0, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	m_Device->SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 0 );
-	m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE);
-	m_Device->SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0 );
-	m_Device->SetTextureStageState( 2, D3DTSS_COLOROP,   D3DTOP_DISABLE);
-	m_Device->SetTextureStageState( 2, D3DTSS_TEXCOORDINDEX, 0 );
-
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	hr = m_Device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+	// reset some render state
+	hr = m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	hr = m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
 
 	// vertex
 	MyVertex whole_backbuffer_vertex[4];
@@ -1782,23 +1797,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	static NvU32 l_counter = 0;
 	if (m_output_mode == intel3d)
 	{
-		CComPtr<IDirect3DSurface9> left_surface;
-		hr = m_mask_temp_left->GetSurfaceLevel(0, &left_surface);
-		clear(left_surface);
-		draw_movie(left_surface, 0);
-		draw_subtitle(left_surface, true);
-		adjust_temp_color(left_surface, true);
-		draw_ui(left_surface);
-
-		CComPtr<IDirect3DSurface9> right_surface;
-		hr = m_mask_temp_right->GetSurfaceLevel(0, &right_surface);
-		clear(right_surface);
-		draw_movie(right_surface, 1);
-		draw_subtitle(right_surface, false);
-		adjust_temp_color(right_surface, false);
-		draw_ui(right_surface);
-
-		intel_render_frame(left_surface, right_surface);
+		intel_render_frame(surf0, surf1);
 	}
 	else if (m_output_mode == NV3D
 #ifdef explicit_nv3d
@@ -1806,118 +1805,55 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 #endif
 		)
 	{
-		//m_nv_version.drvVersion = 0;
-		if (m_nv_version.drvVersion>28500)
-		{
-			NvAPI_Stereo_SetActiveEye(m_nv3d_handle, NVAPI_STEREO_EYE_LEFT);
-		}
-
-		CComPtr<IDirect3DSurface9> left_surface;
-		CComPtr<IDirect3DSurface9> right_surface;
-		hr = m_mask_temp_left->GetSurfaceLevel(0, &left_surface);
-		hr = m_mask_temp_right->GetSurfaceLevel(0, &right_surface);
-
-		clear(left_surface);
-		draw_movie(left_surface, 0);
-		draw_subtitle(left_surface, true);
-		adjust_temp_color(left_surface, true);
-		draw_ui(left_surface);
-
 		// copy left to nv3d surface
 		RECT dst = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
-		if (m_nv_version.drvVersion>28500)
-		{
-			hr = m_Device->StretchRect(left_surface, NULL, back_buffer, NULL, D3DTEXF_NONE);
+		hr = m_Device->StretchRect(surf0, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
 
-		}
-		else
-		{
-			hr = m_Device->StretchRect(left_surface, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
-		}
+		dst.left += m_active_pp.BackBufferWidth;
+		dst.right += m_active_pp.BackBufferWidth;
+		hr = m_Device->StretchRect(surf1, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
 
-		clear(right_surface);
-		draw_movie(right_surface, 1);
-		draw_subtitle(right_surface, false);
-		adjust_temp_color(right_surface, false);
-		draw_ui(right_surface);
-
-		// copy right to nv3d surface
-		if (m_nv_version.drvVersion>28500)
-		{
-			NvAPI_Status res = NvAPI_Stereo_SetActiveEye(m_nv3d_handle, NVAPI_STEREO_EYE_RIGHT);
-			hr = m_Device->StretchRect(right_surface, NULL, back_buffer, NULL, D3DTEXF_NONE);
-			NvAPI_Stereo_SetActiveEye(m_nv3d_handle, NVAPI_STEREO_EYE_LEFT);
-
-		}
-		else
-		{
-			dst.left += m_active_pp.BackBufferWidth;
-			dst.right += m_active_pp.BackBufferWidth;
-			hr = m_Device->StretchRect(right_surface, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
-
-			// StretchRect to backbuffer!, this is how 3D vision works
-			RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
-			hr = m_Device->StretchRect(m_nv3d_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
-		}
+		// StretchRect to backbuffer!, this is how 3D vision works
+		RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
+		hr = m_Device->StretchRect(m_nv3d_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
 	}
 
 	else if (m_output_mode == multiview)
 	{
-		CPooledTexture *view1, *view2, *view3, *view4;
-		CComPtr<IDirect3DSurface9> surf1;
+		CPooledTexture *view2, *view3;
 		CComPtr<IDirect3DSurface9> surf2;
 		CComPtr<IDirect3DSurface9> surf3;
-		CComPtr<IDirect3DSurface9> surf4;
 		
-		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view1));
 		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view2));
 		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view3));
-		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view4));
 
-		view1->get_first_level(&surf1);
 		view2->get_first_level(&surf2);
 		view3->get_first_level(&surf3);
-		view4->get_first_level(&surf4);
 
-		clear(surf1);
-		draw_movie(surf1, 0);
-		draw_subtitle(surf1, true);
-		adjust_temp_color(surf1, true);
+		surfaces[0] = NULL;
+		surfaces[1] = NULL;
+		surfaces[2] = surf2;
+		surfaces[3] = surf3;
 
-		clear(surf2);
-		draw_movie(surf2, 1);
-		draw_subtitle(surf2, true);
-		adjust_temp_color(surf2, true);
+		render_helper(surfaces, 4);
 
-		clear(surf3);
-		draw_movie(surf3, 2);
-		draw_subtitle(surf3, true);
-		adjust_temp_color(surf3, true);
-
-		clear(surf4);
-		draw_movie(surf4, 3);
-		draw_subtitle(surf4, true);
-		adjust_temp_color(surf4, true);
-
-		// pass3: analyph
+		// pass3: multiview interlacing
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		m_Device->SetRenderTarget(0, back_buffer);
 		m_Device->SetTexture( 0, m_tex_mask );
-		m_Device->SetTexture( (4+m_mask_parameter)%4+1, view1->texture );
-		m_Device->SetTexture( (3+m_mask_parameter)%4+1, view2->texture );
-		m_Device->SetTexture( (2+m_mask_parameter)%4+1, view3->texture );
-		m_Device->SetTexture( (1+m_mask_parameter)%4+1, view4->texture );
+		m_Device->SetTexture( (4+m_mask_parameter)%4+1, view0->texture );
+		m_Device->SetTexture( (3+m_mask_parameter)%4+1, view1->texture );
+		m_Device->SetTexture( (2+m_mask_parameter)%4+1, view2->texture );
+		m_Device->SetTexture( (1+m_mask_parameter)%4+1, view3->texture );
 		m_Device->SetPixelShader(m_multiview4);
 
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
 
-		draw_ui(back_buffer);
+		draw_ui(back_buffer, 0);
 
-		safe_delete(view1);
 		safe_delete(view2);
 		safe_delete(view3);
-		safe_delete(view4);
 	}
 
 	else if (m_output_mode == mono 
@@ -1926,53 +1862,20 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 #endif
 		)
 	{
-		clear(back_buffer);
-		draw_movie(back_buffer, 0);
-		draw_subtitle(back_buffer, true);
-		adjust_temp_color(back_buffer, true);
-		draw_ui(back_buffer);
+		surfaces[0] = back_buffer;
+		render_helper(surfaces, 1);
 	}
 	else if (m_output_mode == hd3d)
 	{
-		CComPtr<IDirect3DSurface9> left_surface;
-		hr = m_mask_temp_left->GetSurfaceLevel(0, &left_surface);
-		clear(left_surface);
-		draw_movie(left_surface, 0);
-		draw_subtitle(left_surface, true);
-		adjust_temp_color(left_surface, true);
-		draw_ui(left_surface);
-
-		CComPtr<IDirect3DSurface9> right_surface;
-		hr = m_mask_temp_right->GetSurfaceLevel(0, &right_surface);
-		clear(right_surface);
-		draw_movie(right_surface, 1);
-		draw_subtitle(right_surface, false);
-		adjust_temp_color(right_surface, false);
-		draw_ui(right_surface);
-
-		HD3DDrawStereo(left_surface, right_surface, back_buffer);
+		HD3DDrawStereo(surf0, surf1, back_buffer);
 	}
 	else if (m_output_mode == anaglyph)
 	{
-		CComPtr<IDirect3DSurface9> temp_surface;
-		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
-		clear(temp_surface);
-		draw_movie(temp_surface, 0);
-		draw_subtitle(temp_surface, true);
-		adjust_temp_color(temp_surface, true);
-
-		temp_surface = NULL;
-		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
-		clear(temp_surface);
-		draw_movie(temp_surface, 1);
-		draw_subtitle(temp_surface, false);
-		adjust_temp_color(temp_surface, false);
-
-		// pass3: analyph
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		m_Device->SetRenderTarget(0, back_buffer);
-		m_Device->SetTexture( 0, m_mask_temp_left );
-		m_Device->SetTexture( 1, m_mask_temp_right );
+		clear(back_buffer);
+		hr = m_Device->SetTexture( 0, view0->texture );
+		hr = m_Device->SetTexture( 1, view1->texture );
 		if(get_active_input_layout() != mono2d 
 			|| m_convert3d
 			|| (m_dsr0->is_connected() && m_dsr1->is_connected())
@@ -1985,43 +1888,19 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
-
-		// UI
-		m_Device->SetPixelShader(NULL);
-		draw_ui(back_buffer);
 	}
 
 	else if (m_output_mode == masking)
 	{
-		CComPtr<IDirect3DSurface9> temp_surface;
-		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
-		clear(temp_surface);
-		draw_movie(temp_surface, 0);
-		draw_subtitle(temp_surface, true);
-		adjust_temp_color(temp_surface, true);
-
-		temp_surface = NULL;
-		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
-		clear(temp_surface);
-		draw_movie(temp_surface, 1);
-		draw_subtitle(temp_surface, false);
-		adjust_temp_color(temp_surface, false);
-
-		// pass3: mask!
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		m_Device->SetRenderTarget(0, back_buffer);
 		m_Device->SetPixelShader(m_ps_masking);
 		m_Device->SetTexture( 0, m_tex_mask );
-		m_Device->SetTexture( 1, m_mask_temp_left );
-		m_Device->SetTexture( 2, m_mask_temp_right );
+		m_Device->SetTexture( 1, view0->texture );
+		m_Device->SetTexture( 2, view1->texture );
 
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
-
-		// UI
-		m_Device->SetPixelShader(NULL);
-		draw_ui(back_buffer);
-
 	}
 
 	else if (m_output_mode == pageflipping)
@@ -2048,12 +1927,12 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		QueryPerformanceCounter(&l1);
 		clear(back_buffer);
 		QueryPerformanceCounter(&l2);
-		draw_movie(back_buffer, m_pageflip_frames == 0 ? 1 : 0);
+		draw_movie(back_buffer, m_pageflip_frames);
 		QueryPerformanceCounter(&l3);
 		draw_subtitle(back_buffer, m_pageflip_frames);
 		adjust_temp_color(back_buffer, m_pageflip_frames);
 		QueryPerformanceCounter(&l4);
-		draw_ui(back_buffer);
+		draw_ui(back_buffer, m_pageflip_frames);
 		QueryPerformanceCounter(&l5);
 
 
@@ -2064,25 +1943,11 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 #ifndef no_dual_projector	
 	else if (m_output_mode == iz3d)
 	{
-		CComPtr<IDirect3DSurface9> temp_surface;
-		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
-		clear(temp_surface);
-		draw_movie(temp_surface, 0);
-		draw_subtitle(temp_surface, true);
-		adjust_temp_color(temp_surface, true);
-
-		temp_surface = NULL;
-		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface);
-		clear(temp_surface);
-		draw_movie(temp_surface, 1);
-		draw_subtitle(temp_surface, false);
-		adjust_temp_color(temp_surface, false);
-
 		// pass3: IZ3D
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		m_Device->SetRenderTarget(0, back_buffer);
-		m_Device->SetTexture( 0, m_mask_temp_left );
-		m_Device->SetTexture( 1, m_mask_temp_right );
+		m_Device->SetTexture( 0, view0->texture );
+		m_Device->SetTexture( 1, view1->texture );
 		m_Device->SetPixelShader(m_ps_iz3d_back);
 
 		hr = m_Device->SetFVF( FVF_Flags );
@@ -2105,15 +1970,15 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 		// UI
 		m_Device->SetPixelShader(NULL);
-		draw_ui(back_buffer);
+		draw_ui(back_buffer, 0);
 	}
 	else if (m_output_mode == dual_window)
 	{
 		clear(back_buffer);
 		draw_movie(back_buffer, 0);
-		draw_subtitle(back_buffer, true);
-		adjust_temp_color(back_buffer, true);
-		draw_ui(back_buffer);
+		draw_subtitle(back_buffer, 0);
+		adjust_temp_color(back_buffer, 0);
+		draw_ui(back_buffer, 0);
 
 		// set render target to swap chain2
 		if (m_swap2)
@@ -2124,9 +1989,9 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 			clear(back_buffer2);
 			draw_movie(back_buffer2, 1);
-			draw_subtitle(back_buffer2, false);
-			adjust_temp_color(back_buffer2, false);
-			draw_ui(back_buffer2);
+			draw_subtitle(back_buffer2, 1);
+			adjust_temp_color(back_buffer2, 1);
+			draw_ui(back_buffer2, 1);
 		}
 
 	}
@@ -2134,22 +1999,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 #endif
 	else if (m_output_mode == out_sbs || m_output_mode == out_tb || m_output_mode == out_hsbs || m_output_mode == out_htb)
 	{
-		CComPtr<IDirect3DSurface9> temp_surface;
-		hr = m_mask_temp_left->GetSurfaceLevel(0, &temp_surface);
-		CComPtr<IDirect3DSurface9> temp_surface2;
-		hr = m_mask_temp_right->GetSurfaceLevel(0, &temp_surface2);
-		clear(temp_surface);
-		clear(temp_surface2);
-		draw_movie(temp_surface, 0);
-		draw_movie(temp_surface2, 1);
-		draw_subtitle(temp_surface, true);
-		draw_subtitle(temp_surface2, false);
-		adjust_temp_color(temp_surface, true);
-		adjust_temp_color(temp_surface2, false);
-		draw_ui(temp_surface);
-		draw_ui(temp_surface2);
-
-
 		// pass 3: copy to backbuffer
 		if(false)
 		{
@@ -2161,11 +2010,11 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			RECT src = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
 			RECT dst = src;
 
-			m_Device->StretchRect(temp_surface, &src, back_buffer, &dst, D3DTEXF_NONE);
+			m_Device->StretchRect(surf0, &src, back_buffer, &dst, D3DTEXF_NONE);
 
 			dst.left += m_active_pp.BackBufferWidth/2;
 			dst.right += m_active_pp.BackBufferWidth/2;
-			m_Device->StretchRect(temp_surface2, &src, back_buffer, &dst, D3DTEXF_NONE);
+			m_Device->StretchRect(surf1, &src, back_buffer, &dst, D3DTEXF_NONE);
 		}
 
 		else if (m_output_mode == out_tb)
@@ -2173,11 +2022,11 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			RECT src = {0, 0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight/2};
 			RECT dst = src;
 
-			m_Device->StretchRect(temp_surface, &src, back_buffer, &dst, D3DTEXF_NONE);
+			m_Device->StretchRect(surf0, &src, back_buffer, &dst, D3DTEXF_NONE);
 
 			dst.top += m_active_pp.BackBufferHeight/2;
 			dst.bottom += m_active_pp.BackBufferHeight/2;
-			m_Device->StretchRect(temp_surface2, &src, back_buffer, &dst, D3DTEXF_NONE);
+			m_Device->StretchRect(surf1, &src, back_buffer, &dst, D3DTEXF_NONE);
 
 		}
 #endif
@@ -2186,27 +2035,30 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		{
 			RECT dst = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
 
-			m_Device->StretchRect(temp_surface, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
+			m_Device->StretchRect(surf0, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 
 			dst.left += m_active_pp.BackBufferWidth/2;
 			dst.right += m_active_pp.BackBufferWidth/2;
-			m_Device->StretchRect(temp_surface2, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
+			m_Device->StretchRect(surf1, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 		}
 
 		else if (m_output_mode == out_htb)
 		{
 			RECT dst = {0, 0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight/2};
 
-			m_Device->StretchRect(temp_surface, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
+			m_Device->StretchRect(surf0, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 
 			dst.top += m_active_pp.BackBufferHeight/2;
 			dst.bottom += m_active_pp.BackBufferHeight/2;
-			m_Device->StretchRect(temp_surface2, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
-
+			m_Device->StretchRect(surf1, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 		}
 	}
 
 	m_Device->EndScene();
+
+	safe_delete(view0);
+	safe_delete(view1);
+
 	if (timeGetTime() - l > 5)
 		printf("All Draw Calls = %dms\n", timeGetTime() - l);
 presant:
@@ -2296,8 +2148,6 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	if (!surface)
 		return E_POINTER;
 	view = m_force2d ? 0 : view;
-	bool left_eye = view == 0;
-	left_eye = left_eye ^ m_swapeyes;
 
 	if (!m_dsr0->is_connected())
 	{
@@ -2307,7 +2157,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 
 		CAutoLock lck(&m_uidrawer_cs);
 		m_last_reset_time = timeGetTime();
-		return m_uidrawer != NULL ? m_uidrawer->draw_nonmovie_bg(surface, left_eye) : E_FAIL;
+		return m_uidrawer != NULL ? m_uidrawer->draw_nonmovie_bg(surface, view) : E_FAIL;
 	}
 
 	luaState lua_state;
@@ -2318,7 +2168,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 
 	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
 	CAutoLock rendered_lock(&m_rendered_packet_lock);
-	gpu_sample *sample = dual_stream ? (left_eye ? m_last_rendered_sample1 : m_last_rendered_sample2) : m_last_rendered_sample1;
+	gpu_sample *sample = dual_stream ? (view == 0 ? m_last_rendered_sample1 : m_last_rendered_sample2) : m_last_rendered_sample1;
 
 	if (!sample)
 		return S_FALSE;
@@ -2330,10 +2180,6 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 
 	if (!src)
 		return S_FALSE;
-
-
-
-
 
 	// movie picture position
 	RECTF target = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
@@ -2348,13 +2194,13 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 		switch(layout)
 		{
 		case side_by_side:
-			if (left_eye)
+			if (view == 0)
 				src_rect.right/=2;
 			else
 				src_rect.left = m_lVidWidth/2;
 			break;
 		case top_bottom:
-			if (left_eye)
+			if (view == 0)
 				src_rect.bottom/=2;
 			else
 				src_rect.top = m_lVidHeight/2;
@@ -2397,7 +2243,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	if (m_parallax > 0)
 	{
 		// cut right edge of right eye and left edge of left eye
-		if (left_eye)
+		if (view == 0)
 			src_rect.left += abs(m_parallax) * m_lVidWidth;
 		else
 			src_rect.right -= abs(m_parallax) * m_lVidWidth;
@@ -2406,7 +2252,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	else if (m_parallax < 0)
 	{
 		// cut left edge of right eye and right edge of left eye
-		if (left_eye)
+		if (view == 0)
 			src_rect.right -= abs(m_parallax) * m_lVidWidth;
 		else
 			src_rect.left += abs(m_parallax) * m_lVidWidth;
@@ -2423,7 +2269,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	return hr;
 }
 
-HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, bool left_eye)
+HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 {
 	if (m_display_orientation != horizontal)
 		return E_NOTIMPL;
@@ -2440,7 +2286,7 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, bool left_ey
 	// movie picture position
 	RECTF src_rect = {0,0,m_subtitle_pixel_width, m_subtitle_pixel_height};
 	RECTF dst_rect = {0};
-	calculate_subtitle_position(&dst_rect, left_eye);
+	calculate_subtitle_position(&dst_rect, view);
 
 	CComPtr<IDirect3DSurface9> src;
 	m_tex_subtitle->GetSurfaceLevel(0, &src);
@@ -2455,13 +2301,13 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, bool left_ey
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 	return hr;
 }
-HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface)
+HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface, int view)
 {
 	if (!surface)
 		return E_POINTER;
 
 	CAutoLock lck2(&m_uidrawer_cs);
-	return m_uidrawer == NULL ? E_FAIL : m_uidrawer->draw_ui(surface, m_dsr0->m_State == State_Running);
+	return m_uidrawer == NULL ? E_FAIL : m_uidrawer->draw_ui(surface, view, m_dsr0->m_State == State_Running);
 }
 
 HRESULT my12doomRenderer::loadBitmap(gpu_sample **out, wchar_t *file)
@@ -2554,7 +2400,7 @@ HRESULT my12doomRenderer::get_resource(int arg, resource_userdata *resource)
 }
 
 
-HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, bool left)
+HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, int view)
 {
 	if (!surface_to_adjust)
 		return E_FAIL;
@@ -2566,6 +2412,7 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 
 	// create a temp texture, copy the surface to it, render to it, and then copy back again
 	HRESULT hr = S_OK;
+	bool left = view == 0;
 	double saturation1 = m_saturation1;
 	double saturation2 = m_saturation2;
 
@@ -3390,7 +3237,7 @@ HRESULT my12doomRenderer::calculate_movie_position(RECTF *position)
 	return S_OK;
 }
 
-HRESULT my12doomRenderer::calculate_subtitle_position(RECTF *postion, bool left_eye)
+HRESULT my12doomRenderer::calculate_subtitle_position(RECTF *postion, int view)
 {
 	if (!postion)
 		return E_POINTER;
@@ -3401,7 +3248,7 @@ HRESULT my12doomRenderer::calculate_subtitle_position(RECTF *postion, bool left_
 	float pic_width = tar.right - tar.left;
 	float pic_height = tar.bottom - tar.top;
 
-	float left = tar.left + pic_width * (m_subtitle_fleft - (left_eye ? 0 :m_subtitle_parallax));
+	float left = tar.left + pic_width * (m_subtitle_fleft - (view * m_subtitle_parallax));
 	float width = pic_width * m_subtitle_fwidth;
 	float top = tar.top + pic_height * m_subtitle_ftop;
 	float height = pic_height * m_subtitle_fheight;

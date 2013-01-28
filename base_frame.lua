@@ -61,16 +61,16 @@ function BaseFrame:Create(o)
 	return o
 end
 
-function BaseFrame:render(arg)
+function BaseFrame:render(...)
 
-	self:RenderThis(self, arg)
+	self:RenderThis(...)
 
 	for i=1,#self.childs do
 		local v = self.childs[i]
 		if v and v.render then
 			local l,t,r,b = v:GetAbsRect();
 			BeginChild(l,t,r,b)
-			v:render(arg)
+			v:render(...)
 			EndChild(l,t,r,b)
 		end
 	end
@@ -78,7 +78,7 @@ function BaseFrame:render(arg)
 end
 
 
-function BaseFrame:RenderThis(arg)
+function BaseFrame:RenderThis(...)
 	local left, top, right, bottom = self:GetRect()
 	debug("default rendering(draw nothing)", self, " at", left, top, right, bottom, rect[1], rect[2], rect[3], rect[4])
 end
