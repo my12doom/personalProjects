@@ -371,7 +371,7 @@ HRESULT D3DPresentEngine::PresentSample(IMFSample* pSample, LONGLONG llTarget)
 
     IMFMediaBuffer* pBuffer = NULL;
     IDirect3DSurface9* pSurface = NULL;
-    IDirect3DSwapChain9* pSwapChain = NULL;
+//     IDirect3DSwapChain9* pSwapChain = NULL;
 	IDirect3DSurface9 * back_buffer = NULL;
 
     if (pSample)
@@ -413,7 +413,7 @@ HRESULT D3DPresentEngine::PresentSample(IMFSample* pSample, LONGLONG llTarget)
     }
 
 done:
-    SAFE_RELEASE(pSwapChain);
+//     SAFE_RELEASE(pSwapChain);
     SAFE_RELEASE(pSurface);
     SAFE_RELEASE(pBuffer);
 	SAFE_RELEASE(back_buffer);
@@ -618,25 +618,25 @@ done:
 // class could do something fancier.
 //-----------------------------------------------------------------------------
 
-HRESULT D3DPresentEngine::PresentSwapChain(IDirect3DSwapChain9* pSwapChain, IDirect3DSurface9* pSurface)
-{
-    HRESULT hr = S_OK;
-
-	D3DSURFACE_DESC desc;
-	pSurface->GetDesc(&desc);
-
-    if (m_hwnd == NULL)
-    {
-        return MF_E_INVALIDREQUEST;
-    }
-
-    hr = pSwapChain->Present(NULL, &m_rcDestRect, m_hwnd, NULL, 0);
-
-    LOG_MSG_IF_FAILED(L"D3DPresentEngine::PresentSwapChain, IDirect3DSwapChain9::Present failed.", hr);
-
-
-    return hr;
-}
+// HRESULT D3DPresentEngine::PresentSwapChain(IDirect3DSwapChain9* pSwapChain, IDirect3DSurface9* pSurface)
+// {
+//     HRESULT hr = S_OK;
+// 
+// 	D3DSURFACE_DESC desc;
+// 	pSurface->GetDesc(&desc);
+// 
+//     if (m_hwnd == NULL)
+//     {
+//         return MF_E_INVALIDREQUEST;
+//     }
+// 
+//     hr = pSwapChain->Present(NULL, &m_rcDestRect, m_hwnd, NULL, 0);
+// 
+//     LOG_MSG_IF_FAILED(L"D3DPresentEngine::PresentSwapChain, IDirect3DSwapChain9::Present failed.", hr);
+// 
+// 
+//     return hr;
+// }
 
 //-----------------------------------------------------------------------------
 // PaintFrameWithGDI
