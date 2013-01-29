@@ -88,6 +88,7 @@ m_luminance2(L"Luminance2", 0.5),
 m_hue2(L"Hue2", 0.5),
 m_contrast2(L"Contrast2", 0.5),
 m_theater_owner(NULL),
+m_tell_thread(NULL),
 m_trial_shown(L"Trial", false),
 m_LogFont(L"LogFont", empty_logfontw),
 m_aspect_mode(L"AspectRatioMode", aspect_letterbox),
@@ -2888,9 +2889,10 @@ LRESULT dx_player::on_idle_time()
 
 #ifdef ZHUZHU
 	static bool toggled = false;
-	if (!toggled)
+	static int t = GetTickCount();
+	if (!toggled && GetTickCount() - t >= 0)
 	{
-		if (m_renderer1->test_device_state() == S_OK)
+		if (m_renderer1->test_device_state() == S_OK && m_tell_thread != NULL)
 		{
 			toggle_fullscreen();
 			toggled = true;

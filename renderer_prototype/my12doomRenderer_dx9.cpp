@@ -3523,7 +3523,7 @@ HRESULT my12doomRenderer::set_fullscreen(bool full)
 		m_new_pp.BackBufferHeight = m_d3ddm.Height;
 		m_new_pp.FullScreen_RefreshRateInHz = m_d3ddm.RefreshRate;
 
-		if (m_output_mode == hd3d && m_HD3DStereoModesCount > 0)
+		if (/*m_output_mode == hd3d &&*/ m_HD3DStereoModesCount > 0)
 			HD3DSetStereoFullscreenPresentParameters();
 
 		set_device_state(need_reset);
