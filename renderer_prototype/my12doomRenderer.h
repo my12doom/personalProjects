@@ -126,32 +126,7 @@ protected:
 };
 
 
-#include <map>
-#include <list>
-typedef struct
-{
-	IDirect3DDevice9 * device;
-	int counter;
-} thread_map_entry;
-class Direct3DDeviceManagerHelper
-{
-public:
-	Direct3DDeviceManagerHelper(IDirect3DDevice9 *fallback, IDirect3DDeviceManager9 *manager, HANDLE device_handle);
-	~Direct3DDeviceManagerHelper();
 
-	operator IDirect3DDevice9* (){return m_device;}
-	IDirect3DDevice9* operator->(){return m_device;}
-protected:
-	CComPtr<IDirect3DDeviceManager9> m_manger;
-	HANDLE m_device_handle;
-	CComPtr<IDirect3DDevice9> m_device;
-	bool m_locked;
-
-	static CCritSec cs;
-	static std::map<DWORD, thread_map_entry> thread_map;
-	static std::list<DWORD> thread_list;
-};
-#define DECLARE_DEVICE Direct3DDeviceManagerHelper device(m_device, m_d3d_manager, m_device_handle)
 
 
 
@@ -188,7 +163,7 @@ public:
 	HRESULT repaint_video();
 	HRESULT NV3D_notify(WPARAM wparam);
 	HRESULT reset();
-	int hittest(int x, int y, double*outv){int o = -1; if(m_uidrawer) m_uidrawer->hittest(x, y, &o, outv); return o;}
+	int hittest(int x, int y, double*outv){CAutoLock lck(&m_uidrawer_cs);int o = -1; if(m_uidrawer) m_uidrawer->hittest(x, y, &o, outv); return o;}
 	HRESULT screenshot(const wchar_t*file);	// movie only
 	HRESULT get_movie_desc(int *width, int*height);
 
@@ -398,7 +373,6 @@ protected:
 	// Intel S3D support
 	IGFXS3DControl *m_intel_s3d/* = NULL*/;
 	CComPtr<IDirect3DDeviceManager9> m_d3d_manager;
-	HANDLE m_device_handle;
 	CComPtr<IDirect3DSwapChain9> m_overlay_swap_chain;
 	UINT m_resetToken/* = 0*/;
 	IGFX_S3DCAPS m_intel_caps;  // = {0}
@@ -442,7 +416,8 @@ protected:
 	HWND m_hWnd2;
 	CComPtr<IDirect3D9>		m_D3D;
 	CComPtr<IDirect3D9Ex>	m_D3DEx;
-	CComPtr<IDirect3DDevice9> m_device;
+	CComPtr<IDirect3DDevice9> m_Device;
+	CComPtr<IDirect3DDevice9Ex> m_DeviceEx;
 	CComPtr<IDirect3DSwapChain9> m_swap1;
 	CComPtr<IDirect3DSwapChain9> m_swap2;
 	//CComPtr<IDirect3DQuery9> m_d3d_query;
@@ -451,6 +426,8 @@ protected:
 	D3DPRESENT_PARAMETERS   m_active_pp2;
 	D3DDISPLAYMODE m_d3ddm;
 	HANDLE m_device_not_reseting;
+	CCritSec m_frame_lock;
+	CCritSec m_device_lock;
 	HANDLE m_render_event;
 	int m_device_threadid;
 	CTextureAllocator *m_pool;
