@@ -127,6 +127,26 @@ protected:
 
 
 
+#include <map>
+typedef struct
+{
+	IDirect3DDevice9 * device;
+	int counter;
+} thread_map_entry;
+class Direct3DDeviceManagerHelper
+{
+public:
+	Direct3DDeviceManagerHelper(IDirect3DDevice9 *fallback, IDirect3DDeviceManager9 *manager, HANDLE device_handle);
+	~Direct3DDeviceManagerHelper();
+
+	operator IDirect3DDevice9* (){return m_device;}
+	IDirect3DDevice9* operator->(){return m_device;}
+protected:
+	CComPtr<IDirect3DDeviceManager9> m_manger;
+	HANDLE m_device_handle;
+	CComPtr<IDirect3DDevice9> m_device;
+};
+#define MANAGE_DEVICE Direct3DDeviceManagerHelper device(m_Device, m_d3d_manager, m_device_handle)
 
 
 
@@ -373,6 +393,7 @@ protected:
 	// Intel S3D support
 	IGFXS3DControl *m_intel_s3d/* = NULL*/;
 	CComPtr<IDirect3DDeviceManager9> m_d3d_manager;
+	HANDLE m_device_handle;
 	CComPtr<IDirect3DSwapChain9> m_overlay_swap_chain;
 	UINT m_resetToken/* = 0*/;
 	IGFX_S3DCAPS m_intel_caps;  // = {0}
@@ -485,8 +506,6 @@ protected:
 	// input layout detector
 	input_layout_types get_active_input_layout();
 	double get_active_aspect();
-	CComPtr<IDirect3DSurface9> m_stereo_test_gpu;
-	CComPtr<IDirect3DSurface9> m_stereo_test_cpu;
 	int m_sbs;
 	int m_normal;
 	int m_tb;
