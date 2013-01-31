@@ -127,6 +127,7 @@ protected:
 
 
 #include <map>
+#include <list>
 typedef struct
 {
 	IDirect3DDevice9 * device;
@@ -148,6 +149,7 @@ protected:
 
 	static CCritSec cs;
 	static std::map<DWORD, thread_map_entry> thread_map;
+	static std::list<DWORD> thread_list;
 };
 #define DECLARE_DEVICE Direct3DDeviceManagerHelper device(m_device, m_d3d_manager, m_device_handle)
 
@@ -186,7 +188,7 @@ public:
 	HRESULT repaint_video();
 	HRESULT NV3D_notify(WPARAM wparam);
 	HRESULT reset();
-	int hittest(int x, int y, double*outv){DECLARE_DEVICE;int o = -1; if(m_uidrawer) m_uidrawer->hittest(x, y, &o, outv); return o;}
+	int hittest(int x, int y, double*outv){int o = -1; if(m_uidrawer) m_uidrawer->hittest(x, y, &o, outv); return o;}
 	HRESULT screenshot(const wchar_t*file);	// movie only
 	HRESULT get_movie_desc(int *width, int*height);
 

@@ -94,6 +94,7 @@ HRESULT mylog(const char *format, ...)
 
 CCritSec Direct3DDeviceManagerHelper::cs;
 std::map<DWORD, thread_map_entry> Direct3DDeviceManagerHelper::thread_map;
+std::list<DWORD> Direct3DDeviceManagerHelper::thread_list;
 Direct3DDeviceManagerHelper::Direct3DDeviceManagerHelper(IDirect3DDevice9 *fallback, IDirect3DDeviceManager9 *manager, HANDLE device_handle)
 {
 	if (!manager)
@@ -105,6 +106,17 @@ Direct3DDeviceManagerHelper::Direct3DDeviceManagerHelper(IDirect3DDevice9 *fallb
 
 retry:
 		cs.Lock();
+// 		bool f = false;
+// 		for(std::list<DWORD>::iterator i = thread_list.begin(); i != thread_list.end(); i++ )
+// 			if (*i == GetCurrentThreadId())
+// 				f = true;
+// 		if (!f)
+// 		{
+// 			printf("New Thread: %d\n", GetCurrentThreadId());
+// 			thread_list.push_back(GetCurrentThreadId());
+// 		}
+
+
 		if (thread_map.find(GetCurrentThreadId()) != thread_map.end())
 		{
 			thread_map_entry &entry = thread_map[GetCurrentThreadId()];
@@ -117,8 +129,10 @@ retry:
 		else
 		{
 			m_locked = true;
+// 			printf("LOCK TRY\n");
 			if (SUCCEEDED(m_manger->LockDevice(device_handle, &m_device, FALSE)))
 			{
+//				printf("LOCK OK\n");
 				thread_map_entry entry = {m_device, 1};
 				thread_map[GetCurrentThreadId()] = entry;
 				cs.Unlock();
@@ -127,7 +141,7 @@ retry:
 			else
 			{
 				cs.Unlock();
-				Sleep(0);
+				Sleep(1);
 				goto retry;
 			}
 		}
@@ -137,14 +151,15 @@ retry:
 Direct3DDeviceManagerHelper::~Direct3DDeviceManagerHelper()
 {
 	if (m_locked && m_manger)
-		m_manger->UnlockDevice(m_device_handle, FALSE);
 	{
-		CAutoLock lck(&cs);
-		thread_map_entry &entry = thread_map[GetCurrentThreadId()];
-		entry.counter--;
-		if (entry.counter<=0)
-			thread_map.erase(GetCurrentThreadId());
+		m_manger->UnlockDevice(m_device_handle, FALSE);
+// 		printf("UNLOCK OK\n");
 	}
+	CAutoLock lck(&cs);
+	thread_map_entry &entry = thread_map[GetCurrentThreadId()];
+	entry.counter--;
+	if (entry.counter<=0)
+		thread_map.erase(GetCurrentThreadId());
 }
 
 my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/):
@@ -944,8 +959,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 {
 	if (m_device_state < need_reset)
 	{
-		DECLARE_DEVICE;
-		HRESULT hr = device->TestCooperativeLevel();
+		HRESULT hr = m_device->TestCooperativeLevel();
 		if (FAILED(hr))
 			set_device_state(device_lost);
 	}
@@ -1114,13 +1128,6 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			GetWindowRect(m_hWnd, &m_window_pos);
 
 			set_fullscreen(false);
-
-			/*
-			set_fullscreen(true);
-			m_active_pp.BackBufferWidth = 1680;
-			m_active_pp.BackBufferHeight = 1050;
-			m_active_pp.Windowed = FALSE;
-			*/
 		}
 		else
 		{
@@ -1154,11 +1161,8 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 			{
 				DECLARE_DEVICE;
-				if(m_uidrawer)
-				{
-					delete m_uidrawer;
-					m_uidrawer = NULL;
-				}
+				if (m_uidrawer)
+					m_uidrawer->uninit();
 			}
 
 			m_device = NULL;
