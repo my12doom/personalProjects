@@ -27,6 +27,7 @@
 #include "..\dwindow\global_funcs.h"
 #include "..\lua\my12doom_lua.h"
 #include "PixelShaders\P016.h"
+#include "evr\EVRPresenter.h"
 
 enum helper_sample_format
 {
@@ -1148,9 +1149,13 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 		if (m_D3DEx)
 		{
+			D3DDISPLAYMODEEX display_mode = {sizeof(D3DDISPLAYMODEEX), m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight,
+				m_active_pp.FullScreen_RefreshRateInHz, m_active_pp.BackBufferFormat, D3DSCANLINEORDERING_PROGRESSIVE};
+
+
 			FAIL_RET(m_D3DEx->CreateDeviceEx( AdapterToUse, DeviceType,
 				m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
-				&m_active_pp, NULL, &m_DeviceEx ));
+				&m_active_pp, m_active_pp.Windowed ? NULL : &display_mode, &m_DeviceEx ));
 
 			m_DeviceEx->QueryInterface(IID_IDirect3DDevice9, (void**)&m_Device);
 			m_DeviceEx = NULL;

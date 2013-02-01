@@ -67,7 +67,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib d3dx9.lib winmm.lib dxguid.lib ddraw.lib"
+				AdditionalDependencies="nvapi.lib strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib d3dx9.lib winmm.lib dxguid.lib ddraw.lib Mf.lib Mfplat.lib evr.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode;C:\DS_SDK_LITE\BaseClasses\Debug_Unicode;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\MTDebug&quot;;..\libass\lib;&quot;D:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x86&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;"
@@ -727,7 +727,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
+				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib Mf.lib Mfplat.lib evr.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;"
@@ -1700,6 +1700,122 @@
 				RelativePath="..\renderer_prototype\YV12_to_RGB32.h"
 				>
 			</File>
+			<Filter
+				Name="evr"
+				>
+				<File
+					RelativePath="..\renderer_prototype\evr\EVRPresenter.h"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\evr\EVRPresenterUuid.h"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\evr\Helpers.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\evr\Helpers.h"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\evr\linklist.h"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\evr\PresentEngine.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\evr\PresentEngine.h"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\evr\Presenter.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\evr\Presenter.h"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\evr\scheduler.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\renderer_prototype\evr\scheduler.h"
+					>
+				</File>
+				<Filter
+					Name="common"
+					>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\AsyncCB.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\BufferLock.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\ClassFactory.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\common.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\critsec.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\GrowArray.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\linklist.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\logging.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\logmediatype.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\mediatype.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\mfutils.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\PropVar.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\ReadMe.txt"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\registry.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\TinyMap.h"
+						>
+					</File>
+					<File
+						RelativePath="..\renderer_prototype\evr\common\trace.h"
+						>
+					</File>
+				</Filter>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="subtitle"
