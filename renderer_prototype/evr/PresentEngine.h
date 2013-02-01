@@ -26,10 +26,9 @@
 // the details of Direct3D as much as possible.
 //-----------------------------------------------------------------------------
 
-class D3DPresentEngine : public SchedulerCallback
+class ID3DPresentEngine: public SchedulerCallback
 {
 public:
-
     // State of the Direct3D device.
     enum DeviceState
     {
@@ -38,8 +37,37 @@ public:
         DeviceRemoved,  // The device was removed.
     };
 
-    D3DPresentEngine(HRESULT& hr);
-    virtual ~D3DPresentEngine();
+    // GetService: Returns the IDirect3DDeviceManager9 interface.
+    // (The signature is identical to IMFGetService::GetService but 
+    // this object does not derive from IUnknown.)
+    virtual HRESULT GetService(REFGUID guidService, REFIID riid, void** ppv) PURE;
+    virtual HRESULT CheckFormat(D3DFORMAT format) PURE;
+
+    // Video window / destination rectangle:
+    // This object implements a sub-set of the functions defined by the 
+    // IMFVideoDisplayControl interface. However, some of the method signatures 
+    // are different. The presenter's implementation of IMFVideoDisplayControl 
+    // calls these methods.
+    virtual HRESULT SetVideoWindow(HWND hwnd) PURE;
+    virtual HRESULT SetDestinationRect(const RECT& rcDest) PURE;
+    virtual void ReleaseResources() PURE;
+
+	virtual HRESULT CreateVideoSamples(IMFMediaType *pFormat, VideoSampleList& videoSampleQueue) PURE;
+
+
+    virtual HRESULT CheckDeviceState(DeviceState *pState) PURE;
+    virtual HRESULT PresentSample(IMFSample* pSample, LONGLONG llTarget) PURE;
+    virtual UINT RefreshRate() PURE;
+	virtual RECT GetDestinationRect() PURE;
+	virtual HWND GetVideoWindow() PURE;
+
+};
+
+class DefaultD3DPresentEngine : public ID3DPresentEngine
+{
+public:
+    DefaultD3DPresentEngine(HRESULT& hr);
+    virtual ~DefaultD3DPresentEngine();
 
     // GetService: Returns the IDirect3DDeviceManager9 interface.
     // (The signature is identical to IMFGetService::GetService but 
@@ -59,11 +87,11 @@ public:
 	HRESULT CreateVideoSamples(IMFMediaType *pFormat, VideoSampleList& videoSampleQueue);
 
 
-    HRESULT CheckDeviceState(DeviceState *pState);
+	HRESULT CheckDeviceState(ID3DPresentEngine::DeviceState *pState);
     HRESULT PresentSample(IMFSample* pSample, LONGLONG llTarget); 
-    UINT    RefreshRate() const { return m_DisplayMode.RefreshRate; }
-	RECT    GetDestinationRect() const { return m_rcDestRect; };
-	HWND    GetVideoWindow() const { return m_hwnd; }
+    UINT    RefreshRate() { return m_DisplayMode.RefreshRate; }
+	RECT    GetDestinationRect() { return m_rcDestRect; };
+	HWND    GetVideoWindow() { return m_hwnd; }
 
 protected:
     HRESULT InitializeD3D();

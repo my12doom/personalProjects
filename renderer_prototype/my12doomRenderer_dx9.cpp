@@ -27,7 +27,6 @@
 #include "..\dwindow\global_funcs.h"
 #include "..\lua\my12doom_lua.h"
 #include "PixelShaders\P016.h"
-#include "evr\EVRPresenter.h"
 
 enum helper_sample_format
 {
@@ -94,7 +93,8 @@ HRESULT mylog(const char *format, ...)
 
 my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/):
 m_left_queue(_T("left queue")),
-m_right_queue(_T("right queue"))
+m_right_queue(_T("right queue")),
+m_presenter(NULL)
 {
 	timeBeginPeriod(1);
 
@@ -214,6 +214,7 @@ void my12doomRenderer::init_variables()
 
 	// just for surface creation
 	m_lVidWidth = m_lVidHeight = 64;
+
 	// assume already removed from graph
 	m_recreating_dshow_renderer = true;
 	m_dshow_renderer1 = NULL;
@@ -226,6 +227,17 @@ void my12doomRenderer::init_variables()
 
 	m_dsr0->QueryInterface(IID_IBaseFilter, (void**)&m_dshow_renderer1);
 	m_dsr1->QueryInterface(IID_IBaseFilter, (void**)&m_dshow_renderer2);
+
+	//  EVR creation and configuration
+	if (!m_evr) m_evr.CoCreateInstance(CLSID_EnhancedVideoRenderer);
+	if (!m_presenter) m_presenter = new EVRCustomPresenter(hr, this);
+	CComQIPtr<IMFVideoPresenter, &IID_IMFVideoPresenter> presenter(m_presenter);
+	CComQIPtr<IMFVideoRenderer, &IID_IMFVideoRenderer> evr_mf(m_evr);
+	evr_mf->InitializeRenderer(NULL, presenter);
+	CComQIPtr<IMFGetService, &IID_IMFGetService> evr_get(m_evr);
+	CComPtr<IMFVideoDisplayControl> display_controll;
+	evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
+	display_controll->SetVideoWindow(m_hWnd);
 	m_recreating_dshow_renderer = false;
 
 	// callback
@@ -1153,12 +1165,12 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 				m_active_pp.FullScreen_RefreshRateInHz, m_active_pp.BackBufferFormat, D3DSCANLINEORDERING_PROGRESSIVE};
 
 
+			m_DeviceEx = NULL;
 			FAIL_RET(m_D3DEx->CreateDeviceEx( AdapterToUse, DeviceType,
 				m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
 				&m_active_pp, m_active_pp.Windowed ? NULL : &display_mode, &m_DeviceEx ));
 
 			m_DeviceEx->QueryInterface(IID_IDirect3DDevice9, (void**)&m_Device);
-			m_DeviceEx = NULL;
 		}
 		else
 		{
@@ -1223,9 +1235,9 @@ HRESULT my12doomRenderer::set_device_state(device_state new_state)
 HRESULT my12doomRenderer::reset()
 {
 	terminate_render_thread();
-	MANAGE_DEVICE;
 	set_device_state(need_reset_object);
 	init_variables();
+	MANAGE_DEVICE;
 
 	// what invalidate_gpu_objects() don't do
 	gpu_sample *sample = NULL;
@@ -1371,6 +1383,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	// surfaces
 	m_deinterlace_surface = NULL;
 	m_PC_level_test = NULL;
+	m_evr_surf = NULL;
 
 	// swap chains
 	delete_render_targets();
@@ -1515,6 +1528,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 
 	// textures
 	FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
+	FAIL_RET(m_Device->CreateRenderTarget(1920, 1080, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_evr_surf, NULL));
 	FAIL_RET( m_Device->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, 0, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_subtitle, NULL));
 	if(m_tex_subtitle_mem == NULL)
 	{
@@ -1629,6 +1643,10 @@ HRESULT my12doomRenderer::render_helper(IDirect3DSurface9 *surfaces[], int nview
 			continue;
 
 		FAIL_RET(clear(p));
+
+		if (m_evr_surf)
+			m_Device->StretchRect(m_evr_surf, NULL, p, NULL, D3DTEXF_LINEAR);
+
 		FAIL_RET(draw_movie(p, view));
 		FAIL_RET(draw_subtitle(p, view));
 		FAIL_RET(adjust_temp_color(p, view));
@@ -1675,52 +1693,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		set_device_state(need_create);
 	}
 
-
-	MANAGE_DEVICE;
-	// device state check again
-	if (FAILED(handle_device_state()))
-		return E_FAIL;
-
-	// pass 2: drawing to back buffer!
-
-	if (timeGetTime() - last_nv3d_fix_time > 1000)
-	{
-		fix_nv3d_bug();
-		last_nv3d_fix_time = timeGetTime();
-	}
-
-
-	hr = m_Device->BeginScene();
-
-	// prepare all samples in queue for rendering
-	if(false)
-	{
-		bool dual_stream = m_dsr0->is_connected() && m_dsr1->is_connected();
-		input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
-		bool need_detect = !dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect;
-
-		CAutoLock lck(&m_queue_lock);
-		for(POSITION pos_left = m_left_queue.GetHeadPosition(); pos_left; pos_left = m_left_queue.Next(pos_left))
-		{
-			gpu_sample *left_sample = m_left_queue.Get(pos_left);
-// 			left_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
-			if (need_detect) left_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, NULL);
-		}
-		for(POSITION pos_right = m_right_queue.GetHeadPosition(); pos_right; pos_right = m_right_queue.Next(pos_right))
-		{
-			gpu_sample *right_sample = m_right_queue.Get(pos_right);
-// 			right_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
-			if (need_detect) right_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, NULL);
-		}
-	}
-
-#ifndef no_dual_projector
-	if (timeGetTime() - m_last_reset_time > TRAIL_TIME_2 && is_trial_version())
-		m_ps_yv12 = m_ps_nv12 = m_ps_yuy2 = NULL;
-#endif
-
-	int l = timeGetTime();
-
 	// load subtitle
 	CAutoPtr<CAutoLock> bmp_lock;
 	bmp_lock.Attach(new CAutoLock(&m_subtitle_lock));
@@ -1747,322 +1719,371 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	}
 
 
-	hr = m_Device->SetPixelShader(NULL);
+	int l = timeGetTime();
 
-	CComPtr<IDirect3DSurface9> back_buffer;
-	if (m_swap1) hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer);
-
-	// most rendering mode is 2 views, so we create texture and render it (except for mono2d and pageflipping, which render only one view at a time)
-	CPooledTexture *view0, *view1;
-	CComPtr<IDirect3DSurface9> surf0;
-	CComPtr<IDirect3DSurface9> surf1;
-
-	FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
-	FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view1));
-
-	view0->get_first_level(&surf0);
-	view1->get_first_level(&surf1);
-
-	IDirect3DSurface9 *surfaces[MAX_VIEWS] = {surf0, surf1};
-	CComPtr<IDirect3DSurface9> back_buffer2;
-	if (m_output_mode == dual_window && m_swap2)
 	{
-		m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
-		surfaces[0] = back_buffer;
-		surfaces[1] = back_buffer2;
-	}
+		MANAGE_DEVICE;
+		// device state check again
+		if (FAILED(handle_device_state()))
+			return E_FAIL;
 
-	if (m_output_mode != mono && m_output_mode != pageflipping)
-		render_helper(surfaces, 2);
+		// pass 2: drawing to back buffer!
 
-	clear(back_buffer, D3DCOLOR_ARGB(255, 0, 0, 0));
-
-	// reset some render state
-	hr = m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-	hr = m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-	hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
-
-	// vertex
-	MyVertex whole_backbuffer_vertex[4];
-	whole_backbuffer_vertex[0].x = -0.5f; whole_backbuffer_vertex[0].y = -0.5f;
-	whole_backbuffer_vertex[1].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[1].y = -0.5f;
-	whole_backbuffer_vertex[2].x = -0.5f; whole_backbuffer_vertex[2].y = m_active_pp.BackBufferHeight-0.5f;
-	whole_backbuffer_vertex[3].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[3].y = m_active_pp.BackBufferHeight-0.5f;
-	for(int i=0; i<4; i++)
-		whole_backbuffer_vertex[i].z = whole_backbuffer_vertex[i].w = 1;
-	whole_backbuffer_vertex[0].tu = 0;
-	whole_backbuffer_vertex[0].tv = 0;
-	whole_backbuffer_vertex[1].tu = 1;
-	whole_backbuffer_vertex[1].tv = 0;
-	whole_backbuffer_vertex[2].tu = 0;
-	whole_backbuffer_vertex[2].tv = 1;
-	whole_backbuffer_vertex[3].tu = 1;
-	whole_backbuffer_vertex[3].tv = 1;
-
-	static NvU32 l_counter = 0;
-	if (m_output_mode == intel3d)
-	{
-		intel_render_frame(surf0, surf1);
-	}
-	else if (m_output_mode == NV3D
-#ifdef explicit_nv3d
-		&& m_nv3d_enabled && m_nv3d_actived /*&& !m_active_pp.Windowed*/
-#endif
-		)
-	{
-		// copy left to nv3d surface
-		RECT dst = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
-		hr = m_Device->StretchRect(surf0, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
-
-		dst.left += m_active_pp.BackBufferWidth;
-		dst.right += m_active_pp.BackBufferWidth;
-		hr = m_Device->StretchRect(surf1, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
-
-		// StretchRect to backbuffer!, this is how 3D vision works
-		RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
-		hr = m_Device->StretchRect(m_nv3d_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
-	}
-
-	else if (m_output_mode == multiview)
-	{
-		CPooledTexture *view2, *view3;
-		CComPtr<IDirect3DSurface9> surf2;
-		CComPtr<IDirect3DSurface9> surf3;
-		
-		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view2));
-		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view3));
-
-		view2->get_first_level(&surf2);
-		view3->get_first_level(&surf3);
-
-		surfaces[0] = NULL;
-		surfaces[1] = NULL;
-		surfaces[2] = surf2;
-		surfaces[3] = surf3;
-
-		render_helper(surfaces, 4);
-
-		// pass3: multiview interlacing
-		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
-		m_Device->SetRenderTarget(0, back_buffer);
-		m_Device->SetTexture( 0, m_tex_mask );
-		m_Device->SetTexture( (4+m_mask_parameter)%4+1, view0->texture );
-		m_Device->SetTexture( (3+m_mask_parameter)%4+1, view1->texture );
-		m_Device->SetTexture( (2+m_mask_parameter)%4+1, view2->texture );
-		m_Device->SetTexture( (1+m_mask_parameter)%4+1, view3->texture );
-		m_Device->SetPixelShader(m_multiview4);
-
-		hr = m_Device->SetFVF( FVF_Flags );
-		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
-
-		draw_ui(back_buffer, 0);
-
-		safe_delete(view2);
-		safe_delete(view3);
-	}
-
-	else if (m_output_mode == mono 
-#ifdef explicit_nv3d
-		|| (m_output_mode == NV3D && !(m_nv3d_enabled && m_nv3d_actived))
-#endif
-		)
-	{
-		surfaces[0] = back_buffer;
-		render_helper(surfaces, 1);
-	}
-	else if (m_output_mode == hd3d)
-	{
-		HD3DDrawStereo(surf0, surf1, back_buffer);
-	}
-	else if (m_output_mode == anaglyph)
-	{
-		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
-		m_Device->SetRenderTarget(0, back_buffer);
-		clear(back_buffer);
-		hr = m_Device->SetTexture( 0, view0->texture );
-		hr = m_Device->SetTexture( 1, view1->texture );
-		if(get_active_input_layout() != mono2d 
-			|| m_convert3d
-			|| (m_dsr0->is_connected() && m_dsr1->is_connected())
-			|| (!m_dsr0->is_connected() && !m_dsr1->is_connected())
-			|| m_remux_mode)
-			m_Device->SetPixelShader(m_red_blue);
-
-		if (m_force2d)
-			m_Device->SetPixelShader(NULL);
-
-		hr = m_Device->SetFVF( FVF_Flags );
-		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
-	}
-
-	else if (m_output_mode == masking)
-	{
-		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
-		m_Device->SetRenderTarget(0, back_buffer);
-		m_Device->SetPixelShader(m_ps_masking);
-		m_Device->SetTexture( 0, m_tex_mask );
-		m_Device->SetTexture( 1, view0->texture );
-		m_Device->SetTexture( 2, view1->texture );
-
-		hr = m_Device->SetFVF( FVF_Flags );
-		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
-	}
-
-	else if (m_output_mode == pageflipping)
-	{
-		double delta = (double)timeGetTime()-m_pageflipping_start;
-		int frame_passed = 1;
-		if (delta/(1500/m_d3ddm.RefreshRate) > 1)
-			frame_passed = max(1, floor(delta/(1000/m_d3ddm.RefreshRate)));
-		m_pageflip_frames += frame_passed;
-		m_pageflip_frames %= 2;
-
-		if (frame_passed>1 || frame_passed <= 0)
+		if (timeGetTime() - last_nv3d_fix_time > 1000)
 		{
-			if (m_nv3d_display && frame_passed > 2)
-			{
-				DWORD counter;
-				NvAPI_GetVBlankCounter(m_nv3d_display, &counter);
-				m_pageflip_frames = counter - m_nv_pageflip_counter;
-			}
-			mylog("delta=%d.\n", (int)delta);
+			fix_nv3d_bug();
+			last_nv3d_fix_time = timeGetTime();
 		}
 
-		LARGE_INTEGER l1, l2, l3, l4, l5;
-		QueryPerformanceCounter(&l1);
-		clear(back_buffer);
-		QueryPerformanceCounter(&l2);
-		draw_movie(back_buffer, m_pageflip_frames);
-		QueryPerformanceCounter(&l3);
-		draw_subtitle(back_buffer, m_pageflip_frames);
-		adjust_temp_color(back_buffer, m_pageflip_frames);
-		QueryPerformanceCounter(&l4);
-		draw_ui(back_buffer, m_pageflip_frames);
-		QueryPerformanceCounter(&l5);
 
+		hr = m_Device->BeginScene();
 
-		//mylog("clear, draw_movie, draw_bmp, draw_ui = %d, %d, %d, %d.\n", (int)(l2.QuadPart-l1.QuadPart), 
-		//	(int)(l3.QuadPart-l2.QuadPart), (int)(l4.QuadPart-l3.QuadPart), (int)(l5.QuadPart-l4.QuadPart) );
-	}
-
-#ifndef no_dual_projector	
-	else if (m_output_mode == iz3d)
-	{
-		// pass3: IZ3D
-		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
-		m_Device->SetRenderTarget(0, back_buffer);
-		m_Device->SetTexture( 0, view0->texture );
-		m_Device->SetTexture( 1, view1->texture );
-		m_Device->SetPixelShader(m_ps_iz3d_back);
-
-		hr = m_Device->SetFVF( FVF_Flags );
-		hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
-
-		// set render target to swap chain2
-		if (m_swap2)
+		// prepare all samples in queue for rendering
+		if(false)
 		{
-			CComPtr<IDirect3DSurface9> back_buffer2;
+			bool dual_stream = m_dsr0->is_connected() && m_dsr1->is_connected();
+			input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
+			bool need_detect = !dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect;
+
+			CAutoLock lck(&m_queue_lock);
+			for(POSITION pos_left = m_left_queue.GetHeadPosition(); pos_left; pos_left = m_left_queue.Next(pos_left))
+			{
+				gpu_sample *left_sample = m_left_queue.Get(pos_left);
+	// 			left_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
+				if (need_detect) left_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, NULL);
+			}
+			for(POSITION pos_right = m_right_queue.GetHeadPosition(); pos_right; pos_right = m_right_queue.Next(pos_right))
+			{
+				gpu_sample *right_sample = m_right_queue.Get(pos_right);
+	// 			right_sample->convert_to_RGB32(m_Device, m_ps_yv12, m_ps_nv12, m_ps_yuy2, g_VertexBuffer, m_last_reset_time);
+				if (need_detect) right_sample->do_stereo_test(m_Device, m_ps_test_sbs, m_ps_test_tb, NULL);
+			}
+		}
+
+	#ifndef no_dual_projector
+		if (timeGetTime() - m_last_reset_time > TRAIL_TIME_2 && is_trial_version())
+			m_ps_yv12 = m_ps_nv12 = m_ps_yuy2 = NULL;
+	#endif
+
+
+
+		hr = m_Device->SetPixelShader(NULL);
+
+		CComPtr<IDirect3DSurface9> back_buffer;
+		if (m_swap1) hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer);
+
+		// most rendering mode is 2 views, so we create texture and render it (except for mono2d and pageflipping, which render only one view at a time)
+		CPooledTexture *view0, *view1;
+		CComPtr<IDirect3DSurface9> surf0;
+		CComPtr<IDirect3DSurface9> surf1;
+
+		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
+		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view1));
+
+		view0->get_first_level(&surf0);
+		view1->get_first_level(&surf1);
+
+		IDirect3DSurface9 *surfaces[MAX_VIEWS] = {surf0, surf1};
+		CComPtr<IDirect3DSurface9> back_buffer2;
+		if (m_output_mode == dual_window && m_swap2)
+		{
 			m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
+			surfaces[0] = back_buffer;
+			surfaces[1] = back_buffer2;
+		}
 
-			clear(back_buffer2);
+		if (m_output_mode != mono && m_output_mode != pageflipping)
+			render_helper(surfaces, 2);
 
-			hr = m_Device->SetRenderTarget(0, back_buffer2);
+		clear(back_buffer, D3DCOLOR_ARGB(255, 0, 0, 0));
+
+		// reset some render state
+		hr = m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		hr = m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+
+		// vertex
+		MyVertex whole_backbuffer_vertex[4];
+		whole_backbuffer_vertex[0].x = -0.5f; whole_backbuffer_vertex[0].y = -0.5f;
+		whole_backbuffer_vertex[1].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[1].y = -0.5f;
+		whole_backbuffer_vertex[2].x = -0.5f; whole_backbuffer_vertex[2].y = m_active_pp.BackBufferHeight-0.5f;
+		whole_backbuffer_vertex[3].x = m_active_pp.BackBufferWidth-0.5f; whole_backbuffer_vertex[3].y = m_active_pp.BackBufferHeight-0.5f;
+		for(int i=0; i<4; i++)
+			whole_backbuffer_vertex[i].z = whole_backbuffer_vertex[i].w = 1;
+		whole_backbuffer_vertex[0].tu = 0;
+		whole_backbuffer_vertex[0].tv = 0;
+		whole_backbuffer_vertex[1].tu = 1;
+		whole_backbuffer_vertex[1].tv = 0;
+		whole_backbuffer_vertex[2].tu = 0;
+		whole_backbuffer_vertex[2].tv = 1;
+		whole_backbuffer_vertex[3].tu = 1;
+		whole_backbuffer_vertex[3].tv = 1;
+
+		static NvU32 l_counter = 0;
+		if (m_output_mode == intel3d)
+		{
+			intel_render_frame(surf0, surf1);
+		}
+		else if (m_output_mode == NV3D
+	#ifdef explicit_nv3d
+			&& m_nv3d_enabled && m_nv3d_actived /*&& !m_active_pp.Windowed*/
+	#endif
+			)
+		{
+			// copy left to nv3d surface
+			RECT dst = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
+			hr = m_Device->StretchRect(surf0, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
+
+			dst.left += m_active_pp.BackBufferWidth;
+			dst.right += m_active_pp.BackBufferWidth;
+			hr = m_Device->StretchRect(surf1, NULL, m_nv3d_surface, &dst, D3DTEXF_NONE);
+
+			// StretchRect to backbuffer!, this is how 3D vision works
+			RECT tar = {0,0, m_active_pp.BackBufferWidth*2, m_active_pp.BackBufferHeight};
+			hr = m_Device->StretchRect(m_nv3d_surface, &tar, back_buffer, NULL, D3DTEXF_NONE);		//source is as previous, tag line not overwrited
+		}
+
+		else if (m_output_mode == multiview)
+		{
+			CPooledTexture *view2, *view3;
+			CComPtr<IDirect3DSurface9> surf2;
+			CComPtr<IDirect3DSurface9> surf3;
+			
+			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view2));
+			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view3));
+
+			view2->get_first_level(&surf2);
+			view3->get_first_level(&surf3);
+
+			surfaces[0] = NULL;
+			surfaces[1] = NULL;
+			surfaces[2] = surf2;
+			surfaces[3] = surf3;
+
+			render_helper(surfaces, 4);
+
+			// pass3: multiview interlacing
 			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
-			m_Device->SetPixelShader(m_ps_iz3d_front);
+			m_Device->SetRenderTarget(0, back_buffer);
+			m_Device->SetTexture( 0, m_tex_mask );
+			m_Device->SetTexture( (4+m_mask_parameter)%4+1, view0->texture );
+			m_Device->SetTexture( (3+m_mask_parameter)%4+1, view1->texture );
+			m_Device->SetTexture( (2+m_mask_parameter)%4+1, view2->texture );
+			m_Device->SetTexture( (1+m_mask_parameter)%4+1, view3->texture );
+			m_Device->SetPixelShader(m_multiview4);
+
+			hr = m_Device->SetFVF( FVF_Flags );
+			hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
+
+			draw_ui(back_buffer, 0);
+
+			safe_delete(view2);
+			safe_delete(view3);
+		}
+
+		else if (m_output_mode == mono 
+	#ifdef explicit_nv3d
+			|| (m_output_mode == NV3D && !(m_nv3d_enabled && m_nv3d_actived))
+	#endif
+			)
+		{
+			surfaces[0] = back_buffer;
+			render_helper(surfaces, 1);
+		}
+		else if (m_output_mode == hd3d)
+		{
+			HD3DDrawStereo(surf0, surf1, back_buffer);
+		}
+		else if (m_output_mode == anaglyph)
+		{
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetRenderTarget(0, back_buffer);
+			clear(back_buffer);
+			hr = m_Device->SetTexture( 0, view0->texture );
+			hr = m_Device->SetTexture( 1, view1->texture );
+			if(get_active_input_layout() != mono2d 
+				|| m_convert3d
+				|| (m_dsr0->is_connected() && m_dsr1->is_connected())
+				|| (!m_dsr0->is_connected() && !m_dsr1->is_connected())
+				|| m_remux_mode)
+				m_Device->SetPixelShader(m_red_blue);
+
+			if (m_force2d)
+				m_Device->SetPixelShader(NULL);
+
 			hr = m_Device->SetFVF( FVF_Flags );
 			hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
 		}
 
-		// UI
-		m_Device->SetPixelShader(NULL);
-		draw_ui(back_buffer, 0);
+		else if (m_output_mode == masking)
+		{
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetRenderTarget(0, back_buffer);
+			m_Device->SetPixelShader(m_ps_masking);
+			m_Device->SetTexture( 0, m_tex_mask );
+			m_Device->SetTexture( 1, view0->texture );
+			m_Device->SetTexture( 2, view1->texture );
+
+			hr = m_Device->SetFVF( FVF_Flags );
+			hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
+		}
+
+		else if (m_output_mode == pageflipping)
+		{
+			double delta = (double)timeGetTime()-m_pageflipping_start;
+			int frame_passed = 1;
+			if (delta/(1500/m_d3ddm.RefreshRate) > 1)
+				frame_passed = max(1, floor(delta/(1000/m_d3ddm.RefreshRate)));
+			m_pageflip_frames += frame_passed;
+			m_pageflip_frames %= 2;
+
+			if (frame_passed>1 || frame_passed <= 0)
+			{
+				if (m_nv3d_display && frame_passed > 2)
+				{
+					DWORD counter;
+					NvAPI_GetVBlankCounter(m_nv3d_display, &counter);
+					m_pageflip_frames = counter - m_nv_pageflip_counter;
+				}
+				mylog("delta=%d.\n", (int)delta);
+			}
+
+			LARGE_INTEGER l1, l2, l3, l4, l5;
+			QueryPerformanceCounter(&l1);
+			clear(back_buffer);
+			QueryPerformanceCounter(&l2);
+			draw_movie(back_buffer, m_pageflip_frames);
+			QueryPerformanceCounter(&l3);
+			draw_subtitle(back_buffer, m_pageflip_frames);
+			adjust_temp_color(back_buffer, m_pageflip_frames);
+			QueryPerformanceCounter(&l4);
+			draw_ui(back_buffer, m_pageflip_frames);
+			QueryPerformanceCounter(&l5);
+
+
+			//mylog("clear, draw_movie, draw_bmp, draw_ui = %d, %d, %d, %d.\n", (int)(l2.QuadPart-l1.QuadPart), 
+			//	(int)(l3.QuadPart-l2.QuadPart), (int)(l4.QuadPart-l3.QuadPart), (int)(l5.QuadPart-l4.QuadPart) );
+		}
+
+	#ifndef no_dual_projector	
+		else if (m_output_mode == iz3d)
+		{
+			// pass3: IZ3D
+			m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			m_Device->SetRenderTarget(0, back_buffer);
+			m_Device->SetTexture( 0, view0->texture );
+			m_Device->SetTexture( 1, view1->texture );
+			m_Device->SetPixelShader(m_ps_iz3d_back);
+
+			hr = m_Device->SetFVF( FVF_Flags );
+			hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
+
+			// set render target to swap chain2
+			if (m_swap2)
+			{
+				CComPtr<IDirect3DSurface9> back_buffer2;
+				m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
+
+				clear(back_buffer2);
+
+				hr = m_Device->SetRenderTarget(0, back_buffer2);
+				m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+				m_Device->SetPixelShader(m_ps_iz3d_front);
+				hr = m_Device->SetFVF( FVF_Flags );
+				hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
+			}
+
+			// UI
+			m_Device->SetPixelShader(NULL);
+			draw_ui(back_buffer, 0);
+		}
+		else if (m_output_mode == dual_window)
+		{
+			clear(back_buffer);
+			draw_movie(back_buffer, 0);
+			draw_subtitle(back_buffer, 0);
+			adjust_temp_color(back_buffer, 0);
+			draw_ui(back_buffer, 0);
+
+			// set render target to swap chain2
+			if (m_swap2)
+			{
+				CComPtr<IDirect3DSurface9> back_buffer2;
+				m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
+				hr = m_Device->SetRenderTarget(0, back_buffer2);
+
+				clear(back_buffer2);
+				draw_movie(back_buffer2, 1);
+				draw_subtitle(back_buffer2, 1);
+				adjust_temp_color(back_buffer2, 1);
+				draw_ui(back_buffer2, 1);
+			}
+
+		}
+
+	#endif
+		else if (m_output_mode == out_sbs || m_output_mode == out_tb || m_output_mode == out_hsbs || m_output_mode == out_htb)
+		{
+			// pass 3: copy to backbuffer
+			if(false)
+			{
+
+			}
+	#ifndef no_dual_projector
+			else if (m_output_mode == out_sbs)
+			{
+				RECT src = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
+				RECT dst = src;
+
+				m_Device->StretchRect(surf0, &src, back_buffer, &dst, D3DTEXF_NONE);
+
+				dst.left += m_active_pp.BackBufferWidth/2;
+				dst.right += m_active_pp.BackBufferWidth/2;
+				m_Device->StretchRect(surf1, &src, back_buffer, &dst, D3DTEXF_NONE);
+			}
+
+			else if (m_output_mode == out_tb)
+			{
+				RECT src = {0, 0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight/2};
+				RECT dst = src;
+
+				m_Device->StretchRect(surf0, &src, back_buffer, &dst, D3DTEXF_NONE);
+
+				dst.top += m_active_pp.BackBufferHeight/2;
+				dst.bottom += m_active_pp.BackBufferHeight/2;
+				m_Device->StretchRect(surf1, &src, back_buffer, &dst, D3DTEXF_NONE);
+
+			}
+	#endif
+
+			else if (m_output_mode == out_hsbs)
+			{
+				RECT dst = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
+
+				m_Device->StretchRect(surf0, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
+
+				dst.left += m_active_pp.BackBufferWidth/2;
+				dst.right += m_active_pp.BackBufferWidth/2;
+				m_Device->StretchRect(surf1, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
+			}
+
+			else if (m_output_mode == out_htb)
+			{
+				RECT dst = {0, 0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight/2};
+
+				m_Device->StretchRect(surf0, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
+
+				dst.top += m_active_pp.BackBufferHeight/2;
+				dst.bottom += m_active_pp.BackBufferHeight/2;
+				m_Device->StretchRect(surf1, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
+			}
+		}
+
+		m_Device->EndScene();
+		safe_delete(view0);
+		safe_delete(view1);
 	}
-	else if (m_output_mode == dual_window)
-	{
-		clear(back_buffer);
-		draw_movie(back_buffer, 0);
-		draw_subtitle(back_buffer, 0);
-		adjust_temp_color(back_buffer, 0);
-		draw_ui(back_buffer, 0);
 
-		// set render target to swap chain2
-		if (m_swap2)
-		{
-			CComPtr<IDirect3DSurface9> back_buffer2;
-			m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
-			hr = m_Device->SetRenderTarget(0, back_buffer2);
-
-			clear(back_buffer2);
-			draw_movie(back_buffer2, 1);
-			draw_subtitle(back_buffer2, 1);
-			adjust_temp_color(back_buffer2, 1);
-			draw_ui(back_buffer2, 1);
-		}
-
-	}
-
-#endif
-	else if (m_output_mode == out_sbs || m_output_mode == out_tb || m_output_mode == out_hsbs || m_output_mode == out_htb)
-	{
-		// pass 3: copy to backbuffer
-		if(false)
-		{
-
-		}
-#ifndef no_dual_projector
-		else if (m_output_mode == out_sbs)
-		{
-			RECT src = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
-			RECT dst = src;
-
-			m_Device->StretchRect(surf0, &src, back_buffer, &dst, D3DTEXF_NONE);
-
-			dst.left += m_active_pp.BackBufferWidth/2;
-			dst.right += m_active_pp.BackBufferWidth/2;
-			m_Device->StretchRect(surf1, &src, back_buffer, &dst, D3DTEXF_NONE);
-		}
-
-		else if (m_output_mode == out_tb)
-		{
-			RECT src = {0, 0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight/2};
-			RECT dst = src;
-
-			m_Device->StretchRect(surf0, &src, back_buffer, &dst, D3DTEXF_NONE);
-
-			dst.top += m_active_pp.BackBufferHeight/2;
-			dst.bottom += m_active_pp.BackBufferHeight/2;
-			m_Device->StretchRect(surf1, &src, back_buffer, &dst, D3DTEXF_NONE);
-
-		}
-#endif
-
-		else if (m_output_mode == out_hsbs)
-		{
-			RECT dst = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
-
-			m_Device->StretchRect(surf0, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
-
-			dst.left += m_active_pp.BackBufferWidth/2;
-			dst.right += m_active_pp.BackBufferWidth/2;
-			m_Device->StretchRect(surf1, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
-		}
-
-		else if (m_output_mode == out_htb)
-		{
-			RECT dst = {0, 0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight/2};
-
-			m_Device->StretchRect(surf0, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
-
-			dst.top += m_active_pp.BackBufferHeight/2;
-			dst.bottom += m_active_pp.BackBufferHeight/2;
-			m_Device->StretchRect(surf1, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
-		}
-	}
-
-	m_Device->EndScene();
-
-	safe_delete(view0);
-	safe_delete(view1);
 
 	if (timeGetTime() - l > 5)
 		printf("All Draw Calls = %dms\n", timeGetTime() - l);
@@ -2971,6 +2992,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 		}
 		else
 		{
+			Sleep(5);
 			_this->render_nolock(true);
 		}
 	}
@@ -4589,6 +4611,355 @@ ui_drawer_base *my12doomRenderer::get_ui_drawer()
 }
 
 
+// GetService: Returns the IDirect3DDeviceManager9 interface.
+// (The signature is identical to IMFGetService::GetService but 
+// this object does not derive from IUnknown.)
+HRESULT my12doomRenderer::GetService(REFGUID guidService, REFIID riid, void** ppv)
+{
+
+	assert(ppv != NULL);
+
+	HRESULT hr = S_OK;
+
+
+
+	if (riid == __uuidof(IDirect3DDeviceManager9))
+	{
+		if (m_d3d_manager == NULL)
+		{
+			hr = MF_E_UNSUPPORTED_SERVICE;
+		}
+		else
+		{
+			*ppv = m_d3d_manager;
+			((IDirect3DDeviceManager9*)m_d3d_manager)->AddRef();
+		}
+	}
+	else if (riid == __uuidof(IDirectXVideoDecoderService) || riid == __uuidof(IDirectXVideoProcessorService) ) 
+	{
+		return m_d3d_manager->GetVideoService (m_device_handle, riid, ppv);
+	} else if (riid == __uuidof(IDirectXVideoAccelerationService)) {
+		// TODO : to be tested....
+		return DXVA2CreateVideoService(m_Device, riid, ppv);
+	} else if (riid == __uuidof(IDirectXVideoMemoryConfiguration)) {
+		GetInterface((IDirectXVideoMemoryConfiguration*)this, ppv);
+		return S_OK;
+	}
+	else
+	{
+		hr = MF_E_UNSUPPORTED_SERVICE;
+	}
+
+	return hr;
+}
+HRESULT my12doomRenderer::CheckFormat(D3DFORMAT format)
+{
+	HRESULT hr = S_OK;
+
+	UINT uAdapter = D3DADAPTER_DEFAULT;
+	D3DDEVTYPE type = D3DDEVTYPE_HAL;
+
+	D3DDISPLAYMODE mode;
+	D3DDEVICE_CREATION_PARAMETERS params;
+
+	if (m_Device)
+	{
+		CHECK_HR(hr = m_Device->GetCreationParameters(&params));
+
+		uAdapter = params.AdapterOrdinal;
+		type = params.DeviceType;
+
+	}
+
+	CHECK_HR(hr = m_D3D->GetAdapterDisplayMode(uAdapter, &mode));
+
+	CHECK_HR(hr = m_D3D->CheckDeviceType(uAdapter, type, mode.Format, format, TRUE)); 
+
+done:
+	return hr;
+}
+
+// Video window / destination rectangle:
+// This object implements a sub-set of the functions defined by the 
+// IMFVideoDisplayControl interface. However, some of the method signatures 
+// are different. The presenter's implementation of IMFVideoDisplayControl 
+// calls these methods.
+HRESULT my12doomRenderer::SetVideoWindow(HWND hwnd)
+{
+	// do nothing!
+	return S_OK;
+}
+HRESULT my12doomRenderer::SetDestinationRect(const RECT& rcDest)
+{
+	// do nothing!
+	return S_OK;
+}
+void    my12doomRenderer::ReleaseResources()
+{
+
+}
+
+HRESULT my12doomRenderer::CreateVideoSamples(IMFMediaType *pFormat, VideoSampleList& videoSampleQueue)
+{
+	if (m_hWnd == NULL)
+	{
+		return MF_E_INVALIDREQUEST;
+	}
+
+	if (pFormat == NULL)
+	{
+		return MF_E_UNEXPECTED;
+	}
+
+	HRESULT hr = S_OK;
+	D3DPRESENT_PARAMETERS pp;
+
+	IDirect3DSurface9 *pSurface = NULL;    // Swap chain
+	IMFSample *pVideoSample = NULL;            // Sampl
+
+	AutoLock lock(m_ObjectLock);
+
+	ReleaseResources();
+
+	// Get the swap chain parameters from the media type.
+	CHECK_HR(hr = GetSwapChainPresentParameters(pFormat, &pp));
+
+	//UpdateDestRect();
+
+	// Create the video samples.
+	for (int i = 0; i < my12doom_queue_size; i++)
+	{
+		// Create a new swap chain.
+		CHECK_HR(hr = m_Device->CreateRenderTarget(pp.BackBufferWidth, pp.BackBufferHeight, pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &pSurface, NULL));
+
+		// Create the video sample from the swap chain.
+		CHECK_HR(hr = CreateD3DSample(pSurface, &pVideoSample));
+
+		// Add it to the list.
+		CHECK_HR(hr = videoSampleQueue.InsertBack(pVideoSample));
+
+		// Set the swap chain pointer as a custom attribute on the sample. This keeps
+		// a reference count on the swap chain, so that the swap chain is kept alive
+		// for the duration of the sample's lifetime.
+		CHECK_HR(hr = pVideoSample->SetUnknown(MFSamplePresenter_SampleSwapChain, pSurface));
+		pSurface->AddRef();
+
+		SAFE_RELEASE(pVideoSample);
+		SAFE_RELEASE(pSurface);
+	}
+
+	// Let the derived class create any additional D3D resources that it needs.
+// 	CHECK_HR(hr = OnCreateVideoSamples(pp));
+
+done:
+	if (FAILED(hr))
+	{
+		ReleaseResources();
+	}
+
+	SAFE_RELEASE(pSurface);
+	SAFE_RELEASE(pVideoSample);
+	return hr;
+}
+
+
+HRESULT my12doomRenderer::CheckDeviceState(ID3DPresentEngine::DeviceState *pState)
+{
+	HRESULT hr = S_OK;
+
+	AutoLock lock(m_ObjectLock);
+
+	// Check the device state. Not every failure code is a critical failure.
+	hr = m_DeviceEx->CheckDeviceState(m_hWnd);
+
+	*pState = ID3DPresentEngine::DeviceOK;
+
+	switch (hr)
+	{
+	case S_OK:
+	case S_PRESENT_OCCLUDED:
+	case S_PRESENT_MODE_CHANGED:
+		// state is DeviceOK
+		hr = S_OK;
+		break;
+
+	case D3DERR_DEVICELOST:
+	case D3DERR_DEVICEHUNG:
+		// Lost/hung device. Destroy the device and create a new one.
+// 		CHECK_HR(hr = CreateD3DDevice());
+		*pState = ID3DPresentEngine::DeviceReset;
+		hr = S_OK;
+		break;
+
+	case D3DERR_DEVICEREMOVED:
+		// This is a fatal error.
+		*pState = ID3DPresentEngine::DeviceRemoved;
+		break;
+
+	case E_INVALIDARG:
+		// CheckDeviceState can return E_INVALIDARG if the window is not valid
+		// We'll assume that the window was destroyed; we'll recreate the device 
+		// if the application sets a new window.
+		hr = S_OK;
+	}
+
+done:
+	return hr;
+}
+HRESULT my12doomRenderer::PresentSample(IMFSample* pSample, LONGLONG llTarget)
+{
+	HRESULT hr = S_OK;
+
+	IMFMediaBuffer* pBuffer = NULL;
+	IDirect3DSurface9* pSurface = NULL;
+	//     IDirect3DSwapChain9* pSwapChain = NULL;
+	IDirect3DSurface9 * back_buffer = NULL;
+
+	if (pSample)
+	{
+		// Get the buffer from the sample.
+		CHECK_HR(hr = pSample->GetBufferByIndex(0, &pBuffer));
+
+		// Get the surface from the buffer.
+		CHECK_HR(hr = MFGetService(pBuffer, MR_BUFFER_SERVICE, __uuidof(IDirect3DSurface9), (void**)&pSurface));
+	}
+// 	else if (m_pSurfaceRepaint)
+// 	{
+// 		// Redraw from the last surface.
+// 		pSurface = m_pSurfaceRepaint;
+// 		pSurface->AddRef();
+// 	}
+
+	if (pSurface)
+	{
+
+		// Get the swap chain from the surface.
+		//         CHECK_HR(hr = pSurface->GetContainer(__uuidof(IDirect3DSwapChain9), (LPVOID*)&pSwapChain));
+
+		// Present the swap chain.
+		//          CHECK_HR(hr = PresentSwapChain(pSwapChain, pSurface));
+
+
+		// Store this pointer in case we need to repaint the surface.
+// 		CopyComPointer(m_pSurfaceRepaint, pSurface);
+		m_Device->StretchRect(pSurface, NULL, m_evr_surf, NULL, D3DTEXF_LINEAR);
+	}
+	else
+	{
+		// No surface. All we can do is paint a black rectangle.
+// 		PaintFrameWithGDI();
+	}
+
+done:
+	//     SAFE_RELEASE(pSwapChain);
+	SAFE_RELEASE(pSurface);
+	SAFE_RELEASE(pBuffer);
+	SAFE_RELEASE(back_buffer);
+
+	if (FAILED(hr))
+	{
+		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET || hr == D3DERR_DEVICEHUNG)
+		{
+			// We failed because the device was lost. Fill the destination rectangle.
+// 			PaintFrameWithGDI();
+
+			// Ignore. We need to reset or re-create the device, but this method
+			// is probably being called from the scheduler thread, which is not the
+			// same thread that created the device. The Reset(Ex) method must be
+			// called from the thread that created the device.
+
+			// The presenter will detect the state when it calls CheckDeviceState() 
+			// on the next sample.
+			hr = S_OK;
+		}
+	}
+	return hr;
+	return S_OK;
+}
+UINT my12doomRenderer::RefreshRate()
+{
+	return 60;
+}
+RECT my12doomRenderer::GetDestinationRect()
+{
+	RECT r = {0,0,1920,1080};
+	return r;
+}
+HWND my12doomRenderer::GetVideoWindow()
+{
+	return m_hWnd;
+}
+HRESULT my12doomRenderer::GetSwapChainPresentParameters(IMFMediaType *pType, D3DPRESENT_PARAMETERS* pPP)
+{
+	// Caller holds the object lock.
+
+	HRESULT hr = S_OK; 
+
+	UINT32 width = 0, height = 0;
+	DWORD d3dFormat = 0;
+
+	// Helper object for reading the proposed type.
+	VideoType videoType(pType);
+
+	if (m_hWnd == NULL)
+	{
+		return MF_E_INVALIDREQUEST;
+	}
+
+	ZeroMemory(pPP, sizeof(D3DPRESENT_PARAMETERS));
+
+	// Get some information about the video format.
+	CHECK_HR(hr = videoType.GetFrameDimensions(&width, &height));
+	CHECK_HR(hr = videoType.GetFourCC(&d3dFormat));
+
+	ZeroMemory(pPP, sizeof(D3DPRESENT_PARAMETERS));
+	pPP->BackBufferWidth = width;
+	pPP->BackBufferHeight = height;
+	pPP->Windowed = TRUE;
+	pPP->SwapEffect = D3DSWAPEFFECT_COPY;
+	pPP->BackBufferFormat = (D3DFORMAT)d3dFormat;
+	pPP->hDeviceWindow = m_hWnd;
+	pPP->Flags = D3DPRESENTFLAG_VIDEO;
+	pPP->PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
+
+	D3DDEVICE_CREATION_PARAMETERS params;
+	CHECK_HR(hr = m_Device->GetCreationParameters(&params));
+
+	if (params.DeviceType != D3DDEVTYPE_HAL)
+	{
+		pPP->Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+	}
+
+done:
+	return S_OK;
+}
+HRESULT my12doomRenderer::CreateD3DSample(IDirect3DSurface9 *pSurface, IMFSample **ppVideoSample)
+{
+	// Caller holds the object lock.
+
+	HRESULT hr = S_OK;
+	D3DCOLOR clrBlack = D3DCOLOR_ARGB(0xFF, 0x00, 0x00, 0x00);
+
+	IMFSample* pSample = NULL;
+
+	// Fill it with black.
+	CHECK_HR(hr = m_Device->ColorFill(pSurface, NULL, clrBlack));
+
+	// Create the sample.
+	CHECK_HR(hr = MFCreateVideoSampleFromSurface(pSurface, &pSample));
+
+	// Return the pointer to the caller.
+	*ppVideoSample = pSample;
+	(*ppVideoSample)->AddRef();
+
+done:
+	SAFE_RELEASE(pSurface);
+	SAFE_RELEASE(pSample);
+	return hr;
+}
+
+
+
 // helper functions
 
 HRESULT myMatrixIdentity(D3DMATRIX *matrix)
@@ -4692,6 +5063,7 @@ RECTF ClipRect(const RECTF border, const RECTF rect2clip)
 	return t;
 }
 
+// helper classes
 
 Direct3DDeviceManagerHelper::Direct3DDeviceManagerHelper(IDirect3DDevice9 *fallback, IDirect3DDeviceManager9 *manager, HANDLE device_handle)
 {
@@ -4711,3 +5083,5 @@ Direct3DDeviceManagerHelper::~Direct3DDeviceManagerHelper()
 	if (m_manger)
 		m_manger->UnlockDevice(m_device_handle, FALSE);
 }
+
+

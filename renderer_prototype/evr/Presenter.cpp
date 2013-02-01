@@ -930,8 +930,7 @@ done:
 //-----------------------------------------------------------------------------
 // Constructor
 //-----------------------------------------------------------------------------
-
-EVRCustomPresenter::EVRCustomPresenter(HRESULT& hr) :
+EVRCustomPresenter::EVRCustomPresenter(HRESULT& hr, ID3DPresentEngine *engine) :
     m_RenderState(RENDER_STATE_SHUTDOWN),
     m_pD3DPresentEngine(NULL),
     m_pClock(NULL),
@@ -954,7 +953,9 @@ EVRCustomPresenter::EVRCustomPresenter(HRESULT& hr) :
     m_nrcSource.bottom = 1;
     m_nrcSource.right = 1;
 
-    m_pD3DPresentEngine = new D3DPresentEngine(hr);
+	m_pD3DPresentEngine = engine;
+	if (m_pD3DPresentEngine == NULL)
+		m_pD3DPresentEngine = new DefaultD3DPresentEngine(hr);
     if (m_pD3DPresentEngine == NULL)
     {
         hr = E_OUTOFMEMORY;
@@ -1886,7 +1887,7 @@ HRESULT EVRCustomPresenter::DeliverSample(IMFSample *pSample, BOOL bRepaint)
     assert(pSample != NULL);
 
     HRESULT hr = S_OK;
-    D3DPresentEngine::DeviceState state = D3DPresentEngine::DeviceOK;
+    ID3DPresentEngine::DeviceState state = ID3DPresentEngine::DeviceOK;
 
     // If we are not actively playing, OR we are scrubbing (rate = 0) OR this is a 
     // repaint request, then we need to present the sample immediately. Otherwise, 
@@ -1910,7 +1911,7 @@ HRESULT EVRCustomPresenter::DeliverSample(IMFSample *pSample, BOOL bRepaint)
 
         NotifyEvent(EC_ERRORABORT, hr, 0);
     }
-    else if (state == D3DPresentEngine::DeviceReset)
+    else if (state == ID3DPresentEngine::DeviceReset)
     {
         // The Direct3D device was re-set. Notify the EVR.
         NotifyEvent(EC_DISPLAY_CHANGED, S_OK, 0);

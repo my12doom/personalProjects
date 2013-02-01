@@ -123,8 +123,10 @@ public:
     STDMETHOD(SetFullscreen)(BOOL bFullscreen) { return E_NOTIMPL; }
     STDMETHOD(GetFullscreen)(BOOL* pbFullscreen) { return E_NOTIMPL; }
 
+
+	EVRCustomPresenter(HRESULT& hr, ID3DPresentEngine *engine = NULL);
+
 protected:
-    EVRCustomPresenter(HRESULT& hr);
     virtual ~EVRCustomPresenter();
 
     // CheckShutdown: 
@@ -238,7 +240,7 @@ protected:
     float                       m_fRate;                // Playback rate.
 
     // Deletable objects.
-    D3DPresentEngine            *m_pD3DPresentEngine;    // Rendering engine. (Never null if the constructor succeeds.)
+    ID3DPresentEngine           *m_pD3DPresentEngine;    // Rendering engine. (Never null if the constructor succeeds.)
 
     // COM interfaces.
     IMFClock                    *m_pClock;               // The EVR's clock.

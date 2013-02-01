@@ -2467,6 +2467,7 @@ HRESULT dx_player::exit_direct_show()
 	{
 		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer1);
 		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer2);
+		m_gb->RemoveFilter(m_renderer1->m_evr);
 	}
 
 	// reconfig renderer
@@ -2737,6 +2738,7 @@ HRESULT dx_player::start_loading()
 {
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
+	m_gb->AddFilter(m_renderer1->m_evr, L"EVR #1");
 
 	return S_OK;
 }
@@ -3028,7 +3030,7 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 connecting:
 
 	CComPtr<IPin> renderer_input;
-	GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer_input);
+	GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &renderer_input);
 	if (!renderer_input)
 		GetUnconnectedPin(m_renderer1->m_dshow_renderer2, PINDIR_INPUT, &renderer_input);
 

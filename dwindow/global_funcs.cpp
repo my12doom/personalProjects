@@ -633,11 +633,17 @@ HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 	CComQIPtr<IPropertyBag, &IID_IPropertyBag> pbag(decoder);
 	if (pbag)
 	{
-		HRESULT hr = write_property(pbag, L"use_tray=0");
-		hr = write_property(pbag, L"low_latency=0");
-		hr = write_property(pbag, L"di=6");
-		hr = write_property(pbag, g_CUDA ? L"use_cuda=1" : L"use_cuda=0");
-		return write_property(pbag, L"app_mode=1");
+		HRESULT hr;
+// 		HRESULT hr = write_property(pbag, L"use_tray=0");
+// 		hr = write_property(pbag, L"low_latency=0");
+// 		hr = write_property(pbag, L"di=6");
+// 		hr = write_property(pbag, L"use_dxva=1");
+#ifdef DEBUG
+		hr = write_property(pbag, L"use_tray=1");
+#endif
+// 		hr = write_property(pbag, g_CUDA ? L"use_cuda=1" : L"use_cuda=0");
+		hr = write_property(pbag, L"app_mode=1");
+		return hr;
 	}
 	else
 	{

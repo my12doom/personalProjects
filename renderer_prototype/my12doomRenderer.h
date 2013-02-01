@@ -12,6 +12,7 @@
 #include "my12doomRendererTypes.h"
 #include "my12doomAutoShader.h"
 #include "gpu_sample.h"
+#include "evr\EVRPresenter.h"
 
 void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName);
 
@@ -150,8 +151,40 @@ protected:
 
 
 
-class my12doomRenderer
+class my12doomRenderer : public ID3DPresentEngine
 {
+public:
+
+	// GetService: Returns the IDirect3DDeviceManager9 interface.
+	// (The signature is identical to IMFGetService::GetService but 
+	// this object does not derive from IUnknown.)
+	virtual HRESULT GetService(REFGUID guidService, REFIID riid, void** ppv);
+	virtual HRESULT CheckFormat(D3DFORMAT format);
+
+	// Video window / destination rectangle:
+	// This object implements a sub-set of the functions defined by the 
+	// IMFVideoDisplayControl interface. However, some of the method signatures 
+	// are different. The presenter's implementation of IMFVideoDisplayControl 
+	// calls these methods.
+	HRESULT SetVideoWindow(HWND hwnd);
+	HRESULT SetDestinationRect(const RECT& rcDest);
+	void    ReleaseResources();
+
+	HRESULT CreateVideoSamples(IMFMediaType *pFormat, VideoSampleList& videoSampleQueue);
+	HRESULT GetSwapChainPresentParameters(IMFMediaType *pType, D3DPRESENT_PARAMETERS* pPP);
+
+
+	HRESULT CheckDeviceState(ID3DPresentEngine::DeviceState *pState);
+	HRESULT PresentSample(IMFSample* pSample, LONGLONG llTarget); 
+	UINT    RefreshRate();
+	RECT    GetDestinationRect();
+	HWND    GetVideoWindow();
+
+protected:
+	CritSec                     m_ObjectLock;           // Thread lock for the D3D device.
+	HRESULT CreateD3DSample(IDirect3DSurface9 *pSurface, IMFSample **ppVideoSample);
+	CComPtr<IDirect3DSurface9> m_evr_surf;
+
 public:
 	my12doomRenderer(HWND hwnd, HWND hwnd2 = NULL);
 	~my12doomRenderer();
@@ -267,6 +300,11 @@ protected:
 	bool m_recreating_dshow_renderer;
 	my12doomRendererDShow * m_dsr0;
 	my12doomRendererDShow * m_dsr1;
+	CComPtr<IBaseFilter> m_evr;
+	EVRCustomPresenter *m_presenter;
+
+
+
 	HRESULT CheckMediaType(const CMediaType *pmt, int id);
 	HRESULT SetMediaType(const CMediaType *pmt, int id);
 	HRESULT	BreakConnect(int id);

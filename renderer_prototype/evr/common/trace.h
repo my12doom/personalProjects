@@ -16,7 +16,9 @@
 #include "logging.h"
 #include <mfidl.h>
 
-#define NAME(x) case x: return L#x
+#ifndef NAMET
+#define NAMET(x) case x: return L#x
+#endif
 
 namespace MediaFoundationSamples
 {
@@ -30,83 +32,83 @@ namespace MediaFoundationSamples
     {
         switch (met)
         {
-            NAME(MEError);
-            NAME(MEExtendedType);
-            NAME(MESessionTopologySet);
-            NAME(MESessionTopologiesCleared);
-            NAME(MESessionStarted);
-            NAME(MESessionPaused);
-            NAME(MESessionStopped);
-            NAME(MESessionClosed);
-            NAME(MESessionEnded);
-            NAME(MESessionRateChanged);
-            NAME(MESessionScrubSampleComplete);
-            NAME(MESessionCapabilitiesChanged);
-            NAME(MESessionTopologyStatus);
-            NAME(MESessionNotifyPresentationTime);
-            NAME(MENewPresentation);
-            NAME(MELicenseAcquisitionStart);
-            NAME(MELicenseAcquisitionCompleted);
-            NAME(MEIndividualizationStart);
-            NAME(MEIndividualizationCompleted);
-            NAME(MEEnablerProgress);
-            NAME(MEEnablerCompleted);
-            NAME(MEPolicyError);
-            NAME(MEPolicyReport);
-            NAME(MEBufferingStarted);
-            NAME(MEBufferingStopped);
-            NAME(MEConnectStart);
-            NAME(MEConnectEnd);
-            NAME(MEReconnectStart);
-            NAME(MEReconnectEnd);
-            NAME(MERendererEvent);
-            NAME(MESessionStreamSinkFormatChanged);
-            NAME(MESourceStarted);
-            NAME(MEStreamStarted);
-            NAME(MESourceSeeked);
-            NAME(MEStreamSeeked);
-            NAME(MENewStream);
-            NAME(MEUpdatedStream);
-            NAME(MESourceStopped);
-            NAME(MEStreamStopped);
-            NAME(MESourcePaused);
-            NAME(MEStreamPaused);
-            NAME(MEEndOfPresentation);
-            NAME(MEEndOfStream);
-            NAME(MEMediaSample);
-            NAME(MEStreamTick);
-            NAME(MEStreamThinMode);
-            NAME(MEStreamFormatChanged);
-            NAME(MESourceRateChanged);
-            NAME(MEEndOfPresentationSegment);
-            NAME(MESourceCharacteristicsChanged);
-            NAME(MESourceRateChangeRequested);
-            NAME(MESourceMetadataChanged);
-            NAME(MESequencerSourceTopologyUpdated);
-            NAME(MEStreamSinkStarted);
-            NAME(MEStreamSinkStopped);
-            NAME(MEStreamSinkPaused);
-            NAME(MEStreamSinkRateChanged);
-            NAME(MEStreamSinkRequestSample);
-            NAME(MEStreamSinkMarker);
-            NAME(MEStreamSinkPrerolled);
-            NAME(MEStreamSinkScrubSampleComplete);
-            NAME(MEStreamSinkFormatChanged);
-            NAME(MEStreamSinkDeviceChanged);
-            NAME(MEQualityNotify);
-            NAME(MESinkInvalidated);
-            NAME(MEAudioSessionNameChanged);
-            NAME(MEAudioSessionVolumeChanged);
-            NAME(MEAudioSessionDeviceRemoved);
-            NAME(MEAudioSessionServerShutdown);
-            NAME(MEAudioSessionGroupingParamChanged);
-            NAME(MEAudioSessionIconChanged);
-            NAME(MEAudioSessionFormatChanged);
-            NAME(MEAudioSessionDisconnected);
-            NAME(MEAudioSessionExclusiveModeOverride);
-            NAME(MEPolicyChanged);
-            NAME(MEContentProtectionMessage);
-            NAME(MEPolicySet);
+            NAMET(MEError);
+            NAMET(MEExtendedType);
+            NAMET(MESessionTopologySet);
+            NAMET(MESessionTopologiesCleared);
+            NAMET(MESessionStarted);
+            NAMET(MESessionPaused);
+            NAMET(MESessionStopped);
+            NAMET(MESessionClosed);
+            NAMET(MESessionEnded);
+            NAMET(MESessionRateChanged);
+            NAMET(MESessionScrubSampleComplete);
+            NAMET(MESessionCapabilitiesChanged);
+            NAMET(MESessionTopologyStatus);
+            NAMET(MESessionNotifyPresentationTime);
+            NAMET(MENewPresentation);
+            NAMET(MELicenseAcquisitionStart);
+            NAMET(MELicenseAcquisitionCompleted);
+            NAMET(MEIndividualizationStart);
+            NAMET(MEIndividualizationCompleted);
+            NAMET(MEEnablerProgress);
+            NAMET(MEEnablerCompleted);
+            NAMET(MEPolicyError);
+            NAMET(MEPolicyReport);
+            NAMET(MEBufferingStarted);
+            NAMET(MEBufferingStopped);
+            NAMET(MEConnectStart);
+            NAMET(MEConnectEnd);
+            NAMET(MEReconnectStart);
+            NAMET(MEReconnectEnd);
+            NAMET(MERendererEvent);
+            NAMET(MESessionStreamSinkFormatChanged);
+            NAMET(MESourceStarted);
+            NAMET(MEStreamStarted);
+            NAMET(MESourceSeeked);
+            NAMET(MEStreamSeeked);
+            NAMET(MENewStream);
+            NAMET(MEUpdatedStream);
+            NAMET(MESourceStopped);
+            NAMET(MEStreamStopped);
+            NAMET(MESourcePaused);
+            NAMET(MEStreamPaused);
+            NAMET(MEEndOfPresentation);
+            NAMET(MEEndOfStream);
+            NAMET(MEMediaSample);
+            NAMET(MEStreamTick);
+            NAMET(MEStreamThinMode);
+            NAMET(MEStreamFormatChanged);
+            NAMET(MESourceRateChanged);
+            NAMET(MEEndOfPresentationSegment);
+            NAMET(MESourceCharacteristicsChanged);
+            NAMET(MESourceRateChangeRequested);
+            NAMET(MESourceMetadataChanged);
+            NAMET(MESequencerSourceTopologyUpdated);
+            NAMET(MEStreamSinkStarted);
+            NAMET(MEStreamSinkStopped);
+            NAMET(MEStreamSinkPaused);
+            NAMET(MEStreamSinkRateChanged);
+            NAMET(MEStreamSinkRequestSample);
+            NAMET(MEStreamSinkMarker);
+            NAMET(MEStreamSinkPrerolled);
+            NAMET(MEStreamSinkScrubSampleComplete);
+            NAMET(MEStreamSinkFormatChanged);
+            NAMET(MEStreamSinkDeviceChanged);
+            NAMET(MEQualityNotify);
+            NAMET(MESinkInvalidated);
+            NAMET(MEAudioSessionNameChanged);
+            NAMET(MEAudioSessionVolumeChanged);
+            NAMET(MEAudioSessionDeviceRemoved);
+            NAMET(MEAudioSessionServerShutdown);
+            NAMET(MEAudioSessionGroupingParamChanged);
+            NAMET(MEAudioSessionIconChanged);
+            NAMET(MEAudioSessionFormatChanged);
+            NAMET(MEAudioSessionDisconnected);
+            NAMET(MEAudioSessionExclusiveModeOverride);
+            NAMET(MEPolicyChanged);
+            NAMET(MEContentProtectionMessage);
+            NAMET(MEPolicySet);
 
         default:
             return L"Unknown event";
@@ -118,50 +120,50 @@ namespace MediaFoundationSamples
     {
         switch (prop.vt & VT_TYPEMASK)
         {
-            NAME(VT_EMPTY);
-            NAME(VT_NULL);
-            NAME(VT_I2);
-            NAME(VT_I4);
-            NAME(VT_R4);
-            NAME(VT_R8);
-            NAME(VT_CY);
-            NAME(VT_DATE);
-            NAME(VT_BSTR);
-            NAME(VT_DISPATCH);
-            NAME(VT_ERROR);
-            NAME(VT_BOOL);
-            NAME(VT_VARIANT);
-            NAME(VT_UNKNOWN);
-            NAME(VT_DECIMAL);
-            NAME(VT_I1);
-            NAME(VT_UI1);
-            NAME(VT_UI2);
-            NAME(VT_UI4);
-            NAME(VT_I8);
-            NAME(VT_UI8);
-            NAME(VT_INT);
-            NAME(VT_UINT);
-            NAME(VT_VOID);
-            NAME(VT_HRESULT);
-            NAME(VT_PTR);
-            NAME(VT_SAFEARRAY);
-            NAME(VT_CARRAY);
-            NAME(VT_USERDEFINED);
-            NAME(VT_LPSTR);
-            NAME(VT_LPWSTR);
-            NAME(VT_RECORD);
-            NAME(VT_INT_PTR);
-            NAME(VT_UINT_PTR);
-            NAME(VT_FILETIME);
-            NAME(VT_BLOB);
-            NAME(VT_STREAM);
-            NAME(VT_STORAGE);
-            NAME(VT_STREAMED_OBJECT);
-            NAME(VT_STORED_OBJECT);
-            NAME(VT_BLOB_OBJECT);
-            NAME(VT_CF);
-            NAME(VT_CLSID);
-            NAME(VT_VERSIONED_STREAM);
+            NAMET(VT_EMPTY);
+            NAMET(VT_NULL);
+            NAMET(VT_I2);
+            NAMET(VT_I4);
+            NAMET(VT_R4);
+            NAMET(VT_R8);
+            NAMET(VT_CY);
+            NAMET(VT_DATE);
+            NAMET(VT_BSTR);
+            NAMET(VT_DISPATCH);
+            NAMET(VT_ERROR);
+            NAMET(VT_BOOL);
+            NAMET(VT_VARIANT);
+            NAMET(VT_UNKNOWN);
+            NAMET(VT_DECIMAL);
+            NAMET(VT_I1);
+            NAMET(VT_UI1);
+            NAMET(VT_UI2);
+            NAMET(VT_UI4);
+            NAMET(VT_I8);
+            NAMET(VT_UI8);
+            NAMET(VT_INT);
+            NAMET(VT_UINT);
+            NAMET(VT_VOID);
+            NAMET(VT_HRESULT);
+            NAMET(VT_PTR);
+            NAMET(VT_SAFEARRAY);
+            NAMET(VT_CARRAY);
+            NAMET(VT_USERDEFINED);
+            NAMET(VT_LPSTR);
+            NAMET(VT_LPWSTR);
+            NAMET(VT_RECORD);
+            NAMET(VT_INT_PTR);
+            NAMET(VT_UINT_PTR);
+            NAMET(VT_FILETIME);
+            NAMET(VT_BLOB);
+            NAMET(VT_STREAM);
+            NAMET(VT_STORAGE);
+            NAMET(VT_STREAMED_OBJECT);
+            NAMET(VT_STORED_OBJECT);
+            NAMET(VT_BLOB_OBJECT);
+            NAMET(VT_CF);
+            NAMET(VT_CLSID);
+            NAMET(VT_VERSIONED_STREAM);
         default:
             return L"Unknown VARIANT type";
         }
@@ -172,10 +174,10 @@ namespace MediaFoundationSamples
     {
         switch (nodeType)
         {
-            NAME(MF_TOPOLOGY_OUTPUT_NODE);
-            NAME(MF_TOPOLOGY_SOURCESTREAM_NODE);
-            NAME(MF_TOPOLOGY_TRANSFORM_NODE);
-            NAME(MF_TOPOLOGY_TEE_NODE);
+            NAMET(MF_TOPOLOGY_OUTPUT_NODE);
+            NAMET(MF_TOPOLOGY_SOURCESTREAM_NODE);
+            NAMET(MF_TOPOLOGY_TRANSFORM_NODE);
+            NAMET(MF_TOPOLOGY_TEE_NODE);
         default:
             return L"Unknown node type";
         }
@@ -185,13 +187,13 @@ namespace MediaFoundationSamples
     {
         switch (msg)
         {
-            NAME(MFT_MESSAGE_COMMAND_FLUSH);
-            NAME(MFT_MESSAGE_COMMAND_DRAIN);
-            NAME(MFT_MESSAGE_SET_D3D_MANAGER);
-            NAME(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING);
-            NAME(MFT_MESSAGE_NOTIFY_END_STREAMING);
-            NAME(MFT_MESSAGE_NOTIFY_END_OF_STREAM);
-            NAME(MFT_MESSAGE_NOTIFY_START_OF_STREAM);
+            NAMET(MFT_MESSAGE_COMMAND_FLUSH);
+            NAMET(MFT_MESSAGE_COMMAND_DRAIN);
+            NAMET(MFT_MESSAGE_SET_D3D_MANAGER);
+            NAMET(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING);
+            NAMET(MFT_MESSAGE_NOTIFY_END_STREAMING);
+            NAMET(MFT_MESSAGE_NOTIFY_END_OF_STREAM);
+            NAMET(MFT_MESSAGE_NOTIFY_START_OF_STREAM);
         default:
             return L"Unknown message";
         }
