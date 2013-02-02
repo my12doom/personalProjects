@@ -12,6 +12,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include "..\..\DWindow\global_funcs.h"
 #include "EVRPresenter.h"
 
 // ScheduleEvent
@@ -29,7 +30,8 @@ const DWORD SCHEDULER_TIMEOUT = 5000;
 // Constructor
 //-----------------------------------------------------------------------------
 
-Scheduler::Scheduler() : 
+Scheduler::Scheduler(int id) : 
+	m_id(id),
     m_pCB(NULL),
     m_pClock(NULL), 
     m_dwThreadID(0),
@@ -64,7 +66,7 @@ void Scheduler::SetFrameRate(const MFRatio& fps)
     UINT64 AvgTimePerFrame = 0;
 
     // Convert to a duration.
-    MFFrameRateToAverageTimePerFrame(fps.Numerator, fps.Denominator, &AvgTimePerFrame);
+    myMFFrameRateToAverageTimePerFrame(fps.Numerator, fps.Denominator, &AvgTimePerFrame);
 
     m_PerFrameInterval = (MFTIME)AvgTimePerFrame;
 
@@ -251,11 +253,13 @@ HRESULT Scheduler::ScheduleSample(IMFSample *pSample, BOOL bPresentNow)
     if (bPresentNow || (m_pClock == NULL))
     {
         // Present the sample immediately.
-        m_pCB->PresentSample(pSample, 0);
+		m_pCB->PrerollSample(pSample, 0, m_id);
+        m_pCB->PresentSample(pSample, 0, m_id);
     }
     else
     {
         // Queue the sample and ask the scheduler thread to wake up.
+		hr = m_pCB->PrerollSample(pSample, 0, m_id);
         hr = m_ScheduledSamples.Queue(pSample);
 
         if (SUCCEEDED(hr))
@@ -382,7 +386,7 @@ HRESULT Scheduler::ProcessSample(IMFSample *pSample, LONG *plNextSleep)
 
     if (bPresentNow)
     {
-        hr = m_pCB->PresentSample(pSample, hnsPresentationTime);
+        hr = m_pCB->PresentSample(pSample, hnsPresentationTime, m_id);
     }
     else
     {

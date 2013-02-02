@@ -39,7 +39,7 @@ struct SchedulerCallback;
 class Scheduler
 {
 public:
-    Scheduler();
+    Scheduler(int id);
     virtual ~Scheduler();
 
     void SetCallback(SchedulerCallback *pCB)
@@ -84,6 +84,9 @@ private:
     MFTIME              m_PerFrameInterval;     // Duration of each frame.
     LONGLONG            m_PerFrame_1_4th;       // 1/4th of the frame duration.
     MFTIME              m_LastSampleTime;       // Most recent sample time.
+
+	// my12doom's stuff
+	int m_id;
 };
 
 
@@ -95,5 +98,6 @@ private:
 
 struct SchedulerCallback
 {
-    virtual HRESULT PresentSample(IMFSample *pSample, LONGLONG llTarget) = 0;
+    virtual HRESULT PresentSample(IMFSample *pSample, LONGLONG llTarget, int id) = 0;
+	virtual HRESULT PrerollSample(IMFSample *pSample, LONGLONG llTarget, int id) = 0;
 };

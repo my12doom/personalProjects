@@ -230,14 +230,31 @@ void my12doomRenderer::init_variables()
 
 	//  EVR creation and configuration
 	if (!m_evr) m_evr.CoCreateInstance(CLSID_EnhancedVideoRenderer);
-	if (!m_presenter) m_presenter = new EVRCustomPresenter(hr, this);
-	CComQIPtr<IMFVideoPresenter, &IID_IMFVideoPresenter> presenter(m_presenter);
-	CComQIPtr<IMFVideoRenderer, &IID_IMFVideoRenderer> evr_mf(m_evr);
-	evr_mf->InitializeRenderer(NULL, presenter);
-	CComQIPtr<IMFGetService, &IID_IMFGetService> evr_get(m_evr);
-	CComPtr<IMFVideoDisplayControl> display_controll;
-	evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
-	display_controll->SetVideoWindow(m_hWnd);
+	if (!m_evr2) m_evr2.CoCreateInstance(CLSID_EnhancedVideoRenderer);
+	if (!m_presenter) m_presenter = new EVRCustomPresenter(hr, 1, this);
+	if (!m_presenter2) m_presenter2 = new EVRCustomPresenter(hr, 2, this);
+
+	if (m_evr)
+	{
+		CComQIPtr<IMFVideoPresenter, &IID_IMFVideoPresenter> presenter(m_presenter);
+		CComQIPtr<IMFVideoRenderer, &IID_IMFVideoRenderer> evr_mf(m_evr);
+		evr_mf->InitializeRenderer(NULL, presenter);
+		CComQIPtr<IMFGetService, &IID_IMFGetService> evr_get(m_evr);
+		CComPtr<IMFVideoDisplayControl> display_controll;
+		evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
+		display_controll->SetVideoWindow(m_hWnd);
+	}
+
+	if (m_evr2)
+	{
+		CComQIPtr<IMFVideoPresenter, &IID_IMFVideoPresenter> presenter2(m_presenter);
+		CComQIPtr<IMFVideoRenderer, &IID_IMFVideoRenderer> evr_mf(m_evr2);
+		evr_mf->InitializeRenderer(NULL, presenter2);
+		CComQIPtr<IMFGetService, &IID_IMFGetService> evr_get(m_evr2);
+		CComPtr<IMFVideoDisplayControl> display_controll;
+		evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
+		display_controll->SetVideoWindow(m_hWnd);
+	}
 	m_recreating_dshow_renderer = false;
 
 	// callback
@@ -931,6 +948,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 	else if (m_device_state == need_resize_back_buffer)
 	{
+		CAutoLock lck(&m_frame_lock);
 		MANAGE_DEVICE;
 		if (FAILED(hr=(delete_render_targets())))
 		{
@@ -985,11 +1003,6 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			m_device_state = device_lost;
 			return hr;
 		}
-		if (m_d3d_manager)
-		{
-			m_d3d_manager->ResetDevice(m_Device, m_resetToken);
-			m_d3d_manager->OpenDeviceHandle(&m_device_handle);
-		}
 		m_active_pp = m_new_pp;
 		mylog("Device->Reset: %dms.\n", timeGetTime() - l);
 		if (FAILED(hr=(restore_gpu_objects())))
@@ -999,6 +1012,11 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		}
 		mylog("restore objects: %dms.\n", timeGetTime() - l);
 		m_device_state = fine;
+		if (m_d3d_manager)
+		{
+			m_d3d_manager->ResetDevice(m_Device, m_resetToken);
+			m_d3d_manager->OpenDeviceHandle(&m_device_handle);
+		}
 
 		mylog("m_active_pp : %dx%d@%dHz, format %d\n", m_active_pp.BackBufferWidth, 
 			m_active_pp.BackBufferHeight, m_active_pp.FullScreen_RefreshRateInHz, m_active_pp.BackBufferFormat);
@@ -1021,12 +1039,12 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 				return hr;
 			}
 			m_active_pp = m_new_pp;
+			FAIL_SLEEP_RET(restore_gpu_objects());
 			if (m_d3d_manager)
 			{
 				m_d3d_manager->ResetDevice(m_Device, m_resetToken);
 				m_d3d_manager->OpenDeviceHandle(&m_device_handle);
 			}
-			FAIL_SLEEP_RET(restore_gpu_objects());
 			
 			m_device_state = fine;
 			return hr;
@@ -1383,7 +1401,6 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	// surfaces
 	m_deinterlace_surface = NULL;
 	m_PC_level_test = NULL;
-	m_evr_surf = NULL;
 
 	// swap chains
 	delete_render_targets();
@@ -1528,7 +1545,6 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 
 	// textures
 	FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
-	FAIL_RET(m_Device->CreateRenderTarget(1920, 1080, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_evr_surf, NULL));
 	FAIL_RET( m_Device->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, 0, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_subtitle, NULL));
 	if(m_tex_subtitle_mem == NULL)
 	{
@@ -1643,10 +1659,6 @@ HRESULT my12doomRenderer::render_helper(IDirect3DSurface9 *surfaces[], int nview
 			continue;
 
 		FAIL_RET(clear(p));
-
-		if (m_evr_surf)
-			m_Device->StretchRect(m_evr_surf, NULL, p, NULL, D3DTEXF_LINEAR);
-
 		FAIL_RET(draw_movie(p, view));
 		FAIL_RET(draw_subtitle(p, view));
 		FAIL_RET(adjust_temp_color(p, view));
@@ -1690,7 +1702,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	if (GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_CONTROL) != lastkey)
 	{
 		lastkey = GetKeyState(VK_CONTROL);
-		set_device_state(need_create);
+// 		set_device_state(need_create);
 	}
 
 	// load subtitle
@@ -1721,6 +1733,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	int l = timeGetTime();
 
+	CAutoLock lck(&m_frame_lock);
 	{
 		MANAGE_DEVICE;
 		// device state check again
@@ -2087,73 +2100,79 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	if (timeGetTime() - l > 5)
 		printf("All Draw Calls = %dms\n", timeGetTime() - l);
+
+	if (m_output_mode == pageflipping || !GPUIdle)
+		Sleep(5);
+
 presant:
-	static int n = timeGetTime();
-	if (timeGetTime() - n > 43)
-		printf("(%d):presant delta: %dms\n", timeGetTime(), timeGetTime()-n);
-	n = timeGetTime();
-
-
-	// presenting...
-	if (m_output_mode == intel3d && m_overlay_swap_chain)
 	{
-		RECT rect= {0, 0, min(m_intel_active_3d_mode.ulResWidth,m_active_pp.BackBufferWidth), 
-			min(m_active_pp.BackBufferHeight, m_active_pp.BackBufferHeight)};
-		hr = m_overlay_swap_chain->Present(&rect, &rect, NULL, NULL, D3DPRESENT_UPDATECOLORKEY);
-
-		//mylog("%08x\n", hr);
-	}
-
+		MANAGE_DEVICE;
+		static int n = timeGetTime();
+		if (timeGetTime() - n > 43)
+			printf("(%d):presant delta: %dms\n", timeGetTime(), timeGetTime()-n);
+		n = timeGetTime();
 
 
-	else if (m_output_mode == dual_window || m_output_mode == iz3d)
-	{
-		if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
-		if (FAILED(hr) && hr != DDERR_WASSTILLDRAWING)
-			set_device_state(device_lost);
-
-		if(m_swap2) if (m_swap2->Present(NULL, NULL, m_hWnd2, NULL, NULL) == D3DERR_DEVICELOST)
-			set_device_state(device_lost);
-	}
-
-	else
-	{
-		if (m_output_mode == pageflipping)
+		// presenting...
+		if (m_output_mode == intel3d && m_overlay_swap_chain)
 		{
-			if (m_pageflipping_start == -1 && m_nv3d_display)
-				NvAPI_GetVBlankCounter(m_nv3d_display, &m_nv_pageflip_counter);
-			m_pageflipping_start = timeGetTime();
+			RECT rect= {0, 0, min(m_intel_active_3d_mode.ulResWidth,m_active_pp.BackBufferWidth), 
+				min(m_active_pp.BackBufferHeight, m_active_pp.BackBufferHeight)};
+			hr = m_overlay_swap_chain->Present(&rect, &rect, NULL, NULL, D3DPRESENT_UPDATECOLORKEY);
+
+			//mylog("%08x\n", hr);
 		}
 
-		int l2 = timeGetTime();
-		hr = DDERR_WASSTILLDRAWING;
-		while (hr == DDERR_WASSTILLDRAWING)
-			hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, NULL);
-// 		if (timeGetTime()-l2 > 9) mylog("Presant() cost %dms.\n", timeGetTime() - l2);
-		if (FAILED(hr))
-			set_device_state(device_lost);
 
-		static int n = timeGetTime();
-		//if (timeGetTime()-n > 0)printf("delta = %d.\n", timeGetTime()-n);
-		n = timeGetTime();
+
+		else if (m_output_mode == dual_window || m_output_mode == iz3d)
+		{
+			if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
+			if (FAILED(hr) && hr != DDERR_WASSTILLDRAWING)
+				set_device_state(device_lost);
+
+			if(m_swap2) if (m_swap2->Present(NULL, NULL, m_hWnd2, NULL, NULL) == D3DERR_DEVICELOST)
+				set_device_state(device_lost);
+		}
+
+		else
+		{
+			if (m_output_mode == pageflipping)
+			{
+				if (m_pageflipping_start == -1 && m_nv3d_display)
+					NvAPI_GetVBlankCounter(m_nv3d_display, &m_nv_pageflip_counter);
+				m_pageflipping_start = timeGetTime();
+			}
+
+			int l2 = timeGetTime();
+			hr = DDERR_WASSTILLDRAWING;
+			while (hr == DDERR_WASSTILLDRAWING)
+				hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, NULL);
+		// 		if (timeGetTime()-l2 > 9) mylog("Presant() cost %dms.\n", timeGetTime() - l2);
+			if (FAILED(hr))
+				set_device_state(device_lost);
+
+			static int n = timeGetTime();
+			//if (timeGetTime()-n > 0)printf("delta = %d.\n", timeGetTime()-n);
+			n = timeGetTime();
+		}
+
+		// debug LockRect times
+		//if (lockrect_surface + lockrect_texture)
+		//	printf("LockRect: surface, texture, total, cycle = %d, %d, %d, %d.\n", lockrect_surface, lockrect_texture, lockrect_surface+lockrect_texture, (int)lockrect_texture_cycle);
+		lockrect_texture_cycle = lockrect_surface = lockrect_texture = 0;
+
+		if (bmp_lock != NULL)
+		{
+			int l = timeGetTime();
+			m_tex_subtitle_mem->LockRect(&m_subtitle_locked_rect, NULL, NULL);
+			mylog("LockRect for subtitle cost %dms \n", timeGetTime()-l);
+
+			lockrect_surface ++;
+
+			m_subtitle_changed = false;
+		}
 	}
-
-	// debug LockRect times
-	//if (lockrect_surface + lockrect_texture)
-	//	printf("LockRect: surface, texture, total, cycle = %d, %d, %d, %d.\n", lockrect_surface, lockrect_texture, lockrect_surface+lockrect_texture, (int)lockrect_texture_cycle);
-	lockrect_texture_cycle = lockrect_surface = lockrect_texture = 0;
-
-	if (bmp_lock != NULL)
-	{
-		int l = timeGetTime();
-		m_tex_subtitle_mem->LockRect(&m_subtitle_locked_rect, NULL, NULL);
-		mylog("LockRect for subtitle cost %dms \n", timeGetTime()-l);
-
-		lockrect_surface ++;
-
-		m_subtitle_changed = false;
-	}
-
 
 
 	return S_OK;
@@ -2175,7 +2194,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 		return E_POINTER;
 	view = m_force2d ? 0 : view;
 
-	if (!m_dsr0->is_connected())
+	if (!m_dsr0->is_connected() && false)
 	{
 		luaState lua_state;
 		lua_pushboolean(lua_state, FALSE);
@@ -2234,6 +2253,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 		case mono2d:
 			break;
 		default:
+			break;
 			assert(0);
 		}
 	}
@@ -2992,7 +3012,6 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 		}
 		else
 		{
-			Sleep(5);
 			_this->render_nolock(true);
 		}
 	}
@@ -4405,6 +4424,7 @@ HRESULT my12doomRenderer::HD3DSetStereoFullscreenPresentParameters()
 		}
 	}
 
+	refresh = 24;
 
 	m_new_pp.MultiSampleType = D3DMULTISAMPLE_2_SAMPLES;
 	m_new_pp.FullScreen_RefreshRateInHz = refresh;
@@ -4640,7 +4660,7 @@ HRESULT my12doomRenderer::GetService(REFGUID guidService, REFIID riid, void** pp
 		return m_d3d_manager->GetVideoService (m_device_handle, riid, ppv);
 	} else if (riid == __uuidof(IDirectXVideoAccelerationService)) {
 		// TODO : to be tested....
-		return DXVA2CreateVideoService(m_Device, riid, ppv);
+		return myDXVA2CreateVideoService(m_Device, riid, ppv);
 	} else if (riid == __uuidof(IDirectXVideoMemoryConfiguration)) {
 		GetInterface((IDirectXVideoMemoryConfiguration*)this, ppv);
 		return S_OK;
@@ -4806,7 +4826,12 @@ HRESULT my12doomRenderer::CheckDeviceState(ID3DPresentEngine::DeviceState *pStat
 done:
 	return hr;
 }
-HRESULT my12doomRenderer::PresentSample(IMFSample* pSample, LONGLONG llTarget)
+HRESULT my12doomRenderer::PrerollSample(IMFSample* pSample, LONGLONG llTarget, int id)
+{
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::PresentSample(IMFSample* pSample, LONGLONG llTarget, int id)
 {
 	HRESULT hr = S_OK;
 
@@ -4821,28 +4846,22 @@ HRESULT my12doomRenderer::PresentSample(IMFSample* pSample, LONGLONG llTarget)
 		CHECK_HR(hr = pSample->GetBufferByIndex(0, &pBuffer));
 
 		// Get the surface from the buffer.
-		CHECK_HR(hr = MFGetService(pBuffer, MR_BUFFER_SERVICE, __uuidof(IDirect3DSurface9), (void**)&pSurface));
+		CHECK_HR(hr = myMFGetService(pBuffer, MR_BUFFER_SERVICE, __uuidof(IDirect3DSurface9), (void**)&pSurface));
 	}
-// 	else if (m_pSurfaceRepaint)
-// 	{
-// 		// Redraw from the last surface.
-// 		pSurface = m_pSurfaceRepaint;
-// 		pSurface->AddRef();
-// 	}
 
 	if (pSurface)
 	{
+		D3DSURFACE_DESC desc;
+		pSurface->GetDesc(&desc);
+		m_lVidWidth = desc.Width;
+		m_lVidHeight = desc.Height;
+		m_source_aspect = (double)m_lVidWidth / m_lVidHeight;
 
-		// Get the swap chain from the surface.
-		//         CHECK_HR(hr = pSurface->GetContainer(__uuidof(IDirect3DSwapChain9), (LPVOID*)&pSwapChain));
+		CAutoLock lck(&m_frame_lock);
+		CAutoLock rendered_lock(&m_rendered_packet_lock);
+		safe_delete(m_last_rendered_sample1);
+ 		m_last_rendered_sample1 = new gpu_sample(m_Device, pSurface, m_pool);
 
-		// Present the swap chain.
-		//          CHECK_HR(hr = PresentSwapChain(pSwapChain, pSurface));
-
-
-		// Store this pointer in case we need to repaint the surface.
-// 		CopyComPointer(m_pSurfaceRepaint, pSurface);
-		m_Device->StretchRect(pSurface, NULL, m_evr_surf, NULL, D3DTEXF_LINEAR);
 	}
 	else
 	{
@@ -4878,7 +4897,7 @@ done:
 }
 UINT my12doomRenderer::RefreshRate()
 {
-	return 60;
+	return 24;
 }
 RECT my12doomRenderer::GetDestinationRect()
 {
@@ -4946,7 +4965,7 @@ HRESULT my12doomRenderer::CreateD3DSample(IDirect3DSurface9 *pSurface, IMFSample
 	CHECK_HR(hr = m_Device->ColorFill(pSurface, NULL, clrBlack));
 
 	// Create the sample.
-	CHECK_HR(hr = MFCreateVideoSampleFromSurface(pSurface, &pSample));
+	CHECK_HR(hr = myMFCreateVideoSampleFromSurface(pSurface, &pSample));
 
 	// Return the pointer to the caller.
 	*ppVideoSample = pSample;

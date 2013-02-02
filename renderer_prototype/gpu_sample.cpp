@@ -424,6 +424,54 @@ bool gpu_sample::is_ignored_line(int line)
 	return line*1080/1088 == (line+1) * 1080 / 1088;
 }
 
+gpu_sample::gpu_sample(IDirect3DDevice9 *device, IDirect3DSurface9 *surface, CTextureAllocator *allocator)
+{
+	//CAutoLock lck(&g_gpu_lock);
+	m_allocator = allocator;
+	m_interlace_flags = 0;
+	m_tex_RGB32 = m_tex_YUY2_UV = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
+	m_tex_gpu_RGB32 = m_tex_gpu_YUY2_UV = m_tex_gpu_Y = m_tex_gpu_YV12_UV = m_tex_gpu_NV12_UV = NULL;
+	m_surf_YV12 = m_surf_NV12 = m_surf_YUY2 = NULL;
+	m_surf_gpu_YV12 = m_surf_gpu_NV12 = m_surf_gpu_YUY2 = NULL;
+	m_tex_stereo_test = m_tex_stereo_test_cpu = NULL;
+
+	m_width = 0;
+	m_height = 0;
+	m_ready = false;
+	m_format = MEDIASUBTYPE_RGB32;
+	m_topdown = false;
+	m_prepared_for_rendering = false;
+	m_converted = false;
+	m_cpu_stereo_tested = false;
+	m_cpu_tested_result = input_layout_auto;		// means unknown
+	CComPtr<IDirect3DSurface9> dst;
+	HRESULT hr;
+	if (!allocator)
+		goto clearup;
+	if (!surface)
+		goto clearup;
+
+
+
+	m_StretchRect = false;
+
+	D3DSURFACE_DESC desc;
+	surface->GetDesc(&desc);
+	m_width = desc.Width;
+	m_height = desc.Height;
+
+	allocator->CreateTexture(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_gpu_RGB32);
+	m_tex_gpu_RGB32->get_first_level(&dst);
+	device->StretchRect(surface, NULL, dst, NULL, D3DTEXF_LINEAR);
+	m_prepared_for_rendering = true;
+
+	m_pool = D3DPOOL_SYSTEMMEM;
+	m_ready = true;
+
+clearup:
+	return;
+}
+
 gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format,
 					   bool topdown_RGB32, bool do_cpu_test, bool remux_mode, D3DPOOL pool, DWORD PC_LEVEL)
 {

@@ -634,13 +634,10 @@ HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 	if (pbag)
 	{
 		HRESULT hr;
-// 		HRESULT hr = write_property(pbag, L"use_tray=0");
+ 		hr = write_property(pbag, L"use_tray=0");
 // 		hr = write_property(pbag, L"low_latency=0");
 // 		hr = write_property(pbag, L"di=6");
 // 		hr = write_property(pbag, L"use_dxva=1");
-#ifdef DEBUG
-		hr = write_property(pbag, L"use_tray=1");
-#endif
 // 		hr = write_property(pbag, g_CUDA ? L"use_cuda=1" : L"use_cuda=0");
 		hr = write_property(pbag, L"app_mode=1");
 		return hr;
@@ -1783,13 +1780,23 @@ localization_language get_system_default_lang()
 		return ENGLISH;
 }
 
-HMODULE hDXVA2 = LoadLibrary( L"dxva2.dll" );
+HMODULE hDXVA2 = LoadLibraryW( L"dxva2.dll" );
+HMODULE hMF = LoadLibraryW(L"MF.dll");
+HMODULE hEVR = LoadLibraryW(L"EVR.dll");
+HMODULE hMFPlat = LoadLibraryW(L"MFPlat.dll");
 
 typedef HRESULT (WINAPI *lpDXVA2CreateDirect3DDeviceManager9)(UINT * token,IDirect3DDeviceManager9** manager);
 typedef HRESULT (WINAPI *lpDXVA2CreateVideoService)(IDirect3DDevice9* pDD, REFIID riid, void** ppService);
+typedef HRESULT (WINAPI *lpMFGetService)(IUnknown* punkObject, REFGUID guidService, REFIID riid, __out LPVOID* ppvObject);
+typedef HRESULT (WINAPI *lpMFCreateVideoSampleFromSurface)(IUnknown* pUnkSurface,IMFSample** ppSample);
+typedef HRESULT (WINAPI *lpMFFrameRateToAverageTimePerFrame)(UINT32 unNumerator, UINT32 unDenominator, UINT64* punAverageTimePerFrame);
 
 lpDXVA2CreateDirect3DDeviceManager9 mineDXVA2CreateDirect3DDeviceManager9;
 lpDXVA2CreateVideoService mineDXVA2CreateVideoService;
+lpMFGetService mineMFGetService;
+lpMFCreateVideoSampleFromSurface mineMFCreateVideoSampleFromSurface;
+lpMFFrameRateToAverageTimePerFrame mineMFFrameRateToAverageTimePerFrame;
+
 HRESULT loadDXVA2()
 {
 	if (!hDXVA2)
@@ -1799,8 +1806,26 @@ HRESULT loadDXVA2()
 
 	mineDXVA2CreateVideoService = (lpDXVA2CreateVideoService)GetProcAddress(hDXVA2, "DXVA2CreateVideoService");
 
+	mineMFGetService = (lpMFGetService)GetProcAddress(hMF, "MFGetService");
+
+	mineMFCreateVideoSampleFromSurface = (lpMFCreateVideoSampleFromSurface)GetProcAddress(hEVR, "MFCreateVideoSampleFromSurface");
+
+	mineMFFrameRateToAverageTimePerFrame = (lpMFFrameRateToAverageTimePerFrame) GetProcAddress(hMFPlat, "MFFrameRateToAverageTimePerFrame");
+
 	return S_OK;
 }
+
+HRESULT myMFFrameRateToAverageTimePerFrame(UINT32 unNumerator, UINT32 unDenominator, UINT64* punAverageTimePerFrame)
+{
+	loadDXVA2();
+
+	if (!mineMFFrameRateToAverageTimePerFrame)
+		return E_NOINTERFACE;
+
+	return mineMFFrameRateToAverageTimePerFrame(unNumerator, unDenominator, punAverageTimePerFrame);
+
+}
+
 
 HRESULT myDXVA2CreateDirect3DDeviceManager9(UINT* pResetToken, IDirect3DDeviceManager9** ppDeviceManager)
 {
@@ -1812,6 +1837,17 @@ HRESULT myDXVA2CreateDirect3DDeviceManager9(UINT* pResetToken, IDirect3DDeviceMa
 	return mineDXVA2CreateDirect3DDeviceManager9(pResetToken, ppDeviceManager);
 }
 
+HRESULT myMFCreateVideoSampleFromSurface(IUnknown* pUnkSurface,IMFSample** ppSample)
+{
+	loadDXVA2();
+
+	if (!mineMFCreateVideoSampleFromSurface)
+		return E_NOINTERFACE;
+
+	return mineMFCreateVideoSampleFromSurface(pUnkSurface, ppSample);
+}
+
+
 HRESULT myDXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppService)
 {
 	loadDXVA2();
@@ -1822,6 +1858,15 @@ HRESULT myDXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppS
 	return mineDXVA2CreateVideoService(pDD, riid, ppService);
 }
 
+HRESULT myMFGetService(IUnknown* punkObject, REFGUID guidService, REFIID riid, __out LPVOID* ppvObject)
+{
+	loadDXVA2();
+
+	if (!mineMFGetService)
+		return E_NOINTERFACE;
+
+	return mineMFGetService(punkObject, guidService, riid, ppvObject);
+}
 extern "C" HRESULT WINAPI DXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppService)
 {
 	return myDXVA2CreateVideoService(pDD, riid, ppService);

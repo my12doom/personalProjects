@@ -175,7 +175,8 @@ public:
 
 
 	HRESULT CheckDeviceState(ID3DPresentEngine::DeviceState *pState);
-	HRESULT PresentSample(IMFSample* pSample, LONGLONG llTarget); 
+	HRESULT PresentSample(IMFSample* pSample, LONGLONG llTarget, int id); 
+	HRESULT PrerollSample(IMFSample* pSample, LONGLONG llTarget, int id); 
 	UINT    RefreshRate();
 	RECT    GetDestinationRect();
 	HWND    GetVideoWindow();
@@ -183,7 +184,6 @@ public:
 protected:
 	CritSec                     m_ObjectLock;           // Thread lock for the D3D device.
 	HRESULT CreateD3DSample(IDirect3DSurface9 *pSurface, IMFSample **ppVideoSample);
-	CComPtr<IDirect3DSurface9> m_evr_surf;
 
 public:
 	my12doomRenderer(HWND hwnd, HWND hwnd2 = NULL);
@@ -301,7 +301,9 @@ protected:
 	my12doomRendererDShow * m_dsr0;
 	my12doomRendererDShow * m_dsr1;
 	CComPtr<IBaseFilter> m_evr;
+	CComPtr<IBaseFilter> m_evr2;
 	EVRCustomPresenter *m_presenter;
+	EVRCustomPresenter *m_presenter2;
 
 
 

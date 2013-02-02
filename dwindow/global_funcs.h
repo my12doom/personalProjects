@@ -8,6 +8,7 @@
 #include <dxva.h>
 #include <dxva2api.h>
 #include <streams.h>
+#include <evr.h>
 
 // ffdshow
 #include <streams.h>
@@ -131,6 +132,9 @@ int get_mixed_monitor_count(bool horizontal = false, bool vertical = false);
 int get_mixed_monitor_by_id(int id, RECT *rect, wchar_t *descriptor, bool horizontal = false, bool vertical = false);
 HRESULT myDXVA2CreateDirect3DDeviceManager9(UINT* pResetToken, IDirect3DDeviceManager9** ppDeviceManager);
 HRESULT myDXVA2CreateVideoService(IDirect3DDevice9* pDD, REFIID riid, void** ppService);
+HRESULT myMFGetService(IUnknown* punkObject, REFGUID guidService, REFIID riid, __out LPVOID* ppvObject);
+HRESULT myMFCreateVideoSampleFromSurface(IUnknown* pUnkSurface,IMFSample** ppSample);
+HRESULT myMFFrameRateToAverageTimePerFrame(UINT32 unNumerator, UINT32 unDenominator, UINT64* punAverageTimePerFrame);
 DWORD color_GDI2ARGB(DWORD in);
 BOOL myGetGestureInfo(HGESTUREINFO hGestureInfo, PGESTUREINFO pGestureInfo);
 BOOL hasGetGustureInfo();

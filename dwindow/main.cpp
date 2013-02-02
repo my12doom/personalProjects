@@ -242,7 +242,7 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	// mini dump
 	wchar_t tmp[MAX_PATH];
 	GetTempPathW(MAX_PATH, tmp);
-	wcscpy(tmp, L"G:\\TMP\\DumpFile.dmp");
+	wcscpy(tmp, L"C:\\TMP\\DumpFile.dmp");
 	HANDLE lhDumpFile = CreateFileW(tmp, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
 
 	MINIDUMP_EXCEPTION_INFORMATION loExceptionInfo;

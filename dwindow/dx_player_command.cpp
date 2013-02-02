@@ -1,9 +1,5 @@
 #include "dx_player.h"
 #include "..\renderer_prototype\YV12_to_RGB32.h"
-#include "../png2raw/include/il/il.h"
-#include "../png2raw/include/il/ilu.h"
-#pragma comment(lib, "../png2raw/lib/DevIL.lib")
-#pragma comment(lib, "../png2raw/lib/ILU.lib")
 
 // helper functions
 int wcscmp_nocase(const wchar_t*in1, const wchar_t *in2)

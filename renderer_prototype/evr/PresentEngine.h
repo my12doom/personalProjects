@@ -56,7 +56,6 @@ public:
 
 
     virtual HRESULT CheckDeviceState(DeviceState *pState) PURE;
-    virtual HRESULT PresentSample(IMFSample* pSample, LONGLONG llTarget) PURE;
     virtual UINT RefreshRate() PURE;
 	virtual RECT GetDestinationRect() PURE;
 	virtual HWND GetVideoWindow() PURE;
@@ -88,7 +87,8 @@ public:
 
 
 	HRESULT CheckDeviceState(ID3DPresentEngine::DeviceState *pState);
-    HRESULT PresentSample(IMFSample* pSample, LONGLONG llTarget); 
+    HRESULT PresentSample(IMFSample* pSample, LONGLONG llTarget, int id); 
+	HRESULT PrerollSample(IMFSample* pSample, LONGLONG llTarget, int id); 
     UINT    RefreshRate() { return m_DisplayMode.RefreshRate; }
 	RECT    GetDestinationRect() { return m_rcDestRect; };
 	HWND    GetVideoWindow() { return m_hwnd; }

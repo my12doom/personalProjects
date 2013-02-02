@@ -124,7 +124,7 @@ public:
     STDMETHOD(GetFullscreen)(BOOL* pbFullscreen) { return E_NOTIMPL; }
 
 
-	EVRCustomPresenter(HRESULT& hr, ID3DPresentEngine *engine = NULL);
+	EVRCustomPresenter(HRESULT& hr, int id=0, ID3DPresentEngine *engine = NULL);
 
 protected:
     virtual ~EVRCustomPresenter();
@@ -247,5 +247,8 @@ protected:
     IMFTransform                *m_pMixer;               // The mixer.
     IMediaEventSink             *m_pMediaEventSink;      // The EVR's event-sink interface.
     IMFMediaType                *m_pMediaType;           // Output media type
+
+	// my12doom's stuff
+	int m_id;
 };
 

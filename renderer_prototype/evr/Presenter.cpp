@@ -930,7 +930,8 @@ done:
 //-----------------------------------------------------------------------------
 // Constructor
 //-----------------------------------------------------------------------------
-EVRCustomPresenter::EVRCustomPresenter(HRESULT& hr, ID3DPresentEngine *engine) :
+EVRCustomPresenter::EVRCustomPresenter(HRESULT& hr, int id, ID3DPresentEngine *engine) :
+	m_id(id),
     m_RenderState(RENDER_STATE_SHUTDOWN),
     m_pD3DPresentEngine(NULL),
     m_pClock(NULL),
@@ -943,7 +944,8 @@ EVRCustomPresenter::EVRCustomPresenter(HRESULT& hr, ID3DPresentEngine *engine) :
     m_bPrerolled(FALSE),
     m_fRate(1.0f),
     m_TokenCounter(0),
-    m_SampleFreeCB(this, &EVRCustomPresenter::OnSampleFree)
+    m_SampleFreeCB(this, &EVRCustomPresenter::OnSampleFree),
+	m_scheduler(id)
 {
     hr = S_OK;
 
@@ -1135,7 +1137,7 @@ HRESULT EVRCustomPresenter::Flush()
     if (m_RenderState == RENDER_STATE_STOPPED)
     {
         // Repaint with black.
-        (void)m_pD3DPresentEngine->PresentSample(NULL, 0);
+        (void)m_pD3DPresentEngine->PresentSample(NULL, 0, m_id);
     }
 
     return S_OK; 

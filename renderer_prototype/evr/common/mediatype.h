@@ -110,7 +110,12 @@ namespace MediaFoundationSamples
 
             HRESULT hr = S_OK;
 
-            hr = MFCreateMediaType(&m_pType);
+			static HMODULE hMFPlat = LoadLibraryW(L"MFPlat.dll");
+			typedef HRESULT (WINAPI *lpMFCreateMediaType)(IMFMediaType**  ppMFType);
+			static lpMFCreateMediaType mineMFCreateMediaType = (lpMFCreateMediaType) GetProcAddress(hMFPlat, "MFCreateMediaType");
+
+
+			hr = mineMFCreateMediaType ? mineMFCreateMediaType(&m_pType) : E_NOINTERFACE;
 
             return hr;
         }

@@ -12,6 +12,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
+#include "..\..\DWindow\global_funcs.h"
 #include "EVRPresenter.h"
 
 const DWORD PRESENTER_BUFFER_COUNT = 3;
@@ -357,8 +358,11 @@ done:
 //
 // This method is called by the scheduler and/or the presenter.
 //-----------------------------------------------------------------------------
-
-HRESULT DefaultD3DPresentEngine::PresentSample(IMFSample* pSample, LONGLONG llTarget)
+HRESULT DefaultD3DPresentEngine::PrerollSample(IMFSample* pSample, LONGLONG llTarget, int id)
+{
+	return S_OK;
+}
+HRESULT DefaultD3DPresentEngine::PresentSample(IMFSample* pSample, LONGLONG llTarget, int id)
 {
     HRESULT hr = S_OK;
 
@@ -373,7 +377,7 @@ HRESULT DefaultD3DPresentEngine::PresentSample(IMFSample* pSample, LONGLONG llTa
         CHECK_HR(hr = pSample->GetBufferByIndex(0, &pBuffer));
 
         // Get the surface from the buffer.
-        CHECK_HR(hr = MFGetService(pBuffer, MR_BUFFER_SERVICE, __uuidof(IDirect3DSurface9), (void**)&pSurface));
+        CHECK_HR(hr = myMFGetService(pBuffer, MR_BUFFER_SERVICE, __uuidof(IDirect3DSurface9), (void**)&pSurface));
     }
     else if (m_pSurfaceRepaint)
     {
@@ -455,10 +459,21 @@ HRESULT DefaultD3DPresentEngine::InitializeD3D()
     assert(m_pDeviceManager == NULL);
 
     // Create Direct3D
-    CHECK_HR(hr = Direct3DCreate9Ex(D3D_SDK_VERSION, &m_pD3D9));
+	HMODULE h = LoadLibrary( L"d3d9.dll" );
+	if ( h )
+	{
+		typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)( UINT, IDirect3D9Ex**);
+
+		LPDIRECT3DCREATE9EX func = (LPDIRECT3DCREATE9EX)GetProcAddress( h, "Direct3DCreate9Ex" );
+
+		if ( func )
+			CHECK_HR(hr = func(D3D_SDK_VERSION, &m_pD3D9));
+
+		FreeLibrary( h );
+	}
 
     // Create the device manager
-    CHECK_HR(hr = DXVA2CreateDirect3DDeviceManager9(&m_DeviceResetToken, &m_pDeviceManager));
+    CHECK_HR(hr = myDXVA2CreateDirect3DDeviceManager9(&m_DeviceResetToken, &m_pDeviceManager));
 
 done:
     return hr;
@@ -587,7 +602,7 @@ HRESULT DefaultD3DPresentEngine::CreateD3DSample(IDirect3DSurface9 *pSurface, IM
     CHECK_HR(hr = m_pDevice->ColorFill(pSurface, NULL, clrBlack));
 
     // Create the sample.
-    CHECK_HR(hr = MFCreateVideoSampleFromSurface(pSurface, &pSample));
+    CHECK_HR(hr = myMFCreateVideoSampleFromSurface(pSurface, &pSample));
 
     // Return the pointer to the caller.
     *ppVideoSample = pSample;
