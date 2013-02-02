@@ -2098,12 +2098,9 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	}
 
 
+
 	if (timeGetTime() - l > 5)
 		printf("All Draw Calls = %dms\n", timeGetTime() - l);
-
-	if (m_output_mode == pageflipping || !GPUIdle)
-		Sleep(5);
-
 presant:
 	{
 		MANAGE_DEVICE;
@@ -3013,6 +3010,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 		else
 		{
 			_this->render_nolock(true);
+ 			Sleep(1);
 		}
 	}
 	
@@ -4857,10 +4855,9 @@ HRESULT my12doomRenderer::PresentSample(IMFSample* pSample, LONGLONG llTarget, i
 		m_lVidHeight = desc.Height;
 		m_source_aspect = (double)m_lVidWidth / m_lVidHeight;
 
-		CAutoLock lck(&m_frame_lock);
 		CAutoLock rendered_lock(&m_rendered_packet_lock);
-		safe_delete(m_last_rendered_sample1);
- 		m_last_rendered_sample1 = new gpu_sample(m_Device, pSurface, m_pool);
+		safe_delete(m_sample2render_1);
+ 		m_sample2render_1 = new gpu_sample(m_Device, pSurface, m_pool);
 
 	}
 	else
