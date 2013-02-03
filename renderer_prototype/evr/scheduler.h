@@ -56,6 +56,11 @@ public:
     HRESULT StartScheduler(IMFClock *pClock);
     HRESULT StopScheduler();
 
+	void start(){m_state = Start;}
+	void stop(){m_state = Stop;}
+	void pause(){m_state = Pause;}
+	void restart(){m_state = Restart;}
+
     HRESULT ScheduleSample(IMFSample *pSample, BOOL bPresentNow);
     HRESULT ProcessSamplesInQueue(LONG *plNextSleep);
     HRESULT ProcessSample(IMFSample *pSample, LONG *plNextSleep);
@@ -87,6 +92,14 @@ private:
 
 	// my12doom's stuff
 	int m_id;
+	enum
+	{
+		Start = 0,
+		Restart = 1,
+		Pause = 2,
+		Stop = 3,
+		Uninitialized = 4,
+	}m_state;
 };
 
 

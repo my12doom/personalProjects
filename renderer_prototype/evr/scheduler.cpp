@@ -31,6 +31,7 @@ const DWORD SCHEDULER_TIMEOUT = 5000;
 //-----------------------------------------------------------------------------
 
 Scheduler::Scheduler(int id) : 
+	m_state(Uninitialized),
 	m_id(id),
     m_pCB(NULL),
     m_pClock(NULL), 
@@ -384,7 +385,7 @@ HRESULT Scheduler::ProcessSample(IMFSample *pSample, LONG *plNextSleep)
         }
     }
 
-    if (bPresentNow)
+    if (bPresentNow && m_state <= Restart)
     {
         hr = m_pCB->PresentSample(pSample, hnsPresentationTime, m_id);
     }

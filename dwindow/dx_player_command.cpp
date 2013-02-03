@@ -401,12 +401,17 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		return S_OK;
 	}
 
+#ifdef DEBUG
+	CASE(L"shutdown")
+		TerminateProcess(GetCurrentProcess(), 0);
+#else
 	CASE(L"shutdown")
 	{
 		show_window(1, false);
 		show_window(2, false);
 		return S_OK;
 	}
+#endif
 
 	CASE(L"shutdown_windows")
 	{

@@ -438,6 +438,8 @@ HRESULT EVRCustomPresenter::OnClockStart(MFTIME hnsSystemTime, LONGLONG llClockS
 
     AutoLock lock(m_ObjectLock);
 
+	m_scheduler.start();
+
     // We cannot start after shutdown.
     CHECK_HR(hr = CheckShutdown());
 
@@ -483,6 +485,8 @@ HRESULT EVRCustomPresenter::OnClockRestart(MFTIME hnsSystemTime)
     TRACE((L"OnClockRestart\n"));
 
     AutoLock lock(m_ObjectLock);
+	
+	m_scheduler.restart();
 
     HRESULT hr = S_OK;
     CHECK_HR(hr = CheckShutdown());
@@ -516,6 +520,8 @@ HRESULT EVRCustomPresenter::OnClockStop(MFTIME hnsSystemTime)
 
     AutoLock lock(m_ObjectLock);
 
+	m_scheduler.stop();
+
     HRESULT hr = S_OK;
     CHECK_HR(hr = CheckShutdown());
 
@@ -548,6 +554,8 @@ HRESULT EVRCustomPresenter::OnClockPause(MFTIME hnsSystemTime)
     HRESULT hr = S_OK;
     
     AutoLock lock(m_ObjectLock);
+
+	m_scheduler.pause();
 
     // We cannot pause the clock after shutdown.
     CHECK_HR(hr = CheckShutdown());
