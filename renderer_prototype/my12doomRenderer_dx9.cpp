@@ -2986,8 +2986,8 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 	{
 		if (_this->m_output_mode != pageflipping && GPUIdle)
 		{
-			if (_this->m_dsr0->m_State == State_Running && timeGetTime() - _this->m_last_frame_time < 333)
-			{
+// 			if (_this->m_dsr0->m_State == State_Running && timeGetTime() - _this->m_last_frame_time < 333)
+// 			{
 				if (WaitForSingleObject(_this->m_render_event, 1) != WAIT_TIMEOUT)
 				{
 
@@ -2998,14 +2998,14 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 
 				}
 				continue;
-			}
-			else
-			{
-				_this->render_nolock(true);
-				l = timeGetTime();
-				while (timeGetTime() - l < 33 && !_this->m_render_thread_exit)
-					Sleep(1);
-			}
+// 			}
+// 			else
+// 			{
+// 				_this->render_nolock(true);
+// 				l = timeGetTime();
+// 				while (timeGetTime() - l < 33 && !_this->m_render_thread_exit)
+// 					Sleep(1);
+// 			}
 		}
 		else
 		{
@@ -3319,8 +3319,6 @@ HRESULT my12doomRenderer::generate_mask()
 	CComPtr<IDirect3DTexture9> mask_cpu;
 	FAIL_RET( m_Device->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &mask_cpu, NULL));
 
-
-	MANAGE_DEVICE;
 	D3DLOCKED_RECT locked;
 	FAIL_RET(mask_cpu->LockRect(0, &locked, NULL, NULL));
 
@@ -4858,6 +4856,8 @@ HRESULT my12doomRenderer::PresentSample(IMFSample* pSample, LONGLONG llTarget, i
 		CAutoLock rendered_lock(&m_rendered_packet_lock);
 		safe_delete(m_sample2render_1);
  		m_sample2render_1 = new gpu_sample(m_Device, pSurface, m_pool);
+
+		render(true);
 
 	}
 	else

@@ -117,11 +117,12 @@ public:
 		return dwindow::show_mouse(show || m_theater_owner);
 	}
 	bool is_closed();
+	HRESULT toggle_fullscreen_core();
 	HRESULT toggle_fullscreen();
 	HRESULT set_output_mode(int mode);
 	HRESULT set_theater(HWND owner){m_theater_owner = owner; return S_OK;}
 	HRESULT popup_menu(HWND owner);
-	bool is_fullsceen(int window_id){return window_id==1?m_full1:m_full2;}
+	bool is_fullsceen(int window_id = 1){return (m_renderer1 && m_renderer1->get_fullscreen()) || ( window_id==1?m_full1:m_full2);}
 	HWND get_window(int window_id);
 
 

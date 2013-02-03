@@ -22,6 +22,7 @@
 #define DS_CHECKUPDATE (WM_USER + 14)
 #define DS_EVENT (WM_USER + 4)
 #define DS_EVENTRELY (WM_USER + 6)
+#define TOGGLE_FULLSCREEN_REPLY (WM_USER + 8)
 AutoSetting<BOOL> g_ExclusiveMode(L"ExclusiveMode", false, REG_DWORD);
 RECT rect_zero = {0,0,0,0};
 LOGFONTW empty_logfontw = {0};
@@ -349,7 +350,7 @@ HRESULT dx_player::set_output_monitor(int out_id, int monitor_id)
 		return E_FAIL;
 
 	bool toggle = false;
-	if (m_full1 || m_full2)
+	if (is_fullsceen())
 	{
 		toggle = true;
 		toggle_fullscreen();
@@ -822,6 +823,12 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 		if (m_renderer1)
 			m_renderer1->NV3D_notify(wParam);
 	}
+
+	else if (message == TOGGLE_FULLSCREEN_REPLY)
+	{
+		return toggle_fullscreen_core();
+	}
+
 	return dwindow::on_unhandled_msg(id, message, wParam, lParam);
 }
 
@@ -832,7 +839,7 @@ LRESULT dx_player::on_display_change(int id)
 	{
 		OutputDebugStringA("DISPLAY CHANGE!\n");
 		bool toggle = false;
-		if (m_full1)
+		if (is_fullsceen())
 		{
 			toggle = true;
 			toggle_fullscreen();
@@ -915,7 +922,7 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case VK_ESCAPE:
-		if (m_full1 || (m_renderer1 && m_renderer1->get_fullscreen()))
+		if (is_fullsceen())
 			toggle_fullscreen();
 		break;
 
@@ -3553,7 +3560,7 @@ HRESULT dx_player::set_output_mode(int mode)
 		return VFW_E_NOT_CONNECTED;
 
 	bool toggle = false;
-	if (m_full1 || m_full2)
+	if (is_fullsceen())
 	{
 		toggle = true;
 		toggle_fullscreen();
@@ -3577,6 +3584,12 @@ HRESULT dx_player::set_output_mode(int mode)
 }
 
 HRESULT dx_player::toggle_fullscreen()
+{
+	HRESULT hr = SendMessage(id_to_hwnd(1), TOGGLE_FULLSCREEN_REPLY, 0, 0);
+	return hr;
+}
+
+HRESULT dx_player::toggle_fullscreen_core()
 {
 
 	if (m_output_mode == dual_window || m_output_mode == iz3d)
