@@ -288,7 +288,7 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	int buffer_count = args[3].AsInt(10);
 	const char *ldecod_args = args[4].AsString("");
 	const bool swap_eyes = args[5].AsBool(false);
-	char playlist[MAX_PATH] = {0};
+	char playlist[1024] = {0};
 
 	// check para and input files
 	if (file1[0] == NULL)
@@ -490,7 +490,7 @@ int JMAvs::avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2
 	strcpy(m_m2ts_left, m2ts_left);
 	strcpy(m_m2ts_right, m2ts_right);
 
-	char offset_file[MAX_PATH];
+	char offset_file[1024];
 	strcpy(offset_file, get_filename(offset_out));
 	for (int i=0; i<strlen(offset_file); i++)
 		if (offset_file[i] == ':')
