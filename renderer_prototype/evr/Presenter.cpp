@@ -1436,7 +1436,7 @@ HRESULT EVRCustomPresenter::CreateOptimalVideoType(IMFMediaType* pProposedType, 
     CHECK_HR(hr = mtOptimal.SetPixelAspectRatio(1, 1));
 
     // Get the output rectangle.
-    rcOutput = m_pD3DPresentEngine->GetDestinationRect();
+	mtOptimal.GetFrameDimensions((UINT32*)&rcOutput.right, (UINT32*)&rcOutput.bottom);
     if (IsRectEmpty(&rcOutput))
     {
         // Calculate the output rectangle based on the media type.
