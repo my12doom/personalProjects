@@ -2190,8 +2190,8 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	if (!surface)
 		return E_POINTER;
 	view = m_force2d ? 0 : view;
-
-	if (!m_dsr0->is_connected() && false)
+#ifndef EVR
+	if (!m_dsr0->is_connected())
 	{
 		luaState lua_state;
 		lua_pushboolean(lua_state, FALSE);
@@ -2201,6 +2201,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 		m_last_reset_time = timeGetTime();
 		return m_uidrawer != NULL ? m_uidrawer->draw_nonmovie_bg(surface, view) : E_FAIL;
 	}
+#endif
 
 	luaState lua_state;
 	lua_pushboolean(lua_state, TRUE);
@@ -2986,8 +2987,8 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 	{
 		if (_this->m_output_mode != pageflipping && GPUIdle)
 		{
-// 			if (_this->m_dsr0->m_State == State_Running && timeGetTime() - _this->m_last_frame_time < 333)
-// 			{
+			if (_this->m_dsr0->m_State == State_Running && timeGetTime() - _this->m_last_frame_time < 333)
+			{
 				if (WaitForSingleObject(_this->m_render_event, 1) != WAIT_TIMEOUT)
 				{
 
@@ -2998,14 +2999,14 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 
 				}
 				continue;
-// 			}
-// 			else
-// 			{
-// 				_this->render_nolock(true);
-// 				l = timeGetTime();
-// 				while (timeGetTime() - l < 33 && !_this->m_render_thread_exit)
-// 					Sleep(1);
-// 			}
+			}
+			else
+			{
+				_this->render_nolock(true);
+				l = timeGetTime();
+				while (timeGetTime() - l < 33 && !_this->m_render_thread_exit)
+					Sleep(1);
+			}
 		}
 		else
 		{

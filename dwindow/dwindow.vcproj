@@ -370,7 +370,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector;nologin"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
@@ -390,7 +390,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
+				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;..\libass\lib"
@@ -706,7 +706,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
@@ -727,10 +727,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib Mf.lib Mfplat.lib evr.lib"
+				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;"
+				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -876,7 +876,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
@@ -895,7 +895,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
+				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;..\libass\lib;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;"
@@ -1212,7 +1212,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;ZHUZHU"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
@@ -1232,10 +1232,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
+				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;"
+				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

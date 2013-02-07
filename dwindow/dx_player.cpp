@@ -18,6 +18,13 @@
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
 #include "..\lua\my12doom_lua.h"
 
+#ifdef EVR
+#define DSHOW_RENDERER1 m_evr
+#define DSHOW_RENDERER2 m_evr2
+#else
+#define DSHOW_RENDERER1 m_dshow_renderer1
+#define DSHOW_RENDERER2 m_dshow_renderer2
+#endif
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_CHECKUPDATE (WM_USER + 14)
 #define DS_EVENT (WM_USER + 4)
@@ -2791,9 +2798,9 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname, const wc
 	{
 		hr = load_file(pathname2);
 		CComPtr<IPin> pin;
-		GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &pin);
+		GetUnconnectedPin(m_renderer1->DSHOW_RENDERER1, PINDIR_INPUT, &pin);
 		if (!pin)
-			GetUnconnectedPin(m_renderer1->m_evr2, PINDIR_INPUT, &pin);
+			GetUnconnectedPin(m_renderer1->DSHOW_RENDERER2, PINDIR_INPUT, &pin);
 		if (pin)
 			hr = VFW_E_NOT_CONNECTED;
 	}
@@ -3039,9 +3046,9 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 connecting:
 
 	CComPtr<IPin> renderer_input;
-	GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &renderer_input);
+	GetUnconnectedPin(m_renderer1->DSHOW_RENDERER1, PINDIR_INPUT, &renderer_input);
 	if (!renderer_input)
-		GetUnconnectedPin(m_renderer1->m_evr2, PINDIR_INPUT, &renderer_input);
+		GetUnconnectedPin(m_renderer1->DSHOW_RENDERER2, PINDIR_INPUT, &renderer_input);
 
 	hr = m_gb->Connect(pin, renderer_input);
 
