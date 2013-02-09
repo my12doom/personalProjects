@@ -238,8 +238,8 @@ function tetris:GetRect()
 end
 
 function tetris:RenderThis()
-	local res = get_bitmap("Z:\\skin\\fullscreen.png")
-	local res2 = get_bitmap("Z:\\skin\\stop.png")
+	local res = get_bitmap("fullscreen.png")
+	local res2 = get_bitmap("stop.png")
 	set_bitmap_rect(res2, 0,0,100,100)
 
 	-- paint border
@@ -272,23 +272,6 @@ function tetris:RenderThis()
 		end
 	end
 end
-
-local digittest = BaseFrame:Create()
-root:AddChild(digittest)
-digittest:SetRelativeTo(root, TOP)
-function digittest:GetRect()
-	-- 9 pixel widht, 13 pixel height
-	
-	return 0,0,9,14
-end
-
-function digittest:RenderThis()
-	local n = math.floor((dwindow.GetTickCount() / 300) % 10)
-	local res = get_bitmap("Z:\\skin\\digit.bmp")
-	set_bitmap_rect(res, 6+n*9, 0, 15+n*9, 14)
-	paint(0, 0, 9, 14,res)
-end
-
 
 local button_size = 40;
 local margin_button_right = 32;
@@ -387,7 +370,7 @@ function grow:OnLeave()
 end
 
 function grow:RenderThis()
-	local res = get_bitmap("Z:\\skin\\grow.png")
+	local res = get_bitmap("grow.png")
 	local alpha = alpha_tick / 200
 	paint(0, 0, 250, 250, res, alpha)
 end

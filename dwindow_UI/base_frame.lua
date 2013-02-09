@@ -318,9 +318,18 @@ function RenderUI(view)
 	local delta_time = 0;
 	if last_render_time > 0 then delta_time = dwindow.GetTickCount() - last_render_time end
 	last_render_time = dwindow.GetTickCount();
+	local t = dwindow.GetTickCount()
 	root:BroadCastEvent("OnUpdate", last_render_time, delta_time)
+	local dt = dwindow.GetTickCount() -t
+	t = dwindow.GetTickCount()
 	
 	root:render(view)
+	
+	local dt2 = dwindow.GetTickCount() -t
+	
+	if dt > 0 or dt2 > 0 then
+		info(string.format("slow RenderUI() : OnUpdate() cost %dms, render() cost %dms", dt, dt2))
+	end
 end
 
 

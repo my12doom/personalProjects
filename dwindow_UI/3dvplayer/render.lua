@@ -87,30 +87,23 @@ local function button_OnMouseDown(self)
 end
 
 
+local x = - margin_button_right
+local y = - margin_button_bottom
 
-function OnInitGPU()
-	print("OnInitGPU")
-	-- commit them to GPU (optional)
-	-- handle resize changes here (must)
+for i=1,#button_pictures/2 do
+	local button = buttons[i] or BaseFrame:Create()
+	buttons[i] = button
+	toolbar_bg:AddChild(button)
+	button.dx = x
+	button.dy = y
+	button.pic = {button_pictures[i*2-1], button_pictures[i*2]}
+	button.GetRect = button_GetRect
+	button.RenderThis = button_RenderThis
+	button.OnMouseDown = button_OnMouseDown
+	button.name = button.pic[1]
+	button:SetRelativeTo(nil, BOTTOMRIGHT)
 
-	local x = - margin_button_right
-	local y = - margin_button_bottom
-
-	for i=1,#button_pictures/2 do
-		local button = buttons[i] or BaseFrame:Create()
-		buttons[i] = button
-		toolbar_bg:AddChild(button)
-		button.dx = x
-		button.dy = y
-		button.pic = {button_pictures[i*2-1], button_pictures[i*2]}
-		button.GetRect = button_GetRect
-		button.RenderThis = button_RenderThis
-		button.OnMouseDown = button_OnMouseDown
-		button.name = button.pic[1]
-		button:SetRelativeTo(nil, BOTTOMRIGHT)
-
-		x = x - space_of_each_button
-	end
+	x = x - space_of_each_button
 end
 
 progressbar = BaseFrame:Create()
@@ -210,7 +203,6 @@ end
 
 number_total = BaseFrame:Create({RenderThis = number_current.RenderThis})
 number_total.name = "number_total"
-root:AddChild(number_total)
 toolbar_bg:AddChild(number_total)
 number_total:SetRelativeTo(nil, BOTTOMRIGHT)
 number_total.t = 23456000
@@ -218,7 +210,6 @@ function number_total:GetRect()
 	return 0, 0, numbers_width * 8, numbers_height, -numbers_right_margin, - numbers_bottom_margin
 end
 
---[[
 test = BaseFrame:Create()
 test.name = "test"
 test:SetRelativeTo(root, TOPLEFT)
@@ -273,5 +264,4 @@ function test4:RenderThis()
 	return paint(0,0,40,40, get_bitmap("É´²¼.png"))
 end
 
-if dwindow and dwindow.execute_luafile then dwindow.execute_luafile(GetCurrentLuaPath() .. "tetris.lua") end
-]]--
+if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile(GetCurrentLuaPath() .. "..\\tetris.lua")) end

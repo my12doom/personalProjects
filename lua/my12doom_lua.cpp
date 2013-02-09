@@ -10,7 +10,7 @@ std::list<lua_State*> free_threads;
 
 static int lua_GetTickCount (lua_State *L) 
 {
-	lua_pushinteger(L, GetTickCount());
+	lua_pushinteger(L, timeGetTime());
 	return 1;
 }
 
