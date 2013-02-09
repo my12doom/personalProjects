@@ -107,11 +107,15 @@ public:
 	HRESULT execute_command_adv(wchar_t *command, wchar_t *out, const wchar_t **args, int args_count);
 	HRESULT show_mouse(bool show)
 	{
+#ifdef DEBUG
+		return show_mouse_core(show, true);
+#else
 		return show_mouse_core(show);
+#endif
 	}
 	HRESULT show_mouse_core(bool show, bool test = false)
 	{
-		if (!test)
+		if (test)
 			return S_OK;
 		GetCursorPos(&m_mouse);
 		return dwindow::show_mouse(show || m_theater_owner);

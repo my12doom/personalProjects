@@ -510,7 +510,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="release_test|Win32"
+			Name="release_test2|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
@@ -539,13 +539,15 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;E:\DX_SDK_LITE\Include;..\libass\include"
-				PreprocessorDefinitions="WIN32;DEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
+				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
+				DisableSpecificWarnings="4244;4800;4018;4995;"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -558,10 +560,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
-				OutputFile="$(OutDir)/dwindow.exe"
+				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
+				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Release_mt;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;..\libass\lib"
+				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -593,7 +595,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="release_test|x64"
+			Name="release_test2|x64"
 			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
@@ -623,13 +625,14 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;E:\DX_SDK_LITE\Include;..\libass\include"
-				PreprocessorDefinitions="WIN32;DEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
+				DisableSpecificWarnings="4244;4800;4018;4995;"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -642,12 +645,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
-				OutputFile="$(OutDir)/dwindow.exe"
+				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib"
+				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Release_mt;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;..\libass\lib"
+				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				RandomizedBaseAddress="1"
@@ -2241,20 +2244,40 @@
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath="..\base_frame.lua"
+		<Filter
+			Name="UIs"
 			>
-		</File>
-		<File
-			RelativePath="..\bp.lua"
-			>
-		</File>
+			<File
+				RelativePath="..\dwindow_UI\base_frame.lua"
+				>
+			</File>
+			<File
+				RelativePath="..\dwindow_UI\bp.lua"
+				>
+			</File>
+			<Filter
+				Name="3dvplayer"
+				>
+				<File
+					RelativePath="..\dwindow_UI\3dvplayer\render.lua"
+					>
+				</File>
+				<File
+					RelativePath="..\dwindow_UI\3dvplayer\tetris.lua"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="classic"
+				>
+				<File
+					RelativePath="..\dwindow_UI\classic\render.lua"
+					>
+				</File>
+			</Filter>
+		</Filter>
 		<File
 			RelativePath=".\dwindow.manifest"
-			>
-		</File>
-		<File
-			RelativePath="..\legacyUI.lua"
 			>
 		</File>
 		<File
@@ -2293,7 +2316,7 @@
 				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="release_test|Win32"
+				Name="release_test2|Win32"
 				>
 				<Tool
 					Name="VCCLCompilerTool"
@@ -2301,7 +2324,7 @@
 				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="release_test|x64"
+				Name="release_test2|x64"
 				>
 				<Tool
 					Name="VCCLCompilerTool"
@@ -2372,14 +2395,6 @@
 					AssemblerOutput="2"
 				/>
 			</FileConfiguration>
-		</File>
-		<File
-			RelativePath="..\render.lua"
-			>
-		</File>
-		<File
-			RelativePath="..\tetris.lua"
-			>
 		</File>
 	</Files>
 	<Globals>

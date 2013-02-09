@@ -55,12 +55,12 @@ HRESULT get_layout(void *src, int width, int height, int *out, int stride = -1)
 		{
 			int sx = x*width2/test_size;
 			int min_delta = 255;
-			int r1 = data[sy*stride+sx] & 0xff;
+			int r1 = *(BYTE*)&data[sy*stride+sx];
 
 			int m = min(width, width2+sx+range2);
 			for(int i=max(width2, width2+sx-range2); i<=m; i+=range_step2)
 			{
-				int r2 = data[sy*stride+i] & 0xff;
+				int r2 = *(BYTE*)&data[sy*stride+i] & 0xff;
 				int t = abs(r1-r2);
 				min_delta = min(min_delta, t);
 			}
@@ -82,11 +82,11 @@ HRESULT get_layout(void *src, int width, int height, int *out, int stride = -1)
 		{
 			int sx = x*width/test_size;
 			int min_delta = 255;
-			int r1 = data[sy*stride+sx] & 0xff;
+			int r1 = *(BYTE*)&data[sy*stride+sx] & 0xff;
 			int m = min(width, sx+range);
 			for(int i=max(0, sx-range); i<=m; i+=range_step)
 			{
-				int r2 = data2[sy*stride+i] & 0xff;
+				int r2 = *(BYTE*)&data2[sy*stride+i] & 0xff;
 				int t = abs(r1-r2);
 				min_delta = min(min_delta, t);
 			}

@@ -304,12 +304,27 @@ void lua_global_variable::operator=(lua_CFunction func)
 	lua_pop(L, 1);
 }
 
+static int pcall_track_back(lua_State *L)
+{
+	const char* err = lua_tostring(L, -1);
+	printf("%s\n", err);
+	lua_Debug debug;
+	for(int level = 2; lua_getstack(L, level, &debug); level++)
+	{
+		lua_getinfo(L, "Sl", &debug);
+		printf("%s:%d\n", debug.short_src, debug.currentline);
+	}
+
+
+	lua_pushstring(L, err);
+	return 1;
+}
+
 int lua_mypcall(lua_State *L, int n, int r, int flag)
 {
-	int o;
-	if (o = lua_pcall(L, n, r, flag))
-	{
-		printf("%s\n", lua_tostring(L, -1));
-	}
+	lua_pushcfunction(L, &pcall_track_back);
+	lua_insert(L, lua_gettop(L) - n - 1);
+	int o = lua_pcall(L, n, r, lua_gettop(L) - n - 1);
+	lua_pop(L, 1);
 	return o;
 }

@@ -14,7 +14,7 @@ end
 
 function logo:RenderThis(arg)
 	if not movie_loaded then
-		local res = get_bitmap("Z:\\skin\\logo2.png")
+		local res = get_bitmap("logo2.jpg")
 		paint(0,0,1920,1080, res)
 	end
 end
@@ -34,7 +34,7 @@ end
 
 function toolbar_bg:RenderThis(arg)
 	local l,t,r,b = self:GetRect()
-	local res = get_bitmap("Z:\\skin\\toolbar_background.png");
+	local res = get_bitmap("toolbar_background.png");
 	paint(0,0,r-l,b-t, res)
 end
 
@@ -79,8 +79,7 @@ local function button_GetRect(self)
 end
 
 local function button_RenderThis(self)
-	local filename = ("Z:\\skin\\" .. self.pic[1])
-	paint(11,0,button_size+11,button_size, get_bitmap(filename))
+	paint(11,0,button_size+11,button_size, get_bitmap(self.pic[1]))
 end
 
 local function button_OnMouseDown(self)
@@ -135,7 +134,7 @@ local progress_pic =
 }
 
 function file(n)
-	return "Z:\\skin\\" .. progress_pic[n]
+	return progress_pic[n]
 end
 
 function progressbar:OnMouseDown(x)
@@ -203,7 +202,7 @@ function number_current:RenderThis()
 
 	local x = 0
 	for i=1,#numbers do
-		paint(x, 0, x+numbers_width, numbers_height, get_bitmap("Z:\\skin\\" .. math.floor(numbers[i]) .. ".png"))
+		paint(x, 0, x+numbers_width, numbers_height, get_bitmap(math.floor(numbers[i]) .. ".png"))
 		x = x + numbers_width
 	end
 
@@ -229,7 +228,7 @@ function test:GetRect()
 end
 
 function test:RenderThis()
-	return paint(0,0,40,40, get_bitmap("Z:\\skin\\fullscreen.png"))
+	return paint(0,0,40,40, get_bitmap("fullscreen.png"))
 end
 
 test2 = BaseFrame:Create()
@@ -241,7 +240,7 @@ function test2:GetRect()
 end
 
 function test2:RenderThis()
-	return paint(0,0,40,40, get_bitmap("Z:\\skin\\play.png"))
+	return paint(0,0,40,40, get_bitmap("play.png"))
 end
 
 test3 = BaseFrame:Create()
@@ -256,7 +255,7 @@ function test3:GetRect()
 end
 
 function test3:RenderThis()
-	return paint(0,0,40,40, get_bitmap("Z:\\skin\\stop.png"))
+	return paint(0,0,40,40, get_bitmap("stop.png"))
 end
 
 test4 = BaseFrame:Create()
@@ -271,8 +270,8 @@ function test4:GetRect()
 end
 
 function test4:RenderThis()
-	return paint(0,0,40,40, get_bitmap("Z:\\skin\\É´²¼.png"))
+	return paint(0,0,40,40, get_bitmap("É´²¼.png"))
 end
 
-if dwindow and dwindow.execute_luafile then dwindow.execute_luafile("D:\\private\\tetris.lua") end
+if dwindow and dwindow.execute_luafile then dwindow.execute_luafile(GetCurrentLuaPath() .. "tetris.lua") end
 ]]--

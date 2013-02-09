@@ -4694,8 +4694,16 @@ HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, int view, bool running)
 	lua_getglobal(lua_state, "RenderUI");
 	if (lua_isfunction(lua_state, -1))
 	{
-		lua_pushinteger(lua_state, view);
-		lua_mypcall(lua_state, 1, 0, 0);
+		lua_pop(lua_state, 1);
+		int l = timeGetTime();
+		for(int i=0; i<1; i++)
+		{
+			lua_getglobal(lua_state, "RenderUI");
+			lua_pushinteger(lua_state, view);
+			lua_mypcall(lua_state, 1, 0, 0);
+		}
+		if (timeGetTime() - l > 0)
+			printf("warning: slow lua RenderUI(), cost %dms\n", timeGetTime() - l);
 		lua_settop(lua_state, 0);
 	}
 	else

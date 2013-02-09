@@ -7,8 +7,6 @@ if get_resource == nil then get_resource = function() end end
 if load_bitmap_core == nil then load_bitmap_core = function() end end
 if bit32 == nil then bit32 = require("bit")end
 
-if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile("D:\\private\\bp.lua")) end
-
 function BeginChild(left, top, right, bottom)
 	local left_unclip, top_unclip = left, top
 	left = math.max(rect[1], left)
@@ -40,7 +38,7 @@ TOPRIGHT = TOP + RIGHT
 BOTTOMLEFT = BOTTOM + LEFT
 BOTTOMRIGHT = BOTTOM + RIGHT
 
-function debug(...)
+function debug_print(...)
 	--print("--DEBUG", ...)
 end
 
@@ -80,7 +78,7 @@ end
 
 function BaseFrame:RenderThis(...)
 	local left, top, right, bottom = self:GetRect()
-	debug("default rendering(draw nothing)", self, " at", left, top, right, bottom, rect[1], rect[2], rect[3], rect[4])
+	debug_print("default rendering(draw nothing)", self, " at", left, top, right, bottom, rect[1], rect[2], rect[3], rect[4])
 end
 
 function BaseFrame:AddChild(frame, pos)
@@ -135,7 +133,7 @@ function BaseFrame:RemoveFromParent()
 	if self.parent then
 		self.parent:RemoveChild(self)
 	else
-		debug("illegal RemoveFromParent() : " .. tostring(self) .. " has no parent")
+		debug_print("illegal RemoveFromParent() : " .. tostring(self) .. " has no parent")
 	end
 end
 
@@ -221,7 +219,7 @@ end
 
 function BaseFrame:GetAbsRect()
 	local relative = self.relative_to or self.parent				-- use parent as default relative_to frame
-	local l,t,r,b = 0,0,dwindow.width,dwindow.height				-- use screen as default relative_to frame if no parent & relative
+	local l,t,r,b = 0,0,dwindow.width or 1,dwindow.height or 1		-- use screen as default relative_to frame if no parent & relative
 	local relative_point = self.relative_point or TOPLEFT
 	local anchor = self.anchor or relative_point
 	
@@ -328,25 +326,25 @@ end
 
 -- GPU resource management
 function OnInitCPU()
-	debug("OnInitCPU")
+	debug_print("OnInitCPU")
 	-- load resources here (optional)
 end
 
 function OnInitGPU()
-	debug("OnInitGPU")
+	debug_print("OnInitGPU")
 	-- commit them to GPU (optional)
 	-- handle resize changes here (must)
 end
 
 function OnReleaseGPU()
 	-- decommit all GPU resources (must)
-	debug("OnReleaseGPU")
+	debug_print("OnReleaseGPU")
 	releaseCache(true)
 end
 
 function OnReleaseCPU()
 	-- release all resources (must)
-	debug("OnReleaseCPU")
+	debug_print("OnReleaseCPU")
 	releaseCache(false)
 end
 
@@ -364,6 +362,8 @@ function releaseCache(is_decommit)
 end
 
 function get_bitmap(filename)
+	if string.find(filename, ":\\") ~= 2 then filename = GetCurrentLuaPath(1) .. filename end
+
 	if bitmapcache[filename] == nil then
 		local res, width, height = dwindow.load_bitmap_core(filename)		-- width is also used as error msg output.
 		
@@ -431,3 +431,20 @@ end
 function OnMouseDown(x, y, key)
 	return OnMouseEvent("OnMouseDown",x,y,key)
 end
+
+
+
+-- helper functions
+function GetCurrentLuaPath(offset)
+	local info = debug.getinfo(2+(offset or 0), "Sl")
+	return GetPath(info.short_src)
+end
+
+function GetPath(pathname)
+	local t = string.reverse(pathname)
+	t = string.sub(t, string.find(t, "\\") or 1)
+	return string.reverse(t)
+end
+
+
+if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile(GetCurrentLuaPath() .. "bp.lua")) end

@@ -350,14 +350,14 @@ int my12doomRenderer_lua_init()
 int my12doomRenderer_lua_loadscript()
 {
 	luaState lua_state;
-	if (luaL_loadfile(lua_state, "d:\\private\\base_frame.lua") || lua_pcall(lua_state, 0, 0, 0))
+	if (luaL_loadfile(lua_state, "c:\\private\\dwindow_UI\\base_frame.lua") || lua_pcall(lua_state, 0, 0, 0))
 	{
 		const char * result = lua_tostring(lua_state, -1);
 		printf("failed loading renderer lua script : %s\n", result);
 		lua_settop(lua_state, 0);
 	}
 
-	if (luaL_loadfile(lua_state, "d:\\private\\legacyUI.lua") || lua_pcall(lua_state, 0, 0, 0))
+	if (luaL_loadfile(lua_state, "c:\\private\\dwindow_UI\\3dvplayer\\render.lua") || lua_pcall(lua_state, 0, 0, 0))
 	{
 		const char * result = lua_tostring(lua_state, -1);
 		printf("failed loading renderer lua script : %s\n", result);

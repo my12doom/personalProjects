@@ -1,5 +1,4 @@
-﻿local path = "Z:\\skin2\\"
-local alpha = 0.5
+﻿local alpha = 0.5
 local UI_fading_time = 500
 local UI_show_time = 2000
 
@@ -12,7 +11,7 @@ function bg:GetRect()
 end
 
 function bg:RenderThis()
-	local res = get_bitmap(path.."bg.png")
+	local res = get_bitmap("bg.png")
 	paint(0,0,dwindow.width,64,res,alpha)
 end
 
@@ -28,12 +27,12 @@ function logo:GetRect()
 	return 0,0,self.w+0.025*self.w,self.w,0.0125*self.w,-20
 end
 
+
 function logo:RenderThis(view)
 	local d = self.d
 	if not movie_loaded then
-		print("view", view)
 		local delta = (1-view) * 0.025*self.w
-		paint(0+delta,0,self.w+delta,self.w,get_bitmap(path.."logo.png"))
+		paint(0+delta,0,self.w+delta,self.w,get_bitmap("logo.png"))
 	end
 end
 
@@ -67,8 +66,7 @@ function root:OnUpdate(t, dt)
 		alpha = alpha + da
 	end
 	alpha = math.min(1, math.max(alpha, 0))
-	dwindow.show_mouse(alpha>0)
-	print("OnUpdate", alpha, da, last_mousemove, t, t - (last_mousemove + UI_show_time))
+	dwindow.show_mouse(alpha>0)	
 end
 
 -- Play/Pause button
@@ -80,7 +78,7 @@ function play:GetRect()
 end
 
 function play:RenderThis()
-	local res = get_bitmap(path.."ui.png")
+	local res = get_bitmap("ui.png")
 	if dwindow.is_playing() then
 		set_bitmap_rect(res, 110,0,110+14,14)
 	else
@@ -102,7 +100,7 @@ function full:GetRect()
 end
 
 function full:RenderThis()
-	local res = get_bitmap(path.."ui.png")
+	local res = get_bitmap("ui.png")
 	set_bitmap_rect(res, 192,0,192+14,14)
 	paint(0,0,14,14,res,alpha)
 end
@@ -124,7 +122,7 @@ function volume:RenderThis()
 	local volume =  dwindow.get_volume()
 	volume = math.min(volume, 1)
 	volume = math.max(volume, 0)
-	local res = get_bitmap(path.."ui.png")
+	local res = get_bitmap("ui.png")
 	set_bitmap_rect(res, 124+34,0,124+34+34,14)
 	paint(0,0,34,14,res,alpha)
 	set_bitmap_rect(res, 124,0,124+34*volume,14)
@@ -145,7 +143,7 @@ function progress:RenderThis()
 	local fv = dwindow.tell() / dwindow.total()
 	fv = math.max(0,math.min(fv,1))
 	
-	local res = get_bitmap(path.."ui.png")
+	local res = get_bitmap("ui.png")
 	set_bitmap_rect(res, 216,0,220,14)
 	paint(3,0,w+3,14,res,alpha)
 	set_bitmap_rect(res, 208,0,212,14)
@@ -187,7 +185,7 @@ function number_current:RenderThis()
 		h, -1, m1, m2, -1, s1, s2,   -- -1 = : symbol in time
 	}
 
-	local res = get_bitmap(path.."ui.png")
+	local res = get_bitmap("ui.png")
 	local x = 0
 	for i=1,#numbers do
 		local tex = 6 + math.floor(numbers[i])*9

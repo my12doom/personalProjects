@@ -682,7 +682,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 		}
 
 		memory_sample->GetPointer(&src);
-		if (do_cpu_test) get_layout<WORD>(src, width, height, (int*)&m_cpu_tested_result);
+		if (do_cpu_test) get_layout<WORD>(src+1, width, height, (int*)&m_cpu_tested_result);
 	}
 
 	else if (m_format == MEDIASUBTYPE_YV12)
