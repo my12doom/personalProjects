@@ -19,7 +19,7 @@
         android:orientation="vertical" >
 
 
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/et_host"
             android:layout_width="fill_parent"
             android:singleLine="true"

@@ -257,8 +257,9 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	wchar_t reset_exe[MAX_PATH];
 	wcscpy(reset_exe, g_apppath);
 	wcscat(reset_exe, L"reset.exe");
-	wchar_t this_exe[MAX_PATH];
-	GetModuleFileNameW(NULL, this_exe, MAX_PATH);
+	wchar_t this_exe[MAX_PATH+2] = L"\"";
+	GetModuleFileNameW(NULL, this_exe+1, MAX_PATH);
+	wcscat(this_exe, L"\"");
 	ShellExecute(NULL, NULL, reset_exe, this_exe, NULL, SW_SHOW);
 	ExitProcess(-1);
 	DebugBreak();

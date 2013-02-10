@@ -126,6 +126,7 @@ protected:
 
 // the code
 bool auth = false;
+extern ICommandReciever *command_reciever;
 HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wchar_t **args, int args_count)
 {
 	const wchar_t *p;
@@ -401,17 +402,17 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		return S_OK;
 	}
 
-#ifdef DEBUG
-	CASE(L"shutdown")
-		TerminateProcess(GetCurrentProcess(), 0);
-#else
 	CASE(L"shutdown")
 	{
+		command_reciever = NULL;
+#ifdef DEBUG
+		TerminateProcess(GetCurrentProcess(), 0);
+#else
 		show_window(1, false);
 		show_window(2, false);
+#endif
 		return S_OK;
 	}
-#endif
 
 	CASE(L"shutdown_windows")
 	{

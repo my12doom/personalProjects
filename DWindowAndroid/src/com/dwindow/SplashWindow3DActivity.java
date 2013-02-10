@@ -2,21 +2,27 @@ package com.dwindow;
 
 
 
+import java.util.Vector;
+
 import com.Vstar.DateBase;
 import com.demo.splash.R;
 import com.dwindow.DWindowNetworkConnection.cmd_result;
 import com.Vstar.Value;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -43,11 +49,11 @@ public class SplashWindow3DActivity extends Activity {
 	Button btn_swapeyes;
 	SeekBar sb_progress;
 	SeekBar sb_volume;
-	EditText editHost;
+	AutoCompleteTextView editHost;
 	EditText editPassword;
-	private Value<String> host = (Value<String>) Value.newValue("host", "192.168.1.199");
-	private Value<String> password = (Value<String>) Value.newValue("password", "TestCode");
-	public static Value<String> path = (Value<String>) Value.newValue("path", "\\");
+	private Value<String> host;
+	private Value<String> password;
+	public static Value<String> path;
 	private Bitmap bmp = null;
 	private int total = 1;
 	private int tell = 0;
@@ -57,11 +63,30 @@ public class SplashWindow3DActivity extends Activity {
 	
 	private boolean thisActivityVisible = false; 
 	private Thread shotThread;
+	private Vector<String>availableIPs;
 	
 	private int connect()
 	{
 		conn.connect(host.get());
 		return conn.login(password.get());
+	}
+	
+	class ScannerThread implements Runnable 
+	{
+		private String host;
+		public ScannerThread(String host)
+		{
+			this.host = host;
+		}
+		public void run() 
+		{
+			DWindowNetworkConnection connection = new DWindowNetworkConnection();
+			if (connection.connect(host))
+			{
+				availableIPs.add(host);
+				autoCompleteUpdateHandler.sendEmptyMessage(0);
+			}
+		}
 	}
 	
     @Override
@@ -72,6 +97,11 @@ public class SplashWindow3DActivity extends Activity {
 		//requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.main);
 		DateBase.Init(this);
+		host = (Value<String>) Value.newValue("host", "");
+		password = (Value<String>) Value.newValue("password", "TestCode");
+		path = (Value<String>) Value.newValue("path", "\\");
+		
+		
 		
         sb_progress = (SeekBar)findViewById(R.id.sb_progress);
         sb_progress.setOnSeekBarChangeListener(new SeekBarListener());
@@ -86,7 +116,7 @@ public class SplashWindow3DActivity extends Activity {
         btn_selectsubtitle = (Button)findViewById(R.id.btn_subtitletrack);
         btn_shutdown = (Button)findViewById(R.id.btn_shutdown);
         btn_swapeyes = (Button)findViewById(R.id.btn_swapeyes);
-        editHost = (EditText)findViewById(R.id.et_host);
+        editHost = (AutoCompleteTextView)findViewById(R.id.et_host);
         editPassword = (EditText)findViewById(R.id.et_password);
         editHost.setText(host.get());
         editPassword.setText(password.get());
@@ -225,6 +255,15 @@ public class SplashWindow3DActivity extends Activity {
     
     public void onResume()
     {
+    	try
+		{
+    		availableIPs = new Vector<String>();
+			int ip = ((WifiManager)getSystemService(Context.WIFI_SERVICE)).getConnectionInfo().getIpAddress();
+			String ipstring = ( ip & 0xFF)+ "." + ((ip >> 8 ) & 0xFF) + "." + ((ip >> 16 ) & 0xFF) + ".";
+			for(int i=1; i<255; i++)
+				new Thread(new ScannerThread(ipstring+i)).start();
+		}catch(Exception e){}
+		
     	thisActivityVisible = true;
     	shotThread = new Thread()
     	{
@@ -286,6 +325,16 @@ public class SplashWindow3DActivity extends Activity {
 		}
     	super.onPause();
     }
+    Handler autoCompleteUpdateHandler = new Handler()
+    {
+    	public void handleMessage(Message msg)
+    	{
+    		ArrayAdapter<String> adapter=new ArrayAdapter<String>(SplashWindow3DActivity.this,
+            		android.R.layout.simple_dropdown_item_1line, (String[])availableIPs.toArray(new String[availableIPs.size()]));
+    		editHost.setAdapter(adapter);
+    		editHost.setThreshold(0);
+    	}
+    };
     
     Handler handler = new Handler()
     {
