@@ -3,9 +3,9 @@ call revision_silent.bat
 #build
 set dev2003="C:\Program Files (x86)\Microsoft Visual Studio .NET 2003\Common7\IDE\devenv"
 set dev2008="C:\Program Files (x86)\Microsoft Visual Studio 9.0\Common7\IDE\devenv"
-E:
+C:
 cd\
-cd E:\private_projects
+cd C:\private
 
 #build
 %dev2008% mySplitter\mySplitter.sln /build "Release_mt"
@@ -43,7 +43,7 @@ copy/y coreavs\release_mt\coreavs.dll tools\
 copy/y mcavs\release_mt\mcavs.dll tools\
 
 pause
-F:\NSIS\makensisw.exe dwindow_NSIS\dwindow.nsi
+C:\NSIS\makensisw.exe dwindow_NSIS\dwindow.nsi
 cd dwindow_NSIS
 set v=%DATE:~2,2%%DATE:~5,2%%DATE:~8,2%
 del (zhu)bo3d%v%.exe

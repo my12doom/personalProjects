@@ -314,7 +314,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view, bool running)
 	return S_OK;
 }
 
-HRESULT dx_player::draw_nonmovie_bg(IDirect3DSurface9 *surface, bool left_eye)
+HRESULT dx_player::draw_nonmovie_bg(IDirect3DSurface9 *surface, int view)
 {
 	int client_width = m_width;
 	int client_height = m_height;

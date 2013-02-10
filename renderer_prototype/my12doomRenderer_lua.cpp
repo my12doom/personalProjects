@@ -347,17 +347,37 @@ int my12doomRenderer_lua_init()
 	return 0;
 }
 
+#ifdef DEBUG
+#define BASE_FRAME "..\\..\\dwindow_UI\\base_frame.lua"
+#define LUA_UI "..\\..\\dwindow_UI\\3dvplayer\\render.lua"
+#else
+#define BASE_FRAME "UI\\base_frame.lua"
+#ifdef VSTAR
+#define LUA_UI "UI\\3dvplayer\\render.lua"
+#else
+#define LUA_UI "UI\\classic\\render.lua"
+#endif
+#endif
+
 int my12doomRenderer_lua_loadscript()
 {
 	luaState lua_state;
-	if (luaL_loadfile(lua_state, "c:\\private\\dwindow_UI\\base_frame.lua") || lua_pcall(lua_state, 0, 0, 0))
+	char apppath[MAX_PATH];
+	GetModuleFileNameA(NULL, apppath, MAX_PATH);
+	*((char*)strrchr(apppath, '\\')+1) = NULL;
+	char tmp[MAX_PATH];
+	strcpy(tmp, apppath);
+	strcat(tmp, BASE_FRAME);
+	if (luaL_loadfile(lua_state, tmp) || lua_pcall(lua_state, 0, 0, 0))
 	{
 		const char * result = lua_tostring(lua_state, -1);
 		printf("failed loading renderer lua script : %s\n", result);
 		lua_settop(lua_state, 0);
 	}
 
-	if (luaL_loadfile(lua_state, "c:\\private\\dwindow_UI\\3dvplayer\\render.lua") || lua_pcall(lua_state, 0, 0, 0))
+	strcpy(tmp, apppath);
+	strcat(tmp, LUA_UI);
+	if (luaL_loadfile(lua_state, tmp) || lua_pcall(lua_state, 0, 0, 0))
 	{
 		const char * result = lua_tostring(lua_state, -1);
 		printf("failed loading renderer lua script : %s\n", result);
