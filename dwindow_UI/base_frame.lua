@@ -431,7 +431,6 @@ end
 function OnMouseEvent(event,x,y,...)
 	local frame = root:GetFrameByPoint(x,y)
 	if frame then
-		frame:BringToTop(true)
 		local l,_,t = frame:GetAbsRect()
 		return frame:OnEvent(event, x-l, y-t, ...)
 	end
@@ -446,13 +445,14 @@ end
 -- helper functions
 function GetCurrentLuaPath(offset)
 	local info = debug.getinfo(2+(offset or 0), "Sl")
-	return GetPath(info.short_src)
+	return GetPath(string.sub(info.source, 2))
 end
 
 function GetPath(pathname)
 	local t = string.reverse(pathname)
 	t = string.sub(t, string.find(t, "\\") or 1)
 	return string.reverse(t)
+	
 end
 
 

@@ -542,7 +542,9 @@ DWORD dx_player::tell_thread()
 		{
 			m_ms->GetCurrentPosition(&current);
 			m_current_time = current / 10000;
-
+		}
+		if (m_ms != NULL && m_total_time== 0)
+		{
 			REFERENCE_TIME total_time = 0xffffffff;
 			m_ms->GetDuration(&total_time);
 			m_total_time = total_time / 10000;
@@ -2479,10 +2481,13 @@ HRESULT dx_player::exit_direct_show()
 
 	if(m_gb)
 	{
-		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer1);
-		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer2);
+#ifdef EVR
 		m_gb->RemoveFilter(m_renderer1->m_evr);
 		m_gb->RemoveFilter(m_renderer1->m_evr2);
+#else
+		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer1);
+		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer2);
+#endif
 	}
 
 	// reconfig renderer
@@ -2751,10 +2756,13 @@ HRESULT dx_player::show_volume_bar(bool show)
 
 HRESULT dx_player::start_loading()
 {
-	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
-	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
+#ifdef EVR
 	m_gb->AddFilter(m_renderer1->m_evr, L"EVR #1");
 	m_gb->AddFilter(m_renderer1->m_evr2, L"EVR #2");
+#else
+	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
+	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
+#endif
 
 	return S_OK;
 }

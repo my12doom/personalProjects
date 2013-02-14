@@ -307,14 +307,18 @@ void lua_global_variable::operator=(lua_CFunction func)
 static int pcall_track_back(lua_State *L)
 {
 	const char* err = lua_tostring(L, -1);
-	printf("%s\n", err);
+
+#ifdef DEBUG
+	char tmp[10240];
 	lua_Debug debug;
-	for(int level = 2; lua_getstack(L, level, &debug); level++)
+	for(int level = 1; lua_getstack(L, level, &debug); level++)
 	{
 		lua_getinfo(L, "Sl", &debug);
-		printf("%s:%d\n", debug.short_src, debug.currentline);
+		sprintf(tmp, "%s(%d,1) : %s \n", debug.short_src, debug.currentline, level == 1 ? strrchr(err, ':')+1 : "");
+		OutputDebugStringA(tmp);
 	}
-
+	DebugBreak();
+#endif
 
 	lua_pushstring(L, err);
 	return 1;

@@ -92,9 +92,11 @@ HRESULT mylog(const char *format, ...)
 }
 
 my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/):
-m_left_queue(_T("left queue")),
-m_right_queue(_T("right queue")),
-m_presenter(NULL)
+m_left_queue(_T("left queue"))
+,m_right_queue(_T("right queue"))
+#ifdef EVR
+,m_presenter(NULL)
+#endif
 {
 	timeBeginPeriod(1);
 
@@ -227,7 +229,7 @@ void my12doomRenderer::init_variables()
 
 	m_dsr0->QueryInterface(IID_IBaseFilter, (void**)&m_dshow_renderer1);
 	m_dsr1->QueryInterface(IID_IBaseFilter, (void**)&m_dshow_renderer2);
-
+#ifdef EVR
 	//  EVR creation and configuration
 	if (!m_evr) m_evr.CoCreateInstance(CLSID_EnhancedVideoRenderer);
 	if (!m_evr2) m_evr2.CoCreateInstance(CLSID_EnhancedVideoRenderer);
@@ -255,6 +257,7 @@ void my12doomRenderer::init_variables()
 		evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
 		display_controll->SetVideoWindow(m_hWnd);
 	}
+#endif
 	m_recreating_dshow_renderer = false;
 
 	// callback
@@ -1182,10 +1185,9 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			D3DDISPLAYMODEEX display_mode = {sizeof(D3DDISPLAYMODEEX), m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight,
 				m_active_pp.FullScreen_RefreshRateInHz, m_active_pp.BackBufferFormat, D3DSCANLINEORDERING_PROGRESSIVE};
 
-
 			m_DeviceEx = NULL;
 			FAIL_RET(m_D3DEx->CreateDeviceEx( AdapterToUse, DeviceType,
-				m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
+				m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_ENABLE_PRESENTSTATS,
 				&m_active_pp, m_active_pp.Windowed ? NULL : &display_mode, &m_DeviceEx ));
 
 			m_DeviceEx->QueryInterface(IID_IDirect3DDevice9, (void**)&m_Device);
@@ -1943,34 +1945,53 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 		else if (m_output_mode == pageflipping)
 		{
-			double delta = (double)timeGetTime()-m_pageflipping_start;
 			int frame_passed = 1;
-			if (delta/(1500/m_d3ddm.RefreshRate) > 1)
-				frame_passed = max(1, floor(delta/(1000/m_d3ddm.RefreshRate)));
-			m_pageflip_frames += frame_passed;
-			m_pageflip_frames %= 2;
+			m_pageflip_frames = max(0, m_pageflip_frames);
+			CComQIPtr<IDirect3DSwapChain9Ex, &IID_IDirect3DSwapChain9Ex> swap_ex(m_swap1);
+			D3DPRESENTSTATS state;
 
-			if (frame_passed>1 || frame_passed <= 0)
+			if (swap_ex && SUCCEEDED(swap_ex->GetPresentStats(&state)) && state.PresentRefreshCount > 0)
 			{
-				if (m_nv3d_display && frame_passed > 2)
-				{
-					DWORD counter;
-					NvAPI_GetVBlankCounter(m_nv3d_display, &counter);
-					m_pageflip_frames = counter - m_nv_pageflip_counter;
-				}
-				mylog("delta=%d.\n", (int)delta);
+				frame_passed = state.PresentRefreshCount - m_pageflip_frames;
+				m_pageflip_frames = state.PresentRefreshCount;
 			}
+			else
+			{
+				double delta = (double)timeGetTime()-m_pageflipping_start;
+				if (delta/(1500/m_d3ddm.RefreshRate) > 1)
+					frame_passed =floor(delta/(1000/m_d3ddm.RefreshRate));
+
+				frame_passed = max(1, frame_passed);
+				m_pageflip_frames += frame_passed;
+			}
+
+			//m_pageflip_frames %= 2;
+			printf("%08x\n", hr);
+
+			if (frame_passed%2 == 0)
+				return S_FALSE;	// skip this frame
+
+// 			if (frame_passed>1 || frame_passed <= 0)
+// 			{
+// 				if (m_nv3d_display && frame_passed > 2)
+// 				{
+// 					DWORD counter;
+// 					NvAPI_GetVBlankCounter(m_nv3d_display, &counter);
+// 					m_pageflip_frames = counter - m_nv_pageflip_counter;
+// 				}
+// 				mylog("delta=%d.\n", (int)delta);
+// 			}
 
 			LARGE_INTEGER l1, l2, l3, l4, l5;
 			QueryPerformanceCounter(&l1);
 			clear(back_buffer);
 			QueryPerformanceCounter(&l2);
-			draw_movie(back_buffer, m_pageflip_frames);
+			draw_movie(back_buffer, m_pageflip_frames%2);
 			QueryPerformanceCounter(&l3);
-			draw_subtitle(back_buffer, m_pageflip_frames);
-			adjust_temp_color(back_buffer, m_pageflip_frames);
+			draw_subtitle(back_buffer, m_pageflip_frames%2);
+			adjust_temp_color(back_buffer, m_pageflip_frames%2);
 			QueryPerformanceCounter(&l4);
-			draw_ui(back_buffer, m_pageflip_frames);
+			draw_ui(back_buffer, m_pageflip_frames%2);
 			QueryPerformanceCounter(&l5);
 
 

@@ -358,6 +358,7 @@ int my12doomRenderer_lua_init()
 #define LUA_UI "UI\\classic\\render.lua"
 #endif
 #endif
+#define LUA_UI "UI\\3dvplayer\\render.lua"
 
 int my12doomRenderer_lua_loadscript()
 {
@@ -368,7 +369,7 @@ int my12doomRenderer_lua_loadscript()
 	char tmp[MAX_PATH];
 	strcpy(tmp, apppath);
 	strcat(tmp, BASE_FRAME);
-	if (luaL_loadfile(lua_state, tmp) || lua_pcall(lua_state, 0, 0, 0))
+	if (luaL_loadfile(lua_state, tmp) || lua_mypcall(lua_state, 0, 0, 0))
 	{
 		const char * result = lua_tostring(lua_state, -1);
 		printf("failed loading renderer lua script : %s\n", result);
@@ -377,7 +378,7 @@ int my12doomRenderer_lua_loadscript()
 
 	strcpy(tmp, apppath);
 	strcat(tmp, LUA_UI);
-	if (luaL_loadfile(lua_state, tmp) || lua_pcall(lua_state, 0, 0, 0))
+	if (luaL_loadfile(lua_state, tmp) || lua_mypcall(lua_state, 0, 0, 0))
 	{
 		const char * result = lua_tostring(lua_state, -1);
 		printf("failed loading renderer lua script : %s\n", result);
