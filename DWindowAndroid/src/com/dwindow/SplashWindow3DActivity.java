@@ -21,12 +21,16 @@ import android.os.Message;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.SeekBar;
+import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
 
 public class SplashWindow3DActivity extends Activity {
@@ -86,6 +90,36 @@ public class SplashWindow3DActivity extends Activity {
 				availableIPs.add(host);
 				autoCompleteUpdateHandler.sendEmptyMessage(0);
 			}
+			connection.disconnect();
+		}
+	}
+	
+	private void login()
+	{
+		InputMethodManager inputMethodManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+		inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+		
+		host.set(editHost.getText().toString());
+		password.set(editPassword.getText().toString());
+		disconnectIsFromUser = false;
+		
+		int result = connect();
+		if (result == 1)
+		{
+			findViewById(R.id.login_layout).setVisibility(View.GONE);
+			findViewById(R.id.main_console).setVisibility(View.VISIBLE);
+			handler.sendEmptyMessageDelayed(0, 5);
+		}
+		else
+		{
+			int state = conn.getState();
+			String hint = getResources().getString(R.string.ConnectionFailed);
+			if (result == 0 )
+				hint = getResources().getString(R.string.PasswordError);
+			if (state == conn.ERROR_NEW_PROTOCOL)
+				hint = getResources().getString(R.string.NeedNewVersion);
+			
+			Toast.makeText(SplashWindow3DActivity.this, hint, Toast.LENGTH_SHORT).show();
 		}
 	}
 	
@@ -118,34 +152,22 @@ public class SplashWindow3DActivity extends Activity {
         btn_swapeyes = (Button)findViewById(R.id.btn_swapeyes);
         editHost = (AutoCompleteTextView)findViewById(R.id.et_host);
         editPassword = (EditText)findViewById(R.id.et_password);
+        editPassword.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        editPassword.setOnEditorActionListener(new OnEditorActionListener()
+        {
+			public boolean onEditorAction(TextView v, int actionId,KeyEvent event)
+			{
+				login();
+				return false;
+			}
+		});
         editHost.setText(host.get());
         editPassword.setText(password.get());
         btn_go.setOnClickListener(new OnClickListener()
         {
 			public void onClick(View v) 
 			{
-				host.set(editHost.getText().toString());
-				password.set(editPassword.getText().toString());
-				disconnectIsFromUser = false;
-				
-				int result = connect();
-				if (result == 1)
-				{
-					findViewById(R.id.login_layout).setVisibility(View.GONE);
-					findViewById(R.id.main_console).setVisibility(View.VISIBLE);
-					handler.sendEmptyMessageDelayed(0, 5);
-				}
-				else
-				{
-					int state = conn.getState();
-					String hint = getResources().getString(R.string.ConnectionFailed);
-					if (result == 0 )
-						hint = getResources().getString(R.string.PasswordError);
-					if (state == conn.ERROR_NEW_PROTOCOL)
-						hint = getResources().getString(R.string.NeedNewVersion);
-					
-					Toast.makeText(SplashWindow3DActivity.this, hint, Toast.LENGTH_SHORT).show();
-				}
+				login();
 			}
         });
         

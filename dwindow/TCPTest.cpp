@@ -131,7 +131,13 @@ int my_handle_req(char* data, int size, DWORD ip, int client_sock, char*line, in
 	wchar_t line_w[1024];
 	for (int i=0; i<size; i++)
 	{
-		if (data[i] != 0xA && data[i] != 0xD && p<1024)
+		if (data[i] == '\b')			// backspace or left arrow
+			p = max(p-1,0);
+
+// 		elseif (data[i] == 27)			// left arrow : \27\91\68
+// 			p = max(p-1,0);
+
+		else if (data[i] != 0xA && data[i] != 0xD && p<1024)
 			line[p++] = data[i];
 		else
 		{

@@ -348,17 +348,16 @@ int my12doomRenderer_lua_init()
 }
 
 #ifdef DEBUG
-#define BASE_FRAME "..\\..\\dwindow_UI\\base_frame.lua"
-#define LUA_UI "..\\..\\dwindow_UI\\3dvplayer\\render.lua"
+	#define BASE_FRAME "..\\..\\dwindow_UI\\base_frame.lua"
+	#define LUA_UI "..\\..\\dwindow_UI\\3dvplayer\\render.lua"
 #else
-#define BASE_FRAME "UI\\base_frame.lua"
-#ifdef VSTAR
-#define LUA_UI "UI\\3dvplayer\\render.lua"
-#else
-#define LUA_UI "UI\\classic\\render.lua"
+	#define BASE_FRAME "UI\\base_frame.lua"
+	#ifdef VSTAR
+		#define LUA_UI "UI\\3dvplayer\\render.lua"
+	#else
+		#define LUA_UI "UI\\classic\\render.lua"
+	#endif
 #endif
-#endif
-#define LUA_UI "UI\\3dvplayer\\render.lua"
 
 int my12doomRenderer_lua_loadscript()
 {
