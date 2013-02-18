@@ -2120,8 +2120,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 
 
-	if (timeGetTime() - l > 5)
-		printf("All Draw Calls = %dms\n", timeGetTime() - l);
+// 	if (timeGetTime() - l > 5)
+// 		printf("All Draw Calls = %dms\n", timeGetTime() - l);
 presant:
 	{
 		MANAGE_DEVICE;
@@ -3183,8 +3183,6 @@ HRESULT my12doomRenderer::calculate_movie_position_unscaled(RECTF *position)
 
 	RECTF &tar = *position;
 	tar = get_movie_scissor_rect();
-	float width = tar.right - tar.left;
-	float height = tar.bottom - tar.top;
 
 	// swap width and height for vertical orientation
 	if (m_display_orientation == vertical)
@@ -3200,6 +3198,8 @@ HRESULT my12doomRenderer::calculate_movie_position_unscaled(RECTF *position)
 	else if (m_output_mode == out_tb)
 		tar.bottom /= 2;
 
+	float width = tar.right - tar.left;
+	float height = tar.bottom - tar.top;
 	double active_aspect = get_active_aspect();
 	float delta_w = width - height * active_aspect;
 	float delta_h = height - width  / active_aspect;
