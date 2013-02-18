@@ -921,6 +921,17 @@ LRESULT dx_player::on_key_down(int id, int key)
 		}
 		break;
 
+#ifdef DEBUG
+	case 192:		// "~"
+		{
+			lua_getglobal(lua_state, "debug");
+			lua_getfield(lua_state, -1, "debug");
+			lua_mypcall(lua_state, 0, 0, NULL);
+			lua_pop(lua_state, 1);
+		}
+		break;
+#endif
+
 	case VK_RIGHT:
 		{
 			int t, mt;

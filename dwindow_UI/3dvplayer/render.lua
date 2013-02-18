@@ -210,6 +210,7 @@ function number_total:GetRect()
 	return 0, 0, numbers_width * 8, numbers_height, -numbers_right_margin, - numbers_bottom_margin
 end
 
+--[[
 test = BaseFrame:Create()
 test.name = "test"
 test:SetRelativeTo(root, TOPLEFT)
@@ -263,5 +264,5 @@ end
 function test4:RenderThis()
 	return paint(0,0,40,40, get_bitmap("É´²¼.png"))
 end
-
+]]--
 if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile(GetCurrentLuaPath() .. "..\\tetris.lua")) end

@@ -1,6 +1,7 @@
 // DirectShow part of my12doom renderer
 
 #include "my12doomRenderer.h"
+#include "..\dwindow\global_funcs.h"
 #include <dvdmedia.h>
 
 bool my12doom_queue_enable = true;
@@ -102,6 +103,8 @@ my12doomRendererDShow::~my12doomRendererDShow()
 	m_allocator->Decommit();
 }
 
+AutoSetting<BOOL> g_accept16bitMediaType(L"16bitStream", 0, REG_DWORD);
+
 HRESULT my12doomRendererDShow::CheckMediaType(const CMediaType *pmt)
 {
     HRESULT   hr = E_FAIL;
@@ -117,7 +120,7 @@ HRESULT my12doomRendererDShow::CheckMediaType(const CMediaType *pmt)
 	GUID subtype = *pmt->Subtype();
     if(*pmt->Type() == MEDIATYPE_Video  &&
        (subtype == MEDIASUBTYPE_YV12 || subtype ==  MEDIASUBTYPE_NV12 || subtype == MEDIASUBTYPE_YUY2 || subtype == MEDIASUBTYPE_RGB32
-	    || subtype == MEDIASUBTYPE_P010 || subtype == MEDIASUBTYPE_P016))
+	    || (g_accept16bitMediaType && (subtype == MEDIASUBTYPE_P010 || subtype == MEDIASUBTYPE_P016))))
     {
         hr = m_owner->CheckMediaType(pmt, m_id);
     }
