@@ -2006,6 +2006,21 @@ DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter)
 	return exit_code;
 }
 
+HRESULT restart_this_program()
+{
+	wchar_t reset_exe[MAX_PATH];
+	wcscpy(reset_exe, g_apppath);
+	wcscat(reset_exe, L"reset.exe");
+	wchar_t this_exe[MAX_PATH+2] = L"\"";
+	GetModuleFileNameW(NULL, this_exe+1, MAX_PATH);
+	wcscat(this_exe, L"\"");
+	ShellExecute(NULL, NULL, reset_exe, this_exe, NULL, SW_SHOW);
+	ExitProcess(-1);
+	DebugBreak();
+
+	return S_OK;
+}
+
 
 LPWSTR RhymeUTF82WideCharHelper(LPWSTR lpszWideString, LPCSTR lpszUTF8String, size_t nWideCharCount)
 {

@@ -141,6 +141,7 @@ BOOL hasGetGustureInfo();
 HRESULT CrackPD10(IBaseFilter *filter);
 bool jpeg_enc_yv12(unsigned char* Ybuffer, unsigned char *Ubuffer, unsigned char*Vbuffer, int width, int height, int Ystride, int UVstride, int quality, const wchar_t* filename);
 DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter);
+HRESULT restart_this_program();
 
 inline bool compare_rect(const RECT in1, const RECT in2)
 {

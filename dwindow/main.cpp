@@ -254,15 +254,7 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	CloseHandle(lhDumpFile);
 
 	// reset and suicide
-	wchar_t reset_exe[MAX_PATH];
-	wcscpy(reset_exe, g_apppath);
-	wcscat(reset_exe, L"reset.exe");
-	wchar_t this_exe[MAX_PATH+2] = L"\"";
-	GetModuleFileNameW(NULL, this_exe+1, MAX_PATH);
-	wcscat(this_exe, L"\"");
-	ShellExecute(NULL, NULL, reset_exe, this_exe, NULL, SW_SHOW);
-	ExitProcess(-1);
-	DebugBreak();
+	restart_this_program();
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -341,7 +333,10 @@ int on_command(HWND hWnd, int uid)
 			mytime(true);
 
 			if (!is_trial_version())
-				MessageBoxW(hWnd, C(L"This program will exit now, Restart it to use new user id."), C(L"Exiting"), MB_ICONINFORMATION);
+			{
+				MessageBoxW(hWnd, C(L"This program will RESTART NOW to activate new user id."), C(L"Exiting"), MB_ICONINFORMATION);
+				restart_this_program();
+			}
 
 			EndDialog(hWnd, IDOK);
 		}
