@@ -93,7 +93,8 @@ static int draw_font_core(lua_State *L)
 	USES_CONVERSION;
 	gpu_sample *sample = NULL;
 	RGBQUAD color = {255,255,255,255};
-	if (FAILED(g_renderer->drawFont(&sample, create_font(), A2W(text), color)) || sample == NULL)
+	static HFONT font = create_font();
+	if (FAILED(g_renderer->drawFont(&sample, font, A2W(text), color)) || sample == NULL)
 	{
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "failed loading bitmap file");
@@ -325,6 +326,7 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("set_clip_rect_core") = &set_clip_rect_core;
 	g_lua_manager->get_variable("get_resource") = &get_resource;
 	g_lua_manager->get_variable("load_bitmap_core") = &load_bitmap_core;
+	g_lua_manager->get_variable("draw_font_core") = &draw_font_core;
 	g_lua_manager->get_variable("release_resource_core") = &release_resource_core;
 	g_lua_manager->get_variable("commit_resource_core") = &commit_resource_core;
 	g_lua_manager->get_variable("decommit_resource_core") = &decommit_resource_core;

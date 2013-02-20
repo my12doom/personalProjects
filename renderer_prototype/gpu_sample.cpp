@@ -979,7 +979,7 @@ gpu_sample::gpu_sample(CTextureAllocator *allocator, HFONT font, const wchar_t *
 
 	free(data);
 
-	DeleteObject(SelectObject(hdcBmp, hbmOld));
+	SelectObject(hdcBmp, hbmOld);
 	SelectObject(hdc, hOldFont);
 	DeleteObject(hbm);
 	DeleteDC(hdcBmp);

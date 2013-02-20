@@ -14,8 +14,9 @@ end
 
 function logo:RenderThis(arg)
 	if not movie_loaded then
-		local res = get_bitmap("logo2.jpg")
+		local res = test_get_text_bitmap("HelloWorld" .. tostring(dwindow.GetTickCount()))
 		paint(0,0,1920,1080, res)
+		dwindow.release_resource_core(res.res)
 	end
 end
 

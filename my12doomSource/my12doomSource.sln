@@ -66,6 +66,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RealMediaSplitter", "src\fi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseVideoFilter", "src\filters\transform\BaseVideoFilter\BaseVideoFilter.vcproj", "{54DDA60F-E528-4D07-A152-960A1E818680}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FLVSplitter", "src\filters\parser\FLVSplitter\FLVSplitter.vcproj", "{E62223EF-8263-41EB-8174-CD78BBEEF368}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug Filter|Win32 = Debug Filter|Win32
@@ -281,6 +283,22 @@ Global
 		{54DDA60F-E528-4D07-A152-960A1E818680}.Release|Win32.Build.0 = Release|Win32
 		{54DDA60F-E528-4D07-A152-960A1E818680}.Release|x64.ActiveCfg = Release|x64
 		{54DDA60F-E528-4D07-A152-960A1E818680}.Release|x64.Build.0 = Release|x64
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Debug Filter|Win32.ActiveCfg = Debug Filter|Win32
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Debug Filter|Win32.Build.0 = Debug Filter|Win32
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Debug Filter|x64.ActiveCfg = Debug Filter|x64
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Debug Filter|x64.Build.0 = Debug Filter|x64
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Debug|Win32.Build.0 = Debug|Win32
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Debug|x64.ActiveCfg = Debug|x64
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Debug|x64.Build.0 = Debug|x64
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Release Filter|Win32.ActiveCfg = Release Filter|Win32
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Release Filter|Win32.Build.0 = Release Filter|Win32
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Release Filter|x64.ActiveCfg = Release Filter|x64
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Release Filter|x64.Build.0 = Release Filter|x64
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Release|Win32.ActiveCfg = Release|Win32
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Release|Win32.Build.0 = Release|Win32
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Release|x64.ActiveCfg = Release|x64
+		{E62223EF-8263-41EB-8174-CD78BBEEF368}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

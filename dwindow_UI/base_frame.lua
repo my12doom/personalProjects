@@ -370,9 +370,24 @@ function releaseCache(is_decommit)
 	end
 end
 
-function get_bitmap(filename)
+function test_get_text_bitmap(text)
+	local res, width, height = dwindow.draw_font_core(text)		-- width is also used as error msg output.
+	if not res then
+		error(width, filename)
+		return
+	end
+	local rtn = {res = res, width = width, height = height, filename=filename}
+	rtn.left = 0
+	rtn.right = 0
+	rtn.top = 0
+	rtn.bottom = 0
+	return rtn
+end
+
+function get_bitmap(filename, reload)
 	if string.find(filename, ":\\") ~= 2 then filename = GetCurrentLuaPath(1) .. filename end
 
+	if reload then unload_bitmap(filename) end
 	if bitmapcache[filename] == nil then
 		local res, width, height = dwindow.load_bitmap_core(filename)		-- width is also used as error msg output.
 		
@@ -382,7 +397,7 @@ function get_bitmap(filename)
 			bitmapcache[filename].width = nil
 			bitmapcache[filename].error_msg = width
 		end
-		info("loaded", filename, width, height)
+		print("loaded", filename, width, height)
 	end
 	
 	-- reset ROI
@@ -396,7 +411,7 @@ end
 
 function unload_bitmap(filename, is_decommit)
 	local tbl = bitmapcache[filename]
-	if not tbl or not istable(tbl) then return end
+	if not tbl or type(tbl)~="table" then return end
 
 	if is_decommit then
 		dwindow.decommit_resource_core(bitmapcache[filename].res)
