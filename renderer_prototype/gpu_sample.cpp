@@ -887,7 +887,6 @@ HFONT create_font(const wchar_t *facename/* = L"ºÚÌå"*/, int font_height)
 
 gpu_sample::gpu_sample(CTextureAllocator *allocator, HFONT font, const wchar_t *text, RGBQUAD color, RECT *dst_rect /* = NULL */, DWORD flag /* = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL */)
 {
-	font = create_font(L"ºÚÌå", 120);
 	//CAutoLock lck(&g_gpu_lock);
 	m_allocator = allocator;
 	m_interlace_flags = 0;
