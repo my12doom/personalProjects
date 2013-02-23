@@ -12,6 +12,7 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo);
 
 int wmain(int argc, wchar_t* argv[])
 {
+	SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
 	wchar_t *pipename = L"\\\\.\\pipe\\DWindowThumbnailPipe";
 	SetUnhandledExceptionFilter(my_handler);
 	server_thread(argc>1?argv[1]:pipename);

@@ -1210,14 +1210,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\global_funcs.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\global_funcs.h"
-				>
-			</File>
-			<File
 				RelativePath=".\IStereoLayout.h"
 				>
 			</File>
@@ -2108,8 +2100,40 @@
 				</File>
 			</Filter>
 		</Filter>
+		<Filter
+			Name="Thumbnail"
+			>
+			<File
+				RelativePath="..\Thumbnail\remote_thumbnail.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Thumbnail\remote_thumbnail.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Thumbnail\Thumbnail.h"
+				>
+			</File>
+			<File
+				RelativePath=".\thumbnail_creator.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\thumbnail_creator.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\dwindow.manifest"
+			>
+		</File>
+		<File
+			RelativePath=".\global_funcs.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\global_funcs.h"
 			>
 		</File>
 		<File
