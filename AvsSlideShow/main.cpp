@@ -130,6 +130,16 @@ bool is_avs(const wchar_t *file)
 	return wcscmp(tmp, L"avs") == 0;
 }
 
+bool is_ts(const wchar_t *file)
+{
+	int len = wcslen(file);
+	wchar_t tmp[1024];
+	wcscpy(tmp, file + len - 3);
+	for(int i=0; i<3; i++)
+		tmp[i] = towlower(tmp[i]);
+
+	return wcsstr(tmp, L"ts") != NULL;
+}
 INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
 {
 	switch( msg ) 
@@ -262,6 +272,8 @@ HRESULT do_capture(const wchar_t*video, const wchar_t*bmp, int w_count, int h_co
 		AVSValue res;
 		if (is_avs(video))
 			res = env->Invoke("Import", AVSValue(arg, 1));
+		else if (is_ts(video))
+			res = env->Invoke("DirectShowSource", AVSValue(arg, 1));
 		else
 			res = new myFFSource(video, env);
 

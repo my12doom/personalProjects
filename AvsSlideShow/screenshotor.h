@@ -28,7 +28,7 @@ public:
 	int seek(int64_t position);
 	int set_out_format(PixelFormat ptype, int width, int height);
 	int get_one_frame(void *out, int pitch);
-
+	int close(){return close_codec_and_format();}
 
 	double m_duration;
 	int m_width;

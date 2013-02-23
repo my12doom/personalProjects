@@ -2015,7 +2015,7 @@ HRESULT restart_this_program()
 	GetModuleFileNameW(NULL, this_exe+1, MAX_PATH);
 	wcscat(this_exe, L"\"");
 	ShellExecute(NULL, NULL, reset_exe, this_exe, NULL, SW_SHOW);
-	ExitProcess(-1);
+	TerminateProcess(GetCurrentProcess(), -1);
 	DebugBreak();
 
 	return S_OK;

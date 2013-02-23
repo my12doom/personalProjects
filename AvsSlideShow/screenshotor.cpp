@@ -40,8 +40,8 @@ int screenshoter::open_file(const wchar_t*file)
 
 	// open
 	USES_CONVERSION;
-	char * filename = new char[1024];
-	WideCharToMultiByte(CP_UTF8, NULL, file, 1024, filename, 1024, NULL, NULL);
+	char filename[1024];
+	WideCharToMultiByte(CP_UTF8, NULL, file, -1, filename, 1024, NULL, NULL);
 
 	//const char * filename = W2A(file);
 	if ((rtn = avformat_open_input(&m_input_format, filename, NULL, NULL)) < 0)
@@ -157,6 +157,9 @@ int screenshoter::set_out_format(PixelFormat ptype, int width, int height)
 	m_out_width = width;
 	m_out_height = height;
 
+	if (!m_input_format || !m_input_video_codec_ctx)
+		return -1;
+
 	sws_ctx = sws_getCachedContext(sws_ctx, m_input_video_codec_ctx->width, m_input_video_codec_ctx->height, m_input_video_codec_ctx->pix_fmt, 
 		width, height, ptype, SWS_BILINEAR, NULL, NULL, NULL);
 
@@ -165,6 +168,9 @@ int screenshoter::set_out_format(PixelFormat ptype, int width, int height)
 
 int screenshoter::seek(int64_t position)		// milliseconds
 {
+	if (!m_input_format || !m_input_video_codec_ctx)
+		return -1;
+
 	static AVRational QQQQQQQQ = {1, AV_TIME_BASE};		//AV_TIME_BASE_Q
 
 	int64_t seek_target = int64_t(AV_TIME_BASE) * position / 1000;
@@ -180,6 +186,9 @@ int screenshoter::seek(int64_t position)		// milliseconds
 
 int screenshoter::get_one_frame(void *out, int pitch)
 {
+	if (!m_input_format || !m_input_video_codec_ctx)
+		return -1;
+
 	bool got_frame = false;
 
 	AVPacket packet;
@@ -193,7 +202,7 @@ int screenshoter::get_one_frame(void *out, int pitch)
 		if((av_read_frame_result = av_read_frame(m_input_format, &packet))<0)
 		{
 			if (av_read_frame_result == AVERROR_EOF)		// End of File
-				return -1;
+				return AVERROR_EOF;
 
 
 			char tmp[500];
