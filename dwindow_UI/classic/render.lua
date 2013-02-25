@@ -52,21 +52,28 @@ end
 
 
 local last_mousemove =  0
+local mousex = -999
+local mousey = -999
 function root:OnMouseMove(...)
-	last_mousemove = dwindow.GetTickCount()
-	print("OnMouseMove", ...)
-	print(root:GetAbsRect())
+	local px, py = dwindow.get_mouse_pos()
+	if (mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 100 then	
+		last_mousemove = dwindow.GetTickCount()
+		mousex, mousey = dwindow.get_mouse_pos()
+	end
 end
 
 function root:OnUpdate(t, dt)
 	local da = dt/UI_fading_time
-	if t > last_mousemove + UI_show_time then
+	local old_alpha = alpha
+	local hide_mouse = t > last_mousemove + UI_show_time
+	dwindow.show_mouse(not hide_mouse)
+	
+	if hide_mouse then
 		alpha = alpha - da
 	else
 		alpha = alpha + da
 	end
 	alpha = math.min(1, math.max(alpha, 0))
-	dwindow.show_mouse(alpha>0)	
 end
 
 -- Play/Pause button

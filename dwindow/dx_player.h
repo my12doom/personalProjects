@@ -87,6 +87,7 @@ public:
 	HRESULT get_subtitle_parallax(int *parallax) PURE2;
 
 	// image control functions
+	HRESULT toggle_force2d();
 	HRESULT set_force_2d(bool force2d);
 	HRESULT set_swap_eyes(bool swap_eyes);
 	HRESULT set_movie_pos(double x, double y);	// 1.0 = top, -1.0 = bottom, 0 = center

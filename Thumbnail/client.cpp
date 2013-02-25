@@ -8,7 +8,8 @@ HRESULT save_bitmap(void *data, const wchar_t *filename, int width, int height);
 
 int main()
 {
-	remote_thumbnail r(width, height);
+	remote_thumbnail r;
+	r.set_out_format(30, 400, 225);
 	r.connect(L"\\\\.\\pipe\\DWindowThumbnailPipe");
 	r.open_file(L"E:\\video\\video\\8bit.mkv");
 	r.seek(90000);

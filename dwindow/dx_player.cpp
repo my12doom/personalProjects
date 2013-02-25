@@ -2735,6 +2735,18 @@ HRESULT dx_player::set_force_2d(bool force2d)
 	return S_OK;
 }
 
+HRESULT dx_player::toggle_force2d()
+{
+	m_force_2d = !m_force_2d;
+
+	if (m_renderer1)
+	{
+		m_renderer1->set_force_2d(m_force_2d);
+	}
+
+	return S_OK;
+}
+
 HRESULT dx_player::set_movie_pos(double x, double y)
 {
 	m_movie_pos_x = x;

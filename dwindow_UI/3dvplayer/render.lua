@@ -1,6 +1,4 @@
- -- global functions and variables
-
-buttons = {}
+-- 3dvplayer UI renderer
 
 if require and not BaseFrame then require("base_frame") end
 
@@ -14,14 +12,32 @@ end
 
 function logo:RenderThis(arg)
 	if not movie_loaded then
-		local res = test_get_text_bitmap("HelloWorld" .. tostring(dwindow.GetTickCount()))
+		local res = get_bitmap("logo_bg.png")
 		paint(0,0,1920,1080, res)
-		dwindow.release_resource_core(res.res)
 	end
 end
 
 function logo:HitTest()
 	return false
+end
+
+logo_hot = BaseFrame:Create()
+logo_hot.name = "LOGO HOT AREA"
+logo:AddChild(logo_hot)
+logo_hot:SetRelativeTo(logo, CENTER)
+function logo_hot:GetRect()
+	return 0,0,400,171
+end
+
+function logo_hot:RenderThis()
+	if not movie_loaded then
+		local res = get_bitmap("logo_hot.png")
+		paint(0,0,400,171, res)
+	end
+end
+
+function logo_hot:OnMouseDown(...)
+	return movie_loaded or dwindow.popup_menu()
 end
 
 toolbar_bg = BaseFrame:Create()
@@ -49,6 +65,17 @@ local button_pictures =
 	"previous.png", "",
 	"stop.png", "",
 	"3d.png", "2d.png",
+}
+
+local button_functions = 
+{
+	dwindow.toggle_fullscreen,
+	dwindow.set_volume,
+	dwindow.GetTickCount,
+	dwindow.pause,
+	dwindow.GetTickCount,
+	dwindow.stop,
+	dwindow.toggle_3d,
 }
 
 local button_size = 40;
@@ -84,12 +111,13 @@ local function button_RenderThis(self)
 end
 
 local function button_OnMouseDown(self)
-	dwindow.pause()
+	return button_functions[self.id]()
 end
 
 
 local x = - margin_button_right
 local y = - margin_button_bottom
+local buttons = {}
 
 for i=1,#button_pictures/2 do
 	local button = buttons[i] or BaseFrame:Create()
@@ -103,6 +131,7 @@ for i=1,#button_pictures/2 do
 	button.OnMouseDown = button_OnMouseDown
 	button.name = button.pic[1]
 	button:SetRelativeTo(nil, BOTTOMRIGHT)
+	button.id = i
 
 	x = x - space_of_each_button
 end
@@ -211,6 +240,90 @@ function number_total:GetRect()
 	return 0, 0, numbers_width * 8, numbers_height, -numbers_right_margin, - numbers_bottom_margin
 end
 
+
+grow = BaseFrame:Create()
+grow.x = 0
+grow.y  = 0
+local last_in_time = 0
+local last_out_time = 0
+local last_in = false
+local alpha_tick = 0
+grow:SetRelativeTo(nil, BOTTOMLEFT)
+toolbar_bg:AddChild(grow)
+grow.name = "GROW"
+
+function grow:GetRect()
+	return 0,0,250,250,self.x-125,125
+end
+
+function grow:Stick(dt)
+	local frame = root:GetFrameByPoint(self.px or 0, self.py or 0)
+	local isbutton = false
+	for _,v in ipairs(buttons) do
+		if v == frame then
+			isbutton = true
+		end
+	end
+	if not isbutton then return end
+	
+	local l,t,r,b = frame:GetAbsRect()
+	local dx = (l+r)/2 - self.x
+	self.x = self.x + 0.82 * dx
+end
+
+function grow:OnUpdate()
+	self.px, self.py = dwindow.get_mouse_pos()
+	local px,py = self.px,self.py
+	
+	local r,b = toolbar_bg:GetAbsAnchorPoint(BOTTOMRIGHT)
+	r,b = r - margin_button_right, b - margin_button_bottom
+	local l,t = toolbar_bg:GetAbsAnchorPoint(BOTTOMRIGHT)
+	l,t = l - margin_progress_right, t - margin_button_bottom - button_size
+	local dt = 0;
+	if l<=px and px<r and t<=py and py<b then
+		if not last_in then 
+			self:OnEnter()
+		else
+			alpha_tick = alpha_tick + (dwindow.GetTickCount() - last_in_time)+2
+			dt = dwindow.GetTickCount() - last_in_time
+		end
+		last_in = true
+		last_in_time = dwindow.GetTickCount()
+	else
+		if last_in then
+			self:OnLeave()
+		else
+			alpha_tick = alpha_tick - (dwindow.GetTickCount() - last_out_time)*0.8
+			dt = dwindow.GetTickCount() - last_out_time
+		end
+		last_in = false
+		last_out_time = dwindow.GetTickCount()
+	end
+	
+	alpha_tick = math.max(alpha_tick, 0)
+	alpha_tick = math.min(alpha_tick, 300)
+	
+	if dt > 0 then self:Stick(dt) end
+end
+
+function grow:OnEnter()
+	print("OnEnter")
+end
+
+function grow:OnLeave()
+	print("OnLeave")
+end
+
+function grow:RenderThis()
+	local res = get_bitmap("grow.png")
+	local alpha = alpha_tick / 200
+	paint(0, 0, 250, 250, res, alpha)
+end
+
+function grow:HitTest()
+	return false
+end
+
 --[[
 test = BaseFrame:Create()
 test.name = "test"
@@ -266,4 +379,4 @@ function test4:RenderThis()
 	return paint(0,0,40,40, get_bitmap("É´²¼.png"))
 end
 ]]--
-if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile(GetCurrentLuaPath() .. "..\\tetris.lua")) end
+--if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile(GetCurrentLuaPath() .. "..\\tetris.lua")) end

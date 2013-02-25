@@ -199,6 +199,19 @@ static int pause(lua_State *L)
 
 	return 0;
 }
+static int play(lua_State *L)
+{
+	g_player->play();
+
+	return 0;
+}
+
+static int stop(lua_State *L)
+{
+	g_player->stop();
+
+	return 0;
+}
 
 static int toggle_fullscreen(lua_State *L)
 {
@@ -206,13 +219,13 @@ static int toggle_fullscreen(lua_State *L)
 
 	return 0;
 }
-
-static int play(lua_State *L)
+static int toggle_3d(lua_State *L)
 {
-	g_player->play();
+	g_player->toggle_force2d();
 
 	return 0;
 }
+
 
 static int is_playing(lua_State *L)
 {
@@ -289,7 +302,7 @@ static int show_mouse(lua_State *L)
 		return 0;
 
 	bool v = lua_toboolean(L, parameter_count+0);
-	g_player->show_mouse_core(v,true);
+	g_player->show_mouse_core(v);
 
 	lua_pushboolean(L, TRUE);
 	return 1;
@@ -335,6 +348,7 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("is_playing") = &is_playing;
 	g_lua_manager->get_variable("is_fullscreen") = &is_fullscreen;
 	g_lua_manager->get_variable("pause") = &pause;
+	g_lua_manager->get_variable("stop") = &stop;
 	g_lua_manager->get_variable("toggle_fullscreen") = &toggle_fullscreen;
 	g_lua_manager->get_variable("total") = &total;
 	g_lua_manager->get_variable("tell") = &tell;
@@ -343,6 +357,7 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("set_volume") = &set_volume;
 	g_lua_manager->get_variable("popup_menu") = &popup_menu;
 	g_lua_manager->get_variable("show_mouse") = &show_mouse;
+	g_lua_manager->get_variable("toggle_3d") = &toggle_3d;
 
 	my12doomRenderer_lua_loadscript();
 
@@ -351,7 +366,7 @@ int my12doomRenderer_lua_init()
 
 #ifdef DEBUG
 	#define BASE_FRAME "..\\..\\dwindow_UI\\base_frame.lua"
-	#define LUA_UI "..\\..\\dwindow_UI\\3dvplayer\\render.lua"
+	#define LUA_UI "..\\..\\dwindow_UI\\classic\\render.lua"
 #else
 	#define BASE_FRAME "UI\\base_frame.lua"
 	#ifdef VSTAR

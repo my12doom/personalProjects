@@ -5,7 +5,7 @@
 class remote_thumbnail
 {
 public:
-	remote_thumbnail(int width, int height, int pixel_format = 30, HANDLE pipe = INVALID_HANDLE_VALUE );		// 30 = PIX_FMT_BGRA
+	remote_thumbnail();		// 30 = PIX_FMT_BGRA
 	~remote_thumbnail();
 
 	int connect(HANDLE  pipe);
@@ -14,6 +14,7 @@ public:
 	int open_file(const wchar_t*file);
 	int seek(__int64 position);
 	int get_one_frame();
+	int set_out_format(int pixel_format, int width, int height);
 	int close();
 
 	void *recieved_data;
@@ -27,17 +28,19 @@ public:
 	};
 
 protected:
-	virtual int on_disconnect(){return 0;}								// default behavior: do nothing, override this to reconnect to pipe
+	virtual int on_disconnect(){return 0;}							// default behavior: do nothing, override this to reconnect to pipe
 	virtual int on_error(int error_code){return disconnect();}		// default behavior: disconnect
 
 protected:
-	int set_out_format(int pixel_format, int width, int height);
 
 	bool m_connected;
 	HANDLE m_pipe;
+
+	// tmp variable
 	thumbnail_cmd cmd;
 	DWORD byteWritten;
 
+	// working state
 	int m_width;
 	int m_height;
 	int m_pixel_format;

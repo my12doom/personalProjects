@@ -1,14 +1,13 @@
 #include "remote_thumbnail.h"
 #define error_exit(code){on_error(code);return code;}
 #define test_error(code) if((code)<0) error_exit(code)
-remote_thumbnail::remote_thumbnail(int width, int height, int pixel_format /* = 30 */, HANDLE pipe /* = INVALID_HANDLE_VALUE */ )
+remote_thumbnail::remote_thumbnail()
 :m_pipe(NULL)
 {
-	m_width = width;
-	m_height = height;
-	m_pixel_format = pixel_format;
+	m_width = 400;
+	m_height = 225;
+	m_pixel_format = 30;
 	recieved_data = NULL;
-	connect(pipe);
 }
 remote_thumbnail::~remote_thumbnail()
 {
@@ -53,7 +52,7 @@ int remote_thumbnail::connect(const wchar_t *pipename)
 			return error_connect_timeout;
 	}
 
-
+	return error_connect_error;
 }
 
 int remote_thumbnail::disconnect()

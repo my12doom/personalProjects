@@ -314,7 +314,7 @@ static int pcall_track_back(lua_State *L)
 	for(int level = 1; lua_getstack(L, level, &debug); level++)
 	{
 		lua_getinfo(L, "Sl", &debug);
-		sprintf(tmp, "%s(%d,1) : %s \n", debug.short_src, debug.currentline, level == 1 ? strrchr(err, ':')+1 : "");
+		sprintf(tmp, "%s(%d,1) : %s \n", debug.source+1, debug.currentline, level == 1 ? strrchr(err, ':')+1 : "");
 		OutputDebugStringA(tmp);
 	}
 	DebugBreak();

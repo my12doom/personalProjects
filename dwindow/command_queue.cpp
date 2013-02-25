@@ -15,12 +15,14 @@ command *command_queue::pop()								// return directly, NULL if no command in q
 command *command_queue::wait(int max_wait_time)				// 
 {
 	int l = timeGetTime();
-	while (timeGetTime()-l < max_wait_time)
+	while (timeGetTime()-l < max_wait_time || max_wait_time == -1)
 	{
 		command *o = pop();
 
 		if (o != NULL)
 			return o;
+
+		Sleep(1);
 	}
 
 	return NULL;
