@@ -232,7 +232,7 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	// mini dump
 	wchar_t tmp[MAX_PATH];
 	GetTempPathW(MAX_PATH, tmp);
-	wcscpy(tmp, L"C:\\TMP\\DumpFile.dmp");
+	wcscpy(wcsrchr(tmp, '\\'), L"\\DWindowDumpFile.dmp");
 	HANDLE lhDumpFile = CreateFileW(tmp, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
 
 	MINIDUMP_EXCEPTION_INFORMATION loExceptionInfo;
@@ -243,9 +243,22 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 
 	CloseHandle(lhDumpFile);
 
-	// reset and suicide
+#ifdef ZHUZHU
 	restart_this_program();
+#endif
 
+	// reset and suicide
+	wchar_t description[1024];
+	swprintf(description, C(L"Ooops....something bad happened. \n"
+							L"Press Retry to debug or Cancel to RESTART progress.\n"
+							L"Or continue at your own risk, the program will become UNSTABLE.\n"
+							L"\nMini Dump File:\n%s"), tmp);
+	int o = MessageBoxW(NULL, description, C(L"Error"), MB_CANCELTRYCONTINUE | MB_ICONERROR);
+	if (o == IDCANCEL)
+		restart_this_program();
+	else if (o == IDCONTINUE)
+		TerminateThread(GetCurrentThread(), -1);
+	DebugBreak();
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 

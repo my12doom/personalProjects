@@ -128,7 +128,6 @@ DWORD WINAPI handler_thread(LPVOID param)
 wchar_t *out = new wchar_t[1024000];
 wchar_t *out2 = new wchar_t[1024000];
 char *outA = new char[1024000];
-CCritSec sec;
 int my_handle_req(char* data, int size, DWORD ip, int client_sock, char*line, int &p) 
 {
 	int code_page = CP_ACP;
@@ -147,7 +146,6 @@ int my_handle_req(char* data, int size, DWORD ip, int client_sock, char*line, in
 		{
 			if(data[i] == 0xD)
 			{
-				CAutoLock lck(&sec);
 				line[p] = NULL;
 				MultiByteToWideChar(CP_UTF8, 0, line, 1024, line_w, 1024);
 
