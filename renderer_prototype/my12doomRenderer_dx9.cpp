@@ -4645,6 +4645,7 @@ HRESULT my12doomRenderer::HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirec
 
 HRESULT my12doomRenderer::set_ui_drawer(ui_drawer_base * new_ui_drawer)
 {
+	CAutoLock lck2(&m_frame_lock);
 	CAutoLock lck(&m_uidrawer_cs);
 	if (NULL != m_uidrawer)
 		m_uidrawer->uninit();

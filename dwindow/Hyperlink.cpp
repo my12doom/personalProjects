@@ -86,14 +86,18 @@ CHyperlink::~CHyperlink()
 }
 
 
-bool CHyperlink::create(int resourceid, HWND parent)
+bool CHyperlink::create(int resourceid, HWND parent, const char *url/* = NULL*/, const char *display_text/* = NULL*/)
 {
 	HWND old = ::GetDlgItem(parent, resourceid);
 	if (old != NULL)
 	{
-		RECT rect; char url[256];
+		m_font = (HFONT)SendMessage(old, WM_GETFONT, 0, 0);
+		RECT rect; char text[256];
+		if (display_text == NULL)
+			::GetWindowTextA(old, text, sizeof(text));
+		else
+			strcpy(text, display_text);
 
-		::GetWindowTextA(old, url, sizeof(url));
 		::GetWindowRect(old, &rect);
 
 		//GetWindowRect return bounding box in screen coordinates.
@@ -104,18 +108,18 @@ bool CHyperlink::create(int resourceid, HWND parent)
 		ScreenToClient(parent, ((POINT*)&rect)+1);
 
 		//finally, destroy the old label
-		if (create(rect, url, parent))
+		if (create(rect, url ? url : text, parent, text))
 		::DestroyWindow(old);
 	}
 	return m_hWnd != NULL;
 }
 
-bool CHyperlink::create(RECT rect, const char *url, HWND parent)
+bool CHyperlink::create(RECT rect, const char *url, HWND parent, const char*display_text)
 {
 	if (url != NULL)
 		m_Url = url;
 
-	m_hWnd = ::CreateWindowA( STATIC_HYPER_WINDOW_CLASSA, m_Url.c_str(), WS_CHILD | WS_VISIBLE, 
+	m_hWnd = ::CreateWindowA( STATIC_HYPER_WINDOW_CLASSA, display_text ? display_text : m_Url.c_str(), WS_CHILD | WS_VISIBLE, 
 									rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, 
 									parent, NULL, NULL, NULL);
 
@@ -123,14 +127,14 @@ bool CHyperlink::create(RECT rect, const char *url, HWND parent)
 
 	return m_hWnd != NULL;
 }
-bool CHyperlink::create(int x1, int y1, int x2, int y2, const char *url, HWND parent)
+bool CHyperlink::create(int x1, int y1, int x2, int y2, const char *url, HWND parent, const char*display_text)
 {
 	RECT rect; 
 	rect.left = x1;
 	rect.top = y1;
 	rect.right = x2;
 	rect.bottom = y2;
-	return create(rect, url, parent);
+	return create(rect, url, parent, display_text);
 }
 
 
@@ -157,28 +161,13 @@ int CHyperlink::WndProc(HWND hwnd,WORD wMsg,WPARAM wParam,LPARAM lParam)
 				return 0;
 
 			RECT rect;
-			::GetClientRect(hwnd, &rect);
-
-			HFONT font = ::CreateFont( 16, //height
-										7, //average char width
-										0, //angle of escapement
-										0, //base-line orientation angle
-										FW_NORMAL,	//font weight
-										FALSE,		//italic
-										TRUE,		//underline
-										FALSE,		//strikeout
-										ANSI_CHARSET,			//charset identifier
-										OUT_DEFAULT_PRECIS,		//ouput precision
-										CLIP_DEFAULT_PRECIS,	//clipping precision
-										DEFAULT_QUALITY,	//output quality
-										DEFAULT_PITCH,			//pitch and family
-										L"Arial");
-				
-			::SelectObject(hDC, font);
+			::GetClientRect(hwnd, &rect);				
+ 			::SelectObject(hDC, hl->m_font);
 			::SetTextColor(hDC, RGB(0,0,200));
 			::SetBkMode(hDC, TRANSPARENT);
-			::DrawTextA(hDC, hl->m_Url.c_str(), hl->m_Url.length(), &rect, DT_VCENTER | DT_LEFT);
-			::DeleteObject(font);
+			wchar_t text[1024];
+			::GetWindowTextW(hwnd, text, 1024);
+			::DrawTextW(hDC, text, -1, &rect, DT_VCENTER | DT_LEFT);
 
 			::EndPaint(hwnd, &ps);
 						

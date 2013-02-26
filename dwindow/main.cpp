@@ -10,8 +10,11 @@
 #include <locale.h>
 #include <Dbghelp.h>
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
+#include "Hyperlink.h"
+
 #pragma comment(lib, "DbgHelp")
 dx_player *g_player = NULL;
+CHyperlink register_hyperlink;
 
 // main window
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
@@ -250,6 +253,7 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 int init_dialog(HWND hWnd)
 {
 	//SetWindowTextW(hWnd, C(L"Enter User ID"));
+	register_hyperlink.create(IDC_REGISTERUSER, hWnd, "http://www.bo3d.net/user/");
 
 	return 0;
 }

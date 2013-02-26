@@ -324,19 +324,20 @@ function grow:HitTest()
 	return false
 end
 
---[[
 test = BaseFrame:Create()
 test.name = "test"
 test:SetRelativeTo(root, TOPLEFT)
 root:AddChild(test)
 function test:GetRect()
-	return 0,0,40,40
+	self.res = self.res or test_get_text_bitmap("HelloWorld")
+	return 0,0,self.res.width,self.res.height
 end
 
 function test:RenderThis()
-	return paint(0,0,40,40, get_bitmap("fullscreen.png"))
+	paint(0,0,self.res.width,self.res.height, self.res)
 end
 
+--[[
 test2 = BaseFrame:Create()
 test2.name = "test2"
 test2:SetRelativeTo(test, RIGHT, LEFT)

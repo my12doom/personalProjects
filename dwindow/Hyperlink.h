@@ -48,13 +48,14 @@ public:
 	CHyperlink();
 	virtual ~CHyperlink();
 
-	bool create(int resourceid, HWND parent);
-	bool create(RECT rect, const char *url, HWND parent);
-	bool create(int x1, int y1, int x2, int y2, const char *url, HWND parent);
+	bool create(int resourceid, HWND parent, const char *url = NULL, const char *display_text = NULL);
+	bool create(RECT rect, const char *url, HWND parent, const char*display_text);
+	bool create(int x1, int y1, int x2, int y2, const char *url, HWND parent, const char*display_text);
 
 protected:
 	std::string m_Url;
 	HWND m_hWnd;
+	HFONT m_font;
 
 	static _autoinitializer __autoinitializer;
 	static HCURSOR handcursor;
