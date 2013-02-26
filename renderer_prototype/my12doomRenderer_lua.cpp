@@ -365,10 +365,10 @@ int my12doomRenderer_lua_init()
 }
 
 #ifdef DEBUG
-	#define BASE_FRAME "..\\..\\dwindow_UI\\base_frame.lua"
-	#define LUA_UI "..\\..\\dwindow_UI\\classic\\render.lua"
+	#define BASE_FRAME "..\\..\\dwindow_UI\\dwindow.lua"
+	#define LUA_UI "..\\..\\dwindow_UI\\3dvplayer\\render.lua"
 #else
-	#define BASE_FRAME "UI\\base_frame.lua"
+	#define BASE_FRAME "UI\\dwindow.lua"
 	#ifdef VSTAR
 		#define LUA_UI "UI\\3dvplayer\\render.lua"
 	#else

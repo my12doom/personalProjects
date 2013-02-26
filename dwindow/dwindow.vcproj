@@ -2072,7 +2072,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\dwindow_UI\bp.lua"
+				RelativePath="..\dwindow_UI\dwindow.lua"
 				>
 			</File>
 			<File
