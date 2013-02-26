@@ -1,3 +1,4 @@
+#include <time.h>
 #include <stdio.h>
 #include <Windows.h>
 #include "stereo_test.h"
@@ -149,7 +150,7 @@ DWORD WINAPI core_thread(LPVOID parameter)
 			if (offset != -99999)
 			{
 				int c = min((offset+range)*255/(2*range)+1, 255);
-				c = min_delta * 255 / (throat/32);
+				//c = min_delta * 255 / (throat/32);
 				out[(1080-1-y)*1920+x] = RGB(c, c, c);
 			}
 			else
@@ -333,8 +334,144 @@ int subpixel2D()
 	return 0;
 }
 
+int letterbox_detect()
+{
+	RGBQUAD * data = new RGBQUAD[1920*1080];
+	HBITMAP bm = (HBITMAP)LoadImageA(0, "Z:\\letterboxBW.bmp", IMAGE_BITMAP, 1920, 1080, LR_LOADFROMFILE);
+	GetBitmapBits(bm, 1920*1080*4, data);
+	DeleteObject(bm);
+
+	RGBQUAD mask[4] = {{0,255,0,0},{0,255,0,0},{0,255,0,0},{0,255,0,0}};
+	int t = GetTickCount();
+	int line_lum[1080] = {0};
+	__m128i mm_mask;
+	mm_mask = _mm_loadu_si128((__m128i*)&mask);
+	for(int i=0; i<1000; i++)
+	{
+		FILE *f = fopen("Z:\\letterbox.txt", "wb");
+		for(int y=1; y<540; y++)
+		{
+			__m128i mm0;
+			mm0 = _mm_setzero_si128();
+			__m128i mm1;
+			for(int x=1; x<960; x+=4)
+			{
+				RGBQUAD *p = &data[y*1920+x];
+				mm1 = _mm_loadu_si128((__m128i*)p);
+				mm1 = _mm_and_si128(mm1, mm_mask);
+				mm1 = _mm_srai_epi32 (mm1, 8);
+				mm0 = _mm_add_epi32(mm0, mm1);
+// 				line_lum[y] += ((double)abs(p->rgbGreen));//((double)abs(p->rgbGreen - (p-1)->rgbGreen));
+			}
+			DWORD *p = (DWORD*)&mm0;
+			int total = p[0]+p[1]+p[2]+p[3];
+			line_lum[y] = total;
+			int t1 = line_lum[y];
+			int t2 = line_lum[y-1];
+			float times = 0;
+			if (t1>0 && t2>0)
+				times = t1>t2?(double)t1/t2:(double)t2/t1;
+
+ 			fprintf(f, "%d\t%d\t%f\r\n", y, line_lum[y], times);
+			if (times > 100)
+				break;
+		}
+		fclose(f);
+	}
+	printf("time cost:%d\n", GetTickCount()-t);
+	delete data;
+
+	return 0;
+}
+
+
+int letterbox_detectY()
+{
+	BYTE * data = new BYTE[1920*1080];
+	FILE * f = fopen("Z:\\letterbox.raw", "rb");
+	fread(data, 1, 1920*1080, f);
+	fclose(f);
+
+	int t = GetTickCount();
+	int line_lum[1080] = {0};
+	__m128i mm_zero;
+	mm_zero = _mm_setzero_si128();
+	for(int i=0; i<1000; i++)
+	{
+		FILE *f = fopen("Z:\\letterbox.txt", "wb");
+		for(int y=1; y<540; y++)
+		{
+			__m128i mm_total1;
+			__m128i mm_total2;
+			mm_total1 = _mm_setzero_si128();
+			mm_total2 = _mm_setzero_si128();
+			__m128i mm1;
+			__m128i mm2;
+			for(int x=0; x<1920; x+=16)
+			{
+				BYTE *p = &data[y*1920+x];
+				mm1 = _mm_loadu_si128((__m128i*)p);
+				mm2 = _mm_unpackhi_epi8(mm1, mm_zero);
+				mm1 = _mm_unpacklo_epi8 (mm1, mm_zero);
+				mm_total1 = _mm_add_epi16(mm_total1, mm1);
+				mm_total2 = _mm_add_epi16(mm_total2, mm2);
+			}
+			WORD *p = (WORD*)&mm_total1;
+			WORD *p2 = (WORD*)&mm_total2;
+			int total = p[0]+p[1]+p[2]+p[3]+p2[0]+p2[1]+p2[2]+p2[3];
+			total /= 1920;
+			line_lum[y] = total;
+			int t1 = line_lum[y];
+			int t2 = line_lum[y-1];
+			float times = 0;
+			if (t1>0 && t2>0)
+				times = t1>t2?(double)t1/t2:(double)t2/t1;
+
+ 			fprintf(f, "%d\t%d\t%f\r\n", y, line_lum[y], times);
+			if (times > 5 && total > 10)
+				break;
+		}
+		fclose(f);
+	}
+	printf("time cost:%d\n", GetTickCount()-t);
+	delete data;
+
+	return 0;
+}
+
 int main()
 {
+	return letterbox_detectY();
+	/*
+	FILE * xxxx = fopen("Z:\\y2.raw", "rb");
+
+	BYTE *p = new BYTE[3840*1080];
+	fread(p, 1, 3840*1080, xxxx);
+	fclose(xxxx);
+	RGBQUAD *p2 = new RGBQUAD[3840*1080];
+
+	for(int y=0; y<1080; y++)
+		for(int x=0; x<1920; x++)
+	{
+		BYTE &l = p[y*3840 + x];
+		BYTE &r = p[y*3840 + x + 1920];
+
+		BYTE ll = l - r/4;
+		BYTE rr = r - l/4;
+
+		l = ll;
+		r = rr;
+	}
+
+	for(int i=3840*1080-1; i>=0; i--)
+		memset(p2+i, ((BYTE*)p)[i], 4);
+
+	save_bitmap((DWORD*)p2, L"Z:\\y2.bmp", 3840, 1080);
+	return 0;
+	*/
+
+
+
 // 	return subpixel2D();
 
 // 	philip();
