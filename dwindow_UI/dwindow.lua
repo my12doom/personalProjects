@@ -74,11 +74,13 @@ end
 -- GPU resource management
 function OnInitCPU()
 	debug_print("OnInitCPU")
+	root:BroadCastEvent("OnInitCPU", last_render_time, delta_time)
 	-- load resources here (optional)
 end
 
 function OnInitGPU()
 	debug_print("OnInitGPU")
+	root:BroadCastEvent("OnInitGPU", last_render_time, delta_time)
 	-- commit them to GPU (optional)
 	-- handle resize changes here (must)
 end
@@ -86,12 +88,14 @@ end
 function OnReleaseGPU()
 	-- decommit all GPU resources (must)
 	debug_print("OnReleaseGPU")
+	root:BroadCastEvent("OnReleaseGPU", last_render_time, delta_time)
 	releaseCache(true)
 end
 
 function OnReleaseCPU()
 	-- release all resources (must)
 	debug_print("OnReleaseCPU")
+	root:BroadCastEvent("OnReleaseCPU", last_render_time, delta_time)
 	releaseCache(false)
 end
 

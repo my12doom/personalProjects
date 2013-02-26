@@ -124,7 +124,6 @@ static int draw_font_core(lua_State *L)
 	lua_pushinteger(L, sample->m_width);
 	lua_pushinteger(L, sample->m_height);
 	return 3;
-
 }
 
 static int release_resource_core(lua_State *L)
@@ -373,8 +372,6 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("popup_menu") = &popup_menu;
 	g_lua_manager->get_variable("show_mouse") = &show_mouse;
 	g_lua_manager->get_variable("toggle_3d") = &toggle_3d;
-
-	my12doomRenderer_lua_loadscript();
 
 	return 0;
 }

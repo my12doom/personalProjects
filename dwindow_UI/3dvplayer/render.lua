@@ -329,12 +329,22 @@ test.name = "test"
 test:SetRelativeTo(root, TOPLEFT)
 root:AddChild(test)
 function test:GetRect()
-	self.res = self.res or test_get_text_bitmap("HelloWorld")
-	return 0,0,self.res.width,self.res.height
+	return 0,0,self.width or 0,self.height or 0
 end
 
 function test:RenderThis()
-	paint(0,0,self.res.width,self.res.height, self.res)
+	paint(0,0,self.width,self.height, self.res)
+end
+
+function test:OnInitCPU()
+	self.res = test_get_text_bitmap("HelloWorld")
+	self.width = self.res.width
+	self.height = self.res.height
+end
+
+function test:OnReleaseCPU()
+	dwindow.release_resource_core(self.res.res)
+	self.res = nil
 end
 
 --[[
