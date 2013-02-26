@@ -866,25 +866,6 @@ clearup:
 	safe_delete(m_tex_YUY2_UV);
 }
 
-
-HFONT create_font(const wchar_t *facename/* = L"ºÚÌå"*/, int font_height)
-{
-	LOGFONTW lf={0};
-	;
-	lf.lfHeight = -font_height;
-	lf.lfCharSet = GB2312_CHARSET;
-	lf.lfOutPrecision =  OUT_STROKE_PRECIS;
-	lf.lfClipPrecision = CLIP_STROKE_PRECIS;
-	lf.lfQuality = DEFAULT_QUALITY;
-	lf.lfPitchAndFamily = VARIABLE_PITCH;
-	lf.lfWeight = FW_BOLD*3;
-	lstrcpynW(lf.lfFaceName, facename, 32);
-
-	HFONT rtn = CreateFontIndirectW(&lf); 
-
-	return rtn;
-}
-
 gpu_sample::gpu_sample(CTextureAllocator *allocator, HFONT font, const wchar_t *text, RGBQUAD color, RECT *dst_rect /* = NULL */, DWORD flag /* = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL */)
 {
 	//CAutoLock lck(&g_gpu_lock);

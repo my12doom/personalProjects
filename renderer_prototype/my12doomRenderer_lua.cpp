@@ -82,8 +82,23 @@ static int load_bitmap_core(lua_State *L)
 	return 3;
 }
 
+HFONT create_font(const wchar_t *facename = L"ºÚÌå", int font_height = 14)
+{
+	LOGFONTW lf={0};
+	;
+	lf.lfHeight = -font_height;
+	lf.lfCharSet = GB2312_CHARSET;
+	lf.lfOutPrecision =  OUT_STROKE_PRECIS;
+	lf.lfClipPrecision = CLIP_STROKE_PRECIS;
+	lf.lfQuality = DEFAULT_QUALITY;
+	lf.lfPitchAndFamily = VARIABLE_PITCH;
+	lf.lfWeight = FW_BOLD*3;
+	lstrcpynW(lf.lfFaceName, facename, 32);
 
-extern HFONT create_font(const wchar_t *facename = L"ºÚÌå", int font_height = 14);
+	HFONT rtn = CreateFontIndirectW(&lf); 
+
+	return rtn;
+}
 
 static int draw_font_core(lua_State *L)
 {
