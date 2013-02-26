@@ -120,6 +120,8 @@ m_toolbar_background(NULL),
 m_UI_logo(NULL),
 m_dragging_window(0),
 m_resize_window_on_open(L"OnOpen", FALSE, REG_DWORD),
+m_movie_resizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD),
+m_subtitle_resizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD),
 #ifdef VSTAR
 #endif
 m_simple_audio_switching(L"SimpleAudioSwitching", false)
@@ -1285,6 +1287,12 @@ HRESULT dx_player::popup_menu(HWND owner)
 	if (drive_found)
 		DeleteMenu(sub_open_BD, ID_OPENBLURAY3D_NONE, MF_BYCOMMAND);
 
+	// quality
+	CheckMenuItem(menu, ID_VIDEO_BESTQUALITY,		m_movie_resizing == lanczos ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_BETTERQUALITY,		m_movie_resizing == bilinear_mipmap_minus_one ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_NORMALQUALITY,		m_movie_resizing == bilinear_no_mipmap ? MF_CHECKED:MF_UNCHECKED);
+
+
 	// input mode
 	CheckMenuItem(menu, ID_INPUTLAYOUT_AUTO,		m_input_layout == input_layout_auto ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_INPUTLAYOUT_SIDEBYSIDE,	m_input_layout == side_by_side ? MF_CHECKED:MF_UNCHECKED);
@@ -1308,6 +1316,8 @@ HRESULT dx_player::popup_menu(HWND owner)
 	CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				m_output_mode == out_hsbs ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
+
+	// quality
 
 	// Display Orientation
 	CheckMenuItem(menu, ID_DISPLAYORIENTATION_VERTICAL,		m_display_orientation == vertical ? MF_CHECKED:MF_UNCHECKED);
@@ -1903,6 +1913,14 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		m_useInternalAudioDecoder = !m_useInternalAudioDecoder;
 		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Audio Decoder setting may not apply until next file play or audio swtiching."), L"...", MB_OK);
+	}
+
+	// quality
+	else if (uid == ID_VIDEO_BESTQUALITY || uid == ID_VIDEO_BETTERQUALITY || uid == ID_VIDEO_NORMALQUALITY)
+	{
+		m_movie_resizing = m_subtitle_resizing = (uid == ID_VIDEO_BESTQUALITY) ? lanczos : (uid == ID_VIDEO_BETTERQUALITY ? bilinear_mipmap_minus_one : bilinear_no_mipmap);
+		m_renderer1->set_movie_resizing((resampling_method)(int) m_movie_resizing);
+		m_renderer1->set_subtitle_resizing((resampling_method) (int)m_subtitle_resizing);
 	}
 
 	// normalizing
@@ -2525,6 +2543,8 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_vsync(true);
 	m_renderer1->set_swap_eyes(m_swap_eyes);
 	m_renderer1->set_force_2d(m_force_2d);
+	m_renderer1->set_movie_resizing((resampling_method)(int)m_movie_resizing);
+	m_renderer1->set_subtitle_resizing((resampling_method)(int)m_subtitle_resizing);
 
 	m_file_loaded = false;
 	m_active_audio_track = 0;

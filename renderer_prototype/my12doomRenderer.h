@@ -222,6 +222,8 @@ public:
 
 
 	// settings SET function
+	HRESULT set_movie_resizing(resampling_method method);
+	HRESULT set_subtitle_resizing(resampling_method method);
 	HRESULT set_ui_drawer(ui_drawer_base * new_ui_drawer);
 	HRESULT set_input_layout(int layout);
 	HRESULT set_output_mode(int mode);
@@ -249,6 +251,8 @@ public:
 																									// if you saved these two variables, remember to get it from renderer.
 
 	// settings GET function
+	resampling_method get_movie_resizing();
+	resampling_method get_subtitle_resizing();
 	RECTF get_movie_scissor_rect();
 	ui_drawer_base *get_ui_drawer();
 	DWORD get_mask_color(int id);
@@ -271,7 +275,8 @@ public:
 	float get_zoom_factor(){return m_zoom_factor;}
 
 protected:
-
+	resampling_method  m_movie_resampling_method;
+	resampling_method  m_subtitle_resampling_method;
 	display_orientation m_display_orientation;
 	double m_parallax;
 	bool m_has_subtitle;

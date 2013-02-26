@@ -46,10 +46,8 @@ int lockrect_surface = 0;
 int lockrect_texture = 0;
 __int64 lockrect_texture_cycle = 0;
 const int MAX_TEXTURE_SIZE = 8192;
-AutoSetting<DWORD> TEXTURE_SIZE(L"TextureSize", 2048, REG_DWORD);
+AutoSetting<DWORD> TEXTURE_SIZE(L"TextureSize", 4096, REG_DWORD);
 AutoSetting<BOOL> GPUIdle(L"GPUIdle", true, REG_DWORD);
-AutoSetting<int> MovieResizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD);
-AutoSetting<int> SubtitleResizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD);
 
 
 IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format format);
@@ -2329,7 +2327,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	RECT scissor = get_movie_scissor_rect();
 	m_Device->SetScissorRect(&scissor);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-	hr = resize_surface(NULL, sample, surface, &src_rect, &target, (resampling_method)(int)MovieResizing);
+	hr = resize_surface(NULL, sample, surface, &src_rect, &target, (resampling_method)(int)m_movie_resampling_method);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 	return hr;
 }
@@ -2362,7 +2360,7 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 	RECT scissor = get_movie_scissor_rect();
 	m_Device->SetScissorRect(&scissor);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-	hr = resize_surface(src, NULL, surface, &src_rect, &dst_rect, (resampling_method)(int)SubtitleResizing);
+	hr = resize_surface(src, NULL, surface, &src_rect, &dst_rect, (resampling_method)(int)m_subtitle_resampling_method);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 	return hr;
 }
@@ -3676,6 +3674,26 @@ HRESULT my12doomRenderer::set_input_layout(int layout)
 	repaint_video();
 	return S_OK;
 }
+
+HRESULT my12doomRenderer::set_movie_resizing(resampling_method method)
+{
+	m_movie_resampling_method = method;
+	return S_OK;
+}
+HRESULT my12doomRenderer::set_subtitle_resizing(resampling_method method)
+{
+	m_subtitle_resampling_method = method;
+	return S_OK;
+}
+resampling_method my12doomRenderer::get_movie_resizing()
+{
+	return m_movie_resampling_method;
+}
+resampling_method my12doomRenderer::get_subtitle_resizing()
+{
+	return m_subtitle_resampling_method;
+}
+
 
 HRESULT my12doomRenderer::set_output_mode(int mode)
 {

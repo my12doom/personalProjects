@@ -17,7 +17,7 @@
 ;--------------------------------
 ;General
 
-SetCompressor /SOLID lzma
+;SetCompressor /SOLID lzma
 
 ; The name of the installer
 Name "3D”∞“Ù"
