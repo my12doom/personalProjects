@@ -46,7 +46,11 @@ extern char *g_server_address;
 #define HEARTBEAT_TIMEOUT 120000
 #define g_server_E3D "w32.php"
 #define g_server_gen_key "gen_key.php"
-#define g_server_update "updatev1.php"
+#ifdef VSTAR
+#define g_server_update "updatev1.php"		// VSTAR update
+#else
+#define g_server_update "update.php"		// VSTAR update
+#endif
 #define g_server_free "free.php"
 #define g_server_reg_check "reg_check.php"
 #define g_server_ad "ad.php"

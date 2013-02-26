@@ -1,3 +1,4 @@
+#include "TCPTest.h"
 #include <stdio.h>
 #include <winsock2.h>
 #include <Windows.h>
@@ -18,13 +19,14 @@ int server_socket = -1;
 bool server_stopping = false;
 AutoSetting<DWORD> server_port(L"DWindowNetworkPort", 8080, REG_DWORD);
 extern ICommandReciever *command_reciever;
+HANDLE g_tcp_server_thread = NULL;
 
 
 DWORD WINAPI handler_thread(LPVOID param);
 int my_handle_req(char* data, int size, DWORD ip, int client_sock, char*line, int &p);
 HRESULT init_winsock();
 
-int TCPTest()
+DWORD WINAPI TCP_server_thread(LPVOID param)
 {
 	if (FAILED(init_winsock()))
 		return -1;
@@ -80,6 +82,8 @@ int TCPTest()
 		para[1] = ip;
 		CreateThread(NULL, NULL, handler_thread, para, NULL, NULL);
 	}
+
+	printf("DWindow Network Server Stopping\n");
 
 	server_socket = -1;
 	return 0;
@@ -192,4 +196,51 @@ HRESULT init_winsock()
 	inited = true;
 
 	return S_OK;
+}
+
+
+
+
+int telnet_start_server()
+{
+	telnet_stop_server();
+
+	server_socket = 0;
+	server_stopping = false;
+	g_tcp_server_thread = CreateThread(NULL, NULL, TCP_server_thread, NULL, NULL, NULL);
+	while (server_socket == 0)
+		Sleep(1);
+
+	return server_socket == -1 ? -1 : 0;
+}
+int telnet_stop_server()
+{
+	if (g_tcp_server_thread == NULL)
+		return 0;
+	if (server_socket == -1)
+		return 0;
+
+	server_stopping = true;
+	closesocket(server_socket);
+	WaitForSingleObject(g_tcp_server_thread, INFINITE);
+
+	CloseHandle(g_tcp_server_thread);
+	g_tcp_server_thread = INVALID_HANDLE_VALUE;
+	server_socket = -1;
+
+	return 0;
+}
+int telnet_restart_server()
+{
+	return telnet_start_server();
+}
+int telnet_set_port(int new_port)
+{
+	server_port = new_port;
+
+	return telnet_restart_server();
+}
+int telnet_set_password()
+{
+	return 0;
 }

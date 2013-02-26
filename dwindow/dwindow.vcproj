@@ -1225,10 +1225,6 @@
 				RelativePath="..\ZBuffer\stereo_test.h"
 				>
 			</File>
-			<File
-				RelativePath=".\TCPTest.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"
@@ -2121,6 +2117,18 @@
 			</File>
 			<File
 				RelativePath=".\thumbnail_creator.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Telnet"
+			>
+			<File
+				RelativePath=".\TCPTest.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\TCPTest.h"
 				>
 			</File>
 		</Filter>

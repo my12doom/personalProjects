@@ -10,6 +10,7 @@
 #include <locale.h>
 #include <Dbghelp.h>
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
+#include "TCPTest.h"
 #pragma comment(lib, "DbgHelp")
 dx_player *g_player = NULL;
 
@@ -95,14 +96,6 @@ DWORD WINAPI pre_read_thread(LPVOID k)
 	return 0;
 }
 
-int TCPTest();
-DWORD WINAPI TCPThread(LPVOID k)
-{
-#ifndef VSTAR
-	TCPTest();
-#endif
-	return 0;
-}
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
 	CreateThread(NULL, NULL, pre_read_thread, g_apppath, NULL, NULL);
@@ -199,7 +192,10 @@ retry:
 	setlocale(LC_ALL, "chs");
 
 	command_reciever = test;
-	CreateThread(NULL, NULL, TCPThread, NULL, NULL, NULL);
+
+	telnet_start_server();
+	telnet_set_port(8080);
+
 
 	while (test->init_done_flag != 0x12345678)
 		Sleep(100);
