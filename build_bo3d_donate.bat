@@ -3,8 +3,7 @@ call revision_silent.bat
 #build
 set dev2003="C:\Program Files (x86)\Microsoft Visual Studio .NET 2003\Common7\IDE\devenv"
 set dev2008="C:\Program Files (x86)\Microsoft Visual Studio 9.0\Common7\IDE\devenv"
-C:
-cd C:\private
+cd /d "%~dp0"
 
 #build
 %dev2008% dwindow\dwindow.sln /build "Release_jz"
