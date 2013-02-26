@@ -10,11 +10,8 @@
 #include <locale.h>
 #include <Dbghelp.h>
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
-#include "TCPTest.h"
 #pragma comment(lib, "DbgHelp")
 dx_player *g_player = NULL;
-
-ICommandReciever *command_reciever;
 
 // main window
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
@@ -190,12 +187,6 @@ retry:
 	}
 
 	setlocale(LC_ALL, "chs");
-
-	command_reciever = test;
-
-	telnet_start_server();
-	telnet_set_port(8080);
-
 
 	while (test->init_done_flag != 0x12345678)
 		Sleep(100);

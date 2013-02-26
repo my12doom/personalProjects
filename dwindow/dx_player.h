@@ -141,6 +141,7 @@ protected:
 
 	// trial
 	AutoSetting<bool> m_trial_shown;
+	AutoSetting<DWORD> m_server_port/*(L"DWindowNetworkPort", 8080, REG_DWORD)*/;
 
 	// theater
 	HWND m_theater_owner;

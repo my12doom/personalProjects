@@ -17,6 +17,7 @@
 #include "update_confirm_window.h"
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
 #include "..\lua\my12doom_lua.h"
+#include "TCPTest.h"
 
 #ifdef EVR
 #define DSHOW_RENDERER1 m_evr
@@ -59,6 +60,8 @@ bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for)
 	delete [] tmp2;
 	return o == 0;
 }
+
+ICommandReciever *command_reciever;
 
 // constructor & destructor
 dx_player::dx_player(HINSTANCE hExe):
@@ -122,6 +125,7 @@ m_dragging_window(0),
 m_resize_window_on_open(L"OnOpen", FALSE, REG_DWORD),
 m_movie_resizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD),
 m_subtitle_resizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD),
+m_server_port(L"DWindowNetworkPort", 8080, REG_DWORD),
 #ifdef VSTAR
 #endif
 m_simple_audio_switching(L"SimpleAudioSwitching", false)
@@ -196,6 +200,11 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	CreateThread(0,0,bomb_network_thread, id_to_hwnd(1), NULL, NULL);
 	CreateThread(0,0,ad_thread, id_to_hwnd(1), NULL, NULL);
 	m_tell_thread = CreateThread(0,0,tell_thread_entry, this, NULL, NULL);
+
+	// telnet
+	command_reciever = this;
+	telnet_set_port(m_server_port);
+	telnet_start_server();
 }
 
 typedef struct

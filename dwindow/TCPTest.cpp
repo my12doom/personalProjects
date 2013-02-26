@@ -17,7 +17,7 @@
 #define UM_ICONNOTIFY (WM_USER+2)
 int server_socket = -1;
 bool server_stopping = false;
-AutoSetting<DWORD> server_port(L"DWindowNetworkPort", 8080, REG_DWORD);
+int server_port = 8080;
 extern ICommandReciever *command_reciever;
 HANDLE g_tcp_server_thread = NULL;
 
