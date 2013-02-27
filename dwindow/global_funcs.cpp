@@ -1997,7 +1997,8 @@ DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter)
 	ShExecInfo.lpVerb = _T("open");
 	ShExecInfo.hProcess = INVALID_HANDLE_VALUE;
 
-	ShellExecuteEx(&ShExecInfo);
+	if (!ShellExecuteEx(&ShExecInfo))
+		return AmHresultFromWin32(GetLastError());
 
 	DWORD exit_code = STILL_ACTIVE;
 	while(exit_code == STILL_ACTIVE && ShExecInfo.hProcess != INVALID_HANDLE_VALUE && ShExecInfo.hProcess != NULL)

@@ -9,6 +9,7 @@
 #include "latency_dialog.h"
 #include "..\mySplitter\audio_downmix.h"
 #include <dwmapi.h>
+#include <Shlobj.h>
 #pragma comment(lib, "dwmapi.lib")
 #include "MediaInfo.h"
 #include "open_double_file.h"
@@ -3117,8 +3118,16 @@ connecting:
 	return S_OK;
 }
 
+const wchar_t *get_default_daemon_exe()
+{
+	static wchar_t the_buffer[MAX_PATH];
+	SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES, NULL, NULL, the_buffer);
+	wcscat(the_buffer, L"\\DAEMON Tools Lite\\DTLite.exe");
+	return the_buffer;
+}
+
 AutoSettingString daemon_drive(L"DaemonDrive", L"dt,0");
-AutoSettingString daemon_exe(L"DaemonExe", L"C:\\Program Files\\DAEMON Tools Lite\\DTLite.exe");
+AutoSettingString daemon_exe(L"DaemonExe", get_default_daemon_exe());
 HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = false */, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
 {
 	wchar_t file_to_play[MAX_PATH];
