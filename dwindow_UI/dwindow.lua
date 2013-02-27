@@ -102,11 +102,11 @@ end
 function releaseCache(is_decommit)
 	if is_decommit then
 		for _,v in pairs(bitmapcache) do
-			dwindow.decommit_resource_core(v)
+			dwindow.decommit_resource_core(v.res)
 		end
 	else
 		for _,v in pairs(bitmapcache) do
-			dwindow.release_resource_core(v)
+			dwindow.release_resource_core(v.res)
 			bitmapcache = {}
 		end
 	end
@@ -173,11 +173,17 @@ function set_bitmap_rect(bitmap, left, top, right, bottom)
 end
 
 -- paint
-function paint(left, top, right, bottom, bitmap, alpha)
+bilinear_mipmap_minus_one = 0
+lanczos = 1
+bilinear_no_mipmap = 2
+lanczos_onepass = 3
+bilinear_mipmap = 4
+
+function paint(left, top, right, bottom, bitmap, alpha, resampling_method)
 	if not bitmap or not bitmap.res then return end
 	local x,y  = rect[5], rect[6]
 	local a = alpha or 1.0
-	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a)
+	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap)
 end
 
 

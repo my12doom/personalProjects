@@ -333,7 +333,7 @@ function test:GetRect()
 end
 
 function test:RenderThis()
-	paint(0,0,self.width,self.height, self.res)
+	paint(0,0,self.width,self.height, self.res, 1, bilinear_mipmap_minus_one)
 end
 
 function test:OnInitCPU()

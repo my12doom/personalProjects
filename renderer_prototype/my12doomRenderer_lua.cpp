@@ -23,12 +23,13 @@ static int paint_core(lua_State *L)
 	int s_right = lua_tointeger(L, parameter_count+7);
 	int s_bottom = lua_tointeger(L, parameter_count+8);
 	double alpha = lua_tonumber(L, parameter_count+9);
+	resampling_method method = (resampling_method)(int)lua_tointeger(L, parameter_count+10);
 
 	RECTF dst_rect = {left, top, right, bottom};
 	RECTF src_rect = {s_left, s_top, s_right, s_bottom};
 	bool hasROI = s_left > 0 || s_top > 0 || s_right > 0 || s_bottom > 0;
 
-	g_renderer->paint(&dst_rect, resource, hasROI ? &src_rect : NULL, alpha);
+	g_renderer->paint(&dst_rect, resource, hasROI ? &src_rect : NULL, alpha, method);
 
 	lua_pushboolean(L, 1);
 	return 1;

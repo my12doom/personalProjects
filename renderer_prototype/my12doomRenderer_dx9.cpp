@@ -2421,7 +2421,7 @@ HRESULT my12doomRenderer::Draw(IDirect3DSurface9 *rt, gpu_sample *resource, RECT
 }
 
 extern double UIScale;
-HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RECTF*src_rect/* = NULL*/, float alpha/* = 1.0f*/)
+HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RECTF*src_rect/* = NULL*/, float alpha/* = 1.0f*/, resampling_method method /* =bilinear_no_mipmap */)
 {
 	CComPtr<IDirect3DSurface9> rt;
 	m_Device->GetRenderTarget(0, &rt);
@@ -2437,7 +2437,7 @@ HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RE
 			sample->commit();
 			m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-			resize_surface(NULL, sample, rt, src_rect, dst_rect, bilinear_no_mipmap, alpha );
+			resize_surface(NULL, sample, rt, src_rect, dst_rect, method, alpha );
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 		}
 	}
