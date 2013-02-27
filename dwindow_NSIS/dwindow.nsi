@@ -255,6 +255,8 @@ Section "Uninstall"
   Delete $INSTDIR\*.dll
   Delete $INSTDIR\fonts.conf
   Delete $INSTDIR\dxva2.dll
+  Delete $INSTDIR\*.ini
+  Delete $INSTDIR\Language\*.*
 
   ; Remove shortcuts, if any
   Delete "$SMPROGRAMS\3D”∞“Ù\*.*"
