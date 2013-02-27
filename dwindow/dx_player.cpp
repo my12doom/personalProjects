@@ -202,9 +202,11 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	m_tell_thread = CreateThread(0,0,tell_thread_entry, this, NULL, NULL);
 
 	// telnet
+#ifdef DEBUG
 	command_reciever = this;
 	telnet_set_port(m_server_port);
 	telnet_start_server();
+#endif
 }
 
 typedef struct
@@ -1879,8 +1881,8 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			memset(g_passkey_big, 0, 128);
 			save_passkey();
 
-			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Logged out, the program will exit now, restart the program to login."), L"...", MB_OK);
-			TerminateProcess(GetCurrentProcess(), 1);
+// 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Logged out, the program will exit now, restart the program to login."), L"...", MB_OK);
+			restart_this_program();
 		}
 	}
 
