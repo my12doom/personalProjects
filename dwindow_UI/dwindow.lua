@@ -57,7 +57,7 @@ function RenderUI(view)
 	if last_render_time > 0 then delta_time = dwindow.GetTickCount() - last_render_time end
 	last_render_time = dwindow.GetTickCount();
 	local t = dwindow.GetTickCount()
-	if view == 0 then root:BroadCastEvent("OnUpdate", last_render_time, delta_time) end
+	if view == 0 then root:BroadCastEvent("PreRender", last_render_time, delta_time) end
 	local dt = dwindow.GetTickCount() -t
 	t = dwindow.GetTickCount()
 	
@@ -66,8 +66,20 @@ function RenderUI(view)
 	local dt2 = dwindow.GetTickCount() -t
 	
 	if dt > 0 or dt2 > 0 then
-		info(string.format("slow RenderUI() : OnUpdate() cost %dms, render() cost %dms", dt, dt2))
+		info(string.format("slow RenderUI() : PreRender() cost %dms, render() cost %dms", dt, dt2))
 	end
+end
+
+-- UI update function
+local last_ui_update_time = 0
+function UpdateUI()
+	if not dwindow.menu_open or dwindow.menu_open > 0 then return end
+	
+	local delta_time = 0;
+	if last_ui_update_time > 0 then delta_time = dwindow.GetTickCount() - last_ui_update_time end
+	last_ui_update_time = dwindow.GetTickCount();
+	
+	root:BroadCastEvent("OnUpdate", last_ui_update_time, delta_time)
 end
 
 
@@ -219,5 +231,8 @@ end
 
 
 
--- load base_frame
-if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile(GetCurrentLuaPath() .. "base_frame.lua")) end
+-- load base_frame and default UI
+if dwindow and dwindow.execute_luafile then
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "base_frame.lua"))
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "classic\\render.lua"))
+end

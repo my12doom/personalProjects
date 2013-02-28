@@ -18,10 +18,26 @@ end
 function bg:HitTest()
 end
 
+-- right mouse button reciever
+local rbutton = BaseFrame:Create()
+root:AddChild(rbutton)
+rbutton:SetRelativeTo(root, CENTER)
+function rbutton:GetRect()
+	return 0,0,dwindow.width,dwindow.height
+end
+
+function rbutton:OnMouseDown(x,y,button)
+	if button == VK_RBUTTON then
+		alpha = 1
+		dwindow.show_mouse(true)
+		dwindow.popup_menu()
+	end
+end
+
 -- LOGO
 local logo = BaseFrame:Create()
-root:AddChild(logo)
-logo:SetRelativeTo(nil, CENTER)
+rbutton:AddChild(logo)
+logo:SetRelativeTo(root, CENTER)
 function logo:GetRect()
 	self.w = math.min(math.min(dwindow.width, dwindow.height-40)*3/5, 512)
 	return 0,0,self.w+0.025*self.w,self.w,0.0125*self.w,-20
@@ -47,9 +63,10 @@ function logo:HitTest(x, y)
 end
 
 function logo:OnMouseDown()
+	alpha = 1
+	dwindow.show_mouse(true)
 	dwindow.popup_menu()
 end
-
 
 local last_mousemove =  0
 local mousex = -999
@@ -73,7 +90,7 @@ function root:OnUpdate(t, dt)
 	else
 		alpha = alpha + da
 	end
-	alpha = math.min(1, math.max(alpha, 0))
+	alpha = math.min(1, math.max(alpha, 0))	
 end
 
 -- Play/Pause button

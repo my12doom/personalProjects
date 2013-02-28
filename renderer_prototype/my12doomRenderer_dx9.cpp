@@ -183,7 +183,7 @@ m_left_queue(_T("left queue"))
 
 	pump();
 
-	//CreateThread(0,0,test_thread, this, NULL, NULL);
+	reset();
 }
 
 void my12doomRenderer::init_variables()

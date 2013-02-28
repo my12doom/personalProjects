@@ -226,8 +226,14 @@ function BaseFrame:GetRect()
 	return -99999,-99999,99999,99999
 end
 
+-- CONSTANTS
+VK_RBUTTON = 2
+
 -- time events, usally happen on next render
-function BaseFrame:OnUpdate(time, delta_time) end
+function BaseFrame:PreRender(time, delta_time) end
+
+-- time events, happen on window thread timer
+function BaseFrame:PreRender(time, delta_time) end
 
 -- for these mouse events or focus related events, return anything other than false and nil cause it to be sent to its parents
 function BaseFrame:OnMouseDown(button, x, y) end

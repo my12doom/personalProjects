@@ -66,6 +66,7 @@ ICommandReciever *command_reciever;
 
 // constructor & destructor
 dx_player::dx_player(HINSTANCE hExe):
+m_dialog_open(0),
 m_lastVideoCBTick(0),
 m_renderer1(NULL),
 dwindow(m_screen1, m_screen2),
@@ -189,6 +190,7 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	m_ui_visible_last_change_time = timeGetTime() - 5000;
 	m_volume_visible_last_change_time = timeGetTime() - 5000;
 	reset_timer(2, 125);
+	reset_timer(3, 8);		// 8ms interval ,
 
 	// init dshow
 	init_direct_show();
@@ -1413,7 +1415,9 @@ HRESULT dx_player::popup_menu(HWND owner)
 	// show it
 	POINT mouse_pos;
 	GetCursorPos(&mouse_pos);
+	m_dialog_open ++;
 	TrackPopupMenu(menu, TPM_TOPALIGN | TPM_LEFTALIGN, mouse_pos.x, mouse_pos.y, 0, owner, NULL);
+	m_dialog_open --;
 
 	return S_OK;
 }
@@ -1494,7 +1498,8 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	lua_OnMouseEvent("OnMouseDown", x, y, button);
 
 
-	if ( (button == VK_RBUTTON || (!m_file_loaded && hittest(x, y, id_to_hwnd(id), NULL) == hit_logo) && 
+	if ( m_renderer1->get_ui_drawer() == (ui_drawer_base *)this &&
+		(button == VK_RBUTTON || (!m_file_loaded && hittest(x, y, id_to_hwnd(id), NULL) == hit_logo) && 
 		(!m_renderer1 || !m_renderer1->get_fullscreen())))
 	{
 		show_ui(true);
@@ -1713,6 +1718,23 @@ LRESULT dx_player::on_timer(int id)
 			SystemParametersInfo(SPI_SETPOWEROFFACTIVE, fSaverActive, 0, SPIF_SENDWININICHANGE);
 		}
 	}
+
+	if (id == 3) // lua UpdateUI()
+	{
+		g_lua_manager->get_variable("menu_open") = m_dialog_open;
+
+		luaState lua_state;
+		lua_getglobal(lua_state, "UpdateUI");
+		if (lua_isfunction(lua_state, -1))
+		{
+			lua_mypcall(lua_state, 0, 0, 0);
+			lua_settop(lua_state, 0);
+		}
+		else
+			lua_pop(lua_state, 1);
+
+		return S_OK;
+	}
 	return S_OK;
 }
 
@@ -1855,6 +1877,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	if (uid == ID_OPENFILE)
 	{
 		wchar_t file[MAX_PATH] = L"";
+		m_dialog_open++;
 		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), 
 			L"All Supported files\0"
 			L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso;*.3dp;*.mpo;*.jps;*.pns;*.jpg;*.png;*.gif;*.psd;*.bmp\0"
@@ -1868,7 +1891,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		{
 			reset_and_loadfile(file, false);
 		}
-
+		m_dialog_open--;
 	}
 	else if (uid == ID_OPEN_DOUBLEFILE)
 	{
@@ -2255,10 +2278,12 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 #ifndef no_dual_projector
 		wchar_t file[MAX_PATH] = L"";
+		m_dialog_open++;
 		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Audio Tracks\0*.mp3;*.dts;*.ac3;*.aac;*.m4a;*.mka\0All Files\0*.*\0\0"))
 		{
 			load_audiotrack(file);
 		}
+		m_dialog_open--;
 #else
 		MessageBoxW(id_to_hwnd(id), C(L"External audio track support is only available in registered version."), L"", MB_OK | MB_ICONINFORMATION);
 		ShellExecuteW(NULL, L"open", L"http://www.bo3d.net/buy.php", NULL, NULL, SW_SHOWNORMAL);
@@ -2268,10 +2293,12 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_SUBTITLE_LOADFILE)
 	{
 		wchar_t file[MAX_PATH] = L"";
+		m_dialog_open++;
 		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Subtitles\0*.srt;*.sup;*.ssa;*.ass\0All Files\0*.*\0\0"))
 		{
 			load_subtitle(file, false);
 		}
+		m_dialog_open--;
 	}
 
 	else if (uid == ID_CLOSE)
@@ -2536,7 +2563,7 @@ HRESULT dx_player::exit_direct_show()
 	}
 
 	// reconfig renderer
-	m_renderer1->reset();
+ 	m_renderer1->reset();
 	m_renderer1->set_output_mode(m_output_mode);
 	m_renderer1->set_input_layout(m_input_layout);
 	m_renderer1->set_mask_mode(m_mask_mode);

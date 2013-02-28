@@ -255,7 +255,7 @@ function tetris:RenderThis()
 	end
 end
 
-function tetris:OnUpdate()
+function tetris:PreRender()
 	if dwindow.GetTickCount() - (self.tick or 0)  > 400 then
 		Step()
 		self.tick = dwindow.GetTickCount()

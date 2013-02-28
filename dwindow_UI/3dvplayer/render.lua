@@ -271,7 +271,7 @@ function grow:Stick(dt)
 	self.x = self.x + 0.82 * dx
 end
 
-function grow:OnUpdate()
+function grow:PreRender()
 	self.px, self.py = dwindow.get_mouse_pos()
 	local px,py = self.px,self.py
 	
