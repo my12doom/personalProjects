@@ -26,6 +26,8 @@ INT_PTR CALLBACK update_window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 		break;
 
 	case WM_INITDIALOG:
+		SetForegroundWindow(hDlg);
+		SetWindowPos(hDlg, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
 		localize_window(hDlg);
 		wchar_t description[20480];
 		get_update_result(description, NULL, NULL);
