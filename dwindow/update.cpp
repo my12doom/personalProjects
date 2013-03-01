@@ -38,9 +38,11 @@ HRESULT get_update_result(wchar_t *description, int *new_rev, wchar_t *url)
 	return S_OK;
 }
 
+bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *replacer);
+
 DWORD WINAPI check_update_thread(LPVOID)
 {
- 	Sleep(30*1000);
+//  	Sleep(30*1000);
 
 	int buffersize = 1024*1024;
 	char *data = (char*)malloc(buffersize);
@@ -68,6 +70,8 @@ DWORD WINAPI check_update_thread(LPVOID)
 	latest_rev = _wtoi(exploded[0]);
 	latest_url = exploded[1];
 	latest_description = exploded[2];
+	wcs_replace(latest_description, L"\n", L"\r\r");
+	wcs_replace(latest_description, L"\r\r", L"\r\n");
 
 	for(int i=0; i<3; i++)
 		if (exploded[i])
