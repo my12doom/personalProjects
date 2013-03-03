@@ -74,7 +74,7 @@ public:
 	// load functions
 	HRESULT reset();								// unload all video and subtitle files
 	HRESULT start_loading();
-	HRESULT reset_and_loadfile(const wchar_t *pathname, bool stop, const wchar_t*pathname2 = NULL);
+	HRESULT reset_and_loadfile(const wchar_t *pathname, const wchar_t*pathname2 = NULL, bool stop = false);
 	HRESULT load_audiotrack(const wchar_t *pathname);
 	HRESULT load_subtitle(const wchar_t *pathname, bool reset = true);
 	HRESULT load_file(const wchar_t *pathname, bool non_mainfile = false, int audio_track = LOADFILE_FIRST_TRACK, int video_track = LOADFILE_ALL_TRACK);			// for multi stream mkv
@@ -211,18 +211,14 @@ protected:
 	static DWORD WINAPI select_font_thread(LPVOID lpParame);
 	DWORD tell_thread();
 	static DWORD WINAPI tell_thread_entry(LPVOID lpParame){return ((dx_player*)lpParame)->tell_thread();}
-	HRESULT reset_and_loadfile_internal(const wchar_t *pathname, const wchar_t*pathname2 = NULL);
 	HRESULT render_audio_pin(IPin *pin = NULL);		// render audio pin, if pin=NULL, add all possible decoder
 	HRESULT render_video_pin(IPin *pin = NULL);		// render video pin, if pin=NULL, add all possible decoder
 	int hittest(int x, int y, HWND hwnd, double *v);
-	bool m_reset_and_load;
-	bool m_stop_after_load;
-	HRESULT m_reset_load_hr;
-	wchar_t m_file_to_load[MAX_PATH];
-	wchar_t m_file_to_load2[MAX_PATH];
 	int m_dragging_window;
 	HANDLE m_tell_thread;
 	HRESULT lua_OnMouseEvent(char *event, int x, int y, int key);  // x,y: UIScale applied inside
+	int m_renderer_reset_done;
+	HRESULT reset_renderer();
 
 
 	// window handler

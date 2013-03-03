@@ -128,6 +128,7 @@ m_resize_window_on_open(L"OnOpen", FALSE, REG_DWORD),
 m_movie_resizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD),
 m_subtitle_resizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD),
 m_server_port(L"DWindowNetworkPort", 8080, REG_DWORD),
+m_renderer_reset_done(0),
 #ifdef VSTAR
 #endif
 m_simple_audio_switching(L"SimpleAudioSwitching", false)
@@ -161,7 +162,6 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 
 	// vars
 	m_dragging = -1;
-	m_reset_and_load = false;
 	m_file_loaded = false;
 	m_select_font_active = false;
 	m_log = (wchar_t*)malloc(100000);
@@ -834,7 +834,7 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 			next_to_load[MAX_PATH-1] = NULL;
 
 			if (copy->dwData == WM_LOADFILE)
-				reset_and_loadfile_internal(next_to_load);
+				reset_and_loadfile(next_to_load);
 		}
 		else
 		{
@@ -1899,7 +1899,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		wchar_t right[MAX_PATH];
 
 		if (SUCCEEDED(open_double_file(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(1), left, right)))
-			reset_and_loadfile_internal(left, right);
+			reset_and_loadfile(left, right);
 	}
 
 	else if (uid == ID_LOGOUT)
@@ -2349,7 +2349,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		wchar_t file[MAX_PATH] = L"";
 		if (browse_folder(file, m_theater_owner ? m_theater_owner : id_to_hwnd(id)))
 		{
-			reset_and_loadfile_internal(file);
+			reset_and_loadfile(file);
 		}
 	}
 
@@ -2380,7 +2380,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		wchar_t tmp[MAX_PATH] = L"C:\\";
 		tmp[0] = uid;
-		reset_and_loadfile_internal(tmp);
+		reset_and_loadfile(tmp);
 	}
 
 	// audio track
@@ -2563,7 +2563,7 @@ HRESULT dx_player::exit_direct_show()
 	}
 
 	// reconfig renderer
- 	m_renderer1->reset();
+ 	reset_renderer();
 	m_renderer1->set_output_mode(m_output_mode);
 	m_renderer1->set_input_layout(m_input_layout);
 	m_renderer1->set_mask_mode(m_mask_mode);
@@ -2853,39 +2853,31 @@ HRESULT dx_player::start_loading()
 	return S_OK;
 }
 
-HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, bool stop, const wchar_t*pathname2/* = NULL*/)
+
+HRESULT dx_player::reset_renderer()
 {
 	if (GetCurrentThreadId() == m_thread_id1)
 	{
-		HRESULT hr = reset_and_loadfile_internal(pathname, pathname2);
-
-		if (stop)
-			pause();
-
-		return hr;
+		m_renderer1->reset();
 	}
+	else
+	{
+		m_renderer_reset_done = 2;
 
-	wcscpy(m_file_to_load, pathname);
-	m_file_to_load2[0] = NULL;
-	if (pathname2)
-		wcscpy(m_file_to_load2, pathname2);
-	m_reset_and_load = true;
-	m_stop_after_load = stop;
-	m_reset_load_done = false;
-
-	while (!m_reset_load_done)
-		Sleep(1);
-
+		while (m_renderer_reset_done == 2)
+			Sleep(1);
+	}
 	return S_OK;
 }
 
-HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname, const wchar_t*pathname2)
+
+HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, const wchar_t*pathname2/* = NULL*/, bool stop)
 {
 	reset();
 	start_loading();
 	HRESULT hr;
-// 	hr = load_file(L"Z:\\left.mkv");
-// 	hr = load_file(L"Z:\\right.mkv");
+	// 	hr = load_file(L"Z:\\left.mkv");
+	// 	hr = load_file(L"Z:\\right.mkv");
 	//hr = load_file(L"Z:\\00001.m2ts");
 	hr = load_file(pathname);
 	if(pathname2 && pathname2[0] != NULL)
@@ -2967,6 +2959,10 @@ HRESULT dx_player::reset_and_loadfile_internal(const wchar_t *pathname, const wc
 			}
 		}
 	}
+
+	if (stop)
+		pause();
+
 	return hr;
 fail:
 	reset();
@@ -3016,15 +3012,10 @@ LRESULT dx_player::on_idle_time()
 	if (m_renderer1)
 		m_renderer1->pump();
 
-	if (m_reset_and_load)
+	if (m_renderer_reset_done == 2)
 	{
-		m_reset_load_hr = reset_and_loadfile_internal(m_file_to_load, m_file_to_load2[0] == NULL ? NULL: m_file_to_load2);
-		m_reset_and_load = false;
-
-		if (m_stop_after_load)
-			pause();
-
-		m_reset_load_done = true;
+		m_renderer1->reset();
+		m_renderer_reset_done = 1;
 	}
 	return S_FALSE;
 }
