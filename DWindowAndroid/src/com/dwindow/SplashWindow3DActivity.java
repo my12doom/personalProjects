@@ -132,7 +132,7 @@ public class SplashWindow3DActivity extends Activity {
 		setContentView(R.layout.main);
 		DateBase.Init(this);
 		host = (Value<String>) Value.newValue("host", "");
-		password = (Value<String>) Value.newValue("password", "TestCode");
+		password = (Value<String>) Value.newValue("password", "");
 		path = (Value<String>) Value.newValue("path", "\\");
 		
 		

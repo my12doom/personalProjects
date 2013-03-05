@@ -23,6 +23,7 @@
             android:id="@+id/et_host"
             android:layout_width="fill_parent"
             android:singleLine="true"
+            android:hint="IP"
             android:layout_height="50dip" />
 
         <EditText
@@ -31,6 +32,7 @@
             android:layout_height="50dip"
             android:password="true"
             android:singleLine="true"
+            android:hint="password"
             android:layout_marginTop="-2dp" />
 
         <Button

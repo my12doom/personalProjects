@@ -32,14 +32,10 @@ int ConvertToUTF8(char *input, int input_size, char *output, int output_size)
 				if(c == 0xD)
 				{
 					line_w[p] = NULL;
-					mytrim(line_w);
 
-					if (NULL != line_w[0])
-					{
-						WideCharToMultiByte(CP_UTF8, NULL, line_w, 1024, output+op, output_size-op, NULL, NULL);
-						op += strlen(output+op);
-						output[op++] = '\n';
-					}
+					WideCharToMultiByte(CP_UTF8, NULL, line_w, 1024, output+op, output_size-op, NULL, NULL);
+					op += strlen(output+op);
+					output[op++] = '\n';
 				}
 				else
 					p = 0;
@@ -62,14 +58,10 @@ int ConvertToUTF8(char *input, int input_size, char *output, int output_size)
 				if(c == 0xD)
 				{
 					line_w[p] = NULL;
-					mytrim(line_w);
 
-					if (NULL != line_w[0])
-					{
-						WideCharToMultiByte(CP_UTF8, NULL, line_w, 1024, output+op, output_size-op, NULL, NULL);
-						op += strlen(output+op);
-						output[op++] = '\n';
-					}
+					WideCharToMultiByte(CP_UTF8, NULL, line_w, 1024, output+op, output_size-op, NULL, NULL);
+					op += strlen(output+op);
+					output[op++] = '\n';
 				}
 				else
 					p = 0;
@@ -94,14 +86,10 @@ int ConvertToUTF8(char *input, int input_size, char *output, int output_size)
 				{
 					line[p] = NULL;
 					MultiByteToWideChar(CP_UTF8, 0, line, 1024, line_w, 1024);
-					mytrim(line_w);
 
-					if (NULL != line_w[0])
-					{
-						WideCharToMultiByte(CP_UTF8, NULL, line_w, 1024, output+op, output_size-op, NULL, NULL);
-						op += strlen(output+op);
-						output[op++] = '\n';
-					}
+					WideCharToMultiByte(CP_UTF8, NULL, line_w, 1024, output+op, output_size-op, NULL, NULL);
+					op += strlen(output+op);
+					output[op++] = '\n';
 				}
 				else
 					p = 0;
@@ -124,14 +112,10 @@ int ConvertToUTF8(char *input, int input_size, char *output, int output_size)
 				{
 					line[p] = NULL;
 					MultiByteToWideChar(CP_ACP, 0, line, 1024, line_w, 1024);
-					mytrim(line_w);
 
-					if (NULL != line_w[0])
-					{
-						WideCharToMultiByte(CP_UTF8, NULL, line_w, 1024, output+op, output_size-op, NULL, NULL);
-						op += strlen(output+op);
-						output[op++] = '\n';
-					}
+					WideCharToMultiByte(CP_UTF8, NULL, line_w, 1024, output+op, output_size-op, NULL, NULL);
+					op += strlen(output+op);
+					output[op++] = '\n';
 				}
 				else
 					p = 0;
