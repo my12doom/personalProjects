@@ -23,7 +23,7 @@ pass:
 	return false;	// ...
 }
 
-CsrtRenderer::CsrtRenderer(HFONT font, DWORD fontcolor)
+CsrtRendererCore::CsrtRendererCore(HFONT font, DWORD fontcolor)
 {
 	m_font = font;
 	m_font_color = fontcolor;
@@ -31,42 +31,42 @@ CsrtRenderer::CsrtRenderer(HFONT font, DWORD fontcolor)
 	reset();
 }
 
-CsrtRenderer::~CsrtRenderer()
+CsrtRendererCore::~CsrtRendererCore()
 {
 
 }
-HRESULT CsrtRenderer::set_font_color(DWORD newcolor)
+HRESULT CsrtRendererCore::set_font_color(DWORD newcolor)
 {
 	m_font_color = newcolor;
 	return S_OK;
 }
 
-HRESULT CsrtRenderer::set_font(HFONT newfont)
+HRESULT CsrtRendererCore::set_font(HFONT newfont)
 {
 	m_font = newfont;
 	return S_OK;
 }
 
 
-HRESULT CsrtRenderer::load_file(wchar_t *filename)
+HRESULT CsrtRendererCore::load_file(wchar_t *filename)
 {
 	return m_srt.load(filename);
 }
 
-HRESULT CsrtRenderer::reset()
+HRESULT CsrtRendererCore::reset()
 {
 	m_srt.init(20480, 2048*1024);
 	m_last_found[0] = NULL;
 	return S_OK;
 }
 
-HRESULT CsrtRenderer::seek()
+HRESULT CsrtRendererCore::seek()
 {
 	m_last_found[0] = NULL;
 	return S_OK;
 }
 
-HRESULT CsrtRenderer::add_data(BYTE *data, int size, int start, int end)
+HRESULT CsrtRendererCore::add_data(BYTE *data, int size, int start, int end)
 {
 	// remove some splitter's prefix 2byte datasize
 	if (size >=2 && (data[0] << 8) + data[1] == size-2)
@@ -88,7 +88,7 @@ HRESULT CsrtRenderer::add_data(BYTE *data, int size, int start, int end)
 	return hr;
 }
 
-HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_time/* =-1 */)
+HRESULT CsrtRendererCore::get_subtitle(int time, rendered_subtitle *out, int last_time/* =-1 */)
 {
 	if (NULL == out)
 		return E_POINTER;
@@ -111,7 +111,7 @@ HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_ti
 	}
 }
 
-HRESULT CsrtRenderer::render(const wchar_t *text, rendered_subtitle *out, bool has_offset, int offset)
+HRESULT CsrtRendererCore::render(const wchar_t *text, rendered_subtitle *out, bool has_offset, int offset)
 {
 	if (text[0] == NULL)
 	{
@@ -180,7 +180,7 @@ HRESULT CsrtRenderer::render(const wchar_t *text, rendered_subtitle *out, bool h
 
 }
 
-HRESULT CsrtRenderer::set_output_aspect(double aspect)
+HRESULT CsrtRendererCore::set_output_aspect(double aspect)
 {
 	if (m_aspect == aspect)
 		return S_FALSE;
@@ -191,7 +191,7 @@ HRESULT CsrtRenderer::set_output_aspect(double aspect)
 
 // ASS Subtitle
 
-HRESULT CAssRenderer::add_data(BYTE *data, int size, int start, int end)
+HRESULT CAssRendererFallback::add_data(BYTE *data, int size, int start, int end)
 {
 	// remove some splitter's prefix 2byte datasize
 	if (size >=2 && (data[0] << 8) + data[1] == size-2)

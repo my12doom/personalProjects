@@ -355,7 +355,7 @@ enum command_types
 LibassRenderer::LibassRenderer()
 {
 	m_core = NULL;
-	m_fallback = new CAssRenderer(NULL, RGB(255,255,255));
+	m_fallback = new CAssRendererFallback(NULL, RGB(255,255,255));
 	m_exit_flag = (bool*)malloc(sizeof(bool));
 	*m_exit_flag = false;
 	m_loading_done_flag = false;

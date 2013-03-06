@@ -63,7 +63,7 @@ protected:
 	HANDLE m_thread;
 	CCritSec m_cs;
 	LibassRendererCore *m_core;
-	CAssRenderer *m_fallback;
+	CAssRendererFallback *m_fallback;
 	command_queue m_commands;
 	bool *m_exit_flag;
 	bool m_loading_done_flag;

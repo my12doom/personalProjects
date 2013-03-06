@@ -78,7 +78,7 @@ HRESULT DShowSubtitleRenderer::CheckMediaTypeCB(const CMediaType *inType)
 		m_srenderer = new PGSRenderer();
 	else if (subType == MEDIASUBTYPE_UTF8 ||
 		(subType == GUID_NULL &&inType->FormatLength()>=520))
-		m_srenderer = new CsrtRenderer(m_font, m_font_color);
+		m_srenderer = new CsrtRendererCore(m_font, m_font_color);
 	else if (subType == MEDIASUBTYPE_ASS || subType == MEDIASUBTYPE_ASS2)
 	{
 // 		if (LibassRendererCore::fonts_loaded() != S_OK)

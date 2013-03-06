@@ -2,11 +2,11 @@
 #include "..\CSubtitle.h"
 #include "srt_parser.h"
 
-class CsrtRenderer : public CSubtitleRenderer
+class CsrtRendererCore : public CSubtitleRenderer
 {
 public:
-	CsrtRenderer(HFONT font, DWORD fontcolor);
-	~CsrtRenderer();
+	CsrtRendererCore(HFONT font, DWORD fontcolor);
+	~CsrtRendererCore();
 	virtual HRESULT load_file(wchar_t *filename);										//maybe you don't need this?
 	virtual HRESULT add_data(BYTE *data, int size, int start, int end);
 	virtual HRESULT get_subtitle(int time, rendered_subtitle *out, int last_time=-1);	// get subtitle on a time point, 
@@ -29,9 +29,9 @@ protected:
 	DWORD m_font_color;
 };
 
-class CAssRenderer : public CsrtRenderer
+class CAssRendererFallback : public CsrtRendererCore
 {
 public:
-	CAssRenderer(HFONT font, DWORD fontcolor): CsrtRenderer(font, fontcolor){}
+	CAssRendererFallback(HFONT font, DWORD fontcolor): CsrtRendererCore(font, fontcolor){}
 	virtual HRESULT add_data(BYTE *data, int size, int start, int end);					// override this function to provide dshow support, which remove leading tags
 };

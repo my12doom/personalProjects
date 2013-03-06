@@ -785,7 +785,7 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 	{
 		return DecodeGesture(id_to_hwnd(id), message, wParam, lParam);
 	}
-	
+
 	if (message == DS_EVENT)
 	{
 		CComQIPtr<IMediaEvent, &IID_IMediaEvent> event(m_gb);
@@ -2487,15 +2487,15 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SetWindowLongPtr(m_hwnd1, GWL_STYLE, f);
 	SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exf);
 	*/
-
 // 	MARGINS margins = {-1};
 // 	HRESULT hr = DwmExtendFrameIntoClientArea(id_to_hwnd(1),&margins);
 // 	LONG_PTR exstyle1 = GetWindowLongPtr(m_hwnd1, GWL_EXSTYLE);
 // 	exstyle1 |= WS_EX_COMPOSITED;
 // 	SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exstyle1);
-
-
-
+	HRGN rgn = CreateEllipticRgn(0,0,500,500);
+	DWM_BLURBEHIND dbh = {DWM_BB_ENABLE | DWM_BB_BLURREGION | DWM_BB_TRANSITIONONMAXIMIZED, TRUE, rgn, FALSE};
+	DwmEnableBlurBehindWindow(id_to_hwnd(1), &dbh);
+// 	SetWindowRgn(id_to_hwnd(1), rgn, TRUE);
 
 	SetFocus(id_to_hwnd(id));
 	if (id == 1)
@@ -4464,7 +4464,7 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	const wchar_t *p_3 = pathname + wcslen(pathname) -3;
 	if ( wcs_endwith_nocase(pathname, L".srt"))
 	{
-		m_renderer = new CsrtRenderer(NULL, 0xffffff);
+		m_renderer = new CsrtRendererCore(NULL, 0xffffff);
 	}
 	else if (wcs_endwith_nocase(pathname, L".ssa") || wcs_endwith_nocase(pathname, L".ass"))
 	{
