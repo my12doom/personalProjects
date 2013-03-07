@@ -105,6 +105,7 @@ m_left_queue(_T("left queue"))
 	m_nv3d_actived = false;
 	m_nv3d_display = NULL;
 	m_nv3d_display = 0;
+	m_HD3DStereoModes = NULL;
 	m_movie_scissor_rect = NULL;
 	NvAPI_Status res = NvAPI_Initialize();
 	if (NVAPI_OK == res)
@@ -4340,7 +4341,9 @@ HRESULT my12doomRenderer::HD3D_one_time_init()
 	//Send stereo command to get the list of stereo modes
 	if(displayModeParams.dwNumModes)
 	{
-		displayModeParams.pStereoModes = m_HD3DStereoModes;
+		if (m_HD3DStereoModes)
+			delete [] m_HD3DStereoModes;
+		displayModeParams.pStereoModes = m_HD3DStereoModes = new D3DDISPLAYMODE[displayModeParams.dwNumModes];
 
 		hr = HD3DSendStereoCommand(ATI_STEREO_GETDISPLAYMODES, (BYTE *)(&displayModeParams), 
 			sizeof(ATIDX9GETDISPLAYMODES), 0, 0);

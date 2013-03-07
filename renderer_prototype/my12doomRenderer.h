@@ -426,7 +426,7 @@ protected:
 	CComPtr <IDirect3DSurface9> m_HD3DCommSurface;
 	DWORD m_HD3Dlineoffset;					// 0 = HD3D is available but not enabled (HD3D need exclusive mode)
 	int m_HD3DStereoModesCount;				// 0 = HD3D unavailable
-	D3DDISPLAYMODE m_HD3DStereoModes[100];
+	D3DDISPLAYMODE *m_HD3DStereoModes;
 
 	HRESULT HD3D_one_time_init();
 	HRESULT HD3D_restore_objects();
