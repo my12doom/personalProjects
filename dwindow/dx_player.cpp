@@ -2136,13 +2136,15 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		D3DDISPLAYMODE *modes = NULL;
 		if (count>0)
 			modes = new D3DDISPLAYMODE[count];
+		m_renderer1->HD3DGetAvailable3DModes(modes, &count);
 		int result = -1;
 		for(int i=0; i<count; i++)
 		{
 			D3DDISPLAYMODE &this_mode = modes[i];
 			if (this_mode.Width == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Width && 
 				this_mode.Height == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Height && 
-				this_mode.RefreshRate == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).RefreshRate)
+				this_mode.RefreshRate == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).RefreshRate &&
+				this_mode.Format == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Format)
 				result = i;
 		}
 		if (result == -1)
@@ -2629,6 +2631,7 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_force_2d(m_force_2d);
 	m_renderer1->set_movie_resizing((resampling_method)(int)m_movie_resizing);
 	m_renderer1->set_subtitle_resizing((resampling_method)(int)m_subtitle_resizing);
+	m_renderer1->HD3D_set_prefered_mode(m_hd3d_prefered_mode);
 
 	m_file_loaded = false;
 	m_active_audio_track = 0;

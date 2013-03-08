@@ -4423,14 +4423,16 @@ HRESULT my12doomRenderer::HD3DSetStereoFullscreenPresentParameters()
 	int res_x = 0;
 	int res_y = 0;
 	int refresh = 0;
+	D3DFORMAT fmt = D3DFMT_UNKNOWN;
 	for(int i=0; i<m_HD3DStereoModesCount; i++)
 	{
 		D3DDISPLAYMODE this_mode = m_HD3DStereoModes[i];
-		if (this_mode.Width == m_prefered_mode.Width && this_mode.Height == m_prefered_mode.Height && this_mode.RefreshRate == m_prefered_mode.RefreshRate)
+		if (this_mode.Width == m_prefered_mode.Width && this_mode.Height == m_prefered_mode.Height && this_mode.RefreshRate == m_prefered_mode.RefreshRate && this_mode.Format == m_prefered_mode.Format)
 		{
 			res_x = this_mode.Width;
 			res_y = this_mode.Height;
 			refresh = this_mode.RefreshRate;
+			fmt = this_mode.Format;
 			break;
 		}
 	}
@@ -4484,11 +4486,14 @@ HRESULT my12doomRenderer::HD3DSetStereoFullscreenPresentParameters()
 		}
 	}
 
+	if (fmt == D3DFMT_UNKNOWN)
+		fmt = D3DFMT_X8R8G8B8;
+
 	m_new_pp.MultiSampleType = D3DMULTISAMPLE_2_SAMPLES;
 	m_new_pp.FullScreen_RefreshRateInHz = refresh;
 	m_new_pp.BackBufferWidth = res_x;
 	m_new_pp.BackBufferHeight = res_y;
-	m_new_pp.BackBufferFormat = D3DFMT_X8R8G8B8;
+	m_new_pp.BackBufferFormat = fmt;
 
 	return S_OK;
 }

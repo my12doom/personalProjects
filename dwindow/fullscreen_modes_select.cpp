@@ -7,11 +7,23 @@ int g_modes_count;
 int g_selected;
 INT_PTR CALLBACK fullscreen_modes_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
 
+wchar_t fmt_table[200][20] = {0};
+
+void init_fmt_table()
+{
+	wcscpy(fmt_table[D3DFMT_R8G8B8], L"D3DFMT_R8G8B8");
+	wcscpy(fmt_table[D3DFMT_A8R8G8B8],L"D3DFMT_A8R8G8B8");
+	wcscpy(fmt_table[D3DFMT_X8R8G8B8],L"D3DFMT_X8R8G8B8");
+	wcscpy(fmt_table[D3DFMT_R5G6B5], L"D3DFMT_R5G6B5");
+	wcscpy(fmt_table[D3DFMT_A2R10G10B10], L"D3DFMT_A2B10G10R10");
+}
+
 HRESULT select_fullscreen_mode(HINSTANCE instance, HWND parent, D3DDISPLAYMODE *modes, int modes_count, int *selected)		// return S_FALSE on cancel, selected undefined in this case
 {
 	g_modes = modes;
 	g_modes_count = modes_count;
-	g_selected = selected ? -1 : *selected;
+	g_selected = selected ? *selected : -1;
+	init_fmt_table();
 
 	int o = DialogBoxW(instance, MAKEINTRESOURCEW(IDD_FULLSCREEN_MODES), parent, fullscreen_modes_proc);
 
@@ -22,6 +34,8 @@ HRESULT select_fullscreen_mode(HINSTANCE instance, HWND parent, D3DDISPLAYMODE *
 
 	return o == 0 ? S_OK : S_FALSE;
 }
+
+
 
 INT_PTR CALLBACK fullscreen_modes_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
 {
@@ -45,7 +59,10 @@ INT_PTR CALLBACK fullscreen_modes_proc( HWND hDlg, UINT msg, WPARAM wParam, LPAR
 			wchar_t tmp[1024];
 			for(int i=0; i<g_modes_count; i++)
 			{
-				wsprintfW(tmp, L"%dx%d @ %dHz\n", g_modes[i].Width, g_modes[i].Height,g_modes[i].RefreshRate);
+				wchar_t *p = i>=0 && i<200 ? fmt_table[g_modes[i].Format] : NULL;
+				wsprintfW(tmp, L"%dx%d @ %dHz (%s)\n", g_modes[i].Width, g_modes[i].Height,g_modes[i].RefreshRate, p&&p[0]?p:L"Unknown Format");
+				if (!(p&&p[0]))
+					printf("");
 				SendMessageW(combobox, CB_ADDSTRING, NULL, (LPARAM)tmp);
 			}
 			SendMessageW(combobox, CB_ADDSTRING, NULL, (LPARAM)C(L"Auto Select"));
