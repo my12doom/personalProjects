@@ -205,6 +205,7 @@ protected:
 	CComPtr<IStereoLayout> m_stereo_layout;
 	AutoSetting<int> m_movie_resizing;/*(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD)*/;
 	AutoSetting<int> m_subtitle_resizing;/*(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD)*/;
+	AutoSetting<D3DDISPLAYMODE> m_hd3d_prefered_mode;
 
 	// helper function and vars
 	bool m_select_font_active;

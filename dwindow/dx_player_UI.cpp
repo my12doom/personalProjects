@@ -472,7 +472,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view, bool running)
 	hr = m_Device->SetTexture( 0, m_ui_background_gpu );
 	hr = m_Device->SetStreamSource( 0, m_vertex, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags );
-	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, BACKGROUND*4, 2 );
+// 	hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, BACKGROUND*4, 2 );
 	//m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 
 	hr = m_Device->SetTexture( 0, m_ui_tex_gpu );

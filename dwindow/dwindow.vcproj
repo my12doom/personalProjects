@@ -1335,6 +1335,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\fullscreen_modes_select.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\fullscreen_modes_select.h"
+					>
+				</File>
+				<File
 					RelativePath=".\Hyperlink.cpp"
 					>
 				</File>

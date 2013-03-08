@@ -19,6 +19,7 @@
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
 #include "..\lua\my12doom_lua.h"
 #include "TCPTest.h"
+#include "fullscreen_modes_select.h"
 
 #ifdef EVR
 #define DSHOW_RENDERER1 m_evr
@@ -35,6 +36,7 @@
 AutoSetting<BOOL> g_ExclusiveMode(L"ExclusiveMode", false, REG_DWORD);
 RECT rect_zero = {0,0,0,0};
 LOGFONTW empty_logfontw = {0};
+D3DDISPLAYMODE mode_auto = {0};
 
 #include "bomb_network.h"
 
@@ -129,6 +131,7 @@ m_movie_resizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD),
 m_subtitle_resizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD),
 m_server_port(L"DWindowNetworkPort", 8080, REG_DWORD),
 m_renderer_reset_done(0),
+m_hd3d_prefered_mode(L"HD3DPreferedMode", mode_auto),
 #ifdef VSTAR
 #endif
 m_simple_audio_switching(L"SimpleAudioSwitching", false)
@@ -2095,8 +2098,11 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		HRESULT hr = set_output_mode(hd3d);
 		if (hr == E_RESOLUTION_MISSMATCH)
 		{
-			D3DDISPLAYMODE modes[100];
-			int count = 100;
+			int count = 0;
+			m_renderer1->HD3DGetAvailable3DModes(NULL, &count);
+			D3DDISPLAYMODE *modes = NULL;
+			if (count>0)
+				modes = new D3DDISPLAYMODE[count];
 			m_renderer1->HD3DGetAvailable3DModes(modes, &count);
 
 			wchar_t msg[1024];
@@ -2110,6 +2116,9 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 				wcscat(msg, tmp);
 			}
 
+			if (modes)
+				delete [] modes;
+
 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1),
 				msg, C(L"Error"), MB_ICONINFORMATION);
 		}
@@ -2117,7 +2126,39 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		{
 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1),
 				C(L"No supported device found."), C(L"Error"), MB_ICONERROR);
-		}	}
+		}
+	}
+
+	else if (uid == ID_HD3D_FULLSCREEN_MODE)
+	{
+		int count = 0;
+		m_renderer1->HD3DGetAvailable3DModes(NULL, &count);
+		D3DDISPLAYMODE *modes = NULL;
+		if (count>0)
+			modes = new D3DDISPLAYMODE[count];
+		int result = -1;
+		for(int i=0; i<count; i++)
+		{
+			D3DDISPLAYMODE &this_mode = modes[i];
+			if (this_mode.Width == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Width && 
+				this_mode.Height == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Height && 
+				this_mode.RefreshRate == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).RefreshRate)
+				result = i;
+		}
+		if (result == -1)
+			m_hd3d_prefered_mode = mode_auto;
+
+		HRESULT hr = select_fullscreen_mode(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), modes, count, &result);
+
+		if (hr == S_OK)
+		{
+			m_hd3d_prefered_mode = result >=0 ? modes[result] : mode_auto;
+			m_renderer1->HD3D_set_prefered_mode(m_hd3d_prefered_mode);
+		}
+
+		if (modes)
+			delete [] modes;
+	}
 	else if (uid == ID_OUTPUTMODE_MONOSCOPIC2D)
 	{
 		set_output_mode(mono);			
@@ -2492,9 +2533,9 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 // 	LONG_PTR exstyle1 = GetWindowLongPtr(m_hwnd1, GWL_EXSTYLE);
 // 	exstyle1 |= WS_EX_COMPOSITED;
 // 	SetWindowLongPtr(m_hwnd1, GWL_EXSTYLE, exstyle1);
-	HRGN rgn = CreateEllipticRgn(0,0,500,500);
-	DWM_BLURBEHIND dbh = {DWM_BB_ENABLE | DWM_BB_BLURREGION | DWM_BB_TRANSITIONONMAXIMIZED, TRUE, rgn, FALSE};
-	DwmEnableBlurBehindWindow(id_to_hwnd(1), &dbh);
+// 	HRGN rgn = CreateEllipticRgn(0,0,500,500);
+// 	DWM_BLURBEHIND dbh = {DWM_BB_ENABLE | DWM_BB_BLURREGION | DWM_BB_TRANSITIONONMAXIMIZED, TRUE, NULL, FALSE};
+// 	DwmEnableBlurBehindWindow(id_to_hwnd(1), &dbh);
 // 	SetWindowRgn(id_to_hwnd(1), rgn, TRUE);
 
 	SetFocus(id_to_hwnd(id));

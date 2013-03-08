@@ -427,6 +427,7 @@ protected:
 	DWORD m_HD3Dlineoffset;					// 0 = HD3D is available but not enabled (HD3D need exclusive mode)
 	int m_HD3DStereoModesCount;				// 0 = HD3D unavailable
 	D3DDISPLAYMODE *m_HD3DStereoModes;
+	D3DDISPLAYMODE m_prefered_mode;			// backbuffer format is ignored, using X8R8G8B8
 
 	HRESULT HD3D_one_time_init();
 	HRESULT HD3D_restore_objects();
@@ -436,6 +437,7 @@ protected:
 	HRESULT HD3DGetAvailable3DModes(D3DDISPLAYMODE *modes, IN OUT int *count);			// count: caller:buffer count, return:modes count
 	HRESULT HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirect3DSurface9 *right_surface, IDirect3DSurface9 *back_buffer);
 	HRESULT HD3DSendStereoCommand(ATIDX9STEREOCOMMAND stereoCommand, BYTE *pOutBuffer, DWORD dwOutBufferSize, BYTE *pInBuffer, DWORD dwInBufferSize);
+	HRESULT HD3D_set_prefered_mode(D3DDISPLAYMODE mode);
 
 	// Intel S3D support
 	IGFXS3DControl *m_intel_s3d/* = NULL*/;

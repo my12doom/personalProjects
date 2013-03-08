@@ -26,3 +26,5 @@ cd dwindow_NSIS
 set v=%DATE:~2,2%%DATE:~5,2%%DATE:~8,2%
 del (free)bo3d%v%.exe
 ren dwindow_setup.exe (free)bo3d%v%.exe
+cd..
+copy/y dwindow\release_mt\StereoPlayer.pdb pdbs\(free)bo3d%v%.pdb
