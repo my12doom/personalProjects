@@ -189,6 +189,7 @@ SectionEnd
 
 Section "mkv3d文件"
 !insertmacro Assoc mkv3d "mkv3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+!insertmacro Assoc mk3d "mk3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
 SectionEnd
 
 Section "ssif文件"
@@ -272,6 +273,7 @@ Section "Uninstall"
   ; Revese file association
   !insertmacro UnAssoc mkv
   !insertmacro UnAssoc mkv3d
+  !insertmacro UnAssoc mk3d
   !insertmacro UnAssoc ssif
   !insertmacro UnAssoc mpls
 

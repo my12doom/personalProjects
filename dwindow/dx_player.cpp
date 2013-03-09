@@ -1883,9 +1883,9 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		m_dialog_open++;
 		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), 
 			L"All Supported files\0"
-			L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso;*.3dp;*.mpo;*.jps;*.pns;*.jpg;*.png;*.gif;*.psd;*.bmp\0"
+			L"*.mp4;*.mkv;*.mkv3d;*.mkv2d;*.mk3d;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso;*.3dp;*.mpo;*.jps;*.pns;*.jpg;*.png;*.gif;*.psd;*.bmp\0"
 			L"Video files\0"
-			L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso\0"
+			L"*.mp4;*.mkv;*.mkv3d;*.mkv2d;*.mk3d;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso\0"
 			L"Picture files\0"
 			L"*.3dp;*.mpo;*.jps;*.pns;*.jpg;*.png;*.gif;*.psd;*.bmp\0"
 			L"All Files\0"
