@@ -3712,8 +3712,8 @@ HRESULT my12doomRenderer::set_output_mode(int mode)
 	if (m_output_mode == intel3d && mode != intel3d)
 		FAIL_RET(intel_switch_to_2d());
 
-	if (mode == hd3d)
-		FAIL_RET(HD3DMatchResolution());
+// 	if (mode == hd3d)
+// 		FAIL_RET(HD3DMatchResolution());			// HD3D now support auto detect / setting fullscreen resolution
 
 	m_output_mode = (output_mode_types)(mode % output_mode_types_max);
 

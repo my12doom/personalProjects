@@ -2095,6 +2095,18 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uid == ID_OUTPUTMODE_AMDHD3D)
 	{
+		::detect_monitors();
+		if (get_mixed_monitor_count(true, true) > 1)
+		{
+			int o = MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(id), 
+				C(L"More than one monitor detected, please make sure the program window first appearance is on HD3D supported monitor.\n"
+				L"If not, the program may hang after entering fullscreen.\n"
+				L"To fix this, drag the program window to that monitor and restart the program.\n\n"
+				L"Continue?"), C(L"Warning"), MB_YESNO | MB_ICONWARNING);
+
+			if (o == IDNO)
+				return S_OK;
+		}
 		HRESULT hr = set_output_mode(hd3d);
 		if (hr == E_RESOLUTION_MISSMATCH)
 		{
@@ -2119,13 +2131,16 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			if (modes)
 				delete [] modes;
 
-			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1),
+			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(id),
 				msg, C(L"Error"), MB_ICONINFORMATION);
 		}
 		else if (hr == E_NOINTERFACE)
 		{
 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1),
 				C(L"No supported device found."), C(L"Error"), MB_ICONERROR);
+		}
+		else
+		{
 		}
 	}
 
@@ -2238,6 +2253,34 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uid == ID_OUTPUTMODE_GERNERAL120HZGLASSES)
 	{
+		int count = 0;
+		m_renderer1->HD3DGetAvailable3DModes(NULL, &count);
+
+		if (count>0)
+		{
+			int o = MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(id), 
+				C(L"HD3D supported device detected.\n"
+				L"It is highly recommended that you use HD3D mode instead of Gerneral 120Hz Glasses.\n\n"
+				L"Continue with Gerneral 120Hz Glasses ?"), C(L"Warning"), MB_YESNO | MB_ICONWARNING);
+
+			if (o == IDNO)
+				return S_OK;
+		}
+
+		IGFX_S3DCAPS caps = {0};
+		m_renderer1->intel_get_caps(&caps);
+		if (caps.ulNumEntries>0)
+		{
+			int o = MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(id), 
+				C(L"Intel Stereoscopic supported device detected.\n"
+				L"It is highly recommended that you use Intel Stereoscopic mode instead of Gerneral 120Hz Glasses.\n\n"
+				L"Continue with Gerneral 120Hz Glasses ?"), C(L"Warning"), MB_YESNO | MB_ICONWARNING);
+
+			if (o == IDNO)
+				return S_OK;
+		}
+
+
 		set_output_mode(pageflipping);			
 	}
 	else if (uid == ID_OUTPUTMODE_ANAGLYPH)
