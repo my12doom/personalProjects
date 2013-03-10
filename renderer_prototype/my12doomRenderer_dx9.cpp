@@ -1790,17 +1790,10 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		if (m_swap1) hr = m_swap1->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer);
 
 		// most rendering mode is 2 views, so we create texture and render it (except for mono2d and pageflipping, which render only one view at a time)
-		CPooledTexture *view0, *view1;
+		CPooledTexture *view0 = NULL, *view1 = NULL;
 		CComPtr<IDirect3DSurface9> surf0;
 		CComPtr<IDirect3DSurface9> surf1;
-
-		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
-		FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view1));
-
-		view0->get_first_level(&surf0);
-		view1->get_first_level(&surf1);
-
-		IDirect3DSurface9 *surfaces[MAX_VIEWS] = {surf0, surf1};
+		IDirect3DSurface9 *surfaces[MAX_VIEWS] = {0};
 		CComPtr<IDirect3DSurface9> back_buffer2;
 		if (m_output_mode == dual_window && m_swap2)
 		{
@@ -1810,7 +1803,18 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		}
 
 		if (m_output_mode != mono && m_output_mode != pageflipping)
+		{
+
+			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
+			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view1));
+
+			view0->get_first_level(&surf0);
+			view1->get_first_level(&surf1);
+
+			surfaces[0] = surf0;
+			surfaces[1] = surf1;
 			render_helper(surfaces, 2);
+		}
 
 		clear(back_buffer, D3DCOLOR_ARGB(255, 0, 0, 0));
 
@@ -1905,6 +1909,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			)
 		{
 			surfaces[0] = back_buffer;
+			surfaces[1] = NULL;
 			render_helper(surfaces, 1);
 		}
 		else if (m_output_mode == hd3d)
