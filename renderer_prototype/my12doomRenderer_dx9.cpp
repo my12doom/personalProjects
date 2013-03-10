@@ -828,6 +828,7 @@ HRESULT my12doomRenderer::fix_nv3d_bug()
 HRESULT my12doomRenderer::delete_render_targets()
 {
 	intel_delete_rendertargets();
+	m_swap1ex = NULL;
 	m_swap1 = NULL;
 	m_swap2 = NULL;
 	m_nv3d_surface = NULL;
@@ -867,6 +868,8 @@ HRESULT my12doomRenderer::create_render_targets()
 
 	if (m_swap1)
 	{
+// 		m_swap1->QueryInterface(IID_IDirect3DSwapChain9Ex, (void**)&m_swap1ex);
+
 		RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
 		if (m_output_mode == out_sbs)
 			tar.right /= 2;
@@ -1946,10 +1949,9 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		{
 			int frame_passed = 1;
 			m_pageflip_frames = max(0, m_pageflip_frames);
-			CComQIPtr<IDirect3DSwapChain9Ex, &IID_IDirect3DSwapChain9Ex> swap_ex(m_swap1);
 			D3DPRESENTSTATS state;
 
-			if (swap_ex && SUCCEEDED(swap_ex->GetPresentStats(&state)) && state.PresentRefreshCount > 0)
+			if (m_swap1ex && SUCCEEDED(m_swap1ex->GetPresentStats(&state)) && state.PresentRefreshCount > 0)
 			{
 				frame_passed = state.PresentRefreshCount - m_pageflip_frames;
 				m_pageflip_frames = state.PresentRefreshCount;

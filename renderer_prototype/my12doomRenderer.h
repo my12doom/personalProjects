@@ -489,6 +489,7 @@ protected:
 	CComPtr<IDirect3DDevice9> m_Device;
 	CComPtr<IDirect3DDevice9Ex> m_DeviceEx;
 	CComPtr<IDirect3DSwapChain9> m_swap1;
+	CComPtr<IDirect3DSwapChain9Ex> m_swap1ex;
 	CComPtr<IDirect3DSwapChain9> m_swap2;
 	//CComPtr<IDirect3DQuery9> m_d3d_query;
 	D3DPRESENT_PARAMETERS   m_new_pp;
