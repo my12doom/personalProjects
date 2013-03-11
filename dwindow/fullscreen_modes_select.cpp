@@ -55,17 +55,17 @@ INT_PTR CALLBACK fullscreen_modes_proc( HWND hDlg, UINT msg, WPARAM wParam, LPAR
 
 	case WM_INITDIALOG:
 		{
+			localize_window(hDlg);
+
 			HWND combobox = GetDlgItem(hDlg, IDC_COMBO1);
 			wchar_t tmp[1024];
 			for(int i=0; i<g_modes_count; i++)
 			{
 				wchar_t *p = i>=0 && i<200 ? fmt_table[g_modes[i].Format] : NULL;
 				wsprintfW(tmp, L"%dx%d @ %dHz (%s)\n", g_modes[i].Width, g_modes[i].Height,g_modes[i].RefreshRate, p&&p[0]?p:L"Unknown Format");
-				if (!(p&&p[0]))
-					printf("");
 				SendMessageW(combobox, CB_ADDSTRING, NULL, (LPARAM)tmp);
 			}
-			SendMessageW(combobox, CB_ADDSTRING, NULL, (LPARAM)C(L"Auto Select"));
+			SendMessageW(combobox, CB_ADDSTRING, NULL, (LPARAM)C(L"Auto Detect"));
 			SendMessageW(combobox, CB_SETCURSEL, g_selected>=0 && g_selected<g_modes_count ? g_selected : g_modes_count, 0);
 		}
 		break;
