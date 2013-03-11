@@ -1547,6 +1547,12 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	// query
 	//m_Device->CreateQuery(D3DQUERYTYPE_TIMESTAMP, &m_d3d_query);
 
+	// confirm max TEXTURE_SIZE
+	D3DCAPS9 caps;
+	ZeroMemory(&caps, sizeof(caps));
+	m_Device->GetDeviceCaps(&caps);
+	TEXTURE_SIZE = min((int)TEXTURE_SIZE, min(caps.MaxTextureWidth, caps.MaxTextureHeight));
+
 	// textures
 	FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
 	FAIL_RET( m_Device->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, 0, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_subtitle, NULL));
