@@ -1994,16 +1994,19 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 // 				mylog("delta=%d.\n", (int)delta);
 // 			}
 
+			int swap_offset = m_swapeyes ? 1 : 0;
+			int view = (m_pageflip_frames+swap_offset)%2;
+
 			LARGE_INTEGER l1, l2, l3, l4, l5;
 			QueryPerformanceCounter(&l1);
 			clear(back_buffer);
 			QueryPerformanceCounter(&l2);
-			draw_movie(back_buffer, m_pageflip_frames%2);
+			draw_movie(back_buffer, view);
 			QueryPerformanceCounter(&l3);
-			draw_subtitle(back_buffer, m_pageflip_frames%2);
-			adjust_temp_color(back_buffer, m_pageflip_frames%2);
+			draw_subtitle(back_buffer, view);
+			adjust_temp_color(back_buffer, view);
 			QueryPerformanceCounter(&l4);
-			draw_ui(back_buffer, m_pageflip_frames%2);
+			draw_ui(back_buffer, view);
 			QueryPerformanceCounter(&l5);
 
 
