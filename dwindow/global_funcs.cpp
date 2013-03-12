@@ -809,6 +809,7 @@ HRESULT set_ff_audio_normalizing(IBaseFilter *filter, double max_ratio)	// setti
 		return hr = cfg->putParam(IDFF_volumeNormalize, 0);
 	}
 
+	hr = cfg->putParam(IDFF_volumeNormalizeRegainVolume, 1);
 	hr = cfg->putParam(IDFF_isVolume, 1);
 	hr = cfg->putParam(IDFF_volumeNormalize, 1);
 	hr = cfg->putParam(IDFF_maxNormalization, max_ratio*100);
