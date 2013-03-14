@@ -313,7 +313,8 @@ int on_command(HWND hWnd, int uid)
 
 		char downloaded[800] = "";
 		memset(downloaded, 0, 400);
-		download_url(url, downloaded, 400);
+		int size = 400;
+		download_url(url, downloaded, &size);
 
 #ifdef DEBUG
 		OutputDebugStringA(url);

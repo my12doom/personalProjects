@@ -240,9 +240,9 @@ BOOL InternetFile::SetFilePointerEx(__in LARGE_INTEGER liDistanceToMove, __out_o
 			break;
 	}
 
-// 	if (lpNewFilePointer->QuadPart != m_pos)
+ 	if (lpNewFilePointer->QuadPart != m_pos)
 	{
-// 		if (lpNewFilePointer->QuadPart < m_buffer_start || lpNewFilePointer->QuadPart >= m_buffer_start + buffer_size * buffer_count)
+ 		if (lpNewFilePointer->QuadPart < m_buffer_start || lpNewFilePointer->QuadPart >= m_buffer_start + buffer_size * buffer_count)
 		{
 			__int64 size = m_size;
 			wchar_t URL[MAX_PATH];

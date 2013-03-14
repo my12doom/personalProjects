@@ -235,4 +235,5 @@ end
 if dwindow and dwindow.execute_luafile then
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "base_frame.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "classic\\render.lua"))
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer.lua"))
 end

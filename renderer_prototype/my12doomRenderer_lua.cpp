@@ -296,7 +296,6 @@ static int get_volume(lua_State *L)
 
 	return 1;
 }
-
 static int set_volume(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
@@ -309,6 +308,21 @@ static int set_volume(lua_State *L)
 	lua_pushboolean(L, TRUE);
 	return 1;
 }
+
+static int reset_and_loadfile(lua_State *L)
+{
+	const char *filename1 = lua_tostring(L, -1);
+	const char *filename2 = lua_tostring(L, -2);
+	const bool stop = lua_isboolean(L, -3) ? lua_toboolean(L, -3) : false;
+
+	USES_CONVERSION;
+	HRESULT hr = g_player->reset_and_loadfile(filename1 ? A2W(filename1) : NULL, filename2 ? A2W(filename2) : NULL, stop);
+
+	lua_pushboolean(L, SUCCEEDED(hr));
+	lua_pushinteger(L, hr);
+	return 2;
+}
+
 
 static int show_mouse(lua_State *L)
 {
@@ -373,6 +387,7 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("popup_menu") = &popup_menu;
 	g_lua_manager->get_variable("show_mouse") = &show_mouse;
 	g_lua_manager->get_variable("toggle_3d") = &toggle_3d;
+	g_lua_manager->get_variable("reset_and_loadfile") = &reset_and_loadfile;
 
 	return 0;
 }

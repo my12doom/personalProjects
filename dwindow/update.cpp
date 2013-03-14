@@ -57,7 +57,8 @@ DWORD WINAPI check_update_thread(LPVOID)
 	memset(data, 0, buffersize);
 	memset(data2, 0, buffersize);
 	memset(dataw, 0, buffersize*sizeof(wchar_t));
- 	download_url(url, data, buffersize);
+ 	download_url(url, data, &buffersize);
+	buffersize++;
 	strcat(data, "\r\n");
 	ConvertToUTF8(data, strlen(data)+1, data2, buffersize);
 

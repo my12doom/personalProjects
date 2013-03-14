@@ -1808,9 +1808,18 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			surfaces[1] = back_buffer2;
 		}
 
-		if (m_output_mode != mono && m_output_mode != pageflipping)
+		if (get_active_input_layout() == mono2d && m_dsr0->is_connected())
 		{
+			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
+			view0->get_first_level(&surf0);
+			view1 = view0;
 
+			surfaces[0] = surf0;
+			render_helper(surfaces, 1);
+		}
+
+		else if (m_output_mode != mono && m_output_mode != pageflipping)
+		{
 			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
 			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view1));
 
@@ -2129,6 +2138,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		}
 
 		m_Device->EndScene();
+		if (view0 == view1)
+			view1 = NULL;
 		safe_delete(view0);
 		safe_delete(view1);
 	}

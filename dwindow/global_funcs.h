@@ -124,7 +124,7 @@ HRESULT load_e3d_key(const unsigned char *file_hash, unsigned char *file_key);
 HRESULT download_e3d_key(const wchar_t *filename);
 HRESULT make_xvid_support_mp4v();
 HRESULT make_av_splitter_support_my_formats();
-HRESULT download_url(char *url_to_download, char *out, int outlen = 64, int timeout=INFINITE);
+HRESULT download_url(const char *url_to_download, char *out, int *outlen, int timeout=INFINITE);
 HRESULT bar_logout();
 DWORD WINAPI killer_thread(LPVOID time);
 DWORD WINAPI killer_thread2(LPVOID time);

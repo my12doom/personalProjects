@@ -1129,8 +1129,9 @@ HRESULT load_passkey()
 		}
 	
 		char downloaded[1024];
+		int size = 1024;
 		memset(downloaded, 0, sizeof(downloaded));
-		download_url(url, downloaded, 1024, 3000);
+		download_url(url, downloaded, &size, 3000);
 		unsigned char encoded_passkey_big[128+10];
 
 		HRESULT hr = E_FAIL;
@@ -1506,7 +1507,7 @@ int load_D3D_setting(const WCHAR *key, void *data, int len)
 
 typedef struct _download_para
 {
-	char *url_to_download;
+	const char *url_to_download;
 	char *out;
 	int outlen;
 	bool *cancel;
@@ -1536,7 +1537,12 @@ DWORD WINAPI download_thread(LPVOID para)
 		return E_FAIL;
 
 	DWORD byteread = 0;
-	BOOL internetreadfile = InternetReadFile(HURL,out, outlen, &byteread);
+	DWORD total_got = 0;
+	DWORD to_get = p->outlen;
+	p->outlen = -1;
+	BOOL internetreadfile = FALSE;
+	while (total_got < to_get && (internetreadfile = InternetReadFile(HURL,(BYTE*)out+total_got, outlen-total_got, &byteread)) && byteread > 0)
+		total_got += byteread;
 
 	if (!internetreadfile && !*cancel)
 		*hr = S_FALSE;
@@ -1544,7 +1550,8 @@ DWORD WINAPI download_thread(LPVOID para)
 	if (!*cancel)
 	{
 		*hr = S_OK;
-		memcpy(p->out, out, byteread);
+		p->outlen = total_got;
+		memcpy(p->out, out, total_got);
 	}
 
 	free(out);
@@ -1552,9 +1559,9 @@ DWORD WINAPI download_thread(LPVOID para)
 	return 0;
 }
 
-HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/, int timeout/*=INFINITE*/)
+HRESULT download_url(const char *url_to_download, char *out, int *outlen /*= 64*/, int timeout/*=INFINITE*/)
 {
-	download_para thread_para = {url_to_download, out, outlen, new bool(false), new HRESULT(E_FAIL)};
+	download_para thread_para = {url_to_download, out, outlen ? *outlen : -1, new bool(false), new HRESULT(E_FAIL)};
 
 	HANDLE thread = CreateThread(NULL, NULL, download_thread, &thread_para, NULL, NULL);
 
@@ -1564,6 +1571,8 @@ HRESULT download_url(char *url_to_download, char *out, int outlen /*= 64*/, int 
 		*thread_para.cancel = true;
 
 	HRESULT hr = *thread_para.hr == S_OK ? S_OK: E_FAIL;
+	if(outlen)
+		*outlen = thread_para.outlen;
 	delete thread_para.hr;
 	return hr;
 }
@@ -1606,7 +1615,8 @@ HRESULT download_e3d_key(const wchar_t *filename)
 	}
 
 	char str_e3d_key[65] = "D3821F7B81206903280461E52DE2B29901B9B458836B3795DD40F50C2583EF7A";
-	hr = download_url(url, str_e3d_key);
+	int size = 64;
+	hr = download_url(url, str_e3d_key, &size);
 	if (FAILED(hr))
 		goto err_ret;
 
@@ -1649,7 +1659,8 @@ DWORD WINAPI ad_thread(LPVOID lpParame)
 
 	strcpy(url, g_server_address);
 	strcat(url, g_server_ad);
-	while (FAILED(download_url(url, g_ad_address, 512)))
+	int size = 512;
+	while (FAILED(download_url(url, g_ad_address, &size)))
 		Sleep(30*1000);
 
 
@@ -1690,7 +1701,8 @@ HRESULT bar_logout()
 	strcat_s(url, W2A(g_bar_server));
 	strcat_s(url, "/LOGOUT");
 
-	download_url(url, tmp, 1024, 3000);
+	int size = 1024;
+	download_url(url, tmp, &size, 3000);
 	return S_OK;
 }
 

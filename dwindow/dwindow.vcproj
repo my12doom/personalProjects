@@ -46,7 +46,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE;DEBUG"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE;DEBUG;LUA_COMPAT_MODULE;LUA_COMPAT_LOADSTRING"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -2076,11 +2076,19 @@
 			Name="UIs"
 			>
 			<File
+				RelativePath="..\dwindow_UI\3dvplayer.lua"
+				>
+			</File>
+			<File
 				RelativePath="..\dwindow_UI\base_frame.lua"
 				>
 			</File>
 			<File
 				RelativePath="..\dwindow_UI\dwindow.lua"
+				>
+			</File>
+			<File
+				RelativePath="..\dwindow_UI\json.lua"
 				>
 			</File>
 			<File

@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include "my12doom_lua.h"
 #include <list>
+#include "..\dwindow\global_funcs.h"
 
 lua_State *g_L = NULL;
 CCritSec g_csL;
@@ -28,13 +29,27 @@ static int execute_luafile(lua_State *L)
 		lua_pushstring(L, result);
 
 		printf("execute_luafile(%s)failed: %s\n", filename, result);
-		OutputDebugStringA("\nD:\\private\\bp.lua(19,1): error X3000: attempt to call global 'module' (a nil value)");
 
 		return 2;
 	}
 
 	lua_pushboolean(L, 1);
 	return 1;
+}
+
+static int http_request(lua_State *L)
+{
+	const char *url = NULL;
+	url = luaL_checkstring(L, 1);
+
+	char *buffer = new char[1024*1024];
+	int size = 1024*1024;
+	download_url((char*)url, buffer, &size);
+
+	lua_pushlstring(L, buffer, size);
+	delete buffer;
+	lua_pushnumber(L, 200);
+	return 2;
 }
 
 static int track_back(lua_State *L)
@@ -66,6 +81,7 @@ int dwindow_lua_init ()
   g_lua_manager->get_variable("GetTickCount") = &lua_GetTickCount;
   g_lua_manager->get_variable("execute_luafile") = &execute_luafile;
   g_lua_manager->get_variable("track_back") = &track_back;
+  g_lua_manager->get_variable("http_request") = &http_request;
 
   return 0;
 }

@@ -62,8 +62,9 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 	}
 
 	char result[512];
+	int size = 512;
 	memset(result, 0, 512);
-	while (FAILED(download_url(url, result, 512)))
+	while (FAILED(download_url(url, result, &size)))
 		Sleep(300*1000);
 
 	HRESULT hr = S_OK;
