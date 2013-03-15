@@ -4835,6 +4835,7 @@ HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 }
 HRESULT lua_drawer::init_cpu(int width, int height, IDirect3DDevice9 *device)
 {
+	m_device = device;
 	g_lua_manager->get_variable("width") = int(width/UIScale);
 	g_lua_manager->get_variable("height") = int(height/UIScale);
 
@@ -4868,6 +4869,8 @@ HRESULT lua_drawer::invalidate_cpu()
 }
 HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, int view, bool running)
 {
+	m_device->SetRenderTarget(0, surface);
+
 	g_lua_manager->get_variable("running") = running;
 
 	luaState lua_state;
