@@ -324,7 +324,7 @@ function grow:HitTest()
 	return false
 end
 
-test = BaseFrame:Create()
+local test = BaseFrame:Create()
 test.name = "test"
 test:SetRelativeTo(root, TOPLEFT)
 root:AddChild(test)
@@ -342,8 +342,15 @@ function test:OnInitCPU()
 	self.height = self.res.height
 end
 
+function test:OnMouseDown()
+	print("test:OnMouseDown()", load_another)
+	if load_another then load_another() end
+end
+
 function test:OnReleaseCPU()
-	dwindow.release_resource_core(self.res.res)
+	if self.res and self.res.res then
+		dwindow.release_resource_core(self.res.res)
+	end
 	self.res = nil
 end
 

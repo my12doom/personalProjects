@@ -4711,6 +4711,7 @@ HRESULT my12doomRenderer::set_ui_drawer(ui_drawer_base * new_ui_drawer)
 		tar.bottom /= 2;
 
 	m_uidrawer = new_ui_drawer;
+
 	if(m_Device && m_uidrawer ) m_uidrawer->init(tar.right, tar.bottom, m_Device);
 	return S_OK;
 }

@@ -164,10 +164,17 @@ for _,mark in pairs(marks) do
 end
 ]]--
 
-local video = PageMerger:Create()
-video:openURL(v3dplayer.API_ROOT_PATH .. "mod=movielist&mark=".."short")
-local movie = video:GetItem(math.random(video:GetCount()))
-local addresses = string_split(movie.address or "||", "|")
-local highest = (addresses[1] ~= "NULL" and addresses[1]) or (addresses[2] ~= "NULL" and addresses[2]) or (addresses[3] ~= "NULL" and addresses[3])
-		
---dwindow.reset_and_loadfile(v3dplayer.video_server .. highest)
+local video_list = PageMerger:Create()
+video_list:openURL(v3dplayer.API_ROOT_PATH .. "mod=movielist&mark=".."short")
+
+function load_another()
+	local movie = video_list:GetItem(math.random(video_list:GetCount()))
+	local addresses = string_split(movie.address or "||", "|")
+	local highest = (addresses[1] ~= "NULL" and addresses[1]) or (addresses[2] ~= "NULL" and addresses[2]) or (addresses[3] ~= "NULL" and addresses[3])
+
+	dwindow.reset_and_loadfile(v3dplayer.video_server .. highest)
+	
+	printtable(movie)
+end
+
+print("test:OnMouseDown()", load_another)

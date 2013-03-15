@@ -59,8 +59,9 @@ class subtitle_file_handler
 public:
 	bool actived/* = false*/;
 	wchar_t m_pathname[MAX_PATH];
+	wchar_t m_displayname[MAX_PATH];
 	CSubtitleRenderer *m_renderer;
-	subtitle_file_handler(const wchar_t *pathname);
+	subtitle_file_handler(const wchar_t *pathname, const wchar_t *displayname = NULL);
 	~subtitle_file_handler();
 };
 

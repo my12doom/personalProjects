@@ -3046,6 +3046,8 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, const wchar_t*pat
 		}
 	}
 
+	load_subtitle(L"http://3dvp-sub.stor.sinaapp.com/07ABAA49.srt");
+
 	if (stop)
 		pause();
 
@@ -3614,6 +3616,24 @@ HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME 
 {
 	if (pathname == NULL)
 		return E_POINTER;
+
+	if (wcsrchr(pathname, L'.') == NULL)			// must have a extension
+		return E_NOTIMPL;
+
+	wchar_t tmp_file[MAX_PATH];
+	const wchar_t *displayname = NULL;
+	if (wcsstr_nocase(pathname, L"http://") == pathname)
+	{
+		wchar_t tmp[MAX_PATH];
+		srand(time(NULL));
+		swprintf(tmp, L"dwindow_http_subtitle%d%s", rand(), wcsrchr(pathname, L'.'));
+		GetTempPathW(MAX_PATH, tmp_file);
+		wcscat(tmp_file, tmp);
+
+		displayname = pathname;
+		pathname = tmp_file;
+
+	}
 
 	// find duplication
 	int j = 0;
@@ -4434,7 +4454,7 @@ HRESULT dx_player::list_subtitle_track(wchar_t **out, bool*connected_out, int *f
 		CAutoPtr<subtitle_file_handler> &tmp = m_external_subtitles.GetAt(i);
 		if (subtitle_track_found < 32)
 		{
-			wcscpy(out[subtitle_track_found], tmp->m_pathname);
+			wcscpy(out[subtitle_track_found], tmp->m_displayname);
 			connected_out[subtitle_track_found] = tmp->actived;
 		}
 
@@ -4536,9 +4556,10 @@ HRESULT dx_player::list_subtitle_track(wchar_t **out, bool*connected_out, int *f
 }
 
 
-subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
+subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname, const wchar_t *displayname/* = NULL*/)
 {
 	wcscpy(m_pathname, pathname);
+	wcscpy(m_displayname, displayname ? displayname : pathname);
 	actived = false;
 	m_renderer = NULL;
 
