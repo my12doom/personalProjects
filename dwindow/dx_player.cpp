@@ -927,7 +927,6 @@ LRESULT dx_player::on_key_down(int id, int key)
 		{
 		ui_drawer_base *p = m_renderer1->get_ui_drawer();
  		m_renderer1->set_ui_drawer(NULL);
-		my12doomRenderer_lua_loadscript();
 		m_renderer1->set_ui_drawer(p == (ui_drawer_base *)this ? m_lua : (ui_drawer_base *)this);
 		}
 		break;
@@ -4835,6 +4834,7 @@ HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 }
 HRESULT lua_drawer::init_cpu(int width, int height, IDirect3DDevice9 *device)
 {
+	my12doomRenderer_lua_loadscript();
 	m_device = device;
 	g_lua_manager->get_variable("width") = int(width/UIScale);
 	g_lua_manager->get_variable("height") = int(height/UIScale);
