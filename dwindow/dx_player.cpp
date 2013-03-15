@@ -3617,24 +3617,6 @@ HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME 
 	if (pathname == NULL)
 		return E_POINTER;
 
-	if (wcsrchr(pathname, L'.') == NULL)			// must have a extension
-		return E_NOTIMPL;
-
-	wchar_t tmp_file[MAX_PATH];
-	const wchar_t *displayname = NULL;
-	if (wcsstr_nocase(pathname, L"http://") == pathname)
-	{
-		wchar_t tmp[MAX_PATH];
-		srand(time(NULL));
-		swprintf(tmp, L"dwindow_http_subtitle%d%s", rand(), wcsrchr(pathname, L'.'));
-		GetTempPathW(MAX_PATH, tmp_file);
-		wcscat(tmp_file, tmp);
-
-		displayname = pathname;
-		pathname = tmp_file;
-
-	}
-
 	// find duplication
 	int j = 0;
 	for(POSITION i = m_external_subtitles.GetHeadPosition(); i; m_external_subtitles.GetNext(i))
@@ -4556,17 +4538,14 @@ HRESULT dx_player::list_subtitle_track(wchar_t **out, bool*connected_out, int *f
 }
 
 
-subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname, const wchar_t *displayname/* = NULL*/)
+subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 {
-	wcscpy(m_pathname, pathname);
-	wcscpy(m_displayname, displayname ? displayname : pathname);
 	actived = false;
 	m_renderer = NULL;
 
-	FILE * f = _wfopen(pathname, L"rb");
-	if (!f)
+	if (pathname == NULL || wcsrchr(pathname, L'.') == NULL)		// must have a extension
 		return;
-	fclose(f);
+
 
 	const wchar_t *p_3 = pathname + wcslen(pathname) -3;
 	if ( wcs_endwith_nocase(pathname, L".srt"))
@@ -4592,6 +4571,42 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname, const wcha
 	{
 		return;
 	}
+
+	wchar_t tmp_file[MAX_PATH];
+	const wchar_t *displayname = NULL;
+	if (wcsstr_nocase(pathname, L"http://") == pathname)
+	{
+		wchar_t tmp[MAX_PATH];
+		srand(time(NULL));
+		swprintf(tmp, L"dwindow_http_subtitle%d%s", rand(), wcsrchr(pathname, L'.'));
+		GetTempPathW(MAX_PATH, tmp_file);
+		wcscat(tmp_file, tmp);
+
+		char *data = new char[1024*1024];
+		int size = 1024*1024;
+		USES_CONVERSION;
+		download_url(W2A(pathname), data,  &size);
+		FILE * f = _wfopen(tmp_file, L"wb");
+		if (!f)
+		{
+			delete [] data;
+			return;
+		}
+
+		fwrite(data, 1, 1024*1024, f);
+		fclose(f);
+		delete [] data;
+
+		displayname = pathname;
+		pathname = tmp_file;
+	}
+
+	wcscpy(m_pathname, pathname);
+	wcscpy(m_displayname, displayname ? displayname : pathname);
+	FILE * f = _wfopen(pathname, L"rb");
+	if (!f)
+		return;
+	fclose(f);
 
 	m_renderer->load_file(m_pathname);
 }
