@@ -104,70 +104,81 @@ function string_split(pString, pPattern)
    return Table
 end
 
-v3dplayer = {}
-v3dplayer.API_ROOT_PATH = "http://api.3dv.cn/p/ver=33&mac=00-00-00-00-00-00&model=dwindow&uid=0&"
-v3dplayer.feedback_url = v3dplayer.API_ROOT_PATH .. "mod=feedback"
-v3dplayer.rating_url = v3dplayer.API_ROOT_PATH .. "mod=mark"
-v3dplayer.comment_url = v3dplayer.API_ROOT_PATH .. "mod=comment_url"
-v3dplayer.details_web_url = v3dplayer.API_ROOT_PATH .. "mod=movie&product=player&mid="
-v3dplayer.subtitle_url = v3dplayer.API_ROOT_PATH .. "mod=subtitle&json=1"
+function v3d_init()
+	if v3d_inited then return end
+	
+	v3dplayer = {}
+	v3dplayer.API_ROOT_PATH = "http://api.3dv.cn/p/ver=33&mac=00-00-00-00-00-00&model=dwindow&uid=0&"
+	v3dplayer.feedback_url = v3dplayer.API_ROOT_PATH .. "mod=feedback"
+	v3dplayer.rating_url = v3dplayer.API_ROOT_PATH .. "mod=mark"
+	v3dplayer.comment_url = v3dplayer.API_ROOT_PATH .. "mod=comment_url"
+	v3dplayer.details_web_url = v3dplayer.API_ROOT_PATH .. "mod=movie&product=player&mid="
+	v3dplayer.subtitle_url = v3dplayer.API_ROOT_PATH .. "mod=subtitle&json=1"
 
-local configuration_base = json_url2table(v3dplayer.API_ROOT_PATH)
+	local configuration_base = json_url2table(v3dplayer.API_ROOT_PATH)
 
-if not istable(configuration_base) then
-	error("configuration_base")
-end
+	if not istable(configuration_base) then
+		error("configuration_base")
+	end
 
-printtable(configuration_base)
+	printtable(configuration_base)
 
-v3dplayer.video_server = configuration_base.server or "http://v.cnliti.com/"
-local configuration = json_url2table(v3dplayer.API_ROOT_PATH .. "sign=" .. (configuration_base.version or 0) )
+	v3dplayer.video_server = configuration_base.server or "http://v.cnliti.com/"
+	local configuration = json_url2table(v3dplayer.API_ROOT_PATH .. "sign=" .. (configuration_base.version or 0) )
 
---printtable(configuration)
+	--printtable(configuration)
 
-if not istable(configuration) then
-	error("configuration")
-end
+	if not istable(configuration) then
+		error("configuration")
+	end
 
-v3dplayer.maintenance = configuration.maintain or ""
-v3dplayer.pic_url = configuration.picPath or "http://www.cnliti.com/uploadfile/"
-v3dplayer.thumb_url = configuration.thumbPath or "http://www.cnliti.com/uploadfile/"
-v3dplayer.subtitle_url = configuration.subtitlePath or "http://www.cnliti.com/uploadfile/subtitle/"
-v3dplayer.speed_limit = tonumber(configuration.limitspeed) or 300
-v3dplayer.min_3dvplayer_version = tonumber(configuration.forceupdate) or 17
+	v3dplayer.maintenance = configuration.maintain or ""
+	v3dplayer.pic_url = configuration.picPath or "http://www.cnliti.com/uploadfile/"
+	v3dplayer.thumb_url = configuration.thumbPath or "http://www.cnliti.com/uploadfile/"
+	v3dplayer.subtitle_url = configuration.subtitlePath or "http://www.cnliti.com/uploadfile/subtitle/"
+	v3dplayer.speed_limit = tonumber(configuration.limitspeed) or 300
+	v3dplayer.min_3dvplayer_version = tonumber(configuration.forceupdate) or 17
 
 
---printtable(v3dplayer)
-local marks = {"video", "trailers", "short", "demo"}
+	--printtable(v3dplayer)
+	local marks = {"video", "trailers", "short", "demo"}
 
---[[
-for _,mark in pairs(marks) do
-	local video = PageMerger:Create()
-	video:openURL(v3dplayer.API_ROOT_PATH .. "mod=movielist&mark="..mark)
-	for i=1,video:GetCount() do
-		local movie = video:GetItem(i)
+	--[[
+	for _,mark in pairs(marks) do
+		local video = PageMerger:Create()
+		video:openURL(v3dplayer.API_ROOT_PATH .. "mod=movielist&mark="..mark)
+		for i=1,video:GetCount() do
+			local movie = video:GetItem(i)
 
-		local addresses = string_split(movie.address or "||", "|")
-		local highest = addresses[1] or addresses[2] or addresses[3]
-		print(movie.name or "", movie.id or 0, v3dplayer.video_server .. highest,
-			v3dplayer.subtitle_url .. movie.caption)
+			local addresses = string_split(movie.address or "||", "|")
+			local highest = addresses[1] or addresses[2] or addresses[3]
+			print(movie.name or "", movie.id or 0, v3dplayer.video_server .. highest,
+				v3dplayer.subtitle_url .. movie.caption)
 
-		local detail_url = v3dplayer.API_ROOT_PATH .. "mod=info&mid=" .. movie.id .. "&mark=" .. mark;
-		local detail, error_desc = json_url2table(detail_url)
+			local detail_url = v3dplayer.API_ROOT_PATH .. "mod=info&mid=" .. movie.id .. "&mark=" .. mark;
+			local detail, error_desc = json_url2table(detail_url)
 
-		if istable(detail) then
-			printtable(detail)
-		else
-			print(detail_url, error_desc)
+			if istable(detail) then
+				printtable(detail)
+			else
+				print(detail_url, error_desc)
+			end
 		end
 	end
-end
-]]--
+	]]--
 
-local video_list = PageMerger:Create()
-video_list:openURL(v3dplayer.API_ROOT_PATH .. "mod=movielist&mark=".."video")
+	video_list = PageMerger:Create()
+	video_list:openURL(v3dplayer.API_ROOT_PATH .. "mod=movielist&mark=".."video")
+
+	v3d_inited = true
+end
 
 function load_another()
+
+	return dwindow.Sleep(100000)
+--[[
+	v3d_init()
+
 	local movie = video_list:GetItem(math.random(video_list:GetCount()))
 	local addresses = string_split(movie.address or "||", "|")
 	local highest = (addresses[1] ~= "NULL" and addresses[1]) or (addresses[2] ~= "NULL" and addresses[2]) or (addresses[3] ~= "NULL" and addresses[3])
@@ -178,7 +189,7 @@ function load_another()
 		dwindow.load_subtitle(v3dplayer.subtitle_url .. movie.caption)
 	end
 	
-	printtable(movie)
+	printtable(movie)]]--
 end
 
 print("test:OnMouseDown()", load_another)

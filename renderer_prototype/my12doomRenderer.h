@@ -555,6 +555,7 @@ protected:
 
 	// input layout detector
 	input_layout_types get_active_input_layout();
+	bool is2Dimage();
 	double get_active_aspect();
 	int m_sbs;
 	int m_normal;

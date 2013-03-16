@@ -3046,8 +3046,6 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, const wchar_t*pat
 		}
 	}
 
-	load_subtitle(L"http://3dvp-sub.stor.sinaapp.com/07ABAA49.srt");
-
 	if (stop)
 		pause();
 

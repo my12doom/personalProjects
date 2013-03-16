@@ -15,6 +15,14 @@ static int lua_GetTickCount (lua_State *L)
 	return 1;
 }
 
+static int lua_Sleep(lua_State *L)
+{
+	DWORD time = lua_tointeger(L, -1);
+	Sleep(time);
+
+	return 0;
+}
+
 
 static int execute_luafile(lua_State *L)
 {
@@ -58,6 +66,90 @@ static int track_back(lua_State *L)
 }
 
 
+// threads
+
+int luaResumeThread(lua_State *L)
+{
+	HANDLE h = (HANDLE)lua_touserdata(L, -1);
+	if (h == NULL)
+		return 0;
+
+	ResumeThread(h);
+	return 0;
+}
+int luaSuspendThread(lua_State *L)
+{
+	HANDLE h = (HANDLE)lua_touserdata(L, -1);
+	if (h == NULL)
+		return 0;
+	SuspendThread(h);
+	return 0;
+}
+int luaWaitForSingleObject(lua_State *L)
+{
+	int n = -lua_gettop(L);
+	HANDLE h = (HANDLE)lua_touserdata(L, n+0);
+	if (h == NULL)
+		return 0;
+	DWORD timeout = lua_tointeger(L, n+2);
+	DWORD o = WaitForSingleObject(h, timeout);
+
+	lua_pushinteger(L, o);
+	return 1;
+}
+
+
+typedef	struct
+{
+	int id;
+	int parameter;
+} luaCreateThreadPara;
+DWORD WINAPI luaCreateThreadEntry(LPVOID parameter)
+{
+	luaCreateThreadPara *para = (luaCreateThreadPara*)parameter;
+
+
+	luaState L;
+
+	lua_getglobal(L, "ThreadExchangeTable");
+	if (!lua_istable(L, -1))
+	{
+		delete para;
+		return -1;					// exchange table not found
+	}
+
+	lua_pushinteger(L, para->id);
+	lua_gettable(L, -2);
+
+	if (!lua_isfunction(L, -1))
+	{
+		delete para;
+		return -2;					// no function found
+	}
+
+	lua_pushinteger(L, para->parameter);
+	delete para;
+
+	lua_mypcall(L, 1, 0, 0);
+
+	return 0;
+}
+
+int luaCreateThread(lua_State *L)
+{
+	int n = -lua_gettop(L);
+	int exchange_id = lua_tointeger(L, n+0);
+	int parameter = lua_tointeger(L, n+1);
+
+	luaCreateThreadPara * p = new luaCreateThreadPara;
+	p->id = exchange_id;
+	p->parameter = parameter;
+
+	lua_pushlightuserdata(L, CreateThread(NULL, NULL, luaCreateThreadEntry, p, NULL, NULL));
+	return 1;
+}
+
+
 int dwindow_lua_init () 
 {
   dwindow_lua_exit();
@@ -82,6 +174,14 @@ int dwindow_lua_init ()
   g_lua_manager->get_variable("execute_luafile") = &execute_luafile;
   g_lua_manager->get_variable("track_back") = &track_back;
   g_lua_manager->get_variable("http_request") = &http_request;
+  g_lua_manager->get_variable("Sleep") = &lua_Sleep;
+
+  // threads
+  g_lua_manager->get_variable("ResumeThread") = &luaResumeThread;
+  g_lua_manager->get_variable("SuspendThread") = &luaSuspendThread;
+  g_lua_manager->get_variable("WaitForSingleObject") = &luaWaitForSingleObject;
+  g_lua_manager->get_variable("CreateThread") = &luaCreateThread;
+
 
   return 0;
 }
@@ -132,7 +232,6 @@ int dwindow_lua_exit()
 	g_L = NULL;
 	return 0;
 }
-
 
 lua_manager::lua_manager(lua_State *L, CCritSec *cs)
 {

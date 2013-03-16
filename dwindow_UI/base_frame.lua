@@ -270,3 +270,52 @@ function BaseFrame:BroadCastEvent(event, ...)
 end
 
 
+Thread = {}
+ThreadExchangeTable = {}
+
+function Thread:Create(func, para)
+	local o = {}
+	setmetatable(o, self)
+	self.__index = self
+	
+	ThreadExchangeTable[#ThreadExchangeTable+1] = func
+	
+	self.func = func
+	self.exchange_id = #ThreadExchangeTable
+	self.handle = dwindow.CreateThread(self.exchange_id, para)
+
+	return o
+end
+
+function Thread:Resume()
+	return dwindow.ResumeThread(self.handle)
+end
+
+function Thread:Suspend()
+	return dwindow:SuspendThread(self.handle)
+end
+
+function Thread:Terminate(exitcode)
+	return dwindow.TerminateThread(self.handle, exitcode)
+end
+
+function Thread:Wait(timeout)
+	return dwindow.WaitForSingleObject(self.handle, timeout)
+end
+
+function Thread:Sleep(timeout)		-- direct use of dwindow.Sleep() is recommended
+	return dwindow.Sleep(timeout)
+end
+
+
+local hello = Thread:Create(function ()
+	print("Hello Thread!")
+	dwindow.Sleep(1500)
+	print("Bye Thread!")
+end, 0)
+
+hello:Suspend()
+Thread.Sleep(500)
+hello:Resume()
+Thread.Sleep(500)
+hello:Terminate()

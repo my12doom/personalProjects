@@ -1808,7 +1808,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			surfaces[1] = back_buffer2;
 		}
 
-		if (get_active_input_layout() == mono2d && m_dsr0->is_connected())
+		if (is2Dimage() && m_dsr0->is_connected())
 		{
 			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
 			view0->get_first_level(&surf0);
@@ -1938,15 +1938,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			clear(back_buffer);
 			hr = m_Device->SetTexture( 0, view0->texture );
 			hr = m_Device->SetTexture( 1, view1->texture );
-			if(get_active_input_layout() != mono2d 
-				|| m_convert3d
-				|| (m_dsr0->is_connected() && m_dsr1->is_connected())
-				|| (!m_dsr0->is_connected() && !m_dsr1->is_connected())
-				|| m_remux_mode)
-				m_Device->SetPixelShader(m_red_blue);
-
-			if (m_force2d)
-				m_Device->SetPixelShader(NULL);
+			m_Device->SetPixelShader(is2Dimage() ? NULL : (IDirect3DPixelShader9*)m_red_blue);
 
 			hr = m_Device->SetFVF( FVF_Flags );
 			hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
@@ -3175,6 +3167,16 @@ input_layout_types my12doomRenderer::get_active_input_layout()
 		return m_input_layout;
 	else
 		return m_layout_detected;
+}
+
+bool my12doomRenderer::is2Dimage()
+{
+	return !(get_active_input_layout() != mono2d 
+		|| m_convert3d
+		|| (m_dsr0->is_connected() && m_dsr1->is_connected())
+		|| (!m_dsr0->is_connected() && !m_dsr1->is_connected())
+		|| m_remux_mode
+		|| m_force2d);
 }
 
 double my12doomRenderer::get_active_aspect()
