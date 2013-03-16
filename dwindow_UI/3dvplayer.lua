@@ -188,5 +188,3 @@ function load_another()
 	
 	printtable(movie)
 end
-
-print("test:OnMouseDown()", load_another)
