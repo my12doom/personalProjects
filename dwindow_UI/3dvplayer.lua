@@ -1,4 +1,3 @@
-json = require("json")
 local http = {request = dwindow.http_request}
 
 PageMerger ={}
@@ -76,6 +75,8 @@ function json_url2table(url)
 	print(bytes, response_code, headers)
 
 	bytes = string.gsub( bytes, "\r\n", "\\n")
+	
+	local json = dwindow.cjson()
 
 	local suc,result = pcall(json.decode, bytes)
 
@@ -173,6 +174,7 @@ end
 
 function load_another()
 
+	Thread:Create(function()
 	v3d_init()
 
 	math.randomseed(dwindow.GetTickCount())
@@ -187,4 +189,5 @@ function load_another()
 	end
 	
 	printtable(movie)
+	end, 0)
 end

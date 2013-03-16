@@ -149,6 +149,7 @@ int luaCreateThread(lua_State *L)
 	return 1;
 }
 
+extern "C" int luaopen_cjson_safe(lua_State *l);
 
 int dwindow_lua_init () 
 {
@@ -182,6 +183,7 @@ int dwindow_lua_init ()
   g_lua_manager->get_variable("WaitForSingleObject") = &luaWaitForSingleObject;
   g_lua_manager->get_variable("CreateThread") = &luaCreateThread;
 
+  g_lua_manager->get_variable("cjson") = &luaopen_cjson_safe;
 
   return 0;
 }

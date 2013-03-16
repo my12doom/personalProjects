@@ -2148,6 +2148,30 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="cjson"
+			>
+			<File
+				RelativePath="..\lua\fpconv.c"
+				>
+			</File>
+			<File
+				RelativePath="..\lua\fpconv.h"
+				>
+			</File>
+			<File
+				RelativePath="..\lua\lua_cjson.c"
+				>
+			</File>
+			<File
+				RelativePath="..\lua\strbuf.c"
+				>
+			</File>
+			<File
+				RelativePath="..\lua\strbuf.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\dwindow.manifest"
 			>
