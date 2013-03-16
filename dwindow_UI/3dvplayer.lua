@@ -139,11 +139,9 @@ function v3d_init()
 	v3dplayer.speed_limit = tonumber(configuration.limitspeed) or 300
 	v3dplayer.min_3dvplayer_version = tonumber(configuration.forceupdate) or 17
 
-
+	--[[
 	--printtable(v3dplayer)
 	local marks = {"video", "trailers", "short", "demo"}
-
-	--[[
 	for _,mark in pairs(marks) do
 		local video = PageMerger:Create()
 		video:openURL(v3dplayer.API_ROOT_PATH .. "mod=movielist&mark="..mark)
@@ -175,10 +173,9 @@ end
 
 function load_another()
 
-	return dwindow.Sleep(100000)
---[[
 	v3d_init()
 
+	math.randomseed(dwindow.GetTickCount())
 	local movie = video_list:GetItem(math.random(video_list:GetCount()))
 	local addresses = string_split(movie.address or "||", "|")
 	local highest = (addresses[1] ~= "NULL" and addresses[1]) or (addresses[2] ~= "NULL" and addresses[2]) or (addresses[3] ~= "NULL" and addresses[3])
@@ -189,7 +186,7 @@ function load_another()
 		dwindow.load_subtitle(v3dplayer.subtitle_url .. movie.caption)
 	end
 	
-	printtable(movie)]]--
+	printtable(movie)
 end
 
 print("test:OnMouseDown()", load_another)
