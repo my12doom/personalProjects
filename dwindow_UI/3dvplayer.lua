@@ -165,7 +165,7 @@ end
 ]]--
 
 local video_list = PageMerger:Create()
-video_list:openURL(v3dplayer.API_ROOT_PATH .. "mod=movielist&mark=".."short")
+video_list:openURL(v3dplayer.API_ROOT_PATH .. "mod=movielist&mark=".."video")
 
 function load_another()
 	local movie = video_list:GetItem(math.random(video_list:GetCount()))
@@ -173,6 +173,10 @@ function load_another()
 	local highest = (addresses[1] ~= "NULL" and addresses[1]) or (addresses[2] ~= "NULL" and addresses[2]) or (addresses[3] ~= "NULL" and addresses[3])
 
 	dwindow.reset_and_loadfile(v3dplayer.video_server .. highest)
+	
+	if movie.caption and movie.caption ~= "" then
+		dwindow.load_subtitle(v3dplayer.subtitle_url .. movie.caption)
+	end
 	
 	printtable(movie)
 end

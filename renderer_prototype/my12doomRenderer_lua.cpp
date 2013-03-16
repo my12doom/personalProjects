@@ -323,6 +323,18 @@ static int reset_and_loadfile(lua_State *L)
 	return 2;
 }
 
+static int load_subtitle(lua_State *L)
+{
+	const char *filename = lua_tostring(L, -1);
+	const bool reset = lua_isboolean(L, -2) ? lua_toboolean(L, -2) : false;
+
+	USES_CONVERSION;
+	HRESULT hr = g_player->load_subtitle(filename ? A2W(filename) : NULL, reset);
+
+	lua_pushboolean(L, SUCCEEDED(hr));
+	lua_pushinteger(L, hr);
+	return 2;
+}
 
 static int show_mouse(lua_State *L)
 {
@@ -388,6 +400,7 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("show_mouse") = &show_mouse;
 	g_lua_manager->get_variable("toggle_3d") = &toggle_3d;
 	g_lua_manager->get_variable("reset_and_loadfile") = &reset_and_loadfile;
+	g_lua_manager->get_variable("load_subtitle") = &load_subtitle;
 
 	return 0;
 }
