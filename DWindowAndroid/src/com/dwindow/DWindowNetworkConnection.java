@@ -81,8 +81,7 @@ public class DWindowNetworkConnection {
 	        String [] version_strs = welcomeString.split("\\.");
 	        int[] version = new int[] {Integer.parseInt(version_strs[0]), Integer.parseInt(version_strs[1]), Integer.parseInt(version_strs[2])};
 	        
-	        if (version[0] > 0 || version[1] > 0 || version[2] > 1)
-	        {
+	        if (version[0] > 0 || version[1] > 0 || version[2] > 1){
 	        	mState = ERROR_NEW_PROTOCOL;
 	        	return false;
 	        }
@@ -96,19 +95,19 @@ public class DWindowNetworkConnection {
 		mState = ERROR_NOT_LOGINED;
         return true;
 	}
+	
 	public int login(String password){
 		cmd_result result = execute_command("auth|"+password);
-		if (result.successed())
-		{
+		if (result.successed()){
 			mState = result.result.equalsIgnoreCase("true") ? 0 : ERROR_LOGIN_FAILED;
 
 			return result.result.equalsIgnoreCase("true") ? 1 : 0;
 		}
-		else
-		{
+		else{
 			return -1;
 		}
 	}
+	
 	public void disconnect(){
 		try {
 			mState = ERROR_NOT_CONNECTED;
@@ -127,45 +126,43 @@ public class DWindowNetworkConnection {
 	}
 	
 	// calling this before login() may cause disconnection.
-	public cmd_result execute_command(String cmd){
-		synchronized(this)
-		{
-		cmd_result out = new cmd_result();
-		if (mState < 0 && mState != ERROR_NOT_LOGINED)
+	public synchronized cmd_result execute_command(String cmd){
+		synchronized(this){
+			cmd_result out = new cmd_result();
+			if (mState < 0 && mState != ERROR_NOT_LOGINED)
+				return out;
+			try{
+				outputStream.write((cmd+"\r\n").getBytes("UTF-8"));		
+				String out_str = reader.readLine();
+				String[] split = out_str.split(",", 2);
+				out.result = split.length > 1 ? split[1] : "";
+				out.hr = new HRESULT(split[0]);
+			}catch (Exception e){
+				mState = -2;
+			}
 			return out;
-		try{
-			outputStream.write((cmd+"\r\n").getBytes("UTF-8"));		
-			String out_str = reader.readLine();
-			String[] split = out_str.split(",", 2);
-			out.result = split.length > 1 ? split[1] : "";
-			out.hr = new HRESULT(split[0]);
-		}catch (Exception e){
-			mState = -2;
-		}
-		return out;
 		}
 	}
 	
 	public synchronized byte[] shot(){
-		synchronized(this)
-		{
-		try{
-			outputStream.write(("shot\r\n").getBytes("UTF-8"));
-			byte[] p = new byte[4];
-			socket.getInputStream().read(p);
-			int size = ((int)p[0]&0xff) | (((int)p[1]&0xff) << 8) | (((int)p[2]&0xff) << 16) | (((int)p[3]&0xff) << 24);
-			byte[] out = new byte[size];
-			readStream(socket.getInputStream(), out);
-			return out;
-		}catch (Exception e){
-		}catch (Error e2){
-		}
-		mState = -3;
-		return null;
+		synchronized(this){
+			try{
+				outputStream.write(("shot\r\n").getBytes("UTF-8"));
+				byte[] p = new byte[4];
+				socket.getInputStream().read(p);
+				int size = ((int)p[0]&0xff) | (((int)p[1]&0xff) << 8) | (((int)p[2]&0xff) << 16) | (((int)p[3]&0xff) << 24);
+				byte[] out = new byte[size];
+				readStream(socket.getInputStream(), out);
+				return out;
+			}catch (Exception e){
+			}catch (Error e2){
+			}
+			mState = -3;
+			return null;
 		}
 	}
 	
-	public int readStream(InputStream inStream, byte[] out) throws Exception {
+	private int readStream(InputStream inStream, byte[] out) throws Exception {
 		int got = 0;
 		int total_got = 0;
 		while ((got = inStream.read(out, total_got , Math.min(1024, out.length-total_got))) != -1 && total_got < out.length) {
