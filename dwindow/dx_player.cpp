@@ -571,7 +571,6 @@ DWORD dx_player::tell_thread()
 
 		if (m_mc)
 		{
-			m_filter_state = -1;
 			m_mc->GetState(500, &m_filter_state);
 		}
 	}
@@ -624,13 +623,6 @@ bool dx_player::is_playing()
 	if (m_filter_state >= 0)
 	{
 		return m_filter_state == State_Running;
-	}
-	if (m_mc)
-	{
-		OAFilterState state = State_Stopped;
-		m_mc->GetState(500, &state);
-		if (state == State_Running)
-			return true;
 	}
 
 	return false;
@@ -2679,6 +2671,7 @@ HRESULT dx_player::exit_direct_show()
 	m_active_audio_track = 0;
 	m_active_subtitle_track = 0;
 	m_total_time = m_current_time = 0;
+	m_filter_state = -1;
 	
 	m_offset_metadata = NULL;
 	m_stereo_layout = NULL;
