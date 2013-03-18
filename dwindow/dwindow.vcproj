@@ -2088,10 +2088,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\dwindow_UI\json.lua"
-				>
-			</File>
-			<File
 				RelativePath="..\dwindow_UI\tetris.lua"
 				>
 			</File>

@@ -191,3 +191,34 @@ function load_another()
 	printtable(movie)
 	end, 0)
 end
+
+
+local test = BaseFrame:Create()
+test.name = "test"
+test:SetRelativeTo(root, TOPLEFT)
+root:AddChild(test)
+function test:GetRect()
+	return 0,0,self.width or 0,self.height or 0
+end
+
+function test:RenderThis()
+	paint(0,0,self.width,self.height, self.res, 1, bilinear_mipmap_minus_one)
+end
+
+function test:OnInitCPU()
+	self.res = test_get_text_bitmap("HelloWorld")
+	self.width = self.res.width
+	self.height = self.res.height
+end
+
+function test:OnMouseDown()
+	print("test:OnMouseDown()", load_another)
+	if load_another then load_another() end
+end
+
+function test:OnReleaseCPU()
+	if self.res and self.res.res then
+		dwindow.release_resource_core(self.res.res)
+	end
+	self.res = nil
+end
