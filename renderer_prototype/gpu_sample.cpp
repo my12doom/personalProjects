@@ -472,10 +472,21 @@ clearup:
 	return;
 }
 
+int gpusample_interlace(int height, int n)
+{
+	return n<height/2 ? n*2 : ((n-height/2)*2+1);
+}
+
+int gpusample_deinterlace(int height, int n)
+{
+	return n%2 ? n/2+height/2 : n/2;
+}
+
 gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format,
-					   bool topdown_RGB32, bool do_cpu_test, bool remux_mode, D3DPOOL pool, DWORD PC_LEVEL)
+					   bool topdown_RGB32, bool interlaced, bool do_cpu_test, bool remux_mode, D3DPOOL pool, DWORD PC_LEVEL)
 {
 	//CAutoLock lck(&g_gpu_lock);
+	m_interlaced = interlaced;
 	m_allocator = allocator;
 	m_interlace_flags = 0;
 	m_tex_RGB32 = m_tex_YUY2_UV = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
@@ -748,6 +759,14 @@ clearup:
 	safe_delete(m_tex_YV12_UV);
 	safe_delete(m_tex_NV12_UV);
 	safe_delete(m_tex_YUY2_UV);
+}
+
+HRESULT gpu_sample::set_interlace(bool interlace)
+{
+	if (interlace == m_interlaced)
+		return S_OK;
+
+	return E_NOTIMPL;
 }
 
 extern CCritSec g_ILLock;

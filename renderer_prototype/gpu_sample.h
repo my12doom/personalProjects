@@ -2,7 +2,7 @@
 class gpu_sample
 {
 public:
-	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool do_cpu_test = false, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM, DWORD PC_LEVEL = 0);
+	gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format, bool topdown_RGB32, bool interlaced = false, bool do_cpu_test = false, bool remux_mode = false, D3DPOOL pool = D3DPOOL_SYSTEMMEM, DWORD PC_LEVEL = 0);
 	gpu_sample(const wchar_t *filename, CTextureAllocator *allocator);
 	gpu_sample(CTextureAllocator *allocator, HFONT font, const wchar_t *text, RGBQUAD color, RECT *dst_rect = NULL, DWORD flag = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL);
 	gpu_sample(IDirect3DDevice9 *device, IDirect3DSurface9 *surface, CTextureAllocator *allocator);
@@ -13,6 +13,7 @@ public:
 	HRESULT convert_to_RGB32_CPU(const wchar_t *out);
 	HRESULT do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShader9 *shader_sbs, IDirect3DPixelShader9 *shader_tb, IDirect3DVertexBuffer9 *vb);
 	HRESULT get_strereo_test_result(IDirect3DDevice9 *device, int *out);		// S_FALSE: unkown, S_OK: out = (input_layout_types)
+	HRESULT set_interlace(bool interlace);
 
 	bool m_ready;
 	int m_width;
@@ -22,6 +23,7 @@ public:
 	int m_fn;
 	CLSID m_format;
 	bool m_topdown;
+	bool m_interlaced;
 
 	CPooledTexture *m_tex_gpu_RGB32;				// GPU RGB32 planes, in A8R8G8B8, full width
 	CPooledTexture *m_tex_gpu_Y;					// GPU Y plane of YV12/NV12, in L8

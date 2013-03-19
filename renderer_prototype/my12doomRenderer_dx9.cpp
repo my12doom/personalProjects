@@ -671,7 +671,7 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 	{
 retry:
 		CAutoLock lck(&m_pool_lock);
-		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, need_detect, m_remux_mode, D3DPOOL_SYSTEMMEM, m_PC_level);
+		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, m_forced_deinterlace, need_detect, m_remux_mode, D3DPOOL_SYSTEMMEM, m_PC_level);
 
 //		if ( (m_dsr0->m_format == MEDIASUBTYPE_RGB32 && (!loaded_sample->m_tex_RGB32 || loaded_sample->m_tex_RGB32->creator != m_Device)) ||
 //			 (m_dsr0->m_format == MEDIASUBTYPE_YUY2 && (!loaded_sample->m_tex_YUY2 || loaded_sample->m_tex_YUY2->creator != m_Device)) ||
@@ -2347,6 +2347,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	RECT scissor = get_movie_scissor_rect();
 	m_Device->SetScissorRect(&scissor);
 
+	sample->set_interlace(m_forced_deinterlace);
 
 	if (!m_forced_deinterlace)
 	{
