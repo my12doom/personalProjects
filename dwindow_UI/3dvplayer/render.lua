@@ -10,7 +10,7 @@ function logo:GetRect()
 	return 0,0,1920,1080
 end
 
-function logo:RenderThis(arg)
+function logo:RenderThis()
 	if not movie_loaded then
 		local res = get_bitmap("logo_bg.png")
 		paint(0,0,1920,1080, res)
@@ -49,7 +49,7 @@ function toolbar_bg:GetRect()
 	return 0, 0, dwindow.width, toolbar_height
 end
 
-function toolbar_bg:RenderThis(arg)
+function toolbar_bg:RenderThis()
 	local l,t,r,b = self:GetRect()
 	local res = get_bitmap("toolbar_background.png");
 	paint(0,0,r-l,b-t, res)

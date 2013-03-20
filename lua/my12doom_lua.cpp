@@ -85,7 +85,16 @@ int luaSuspendThread(lua_State *L)
 	SuspendThread(h);
 	return 0;
 }
-int luaWaitForSingleObject(lua_State *L)
+int luaTerminateThread(lua_State *L)
+{
+	int n = -lua_gettop(L);
+	HANDLE h = (HANDLE)lua_touserdata(L, n+0);
+	DWORD exitcode = lua_tointeger(L, n+1);
+	if (h == NULL)
+		return 0;
+	TerminateThread(h, exitcode);
+	return 0;
+}int luaWaitForSingleObject(lua_State *L)
 {
 	int n = -lua_gettop(L);
 	HANDLE h = (HANDLE)lua_touserdata(L, n+0);
@@ -103,31 +112,22 @@ typedef	struct
 {
 	int id;
 	int parameter;
+	char entry_name[1024];
 } luaCreateThreadPara;
 DWORD WINAPI luaCreateThreadEntry(LPVOID parameter)
 {
 	luaCreateThreadPara *para = (luaCreateThreadPara*)parameter;
 
-
 	luaState L;
 
-	lua_getglobal(L, "ThreadExchangeTable");
-	if (!lua_istable(L, -1))
-	{
-		delete para;
-		return -1;					// exchange table not found
-	}
-
-	lua_pushinteger(L, para->id);
-	lua_gettable(L, -2);
-
+	lua_getglobal(L, para->entry_name);
 	if (!lua_isfunction(L, -1))
 	{
 		delete para;
-		return -2;					// no function found
+		return -2;					// no entry function found
 	}
 
-	lua_pushinteger(L, para->parameter);
+	lua_pushinteger(L, para->id);
 	delete para;
 
 	lua_mypcall(L, 1, 0, 0);
@@ -138,12 +138,12 @@ DWORD WINAPI luaCreateThreadEntry(LPVOID parameter)
 int luaCreateThread(lua_State *L)
 {
 	int n = -lua_gettop(L);
-	int exchange_id = lua_tointeger(L, n+0);
-	int parameter = lua_tointeger(L, n+1);
+	const char *entry_name = lua_tostring(L, n+0);
+	int exchange_id = lua_tointeger(L, n+1);
 
 	luaCreateThreadPara * p = new luaCreateThreadPara;
 	p->id = exchange_id;
-	p->parameter = parameter;
+	strcpy(p->entry_name, entry_name);
 
 	lua_pushlightuserdata(L, CreateThread(NULL, NULL, luaCreateThreadEntry, p, NULL, NULL));
 	return 1;
@@ -182,6 +182,7 @@ int dwindow_lua_init ()
   g_lua_manager->get_variable("SuspendThread") = &luaSuspendThread;
   g_lua_manager->get_variable("WaitForSingleObject") = &luaWaitForSingleObject;
   g_lua_manager->get_variable("CreateThread") = &luaCreateThread;
+  g_lua_manager->get_variable("TerminateThread") = &luaTerminateThread;
 
   g_lua_manager->get_variable("cjson") = &luaopen_cjson_safe;
 

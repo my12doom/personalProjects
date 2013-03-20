@@ -271,18 +271,27 @@ end
 
 
 Thread = {}
-ThreadExchangeTable = {}
+ThreadArgExchangeTable = {}
 
-function Thread:Create(func, para)
+function dwindow_thread_entry(exchange_id)
+	local tbl = ThreadArgExchangeTable[exchange_id]
+	if tbl == nil or type(tbl) ~= "table" then
+		return nil
+	end
+	 
+	return tbl.func(table.unpack(tbl.args))
+end
+
+function Thread:Create(func, ...)
 	local o = {}
 	setmetatable(o, self)
 	self.__index = self
-	
-	ThreadExchangeTable[#ThreadExchangeTable+1] = func
+		
+	ThreadArgExchangeTable[#ThreadArgExchangeTable+1] = {func = func, args = table.pack(...)}
 	
 	self.func = func
-	self.exchange_id = #ThreadExchangeTable
-	self.handle = dwindow.CreateThread(self.exchange_id, para)
+	self.exchange_id = #ThreadArgExchangeTable
+	self.handle = dwindow.CreateThread("dwindow_thread_entry", self.exchange_id)
 
 	return o
 end
@@ -295,9 +304,9 @@ function Thread:Suspend()
 	return dwindow:SuspendThread(self.handle)
 end
 
-function Thread:Terminate(exitcode)
-	return dwindow.TerminateThread(self.handle, exitcode)
-end
+--function Thread:Terminate(exitcode)
+--	return dwindow.TerminateThread(self.handle, exitcode or 0)
+--end
 
 function Thread:Wait(timeout)
 	return dwindow.WaitForSingleObject(self.handle, timeout)
@@ -308,14 +317,13 @@ function Thread:Sleep(timeout)		-- direct use of dwindow.Sleep() is recommended
 end
 
 
-local hello = Thread:Create(function ()
-	print("Hello Thread!")
+local hello = Thread:Create(function (...)
+	print("Hello Thread!",...)
 	dwindow.Sleep(1500)
-	print("Bye Thread!")
-end, 0)
+	print("Bye Thread!",...)
+end, 0,1,2,3)
 
 hello:Suspend()
 Thread.Sleep(500)
 hello:Resume()
 Thread.Sleep(500)
-hello:Terminate()
