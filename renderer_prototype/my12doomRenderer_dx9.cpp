@@ -1813,6 +1813,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
 			view0->get_first_level(&surf0);
 			view1 = view0;
+			surf1 = surf0;
 
 			surfaces[0] = surf0;
 			render_helper(surfaces, 1);
