@@ -1950,9 +1950,20 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			m_Device->SetRenderTarget(0, back_buffer);
 			m_Device->SetPixelShader(m_ps_masking);
 			m_Device->SetTexture( 0, m_tex_mask );
-			m_Device->SetTexture( 1, view0->texture );
-			m_Device->SetTexture( 2, view1->texture );
 
+			// swap on need
+			bool need_swap = false;
+			int x = m_window_rect.left&1;
+			int y = m_window_rect.top&1;
+			if ( ((m_mask_mode == row_interlace || m_mask_mode == subpixel_row_interlace) && x) ||
+				(m_mask_mode == line_interlace && y) ||
+				(m_mask_mode == checkboard_interlace && ((x+y)%2)))
+			{
+				need_swap = true;
+			}
+
+			m_Device->SetTexture( 1, need_swap ? view1->texture : view0->texture );
+			m_Device->SetTexture( 2, need_swap ? view0->texture : view1->texture );
 			hr = m_Device->SetFVF( FVF_Flags );
 			hr = m_Device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, whole_backbuffer_vertex, sizeof(MyVertex) );
 		}
