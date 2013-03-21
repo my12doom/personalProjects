@@ -10,7 +10,8 @@ public:
 	void init(int num, int text_size);			//init or reset
 	int load(wchar_t *pathname);
 	int load_offset_metadata(const wchar_t *pathname, int fps = 24);		// sorry, no Unicode support, 1.001 divided
-	int save(const wchar_t *pathname);
+	int save(const wchar_t *pathname);				// encoding: Unicode-16 Little Endian
+	int save_as_ass(const wchar_t *pathname);		// encoding: Unicode-16 Little Endian
 	int get_subtitle(int start, int end, wchar_t *out, bool *has_offset = NULL, int *offset = NULL, bool multi = false);//size in wchar_t
 	int direct_add_subtitle(wchar_t *line, int start, int end);
 
@@ -46,5 +47,6 @@ private:
 	int wstrtrim(wchar_t *str, wchar_t char_ = L' ');
 	int time_to_decimal(wchar_t *str);
 	wchar_t *decimal_to_time(int decimal);		// warning: no MT support for this function, it returns a point to its internal static wchar_t[];
+	wchar_t *decimal_to_time_ass(int decimal);		// warning: no MT support for this function, it returns a point to its internal static wchar_t[];
 };
 #endif

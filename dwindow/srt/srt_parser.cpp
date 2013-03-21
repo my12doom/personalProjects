@@ -100,6 +100,18 @@ wchar_t *srt_parser::decimal_to_time(int decimal)		// warning: no MT support for
 	return out;
 }
 
+wchar_t *srt_parser::decimal_to_time_ass(int decimal)		// warning: no MT support for this function, it returns a point to its internal static wchar_t[];
+{
+	//1:22:33,44
+	static wchar_t out[15];
+	int h = decimal / 3600000;
+	int m = (decimal % 3600000) / 60000;
+	int s = (decimal % 60000) / 1000;
+	int ms = decimal % 1000;
+	swprintf(out, L"%d:%02d:%02d.%02d", h, m, s, ms/10);
+
+	return out;
+}
 
 // end helper functions
 
@@ -313,6 +325,71 @@ replace:
 		fwprintf(f, L"%s --> %s\r\n", start, end);
 		if (has_offset) fwprintf(f, L"<offset=%d>", offset);
 		fwprintf(f, L"%s\r\n\r\n", text);
+	}
+
+	fclose(f);
+
+	return 0;
+}
+
+bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *replacer);
+
+
+int srt_parser::save_as_ass(const wchar_t *pathname)
+{
+	FILE * f = _wfopen(pathname, L"wb");
+	if (NULL == f) return -1;
+
+	unsigned char tmp[1024];
+
+	// write BOM, UTF-16 Little
+	tmp[0] = 0xFF;
+	tmp[1] = 0xFE;
+	tmp[2] = 0x00;
+	fwrite(tmp, 1, 2, f);
+
+	// ass header
+	wchar_t ass_header[16][300] =
+	{
+		L"[Script Info]",
+		L"Title:ÂþÓÎ×ÖÄ»",
+		L"Original Script:ÂþÓÎ×ÖÄ»×é",
+		L"Synch Point:0",
+		L"ScriptType:v4.00+",
+		L"Collisions:Normal",
+		L"PlayResX:640",
+		L"PlayResY:360",
+		L"Timer:100.0000",
+		L"",
+		L"[V4+ Styles]",
+		L"Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+		L"Style: Default,Arial,25,&H00FFFFFF,&HF0000000,&H00000000,&H80000000,-1,0,0,0,100,100,0,0.00,1,1,1,2,30,30,10,134",
+		L"",
+		L"[Events]",
+		L"Format: Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text",
+	};
+
+	for(int i=0; i<16; i++)
+		fwprintf(f, L"%s\r\n", ass_header[i]);
+
+	for(int i=0; i<m_index_pos; i++)
+	{
+		int sub_start = m_index[i].time_start;
+		int sub_end = m_index[i].time_end;
+		wchar_t start[15];
+		wchar_t end[15];
+		wchar_t text[1024];
+
+		wcscpy(start, decimal_to_time_ass(sub_start));
+		wcscpy(end, decimal_to_time_ass(sub_end));
+		wcscpy(text, m_text_data + m_index[i].pos);
+		bool has_offset = m_index[i].has_offset;
+		int offset = m_index[i].offset;
+
+		wcs_replace(text, L"\r\n", L"\n");
+		wcs_replace(text, L"\n", L"\\N");
+
+		fwprintf(f, L"Dialogue: 0,%s,%s,*Default,NTP,0000,0000,0000,,%s\r\n", start, end, text);
 	}
 
 	fclose(f);
