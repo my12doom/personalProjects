@@ -352,8 +352,8 @@ int srt_parser::save_as_ass(const wchar_t *pathname)
 	wchar_t ass_header[16][300] =
 	{
 		L"[Script Info]",
-		L"Title:ÂşÓÎ×ÖÄ»",
-		L"Original Script:ÂşÓÎ×ÖÄ»×é",
+		L"Title:DWindow",
+		L"Original Script:DWindow",
 		L"Synch Point:0",
 		L"ScriptType:v4.00+",
 		L"Collisions:Normal",

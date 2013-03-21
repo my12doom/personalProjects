@@ -4,7 +4,7 @@ extern "C" {
 };
 #include "CSubtitle.h"
 #include <streams.h>
-#include "srt\srt_renderer.h"
+#include "srt\srt_renderer_core.h"
 #include "command_queue.h"
 
 class LibassRendererCore: public CSubtitleRenderer

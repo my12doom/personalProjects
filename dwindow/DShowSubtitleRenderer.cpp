@@ -76,21 +76,23 @@ HRESULT DShowSubtitleRenderer::CheckMediaTypeCB(const CMediaType *inType)
 	if (subType == MEDIASUBTYPE_PGS || 
 		(subType == GUID_NULL &&inType->FormatLength()>=520 && wcsstr(format->TrackName, L"SUP")))
 		m_srenderer = new PGSRenderer();
-	else if (subType == MEDIASUBTYPE_UTF8 ||
-		(subType == GUID_NULL &&inType->FormatLength()>=520))
-		m_srenderer = new CsrtRendererCore(m_font, m_font_color);
+	else if (subType == MEDIASUBTYPE_UTF8 || (subType == GUID_NULL &&inType->FormatLength()>=520))
+	{
+		m_srenderer = new CsrtRenderer();
+		m_srenderer->load_index(inType->pbFormat + format->dwOffset, inType->cbFormat - format->dwOffset);
+	}
 	else if (subType == MEDIASUBTYPE_ASS || subType == MEDIASUBTYPE_ASS2)
 	{
 // 		if (LibassRendererCore::fonts_loaded() != S_OK)
 // 			MessageBoxW(NULL, C(L"This is first time to load ass/ssa subtilte, font scanning may take one minute or two, the player may looks like hanged, please wait..."), C(L"Please Wait"), MB_OK);
 
 		m_srenderer = new LibassRenderer();
-		((LibassRenderer*)m_srenderer)->load_index(inType->pbFormat + format->dwOffset, inType->cbFormat - format->dwOffset);
+		m_srenderer->load_index(inType->pbFormat + format->dwOffset, inType->cbFormat - format->dwOffset);
 	}
 	else if (subType == MEDIASUBTYPE_VOBSUB)
 	{
 		m_srenderer = new VobSubRenderer();
-		((VobSubRenderer*)m_srenderer)->load_index(inType->pbFormat + format->dwOffset, inType->cbFormat - format->dwOffset);
+		m_srenderer->load_index(inType->pbFormat + format->dwOffset, inType->cbFormat - format->dwOffset);
 	}
 	else
 		return VFW_E_INVALID_MEDIA_TYPE;

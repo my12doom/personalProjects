@@ -4541,7 +4541,7 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	const wchar_t *p_3 = pathname + wcslen(pathname) -3;
 	if ( wcs_endwith_nocase(pathname, L".srt"))
 	{
-		m_renderer = new CsrtRendererCore(NULL, 0xffffff);
+		m_renderer = new CsrtRenderer();
 	}
 	else if (wcs_endwith_nocase(pathname, L".ssa") || wcs_endwith_nocase(pathname, L".ass"))
 	{

@@ -1744,6 +1744,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\srt\srt_renderer_core.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\srt\srt_renderer_core.h"
+				>
+			</File>
+			<File
 				RelativePath=".\vobsub_parser.cpp"
 				>
 			</File>

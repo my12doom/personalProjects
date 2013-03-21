@@ -35,6 +35,7 @@ class CSubtitleRenderer
 public:
 	virtual ~CSubtitleRenderer(){};
 	virtual HRESULT load_file(wchar_t *filename)=0;	//maybe you don't need this?
+	virtual HRESULT load_index(void *data, int size){return S_OK;}
 	virtual HRESULT add_data(BYTE *data, int size, int start, int end)=0;
 	virtual HRESULT get_subtitle(int time, rendered_subtitle *out, int last_time=-1)=0;			// get subtitle on a time point, 
 																								// if last_time != -1, return S_OK = need update, return S_FALSE = same subtitle, and out should be ignored;
