@@ -208,7 +208,7 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	m_tell_thread = CreateThread(0,0,tell_thread_entry, this, NULL, NULL);
 
 	// telnet
-#ifdef DEBUG
+#if defined(DEBUG) || defined(ZHUZHU)
 	command_reciever = this;
 	telnet_set_port(m_server_port);
 	telnet_start_server();
