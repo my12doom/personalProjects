@@ -49,7 +49,7 @@ extern char *g_server_address;
 #ifdef VSTAR
 #define g_server_update "updatev1.php"		// VSTAR update
 #else
-#define g_server_update "update.php"		// VSTAR update
+#define g_server_update "update.php"		// normal update
 #endif
 #define g_server_free "free.php"
 #define g_server_reg_check "reg_check.php"

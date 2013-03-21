@@ -1,8 +1,11 @@
+/*
+ * 一个DWindow客户端示例代码
+ * 默认超时被设为了3秒，有些操作服务端操作时间比较久会超时，请自行处理超时断开与由于超时造成的异常
+ */
+
 package com.dwindow;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -36,6 +39,11 @@ public class DWindowNetworkConnection {
 		}
 	}
 	
+	public class Track{
+		public String track_name;
+		public boolean enabled;
+	}
+	
 	public class cmd_result{
 		cmd_result(){
 			hr = new HRESULT("80004005");	// E_FAIL
@@ -56,8 +64,7 @@ public class DWindowNetworkConnection {
 		}
 	}
 	
-	public DWindowNetworkConnection(){
-		
+	public DWindowNetworkConnection(){		
 	}
 	public boolean connect(String server){
 		return connect(server, 3000);
@@ -142,6 +149,31 @@ public class DWindowNetworkConnection {
 			}
 			return out;
 		}
+	}
+	
+	private synchronized Track[] list_track(String track_type){
+		cmd_result result = execute_command("list_"+track_type+"_track");
+		if(result.failed())
+			return null;
+		
+		String[] split = result.result.split("\\|");
+		Track[] rtn = new Track[split.length/2];
+		
+		for(int i=0; i<rtn.length; i++){
+			rtn[i] = new Track();
+			rtn[i].track_name = split[i*2];
+			rtn[i].enabled = Boolean.parseBoolean(split[i*2+1]);
+		}
+		
+		return rtn;
+	}
+	
+	public Track[] list_audio_track(){
+		return list_track("audio");
+	}
+	
+	public Track[] list_subtitle_track(){
+		return list_track("subtitle");
 	}
 	
 	public synchronized byte[] shot(){

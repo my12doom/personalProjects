@@ -6,6 +6,7 @@ import java.util.Vector;
 
 import com.Vstar.DateBase;
 import com.demo.splash.R;
+import com.dwindow.DWindowNetworkConnection.Track;
 import com.dwindow.DWindowNetworkConnection.cmd_result;
 import com.Vstar.Value;
 
@@ -18,6 +19,7 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -168,6 +170,11 @@ public class SplashWindow3DActivity extends Activity {
 			public void onClick(View v) 
 			{
 				login();
+				Track[] list = conn.list_audio_track();
+				for(int i=0; i<list.length; i++)
+				{
+					Log.v(list[i].track_name, list[i].enabled + "");
+				}
 			}
         });
         
