@@ -1,6 +1,7 @@
 /*
  * 一个DWindow客户端示例代码
  * 默认超时被设为了3秒，有些操作服务端操作时间比较久会超时，请自行处理超时断开与由于超时造成的异常
+ * shot()返回的Byte数组在正确的情况下可以用BitmapFactory.decodeByteArray()解码为Bitmap
  */
 
 package com.dwindow;
