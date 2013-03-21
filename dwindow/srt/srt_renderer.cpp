@@ -82,6 +82,20 @@ HRESULT CsrtRenderer::load_index(void *data, int size)
 	return hr;
 }
 
+int CsrtRenderer::get_n(int start, int end)
+{
+	for (std::list<n_table_entry>::iterator it = n_table.begin(); it != n_table.end(); it++)
+	{
+		if (it->start == start && it->end == end)
+			return it->n;
+	}
+
+	int o = n++;
+	n_table_entry new_n = {o, start, end};
+	n_table.push_back(new_n);
+	return o;
+}
+
 HRESULT CsrtRenderer::add_data(BYTE *data, int size, int start, int end)
 {
 	if (size >=2 && (data[0] << 8) + data[1] == size-2)
@@ -105,7 +119,7 @@ HRESULT CsrtRenderer::add_data(BYTE *data, int size, int start, int end)
 	}
 
 	char *p1 = (char*)malloc(size+1024);
-	sprintf(p1, "%d,0,Default,,0000,0000,0000,,%s", n++, line);
+	sprintf(p1, "%d,0,Default,,0000,0000,0000,,%s", get_n(start, end), line);
 
 	HRESULT hr = m_ass.add_data((BYTE*)p1, strlen(p1), start, end);
 

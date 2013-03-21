@@ -1,6 +1,7 @@
 #pragma once
 #include "..\CSubtitle.h"
 #include "..\libass_renderer.h"
+#include <list>
 
 class CsrtRenderer : public CSubtitleRenderer
 {
@@ -23,4 +24,14 @@ public:
 protected:
 	LibassRenderer m_ass;
 	int n;
+	typedef struct n_table_struct
+	{
+		int n;
+		int start;
+		int end;
+	} n_table_entry;
+
+	CCritSec cs;
+	std::list<n_table_entry> n_table;
+	int get_n(int start, int end);
 };
