@@ -3,9 +3,9 @@ package com.dwindow;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import com.Vstar.DateBase;
 import com.demo.splash.R;
 import com.dwindow.DWindowNetworkConnection.cmd_result;
+import com.dwindow.util.DateBase;
 
 import android.app.Activity;
 import android.content.Context;
@@ -34,7 +34,7 @@ public class SelectfileActivity extends Activity
 	private boolean listBD = false;
 	private ListViewAdapter adapter;
 	private ListView listView;
-	private DWindowNetworkConnection conn = SplashWindow3DActivity.conn;
+	private DWindowNetworkConnection conn = DWindowActivity.conn;
 	String[] exts = {".mp4", ".mkv", ".avi", ".rmvb", ".wmv", ".avs", ".ts", ".m2ts", ".ssif", ".mpls", ".3dv", ".e3d", ".iso"};
 	private boolean result_selected;
 	private String result_file;

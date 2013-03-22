@@ -4,11 +4,11 @@ package com.dwindow;
 
 import java.util.Vector;
 
-import com.Vstar.DateBase;
 import com.demo.splash.R;
 import com.dwindow.DWindowNetworkConnection.Track;
 import com.dwindow.DWindowNetworkConnection.cmd_result;
-import com.Vstar.Value;
+import com.dwindow.util.DateBase;
+import com.dwindow.util.Value;
 
 import android.app.Activity;
 import android.content.Context;
@@ -35,7 +35,7 @@ import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
 
-public class SplashWindow3DActivity extends Activity {
+public class DWindowActivity extends Activity {
 	
 	private final int request_code_openfile = 10000;
 	private final int request_code_openBD = 10001;
@@ -121,7 +121,7 @@ public class SplashWindow3DActivity extends Activity {
 			if (state == conn.ERROR_NEW_PROTOCOL)
 				hint = getResources().getString(R.string.NeedNewVersion);
 			
-			Toast.makeText(SplashWindow3DActivity.this, hint, Toast.LENGTH_SHORT).show();
+			Toast.makeText(DWindowActivity.this, hint, Toast.LENGTH_SHORT).show();
 		}
 	}
 	
@@ -182,7 +182,7 @@ public class SplashWindow3DActivity extends Activity {
         {
 			public void onClick(View v) 
 			{
-				Intent intent = new Intent(SplashWindow3DActivity.this, SelectfileActivity.class);
+				Intent intent = new Intent(DWindowActivity.this, SelectfileActivity.class);
 				intent.putExtra("path", path.get());
 				startActivityForResult(intent, request_code_openfile);
 			}
@@ -192,7 +192,7 @@ public class SplashWindow3DActivity extends Activity {
         {
 			public void onClick(View v) 
 			{
-				Intent intent = new Intent(SplashWindow3DActivity.this, SelectfileActivity.class);
+				Intent intent = new Intent(DWindowActivity.this, SelectfileActivity.class);
 				intent.putExtra("path", path.get());
 				intent.putExtra("BD", true);
 				startActivityForResult(intent, request_code_openBD);
@@ -203,7 +203,7 @@ public class SplashWindow3DActivity extends Activity {
         {
 			public void onClick(View v) 
 			{
-				Intent intent = new Intent(SplashWindow3DActivity.this, SelectTrackActivity.class);
+				Intent intent = new Intent(DWindowActivity.this, SelectTrackActivity.class);
 				intent.putExtra("track", "audio");
 				startActivityForResult(intent, request_code_selectAudio);
 			}
@@ -213,7 +213,7 @@ public class SplashWindow3DActivity extends Activity {
         {
 			public void onClick(View v) 
 			{
-				Intent intent = new Intent(SplashWindow3DActivity.this, SelectTrackActivity.class);
+				Intent intent = new Intent(DWindowActivity.this, SelectTrackActivity.class);
 				intent.putExtra("track", "subtitle");
 				startActivityForResult(intent, request_code_selectSubtitle);
 			}
@@ -358,7 +358,7 @@ public class SplashWindow3DActivity extends Activity {
     {
     	public void handleMessage(Message msg)
     	{
-    		ArrayAdapter<String> adapter=new ArrayAdapter<String>(SplashWindow3DActivity.this,
+    		ArrayAdapter<String> adapter=new ArrayAdapter<String>(DWindowActivity.this,
             		android.R.layout.simple_dropdown_item_1line, (String[])availableIPs.toArray(new String[availableIPs.size()]));
     		editHost.setAdapter(adapter);
     		editHost.setThreshold(0);

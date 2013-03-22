@@ -3,9 +3,9 @@
 package com.dwindow;
 
 
-import com.Vstar.DateBase;
 import com.demo.splash.R;
 import com.dwindow.DWindowNetworkConnection.cmd_result;
+import com.dwindow.util.DateBase;
 
 import android.app.Activity;
 import android.content.Context;
@@ -29,7 +29,7 @@ public class SelectTrackActivity extends Activity
 	private String track_source;
 	private ListViewAdapter adapter;
 	private ListView listView;
-	private DWindowNetworkConnection conn = SplashWindow3DActivity.conn;
+	private DWindowNetworkConnection conn = DWindowActivity.conn;
 	
 	private boolean result_selected;
 	private int result_track;
@@ -60,7 +60,7 @@ public class SelectTrackActivity extends Activity
         		if (position >= selectionRange.length/2)
         		{
         			Intent intent = new Intent(SelectTrackActivity.this, SelectfileActivity.class);
-    				intent.putExtra("path", SplashWindow3DActivity.path.get());
+    				intent.putExtra("path", DWindowActivity.path.get());
     				intent.putExtra("exts", new String[]{".srt", ".ssa", ".ass", ".ass2", ".ssa", ".sup", ".idx", ".sub"});
     				startActivityForResult(intent, request_code_loadsubtitle);
         		}
@@ -153,7 +153,7 @@ public class SelectTrackActivity extends Activity
     	{
     		boolean selected = data.getBooleanExtra("selected", false);
     		String selected_file = data.getStringExtra("selected_file");
-    		SplashWindow3DActivity.path.set(data.getStringExtra("path"));
+    		DWindowActivity.path.set(data.getStringExtra("path"));
     		
     		if (selected)
     		{
