@@ -1,5 +1,3 @@
-// this class is very similar to select file activity
-
 package com.dwindow;
 
 
