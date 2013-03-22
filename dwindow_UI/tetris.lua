@@ -1,4 +1,4 @@
-local ww = 10
+ï»¿local ww = 10
 local ww = 10
 local hh = 16
 local typecount = 8
@@ -92,14 +92,14 @@ function type2shape(type)
 	if not type then type = math.random(typecount) end
 	local p1 =
 	{
-		{{1,0}, {1,1},             {max_dis,max_dis}},		--2¸ñÊúÌõ
-		{{0,1}, {1,1},{1,0},{1,-1},{max_dis,max_dis}},		--×ó¹ÕL¹ÕÌõ
-		{{1,1}, {0,1},{0,0},{0,-1},{max_dis,max_dis}},		--ÓÒ¹ÕL¹ÕÌõ
-		{{0,0}, {0,1},{1,1},{1,0}, {max_dis,max_dis}},		--·½¿é
-		{{0,0}, {0,1},{1,0},{0,-1},{max_dis,max_dis}},		--KÌõ
-		{{0,-1},{0,0},{0,1},{0,2}, {max_dis,max_dis}},		--4¸ñÊú³¤Ìõ
-		{{0,-1},{0,0},{1,0},{1,1}, {max_dis,max_dis}},		--ÓÒ¹ÕZ¹ÕÌõ
-		{{1,-1},{1,0},{0,0},{0,1}, {max_dis,max_dis}},		--×ó¹ÕZ¹ÕÌõ
+		{{1,0}, {1,1},             {max_dis,max_dis}},		--2æ ¼ç«–æ¡
+		{{0,1}, {1,1},{1,0},{1,-1},{max_dis,max_dis}},		--å·¦æ‹Læ‹æ¡
+		{{1,1}, {0,1},{0,0},{0,-1},{max_dis,max_dis}},		--å³æ‹Læ‹æ¡
+		{{0,0}, {0,1},{1,1},{1,0}, {max_dis,max_dis}},		--æ–¹å—
+		{{0,0}, {0,1},{1,0},{0,-1},{max_dis,max_dis}},		--Kæ¡
+		{{0,-1},{0,0},{0,1},{0,2}, {max_dis,max_dis}},		--4æ ¼ç«–é•¿æ¡
+		{{0,-1},{0,0},{1,0},{1,1}, {max_dis,max_dis}},		--å³æ‹Zæ‹æ¡
+		{{1,-1},{1,0},{0,0},{0,1}, {max_dis,max_dis}},		--å·¦æ‹Zæ‹æ¡
 	}
 
 	for i=1,max_shape_len do
@@ -162,7 +162,7 @@ local function Step()
 end
 
 local function rotateBlock()
-	-- ÒÔ(0.5,0.5)ÎªÖÐÐÄÐý×ª
+	-- ä»¥(0.5,0.5)ä¸ºä¸­å¿ƒæ—‹è½¬
 	local x;
 
 	for i=1,max_shape_len do
@@ -173,7 +173,7 @@ local function rotateBlock()
 		end
 	end
 
-	--Èç¹ûÓÐÅö×²£¬Ðý×ª»ØÈ¥
+	--å¦‚æžœæœ‰ç¢°æ’žï¼Œæ—‹è½¬å›žåŽ»
 	local r = check();
 	if bit32.band(r,CHECK_HIT) > 0 then
 		for i=1,max_shape_len do

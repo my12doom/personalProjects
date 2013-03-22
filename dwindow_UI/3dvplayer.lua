@@ -1,4 +1,4 @@
-local http = {request = dwindow.http_request}
+﻿local http = {request = dwindow.http_request}
 
 PageMerger ={}
 
@@ -206,7 +206,7 @@ function test:RenderThis()
 end
 
 function test:OnInitCPU()
-	self.res = test_get_text_bitmap("HelloWorld")
+	self.res = test_get_text_bitmap("HelloWorld你好")
 	self.width = self.res.width
 	self.height = self.res.height
 end

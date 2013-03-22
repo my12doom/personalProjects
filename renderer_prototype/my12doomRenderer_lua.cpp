@@ -64,9 +64,9 @@ static int load_bitmap_core(lua_State *L)
 	int parameter_count = -lua_gettop(L);
 	const char *filename = lua_tostring(L, parameter_count+0);
 
-	USES_CONVERSION;
+	USES_CONVERSION_UTF8;
 	gpu_sample *sample = NULL;
-	if (FAILED(g_renderer->loadBitmap(&sample, A2W(filename))) || sample == NULL)
+	if (FAILED(g_renderer->loadBitmap(&sample, UTF82W(filename))) || sample == NULL)
 	{
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "failed loading bitmap file");
@@ -106,11 +106,11 @@ static int draw_font_core(lua_State *L)
 	int parameter_count = -lua_gettop(L);
 	const char *text = lua_tostring(L, parameter_count+0);
 
-	USES_CONVERSION;
+	USES_CONVERSION_UTF8;
 	gpu_sample *sample = NULL;
 	RGBQUAD color = {255,255,255,255};
 	static HFONT font = create_font();
-	if (FAILED(g_renderer->drawFont(&sample, font, A2W(text), color)) || sample == NULL)
+	if (FAILED(g_renderer->drawFont(&sample, font, UTF82W(text), color)) || sample == NULL)
 	{
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "failed loading bitmap file");
@@ -315,8 +315,8 @@ static int reset_and_loadfile(lua_State *L)
 	const char *filename2 = lua_tostring(L, -2);
 	const bool stop = lua_isboolean(L, -3) ? lua_toboolean(L, -3) : false;
 
-	USES_CONVERSION;
-	HRESULT hr = g_player->reset_and_loadfile(filename1 ? A2W(filename1) : NULL, filename2 ? A2W(filename2) : NULL, stop);
+	USES_CONVERSION_UTF8;
+	HRESULT hr = g_player->reset_and_loadfile(filename1 ? UTF82W(filename1) : NULL, filename2 ? UTF82W(filename2) : NULL, stop);
 
 	lua_pushboolean(L, SUCCEEDED(hr));
 	lua_pushinteger(L, hr);
@@ -328,8 +328,8 @@ static int load_subtitle(lua_State *L)
 	const char *filename = lua_tostring(L, -1);
 	const bool reset = lua_isboolean(L, -2) ? lua_toboolean(L, -2) : false;
 
-	USES_CONVERSION;
-	HRESULT hr = g_player->load_subtitle(filename ? A2W(filename) : NULL, reset);
+	USES_CONVERSION_UTF8;
+	HRESULT hr = g_player->load_subtitle(filename ? UTF82W(filename) : NULL, reset);
 
 	lua_pushboolean(L, SUCCEEDED(hr));
 	lua_pushinteger(L, hr);

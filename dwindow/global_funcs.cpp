@@ -2064,7 +2064,7 @@ LPWSTR RhymeUTF82WideCharHelper(LPWSTR lpszWideString, LPCSTR lpszUTF8String, si
 	{
 		return NULL;
 	}
-	lpszWideString[nConverted] = L'/0';
+	lpszWideString[nConverted] = NULL;
 	return lpszWideString;
 }
 
@@ -2099,6 +2099,6 @@ LPSTR RhymeWideChar2UTF8Helper(LPSTR lpszUTF8String, LPCWSTR lpszWideString, siz
 		return NULL;
 	}
 
-	lpszUTF8String[nConverted] = '/0';
+	lpszUTF8String[nConverted] = NULL;
 	return lpszUTF8String;
 }

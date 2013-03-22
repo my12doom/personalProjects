@@ -23,18 +23,19 @@ static int lua_Sleep(lua_State *L)
 	return 0;
 }
 
-
 static int execute_luafile(lua_State *L)
 {
 // 	int parameter_count = lua_gettop(L);
 	const char *filename = NULL;
 	filename = luaL_checkstring(L, 1);
-	if(luaL_loadfile(L, filename) || lua_pcall(L, 0, 0, 0))
+	USES_CONVERSION_UTF8;
+	USES_CONVERSION;
+	if(luaL_loadfile(L, W2A(UTF82W(filename))) || lua_pcall(L, 0, 0, 0))
 	{
 		const char * result;
 		result = lua_tostring(L, -1);
 		lua_pushboolean(L, 0);
-		lua_pushstring(L, result);
+		lua_pushstring(L, W2UTF8(A2W(result)));
 
 		printf("execute_luafile(%s)failed: %s\n", filename, result);
 

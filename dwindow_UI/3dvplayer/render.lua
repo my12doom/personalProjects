@@ -1,4 +1,4 @@
--- 3dvplayer UI renderer
+﻿-- 3dvplayer UI renderer
 
 if require and not BaseFrame then require("base_frame") end
 
@@ -364,7 +364,7 @@ function test4:GetRect()
 end
 
 function test4:RenderThis()
-	return paint(0,0,40,40, get_bitmap("ɴ��.png"))
+	return paint(0,0,40,40, get_bitmap("纱布.png"))
 end
 ]]--
 --if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile(GetCurrentLuaPath() .. "..\\tetris.lua")) end
