@@ -507,7 +507,7 @@ __forceinline void BasicRsaCheck()
 #define UTF82W_EX(lputf8, nChars) (\
 	((_lputf8_rhyme = lputf8) == NULL) ? NULL : (\
 	_convert_rhyme = MultiByteToWideChar(CP_UTF8, 0, _lputf8_rhyme, (int)(strlen(_lputf8_rhyme)), NULL, 0),\
-	(_convert_rhyme == 0) ? NULL : \
+	(_convert_rhyme == 0) ? L"" : \
 	(RhymeUTF82WideCharHelper( \
 	(LPWSTR)_ATL_SAFE_ALLOCA((_convert_rhyme + 1) * sizeof(WCHAR), nChars), \
 	_lputf8_rhyme, \

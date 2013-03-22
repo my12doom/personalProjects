@@ -2060,7 +2060,7 @@ LPWSTR RhymeUTF82WideCharHelper(LPWSTR lpszWideString, LPCSTR lpszUTF8String, si
 		lpszWideString,
 		(int)(nWideCharCount));
 
-	if(nConverted == 0 && ERROR_NO_UNICODE_TRANSLATION == GetLastError())
+	if(ERROR_NO_UNICODE_TRANSLATION == GetLastError())
 	{
 		return NULL;
 	}
@@ -2094,7 +2094,7 @@ LPSTR RhymeWideChar2UTF8Helper(LPSTR lpszUTF8String, LPCWSTR lpszWideString, siz
 		NULL,
 		NULL);
 
-	if(nConverted == 0 && ERROR_NO_UNICODE_TRANSLATION == GetLastError())
+	if(ERROR_NO_UNICODE_TRANSLATION == GetLastError())
 	{
 		return NULL;
 	}

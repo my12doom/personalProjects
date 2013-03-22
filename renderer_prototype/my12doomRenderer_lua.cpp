@@ -110,7 +110,14 @@ static int draw_font_core(lua_State *L)
 	gpu_sample *sample = NULL;
 	RGBQUAD color = {255,255,255,255};
 	static HFONT font = create_font();
-	if (FAILED(g_renderer->drawFont(&sample, font, UTF82W(text), color)) || sample == NULL)
+	wchar_t * p = UTF82W(text);
+
+	wchar_t w[1024];
+	MultiByteToWideChar(CP_UTF8, 0, text, -1, w, 1024);
+
+
+
+	if (FAILED(g_renderer->drawFont(&sample, font, w, color)) || sample == NULL)
 	{
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "failed loading bitmap file");

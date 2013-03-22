@@ -38,6 +38,10 @@ function EndChild(left, top, right, bottom)
 	dwindow.set_clip_rect_core(rects[1], rects[2], rects[3], rects[4])
 end
 
+function IsCurrentDrawingVisible()
+	return rect[3]>rect[1] and rect[4]>rect[2]
+end
+
 
 -- some controlling function
 function StartDragging() end
@@ -236,4 +240,5 @@ if dwindow and dwindow.execute_luafile then
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "base_frame.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "classic\\render.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer.lua"))
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Container.lua"))
 end

@@ -12,8 +12,8 @@ BOTTOMRIGHT = BOTTOM + RIGHT
 
 BaseFrame ={}
 
-function BaseFrame:Create(o)
-	o = o or {}
+function BaseFrame:Create()
+	local o = {}
 	o.childs = {}
 	setmetatable(o, self)
 	self.__index = self
@@ -30,7 +30,7 @@ function BaseFrame:render(...)
 		if v and v.render then
 			local l,t,r,b = v:GetAbsRect();
 			BeginChild(l,t,r,b)
-			v:render(...)
+			if IsCurrentDrawingVisible() then v:render(...) end
 			EndChild(l,t,r,b)
 		end
 	end
@@ -177,6 +177,7 @@ function BaseFrame:GetAbsAnchorPoint(point)
 	return px, py
 end
 
+-- GetRect in Screen space
 function BaseFrame:GetAbsRect()
 	local relative = self.relative_to or self.parent				-- use parent as default relative_to frame
 	local l,t,r,b = 0,0,dwindow.width or 1,dwindow.height or 1		-- use screen as default relative_to frame if no parent & relative
@@ -221,6 +222,8 @@ function BaseFrame:GetAbsRect()
 	
 	return l,t,r,b
 end
+
+-- GetRect in parent's client space
 
 function BaseFrame:GetRect()
 	return -99999,-99999,99999,99999

@@ -192,9 +192,13 @@ function load_another()
 	end, 0)
 end
 
+function v3dplayer_getitem(id)
+	v3d_init()
+	return video_list:GetItem(id)
+end
+
 
 local test = BaseFrame:Create()
-test.name = "test"
 test:SetRelativeTo(root, TOPLEFT)
 root:AddChild(test)
 function test:GetRect()
@@ -206,7 +210,7 @@ function test:RenderThis()
 end
 
 function test:OnInitCPU()
-	self.res = test_get_text_bitmap("HelloWorld你好")
+	self.res = self.res or test_get_text_bitmap("HelloWorld你好")
 	self.width = self.res.width
 	self.height = self.res.height
 end
