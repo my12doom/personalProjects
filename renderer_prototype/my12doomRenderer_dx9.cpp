@@ -3088,8 +3088,8 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 			}
 			else
 			{
-				_this->render_nolock(true);
 				l = timeGetTime();
+				_this->render_nolock(true);
 				while (timeGetTime() - l < 33 && !_this->m_render_thread_exit)
 					Sleep(1);
 			}
