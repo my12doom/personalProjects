@@ -1359,6 +1359,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\login.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\login.h"
+					>
+				</File>
+				<File
 					RelativePath=".\open_double_file.cpp"
 					>
 				</File>
