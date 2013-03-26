@@ -139,7 +139,6 @@ DWORD WINAPI register_download_thread(LPVOID puid)
 	memset(downloaded, 0, 400);
 	int size = 400;
 	HANDLE spinner = CreateThread(NULL, NULL, spinner_thread, (LPVOID)uid, NULL, NULL);
-	Sleep(5000);
 	download_url(url, downloaded, &size);
 	TerminateThread(spinner, -1);
 	SetWindowTextW(GetDlgItem(g_login_window, uid), uid == IDOK ? C(L"Login") : C(L"Start Activation"));

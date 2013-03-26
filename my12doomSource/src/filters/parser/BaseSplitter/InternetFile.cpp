@@ -177,7 +177,7 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 
 		if (this_round_got == 0)
 		{
-			if (m_downloading_thread_state == 0)
+			if (m_downloading_thread_state == 0 && m_pos < m_size)
 			{
 				LARGE_INTEGER li;
 				li.QuadPart = m_pos;
@@ -185,9 +185,13 @@ BOOL InternetFile::ReadFile(LPVOID lpBuffer, DWORD nToRead, LPDWORD nRead, LPOVE
 				wcscpy(URL, m_URL);
 				SetFilePointerEx(li, &li, SEEK_SET);
 				wcscpy(m_URL, URL);
+				Sleep(1);
 				continue;
 			}
-			Sleep(1);
+			else
+			{
+				break;
+			}
 		}
 	}
 
