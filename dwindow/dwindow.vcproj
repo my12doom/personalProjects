@@ -2193,6 +2193,14 @@
 			>
 		</File>
 		<File
+			RelativePath=".\dwindow_log.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\dwindow_log.h"
+			>
+		</File>
+		<File
 			RelativePath=".\global_funcs.cpp"
 			>
 		</File>

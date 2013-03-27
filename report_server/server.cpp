@@ -2,6 +2,9 @@
 #include <winsock2.h>
 #include <Windows.h>
 #pragma  comment(lib, "ws2_32.lib")
+#include "report.h"
+#include "SHA1.h"
+#include <wchar.h>
 
 // socks variables
 #define MAX_CONNECTION 1000
@@ -31,35 +34,95 @@ DWORD WINAPI handler_thread(LPVOID param)
 {
 	int acc_socket = *(int*)param;
 	DWORD ip = ((DWORD*)param)[1];
+	BYTE *b_ip = (BYTE*)&ip;
 
 	delete param;
 
-	int filesize = 0;
 	int rtn = 0;
 
-	if (recv(acc_socket, (char*)&filesize, 4, 0) <4)
+
+	int header_size =0;
+	if (recv(acc_socket, (char*)&header_size, 4, 0) <4)
 	{
 		rtn = -1;
 		goto clearup;
 	}
 
-	printf("%d bytes\n", filesize);
+	printf("%d.%d.%d.%d connected, header %d bytes\n", b_ip[0], b_ip[1], b_ip[2], b_ip[3], header_size);
 
-	shutdown(acc_socket, SD_SEND);
+	// v1 header
+	report_header_v1 *header = new report_header_v1;
+	header->header_size = header_size;
+	if (header_size == sizeof(report_header_v1))
+	{
+		if (recv(acc_socket, ((char*)header)+4, header_size-4, 0) <header_size-4)
+		{
+			rtn = -2;
+			goto clearup;
+		}
+		printf("v1 header detected, filesize = %lldbytes, SHA1=", header->file_size);
+		for(int i=0; i<20; i++)
+			printf("%02x", header->sha1[i]);
+		printf("\n");
+	}
+	else
+	{
+		rtn = -3;
+		goto clearup;
+	}
 
-	FILE *f = fopen("out.dat", "wb");
+	wchar_t temp_file[MAX_PATH];
+	wchar_t app_path[MAX_PATH];
+	GetModuleFileNameW(NULL, app_path, MAX_PATH);
+	((wchar_t*)wcsrchr(app_path, L'\\'))[0] = NULL;
+	GetTempFileNameW(app_path, L"report", 0, temp_file);
+
+	FILE *f = _wfopen(temp_file, L"wb");
+	if (!f)
+	{
+		rtn = -4;
+		goto clearup;
+	}
 
 	char buf[4096];
 	int block_size;
-	int got = 0;
-	while (got < filesize && (block_size = recv(acc_socket, buf, 4096, 0)) > 0 )
+	__int64 got = 0;
+	SHA1_STATETYPE sha1_context;
+	SHA1_Start(&sha1_context);
+	while (got < header->file_size && (block_size = recv(acc_socket, buf, 4096, 0)) > 0 )
 	{
-		int left = filesize - got;
+		int left = header->file_size - got;
 
-		fwrite(buf, 1, min(block_size, left), f);
+		fwrite((unsigned char*)buf, 1, min(block_size, left), f);
+		SHA1_Hash((unsigned char*)buf, min(block_size, left), &sha1_context);
 
 		got += min(block_size, left);
 	}
+
+	fclose(f);
+	unsigned char sha1_recieved[20];
+	SHA1_Finish(sha1_recieved, &sha1_context);
+
+	// rename if sha1 ok
+	if (memcmp(sha1_recieved, header->sha1, 20) == 0)
+	{
+		wchar_t tmp[MAX_PATH*2];
+		wsprintf(tmp, L"%s.%d.zip", temp_file, header->rev);
+		_wrename(temp_file, tmp);
+		wprintf(L"%d.%d.%d.%d finished, saved to %s\n", b_ip[0], b_ip[1], b_ip[2], b_ip[3], tmp);
+		send(acc_socket, "OK", 3, 0);
+	}
+	else
+	{
+		printf("%d.%d.%d.%d FAILED SHA1 checking.\n", b_ip[0], b_ip[1], b_ip[2], b_ip[3]);
+		_wremove(temp_file);
+		send(acc_socket, "BAD HASH", 9, 0);
+	}
+
+		// delete if sha1 not matched
+
+
+	shutdown(acc_socket, SD_SEND);
 
 	fclose(f);
 

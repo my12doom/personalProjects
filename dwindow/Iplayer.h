@@ -50,9 +50,6 @@ public:
 	virtual bool is_fullsceen(int window_id) PURE;
 	virtual HWND get_window(int window_id) PURE;
 
-	// error reporting vars and functions
-	virtual HRESULT log_line(wchar_t *format, ...) PURE;
-
 	// helper variables
 	wchar_t *m_log;
 	bool m_file_loaded /*= false*/;

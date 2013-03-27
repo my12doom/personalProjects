@@ -135,8 +135,6 @@ public:
 	POINT m_mouse;
 	int m_dialog_open;
 
-	// error reporting vars and functions
-	HRESULT log_line(wchar_t *format, ...);
 	int init_done_flag;
 
 protected:

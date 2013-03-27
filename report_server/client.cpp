@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include <conio.h>
 #pragma  comment(lib, "ws2_32.lib")
+#include "report.h"
+#include "SHA1.h"
 
 
 int tcp_connect(char *hostname,int port)
@@ -49,6 +51,29 @@ int main()
 	int filesize = ftell(f);
 	fseek(f, 0, SEEK_SET);
 
+	// calculate header
+	report_header_v1 header = {sizeof(report_header_v1)};
+	header.file_size = filesize;
+	header.rev = 345;
+	char tmp[4096];
+	int block_size;
+	__int64 got = 0;
+	SHA1_STATETYPE context;
+	SHA1_Start(&context);
+	while(block_size = fread(tmp, 1, 4096, f))
+	{
+		got += block_size;
+
+		printf("\rcalculating SHA1...%d%%", got*100/filesize);
+		SHA1_Hash((unsigned char*)tmp, block_size, &context);
+	}
+	SHA1_Finish((unsigned char*)header.sha1, &context);
+	printf("\rcalculating SHA1...");
+	for(int i=0; i<20; i++)
+		printf("%02x", (unsigned int)header.sha1[i]);
+	printf("\n");
+
+
 	int fd = tcp_connect("bo3d.net", 82);
 	//int fd = tcp_connect("127.0.0.1", 82);
 	if (fd<0)
@@ -57,10 +82,9 @@ int main()
 		getch();
 	}
 
-	send(fd, (char*)&filesize, 4, 0);
-	char tmp[4096];
-	int block_size;
+	send(fd, (char*)&header, sizeof(header), 0);
 	int sent = 0;
+	fseek(f, 0, SEEK_SET);
 	while(block_size = fread(tmp, 1, 4096, f))
 	{
 		send(fd, tmp, block_size, 0);
@@ -69,6 +93,12 @@ int main()
 
 		printf("\r%d/%d sent, %d%%", sent, filesize, (__int64)sent*100/filesize);
 	}
+
+	memset(tmp, 0, sizeof(tmp));
+	recv(fd, tmp, 4096, 0);
+	printf("\n%s\n", tmp);
+	getch();
+
 
 	closesocket(fd);
 

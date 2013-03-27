@@ -20,6 +20,8 @@
 #include "..\lua\my12doom_lua.h"
 #include "TCPTest.h"
 #include "fullscreen_modes_select.h"
+#include "dwindow_log.h"
+
 
 #ifdef EVR
 #define DSHOW_RENDERER1 m_evr
@@ -261,7 +263,7 @@ HRESULT dx_player::detect_monitors()
 		)
 	{
 		// reset position if monitor changed.
-		log_line(L"monitor changed, resetting.\n");
+		dwindow_log_line(L"monitor changed, resetting.\n");
 		if (g_logic_monitor_count == 1)
 			m_screen1 = m_screen2 = g_logic_monitor_rects[0];
 		else if (g_logic_monitor_count == 2)
@@ -347,7 +349,7 @@ HRESULT dx_player::init_window_size_positions()
 		SetWindowPos(id_to_hwnd(2), NULL, m_screen2.left + width2*ratio, m_screen2.top + height2*ratio,
 			width2*(1-ratio*2) + dcx, height2*(1-ratio*2) + dcy, SWP_NOZORDER);
 
-		log_line(L"reset position:%dx%d\n", width1, height1);
+		dwindow_log_line(L"reset position:%dx%d\n", width1, height1);
 	}
 	else
 	{
@@ -359,7 +361,7 @@ HRESULT dx_player::init_window_size_positions()
 		SetWindowPos(id_to_hwnd(2), NULL, r2.left, r2.top,
 			r2.right - r2.left, r2.bottom - r2.top, SWP_NOZORDER);
 
-		log_line(L"use position:%dx%d\n", width1, height1);
+		dwindow_log_line(L"use position:%dx%d\n", width1, height1);
 
 	}
 
@@ -420,7 +422,7 @@ dx_player::~dx_player()
 HRESULT dx_player::reset()
 {
 	BasicRsaCheck();
-	log_line(L"reset!");
+	dwindow_log_line(L"reset!");
 
 	// reinit
 	exit_direct_show();
@@ -1054,9 +1056,6 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 	GetCursorPos(&mouse);
 	lua_OnMouseEvent("OnMouseMove", x, y, 0);
 
-	if (GetKeyState(VK_CONTROL) < 0)
-		printf("on_mouse_move");
-
 	double v;
 	int type = hittest(x, y, id_to_hwnd(id), &v);
 	if (type == hit_volume && GetAsyncKeyState(VK_LBUTTON) < 0 && m_dragging == hit_volume)
@@ -1128,7 +1127,7 @@ LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 				speed > min_speed
 				)
 			{
-				printf("flicking: speed = %f, delta = (%d, %d), angel = %f\n", speed, dx, dy, angel);
+//				printf("flicking: speed = %f, delta = (%d, %d), angel = %f\n", speed, dx, dy, angel);
 // 				if (dx > 0)
 // 					playlist_play_previous();
 // 				else
@@ -2760,7 +2759,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	{
 		REFERENCE_TIME frame_time = m_renderer1->m_frame_length;
 		HRESULT hr = m_offset_metadata->GetOffset(time_for_offset_metadata, frame_time, &m_internel_offset);
-		//log_line(L"offset = %d(%s)", m_internel_offset, hr == S_OK ? L"S_OK" : L"S_FALSE");
+		//dwindow_log_line(L"offset = %d(%s)", m_internel_offset, hr == S_OK ? L"S_OK" : L"S_FALSE");
 
 		if (SUCCEEDED(hr))
 			movie_has_offset_metadata = true;
@@ -3139,7 +3138,7 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 
 	if (m_is_remux_file)
 	{
-		log_line(L"adding pd10 decoder");
+		dwindow_log_line(L"adding pd10 decoder");
 		CComPtr<IBaseFilter> pd10;
 		hr = myCreateInstance(CLSID_PD10_DECODER, IID_IBaseFilter, (void**)&pd10);
 		hr = m_gb->AddFilter(pd10, L"PD10 Decoder");
@@ -3159,7 +3158,7 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1VCC')) ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1vcc')))
 	{
-		log_line(L"adding coremvc decoder");
+		dwindow_log_line(L"adding coremvc decoder");
 		coremvc_hooker mvc_hooker;
 		CComPtr<IBaseFilter> coremvc;
 		hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
@@ -3172,9 +3171,9 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		if (fi.pGraph)
 			fi.pGraph->Release();
 		else
-			log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
+			dwindow_log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
 
-		log_line(L"CoreMVC hr = 0x%08x", hr);
+		dwindow_log_line(L"CoreMVC hr = 0x%08x", hr);
 	}
 
 	if ( NULL == pin ||
@@ -3193,7 +3192,7 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('5VID')) )
 
 	{
-		log_line(L"adding ffdshow video decoder");
+		dwindow_log_line(L"adding ffdshow video decoder");
 		CComPtr<IBaseFilter> pd10;
 		hr = myCreateInstance(CLSID_FFDSHOW, IID_IBaseFilter, (void**)&pd10);
 		hr = set_ff_video_formats(pd10);
@@ -3255,19 +3254,19 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	}
 
 	// Bluray Directory
-	log_line(L"start loading %s", file_to_play);
+	dwindow_log_line(L"start loading %s", file_to_play);
 	if(PathIsDirectoryW(file_to_play))
 	{
 		wchar_t playlist[MAX_PATH];
 		HRESULT hr;
 		if (FAILED(hr = find_main_movie(file_to_play, playlist)))
 		{
-			log_line(L"main movie not found for %s, error=0x%08x", file_to_play, hr);
+			dwindow_log_line(L"main movie not found for %s, error=0x%08x", file_to_play, hr);
 			return hr;
 		}
 		else
 		{
-			log_line(L"main movie of %s is %s", file_to_play, playlist);
+			dwindow_log_line(L"main movie of %s is %s", file_to_play, playlist);
 			wcscpy(file_to_play, playlist);
 		}
 	}
@@ -3276,7 +3275,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	HRESULT hr = load_subtitle(pathname, false);
 	if (SUCCEEDED(hr))
 	{
-		log_line(L"loaded as subtitle");
+		dwindow_log_line(L"loaded as subtitle");
 		return hr;
 	}
 
@@ -3295,7 +3294,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	// E3D keys
 	if (source_clsid == CLSID_E3DSource)
 	{
-		log_line(L"loading local E3D key for %s", file_to_play);
+		dwindow_log_line(L"loading local E3D key for %s", file_to_play);
 		HANDLE h_file = CreateFileW (file_to_play, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 		file_reader reader;
 		reader.SetFile(h_file);
@@ -3313,18 +3312,18 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 			if (!reader.m_key_ok)
 			{
-				log_line(L"local E3D key failed.");
-				log_line(L"downloading E3D key for %s", file_to_play);
+				dwindow_log_line(L"local E3D key failed.");
+				dwindow_log_line(L"downloading E3D key for %s", file_to_play);
 				if (SUCCEEDED(download_e3d_key(file_to_play)))
 				{
-					log_line(L"download E3D key OK, saving to local store.");
+					dwindow_log_line(L"download E3D key OK, saving to local store.");
 					e3d_get_process_key(key);
 					save_e3d_key(reader.m_hash, key);
 				}
 			}
 			else
 			{
-				log_line(L"local E3D key OK.");
+				dwindow_log_line(L"local E3D key OK.");
 			}
 			e3d_set_process_key(key);
 		}
@@ -3334,7 +3333,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	int audio_rendered = 0;
 	if (matched_private_filter)
 	{
-		log_line(L"loading with private filter");
+		dwindow_log_line(L"loading with private filter");
 		// private file types
 		// create source, load file and join it into graph
 		CComPtr<IBaseFilter> source_base;
@@ -3372,7 +3371,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 
 		// then render pins
-		log_line(L"renderer ing pins");
+		dwindow_log_line(L"renderer ing pins");
 		CComPtr<IPin> pin;
 		CComPtr<IEnumPins> pEnum;
 		int audio_num = 0, video_num = 0;
@@ -3392,7 +3391,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 					PIN_INFO info;
 					pin->QueryPinInfo(&info);
 					if (info.pFilter) info.pFilter->Release();
-					log_line(L"testing pin %s", info.achName);
+					dwindow_log_line(L"testing pin %s", info.achName);
 
 					if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Video))
 					{
@@ -3401,9 +3400,9 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 							|| video_track == LOADFILE_ALL_TRACK)
 						{
 
-							log_line(L"renderering video pin #%d", video_num);
+							dwindow_log_line(L"renderering video pin #%d", video_num);
 							hr = render_video_pin(pin);
-							log_line(L"done renderering video pin #%d", video_num);
+							dwindow_log_line(L"done renderering video pin #%d", video_num);
 							video_rendered ++;
 						}
 						video_num ++;
@@ -3415,7 +3414,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 							|| audio_track == LOADFILE_ALL_TRACK)
 						{
 							hr = render_audio_pin(pin);
-							log_line(L"done renderering audio pin #%d", audio_num);
+							dwindow_log_line(L"done renderering audio pin #%d", audio_num);
 							audio_rendered ++;
 						}
 						audio_num ++;
@@ -3423,11 +3422,11 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 					else if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Subtitle))
 					{
-						log_line(L"renderering subtitle pin %s", info.achName);
+						dwindow_log_line(L"renderering subtitle pin %s", info.achName);
 						CComPtr<IPin> srenderer_pin;
 						GetUnconnectedPin(m_grenderer.m_filter, PINDIR_INPUT, &srenderer_pin);
 						if (srenderer_pin) m_gb->ConnectDirect(pin, srenderer_pin, NULL);
-						log_line(L"done renderering subtitle %s", info.achName);
+						dwindow_log_line(L"done renderering subtitle %s", info.achName);
 					}
 
 					else;	// other tracks, ignore them
@@ -3443,11 +3442,11 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	{
 		if (m_is_remux_file)
 		{
-			log_line(L"Remux file should always use private filters (%s)", file_to_play);
+			dwindow_log_line(L"Remux file should always use private filters (%s)", file_to_play);
 			return hr;
 		}
 
-		log_line(L"%s, trying system filters. (%s)", matched_private_filter ? L"private filters failed" : L"no matching private filters", file_to_play);
+		dwindow_log_line(L"%s, trying system filters. (%s)", matched_private_filter ? L"private filters failed" : L"no matching private filters", file_to_play);
 
 		// this just add decoders
 		hr = render_video_pin(NULL);
@@ -3463,21 +3462,21 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 	// check result
 	if (hr == VFW_S_AUDIO_NOT_RENDERED)
-		log_line(L"warning: audio not rendered. \"%s\"", file_to_play);
+		dwindow_log_line(L"warning: audio not rendered. \"%s\"", file_to_play);
 
 	if (hr == VFW_S_PARTIAL_RENDER)
-		log_line(L"warning: Some of the streams in this movie are in an unsupported format. \"%s\"", file_to_play);
+		dwindow_log_line(L"warning: Some of the streams in this movie are in an unsupported format. \"%s\"", file_to_play);
 
 	if (hr == VFW_S_VIDEO_NOT_RENDERED)
-		log_line(L"warning: video not rendered. \"%s\"", file_to_play);
+		dwindow_log_line(L"warning: video not rendered. \"%s\"", file_to_play);
 
 	if (FAILED(hr))
 	{
-		log_line(L"failed rendering \"%s\" (error = 0x%08x).", file_to_play, hr);
+		dwindow_log_line(L"failed rendering \"%s\" (error = 0x%08x).", file_to_play, hr);
 	}
 	else
 	{
-		log_line(L"load OK.");
+		dwindow_log_line(L"load OK.");
 		
 
 		if (!non_mainfile)
@@ -3508,7 +3507,7 @@ HRESULT dx_player::end_loading()
 	AutoSetting<bool> video_only(L"ForceVideo", true);
 	if (renderer1_input && (bool)video_only)
 	{
-		log_line(L"no video stream found.");
+		dwindow_log_line(L"no video stream found.");
 		return E_FAIL;
 	}
 
@@ -3518,7 +3517,7 @@ HRESULT dx_player::end_loading()
 HRESULT dx_player::debug_list_filters()
 {
 	// debug: list filters
-	log_line(L"Listing filters.");
+	dwindow_log_line(L"Listing filters.");
 	CComPtr<IEnumFilters> pEnum;
 	CComPtr<IBaseFilter> filter;
 	m_gb->EnumFilters(&pEnum);
@@ -3564,11 +3563,11 @@ HRESULT dx_player::debug_list_filters()
 		}
 
 
-		log_line(L"%s", tmp);
+		dwindow_log_line(L"%s", tmp);
 
 		filter = NULL;
 	}
-	log_line(L"");
+	dwindow_log_line(L"");
 
 	return S_OK;
 }
@@ -3652,28 +3651,6 @@ HRESULT dx_player::set_subtitle_pos(double center_x, double bottom_y)
 	m_subtitle_bottom_y = bottom_y;
 
 	return draw_subtitle();
-}
-
-HRESULT dx_player::log_line(wchar_t *format, ...)
-{
-#ifdef DEBUG
-	if (!m_log)
-		return E_POINTER;
-	wcscat(m_log, L"\r\n");
-
-	wchar_t tmp[10240];
-	va_list valist;
-	va_start(valist, format);
-	wvsprintfW(tmp, format, valist);
-	va_end(valist);
-
-	OutputDebugStringW(L"log:");
-	OutputDebugStringW(tmp);
-	OutputDebugStringW(L"\n");
-
-	wcscat(m_log, tmp);
-#endif
-	return S_OK;
 }
 
 HRESULT dx_player::select_font(bool show_dlg)
