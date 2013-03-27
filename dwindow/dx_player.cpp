@@ -529,11 +529,11 @@ HRESULT dx_player::seek(int time)
 	REFERENCE_TIME target = (REFERENCE_TIME)time *10000;
 
 	if(m_renderer1) m_renderer1->set_subtitle(NULL, 0, 0, 0, 0, 0, 0);				// refresh subtitle on next frame
-	printf("seeking to %I64d\n", target);
+	dwindow_log_line("seeking to %I64d", target);
 	HRESULT hr = m_ms->SetPositions(&target, AM_SEEKING_AbsolutePositioning, NULL, NULL);
 	m_ms->GetPositions(&target, NULL);
 
-	printf("seeked to %I64d\n", target);
+	dwindow_log_line("seeked to %I64d", target);
 	m_lastCBtime = (REFERENCE_TIME)time * 10000;
 
 	OAFilterState state = State_Running;
@@ -661,7 +661,7 @@ LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		switch (gi.dwID){
 		   case GID_ZOOM:
 			   {
-			   printf("GID_ZOOM, %d, (%d,%d)\n", (int)gi.ullArguments, gi.ptsLocation.x, gi.ptsLocation.y);
+// 			   printf("GID_ZOOM, %d, (%d,%d)\n", (int)gi.ullArguments, gi.ptsLocation.x, gi.ptsLocation.y);
 			   bHandled = FALSE;
 
 			   if (zoom_start < -1000 || gi.dwFlags & GF_BEGIN)
@@ -675,7 +675,7 @@ LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			   break;
 		   case GID_PAN:
 			   // Code for panning goes here
-			   printf("GID_PAN\n");
+// 			   printf("GID_PAN\n");
 			   if (pan_x < - 1000 || gi.dwFlags & GF_BEGIN)
 			   {
 				   pan_x = gi.ptsLocation.x;
@@ -691,34 +691,34 @@ LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			   bHandled = FALSE;
 			   break;
 		   case GID_ROTATE:
-			   printf("GID_ROTATE\n");
+// 			   printf("GID_ROTATE\n");
 			   // Code for rotation goes here
 			   bHandled = TRUE;
 			   break;
 		   case GID_TWOFINGERTAP:
-			   printf("GID_TWOFINGERTAP\n");
+// 			   printf("GID_TWOFINGERTAP\n");
 			   // Code for two-finger tap goes here
 			   on_key_down(hwnd_to_id(hWnd), VK_NUMPAD5);
 			   bHandled = TRUE;
 			   break;
 		   case GID_PRESSANDTAP:
-			   printf("GID_PRESSANDTAP\n");
+// 			   printf("GID_PRESSANDTAP\n");
 			   // Code for roll over goes here
 			   bHandled = TRUE;
 			   break;
 		   case GID_BEGIN:
-			   printf("GID_BEGIN, (%d-%d), seq %d\n", gi.ptsLocation.x, gi.ptsLocation.y, gi.dwSequenceID);
+// 			   printf("GID_BEGIN, (%d-%d), seq %d\n", gi.ptsLocation.x, gi.ptsLocation.y, gi.dwSequenceID);
 			   zoom_start = (int)gi.ullArguments;
-			   printf("zoom_start=%d\r\n", zoom_start);
+// 			   printf("zoom_start=%d\r\n", zoom_start);
 			   zoom_factor_start = m_renderer1->get_zoom_factor();
 			   break;
 		   case GID_END:
-			   printf("GID_END, (%d-%d), seq %d\n", gi.ptsLocation.x, gi.ptsLocation.y, gi.dwSequenceID);
+// 			   printf("GID_END, (%d-%d), seq %d\n", gi.ptsLocation.x, gi.ptsLocation.y, gi.dwSequenceID);
 			   zoom_start = -9999;
 			   pan_x = -9999;
 			   break;
 		   default:
-			   printf("Unkown GESTURE : dwID=%d\n", gi.dwID);
+// 			   printf("Unkown GESTURE : dwID=%d\n", gi.dwID);
 			   // A gesture was not recognized
 			   break;
 		}
@@ -812,7 +812,7 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 
 		else if (event_code == EC_VIDEO_SIZE_CHANGED)
 		{
-			printf("EC_VIDEO_SIZE_CHANGED\n");
+			dwindow_log_line("EC_VIDEO_SIZE_CHANGED");
 		}
 	}
 	else if (message ==  WM_GESTURENOTIFY)
@@ -4743,7 +4743,7 @@ HRESULT dx_player::widi_connect(int id, DWORD screenmode /* = ExternalOnly */, i
 	OLECHAR str_id[256];
 	HRESULT hr = widi_get_adapter_by_id(id, (wchar_t*)str_id);
 
-	printf("connecting %d\n", id);
+	dwindow_log_line("connecting widi %d", id);
 	wprintf(L"str_id = %s\n", str_id);
 
 	if (FAILED(hr))
