@@ -29,7 +29,7 @@ int dwindow_log_line(const wchar_t *format, ...)
 	time_t tt = time(NULL);
 	struct tm t = *localtime(&tt);
 	wchar_t time_str[200];	
-	wsprintfW(time_str, L"%d-%02d-%02d %02d:%02d:%02d ", t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+	wsprintfW(time_str, L"%d-%02d-%02d %02d:%02d:%02d:%03d ", t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, GetTickCount()%1000);
 	fwrite(time_str, 2, wcslen(time_str), f);
 	fwrite(tmp, 2, wcslen(tmp), f);
 	fwrite(L"\r\n", 2, 2, f);
@@ -55,7 +55,7 @@ int dwindow_log_line(const char *format, ...)
 	time_t tt = time_t(NULL);
 	struct tm t = *localtime(&tt);
 	wchar_t time_str[200];	
-	wsprintfW(time_str, L"%d-%02d-%02d %02d:%02d:%02d", t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+	wsprintfW(time_str, L"%d-%02d-%02d %02d:%02d:%02d:%03d", t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, GetTickCount()%1000);
 	fwrite(time_str, 2, wcslen(time_str), f);
 
 	USES_CONVERSION;
