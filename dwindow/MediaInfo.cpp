@@ -7,6 +7,7 @@
 #include <commctrl.h>
 #include "MediaInfoDLL.h"
 #include "global_funcs.h"
+#include "dwindow_log.h"
 using namespace MediaInfoDLL;
 
 
@@ -404,6 +405,8 @@ HRESULT get_mediainfo(const wchar_t *filename, media_info_entry **out, bool use_
 
 	MediaInfo MI;
 
+	dwindow_log_line(L"Gettting MediaInfo for %s", filename);
+
 	// localization
 	if (use_localization)
 	{
@@ -511,6 +514,17 @@ HRESULT get_mediainfo(const wchar_t *filename, media_info_entry **out, bool use_
 
 		p = p2;
 		p2 = wcsstr(p2, L"\n");
+	}
+
+	if(out)
+	{
+		dwindow_log_line(L"MediaInfo for %s", filename);
+		for(media_info_entry *p = *out;p; p=p->next)
+		{
+			wchar_t space[] = L"          ";
+			space[p->level_depth*2] = NULL;
+			dwindow_log_line(L"%s %s - %s", space, p->key, p->value);
+		}
 	}
 
 	return S_OK;
