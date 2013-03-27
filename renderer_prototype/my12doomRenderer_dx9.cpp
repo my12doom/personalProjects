@@ -27,6 +27,7 @@
 #include "..\dwindow\global_funcs.h"
 #include "..\lua\my12doom_lua.h"
 #include "PixelShaders\P016.h"
+#include "..\dwindow\dwindow_log.h"
 
 enum helper_sample_format
 {
@@ -114,7 +115,7 @@ m_left_queue(_T("left queue"))
 		res = NvAPI_Stereo_IsEnabled(&enabled3d);
 		if (res == NVAPI_OK)
 		{
-			printf("NV3D enabled.\n");
+			dwindow_log_line("NV3D enabled.");
 			m_nv3d_enabled = (bool)enabled3d;
 		}
 
@@ -309,7 +310,7 @@ HRESULT my12doomRenderer::SetMediaType(const CMediaType *pmt, int id)
 
 	if (*pmt->FormatType() == FORMAT_VideoInfo)
 	{
-		printf("SetMediaType() VideoInfo1,  %s deinterlace\n", m_deinterlace ? "DO" : "NO");
+		dwindow_log_line("SetMediaType() VideoInfo1,  %s deinterlace", m_deinterlace ? "DO" : "NO");
 		m_deinterlace = false;
 	}
 	else if (*pmt->FormatType() == FORMAT_VideoInfo2)
@@ -319,10 +320,10 @@ HRESULT my12doomRenderer::SetMediaType(const CMediaType *pmt, int id)
 		{
 			m_deinterlace = true;
 		}
-		printf("SetMediaType() VideoInfo2,  %s deinterlace\n", m_deinterlace ? "DO" : "NO");
+		dwindow_log_line("SetMediaType() VideoInfo2,  %s deinterlace", m_deinterlace ? "DO" : "NO");
 	}
 
-	printf("SetMediaType() %s deinterlace\n", m_deinterlace ? "DO" : "NO");
+	dwindow_log_line("SetMediaType() %s deinterlace", m_deinterlace ? "DO" : "NO");
 
 	return S_OK;
 }
@@ -337,7 +338,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 	int width, height, aspect_x, aspect_y;
 	if (*pmt->FormatType() == FORMAT_VideoInfo)
 	{
-		printf("CheckMediaType(%d) VideoInfo1\n", id);
+		dwindow_log_line("CheckMediaType(%d) VideoInfo1", id);
 		VIDEOINFOHEADER *vihIn = (VIDEOINFOHEADER*)pmt->Format();
 		width = vihIn->bmiHeader.biWidth;
 		height = vihIn->bmiHeader.biHeight;
@@ -356,7 +357,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 	else if (*pmt->FormatType() == FORMAT_VideoInfo2)
 	{
 		VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)pmt->Format();
-		printf("CheckMediaType(%d) VideoInfo2, flag: %d(%02x), %s deinterlace\n", id, vihIn->dwInterlaceFlags, vihIn->dwInterlaceFlags, deinterlace ? "DO" : "NO");
+		dwindow_log_line("CheckMediaType(%d) VideoInfo2, flag: %d(%02x), %s deinterlace", id, vihIn->dwInterlaceFlags, vihIn->dwInterlaceFlags, deinterlace ? "DO" : "NO");
 		if (vihIn->dwInterlaceFlags & AMINTERLACE_IsInterlaced)
 		{
 			deinterlace = true;
@@ -384,7 +385,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 	}
 	else
 	{
-		printf("Not Video.\n");
+		dwindow_log_line("Not Video.");
 		hr = E_FAIL;
 	}
 
@@ -428,7 +429,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 	{
 		if (!m_dsr0->is_connected())
 		{
-			printf("don't connect 2nd renderer before 1st, E_FAIL.\n");
+			dwindow_log_line("don't connect 2nd renderer before 1st, E_FAIL.");
 			hr = E_FAIL;
 		}
 
@@ -439,7 +440,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 		}
 		else if (SUCCEEDED(hr))
 		{
-			printf("resolution mismatch, E_FAIL.\n");
+			dwindow_log_line("resolution mismatch, E_FAIL.");
 			hr = E_FAIL;
 		}
 	}
@@ -447,7 +448,7 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 	if (hr == S_OK)
 		m_deinterlace = deinterlace;
 
-	printf("return %s.\n", hr == S_OK ? "S_OK" : "E_FAIL");
+	dwindow_log_line("return %s.", hr == S_OK ? "S_OK" : "E_FAIL");
 
 	return hr;
 }
@@ -708,14 +709,14 @@ retry:
 		if (pmt->formattype == FORMAT_VideoInfo2)
 		{
 			VIDEOINFOHEADER2 *vihIn = (VIDEOINFOHEADER2*)pmt->pbFormat;
-			printf("sample video header 2.\n");
+			dwindow_log_line("sample video header 2.");
 
 		}
 
 		else if (pmt->formattype == FORMAT_VideoInfo)
 		{
 			VIDEOINFOHEADER *vihIn = (VIDEOINFOHEADER*)pmt->pbFormat;
-			printf("sample video header.\n");
+			dwindow_log_line("sample video header.");
 
 		}
 
@@ -1989,9 +1990,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 				frame_passed = max(1, frame_passed);
 				m_pageflip_frames += frame_passed;
 			}
-
-			//m_pageflip_frames %= 2;
-			printf("%08x\n", hr);
 
 			if (frame_passed%2 == 0)
 				return S_FALSE;	// skip this frame
