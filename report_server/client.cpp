@@ -5,6 +5,7 @@
 #pragma  comment(lib, "ws2_32.lib")
 #include "report.h"
 #include "SHA1.h"
+#include "..\my12doom_revision.h"
 
 
 int tcp_connect(char *hostname,int port)
@@ -54,7 +55,7 @@ int main()
 	// calculate header
 	report_header_v1 header = {sizeof(report_header_v1)};
 	header.file_size = filesize;
-	header.rev = 345;
+	header.rev = my12doom_rev;
 	char tmp[4096];
 	int block_size;
 	__int64 got = 0;

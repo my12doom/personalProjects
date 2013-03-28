@@ -139,6 +139,7 @@ Section "3DÓ°ÒôÖ÷³ÌÐò(required)"
   ; Put file there
   File "StereoPlayer.exe"
   File "reset.exe"
+  File "ErrorReport.exe"
   File "dwindow.ini"
   File "alpha.raw"
   File "logo.raw"

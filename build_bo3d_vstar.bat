@@ -11,12 +11,14 @@ copy dwindow\ico\icoVSTAR.ico dwindow\ico\ico.ico
 %dev2008% my12doomSource\my12doomSource.sln /build "Release Filter"
 del dwindow\ico\ico.ico
 copy dwindow\ico\ico_normal.ico dwindow\ico\ico.ico
+%dev2008% report_server\report_server.sln /build "Release"
 
 #copy
 copy/y dwindow\dwindow.ini dwindow_NSIS
 copy/y dwindow\alpha.raw dwindow_NSIS
 copy/y dwindow\logo.raw dwindow_NSIS
 copy/y dwindow\Release_vstar\StereoPlayer.exe dwindow_NSIS
+copy/y report_server\release\ErrorReport.exe dwindow_NSIS
 del/q dwindow_NSIS\codec\*.*
 del/q dwindow_NSIS\skin\*.*
 copy/y dwindow\skin\*.* dwindow_NSIS\skin
