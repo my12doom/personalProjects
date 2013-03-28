@@ -68,6 +68,8 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	while (test->init_done_flag != 0x12345678)
 		Sleep(100);
+	SendMessageW(test->m_hwnd1, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
+	SetForegroundWindow(test->m_hwnd1);
 	if (is_theeater_version())
 		dwindow_dll_go(hinstance, NULL, test);
 	else
