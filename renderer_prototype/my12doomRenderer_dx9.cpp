@@ -59,34 +59,32 @@ RECT ClipRect(const RECT border, const RECT rect2clip);
 
 HRESULT mylog(wchar_t *format, ...)
 {
-#ifdef DEBUG
 	wchar_t tmp[10240];
 	wchar_t tmp2[10240];
 	va_list valist;
 	va_start(valist, format);
-	wvsprintfW(tmp, format, valist);
+	wvsprintf(tmp, format, valist);
 	va_end(valist);
 
 	wsprintfW(tmp2, L"(tid=%d)%s", GetCurrentThreadId(), tmp);
 	OutputDebugStringW(tmp);
-#endif
+	dwindow_log_line(tmp);
 	return S_OK;
 }
 
 
 HRESULT mylog(const char *format, ...)
 {
-#ifdef DEBUG
 	char tmp[10240];
 	char tmp2[10240];
 	va_list valist;
 	va_start(valist, format);
-	wvsprintfA(tmp, format, valist);
+	vsprintf(tmp, format, valist);
 	va_end(valist);
 
 	wsprintfA(tmp2, "(tid=%d)%s", GetCurrentThreadId(), tmp);
 	OutputDebugStringA(tmp2);
-#endif
+	dwindow_log_line(tmp2);
 	return S_OK;
 }
 
@@ -134,6 +132,7 @@ m_left_queue(_T("left queue"))
 		// disable new 3d vision interface for now
 		m_nv_version.drvVersion = min(m_nv_version.drvVersion, 28500);
 	}
+	m_subtitle = NULL;
 	m_nv3d_handle = NULL;
 	m_output_mode = mono;
 	m_intel_s3d = NULL;
@@ -1317,7 +1316,6 @@ HRESULT my12doomRenderer::invalidate_cpu_objects()
 	CAutoLock lck2(&m_pool_lock);
 	if (m_pool) m_pool->DestroyPool(D3DPOOL_MANAGED);
 	if (m_pool) m_pool->DestroyPool(D3DPOOL_SYSTEMMEM);
-	m_tex_subtitle_mem = NULL;
 
 	return S_OK;
 }
@@ -1364,7 +1362,7 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_ps_bmp_blur = NULL;
 
 	// textures
-	m_tex_subtitle = NULL;
+	safe_delete(m_subtitle);
 
 	// pending samples
 	{
@@ -1556,14 +1554,6 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 
 	// textures
 	FAIL_RET(m_Device->CreateRenderTarget(m_pass1_width, m_pass1_height/2, m_active_pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_deinterlace_surface, NULL));
-	FAIL_RET( m_Device->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, 0, D3DUSAGE_RENDERTARGET | use_mipmap, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,	&m_tex_subtitle, NULL));
-	if(m_tex_subtitle_mem == NULL)
-	{
-		// only first time, so we don't need lock CritSec
-		FAIL_RET( m_Device->CreateOffscreenPlainSurface(TEXTURE_SIZE, TEXTURE_SIZE, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM,	&m_tex_subtitle_mem, NULL));
-		m_tex_subtitle_mem->LockRect(&m_subtitle_locked_rect, NULL, NULL);
-		m_subtitle_changed = false;
-	}
 
 	FAIL_RET(create_render_targets());
 
@@ -1715,32 +1705,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		lastkey = GetKeyState(VK_CONTROL);
 // 		set_device_state(need_create);
 	}
-
-	// load subtitle
-	CAutoPtr<CAutoLock> bmp_lock;
-	bmp_lock.Attach(new CAutoLock(&m_subtitle_lock));
-	if (m_subtitle_changed )
-	{
-		int l = timeGetTime();
-		if (!m_tex_subtitle || !m_tex_subtitle_mem)
-			return VFW_E_WRONG_STATE;
-
-		m_tex_subtitle_mem->UnlockRect();
-
-		CComPtr<IDirect3DSurface9> dst;
-		RECT src = {0,0,min(m_subtitle_pixel_width+100, TEXTURE_SIZE), min(m_subtitle_pixel_height+100, TEXTURE_SIZE)};
-
-		FAIL_RET(m_tex_subtitle->GetSurfaceLevel(0, &dst));
-
-		m_Device->UpdateSurface(m_tex_subtitle_mem, &src, dst, NULL);
-
-		mylog("UpdateSurface = %d ms.\n", timeGetTime() - l);
-	}
-	else
-	{
-		bmp_lock.Free();
-	}
-
 
 	int l = timeGetTime();
 
@@ -2207,17 +2171,6 @@ presant:
 		//if (lockrect_surface + lockrect_texture)
 		//	printf("LockRect: surface, texture, total, cycle = %d, %d, %d, %d.\n", lockrect_surface, lockrect_texture, lockrect_surface+lockrect_texture, (int)lockrect_texture_cycle);
 		lockrect_texture_cycle = lockrect_surface = lockrect_texture = 0;
-
-		if (bmp_lock != NULL)
-		{
-			int l = timeGetTime();
-			m_tex_subtitle_mem->LockRect(&m_subtitle_locked_rect, NULL, NULL);
-			mylog("LockRect for subtitle cost %dms \n", timeGetTime()-l);
-
-			lockrect_surface ++;
-
-			m_subtitle_changed = false;
-		}
 	}
 
 
@@ -2416,8 +2369,11 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 	RECTF dst_rect = {0};
 	calculate_subtitle_position(&dst_rect, view);
 
+	CAutoLock lck2(&m_subtitle_lock);
+	if (!m_subtitle)
+		return S_OK;
 	CComPtr<IDirect3DSurface9> src;
-	m_tex_subtitle->GetSurfaceLevel(0, &src);
+	m_subtitle->get_first_level(&src);
 
 	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
@@ -4068,9 +4024,6 @@ HRESULT my12doomRenderer::repaint_video()
 
 HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow)
 {
-	if (m_tex_subtitle == NULL)
-		return VFW_E_WRONG_STATE;
-
 	if (m_device_state >= device_lost)
 		return S_FALSE;			// TODO : of source it's not SUCCESS
 
@@ -4081,33 +4034,52 @@ HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float 
 
 	else
 	{
-		m_has_subtitle = true;
-		m_gpu_shadow = gpu_shadow;
+		HRESULT hr;
+		CPooledTexture *tex_mem = NULL;
+		{
+			CAutoLock lck(&m_pool_lock);
+			if (!m_pool)
+				return VFW_E_WRONG_STATE;
+			FAIL_RET(m_pool->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &tex_mem));
+		}
 
-		m_subtitle_fleft = fleft;
-		m_subtitle_ftop = ftop;
-		m_subtitle_fwidth = fwidth;
-		m_subtitle_fheight = fheight;
-		m_subtitle_pixel_width = width;
-		m_subtitle_pixel_height = height;
+		// copying
+		BYTE *src = (BYTE*)data;
+		BYTE *dst = (BYTE*) tex_mem->locked_rect.pBits;
+		for(int y=0; y<min(TEXTURE_SIZE,height); y++)
+		{
+			memset(dst, 0, tex_mem->locked_rect.Pitch);
+			memcpy(dst, src, width*4);
+			dst += tex_mem->locked_rect.Pitch;
+			src += width*4;
+		}
+		memset(dst, 0, tex_mem->locked_rect.Pitch * (TEXTURE_SIZE-min(TEXTURE_SIZE,height)));
 
 
 		{
 			CAutoLock lck2(&m_subtitle_lock);
-			BYTE *src = (BYTE*)data;
-			BYTE *dst = (BYTE*) m_subtitle_locked_rect.pBits;
-			for(int y=0; y<min(TEXTURE_SIZE,height); y++)
+			if (!m_subtitle && FAILED( hr = m_pool->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_subtitle)))
 			{
-				memset(dst, 0, m_subtitle_locked_rect.Pitch);
-				memcpy(dst, src, width*4);
-				dst += m_subtitle_locked_rect.Pitch;
-				src += width*4;
+				safe_delete(tex_mem);
+				return hr;
 			}
-			memset(dst, 0, m_subtitle_locked_rect.Pitch * (TEXTURE_SIZE-min(TEXTURE_SIZE,height)));
-			m_subtitle_changed = true;
+
+			m_has_subtitle = true;
+			m_gpu_shadow = gpu_shadow;
+
+			m_subtitle_fleft = fleft;
+			m_subtitle_ftop = ftop;
+			m_subtitle_fwidth = fwidth;
+			m_subtitle_fheight = fheight;
+			m_subtitle_pixel_width = width;
+			m_subtitle_pixel_height = height;
+
+			tex_mem->Unlock();
+			m_pool->UpdateTexture(tex_mem, m_subtitle);
 		}
 
-		//m_vertex_changed = true;
+		safe_delete(tex_mem);
+
 		repaint_video();
 	}
 

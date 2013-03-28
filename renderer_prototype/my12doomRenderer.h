@@ -281,6 +281,8 @@ protected:
 	double m_parallax;
 	bool m_has_subtitle;
 	int m_last_ui_draw;
+	CPooledTexture *m_subtitle;
+	CCritSec m_subtitle_lock;
 	int m_subtitle_pixel_width, m_subtitle_pixel_height;
 	float m_subtitle_fleft, m_subtitle_ftop, m_subtitle_fwidth, m_subtitle_fheight;
 	double m_movie_offset_x /*= -0.0*/;
@@ -542,16 +544,8 @@ protected:
 	RECT m_window_rect;
 	CComPtr<IDirect3DTexture9> m_tex_mask;					// mask txture
 
-	CComPtr<IDirect3DTexture9> m_tex_subtitle;
-	CComPtr<IDirect3DSurface9> m_tex_subtitle_mem;
-	D3DLOCKED_RECT m_subtitle_locked_rect;
-	bool m_subtitle_changed;
-	CCritSec m_subtitle_lock;
 
 	CComPtr<IDirect3DSurface9> m_nv3d_surface;				// nv3d temp surface
-
-
-	CComPtr<IDirect3DSurface9> m_just_a_test_surface;
 
 	// input layout detector
 	input_layout_types get_active_input_layout();
