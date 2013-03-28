@@ -2035,6 +2035,20 @@ HRESULT restart_this_program()
 	return S_OK;
 }
 
+HRESULT report_file(const wchar_t *filepath)
+{
+	wchar_t reset_exe[MAX_PATH];
+	wcscpy(reset_exe, g_apppath);
+	wcscat(reset_exe, L"ErrorReport.exe");
+
+	wchar_t tmp[MAX_PATH+2] = L"\"";
+	wcscat(tmp, filepath);
+	wcscat(tmp, L"\"");
+	ShellExecute(NULL, NULL, reset_exe, tmp, NULL, SW_SHOW);
+
+	return S_OK;
+}
+
 
 LPWSTR RhymeUTF82WideCharHelper(LPWSTR lpszWideString, LPCSTR lpszUTF8String, size_t nWideCharCount)
 {

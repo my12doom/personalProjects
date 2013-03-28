@@ -79,7 +79,6 @@ int main()
 	if (fd<0)
 	{
 		printf("error connectting to server\n");
-		getch();
 	}
 
 	send(fd, (char*)&header, sizeof(header), 0);
@@ -97,10 +96,13 @@ int main()
 	memset(tmp, 0, sizeof(tmp));
 	recv(fd, tmp, 4096, 0);
 	printf("\n%s\n", tmp);
-	getch();
-
 
 	closesocket(fd);
 
 	return 0;
+}
+
+int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
+{
+	return main();
 }

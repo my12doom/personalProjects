@@ -4,6 +4,8 @@
 #include <locale.h>
 #include <Dbghelp.h>
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
+#include "dwindow_log.h"
+#include "zip.h"
 
 #pragma comment(lib, "DbgHelp")
 dx_player *g_player = NULL;
@@ -87,10 +89,10 @@ int main()
 LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 {
 	// mini dump
-	wchar_t tmp[MAX_PATH];
-	GetTempPathW(MAX_PATH, tmp);
-	wcscpy(wcsrchr(tmp, '\\'), L"\\DWindowDumpFile.dmp");
-	HANDLE lhDumpFile = CreateFileW(tmp, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
+	wchar_t dump_file[MAX_PATH];
+	wcscpy(dump_file, dwindow_log_get_filename());
+	wcscpy(wcsrchr(dump_file, '\\'), L"\\DWindowDumpFile.dmp");
+	HANDLE lhDumpFile = CreateFileW(dump_file, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
 
 	MINIDUMP_EXCEPTION_INFORMATION loExceptionInfo;
 	loExceptionInfo.ExceptionPointers = ExceptionInfo;
@@ -99,6 +101,19 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),lhDumpFile, MiniDumpNormal, &loExceptionInfo, NULL, NULL);
 
 	CloseHandle(lhDumpFile);
+
+	// create zip file
+	wchar_t zip[MAX_PATH];
+	HZIP hz; DWORD writ;
+	wcscpy(zip, dwindow_log_get_filename());
+	wcscpy(wcsrchr(zip, '\\'), L"\\DWindowReport.zip");
+	hz = CreateZip(zip,0);
+	ZipAdd(hz,_T("Log.txt"), dwindow_log_get_filename());
+	ZipAdd(hz,_T("DWindowDumpFile.dmp"), dump_file);
+	CloseZip(hz);
+
+	// upload it
+	report_file(zip);
 
 #ifdef ZHUZHU
 	restart_this_program();
@@ -109,7 +124,7 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	swprintf(description, C(L"Ooops....something bad happened. \n"
 							L"Press Retry to debug or Cancel to RESTART progress.\n"
 							L"Or continue at your own risk, the program will become UNSTABLE.\n"
-							L"\nMini Dump File:\n%s"), tmp);
+							L"\nMini Dump File:\n%s"), dump_file);
 	int o = MessageBoxW(NULL, description, C(L"Error"), MB_CANCELTRYCONTINUE | MB_ICONERROR);
 	if (o == IDCANCEL)
 		restart_this_program();
