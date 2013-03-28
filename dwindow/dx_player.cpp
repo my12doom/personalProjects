@@ -3161,7 +3161,7 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		dwindow_log_line(L"adding coremvc decoder");
 		coremvc_hooker mvc_hooker;
 		CComPtr<IBaseFilter> coremvc;
-		hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
+// 		hr = myCreateInstance(CLSID_ffdshowDXVA, IID_IBaseFilter, (void**)&coremvc);
 		hr = ActiveCoreMVC(coremvc);
 		hr = m_gb->AddFilter(coremvc, L"CoreMVC");
 
@@ -3171,7 +3171,7 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		if (fi.pGraph)
 			fi.pGraph->Release();
 		else
-			dwindow_log_line(L"couldn't add CoreMVC to graph(need rename to StereoPlayer.exe.");
+			dwindow_log_line(L"couldn't add CoreMVC to graph.");
 
 		dwindow_log_line(L"CoreMVC hr = 0x%08x", hr);
 	}
@@ -3504,6 +3504,14 @@ HRESULT dx_player::end_loading()
 
 	CComPtr<IPin> renderer1_input;
 	GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer1_input);
+#ifdef EVR
+	if (renderer1_input)
+	{
+		renderer1_input = NULL;
+		GetUnconnectedPin(m_renderer1->DSHOW_RENDERER1, PINDIR_INPUT, &renderer1_input);
+	}
+
+#endif
 	AutoSetting<bool> video_only(L"ForceVideo", true);
 	if (renderer1_input && (bool)video_only)
 	{

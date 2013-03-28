@@ -488,8 +488,6 @@ HRESULT my12doomRenderer::CompleteConnect(IPin *pRecievePin, int id)
 
 HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 {
-	m_last_frame_time = timeGetTime();
-
 	int l1 = timeGetTime();
 	bool should_render = true;
 	REFERENCE_TIME start=0, end=0;
@@ -2986,6 +2984,7 @@ HRESULT my12doomRenderer::render(bool forced)
 	if(m_output_mode == pageflipping)
 		return S_FALSE;
 
+	m_last_frame_time = timeGetTime();
 	SetEvent(m_render_event);
 
 	return S_OK;
@@ -3039,7 +3038,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 	{
 		if (_this->m_output_mode != pageflipping && GPUIdle)
 		{
-			if (_this->m_dsr0->m_State == State_Running && timeGetTime() - _this->m_last_frame_time < 333)
+			if (timeGetTime() - _this->m_last_frame_time < 333)
 			{
 				if (WaitForSingleObject(_this->m_render_event, 1) != WAIT_TIMEOUT)
 				{
