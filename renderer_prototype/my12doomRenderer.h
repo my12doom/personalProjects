@@ -282,6 +282,7 @@ protected:
 	bool m_has_subtitle;
 	int m_last_ui_draw;
 	CPooledTexture *m_subtitle;
+	CPooledTexture *m_subtitle_mem;
 	CCritSec m_subtitle_lock;
 	int m_subtitle_pixel_width, m_subtitle_pixel_height;
 	float m_subtitle_fleft, m_subtitle_ftop, m_subtitle_fwidth, m_subtitle_fheight;

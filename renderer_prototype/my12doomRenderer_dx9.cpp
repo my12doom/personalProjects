@@ -133,6 +133,7 @@ m_left_queue(_T("left queue"))
 		m_nv_version.drvVersion = min(m_nv_version.drvVersion, 28500);
 	}
 	m_subtitle = NULL;
+	m_subtitle_mem = NULL;
 	m_nv3d_handle = NULL;
 	m_output_mode = mono;
 	m_intel_s3d = NULL;
@@ -2370,8 +2371,19 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 	calculate_subtitle_position(&dst_rect, view);
 
 	CAutoLock lck2(&m_subtitle_lock);
-	if (!m_subtitle)
-		return S_OK;
+
+	{
+		CAutoLock lck(&m_pool_lock);
+		if (!m_subtitle && FAILED( hr = m_pool->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_subtitle)))
+			return hr;
+	}
+
+	if (m_subtitle_mem)
+	{
+		m_subtitle_mem->Unlock();
+		m_pool->UpdateTexture(m_subtitle_mem, m_subtitle);
+	}
+
 	CComPtr<IDirect3DSurface9> src;
 	m_subtitle->get_first_level(&src);
 
@@ -4048,22 +4060,22 @@ HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float 
 		BYTE *dst = (BYTE*) tex_mem->locked_rect.pBits;
 		for(int y=0; y<min(TEXTURE_SIZE,height); y++)
 		{
-			memset(dst, 0, tex_mem->locked_rect.Pitch);
 			memcpy(dst, src, width*4);
+			memset(dst+width*4, 0, 16*4);
 			dst += tex_mem->locked_rect.Pitch;
 			src += width*4;
 		}
-		memset(dst, 0, tex_mem->locked_rect.Pitch * (TEXTURE_SIZE-min(TEXTURE_SIZE,height)));
+		memset(dst, 0, tex_mem->locked_rect.Pitch * min(TEXTURE_SIZE-height, 16));
 
 
 		{
-			CAutoLock lck2(&m_subtitle_lock);
-			if (!m_subtitle && FAILED( hr = m_pool->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_subtitle)))
-			{
-				safe_delete(tex_mem);
-				return hr;
-			}
+			int l = timeGetTime();
+// 			CAutoLock lck2(&m_subtitle_lock);
+			dwindow_log_line("set_subtitle() cost %dms", timeGetTime()-l);
 
+			CPooledTexture *p = m_subtitle_mem;
+			m_subtitle_mem = NULL;
+			m_subtitle_mem = tex_mem;
 			m_has_subtitle = true;
 			m_gpu_shadow = gpu_shadow;
 
@@ -4074,11 +4086,8 @@ HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float 
 			m_subtitle_pixel_width = width;
 			m_subtitle_pixel_height = height;
 
-			tex_mem->Unlock();
-			m_pool->UpdateTexture(tex_mem, m_subtitle);
+			safe_delete(p);
 		}
-
-		safe_delete(tex_mem);
 
 		repaint_video();
 	}
