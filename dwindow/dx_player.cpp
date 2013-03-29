@@ -3161,7 +3161,11 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		dwindow_log_line(L"adding coremvc decoder");
 		coremvc_hooker mvc_hooker;
 		CComPtr<IBaseFilter> coremvc;
-// 		hr = myCreateInstance(CLSID_ffdshowDXVA, IID_IBaseFilter, (void**)&coremvc);
+#ifdef EVR
+		hr = myCreateInstance(CLSID_FFDSHOWDXVA, IID_IBaseFilter, (void**)&coremvc);
+#else
+ 		hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
+#endif
 		hr = ActiveCoreMVC(coremvc);
 		hr = m_gb->AddFilter(coremvc, L"CoreMVC");
 
