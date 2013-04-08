@@ -710,7 +710,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;EVR"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
@@ -1453,6 +1453,14 @@
 			</File>
 			<File
 				RelativePath="..\renderer_prototype\gpu_sample.h"
+				>
+			</File>
+			<File
+				RelativePath=".\IPinHook.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\IPinHook.h"
 				>
 			</File>
 			<File

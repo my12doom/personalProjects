@@ -21,6 +21,7 @@
 #include "TCPTest.h"
 #include "fullscreen_modes_select.h"
 #include "dwindow_log.h"
+#include "IPinHook.h"
 
 
 #ifdef EVR
@@ -2634,6 +2635,8 @@ HRESULT dx_player::exit_direct_show()
 #ifdef EVR
 		m_gb->RemoveFilter(m_renderer1->m_evr);
 		m_gb->RemoveFilter(m_renderer1->m_evr2);
+
+		UnhookNewSegmentAndReceive();
 #else
 		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer1);
 		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer2);
@@ -2829,11 +2832,14 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 			if (sub.delta_valid)
 				hr = m_renderer1->set_subtitle_parallax(sub.delta + (double)m_user_subtitle_parallax/1920);
 
+			int l = timeGetTime();
+			dwindow_log_line("set_subtitle_begin(), %d", l);
 			hr = m_renderer1->set_subtitle(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
 				sub.height,
 				sub.left + (m_subtitle_center_x-0.5),
 				sub.top + (m_subtitle_bottom_y-0.95),
 				sub.gpu_shadow);
+			dwindow_log_line("set_subtitle_begin()end, %d", timeGetTime() - l);
 
 			free(sub.data);
 			if (FAILED(hr))
@@ -2925,6 +2931,16 @@ HRESULT dx_player::start_loading()
 #ifdef EVR
 	m_gb->AddFilter(m_renderer1->m_evr, L"EVR #1");
 	m_gb->AddFilter(m_renderer1->m_evr2, L"EVR #2");
+
+	IPin *p = NULL;
+	IMemInputPin *p2 = NULL;
+	GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &p);
+	if (p)
+		p->QueryInterface(IID_IMemInputPin, (void**)&p2);
+// 	HookNewSegmentAndReceive((IPinC*)p, (IMemInputPinC*)p2);
+
+	p->Release();
+	p2->Release();
 #else
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
 	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
@@ -3160,10 +3176,15 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1VCC')) ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1vcc')))
 	{
+#ifdef EVR
+		CComPtr<IBaseFilter> ffdshow_dxva;
+		hr = myCreateInstance(CLSID_ffdshowDXVA, IID_IBaseFilter, (void**)&ffdshow_dxva);
+  		hr = m_gb->AddFilter(ffdshow_dxva, L"ffdshowDXVA");
+#else
 		dwindow_log_line(L"adding coremvc decoder");
 		coremvc_hooker mvc_hooker;
 		CComPtr<IBaseFilter> coremvc;
-// 		hr = myCreateInstance(CLSID_ffdshowDXVA, IID_IBaseFilter, (void**)&coremvc);
+ 		hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
 		hr = ActiveCoreMVC(coremvc);
 		hr = m_gb->AddFilter(coremvc, L"CoreMVC");
 
@@ -3176,6 +3197,7 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 			dwindow_log_line(L"couldn't add CoreMVC to graph.");
 
 		dwindow_log_line(L"CoreMVC hr = 0x%08x", hr);
+#endif
 	}
 
 	if ( NULL == pin ||

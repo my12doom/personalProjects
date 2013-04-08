@@ -28,6 +28,7 @@
 #include "..\lua\my12doom_lua.h"
 #include "PixelShaders\P016.h"
 #include "..\dwindow\dwindow_log.h"
+#include "..\dwindow\IPinHook.h"
 
 enum helper_sample_format
 {
@@ -4084,7 +4085,7 @@ HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float 
 			safe_delete(p);
 		}
 
-		repaint_video();
+// 		repaint_video();
 	}
 
 	return S_OK;
@@ -4943,11 +4944,17 @@ done:
 }
 HRESULT my12doomRenderer::PrerollSample(IMFSample* pSample, LONGLONG llTarget, int id)
 {
+	if (m_cb)
+		m_cb->PrerollCB(llTarget + g_tSegmentStart, llTarget + 1 + g_tSegmentStart, NULL, id-1);
+
 	return S_OK;
 }
 
 HRESULT my12doomRenderer::PresentSample(IMFSample* pSample, LONGLONG llTarget, int id)
 {
+	if (m_cb)
+		m_cb->SampleCB(llTarget + g_tSegmentStart, llTarget + 1 + g_tSegmentStart, NULL, id-1);
+
 	HRESULT hr = S_OK;
 
 	IMFMediaBuffer* pBuffer = NULL;

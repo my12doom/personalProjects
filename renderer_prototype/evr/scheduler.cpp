@@ -251,16 +251,19 @@ HRESULT Scheduler::ScheduleSample(IMFSample *pSample, BOOL bPresentNow)
         return E_FAIL;
     }
 
+	REFERENCE_TIME time = 0;
+	pSample->GetSampleTime(&time);
+
     if (bPresentNow || (m_pClock == NULL))
     {
         // Present the sample immediately.
-		m_pCB->PrerollSample(pSample, 0, m_id);
-        m_pCB->PresentSample(pSample, 0, m_id);
+		m_pCB->PrerollSample(pSample, time, m_id);
+        m_pCB->PresentSample(pSample, time, m_id);
     }
     else
     {
         // Queue the sample and ask the scheduler thread to wake up.
-		hr = m_pCB->PrerollSample(pSample, 0, m_id);
+		hr = m_pCB->PrerollSample(pSample, time, m_id);
         hr = m_ScheduledSamples.Queue(pSample);
 
         if (SUCCEEDED(hr))
