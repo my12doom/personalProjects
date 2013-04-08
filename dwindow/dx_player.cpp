@@ -2832,14 +2832,11 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 			if (sub.delta_valid)
 				hr = m_renderer1->set_subtitle_parallax(sub.delta + (double)m_user_subtitle_parallax/1920);
 
-			int l = timeGetTime();
-			dwindow_log_line("set_subtitle_begin(), %d", l);
 			hr = m_renderer1->set_subtitle(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
 				sub.height,
 				sub.left + (m_subtitle_center_x-0.5),
 				sub.top + (m_subtitle_bottom_y-0.95),
 				sub.gpu_shadow);
-			dwindow_log_line("set_subtitle_begin()end, %d", timeGetTime() - l);
 
 			free(sub.data);
 			if (FAILED(hr))
@@ -2937,7 +2934,7 @@ HRESULT dx_player::start_loading()
 	GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &p);
 	if (p)
 		p->QueryInterface(IID_IMemInputPin, (void**)&p2);
-// 	HookNewSegmentAndReceive((IPinC*)p, (IMemInputPinC*)p2);
+ 	HookNewSegmentAndReceive((IPinC*)p, (IMemInputPinC*)p2);
 
 	p->Release();
 	p2->Release();

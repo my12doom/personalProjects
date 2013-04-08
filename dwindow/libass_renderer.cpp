@@ -5,7 +5,6 @@
 #include <emmintrin.h>
 #include <assert.h>
 #include "command_queue.h"
-#include "dwindow_log.h"
 
 #define _r(c)  ((c)>>24)
 #define _g(c)  (((c)>>16)&0xFF)
@@ -121,10 +120,7 @@ HRESULT LibassRendererCore::get_subtitle(int time, rendered_subtitle *out, int l
 	ASS_Image *img = NULL;
 	ASS_Image *p = NULL;
 	int changed = 0;
-	dwindow_log_line("libass::get_subtitle(%d,%d)", time, last_time);
 	p = img = ass_render_frame(m_ass_renderer, m_track, time, &changed);
-
-	dwindow_log_line("libass::changed = %d", changed);
 
 	if (!img)
 		return S_OK;
