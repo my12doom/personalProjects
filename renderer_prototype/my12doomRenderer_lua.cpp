@@ -408,6 +408,7 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("toggle_3d") = &toggle_3d;
 	g_lua_manager->get_variable("reset_and_loadfile") = &reset_and_loadfile;
 	g_lua_manager->get_variable("load_subtitle") = &load_subtitle;
+	g_lua_manager->get_variable("set_movie_rect") = &set_movie_rect;
 
 	return 0;
 }

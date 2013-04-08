@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <stdio.h>
 #include "remote_thumbnail.h"
+#include "..\ZBuffer\stereo_test.h"
 
 int width = 800;
 int height = 480;
@@ -22,24 +23,53 @@ int main()
 	ShExecInfo.hInstApp = NULL;	
 	ShExecInfo.lpVerb = L"open";
 
-	ShellExecuteEx(&ShExecInfo);
+// 	ShellExecuteEx(&ShExecInfo);
 	HANDLE process = ShExecInfo.hProcess;
 
 	Sleep(500);
 
 
 	remote_thumbnail r;
-	r.set_out_format(30, 400, 225);
 	r.connect(L"\\\\.\\pipe\\DWindowThumbnailPipe");
 	r.open_file(L"E:\\video\\video\\8bit.mkv");
-	r.seek(90000);
+	r.open_file(L"Z:\\testvideo\\LG2012Äê3DÊÔ³¬ìÅ´ÞÖÇÄÈ.mkv");
+	r.set_out_format(30, 128, 128);
+
+	int unkown = 0;
+	int sbs = 0;
+	int tb = 0;
+	int mono = 0;
+
 	for(int i=0; i<100; i++)
 	{
+		r.seek((__int64)220*1000*i/100);
 		wchar_t tmp[MAX_PATH];
 		swprintf(tmp, L"E:\\video\\shots\\%d.bmp", i);
 		if (r.get_one_frame() != 0)
 			break;
-		save_bitmap(r.recieved_data, tmp, 800, -480);
+		save_bitmap(r.recieved_data, tmp, 128, -128);
+
+		int o;
+		HRESULT hr = get_layout<DWORD>(r.recieved_data, 128, 128, &o);
+
+		if (FAILED(hr))
+		{
+			printf("unkown");
+			unkown ++;
+		}
+		else
+		{
+			printf(o == mono2d ? "mono2d" : (o == side_by_side ? "sbs" : "tb"));
+
+			if (o == mono2d)
+				mono ++;
+			if (o == side_by_side)
+				sbs ++;
+			if (o == top_bottom)
+				tb ++;
+		}
+
+		printf("");		
 	}
 	r.close();
 	r.disconnect();

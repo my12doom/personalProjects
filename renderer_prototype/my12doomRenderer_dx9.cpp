@@ -2204,10 +2204,6 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	}
 #endif
 
-	luaState lua_state;
-	lua_pushboolean(lua_state, TRUE);
-	lua_setglobal(lua_state, "movie_loaded");
-
 	CComPtr<IDirect3DSurface9> src;
 
 	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;

@@ -1,1 +1,1 @@
-svnserve -d -r X:\private_repo
+svnserve -d -r X:\reborn

@@ -185,12 +185,12 @@ SectionEnd
 SectionGroup /e "文件关联"
 
 Section "mkv文件"
-!insertmacro Assoc mkv "mkv" "MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+!insertmacro Assoc mkv "mkv" "MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,1"
 SectionEnd
 
 Section "mkv3d文件"
-!insertmacro Assoc mkv3d "mkv3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
-!insertmacro Assoc mk3d "mk3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+!insertmacro Assoc mkv3d "mkv3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,1"
+!insertmacro Assoc mk3d "mk3d" "3D MKV 文件" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,1"
 SectionEnd
 
 Section "ssif文件"

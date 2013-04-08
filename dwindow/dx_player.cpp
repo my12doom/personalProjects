@@ -2602,6 +2602,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 
 HRESULT dx_player::init_direct_show()
 {
+	CAutoLock lock(&m_dshow_sec);
 	HRESULT hr = S_OK;
 	hr = exit_direct_show();
 
@@ -2624,6 +2625,7 @@ CLEANUP:
 
 HRESULT dx_player::exit_direct_show()
 {
+	CAutoLock lock(&m_dshow_sec);
 	if (m_mc)
 		m_mc->Stop();
 
@@ -3161,11 +3163,7 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		dwindow_log_line(L"adding coremvc decoder");
 		coremvc_hooker mvc_hooker;
 		CComPtr<IBaseFilter> coremvc;
-#ifdef EVR
-		hr = myCreateInstance(CLSID_FFDSHOWDXVA, IID_IBaseFilter, (void**)&coremvc);
-#else
- 		hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
-#endif
+// 		hr = myCreateInstance(CLSID_ffdshowDXVA, IID_IBaseFilter, (void**)&coremvc);
 		hr = ActiveCoreMVC(coremvc);
 		hr = m_gb->AddFilter(coremvc, L"CoreMVC");
 

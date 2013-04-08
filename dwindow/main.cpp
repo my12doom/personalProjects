@@ -15,10 +15,12 @@ AutoSetting<bool> single_instance(L"SingleInstance", true);
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
 LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo);
 extern HRESULT dwindow_dll_go(HINSTANCE inst, HWND owner, Iplayer *p);
+void DisableSetUnhandledExceptionFilter();
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
  	SetUnhandledExceptionFilter(my_handler);
+	DisableSetUnhandledExceptionFilter();
 	CoInitialize(NULL);
 
 	int argc = 1;
@@ -134,4 +136,25 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 		TerminateThread(GetCurrentThread(), -1);
 	DebugBreak();
 	return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void DisableSetUnhandledExceptionFilter()
+{
+	void *addr = (void*)GetProcAddress(LoadLibrary(_T("kernel32.dll")),
+		"SetUnhandledExceptionFilter");
+	if (addr)
+	{
+		unsigned char code[16];
+		int size = 0;
+		code[size++] = 0x33;
+		code[size++] = 0xC0;
+		code[size++] = 0xC2;
+		code[size++] = 0x04;
+		code[size++] = 0x00;
+
+		DWORD dwOldFlag, dwTempFlag;
+		VirtualProtect(addr, size, PAGE_READWRITE, &dwOldFlag);
+		WriteProcessMemory(GetCurrentProcess(), addr, code, size, NULL);
+		VirtualProtect(addr, size, dwOldFlag, &dwTempFlag);
+	}
 }
