@@ -23,14 +23,6 @@
 #include "dwindow_log.h"
 #include "IPinHook.h"
 
-
-#ifdef EVR
-#define DSHOW_RENDERER1 m_evr
-#define DSHOW_RENDERER2 m_evr2
-#else
-#define DSHOW_RENDERER1 m_dshow_renderer1
-#define DSHOW_RENDERER2 m_dshow_renderer2
-#endif
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_CHECKUPDATE (WM_USER + 14)
 #define DS_EVENT (WM_USER + 4)
@@ -2632,15 +2624,18 @@ HRESULT dx_player::exit_direct_show()
 
 	if(m_gb)
 	{
-#ifdef EVR
-		m_gb->RemoveFilter(m_renderer1->m_evr);
-		m_gb->RemoveFilter(m_renderer1->m_evr2);
+		if (g_EVR)
+		{
+			m_gb->RemoveFilter(m_renderer1->m_evr);
+			m_gb->RemoveFilter(m_renderer1->m_evr2);
 
-		UnhookNewSegmentAndReceive();
-#else
-		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer1);
-		m_gb->RemoveFilter(m_renderer1->m_dshow_renderer2);
-#endif
+			UnhookNewSegmentAndReceive();
+		}
+		else
+		{
+			m_gb->RemoveFilter(m_renderer1->m_dshow_renderer1);
+			m_gb->RemoveFilter(m_renderer1->m_dshow_renderer2);
+		}
 	}
 
 	// reconfig renderer
@@ -2925,23 +2920,26 @@ HRESULT dx_player::show_volume_bar(bool show)
 
 HRESULT dx_player::start_loading()
 {
-#ifdef EVR
-	m_gb->AddFilter(m_renderer1->m_evr, L"EVR #1");
-	m_gb->AddFilter(m_renderer1->m_evr2, L"EVR #2");
+	if(g_EVR)
+	{
+		m_gb->AddFilter(m_renderer1->m_evr, L"EVR #1");
+		m_gb->AddFilter(m_renderer1->m_evr2, L"EVR #2");
 
-	IPin *p = NULL;
-	IMemInputPin *p2 = NULL;
-	GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &p);
-	if (p)
-		p->QueryInterface(IID_IMemInputPin, (void**)&p2);
- 	HookNewSegmentAndReceive((IPinC*)p, (IMemInputPinC*)p2);
+		IPin *p = NULL;
+		IMemInputPin *p2 = NULL;
+		GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &p);
+		if (p)
+			p->QueryInterface(IID_IMemInputPin, (void**)&p2);
+ 		HookNewSegmentAndReceive((IPinC*)p, (IMemInputPinC*)p2);
 
-	p->Release();
-	p2->Release();
-#else
-	m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
-	m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
-#endif
+		p->Release();
+		p2->Release();
+	}
+	else
+	{
+		m_gb->AddFilter(m_renderer1->m_dshow_renderer1, L"Renderer #1");
+		m_gb->AddFilter(m_renderer1->m_dshow_renderer2, L"Renderer #2");
+	}
 
 	return S_OK;
 }
@@ -2977,9 +2975,18 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, const wchar_t*pat
 	{
 		hr = load_file(pathname2);
 		CComPtr<IPin> pin;
-		GetUnconnectedPin(m_renderer1->DSHOW_RENDERER1, PINDIR_INPUT, &pin);
-		if (!pin)
-			GetUnconnectedPin(m_renderer1->DSHOW_RENDERER2, PINDIR_INPUT, &pin);
+		if (g_EVR)
+		{
+			GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &pin);
+			if (!pin)
+				GetUnconnectedPin(m_renderer1->m_evr2, PINDIR_INPUT, &pin);
+		}
+		else
+		{
+			GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &pin);
+			if (!pin)
+				GetUnconnectedPin(m_renderer1->m_dshow_renderer2, PINDIR_INPUT, &pin);
+		}
 		if (pin)
 			hr = VFW_E_NOT_CONNECTED;
 	}
@@ -3173,28 +3180,32 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1VCC')) ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1vcc')))
 	{
-#ifdef EVR
-		CComPtr<IBaseFilter> ffdshow_dxva;
-		hr = myCreateInstance(CLSID_ffdshowDXVA, IID_IBaseFilter, (void**)&ffdshow_dxva);
-  		hr = m_gb->AddFilter(ffdshow_dxva, L"ffdshowDXVA");
-#else
-		dwindow_log_line(L"adding coremvc decoder");
-		coremvc_hooker mvc_hooker;
-		CComPtr<IBaseFilter> coremvc;
- 		hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
-		hr = ActiveCoreMVC(coremvc);
-		hr = m_gb->AddFilter(coremvc, L"CoreMVC");
-
-		FILTER_INFO fi;
-		fi.pGraph = NULL;
-		if (coremvc) coremvc->QueryFilterInfo(&fi);
-		if (fi.pGraph)
-			fi.pGraph->Release();
+		if (g_EVR)
+		{
+			CComPtr<IBaseFilter> ffdshow_dxva;
+			hr = myCreateInstance(CLSID_ffdshowDXVA, IID_IBaseFilter, (void**)&ffdshow_dxva);
+			hr = set_ff_video_formats(ffdshow_dxva);
+			hr = m_gb->AddFilter(ffdshow_dxva, L"ffdshowDXVA");
+		}
 		else
-			dwindow_log_line(L"couldn't add CoreMVC to graph.");
+		{
+			dwindow_log_line(L"adding coremvc decoder");
+			coremvc_hooker mvc_hooker;
+			CComPtr<IBaseFilter> coremvc;
+			hr = myCreateInstance(CLSID_CoreAVC, IID_IBaseFilter, (void**)&coremvc);
+			hr = ActiveCoreMVC(coremvc);
+			hr = m_gb->AddFilter(coremvc, L"CoreMVC");
 
-		dwindow_log_line(L"CoreMVC hr = 0x%08x", hr);
-#endif
+			FILTER_INFO fi;
+			fi.pGraph = NULL;
+			if (coremvc) coremvc->QueryFilterInfo(&fi);
+			if (fi.pGraph)
+				fi.pGraph->Release();
+			else
+				dwindow_log_line(L"couldn't add CoreMVC to graph.");
+
+			dwindow_log_line(L"CoreMVC hr = 0x%08x", hr);
+		}
 	}
 
 	if ( NULL == pin ||
@@ -3230,9 +3241,19 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 connecting:
 
 	CComPtr<IPin> renderer_input;
-	GetUnconnectedPin(m_renderer1->DSHOW_RENDERER1, PINDIR_INPUT, &renderer_input);
-	if (!renderer_input)
-		GetUnconnectedPin(m_renderer1->DSHOW_RENDERER2, PINDIR_INPUT, &renderer_input);
+	
+	if (g_EVR)
+	{
+		GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &renderer_input);
+		if (!renderer_input)
+			GetUnconnectedPin(m_renderer1->m_evr2, PINDIR_INPUT, &renderer_input);
+	}
+	else
+	{
+		GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer_input);
+		if (!renderer_input)
+			GetUnconnectedPin(m_renderer1->m_dshow_renderer2, PINDIR_INPUT, &renderer_input);
+	}
 
 	hr = m_gb->Connect(pin, renderer_input);
 
@@ -3524,15 +3545,12 @@ HRESULT dx_player::end_loading()
 	RemoveUselessFilters(m_gb);
 
 	CComPtr<IPin> renderer1_input;
-	GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer1_input);
-#ifdef EVR
-	if (renderer1_input)
-	{
-		renderer1_input = NULL;
-		GetUnconnectedPin(m_renderer1->DSHOW_RENDERER1, PINDIR_INPUT, &renderer1_input);
-	}
+	if (g_EVR)
+		GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &renderer1_input);
+	else
+		GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer1_input);
 
-#endif
+
 	AutoSetting<bool> video_only(L"ForceVideo", true);
 	if (renderer1_input && (bool)video_only)
 	{

@@ -92,9 +92,7 @@ HRESULT mylog(const char *format, ...)
 my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/):
 m_left_queue(_T("left queue"))
 ,m_right_queue(_T("right queue"))
-#ifdef EVR
 ,m_presenter(NULL)
-#endif
 {
 	timeBeginPeriod(1);
 
@@ -230,35 +228,37 @@ void my12doomRenderer::init_variables()
 
 	m_dsr0->QueryInterface(IID_IBaseFilter, (void**)&m_dshow_renderer1);
 	m_dsr1->QueryInterface(IID_IBaseFilter, (void**)&m_dshow_renderer2);
-#ifdef EVR
-	//  EVR creation and configuration
-	if (!m_evr) m_evr.CoCreateInstance(CLSID_EnhancedVideoRenderer);
-	if (!m_evr2) m_evr2.CoCreateInstance(CLSID_EnhancedVideoRenderer);
-	if (!m_presenter) m_presenter = new EVRCustomPresenter(hr, 1, this);
-	if (!m_presenter2) m_presenter2 = new EVRCustomPresenter(hr, 2, this);
 
-	if (m_evr)
+	if(g_EVR)
 	{
-		CComQIPtr<IMFVideoPresenter, &IID_IMFVideoPresenter> presenter(m_presenter);
-		CComQIPtr<IMFVideoRenderer, &IID_IMFVideoRenderer> evr_mf(m_evr);
-		evr_mf->InitializeRenderer(NULL, presenter);
-		CComQIPtr<IMFGetService, &IID_IMFGetService> evr_get(m_evr);
-		CComPtr<IMFVideoDisplayControl> display_controll;
-		evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
-		display_controll->SetVideoWindow(m_hWnd);
-	}
+		//  EVR creation and configuration
+		if (!m_evr) m_evr.CoCreateInstance(CLSID_EnhancedVideoRenderer);
+		if (!m_evr2) m_evr2.CoCreateInstance(CLSID_EnhancedVideoRenderer);
+		if (!m_presenter) m_presenter = new EVRCustomPresenter(hr, 1, this);
+		if (!m_presenter2) m_presenter2 = new EVRCustomPresenter(hr, 2, this);
 
-	if (m_evr2)
-	{
-		CComQIPtr<IMFVideoPresenter, &IID_IMFVideoPresenter> presenter2(m_presenter);
-		CComQIPtr<IMFVideoRenderer, &IID_IMFVideoRenderer> evr_mf(m_evr2);
-		evr_mf->InitializeRenderer(NULL, presenter2);
-		CComQIPtr<IMFGetService, &IID_IMFGetService> evr_get(m_evr2);
-		CComPtr<IMFVideoDisplayControl> display_controll;
-		evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
-		display_controll->SetVideoWindow(m_hWnd);
+		if (m_evr)
+		{
+			CComQIPtr<IMFVideoPresenter, &IID_IMFVideoPresenter> presenter(m_presenter);
+			CComQIPtr<IMFVideoRenderer, &IID_IMFVideoRenderer> evr_mf(m_evr);
+			evr_mf->InitializeRenderer(NULL, presenter);
+			CComQIPtr<IMFGetService, &IID_IMFGetService> evr_get(m_evr);
+			CComPtr<IMFVideoDisplayControl> display_controll;
+			evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
+			display_controll->SetVideoWindow(m_hWnd);
+		}
+
+		if (m_evr2)
+		{
+			CComQIPtr<IMFVideoPresenter, &IID_IMFVideoPresenter> presenter2(m_presenter);
+			CComQIPtr<IMFVideoRenderer, &IID_IMFVideoRenderer> evr_mf(m_evr2);
+			evr_mf->InitializeRenderer(NULL, presenter2);
+			CComQIPtr<IMFGetService, &IID_IMFGetService> evr_get(m_evr2);
+			CComPtr<IMFVideoDisplayControl> display_controll;
+			evr_get->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&display_controll);
+			display_controll->SetVideoWindow(m_hWnd);
+		}
 	}
-#endif
 	m_recreating_dshow_renderer = false;
 
 	// callback
@@ -2192,8 +2192,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	if (!surface)
 		return E_POINTER;
 	view = m_force2d ? 0 : view;
-#ifndef EVR
-	if (!m_dsr0->is_connected())
+	if (!g_EVR && !m_dsr0->is_connected())
 	{
 		luaState lua_state;
 		lua_pushboolean(lua_state, FALSE);
@@ -2203,7 +2202,6 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 		m_last_reset_time = timeGetTime();
 		return m_uidrawer != NULL ? m_uidrawer->draw_nonmovie_bg(surface, view) : E_FAIL;
 	}
-#endif
 
 	CComPtr<IDirect3DSurface9> src;
 
@@ -4979,7 +4977,8 @@ HRESULT my12doomRenderer::PresentSample(IMFSample* pSample, LONGLONG llTarget, i
 		m_lVidHeight = desc.Height;
 		m_source_aspect = (double)m_lVidWidth / m_lVidHeight;
 
-		CAutoLock rendered_lock(&m_rendered_packet_lock);
+		CAutoLock pool_lock(&m_pool_lock);
+		CAutoLock rendered_lock(&m_packet_lock);
 		safe_delete(m_sample2render_1);
  		m_sample2render_1 = new gpu_sample(m_Device, pSurface, m_pool);
 

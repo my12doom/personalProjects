@@ -628,6 +628,8 @@ coremvc_hooker::~coremvc_hooker()
 }
 
 AutoSetting<bool> g_CUDA(L"CUDA", false);
+AutoSetting<BOOL> g_EVR(L"EVR", FALSE, REG_DWORD);
+
 HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 {
 	CComQIPtr<IPropertyBag, &IID_IPropertyBag> pbag(decoder);
@@ -947,6 +949,7 @@ HRESULT set_ff_video_formats(IBaseFilter *filter)
 	hr = cfg->putParam(IDFF_em2v, IDFF_MOVIE_LAVC);
 	//hr = cfg->putParam(IDFF_vcr1, IDFF_MOVIE_LAVC);
 	hr = cfg->putParam(IDFF_h261, IDFF_MOVIE_LAVC);
+	hr = cfg->putParam(IDFF_dec_DXVA_H264, TRUE);
 
 
 	return hr;

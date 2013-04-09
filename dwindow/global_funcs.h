@@ -63,6 +63,7 @@ extern D3DADAPTER_IDENTIFIER9 g_logic_ids[16];
 extern HMONITOR g_logic_monitors[16];
 extern CCritSec g_ILLock;
 
+
 //definitions
 #define AmHresultFromWin32(x) (MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, x))
 #if 0
@@ -274,6 +275,7 @@ localization_language get_system_default_lang();
 
 // CUDA
 extern AutoSetting<bool> g_CUDA;
+extern AutoSetting<BOOL> g_EVR;//(L"EVR", FALSE, REG_DWORD);
 
 
 // forceinline functions

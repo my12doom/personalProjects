@@ -17,6 +17,8 @@
 extern HRESULT mylog(wchar_t *format, ...);
 extern HRESULT mylog(const char *format, ...);
 
+AutoSetting<BOOL> g_use_ATI_DXVA_workaround(L"ATIDXVAWorkaround", TRUE, REG_DWORD);
+
 gpu_sample::~gpu_sample()
 {
 	safe_delete(m_tex_RGB32);
@@ -444,6 +446,7 @@ gpu_sample::gpu_sample(IDirect3DDevice9 *device, IDirect3DSurface9 *surface, CTe
 	m_converted = false;
 	m_cpu_stereo_tested = false;
 	m_cpu_tested_result = input_layout_auto;		// means unknown
+	CComPtr<IDirect3DSurface9> tmp;
 	CComPtr<IDirect3DSurface9> dst;
 	HRESULT hr;
 	if (!allocator)
@@ -460,9 +463,19 @@ gpu_sample::gpu_sample(IDirect3DDevice9 *device, IDirect3DSurface9 *surface, CTe
 	m_width = desc.Width;
 	m_height = desc.Height;
 
-	allocator->CreateTexture(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_gpu_RGB32);
+	JIF(allocator->CreateTexture(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_gpu_RGB32));
 	m_tex_gpu_RGB32->get_first_level(&dst);
-	device->StretchRect(surface, NULL, dst, NULL, D3DTEXF_LINEAR);
+
+	if ((BOOL)g_use_ATI_DXVA_workaround)
+	{
+		JIF(device->CreateRenderTarget(desc.Width, desc.Height, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &tmp, NULL));
+		hr = device->StretchRect(surface, NULL, tmp, NULL, D3DTEXF_LINEAR);
+		hr = device->StretchRect(tmp, NULL, dst, NULL, D3DTEXF_LINEAR);
+	}
+	else
+	{
+		hr = hr = device->StretchRect(surface, NULL, dst, NULL, D3DTEXF_LINEAR);
+	}
 	m_prepared_for_rendering = true;
 
 	m_pool = D3DPOOL_SYSTEMMEM;
