@@ -2371,10 +2371,14 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 			return hr;
 	}
 
-	if (m_subtitle_mem)
 	{
-		m_subtitle_mem->Unlock();
-		m_pool->UpdateTexture(m_subtitle_mem, m_subtitle);
+		CAutoLock lck(&m_subtitle_lock);
+		if (m_subtitle_mem)
+		{
+			m_subtitle_mem->Unlock();
+			m_pool->UpdateTexture(m_subtitle_mem, m_subtitle);
+			safe_delete(m_subtitle_mem);
+		}
 	}
 
 	CComPtr<IDirect3DSurface9> src;
@@ -4064,7 +4068,7 @@ HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float 
 
 		{
 			int l = timeGetTime();
-// 			CAutoLock lck2(&m_subtitle_lock);
+ 			CAutoLock lck2(&m_subtitle_lock);
 			dwindow_log_line("set_subtitle() cost %dms", timeGetTime()-l);
 
 			CPooledTexture *p = m_subtitle_mem;

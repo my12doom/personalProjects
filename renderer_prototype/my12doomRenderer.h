@@ -308,12 +308,10 @@ protected:
 	bool m_recreating_dshow_renderer;
 	my12doomRendererDShow * m_dsr0;
 	my12doomRendererDShow * m_dsr1;
-#ifdef EVR
 	CComPtr<IBaseFilter> m_evr;
 	CComPtr<IBaseFilter> m_evr2;
 	EVRCustomPresenter *m_presenter;
 	EVRCustomPresenter *m_presenter2;
-#endif
 
 
 
