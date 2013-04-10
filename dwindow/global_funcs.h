@@ -493,44 +493,20 @@ __forceinline void BasicRsaCheck()
 }
 
 
-/// UTF8 - Unicode macro
+class W2UTF8
+{
+public:
+	W2UTF8(const wchar_t *in);
+	~W2UTF8();
+	operator char*();
+	char *p;
+};
 
-#include <atlbase.h>
-#define USES_CONVERSION_UTF8 \
-	USES_CONVERSION_EX; \
-	int _convert_rhyme = 0; \
-	(_convert_rhyme); \
-	UINT _acp_rhyme = CP_UTF8 ; \
-	(_acp_rhyme); \
-	LPCTSTR _lpt_rhyme = NULL; \
-	(_lpt_rhyme); \
-	LPCSTR _lputf8_rhyme = NULL; \
-	(_lputf8_rhyme)
-
-
-#define UTF82W_EX(lputf8, nChars) (\
-	((_lputf8_rhyme = lputf8) == NULL) ? NULL : (\
-	_convert_rhyme = MultiByteToWideChar(CP_UTF8, 0, _lputf8_rhyme, (int)(strlen(_lputf8_rhyme)), NULL, 0),\
-	(_convert_rhyme == 0) ? L"" : \
-	(RhymeUTF82WideCharHelper( \
-	(LPWSTR)_ATL_SAFE_ALLOCA((_convert_rhyme + 1) * sizeof(WCHAR), nChars), \
-	_lputf8_rhyme, \
-	_convert_rhyme + 1))))\
-
-
-#define UTF82W(lputf8) UTF82W_EX(lputf8, _ATL_SAFE_ALLOCA_DEF_THRESHOLD)
-
-
-#define W2UTF8_EX(lpwide, nChars) (\
-	((_lpt_rhyme = lpwide) == NULL) ? NULL : (\
-	_convert_rhyme = WideCharToMultiByte(CP_UTF8, 0, _lpt_rhyme, (int)(wcslen(_lpt_rhyme)), NULL, 0, NULL, NULL),\
-	(_convert_rhyme == 0) ? NULL : \
-	(RhymeWideChar2UTF8Helper( \
-	(LPSTR)_ATL_SAFE_ALLOCA((_convert_rhyme + 1) * sizeof(char), nChars), \
-	_lpt_rhyme, \
-	_convert_rhyme + 1))))\
-
-#define W2UTF8(lpwide) W2UTF8_EX(lpwide, _ATL_SAFE_ALLOCA_DEF_THRESHOLD)
-
-LPWSTR RhymeUTF82WideCharHelper(LPWSTR lpszWideString, LPCSTR lpszUTF8String, size_t nWideCharCount);
-LPSTR RhymeWideChar2UTF8Helper(LPSTR lpszUTF8String, LPCWSTR lpszWideString, size_t nUTF8ByteCount);
+class UTF82W
+{
+public:
+	UTF82W(const char *in);
+	~UTF82W();
+	operator wchar_t*();
+	wchar_t *p;
+};

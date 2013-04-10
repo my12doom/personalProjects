@@ -28,7 +28,6 @@ static int execute_luafile(lua_State *L)
 // 	int parameter_count = lua_gettop(L);
 	const char *filename = NULL;
 	filename = luaL_checkstring(L, 1);
-	USES_CONVERSION_UTF8;
 	USES_CONVERSION;
 	if(luaL_loadfile(L, W2A(UTF82W(filename))) || lua_pcall(L, 0, 0, 0))
 	{

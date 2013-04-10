@@ -2,6 +2,7 @@
 
 extern int lockrect_texture;
 extern __int64 lockrect_texture_cycle;
+int lock_delay = 3;
 
 // texture class
 CPooledTexture::~CPooledTexture()
@@ -78,7 +79,7 @@ HRESULT CTextureAllocator::CreateTexture(int width, int height, DWORD usage, D3D
 		for(int i=0; i<m_texture_count; i++)
 		{
 			PooledTexture &t = m_texture_pool[i];
-			if (t.width == width && t.height == height && t.pool == pool && t.format == format)
+			if (t.width == width && t.height == height && t.pool == pool && t.format == format && t.frame_passed >= lock_delay)
 			{
 				*(PooledTexture*)o = t;
 				m_texture_count --;
@@ -139,8 +140,6 @@ HRESULT CTextureAllocator::CreateOffscreenSurface(int width, int height, D3DFORM
 				*(PooledSurface*)o = t;
 				m_surface_count --;
 				memcpy(m_surface_pool+i, m_surface_pool+i+1, (m_surface_count-i)*sizeof(PooledSurface));
-				//for(int j=i; j<m_pool_count; j++)
-				//	m_pool[j] = m_pool[j+1];
 
 				return S_OK;
 			}
@@ -180,21 +179,14 @@ HRESULT CTextureAllocator::DeleteTexture(CPooledTexture *texture, bool dont_pool
 	if (dont_pool)
 		return texture->texture->Release();
 
-	if (texture->locked_rect.pBits == NULL && (texture->pool == D3DPOOL_SYSTEMMEM || texture->usage & D3DUSAGE_DYNAMIC))
-	{
-		LARGE_INTEGER li, l2;
-		QueryPerformanceCounter(&li);
-		texture->hr = texture->texture->LockRect(0, &texture->locked_rect, NULL, texture->usage & D3DUSAGE_DYNAMIC ? D3DLOCK_DISCARD : NULL);
-		QueryPerformanceCounter(&l2);
-		lockrect_texture ++;
-		lockrect_texture_cycle += l2.QuadPart - li.QuadPart;
-	}
 	if (FAILED(texture->hr))
 	{
 		texture->texture->Release();
 		return S_FALSE;
 	}
 	
+	texture->frame_passed = 0;
+
 	CAutoLock lck(&m_texture_pool_lock);
 	m_texture_pool[m_texture_count++] = *texture;
 
@@ -267,7 +259,7 @@ HRESULT CTextureAllocator::DestroyPool(D3DPOOL pool2destroy)
 	return S_OK;
 }
 
-HRESULT CTextureAllocator::UpdateTexture(CPooledTexture *src, CPooledTexture *dst)
+HRESULT CTextureAllocator::UpdateTexture(CPooledTexture *src, CPooledTexture *dst, RECT *dirty)
 {
 	if (src->m_allocator != this)
 	{
@@ -281,7 +273,34 @@ HRESULT CTextureAllocator::UpdateTexture(CPooledTexture *src, CPooledTexture *ds
 	if (src->pool != D3DPOOL_SYSTEMMEM || dst->pool != D3DPOOL_DEFAULT)
 		return E_INVALIDARG;
 
-	src->texture->AddDirtyRect(NULL);
+	src->texture->AddDirtyRect(dirty);
 
 	return m_device->UpdateTexture(src->texture, dst->texture);
+}
+
+HRESULT CTextureAllocator::AfterFrameRender()
+{
+	CAutoLock lck(&m_surface_pool_lock);
+	for(int i=0; i<m_surface_count; i++)
+		m_surface_pool[i].frame_passed++;
+
+	CAutoLock lck2(&m_texture_pool_lock);
+	for(int i=0; i<m_texture_count; i++)
+	{
+		m_texture_pool[i].frame_passed++;
+		PooledTexture *texture = &m_texture_pool[i];
+
+
+		if (texture->locked_rect.pBits == NULL && (texture->pool == D3DPOOL_SYSTEMMEM || texture->usage & D3DUSAGE_DYNAMIC))
+		{
+			LARGE_INTEGER li, l2;
+			QueryPerformanceCounter(&li);
+			texture->hr = texture->texture->LockRect(0, &texture->locked_rect, NULL, texture->usage & D3DUSAGE_DYNAMIC ? D3DLOCK_DISCARD : NULL);
+			QueryPerformanceCounter(&l2);
+			lockrect_texture ++;
+			lockrect_texture_cycle += l2.QuadPart - li.QuadPart;
+		}
+	}
+
+	return S_OK;
 }

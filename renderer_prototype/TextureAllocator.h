@@ -20,6 +20,8 @@ typedef struct stuct_PooledTexture
 	HRESULT hr;
 	IDirect3DDevice9 *creator;
 	CTextureAllocator *m_allocator;
+
+	int frame_passed;			// frame passed since last decommit
 }PooledTexture;
 
 typedef struct stuct_PooledSurface
@@ -34,6 +36,8 @@ typedef struct stuct_PooledSurface
 
 	HRESULT hr;
 	IDirect3DDevice9 *creator;
+
+	int frame_passed;			// frame passed since last decommit
 }PooledSurface;
 
 class CPooledTexture : public PooledTexture
@@ -70,7 +74,8 @@ public:
 	HRESULT CreateOffscreenSurface(int width, int height, D3DFORMAT format, D3DPOOL pool, CPooledSurface **out);
 	HRESULT DeleteSurface(CPooledSurface * surface, bool dont_pool = false);
 	HRESULT DestroyPool(D3DPOOL pool2destroy);
-	HRESULT UpdateTexture(CPooledTexture *src, CPooledTexture *dst);
+	HRESULT UpdateTexture(CPooledTexture *src, CPooledTexture *dst, RECT *dirty = NULL);
+	HRESULT AfterFrameRender();
 protected:
 	IDirect3DDevice9 *m_device;
 	PooledTexture m_texture_pool[1024];

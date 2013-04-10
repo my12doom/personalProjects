@@ -2052,70 +2052,40 @@ HRESULT report_file(const wchar_t *filepath)
 	return S_OK;
 }
 
-
-LPWSTR RhymeUTF82WideCharHelper(LPWSTR lpszWideString, LPCSTR lpszUTF8String, size_t nWideCharCount)
+W2UTF8::W2UTF8(const wchar_t *in)
 {
-	_ASSERTE(lpszWideString != NULL);
-	_ASSERTE(lpszUTF8String != NULL);
-	_ASSERTE(nWideCharCount <= 0x7fffffff);
-	_ASSERTE(strlen(lpszUTF8String) <= 0x7fffffff);
 
-	size_t nUTF8Length = strlen(lpszUTF8String);
-
-	if(lpszWideString == NULL || lpszUTF8String == NULL ||
-		nWideCharCount > 0x7fffffff ||
-		nUTF8Length > 0x7fffffff)
-	{
-		return NULL;
-	}
-
-	int nConverted = MultiByteToWideChar(
-		CP_UTF8,
-		0,
-		lpszUTF8String,
-		(int)(nUTF8Length),
-		lpszWideString,
-		(int)(nWideCharCount));
-
-	if(ERROR_NO_UNICODE_TRANSLATION == GetLastError())
-	{
-		return NULL;
-	}
-	lpszWideString[nConverted] = NULL;
-	return lpszWideString;
 }
 
-LPSTR RhymeWideChar2UTF8Helper(LPSTR lpszUTF8String, LPCWSTR lpszWideString, size_t nUTF8ByteCount)
+W2UTF8::~W2UTF8()
 {
-	_ASSERTE(lpszWideString != NULL);
-	_ASSERTE(lpszUTF8String != NULL);
-	_ASSERTE(nUTF8ByteCount <= 0x7fffffff);
-	_ASSERTE(wcslen(lpszWideString) <= 0x7fffffff);
+	if(p)free(p);
+}
 
-	size_t nWideCharCount = wcslen(lpszWideString);
+W2UTF8::operator char*()
+{
+	return p;
+}
 
-	if(lpszWideString == NULL || lpszUTF8String == NULL ||
-		nUTF8ByteCount > 0x7fffffff ||
-		nWideCharCount > 0x7fffffff)
-	{
-		return NULL;
-	}
+UTF82W::UTF82W(const char *in)
+{
+	p = NULL;
 
-	int nConverted = WideCharToMultiByte(
-		CP_UTF8,
-		0,
-		lpszWideString,
-		(int)(nWideCharCount),
-		lpszUTF8String,
-		(int)(nUTF8ByteCount),
-		NULL,
-		NULL);
+	if (!in)
+		return;
 
-	if(ERROR_NO_UNICODE_TRANSLATION == GetLastError())
-	{
-		return NULL;
-	}
+	int len = MultiByteToWideChar(CP_UTF8, NULL, in, -1, NULL, 0);
+	if (len<0)
+		return;
 
-	lpszUTF8String[nConverted] = NULL;
-	return lpszUTF8String;
+	p = (wchar_t*)malloc(len*sizeof(wchar_t));
+	assert(MultiByteToWideChar(CP_UTF8, NULL, in, -1, p, len) == len);
+}
+UTF82W::~UTF82W()
+{
+	if(p)free(p);
+}
+UTF82W::operator wchar_t*()
+{
+	return p;
 }

@@ -49,6 +49,7 @@ int lockrect_texture = 0;
 __int64 lockrect_texture_cycle = 0;
 const int MAX_TEXTURE_SIZE = 8192;
 AutoSetting<DWORD> TEXTURE_SIZE(L"TextureSize", 4096, REG_DWORD);
+AutoSetting<DWORD> SUBTITLE_TEXTURE_SIZE(L"SubtitleTextureSize", 2048, REG_DWORD);
 AutoSetting<BOOL> GPUIdle(L"GPUIdle", true, REG_DWORD);
 
 
@@ -2174,6 +2175,28 @@ presant:
 	}
 
 
+
+	{
+		CAutoLock lck(&m_subtitle_lock);
+		if (m_subtitle_mem)
+		{
+			int l2 = timeGetTime();
+			RECT dirty = {0,0,min(m_subtitle_pixel_width, m_subtitle_mem->locked_rect.Pitch/4), min(m_subtitle_pixel_height, min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE))};
+			m_subtitle_mem->Unlock();
+			int l3 = timeGetTime();
+			m_pool->UpdateTexture(m_subtitle_mem, m_subtitle, &dirty);
+			int l4 = timeGetTime();
+			safe_delete(m_subtitle_mem);
+
+			if (l4 - l2 >0)
+				dwindow_log_line("upload subtitle cost %d-%d-%d, %dx%d", l4-l2, l3-l2, l4-l3, dirty.right, dirty.bottom);
+		}
+	}
+
+
+	CAutoLock pool_lck(&m_pool_lock);
+	m_pool->AfterFrameRender();
+
 	return S_OK;
 }
 
@@ -2367,18 +2390,8 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 
 	{
 		CAutoLock lck(&m_pool_lock);
-		if (!m_subtitle && FAILED( hr = m_pool->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_subtitle)))
+		if (!m_subtitle && FAILED( hr = m_pool->CreateTexture(min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE), min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE), D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_subtitle)))
 			return hr;
-	}
-
-	{
-		CAutoLock lck(&m_subtitle_lock);
-		if (m_subtitle_mem)
-		{
-			m_subtitle_mem->Unlock();
-			m_pool->UpdateTexture(m_subtitle_mem, m_subtitle);
-			safe_delete(m_subtitle_mem);
-		}
 	}
 
 	CComPtr<IDirect3DSurface9> src;
@@ -2392,6 +2405,7 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
 	hr = resize_surface(src, NULL, surface, &src_rect, &dst_rect, (resampling_method)(int)m_subtitle_resampling_method);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+
 	return hr;
 }
 HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface, int view)
@@ -4050,7 +4064,7 @@ HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float 
 			CAutoLock lck(&m_pool_lock);
 			if (!m_pool)
 				return VFW_E_WRONG_STATE;
-			FAIL_RET(m_pool->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &tex_mem));
+			FAIL_RET(m_pool->CreateTexture(min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE), min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE), NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &tex_mem));
 		}
 
 		// copying
@@ -4058,18 +4072,17 @@ HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float 
 		BYTE *dst = (BYTE*) tex_mem->locked_rect.pBits;
 		for(int y=0; y<min(TEXTURE_SIZE,height); y++)
 		{
-			memcpy(dst, src, width*4);
+			memcpy(dst, src, min(width*4, tex_mem->locked_rect.Pitch));
 			memset(dst+width*4, 0, 16*4);
 			dst += tex_mem->locked_rect.Pitch;
 			src += width*4;
 		}
-		memset(dst, 0, tex_mem->locked_rect.Pitch * min(TEXTURE_SIZE-height, 16));
+		memset(dst, 0, tex_mem->locked_rect.Pitch * min(min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE)-height, 16));
 
 
 		{
 			int l = timeGetTime();
  			CAutoLock lck2(&m_subtitle_lock);
-			dwindow_log_line("set_subtitle() cost %dms", timeGetTime()-l);
 
 			CPooledTexture *p = m_subtitle_mem;
 			m_subtitle_mem = NULL;
