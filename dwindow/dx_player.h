@@ -418,7 +418,7 @@ protected:
 class lua_drawer : public ui_drawer_base
 {
 public:
-	lua_drawer();
+	lua_drawer(dx_player *owner);
 	virtual HRESULT init_gpu(int width, int height, IDirect3DDevice9 *device);
 	virtual HRESULT init_cpu(int width, int height, IDirect3DDevice9 *device);
 	virtual HRESULT invalidate_gpu();
@@ -428,4 +428,5 @@ public:
 	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL);
 
 	IDirect3DDevice9 *m_device;
+	dx_player *m_owner;
 };

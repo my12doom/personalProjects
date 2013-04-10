@@ -11,7 +11,7 @@ function logo:GetRect()
 end
 
 function logo:RenderThis()
-	if not movie_loaded then
+	if not dwindow.movie_loaded then
 		local res = get_bitmap("logo_bg.png")
 		paint(0,0,1920,1080, res)
 	end
@@ -30,14 +30,14 @@ function logo_hot:GetRect()
 end
 
 function logo_hot:RenderThis()
-	if not movie_loaded then
+	if not dwindow.movie_loaded then
 		local res = get_bitmap("logo_hot.png")
 		paint(0,0,400,171, res)
 	end
 end
 
 function logo_hot:OnMouseDown(...)
-	return movie_loaded or dwindow.popup_menu()
+	return dwindow.movie_loaded or dwindow.popup_menu()
 end
 
 toolbar_bg = BaseFrame:Create()

@@ -47,14 +47,14 @@ end
 
 function logo:RenderThis(view)
 	local d = self.d
-	if not movie_loaded then
+	if not dwindow.movie_loaded then
 		local delta = (1-view) * 0.025*self.w
 		paint(0+delta,0,self.w+delta,self.w,get_bitmap("logo.png"))
 	end
 end
 
 function logo:HitTest(x, y)
-	if movie_loaded then return end
+	if dwindow.movie_loaded then return end
 	
 	local r = self.w/2
 	local dx = x-self.w/2

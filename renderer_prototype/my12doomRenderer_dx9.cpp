@@ -2216,16 +2216,6 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	if (!surface)
 		return E_POINTER;
 	view = m_force2d ? 0 : view;
-	if (!g_EVR && !m_dsr0->is_connected())
-	{
-		luaState lua_state;
-		lua_pushboolean(lua_state, FALSE);
-		lua_setglobal(lua_state, "movie_loaded");
-
-		CAutoLock lck(&m_uidrawer_cs);
-		m_last_reset_time = timeGetTime();
-		return m_uidrawer != NULL ? m_uidrawer->draw_nonmovie_bg(surface, view) : E_FAIL;
-	}
 
 	CComPtr<IDirect3DSurface9> src;
 

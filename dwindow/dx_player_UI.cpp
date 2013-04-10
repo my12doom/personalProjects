@@ -433,6 +433,9 @@ HRESULT dx_player::invalidate_cpu()
 }
 HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view, bool running)
 {
+	if (!m_file_loaded)
+		draw_nonmovie_bg(surface, view);
+
 	int total = 0;
 	this->total(&total);
 	int current = m_current_time;

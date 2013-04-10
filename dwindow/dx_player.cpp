@@ -2573,7 +2573,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		g_renderer = m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
 		m_renderer1->set_ui_drawer(this);
 		//m_renderer1->set_ui_drawer();
-		m_lua = new lua_drawer();
+		m_lua = new lua_drawer(this);
 
 		// show it!
 		show_window(1, true);
@@ -4867,8 +4867,9 @@ LRESULT dx_player::OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam)
 	return S_OK;
 }
 
-lua_drawer::lua_drawer()
+lua_drawer::lua_drawer(dx_player *owner)
 {
+	m_owner = owner;
 }
 HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 {
@@ -4923,6 +4924,7 @@ HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, int view, bool running)
 	m_device->SetRenderTarget(0, surface);
 
 	g_lua_manager->get_variable("running") = running;
+	g_lua_manager->get_variable("movie_loaded") = m_owner->m_file_loaded;
 
 	luaState lua_state;
 	lua_getglobal(lua_state, "RenderUI");
