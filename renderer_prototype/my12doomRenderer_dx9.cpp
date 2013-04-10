@@ -50,6 +50,7 @@ __int64 lockrect_texture_cycle = 0;
 const int MAX_TEXTURE_SIZE = 8192;
 AutoSetting<DWORD> TEXTURE_SIZE(L"TextureSize", 4096, REG_DWORD);
 AutoSetting<DWORD> SUBTITLE_TEXTURE_SIZE(L"SubtitleTextureSize", 2048, REG_DWORD);
+AutoSetting<DWORD> EVRQueueSize(L"EVRQueueSize", 5, REG_DWORD);
 AutoSetting<BOOL> GPUIdle(L"GPUIdle", true, REG_DWORD);
 
 
@@ -4878,7 +4879,7 @@ HRESULT my12doomRenderer::CreateVideoSamples(IMFMediaType *pFormat, VideoSampleL
 	//UpdateDestRect();
 
 	// Create the video samples.
-	for (int i = 0; i < my12doom_queue_size; i++)
+	for (int i = 0; i < EVRQueueSize; i++)
 	{
 		// Create a new swap chain.
 		CHECK_HR(hr = m_Device->CreateRenderTarget(pp.BackBufferWidth, pp.BackBufferHeight, pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &pSurface, NULL));

@@ -79,7 +79,8 @@ HRESULT CTextureAllocator::CreateTexture(int width, int height, DWORD usage, D3D
 		for(int i=0; i<m_texture_count; i++)
 		{
 			PooledTexture &t = m_texture_pool[i];
-			if (t.width == width && t.height == height && t.pool == pool && t.format == format && t.frame_passed >= lock_delay)
+			if (t.width == width && t.height == height && t.pool == pool && t.format == format && 
+				(t.frame_passed >= lock_delay || pool != D3DPOOL_SYSTEMMEM || !(usage & D3DUSAGE_DYNAMIC)))
 			{
 				*(PooledTexture*)o = t;
 				m_texture_count --;
