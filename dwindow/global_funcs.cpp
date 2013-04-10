@@ -894,6 +894,7 @@ HRESULT set_ff_audio_formats(IBaseFilter *filter)
 	hr = cfg->putParam(IDFF_trayIcon, 0);
 	hr = cfg->putParam(IDFF_isBlacklist, 0);
 	hr = cfg->putParam(IDFF_isWhitelist, 0);
+	hr = cfg->putParam(IDFF_multipleInstances, 0);
 
 	hr = cfg->putParam(IDFF_mp3, IDFF_MOVIE_LAVC);
 	hr = cfg->putParam(IDFF_mp2, IDFF_MOVIE_LAVC);
@@ -928,6 +929,7 @@ HRESULT set_ff_video_formats(IBaseFilter *filter)
 	hr = cfg->putParam(IDFF_trayIcon, 0);
 	hr = cfg->putParam(IDFF_isBlacklist, 0);
 	hr = cfg->putParam(IDFF_isWhitelist, 0);
+	hr = cfg->putParam(IDFF_multipleInstances, 0);
 
 	hr = cfg->putParam(IDFF_h264, IDFF_MOVIE_LAVC);		// this is mainly for non-private files, use whatever I can
 	hr = cfg->putParam(IDFF_xvid, IDFF_MOVIE_LAVC);
@@ -953,8 +955,8 @@ HRESULT set_ff_video_formats(IBaseFilter *filter)
 	hr = cfg->putParam(IDFF_em2v, IDFF_MOVIE_LAVC);
 	//hr = cfg->putParam(IDFF_vcr1, IDFF_MOVIE_LAVC);
 	hr = cfg->putParam(IDFF_h261, IDFF_MOVIE_LAVC);
-	hr = cfg->putParam(IDFF_dec_DXVA_H264, TRUE);
-
+	hr = cfg->putParam(IDFF_dec_DXVA_H264, 1);
+	hr = cfg->putParam(IDFF_dec_DXVA_VC1, 1);
 
 	return hr;
 }

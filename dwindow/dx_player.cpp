@@ -3186,6 +3186,20 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 			hr = myCreateInstance(CLSID_ffdshowDXVA, IID_IBaseFilter, (void**)&ffdshow_dxva);
 			hr = set_ff_video_formats(ffdshow_dxva);
 			hr = m_gb->AddFilter(ffdshow_dxva, L"ffdshowDXVA");
+			hr = set_ff_video_formats(ffdshow_dxva);
+
+			CComPtr<IPin> pin_dec;
+			GetUnconnectedPin(ffdshow_dxva, PINDIR_INPUT, &pin_dec);
+			if (FAILED(m_gb->ConnectDirect(pin, pin_dec, NULL)))
+			{
+				hr = set_ff_video_formats(ffdshow_dxva);
+			}
+			else
+			{
+
+				hr = m_gb->RemoveFilter(ffdshow_dxva);
+				hr = m_gb->AddFilter(ffdshow_dxva, L"ffdshowDXVA");
+			}
 		}
 		else
 		{
