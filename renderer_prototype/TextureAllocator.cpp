@@ -186,7 +186,7 @@ HRESULT CTextureAllocator::DeleteTexture(CPooledTexture *texture, bool dont_pool
 		return S_FALSE;
 	}
 	
-	texture->frame_passed = 0;
+	texture->frame_passed = 5;
 
 	CAutoLock lck(&m_texture_pool_lock);
 	m_texture_pool[m_texture_count++] = *texture;

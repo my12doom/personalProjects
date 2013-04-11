@@ -471,6 +471,9 @@ HRESULT find_main_movie(const wchar_t *folder, wchar_t *out)
 
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 {
+	if (!pFilter)
+		return E_POINTER;
+
 	*ppPin = 0;
 	IEnumPins *pEnum = 0;
 	IPin *pPin = 0;
