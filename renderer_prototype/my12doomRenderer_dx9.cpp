@@ -2179,13 +2179,22 @@ presant:
 
 	{
 		CAutoLock lck(&m_subtitle_lock);
-		if (m_subtitle_mem)
+		if (m_subtitle_mem && m_subtitle)
 		{
 			int l2 = timeGetTime();
 			RECT dirty = {0,0,min(m_subtitle_pixel_width, m_subtitle_mem->locked_rect.Pitch/4), min(m_subtitle_pixel_height, min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE))};
 			m_subtitle_mem->Unlock();
 			int l3 = timeGetTime();
-			m_pool->UpdateTexture(m_subtitle_mem, m_subtitle, &dirty);
+ 			//m_pool->UpdateTexture(m_subtitle_mem, m_subtitle, &dirty);
+			CComPtr<IDirect3DSurface9> mem_surf;
+			CComPtr<IDirect3DSurface9> def_surf;
+			m_subtitle_mem->get_first_level(&mem_surf);
+			m_subtitle->get_first_level(&def_surf);
+
+			POINT p = {0,0};
+			m_Device->UpdateSurface(mem_surf, &dirty, def_surf, &p);
+
+
 			int l4 = timeGetTime();
 			safe_delete(m_subtitle_mem);
 
@@ -2196,7 +2205,10 @@ presant:
 
 
 	CAutoLock pool_lck(&m_pool_lock);
+	int AfterFrameRender_tick = timeGetTime();
 	m_pool->AfterFrameRender();
+	if (timeGetTime() - AfterFrameRender_tick > 0)
+		dwindow_log_line("AfterFrameRender() cost %dms", timeGetTime() - l);
 
 	return S_OK;
 }
