@@ -2203,13 +2203,6 @@ presant:
 		}
 	}
 
-
-	CAutoLock pool_lck(&m_pool_lock);
-	int AfterFrameRender_tick = timeGetTime();
-// 	m_pool->AfterFrameRender();
-	if (timeGetTime() - AfterFrameRender_tick > 0)
-		dwindow_log_line("AfterFrameRender() cost %dms", timeGetTime() - l);
-
 	return S_OK;
 }
 

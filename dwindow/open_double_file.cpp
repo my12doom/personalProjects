@@ -29,8 +29,12 @@ INT_PTR CALLBACK double_file_dialog_proc( HWND hDlg, UINT msg, WPARAM wParam, LP
 			{
 				wchar_t file[MAX_PATH] = L"";
 				if (open_file_dlg(file, hDlg, 
+					L"All Supported files\0"
+					L"*.mp4;*.mkv;*.mkv3d;*.mkv2d;*.mk3d;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso;*.3dp;*.mpo;*.jps;*.pns;*.jpg;*.png;*.gif;*.psd;*.bmp\0"
 					L"Video files\0"
-					L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d\0"
+					L"*.mp4;*.mkv;*.mkv3d;*.mkv2d;*.mk3d;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso\0"
+					L"Picture files\0"
+					L"*.3dp;*.mpo;*.jps;*.pns;*.jpg;*.png;*.gif;*.psd;*.bmp\0"
 					L"All Files\0"
 					L"*.*\0"
 					L"\0\0"))
