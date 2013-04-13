@@ -81,8 +81,8 @@ int x264_init()
 
 	// init encoder
 	x264_param_t param;
-	x264_param_default_preset(&param, "medium", "zerolatency");
-	x264_param_apply_profile(&param, "high");
+	x264_param_default_preset(&param, "veryfast", "zerolatency");
+	x264_param_apply_profile(&param, "baseline");
 	//param.i_threads = 1;
 	param.i_frame_reference = 1;
 	param.i_width = width;
@@ -125,7 +125,10 @@ int x264_capture(int sock/* = -1*/)
 	int nnal;
 	int frame_size = 0;
 	bool isIDR = false;
-	camera_capture();
+
+	static int n = 0;
+	if (n++ % 5  == 0)
+		camera_capture();
 	pic_in.i_pts = i_pts++;
 	x264_encoder_encode(encoder, &nals, &nnal, &pic_in, &pic_out);
 	x264_nal_t *nal;

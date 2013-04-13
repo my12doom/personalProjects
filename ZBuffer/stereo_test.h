@@ -113,7 +113,7 @@ HRESULT get_layout(void *src, int width, int height, int *out, int stride = -1)
 	double cal2 = max(d_avg2 * d_var2, d_avg2 + d_var2);
 
 	double times = 0;
-	if ( (cal1 > 0.01 && cal2 > 0.01) || (cal1>cal2*10000) || (cal2>cal1*10000))
+	if ( (cal1 > 0.01 && cal2 > 0.01) || (((cal1>cal2*10000) || (cal2>cal1*10000)) && cal1 > 0.0001 && cal2 > 0.0001) )
 		times = cal1 > cal2 ? cal1 / cal2 : cal2 / cal1;
 
  	printf("sbs:%f - %f - %f, lum=%f\r\n", d_avg1, d_var1, cal1, d_lum1);
