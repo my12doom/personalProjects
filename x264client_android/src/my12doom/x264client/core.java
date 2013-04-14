@@ -9,7 +9,7 @@ public class core {
 	
 	public native int init(Surface surface);
 	public native int uninit();
-	public native int startTest();
+	public native int startTest(String host, int port);
 	public native int stopTest();
 	
 	public core(){

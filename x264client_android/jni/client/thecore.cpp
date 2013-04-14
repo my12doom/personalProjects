@@ -97,16 +97,16 @@ JNIEXPORT jint NAME(init)( JNIEnv * env, jobject obj,jobject surface)
 }
 
 myclient c;
-JNIEXPORT jint NAME(startTest)( JNIEnv * env, jobject obj)
+JNIEXPORT jint NAME(startTest)( JNIEnv * env, jobject obj, jstring host, jint port)
 {
-	LOGE("connectting to 192.168.1.199 : 8080 .... ");
-	if (c.connect("192.168.1.199", 8080) < 0)
+	LOGE("connectting to %s : %d .... ", host, port);
+	if (c.connect("192.168.11.199", 9087) < 0)
 	{
-		LOGE("failed connectting to server");
+		LOGE("failed connectting to %s : %d", host, port);
 		return -1;
 	}
 
-	LOGE("connectting to 192.168.1.199 : 8080 .... OK");
+	LOGE("connectting to %s : %d .... OK", host, port);
 
 	c.start_decoding();
 
@@ -116,13 +116,13 @@ JNIEXPORT jint NAME(startTest)( JNIEnv * env, jobject obj)
 JNIEXPORT jint NAME(stopTest)( JNIEnv * env, jobject obj)
 {
 	c.stop_decoding();
+	c.disconnect();
 
 	return 0;
 }
 
 JNIEXPORT jint NAME(uninit)( JNIEnv * env, jobject obj)
 {
-	c.disconnect();
 
 	return 0;
 }

@@ -39,7 +39,7 @@ public class X264clientActivity extends Activity {
 
 						if (mCore.init(s) >=0)
 						{
-							mCore.startTest();
+							mCore.startTest("192.168.11.199", 9087);
 							return;
 						}
 
