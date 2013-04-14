@@ -152,7 +152,7 @@ int my_handle_req(char* data, int size, DWORD ip, int client_sock, char*line, in
 				wprintf(L"%s\n", line_w);
 				out[0] = NULL;
 				HRESULT hr = command_reciever ? command_reciever->execute_command_line(line_w, out) : E_FAIL;
-				if (hr == S_JPG)
+				if (hr == S_RAWDATA)
 				{
 					int s = send(client_sock, ((char*)out), *((int*)out)+4, 0);
 					if (s<0)

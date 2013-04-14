@@ -4,7 +4,7 @@
 
 int wcsexplode(const wchar_t *string_to_explode, const wchar_t *delimeter, wchar_t **out, int max_part /* = 0xfffffff */);
 
-static const int S_JPG = 2;
+static const int S_RAWDATA = 2;
 
 class ICommandReciever
 {

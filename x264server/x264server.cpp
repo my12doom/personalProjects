@@ -17,7 +17,13 @@ extern "C"
 #include <Windows.h>
 
 #pragma  comment(lib, "ws2_32.lib")
-#pragma comment(lib, "libx264.dll.a")
+#pragma comment(lib, "libx264.a")
+#pragma comment(lib, "libgcc.a")
+#pragma comment(lib, "libmingwex.a")
+
+int dwindow_init();
+int dwindow_capture();
+int dwindow_close();
 
 int camera_init();
 int camera_capture();
@@ -26,6 +32,10 @@ int camera_close();
 int x264_init();
 int x264_capture(int sock = -1);
 int x264_close();
+
+#define DEVICE_INIT dwindow_init
+#define DEVICE_CAPTURE dwindow_capture
+#define DEVICE_CLOSE dwindow_close
 
 int TCPTest();
 
@@ -38,7 +48,7 @@ int TCPTest();
 #define UM_ICONNOTIFY (WM_USER+2)
 int server_socket = -1;
 bool server_stopping = false;
-int server_port = 8080;
+int server_port = 9087;
 void convertBGR2YUV420(IplImage *in, unsigned char* out_y, unsigned char* out_u, unsigned char* out_v);
 
 // camera variables
@@ -57,7 +67,7 @@ int64_t i_pts = 0;
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	camera_init();
+	DEVICE_INIT();
 
 	// encoding
 	TCPTest();
@@ -69,7 +79,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	x264_close();
-	camera_close();
+	DEVICE_CLOSE();
 
 	return 0;
 }
@@ -126,9 +136,7 @@ int x264_capture(int sock/* = -1*/)
 	int frame_size = 0;
 	bool isIDR = false;
 
-	static int n = 0;
-	if (n++ % 5  == 0)
-		camera_capture();
+	DEVICE_CAPTURE();
 	pic_in.i_pts = i_pts++;
 	x264_encoder_encode(encoder, &nals, &nnal, &pic_in, &pic_out);
 	x264_nal_t *nal;
@@ -220,6 +228,8 @@ HRESULT init_winsock()
 
 DWORD WINAPI handler_thread(LPVOID param)
 {
+	DEVICE_CLOSE();
+	DEVICE_INIT();
 	int acc_socket = *(int*)param;
 	DWORD ip = ((DWORD*)param)[1];
 
@@ -346,4 +356,74 @@ void convertBGR2YUV420(IplImage *in, unsigned char* out_y, unsigned char* out_u,
 			}  
 		}    
 	}
+}
+
+int sockfd;
+int dwindow_init()
+{
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(1, 1), &wsaData) != 0) 
+	{
+		fprintf(stderr, "WSAStartup failed.\n");
+		exit(1);
+	}
+
+	struct hostent *host;
+	if((host=gethostbyname("127.0.0.1"))==NULL)                              //取得主机IP地址               
+	{               
+		fprintf(stderr,"Gethostname error, %s\n", strerror(errno));             
+		exit(1);                
+	}       
+	sockfd=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
+	if(sockfd==-1)                                                         //建立SOCKET连接             
+	{               
+		fprintf(stderr,"Socket Error:%s\a\n",strerror(errno));          
+		exit(1);                
+	}       
+	// 客户程序填充服务端的资料         
+	struct sockaddr_in server_addr = {0};   
+	server_addr.sin_family=AF_INET; 
+	server_addr.sin_port=htons(0xb03d); 
+	server_addr.sin_addr=*((struct in_addr *)host->h_addr);         
+
+	// 客户程序发起连接请求   
+	if(connect(sockfd,(struct sockaddr *)(&server_addr),sizeof(struct sockaddr))==-1)//连接网站         
+	{               
+		fprintf(stderr,"Connect Error:%s\a\n",strerror(errno));         
+		exit(1);
+	}
+
+	char test[4096] = {0};
+	recv(sockfd, test, 4096, 0);
+	recv(sockfd, test+strlen(test), 4096, 0);
+	printf(test);
+
+	const char *p = "auth|TestCode\r\n";
+	send(sockfd, p, strlen(p), 0);
+	memset(test, 0, 4096);
+	int o = recv(sockfd, test, 4096, 0);
+	recv(sockfd, test+strlen(test), 4096, 0);
+	printf(test);
+	return 0;
+}
+
+int dwindow_capture()
+{
+	const char *p = "rawshot\r\n";
+	send(sockfd, p, strlen(p), 0);
+
+	int o = recv(sockfd, (char*)yuv_buffer, 4, 0);
+	assert(*(int*)yuv_buffer == 640*480*3/2);
+
+	int left = *(int*)yuv_buffer;
+	while(left>0)
+		left -= recv(sockfd, (char*)yuv_buffer+640*480*3/2-left, min(left, 4096), 0);
+
+	return 0;
+}
+
+int dwindow_close()
+{
+	closesocket(sockfd);
+	return 0;
 }

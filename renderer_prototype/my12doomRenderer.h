@@ -218,6 +218,7 @@ public:
 	HRESULT reset();
 	int hittest(int x, int y, double*outv){CAutoLock lck(&m_uidrawer_cs);int o = -1; if(m_uidrawer) m_uidrawer->hittest(x, y, &o, outv); return o;}
 	HRESULT screenshot(const wchar_t*file);	// movie only
+	HRESULT screenshot(void *Y, void*U, void*V, int stride, int width, int height);	// movie only
 	HRESULT get_movie_desc(int *width, int*height);
 
 

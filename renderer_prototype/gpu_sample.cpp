@@ -268,6 +268,27 @@ HRESULT gpu_sample::convert_to_RGB32_CPU(const wchar_t *out)
 	return S_OK;
 }
 
+HRESULT gpu_sample::convert_to_RGB32_CPU(void *Y, void*U, void*V, int stride, int width, int height)
+{
+	if (!Y || !U ||!V)
+		return E_POINTER;
+
+	if (stride<width || width%2 !=0 || height%2!=0 || width<=0 || height <=0)
+		return E_INVALIDARG;
+
+	if (m_format == MEDIASUBTYPE_YV12)
+	{
+		resize<BYTE>((BYTE*)m_tex_Y->locked_rect.pBits, (BYTE*)Y, m_width, m_height, width, height, m_tex_Y->locked_rect.Pitch, stride);
+		resize<BYTE>(((BYTE*)m_tex_YV12_UV->locked_rect.pBits) + m_tex_YV12_UV->locked_rect.Pitch * m_height/2, (BYTE*)U, m_width/2, m_height/2, width/2, height/2, m_tex_YV12_UV->locked_rect.Pitch, stride/2);
+		resize<BYTE>(((BYTE*)m_tex_YV12_UV->locked_rect.pBits), (BYTE*)V, m_width/2, m_height/2, width/2, height/2, m_tex_YV12_UV->locked_rect.Pitch, stride/2);
+	}
+	else if (m_format == MEDIASUBTYPE_RGB32)
+	{
+	}
+
+	return S_OK;
+}
+
 HRESULT gpu_sample::do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShader9 *shader_sbs, IDirect3DPixelShader9 *shader_tb, IDirect3DVertexBuffer9 *vb)
 {
 	if (m_cpu_stereo_tested)

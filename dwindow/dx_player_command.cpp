@@ -165,7 +165,23 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		char tmp[200];
 		sprintf(tmp, "shot take %dms\n", GetTickCount()-l);
 		OutputDebugStringA(tmp);
-		return S_JPG;
+		return S_RAWDATA;
+	}
+
+	CASE(L"rawshot")
+	{
+		myInt width(args[0], 640);
+		myInt height(args[1], 480);
+		
+		*((int*)out) = width*height*3/2;
+		char *Y = ((char*)out)+4;
+		char *V = Y+width*height;
+		char *U = V+width/2*height/2;
+		HRESULT hr = m_renderer1->screenshot(Y, U, V, width, width, height);
+		if (FAILED(hr))
+			return hr;
+
+		return S_RAWDATA;
 	}
 
 	CASE(L"set_mask_parameter")

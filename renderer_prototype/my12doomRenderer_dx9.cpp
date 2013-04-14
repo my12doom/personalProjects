@@ -3170,6 +3170,15 @@ HRESULT my12doomRenderer::screenshot(const wchar_t*file)
 	return m_last_rendered_sample1->convert_to_RGB32_CPU(file);
 }
 
+HRESULT my12doomRenderer::screenshot(void *Y, void*U, void*V, int stride, int width, int height)
+{
+	CAutoLock rendered_lock(&m_rendered_packet_lock);
+	if (!m_last_rendered_sample1)
+		return E_FAIL;
+
+	return m_last_rendered_sample1->convert_to_RGB32_CPU(Y, U, V, stride, width, height);
+}
+
 HRESULT my12doomRenderer::get_movie_desc(int *width, int*height)
 {
 	if (width)
