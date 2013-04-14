@@ -57,8 +57,8 @@ IplImage *yuvFrame = NULL;
 
 // x264 variables
 uint8_t *yuv_buffer = NULL;
-int width = 640;
-int height = 480;
+int width = 960;
+int height = 540;
 size_t yuv_size = width * height * 3 / 2;
 x264_t *encoder = NULL;
 x264_picture_t pic_in, pic_out;
@@ -106,7 +106,7 @@ int x264_init()
 	param.b_cabac = 1;
 	param.b_annexb = 1;
 	param.rc.i_rc_method = X264_RC_ABR;
-	param.rc.i_bitrate = 1500;
+	param.rc.i_bitrate = 2500;
 
 
 	encoder = x264_encoder_open(&param);
@@ -409,15 +409,16 @@ int dwindow_init()
 
 int dwindow_capture()
 {
-	const char *p = "rawshot\r\n";
+	char p[100];
+	sprintf(p, "rawshot|%d|%d\r\n", width, height);
 	send(sockfd, p, strlen(p), 0);
 
 	int o = recv(sockfd, (char*)yuv_buffer, 4, 0);
-	assert(*(int*)yuv_buffer == 640*480*3/2);
+	assert(*(int*)yuv_buffer == width*height*3/2);
 
 	int left = *(int*)yuv_buffer;
 	while(left>0)
-		left -= recv(sockfd, (char*)yuv_buffer+640*480*3/2-left, min(left, 4096), 0);
+		left -= recv(sockfd, (char*)yuv_buffer+width*height*3/2-left, min(left, 4096), 0);
 
 	return 0;
 }
