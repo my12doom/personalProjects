@@ -125,7 +125,6 @@ protected:
 };
 
 // the code
-bool auth = false;
 extern ICommandReciever *command_reciever;
 HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wchar_t **args, int args_count)
 {
@@ -135,9 +134,6 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 	#define DEFAULT else
 
 	HRESULT hr = S_OK;
-
-	if (!auth && wcscmp_nocase(command, L"auth")!=0)
-		return E_FAIL;
 
 	SWTICH(command)
 
@@ -178,8 +174,6 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		char *V = Y+width*height;
 		char *U = V+width/2*height/2;
 		HRESULT hr = m_renderer1->screenshot(Y, U, V, width, width, height);
-		if (FAILED(hr))
-			return hr;
 
 		return S_RAWDATA;
 	}
@@ -195,12 +189,6 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		hr = S_OK;
 	}
 
-	CASE(L"auth")
-	{
-		AutoSettingString password(L"DWindowNetworkPassword", L"TestCode");
-		auth = wcscmp(args[0], password) == 0;
-		wcscpy2(out, myBool(auth));
-	}
 	CASE(L"reset")
 		hr = reset();
 

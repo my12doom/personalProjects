@@ -17,6 +17,9 @@
 		/>
 	</Platforms>
 	<ToolFiles>
+		<DefaultToolFile
+			FileName="masm.rules"
+		/>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
@@ -34,6 +37,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="MASM"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -45,7 +51,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
+				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE;DEBUG;LUA_COMPAT_MODULE;LUA_COMPAT_LOADSTRING"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -114,6 +120,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -198,6 +207,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="MASM"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -274,6 +286,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -353,6 +368,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -437,6 +455,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -524,6 +545,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="MASM"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -607,6 +631,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -694,6 +721,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="MASM"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -709,7 +739,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;"
+				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
@@ -777,6 +807,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -864,6 +897,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="MASM"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -945,6 +981,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -1031,6 +1070,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="MASM"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -1114,6 +1156,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -2197,6 +2242,126 @@
 			</File>
 			<File
 				RelativePath="..\lua\strbuf.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="libyuv"
+			>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\compare.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\compare_common.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\compare_neon.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\compare_posix.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\compare_win.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\convert.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\convert_argb.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\convert_from.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\convert_from_argb.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\cpu_id.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\format_conversion.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\mjpeg_decoder.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\planar_functions.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\rotate.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\rotate_argb.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\rotate_mips.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\rotate_neon.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\row_any.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\row_common.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\row_mips.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\row_neon.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\row_posix.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\row_win.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\scale.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\scale_argb.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\scale_argb_neon.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\scale_mips.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\scale_neon.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\libyuv\source\video_common.cc"
 				>
 			</File>
 		</Filter>

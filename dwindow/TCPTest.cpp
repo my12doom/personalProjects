@@ -89,95 +89,103 @@ DWORD WINAPI TCP_server_thread(LPVOID param)
 	return 0;
 }
 
-extern bool auth/* = false*/;
+extern int wcscmp_nocase(const wchar_t*in1, const wchar_t *in2);
 
 DWORD WINAPI handler_thread(LPVOID param)
 {
-	int acc_socket = *(int*)param;
+	int client_sock = *(int*)param;
 	DWORD ip = ((DWORD*)param)[1];
-
+	bool auth = false;
 	delete param;
 
 	int numbytes;
 	char buf[1024];
 	memset(buf, 0, sizeof(buf));
 	const char *welcome_string = "DWindow Network v0.0.1";
-	send(acc_socket, welcome_string, strlen(welcome_string), 0);
-	send(acc_socket, "\n", 1, 0);
+	send(client_sock, welcome_string, strlen(welcome_string), 0);
+	send(client_sock, "\n", 1, 0);
 	char line[1024];
 	int p = 0;
-	while ((numbytes=recv(acc_socket, buf, sizeof(buf)-1, 0)) > 0) 
+	wchar_t *out = new wchar_t[1024000];
+	wchar_t *out2 = new wchar_t[1024000];
+	char *outA = new char[1024000];
+	AutoSettingString password(L"DWindowNetworkPassword", L"TestCode");
+	while ((numbytes=recv(client_sock, buf, sizeof(buf)-1, 0)) > 0) 
 	{
-		my_handle_req(buf, numbytes, ip, acc_socket, line, p);
-	}
-
-	shutdown(acc_socket, SD_SEND);
-	int timeout = GetTickCount();
-	while (recv(acc_socket, buf, 99, 0) > 0 && GetTickCount() - timeout < NETWORK_TIMEOUT)
-	{
-		printf("got %d byte:%s\n", numbytes, buf);
-		memset(buf, 0, sizeof(buf));
-	}
-	closesocket(acc_socket);
-
-	auth = false;
-
-	return 0;
-}
-
-wchar_t *out = new wchar_t[1024000];
-wchar_t *out2 = new wchar_t[1024000];
-char *outA = new char[1024000];
-int my_handle_req(char* data, int size, DWORD ip, int client_sock, char*line, int &p) 
-{
-	int code_page = CP_ACP;
-	wchar_t line_w[1024];
-	for (int i=0; i<size; i++)
-	{
-		if (data[i] == '\b')			// backspace or left arrow
-			p = max(p-1,0);
-
-// 		elseif (data[i] == 27)			// left arrow : \27\91\68
-// 			p = max(p-1,0);
-
-		else if (data[i] != 0xA && data[i] != 0xD && p<1024)
-			line[p++] = data[i];
-		else
+		int code_page = CP_ACP;
+		wchar_t line_w[1024];
+		for (int i=0; i<numbytes; i++)
 		{
-			if(data[i] == 0xD)
-			{
-				line[p] = NULL;
-				MultiByteToWideChar(CP_UTF8, 0, line, 1024, line_w, 1024);
+			if (buf[i] == '\b')			// backspace or left arrow
+				p = max(p-1,0);
 
-				wprintf(L"%s\n", line_w);
-				out[0] = NULL;
-				HRESULT hr = command_reciever ? command_reciever->execute_command_line(line_w, out) : E_FAIL;
-				if (hr == S_RAWDATA)
-				{
-					int s = send(client_sock, ((char*)out), *((int*)out)+4, 0);
-					if (s<0)
-					{
-						int e =  WSAGetLastError();
-						break;
-					}
-				}
+	// 		elseif (data[i] == 27)			// left arrow : \27\91\68
+	// 			p = max(p-1,0);
 
-				else
-				{
-					wprintf(L"%08x,%s\n", hr, out);
-					swprintf(out2, L"%08x,", hr);
-					wcscat(out2, out);
-					int o = WideCharToMultiByte(CP_UTF8, 0, out2, -1, outA, 1024000, NULL, NULL);
-					send(client_sock, outA, strlen(outA), 0);
-					send(client_sock, "\n", 1, 0);
-				}
-
-
-			}
+			else if (buf[i] != 0xA && buf[i] != 0xD && p<1024)
+				line[p++] = buf[i];
 			else
-				p = 0;
+			{
+				if(buf[i] == 0xD)
+				{
+					line[p] = NULL;
+					MultiByteToWideChar(CP_UTF8, 0, line, 1024, line_w, 1024);
+
+					wprintf(L"%s\n", line_w);
+					out[0] = NULL;
+					HRESULT hr;
+					if (auth)
+						hr = command_reciever ? command_reciever->execute_command_line(line_w, out) : E_FAIL;
+					else
+					{
+						wchar_t * splitted[5] = {0};
+						wcsexplode(line_w, L"|", splitted, 5);
+
+						if (splitted[0] && splitted[1] && wcscmp_nocase(splitted[0], L"auth") == 0)
+						{
+							auth = wcscmp(splitted[1], password) == 0;
+							wcscpy(out, auth ? L"True" : L"False");
+							hr = S_OK;
+						}
+
+						for(int i=0; i<5; i++)
+							if (splitted[i])
+								free(splitted[i]);
+					}
+
+					if (hr == S_RAWDATA)
+					{
+						int s = send(client_sock, ((char*)out), *((int*)out)+4, 0);
+						if (s<0)
+						{
+							int e =  WSAGetLastError();
+							break;
+						}
+					}
+
+					else
+					{
+						wprintf(L"%08x,%s\n", hr, out);
+						swprintf(out2, L"%08x,", hr);
+						wcscat(out2, out);
+						int o = WideCharToMultiByte(CP_UTF8, 0, out2, -1, outA, 1024000, NULL, NULL);
+						send(client_sock, outA, strlen(outA), 0);
+						send(client_sock, "\r\n", 2, 0);
+					}
+
+
+				}
+				else
+					p = 0;
+			}
 		}
 	}
+
+	delete out;
+	delete out2;
+	delete outA;
+
+	closesocket(client_sock);
 
 	return 0;
 }
