@@ -51,7 +51,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include"
+				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include;x264"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE;DEBUG;LUA_COMPAT_MODULE;LUA_COMPAT_LOADSTRING"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -76,7 +76,7 @@
 				AdditionalDependencies="nvapi.lib strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib d3dx9.lib winmm.lib dxguid.lib ddraw.lib Mf.lib Mfplat.lib evr.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode;C:\DS_SDK_LITE\BaseClasses\Debug_Unicode;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\MTDebug&quot;;..\libass\lib;&quot;D:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x86&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;"
+				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode;C:\DS_SDK_LITE\BaseClasses\Debug_Unicode;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\MTDebug&quot;;..\libass\lib;&quot;D:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x86&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;x264"
 				IgnoreDefaultLibraryNames="LIBCMTD"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/dwindow.pdb"
@@ -739,7 +739,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include"
+				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include;x264"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
@@ -763,7 +763,7 @@
 				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;"
+				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;x264"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -2362,6 +2362,18 @@
 			</File>
 			<File
 				RelativePath="..\renderer_prototype\libyuv\source\video_common.cc"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="x264"
+			>
+			<File
+				RelativePath=".\myx264.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\myx264.h"
 				>
 			</File>
 		</Filter>

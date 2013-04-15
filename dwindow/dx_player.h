@@ -8,6 +8,7 @@
 #include "streams.h"
 #include "..\renderer_prototype\my12doomRenderer.h"
 #include "dwindow.h"
+#include "myx264.h"
 
 // other
 #include "Iplayer.h"
@@ -205,6 +206,8 @@ protected:
 	AutoSetting<int> m_movie_resizing;/*(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD)*/;
 	AutoSetting<int> m_subtitle_resizing;/*(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD)*/;
 	AutoSetting<D3DDISPLAYMODE> m_hd3d_prefered_mode;
+	std::list<x264*> m_x264_encoder;
+	CCritSec m_x264_encoder_lock;
 
 	// helper function and vars
 	bool m_select_font_active;

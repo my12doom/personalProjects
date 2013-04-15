@@ -441,6 +441,79 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		return S_OK;
 	}
 
+	CASE(L"x264_init")
+	{
+		CAutoLock lck(&m_x264_encoder_lock);
+
+		myInt width(args[0], 960);
+		myInt height(args[1], 540);
+		myInt bitrate(args[2], 1500);
+
+		x264 *new_encoder = new x264();
+		hr = new_encoder->init(width, height, bitrate);
+
+		if (FAILED(hr))
+		{
+			delete new_encoder;
+			return hr;
+		}
+
+
+		//	swprintf(out, L"%08x", new_encoder);
+		wcscpy2(out, myInt((int)new_encoder));
+		m_x264_encoder.push_back(new_encoder);
+	}
+
+	CASE(L"x264_shot")
+	{
+		myInt p(args[0]);
+		{
+			CAutoLock lck(&m_x264_encoder_lock);
+			for(std::list<x264*>::iterator v= m_x264_encoder.begin(); v!=m_x264_encoder.end();++v)
+			{
+				if ((int)(*v) == p)
+					goto shot;
+			}
+		}
+
+		return E_INVALIDARG;
+
+shot:
+		x264 *x = ((x264*)(int)p);
+		char *Y = (char*)malloc(x->width * x->height * 3 / 2);
+		char *V = Y + x->width * x->height;
+		char *U = V + x->width * x->height / 4;
+
+		m_renderer1->screenshot(Y, U, V, x->width, x->width, x->height);
+		*(int*)out = x->encode_a_frame(Y, out+2, NULL);
+		free(Y);
+		
+		return S_RAWDATA;
+	}
+
+	CASE(L"x264_destroy")
+	{
+		myInt p(args[0]);
+		{
+			CAutoLock lck(&m_x264_encoder_lock);
+			for(std::list<x264*>::iterator v= m_x264_encoder.begin(); v!=m_x264_encoder.end();++v)
+			{
+				if ((int)(*v) == p)
+				{
+					x264 *x = ((x264*)(int)p);
+
+					m_x264_encoder.erase(v);
+
+					delete x;
+
+					return S_OK;
+				}
+			}
+		}
+
+		return E_INVALIDARG;
+	}
+
 	CASE(L"list_file")
 	{
 		wchar_t *tmp = new wchar_t[102400];

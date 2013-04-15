@@ -138,6 +138,7 @@ DWORD WINAPI handler_thread(LPVOID param)
 						hr = command_reciever ? command_reciever->execute_command_line(line_w, out) : E_FAIL;
 					else
 					{
+						hr = E_FAIL;
 						wchar_t * splitted[5] = {0};
 						wcsexplode(line_w, L"|", splitted, 5);
 
