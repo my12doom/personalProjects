@@ -29,10 +29,10 @@ protected:
 	int get_a_frame(void *buf);
 
 	int sockfd;
+	int m_x264_handle;
 	bool m_stop_decoding;
 	pthread_t m_decoding_thread;
 	pthread_t m_network_thread;
-
 	pthread_mutex_t m_queue_mutex;
 
 	static const int INBUF_SIZE = 409600;

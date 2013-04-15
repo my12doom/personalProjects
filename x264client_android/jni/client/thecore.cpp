@@ -101,7 +101,7 @@ JNIEXPORT jint NAME(startTest)( JNIEnv * env, jobject obj, jstring jhost, jint p
 {
 	const char *host = env->GetStringUTFChars(jhost, 0);
 	LOGE("connectting to %s : %d .... ", (char*)host, port);
-	if (c.connect((char*)host, 9087) < 0)
+	if (c.connect((char*)host, port) < 0)
 	{
 		LOGE("failed connectting to %s : %d", (char*)host, port);
 		return -1;
@@ -258,7 +258,7 @@ void myclient::show_picture(AVFrame *frame)
 
 	LOGI("surface locking done, start drawing");
 	
-	unsigned char * tmp = (unsigned char*)malloc(640*480*4);
+	unsigned char * tmp = (unsigned char*)malloc(1920*1080*4);
 
 	I420_to_RGB565_core(frame->data[0], frame->linesize[0],
 						frame->data[2], frame->linesize[2],

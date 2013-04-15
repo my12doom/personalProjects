@@ -48,6 +48,7 @@ int client::stop_decoding()
 
 int client::connect(const char *host_address, int port)
 {
+	LOGE("connect(%s, %d)", host_address, port);
 	struct hostent *host;
 	if((host=gethostbyname(host_address))==NULL)
 	{
@@ -70,19 +71,59 @@ int client::connect(const char *host_address, int port)
 		LOGE("Connect Error:%s\a\n",strerror(errno));
 		return -3;
 	}
+
+	LOGI("recv");
+	char test[4096] = {0};
+	recv(sockfd, test, 4096, 0);
+	if(strstr(test,"\n") == NULL)
+		recv(sockfd, test+strlen(test), 4096, 0);
+	LOGI(test);
+
+	const char *p = "auth|TestCode\r\n";
+	send(sockfd, p, strlen(p), 0);
+	memset(test, 0, 4096);
+	int o = recv(sockfd, test, 4096, 0);
+	if(strstr(test,"\n") == NULL)
+		recv(sockfd, test+strlen(test), 4096, 0);
+	LOGI(test);
+
+	p = "x264_init\r\n";
+	send(sockfd, p, strlen(p), 0);
+	memset(test, 0, 4096);
+	o = recv(sockfd, test, 4096, 0);
+	if(strstr(test,"\n") == NULL)
+		recv(sockfd, test+strlen(test), 4096, 0);
+	m_x264_handle = atoi(strstr(test, ",")+1);
+	LOGI("%s, x264_handle = %d", test, m_x264_handle);
 }
 
 int client::disconnect()
 {
+	char p[1024];
+	char test[4096];
+	sprintf(p, "x264_destroy|%d\r\n", m_x264_handle);
+	send(sockfd, p, strlen(p), 0);
+	memset(test, 0, 4096);
+	int o = recv(sockfd, test, 4096, 0);
+	if(strstr(test,"\n") == NULL)
+		recv(sockfd, test+strlen(test), 4096, 0);
+
+	LOGI(test);
+
     close(sockfd);
 }
 
 int client::get_h264_frame(void *buf)
 {
-	send(sockfd, "H", 1, 0);
+	char p[1024];
+	sprintf(p, "x264_shot|%d\r\n", m_x264_handle);
+	send(sockfd, p, strlen(p), 0);
 
 	int frame_size = 0;
 	if (recv(sockfd, (char*)&frame_size, 4, NULL) != 4)
+		return -1;
+
+	if (frame_size> 1024*1024)
 		return -1;
 
 	char *dst = (char*)buf;
@@ -130,6 +171,7 @@ retry:
 
 void client::network_thread()
 {
+	return;
     for(;!m_stop_decoding;)
     {
         packet p;
@@ -205,7 +247,7 @@ void client::decoding_thread()
 	int frame_read = 0;
     for(;!m_stop_decoding;) {
 		LOGI("loop");
-        avpkt.size = get_a_frame(inbuf);
+        avpkt.size = get_h264_frame(inbuf);
         if (avpkt.size < 0)
             break;
 		frame_read ++;
