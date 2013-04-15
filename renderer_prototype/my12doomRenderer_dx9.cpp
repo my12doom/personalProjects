@@ -1957,35 +1957,39 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 				m_pageflip_frames += frame_passed;
 			}
 
-			if (frame_passed%2 == 0)
-				return S_FALSE;	// skip this frame
+			if (frame_passed%2 >= 0)
+			{
+	// 			if (frame_passed>1 || frame_passed <= 0)
+	// 			{
+	// 				if (m_nv3d_display && frame_passed > 2)
+	// 				{
+	// 					DWORD counter;
+	// 					NvAPI_GetVBlankCounter(m_nv3d_display, &counter);
+	// 					m_pageflip_frames = counter - m_nv_pageflip_counter;
+	// 				}
+	// 				mylog("delta=%d.\n", (int)delta);
+	// 			}
 
-// 			if (frame_passed>1 || frame_passed <= 0)
-// 			{
-// 				if (m_nv3d_display && frame_passed > 2)
-// 				{
-// 					DWORD counter;
-// 					NvAPI_GetVBlankCounter(m_nv3d_display, &counter);
-// 					m_pageflip_frames = counter - m_nv_pageflip_counter;
-// 				}
-// 				mylog("delta=%d.\n", (int)delta);
-// 			}
+				int swap_offset = m_swapeyes ? 1 : 0;
+				int view = (m_pageflip_frames+swap_offset)%2;
 
-			int swap_offset = m_swapeyes ? 1 : 0;
-			int view = (m_pageflip_frames+swap_offset)%2;
+				LARGE_INTEGER l1, l2, l3, l4, l5;
+				QueryPerformanceCounter(&l1);
+				clear(back_buffer);
+				QueryPerformanceCounter(&l2);
+				draw_movie(back_buffer, view);
+				QueryPerformanceCounter(&l3);
+				draw_subtitle(back_buffer, view);
+				adjust_temp_color(back_buffer, view);
+				QueryPerformanceCounter(&l4);
+				draw_ui(back_buffer, view);
+				QueryPerformanceCounter(&l5);
+			}
 
-			LARGE_INTEGER l1, l2, l3, l4, l5;
-			QueryPerformanceCounter(&l1);
-			clear(back_buffer);
-			QueryPerformanceCounter(&l2);
-			draw_movie(back_buffer, view);
-			QueryPerformanceCounter(&l3);
-			draw_subtitle(back_buffer, view);
-			adjust_temp_color(back_buffer, view);
-			QueryPerformanceCounter(&l4);
-			draw_ui(back_buffer, view);
-			QueryPerformanceCounter(&l5);
-
+			else
+			{
+				// skip this frame
+			}
 
 			//mylog("clear, draw_movie, draw_bmp, draw_ui = %d, %d, %d, %d.\n", (int)(l2.QuadPart-l1.QuadPart), 
 			//	(int)(l3.QuadPart-l2.QuadPart), (int)(l4.QuadPart-l3.QuadPart), (int)(l5.QuadPart-l4.QuadPart) );
