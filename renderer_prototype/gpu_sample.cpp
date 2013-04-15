@@ -5,6 +5,8 @@
 #include "my12doomRendererTypes.h"
 #include "..\dwindow\global_funcs.h"
 #include "YV12_to_RGB32.h"
+#include <libyuv.h>
+using namespace libyuv;
 
 #include "gpu_sample.h"
 #include "..\ZBuffer\stereo_test.h"
@@ -278,9 +280,19 @@ HRESULT gpu_sample::convert_to_RGB32_CPU(void *Y, void*U, void*V, int stride, in
 
 	if (m_format == MEDIASUBTYPE_YV12)
 	{
-		resize<BYTE>((BYTE*)m_tex_Y->locked_rect.pBits, (BYTE*)Y, m_width, m_height, width, height, m_tex_Y->locked_rect.Pitch, stride);
-		resize<BYTE>(((BYTE*)m_tex_YV12_UV->locked_rect.pBits) + m_tex_YV12_UV->locked_rect.Pitch * m_height/2, (BYTE*)U, m_width/2, m_height/2, width/2, height/2, m_tex_YV12_UV->locked_rect.Pitch, stride/2);
-		resize<BYTE>(((BYTE*)m_tex_YV12_UV->locked_rect.pBits), (BYTE*)V, m_width/2, m_height/2, width/2, height/2, m_tex_YV12_UV->locked_rect.Pitch, stride/2);
+// 		resize<BYTE>((BYTE*)m_tex_Y->locked_rect.pBits, (BYTE*)Y, m_width, m_height, width, height, m_tex_Y->locked_rect.Pitch, stride);
+// 		resize<BYTE>(((BYTE*)m_tex_YV12_UV->locked_rect.pBits) + m_tex_YV12_UV->locked_rect.Pitch * m_height/2, (BYTE*)U, m_width/2, m_height/2, width/2, height/2, m_tex_YV12_UV->locked_rect.Pitch, stride/2);
+// 		resize<BYTE>(((BYTE*)m_tex_YV12_UV->locked_rect.pBits), (BYTE*)V, m_width/2, m_height/2, width/2, height/2, m_tex_YV12_UV->locked_rect.Pitch, stride/2);
+
+		I420Scale((BYTE*)m_tex_Y->locked_rect.pBits, m_tex_Y->locked_rect.Pitch,
+			((BYTE*)m_tex_YV12_UV->locked_rect.pBits) + m_tex_YV12_UV->locked_rect.Pitch * m_height/2, m_tex_YV12_UV->locked_rect.Pitch,
+			((BYTE*)m_tex_YV12_UV->locked_rect.pBits), m_tex_YV12_UV->locked_rect.Pitch,
+			m_width, m_height,
+			
+			(BYTE*)Y, stride,
+			(BYTE*)U, stride/2,
+			(BYTE*)V, stride/2,
+			width, height, kFilterBilinear);
 	}
 	else if (m_format == MEDIASUBTYPE_RGB32)
 	{
