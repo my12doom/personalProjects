@@ -439,6 +439,10 @@ HRESULT get_mediainfo(const wchar_t *filename, media_info_entry **out, bool use_
 			MI.Option(_T("Language"));
 		}
 	}
+	else
+	{
+		MI.Option(_T("Language"));
+	}
 
 	MI.Open(filename);
 	MI.Option(_T("Complete"));
