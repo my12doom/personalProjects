@@ -304,13 +304,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	wprintf(L"\n\n\n");
 
 	qsort(entrys, count, sizeof(IMAGE_ENTRY), compare_entry);
-	qsort(entrys, count, sizeof(IMAGE_ENTRY), compare_entry2);
+// 	qsort(entrys, count, sizeof(IMAGE_ENTRY), compare_entry2);
 
 	for(int i=0; i<count; i++)
 	{
 		wchar_t tmp[MAX_PATH];
 		swprintf(tmp, L"Z:\\sorted\\%d.jpg", i);
-		wprintf(L"%s - %.2f,%.2f,%.2f,%.2f\n", entrys[i].filename, entrys[i].sig[0], entrys[i].sig[1], entrys[i].sig[2], entrys[i].sig[3]);
+		wprintf(L"%d - %s - %.2f,%.2f,%.2f,%.2f\n", i, entrys[i].filename, entrys[i].sig[0], entrys[i].sig[1], entrys[i].sig[2], entrys[i].sig[3]);
 		CopyFile(entrys[i].filename, tmp, FALSE);
 	}
 
