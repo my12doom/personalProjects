@@ -32,6 +32,8 @@ AutoSetting<BOOL> g_ExclusiveMode(L"ExclusiveMode", false, REG_DWORD);
 RECT rect_zero = {0,0,0,0};
 LOGFONTW empty_logfontw = {0};
 D3DDISPLAYMODE mode_auto = {0};
+proc_IMemInputPin_Receive g_old;
+int g_audio_latency = 0;
 
 #include "bomb_network.h"
 
@@ -127,10 +129,13 @@ m_subtitle_resizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD)
 m_server_port(L"DWindowNetworkPort", 8080, REG_DWORD),
 m_renderer_reset_done(0),
 m_hd3d_prefered_mode(L"HD3DPreferedMode", mode_auto),
+m_audio_latency(L"AudioLatency", 0, REG_DWORD),
 #ifdef VSTAR
 #endif
 m_simple_audio_switching(L"SimpleAudioSwitching", false)
 {
+	g_audio_latency = m_audio_latency;
+
 	// touch 
 	if (GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
 		m_has_multi_touch = true;
@@ -205,10 +210,10 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 
 	// telnet
 #if defined(DEBUG) || defined(ZHUZHU)
-#endif
 	command_reciever = this;
 	telnet_set_port(m_server_port);
 	telnet_start_server();
+#endif
 }
 
 typedef struct
@@ -2396,11 +2401,19 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		int t_latency = m_subtitle_latency;
 		double t_ratio = m_subtitle_ratio;
-		HRESULT hr = latency_modify_dialog(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), &t_latency, &t_ratio);
+		HRESULT hr = latency_modify_dialog(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), &t_latency, &t_ratio, false);
 		m_subtitle_latency = t_latency;
 		m_subtitle_ratio = t_ratio;
 
 		draw_subtitle();
+	}
+
+	else if (uid == ID_AUDIO_LATENCY)
+	{
+		int t_latency = m_audio_latency;
+		double t_ratio = 1;
+		HRESULT hr = latency_modify_dialog(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), &t_latency, &t_ratio, true);
+		m_audio_latency = g_audio_latency = t_latency;
 	}
 
 	else if (uid == ID_SUBTITLE_FONT)
@@ -2609,10 +2622,24 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 }
 
 // directshow part
+static HRESULT STDMETHODCALLTYPE new_lav_recieve( IMemInputPinC * This, IMediaSample *pSample)
+{
+	REFERENCE_TIME start, end;
+
+	pSample->GetTime(&start, &end);
+
+ 	start += (REFERENCE_TIME)g_audio_latency * 10000;
+ 	end += (REFERENCE_TIME)g_audio_latency * 10000;
+
+	pSample->SetTime(&start, &end);
+
+	return g_old(This, pSample);
+}
 
 HRESULT dx_player::init_direct_show()
 {
 	CAutoLock lock(&m_dshow_sec);
+	CComPtr<IPin> pin;
 	HRESULT hr = S_OK;
 	hr = exit_direct_show();
 
@@ -2625,6 +2652,16 @@ HRESULT dx_player::init_direct_show()
 	myCreateInstance(CLSID_FFDSHOWAUDIO, IID_IBaseFilter, (void**)&m_lav);
 	CDWindowAudioDownmix *mixer = new CDWindowAudioDownmix(L"Downmixer", NULL, &hr);
 	mixer->QueryInterface(IID_IBaseFilter, (void**)&m_downmixer);
+
+	// hook lav
+	// get old recieve first
+	GetUnconnectedPin(m_lav, PINDIR_INPUT, &pin);
+	proc_IMemInputPin_Receive old = NULL;
+	hr = hookIPin_Recieve(pin, NULL, &old);
+
+	// hook if possible
+	if (SUCCEEDED(hr) && old != NULL &&old != new_lav_recieve)
+		hr = hookIPin_Recieve(pin, new_lav_recieve, &g_old);
 
 	return S_OK;
 

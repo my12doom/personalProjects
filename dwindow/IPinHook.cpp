@@ -127,3 +127,33 @@ bool HookNewSegmentAndReceive(IPinC* pPinC, IMemInputPinC* pMemInputPinC)
 
 	return true;
 }
+
+
+HRESULT hookIPin_Recieve(IPin* pin, proc_IMemInputPin_Receive newRecieve, proc_IMemInputPin_Receive *oldRecieve)
+{
+	if (!pin)
+		return E_POINTER;
+
+	IMemInputPin *p = NULL;
+	pin->QueryInterface(IID_IMemInputPin, (void**)&p);
+	if (!p)
+		return E_NOINTERFACE;
+
+	IMemInputPinC *p2 = (IMemInputPinC*)p;
+	DWORD flOldProtect = 0;
+
+
+	BOOL res = VirtualProtect(p2->lpVtbl, sizeof(IMemInputPinCVtbl), PAGE_WRITECOPY, &flOldProtect);
+	if(oldRecieve != NULL) {
+		*oldRecieve = p2->lpVtbl->Receive;
+	}
+
+	if (newRecieve)
+		p2->lpVtbl->Receive = newRecieve; // Function sets global variable(s)
+
+	res = VirtualProtect(p2->lpVtbl, sizeof(IMemInputPinCVtbl), flOldProtect, &flOldProtect);
+
+	p->Release();
+
+	return S_OK;
+}

@@ -75,3 +75,8 @@ interface IMemInputPinC {
 extern bool HookNewSegmentAndReceive(IPinC* pPinC, IMemInputPinC* pMemInputPin);
 extern void UnhookNewSegmentAndReceive();
 extern REFERENCE_TIME g_tSegmentStart, g_tSampleStart, g_rtTimePerFrame;
+
+
+typedef HRESULT ( STDMETHODCALLTYPE *proc_IMemInputPin_Receive )( IMemInputPinC * This, IMediaSample *pSample);
+
+extern HRESULT hookIPin_Recieve(IPin* pin, proc_IMemInputPin_Receive newRecieve, proc_IMemInputPin_Receive *oldRecieve);

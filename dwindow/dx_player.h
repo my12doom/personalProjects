@@ -328,6 +328,7 @@ protected:
 	int m_internel_offset;
 	int m_last_bitmap_update;
 	bool m_subtitle_has_offset;
+	AutoSetting<int> m_audio_latency;
 	AutoSetting<int> m_subtitle_latency;
 	AutoSetting<double> m_subtitle_ratio;
 

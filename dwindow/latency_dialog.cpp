@@ -2,7 +2,9 @@
 #include "global_funcs.h"
 #include <wchar.h>
 #include <Commctrl.h>
+#include "resource.h"
 
+bool for_audio;
 int t_latency;
 double t_ratio;
 
@@ -64,6 +66,13 @@ INT_PTR CALLBACK latency_dialog_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 			// localization
 			localize_window(hDlg);
 
+			if(for_audio)
+			{
+				SetDlgItemTextW(hDlg, IDC_HINT, C(L"Audio track stretching is not yet available."));
+				EnableWindow(GetDlgItem(hDlg, IDC_EDIT3), FALSE);
+				EnableWindow(GetDlgItem(hDlg, IDC_SPIN2), FALSE);
+			}
+
 			// value
 			wchar_t tmp[200];
 			swprintf(tmp, L"%d", t_latency);
@@ -96,13 +105,14 @@ INT_PTR CALLBACK latency_dialog_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 	return TRUE; // Handled message
 }
 
-HRESULT latency_modify_dialog(HINSTANCE inst, HWND parent, int *latency, double *ratio)
+HRESULT latency_modify_dialog(HINSTANCE inst, HWND parent, int *latency, double *ratio, bool for_audio)
 {
 	if (!latency || !ratio)
 		return E_POINTER;
 
 	t_latency = *latency;
 	t_ratio = *ratio;
+	::for_audio = for_audio;
 	int o = DialogBox(inst, MAKEINTRESOURCE(IDD_LATENCY), parent, latency_dialog_proc);
 	if (o == 0)
 	{
