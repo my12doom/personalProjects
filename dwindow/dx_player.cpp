@@ -189,6 +189,7 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 	m_volume_visible_last_change_time = timeGetTime() - 5000;
 	reset_timer(2, 125);
 	reset_timer(3, 8);		// 8ms interval ,
+	reset_timer(4, 2000);	// x264 killer,
 
 	// init dshow
 	init_direct_show();
@@ -204,10 +205,10 @@ m_simple_audio_switching(L"SimpleAudioSwitching", false)
 
 	// telnet
 #if defined(DEBUG) || defined(ZHUZHU)
+#endif
 	command_reciever = this;
 	telnet_set_port(m_server_port);
 	telnet_start_server();
-#endif
 }
 
 typedef struct
@@ -1720,6 +1721,22 @@ LRESULT dx_player::on_timer(int id)
 			lua_pop(lua_state, 1);
 
 		return S_OK;
+	}
+
+	if (id == 4)	// x264 killer
+	{
+		CAutoLock lck(&m_x264_encoder_lock);
+		for(std::list<x264*>::iterator v= m_x264_encoder.begin(); v!=m_x264_encoder.end();++v)
+		{
+			if ((*v)->last_encode_time < timeGetTime() - 30000)
+			{
+				printf("x264 encoder %d released due to long time idle\n", *v);
+				delete *v;
+				m_x264_encoder.erase(v);
+
+				break;
+			}
+		}
 	}
 	return S_OK;
 }
