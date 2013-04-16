@@ -2029,24 +2029,28 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		}
 		else if (m_output_mode == dual_window)
 		{
+			int view = m_swapeyes ? 1 : 0;
+
 			clear(back_buffer);
-			draw_movie(back_buffer, 0);
-			draw_subtitle(back_buffer, 0);
-			adjust_temp_color(back_buffer, 0);
-			draw_ui(back_buffer, 0);
+			draw_movie(back_buffer, view);
+			draw_subtitle(back_buffer, view);
+			adjust_temp_color(back_buffer, view);
+			draw_ui(back_buffer, view);
 
 			// set render target to swap chain2
 			if (m_swap2)
 			{
+				view = 1 - view;
+
 				CComPtr<IDirect3DSurface9> back_buffer2;
 				m_swap2->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &back_buffer2);
 				hr = m_Device->SetRenderTarget(0, back_buffer2);
 
 				clear(back_buffer2);
-				draw_movie(back_buffer2, 1);
-				draw_subtitle(back_buffer2, 1);
-				adjust_temp_color(back_buffer2, 1);
-				draw_ui(back_buffer2, 1);
+				draw_movie(back_buffer2, view);
+				draw_subtitle(back_buffer2, view);
+				adjust_temp_color(back_buffer2, view);
+				draw_ui(back_buffer2, view);
 			}
 
 		}
@@ -3827,6 +3831,7 @@ DWORD my12doomRenderer::get_mask_color(int id)
 
 HRESULT my12doomRenderer::set_swap_eyes(bool swap)
 {
+	CAutoLock lck(&m_frame_lock);
 	m_swapeyes = swap;
 
 	reload_image();
