@@ -2063,7 +2063,17 @@ HRESULT report_file(const wchar_t *filepath)
 
 W2UTF8::W2UTF8(const wchar_t *in)
 {
+	p = NULL;
 
+	if (!in)
+		return;
+
+	int len = WideCharToMultiByte(CP_UTF8, NULL, in, -1, NULL, 0, NULL, NULL);
+	if (len<0)
+		return;
+
+	p = (char*)malloc(len*sizeof(char));
+	assert(WideCharToMultiByte(CP_UTF8, NULL, in, -1, p, len, NULL, NULL) == len);
 }
 
 W2UTF8::~W2UTF8()
