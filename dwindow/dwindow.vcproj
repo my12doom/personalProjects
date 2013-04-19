@@ -2377,6 +2377,18 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="HTTP"
+			>
+			<File
+				RelativePath=".\httppost.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\httppost.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\dwindow.manifest"
 			>
