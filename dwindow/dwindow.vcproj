@@ -2510,6 +2510,14 @@
 			</FileConfiguration>
 		</File>
 		<File
+			RelativePath=".\runnable.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\runnable.h"
+			>
+		</File>
+		<File
 			RelativePath=".\zip.cpp"
 			>
 		</File>
