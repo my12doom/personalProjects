@@ -170,11 +170,6 @@ public class DWindowActivity extends Activity {
 			public void onClick(View v) 
 			{
 				login();
-				Track[] list = conn.list_audio_track();
-				for(int i=0; i<list.length; i++)
-				{
-					Log.v(list[i].track_name, list[i].enabled + "");
-				}
 			}
         });
         
