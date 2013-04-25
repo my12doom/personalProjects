@@ -177,9 +177,7 @@ SectionEnd
 Section "桌面快捷方式"
 
   CreateShortCut "$DESKTOP\3D影音.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer.exe" 0
-  ;CreateShortCut "$DESKTOP\2345浏览器.lnk" "$INSTDIR\CoralExplorer_221282.exe" "" "$INSTDIR\CoralExplorer_221282.exe" 0
-  ;CreateShortCut "$DESKTOP\PPTV 网络电视.lnk" "$INSTDIR\PPTV(pplive)_forjixian_114230.exe" "" "$INSTDIR\PPTV(pplive)_forjixian_114230.exe" 0
-  
+
 SectionEnd
 
 SectionGroup /e "文件关联"
@@ -207,27 +205,6 @@ SectionGroupEnd
 Section "-Refresh File Icon"
 System::Call 'Shell32::SHChangeNotify(i ${SHCNE_ASSOCCHANGED}, i ${SHCNF_IDLIST}, i 0, i 0)'
 SectionEnd
-
-;Section "安装2345浏览器"
-;	ExecWait '"$INSTDIR\CoralExplorer_221282.exe"'
-;SectionEnd
-
-;Section "PPTV网络电视" pptv
-;  File "PPTV(pplive)_forjixian_114230.exe"
-;	ExecWait '"$INSTDIR\PPTV(pplive)_forjixian_114230.exe"'
-;SectionEnd
-
-;Function .onSelChange
-;  SectionGetFlags ${pptv} $0
-;  IntOp $0 $0 & ${SF_SELECTED}
-;  IntCmp $0 0 is0 less0 more0
-;is0:
-;  MessageBox MB_OK|MB_ICONQUESTION "PPTV是国内在线观看速度最好的网络电视平台，同时也与3D影音共享部分组件，去掉安装会;影响3D影音部分功能使用。"
-;less0:
-;more0:
-  	
-;FunctionEnd
-
 
 
 ;--------------------------------

@@ -6,6 +6,7 @@
 #include "..\renderer_prototype\my12doomRenderer_lua.h"
 #include "dwindow_log.h"
 #include "zip.h"
+#include "runnable.h"
 
 #pragma comment(lib, "DbgHelp")
 dx_player *g_player = NULL;
@@ -48,8 +49,22 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		SetForegroundWindow(pre_instance);
 		if (argc>1)
 		{
-			COPYDATASTRUCT copy = {WM_LOADFILE, wcslen(argv[1])*2+2, argv[1]};
-			SendMessageW(pre_instance, WM_COPYDATA, (WPARAM)NULL, (LPARAM)&copy);
+			if (wcsicmp(argv[1], L"cmd") != 0)
+			{
+				COPYDATASTRUCT copy = {WM_LOADFILE, wcslen(argv[1])*2+2, argv[1]};
+				SendMessageW(pre_instance, WM_COPYDATA, (WPARAM)NULL, (LPARAM)&copy);
+			}
+			else
+			{
+				wchar_t cmd[20480] = {0};
+				for(int i=2; i<argc; i++)
+				{
+					wcscat(cmd, argv[i]);
+					if (i!=argc-1)wcscat(cmd, L"|");
+				}
+				COPYDATASTRUCT copy = {WM_DWINDOW_COMMAND, wcslen(cmd)*2+2, cmd};
+				SendMessageW(pre_instance, WM_COPYDATA, (WPARAM)NULL, (LPARAM)&copy);
+			}
 		}
 		return 0;
 	}	

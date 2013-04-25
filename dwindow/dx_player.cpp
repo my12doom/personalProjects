@@ -825,12 +825,18 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 		if (lParam)
 		{
 			COPYDATASTRUCT *copy = (COPYDATASTRUCT*) lParam;
-			wchar_t next_to_load[MAX_PATH];
-			memcpy(next_to_load, copy->lpData, min(MAX_PATH*2, copy->cbData));
-			next_to_load[MAX_PATH-1] = NULL;
+			wchar_t *data = new wchar_t[copy->cbData];
+			memcpy(data, copy->lpData, copy->cbData);
 
 			if (copy->dwData == WM_LOADFILE)
-				reset_and_loadfile(next_to_load);
+			{
+				data[MAX_PATH-1] = NULL;
+				reset_and_loadfile(data);
+			}
+			else if (copy->dwData == WM_DWINDOW_COMMAND)
+				execute_command_line(data);
+
+			delete data;
 		}
 		else
 		{

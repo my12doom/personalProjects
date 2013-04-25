@@ -141,6 +141,8 @@ Section $(MAINPROGRAM_LANG)
   
   ; Put file there
   File "StereoPlayer.exe"
+  File "reset.exe"
+  File "ErrorReport.exe"
   File "dwindow.ini"
   File "alpha.raw"
   File "logo.raw"
@@ -197,6 +199,7 @@ SectionEnd
 
 Section "mkv3d"
 !insertmacro Assoc mkv3d "mkv3d" "3D MKV File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+!insertmacro Assoc mk3d "mk3d" "3D MKV File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
 SectionEnd
 
 Section "mkv"
@@ -209,6 +212,7 @@ SectionEnd
 
 Section "mkv3d"
 !insertmacro Assoc mkv3d "mkv3d" "3D MKV File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+!insertmacro Assoc mk3d "mk3d" "3D MKV File" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
 SectionEnd
 
 Section "ssif"
@@ -254,6 +258,7 @@ Section "Uninstall"
   Delete $INSTDIR\codec\*.ax
   Delete $INSTDIR\dwindow.exe
   Delete $INSTDIR\StereoPlayer.exe
+  Delete $INSTDIR\reset.exe
   Delete $INSTDIR\detoured.dll
   Delete $INSTDIR\kill_ssaver.dll
   Delete $INSTDIR\launcher.exe
@@ -266,6 +271,8 @@ Section "Uninstall"
   Delete $INSTDIR\*.dll
   Delete $INSTDIR\fonts.conf
   Delete $INSTDIR\dxva2.dll
+  Delete $INSTDIR\*.ini
+  Delete $INSTDIR\Language\*.*
 
   ; Remove shortcuts, if any
   Delete "$SMPROGRAMS\3DVPlayer\*.*"
@@ -281,6 +288,7 @@ Section "Uninstall"
   ; Revese file association
   !insertmacro UnAssoc mkv
   !insertmacro UnAssoc mkv3d
+  !insertmacro UnAssoc mk3d
   !insertmacro UnAssoc ssif
   !insertmacro UnAssoc mpls
   !insertmacro UnAssoc 3dv

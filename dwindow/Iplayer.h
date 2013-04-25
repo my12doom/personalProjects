@@ -8,6 +8,7 @@
 #define LOADFILE_TRACK_NUMBER(x) (0x01 << x)
 #define LOADFILE_FIRST_TRACK LOADFILE_TRACK_NUMBER(0)
 #define WM_LOADFILE (WM_USER + 5)
+#define WM_DWINDOW_COMMAND (WM_USER + 7)
 
 
 class Iplayer : public ICommandReciever
