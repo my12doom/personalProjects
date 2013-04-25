@@ -4831,7 +4831,7 @@ HRESULT dx_player::widi_get_adapter_by_id(int id, wchar_t *out)
 	return S_OK;
 }
 
-HRESULT dx_player::widi_get_adapter_information(int id, wchar_t *out, wchar_t *key/* = NULL*/)
+HRESULT dx_player::widi_get_adapter_information(int id, wchar_t *out, const wchar_t *key/* = NULL*/)
 {
 	wchar_t str_id[255];
 	HRESULT hr = widi_get_adapter_by_id(id, str_id);

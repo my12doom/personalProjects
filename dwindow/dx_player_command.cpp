@@ -552,6 +552,51 @@ shot:
 		return S_OK;
 	}
 
+	CASE(L"widi_refresh")
+	{
+		hr = widi_start_scan();
+	}
+
+	CASE(L"widi_connect")
+	{
+		hr = widi_connect(myInt(args[0]), myInt(args[1]), myInt(args[2]), myInt(args[3]));
+	}
+
+	CASE(L"widi_disconnect")
+	{
+		hr = widi_disconnect(myInt(args[0], -1));		
+	}
+
+	CASE(L"widi_set_screenmode")
+	{
+		hr = widi_set_screen_mode(myInt(args[0], ExternalOnly));
+	}
+
+	CASE(L"widi_num_adapters_found")
+	{
+		wcscpy2(out, myInt(m_widi_num_adapters_found));
+		hr = S_OK;
+	}
+
+	CASE(L"widi_get_adapter_by_id")
+	{
+		hr = S_OK;
+		if (out)
+			hr = widi_get_adapter_by_id(myInt(args[0]), out);
+	}
+
+	CASE(L"widi_get_adapter_information")
+	{
+		if (args[1] == NULL)
+			hr = E_INVALIDARG;
+		else
+		{
+			hr = S_OK;
+			if (out)
+				hr = widi_get_adapter_information(myInt(args[0]), out, args[1]);
+		}
+	}
+
 	DEFAULT
 		return E_NOTIMPL;
 

@@ -166,7 +166,7 @@ protected:
 	HRESULT widi_initialize();
 	HRESULT widi_start_scan();
 	HRESULT widi_get_adapter_by_id(int id, wchar_t *out);
-	HRESULT widi_get_adapter_information(int id, wchar_t *out, wchar_t *key = NULL);
+	HRESULT widi_get_adapter_information(int id, wchar_t *out, const wchar_t *key = NULL);
 	HRESULT widi_connect(int id, DWORD screenmode = ExternalOnly, int resolution_width = 0, int resolution_height = 0);
 	HRESULT widi_set_screen_mode(DWORD screenmode);
 	HRESULT widi_disconnect(int id = -1);	// -1 means disconnect any connection
