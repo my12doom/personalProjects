@@ -73,7 +73,7 @@ public class DWindowNetworkConnection {
 	public boolean connect(String server, int timeout){
 		try{
 			disconnect();
-			int port = 8080;
+			int port = 0xb03d;
 	        if (server.contains(":")){
 	        	try{
 	        		port = Integer.parseInt(server.split(":")[1]);
