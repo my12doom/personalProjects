@@ -3650,8 +3650,13 @@ HRESULT dx_player::debug_list_filters()
 		if (filter_info.pGraph) filter_info.pGraph->Release();
 		wchar_t tmp[10240];
 		wchar_t tmp2[1024];
+		wchar_t friendly_name[200] = L"Unkown";
+		GetFilterFriedlyName(filter, friendly_name, 200);
 		wcscpy(tmp, filter_info.achName);
-		
+		wcscat(tmp, L"(");
+		wcscat(tmp, friendly_name);
+		wcscat(tmp, L")");
+
 		CComPtr<IEnumPins> ep;
 		CComPtr<IPin> pin;
 		filter->EnumPins(&ep);

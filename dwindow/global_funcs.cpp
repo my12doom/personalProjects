@@ -544,6 +544,36 @@ HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin)
 	return E_FAIL;
 }
 
+HRESULT GetFilterFriedlyName(IBaseFilter *filter, wchar_t *out, int outlen)
+{
+	if (!filter || !out)
+		return E_POINTER;
+
+	CLSID clsid;
+	filter->GetClassID(&clsid);
+
+	HKEY hkey = NULL;
+	wchar_t cls_key[1024] = L"CLSID\\";
+	LPOLESTR p = NULL;
+	StringFromCLSID(clsid, &p);
+	wcscat(cls_key, p);
+	CoTaskMemFree(p);
+
+	int ret = RegOpenKeyExW(HKEY_CLASSES_ROOT, cls_key,0,KEY_READ  , &hkey);
+	if (ret != ERROR_SUCCESS || hkey == NULL)
+		return E_FAIL;
+
+	ret = RegQueryValueExW(hkey, L"", 0, NULL, (LPBYTE)out, (LPDWORD)&outlen);
+	if (ret == ERROR_SUCCESS)
+		return S_OK;
+	if (ret == ERROR_MORE_DATA)
+		return E_OUTOFMEMORY;
+
+	RegCloseKey(hkey);
+
+	return S_OK;
+}
+
 // CoreMVC
 HRESULT write_property(IPropertyBag *bag, const wchar_t *property_to_write)
 {

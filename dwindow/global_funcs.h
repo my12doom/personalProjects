@@ -116,6 +116,7 @@ HRESULT set_ff_audio_normalizing(IBaseFilter *filter, double max_ratio);	// sett
 HRESULT find_main_movie(const wchar_t *folder, wchar_t *out);
 HRESULT GetUnconnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
 HRESULT GetConnectedPin(IBaseFilter *pFilter,PIN_DIRECTION PinDir, IPin **ppPin);
+HRESULT GetFilterFriedlyName(IBaseFilter *filter, wchar_t *out, int outlen);
 HRESULT RemoveUselessFilters(IGraphBuilder *gb);
 HRESULT DeterminPin(IPin *pin, wchar_t *name = NULL, CLSID majortype = CLSID_NULL, CLSID subtype = CLSID_NULL);
 HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *name, IPin **ppPin);
