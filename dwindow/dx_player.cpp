@@ -3650,7 +3650,7 @@ HRESULT dx_player::debug_list_filters()
 		if (filter_info.pGraph) filter_info.pGraph->Release();
 		wchar_t tmp[10240];
 		wchar_t tmp2[1024];
-		wchar_t friendly_name[200] = L"Unkown";
+		wchar_t friendly_name[200] = L"Unknown";
 		GetFilterFriedlyName(filter, friendly_name, 200);
 		wcscpy(tmp, filter_info.achName);
 		wcscat(tmp, L"(");
