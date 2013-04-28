@@ -221,7 +221,8 @@ CSourceStream(NAME("Bouncing Ball"),phr, pParent, pPinName),
 m_width(width),
 m_height(height),
 m_data((char*)data),
-m_frame_number(0)
+m_frame_number(0),
+m_segment_time(0)
 {
 	m_rtDuration = (LENGTH * 10000 * 1000);
 
@@ -251,14 +252,14 @@ HRESULT my12doomImageStream::FillBuffer(IMediaSample *pms)
 	memcpy(buf, m_data, m_width * m_height * 4);
 
 	REFERENCE_TIME rtStart, rtStop;
-	rtStart = (REFERENCE_TIME)(m_frame_number+1) * FPS * 10000000;
-	rtStop = (REFERENCE_TIME)(m_frame_number+2) * FPS * 10000000;
+	rtStart = (REFERENCE_TIME)(m_frame_number+1) * 10000000 / FPS;
+	rtStop = (REFERENCE_TIME)(m_frame_number+2) * 10000000 / FPS;
 
 	pms->SetTime(&rtStart, &rtStop);
 
 	m_frame_number ++;
 
-	return S_OK;
+	return rtStart + m_segment_time > LENGTH * 1000 * 10000 ? S_FALSE : S_OK;
 }
 
 // Ask for buffers of the size appropriate to the agreed media type
@@ -300,6 +301,13 @@ HRESULT my12doomImageStream::DecideBufferSize(IMemAllocator *pIMemAlloc,	ALLOCAT
 
 	ASSERT(Actual.cBuffers == 1);
 	return NOERROR;
+}
+
+HRESULT my12doomImageStream::DeliverNewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
+{
+	m_segment_time = tStart;
+
+	return __super::DeliverNewSegment(tStart, tStop, dRate);
 }
 
 // Set the agreed media type, and set up the necessary ball parameters

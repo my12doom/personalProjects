@@ -69,12 +69,14 @@ public:
 	HRESULT ChangeStop();
 	HRESULT ChangeRate();
 	STDMETHODIMP SetRate(double);
+	HRESULT DeliverNewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
 
 protected:
 	int m_width;
 	int m_height;
 	char *m_data;
 	int m_frame_number;
+	REFERENCE_TIME m_segment_time;
 	CCritSec m_cSharedState;            // Lock on m_rtSampleTime
 
 	void UpdateFromSeek();
