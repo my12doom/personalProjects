@@ -65,7 +65,8 @@ public:
 	STDMETHOD(SHA1)(BSTR in, BSTR* out);
 	STDMETHOD(genkeys2)(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, BSTR* out);
 	STDMETHOD(genkey3)(BSTR passkey, LONG time_start, BSTR time_end, LONG max_bar_user, BSTR* out);
-	STDMETHOD(genkey4)(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, LONG theater_version, BSTR* out);
+	STDMETHOD(genkey4)(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, LONG user_type, BSTR* out);
+	STDMETHOD(genkey5)(BSTR passkey, LONG time_start, LONG time_end, LONG max_bar_user, LONG user_type, LONG user_rights, BSTR* out);
 	STDMETHOD(gen_freekey)(LONG time_start, LONG time_end, BSTR* out);
 };
 

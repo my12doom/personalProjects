@@ -427,6 +427,35 @@ __forceinline bool is_actived()
 	return true;
 }
 
+__forceinline DWORD get_passkey_rights()
+{
+	DWORD e[32];
+	dwindow_passkey_big m1;
+	BigNumberSetEqualdw(e, 65537, 32);
+	RSA((DWORD*)&m1, (DWORD*)&g_passkey_big, e, (DWORD*)dwindow_n, 32);
+
+	if (memcmp(m1.passkey, trial_m1, 32) != 0 && memcmp(m1.passkey2, trial_m2, 32) != 0)
+		for(int i=0; i<32; i++)
+			if (m1.passkey[i] != m1.passkey2[i])
+				return false;
+
+	__time64_t t = mytime();
+
+	tm * t2 = _localtime64(&m1.time_end);
+
+	if (m1.time_start > mytime() || mytime() > m1.time_end)
+	{
+		memset(&m1, 0, 128);
+		return false;
+	}
+
+	memcpy(g_passkey, &m1, 32);
+	DWORD rtn = m1.user_rights;
+	memset(&m1, 0, 128);
+	return rtn;
+}
+
+
 __forceinline bool  is_trial_version()
 {
 #ifdef nologin

@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0500 */
-/* at Sun Mar 04 17:54:52 2012
+/* at Mon May 06 11:44:38 2013
  */
 /* Compiler settings for .\phpcrypt.idl:
     Oicf, W1, Zp8, env=Win32 (32b run)
@@ -161,12 +161,21 @@ EXTERN_C const IID IID_Icrypt;
             LONG time_start,
             LONG time_end,
             LONG max_bar_user,
-            LONG theater_version,
+            LONG user_type,
             /* [retval][out] */ BSTR *out) = 0;
         
         virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE gen_freekey( 
             LONG time_start,
             LONG time_end,
+            /* [retval][out] */ BSTR *out) = 0;
+        
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE genkey5( 
+            BSTR passkey,
+            LONG time_start,
+            LONG time_end,
+            LONG max_bar_user,
+            LONG user_type,
+            LONG user_rights,
             /* [retval][out] */ BSTR *out) = 0;
         
     };
@@ -308,13 +317,23 @@ EXTERN_C const IID IID_Icrypt;
             LONG time_start,
             LONG time_end,
             LONG max_bar_user,
-            LONG theater_version,
+            LONG user_type,
             /* [retval][out] */ BSTR *out);
         
         /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *gen_freekey )( 
             Icrypt * This,
             LONG time_start,
             LONG time_end,
+            /* [retval][out] */ BSTR *out);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *genkey5 )( 
+            Icrypt * This,
+            BSTR passkey,
+            LONG time_start,
+            LONG time_end,
+            LONG max_bar_user,
+            LONG user_type,
+            LONG user_rights,
             /* [retval][out] */ BSTR *out);
         
         END_INTERFACE
@@ -398,11 +417,14 @@ EXTERN_C const IID IID_Icrypt;
 #define Icrypt_genkey3(This,passkey,time_start,time_end,max_bar_user,out)	\
     ( (This)->lpVtbl -> genkey3(This,passkey,time_start,time_end,max_bar_user,out) ) 
 
-#define Icrypt_genkey4(This,passkey,time_start,time_end,max_bar_user,theater_version,out)	\
-    ( (This)->lpVtbl -> genkey4(This,passkey,time_start,time_end,max_bar_user,theater_version,out) ) 
+#define Icrypt_genkey4(This,passkey,time_start,time_end,max_bar_user,user_type,out)	\
+    ( (This)->lpVtbl -> genkey4(This,passkey,time_start,time_end,max_bar_user,user_type,out) ) 
 
 #define Icrypt_gen_freekey(This,time_start,time_end,out)	\
     ( (This)->lpVtbl -> gen_freekey(This,time_start,time_end,out) ) 
+
+#define Icrypt_genkey5(This,passkey,time_start,time_end,max_bar_user,user_type,user_rights,out)	\
+    ( (This)->lpVtbl -> genkey5(This,passkey,time_start,time_end,max_bar_user,user_type,user_rights,out) ) 
 
 #endif /* COBJMACROS */
 

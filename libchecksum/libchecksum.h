@@ -49,7 +49,7 @@ typedef struct _dwindow_passkey_big
 	__time64_t time_end;			// 8 byte
 	unsigned short max_bar_user;
 	unsigned char usertype;
-	unsigned int USER_RIGHTS;
+	unsigned int user_rights;
 	unsigned char reserved[8];
 	unsigned char zero;				// = 0
 } dwindow_passkey_big;
