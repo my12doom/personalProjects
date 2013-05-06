@@ -90,7 +90,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	DWORD rights = get_passkey_rights();
 
-	if (is_theeater_version())
+	if (rights & USER_RIGHTS_THEATER_BOX)
 		dwindow_dll_go(hinstance, NULL, test);
 	else
 	while (!test->is_closed())

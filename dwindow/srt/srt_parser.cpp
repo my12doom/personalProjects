@@ -363,7 +363,7 @@ int srt_parser::save_as_ass(const wchar_t *pathname)
 		L"",
 		L"[V4+ Styles]",
 		L"Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-		L"Style: Default,Arial,25,&H00FFFFFF,&HF0000000,&H00000000,&H80000000,-1,0,0,0,100,100,0,0.00,1,1,1,2,30,30,10,134",
+		L"Style: Default,ºÚÌå,25,&H00FFFFFF,&HF0000000,&H00000000,&H80000000,-1,0,0,0,100,100,0,0.00,1,1,1,2,30,30,10,134",
 		L"",
 		L"[Events]",
 		L"Format: Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text",
