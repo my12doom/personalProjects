@@ -49,13 +49,21 @@ typedef struct _dwindow_passkey_big
 	__time64_t time_end;			// 8 byte
 	unsigned short max_bar_user;
 	unsigned char usertype;
-	unsigned char reserved[12];
+	unsigned int USER_RIGHTS;
+	unsigned char reserved[8];
 	unsigned char zero;				// = 0
 } dwindow_passkey_big;
 const unsigned char USERTYPE_NORMAL = 0;
 const unsigned char USERTYPE_THEATER = 1;
 const unsigned char USERTYPE_JZ = 2;
-const unsigned char USERTYPE_BAR = 3;
+const unsigned char USERTYPE_BAR = 3;		// unused
+
+const unsigned int USER_RIGHTS_NO_AD = 1;										// donation user
+const unsigned int USER_RIGHTS_DUAL_PROJECTOR_AND_EXTERNAL_SOUNDTRACK = 2;		// professional user
+const unsigned int USER_RIGHTS_ACTIVE_SERVER = 4;								// net bar user (unused)
+const unsigned int USER_RIGHTS_TELNET_SERVER = 8;
+const unsigned int USER_RIGHTS_THEATER_BOX = 16;
+
 
 typedef struct _dwindow_update_signature
 {
