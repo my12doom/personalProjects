@@ -274,28 +274,14 @@ end
 
 
 Thread = {}
-ThreadArgExchangeTable = {}
-
-function dwindow_thread_entry(exchange_id)
-	local tbl = ThreadArgExchangeTable[exchange_id]
-	if tbl == nil or type(tbl) ~= "table" then
-		return nil
-	end
-	 
-	return tbl.func(table.unpack(tbl.args))
-end
 
 function Thread:Create(func, ...)
+
 	local o = {}
 	setmetatable(o, self)
 	self.__index = self
-		
-	ThreadArgExchangeTable[#ThreadArgExchangeTable+1] = {func = func, args = table.pack(...)}
+	self.handle = dwindow.CreateThread(func, ...)
 	
-	self.func = func
-	self.exchange_id = #ThreadArgExchangeTable
-	self.handle = dwindow.CreateThread("dwindow_thread_entry", self.exchange_id)
-
 	return o
 end
 

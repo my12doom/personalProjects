@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include "my12doom_lua.h"
 #include <list>
+#include <list>
 #include "..\dwindow\global_funcs.h"
 
 lua_State *g_L = NULL;
@@ -107,43 +108,39 @@ int luaTerminateThread(lua_State *L)
 	return 1;
 }
 
-
-typedef	struct
-{
-	int id;
-	int parameter;
-	char entry_name[1024];
-} luaCreateThreadPara;
 DWORD WINAPI luaCreateThreadEntry(LPVOID parameter)
 {
-	luaCreateThreadPara *para = (luaCreateThreadPara*)parameter;
-
 	luaState L;
 
-	lua_getglobal(L, para->entry_name);
-	if (!lua_isfunction(L, -1))
+	int *p = (int*)parameter;
+	for(int i=p[0]; i>=0; i--)
 	{
-		delete para;
-		return -2;					// no entry function found
+		lua_rawgeti(L, LUA_REGISTRYINDEX, p[i+1]);
+		luaL_unref(L, LUA_REGISTRYINDEX, p[i+1]);
 	}
 
-	lua_pushinteger(L, para->id);
-	delete para;
+	if (!lua_isfunction(L, -p[0]))
+	{
+		lua_pop(L, p[0]);
+		delete p;
+		return -2;					// no entry function found, clear the stack and return;
+	}
 
-	lua_mypcall(L, 1, 0, 0);
+	lua_mypcall(L, p[0]-1, 0, 0);
+
+	delete p;
 
 	return 0;
 }
 
 int luaCreateThread(lua_State *L)
 {
-	int n = -lua_gettop(L);
-	const char *entry_name = lua_tostring(L, n+0);
-	int exchange_id = lua_tointeger(L, n+1);
+	int n = lua_gettop(L);
 
-	luaCreateThreadPara * p = new luaCreateThreadPara;
-	p->id = exchange_id;
-	strcpy(p->entry_name, entry_name);
+	int * p = new int[n+1];
+	p[0] = n;
+	for(int i=0; i<n; i++)
+		p[i+1] = luaL_ref(L, LUA_REGISTRYINDEX);
 
 	lua_pushlightuserdata(L, CreateThread(NULL, NULL, luaCreateThreadEntry, p, NULL, NULL));
 	return 1;
