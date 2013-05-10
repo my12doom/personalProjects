@@ -57,6 +57,7 @@ const unsigned char USERTYPE_NORMAL = 0;
 const unsigned char USERTYPE_THEATER = 1;
 const unsigned char USERTYPE_JZ = 2;
 const unsigned char USERTYPE_BAR = 3;		// unused
+const unsigned char USERTYPE_VSTAR = 204;	// I forget why 204...
 
 const unsigned int USER_RIGHTS_NO_AD = 1;										// donation user
 const unsigned int USER_RIGHTS_DUAL_PROJECTOR_AND_EXTERNAL_SOUNDTRACK = 2;		// professional user

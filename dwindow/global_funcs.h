@@ -394,7 +394,7 @@ __forceinline bool is_pro_version()
 	}
 
 	memcpy(g_passkey, &m1, 32);
-	bool rtn = m1.usertype == USERTYPE_NORMAL;
+	bool rtn = m1.usertype == USERTYPE_NORMAL || m1.usertype == USERTYPE_VSTAR;
 	memset(&m1, 0, 128);
 	return rtn;
 }
