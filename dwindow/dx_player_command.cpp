@@ -137,6 +137,24 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 
 	SWTICH(command)
 
+	CASE(L"forward")
+	{
+		int time;
+		tell(&time);
+
+		seek(max(0, time + (int)myInt(args[0], 5000)));
+
+		hr = S_OK;
+	}
+
+	CASE(L"backward")
+	{
+		int time;
+		tell(&time);
+
+		hr = seek(max(0, time - (int)myInt(args[0], 5000)));
+	}
+
 	CASE(L"shot")
 	{
 		int l = timeGetTime();
