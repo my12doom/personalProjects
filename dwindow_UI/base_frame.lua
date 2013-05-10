@@ -257,8 +257,13 @@ end
 -- for these mouse events or focus related events, return anything other than false and nil cause it to be sent to its parents
 
 
+-- Frame events
+function BaseFrame:OnSizing() end
+function BaseFrame:OnSize() end
+function BaseFrame:OnMoving() end
+function BaseFrame:OnMove() end
+
 root = BaseFrame:Create()
-root.name = "ROOT"
 function BaseFrame:OnEvent(event, ...)
 	return (self[event] and self[event](self, ...)) or (self.parent and self.parent:OnEvent(event, ...))
 end
