@@ -1717,7 +1717,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		if (m_subtitle_mem && m_subtitle)
 		{
 			int l2 = timeGetTime();
-			RECT dirty = {0,0,min(m_subtitle_pixel_width, m_subtitle_mem->locked_rect.Pitch/4), min(m_subtitle_pixel_height, min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE))};
+			RECT dirty = {0,0,min(m_subtitle_pixel_width+32, m_subtitle_mem->locked_rect.Pitch/4), min(m_subtitle_pixel_height+32, min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE))};
 			m_subtitle_mem->Unlock();
 			int l3 = timeGetTime();
 			//m_pool->UpdateTexture(m_subtitle_mem, m_subtitle, &dirty);
@@ -4087,11 +4087,11 @@ HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float 
 		for(int y=0; y<min(TEXTURE_SIZE,height); y++)
 		{
 			memcpy(dst, src, min(width*4, tex_mem->locked_rect.Pitch));
-			memset(dst+width*4, 0, 16*4);
+			memset(dst+width*4, 0, 32*4);
 			dst += tex_mem->locked_rect.Pitch;
 			src += width*4;
 		}
-		memset(dst, 0, tex_mem->locked_rect.Pitch * min(min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE)-height, 16));
+		memset(dst, 0, tex_mem->locked_rect.Pitch * min(min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE)-height, 32));
 
 
 		{
