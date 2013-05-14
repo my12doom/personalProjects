@@ -9,6 +9,37 @@ extern my12doomRenderer *g_renderer;
 
 int my12doomRenderer_lua_loadscript();
 
+static int lua_get_splayer_subtitle(lua_State *L)
+{
+	int parameter_count = lua_gettop(L);
+	if (parameter_count < 1 || lua_tostring(L, -parameter_count) == NULL)
+		return 0;
+
+	UTF82W filename (lua_tostring(L, -parameter_count));
+	const wchar_t *langs[16] = {L"eng", L"", NULL};
+	wchar_t tmp[16][200];
+	for(int i=1; i<parameter_count && i<16; i++)
+	{
+		wcscpy(tmp[i-1], UTF82W(lua_tostring(L, -parameter_count+i)));
+		langs[i-1] = tmp[i-1];
+	}
+
+	wchar_t out[5000] = {0};
+	get_splayer_subtitle(filename, out, langs);
+
+	wchar_t *outs[50] = {0};
+	int result_count = wcsexplode(out, L"|", outs, 50);
+
+	for(int i=0; i<result_count; i++)
+		lua_pushstring(L, W2UTF8(outs[i]));
+
+	for(int i=0; i<50; i++)
+		if (outs[i])
+			free(outs[i]);
+
+	return result_count;
+}
+
 static int paint_core(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
@@ -405,6 +436,7 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("reset_and_loadfile") = &reset_and_loadfile;
 	g_lua_manager->get_variable("load_subtitle") = &load_subtitle;
 	g_lua_manager->get_variable("set_movie_rect") = &set_movie_rect;
+	g_lua_manager->get_variable("get_splayer_subtitle") = &lua_get_splayer_subtitle;
 
 	return 0;
 }

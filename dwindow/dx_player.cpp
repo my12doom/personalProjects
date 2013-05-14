@@ -132,7 +132,8 @@ m_hd3d_prefered_mode(L"HD3DPreferedMode", mode_auto),
 m_audio_latency(L"AudioLatency", 0, REG_DWORD),
 #ifdef VSTAR
 #endif
-m_simple_audio_switching(L"SimpleAudioSwitching", false)
+m_simple_audio_switching(L"SimpleAudioSwitching", false),
+m_subtitle_loader_pool(2)
 {
 	g_audio_latency = m_audio_latency;
 
@@ -3121,6 +3122,21 @@ HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, const wchar_t*pat
 		}
 	}
 
+	// load splayer subtitle
+	{
+		wcscpy(m_main_video_filename, pathname);
+		wchar_t tmp[32][1024];
+		wchar_t *tmp2[32];
+		bool connected[32];
+		for(int i=0; i<32; i++)
+			tmp2[i] = tmp[i];
+		int found = 0;
+		list_subtitle_track(tmp2, connected, &found);
+		AutoSetting<BOOL> always_download_subtitle(L"AlwaysDownloadSubtitle", FALSE, REG_DWORD);
+		if (found <= 0 || (BOOL)always_download_subtitle)
+			m_subtitle_loader_pool.submmit(new subtitle_loader(this));
+	}
+
 	if (stop)
 		pause();
 
@@ -3729,6 +3745,29 @@ HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
 	return S_OK;
 #endif
 }
+
+void dx_player::subtitle_loader::run()
+{
+	wchar_t out[5000] = {0};
+	get_splayer_subtitle(m_owner->m_main_video_filename, out);
+
+	if (out[0] != NULL)
+	{
+		wchar_t *outs[2] = {0};
+		wcsexplode(out, L"|", outs, 2);
+		if (outs[1])
+			free(outs[1]);
+
+ 		m_owner->load_subtitle(outs[0]);
+
+		free(outs[0]);
+	}
+	else
+	{
+		MessageBoxW(NULL, L"No Subtitle found", L"...", MB_OK);
+	}
+}
+
 HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME : always reset 
 {
 	if (pathname == NULL)

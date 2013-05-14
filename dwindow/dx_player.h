@@ -12,6 +12,7 @@
 
 // other
 #include "Iplayer.h"
+#include "runnable.h"
 #include "global_funcs.h"
 #include "CSubtitle.h"
 #include "srt\srt_parser.h"
@@ -136,7 +137,10 @@ public:
 	POINT m_mouse;
 	int m_dialog_open;
 
+
 	int init_done_flag;
+
+	wchar_t m_main_video_filename[MAX_PATH];
 
 protected:
 
@@ -190,6 +194,14 @@ protected:
 	bool rect_visible(RECT rect);
 
 	// image control vars
+	class subtitle_loader : public Irunnable
+	{
+	public:
+		subtitle_loader(dx_player *owner){m_owner = owner;}
+		void run();						// splayer subtitle loader
+		dx_player *m_owner;
+	};
+	thread_pool m_subtitle_loader_pool;
 	HINSTANCE m_hexe;
 	AutoSetting<double> m_aspect;/*(L"AlwaysShowRight", false)*/;
 	AutoSetting<DWORD> m_aspect_mode;
