@@ -574,6 +574,29 @@ HRESULT GetFilterFriedlyName(IBaseFilter *filter, wchar_t *out, int outlen)
 	return S_OK;
 }
 
+// splayer subtitle
+HRESULT get_splayer_subtitle(const wchar_t *filepath, wchar_t *out, const wchar_t **langs/* = NULL*/)
+{
+	const wchar_t *default_langs[] = {L"eng", L"", NULL};
+
+	HMODULE hdll = LoadLibraryW(L"mySubDownloader.dll");
+	if (!hdll)
+		return E_FAIL;
+	typedef int (__stdcall *DownloaderSubtitleWFunc) (const wchar_t *filepath, const wchar_t **langs, wchar_t *out);
+	DownloaderSubtitleWFunc pDownloaderSubtitleW = (DownloaderSubtitleWFunc)GetProcAddress(hdll, "DownloaderSubtitleW");
+	if (!pDownloaderSubtitleW)
+	{
+		FreeLibrary(hdll);
+		return E_FAIL;
+	}
+
+	pDownloaderSubtitleW(filepath, langs ? langs : default_langs,  out);
+
+	FreeLibrary(hdll);
+
+	return S_OK;
+}
+
 // CoreMVC
 HRESULT write_property(IPropertyBag *bag, const wchar_t *property_to_write)
 {

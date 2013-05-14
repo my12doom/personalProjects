@@ -150,6 +150,7 @@ bool jpeg_enc_yv12(unsigned char* Ybuffer, unsigned char *Ubuffer, unsigned char
 DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter);
 HRESULT restart_this_program();
 HRESULT report_file(const wchar_t *filepath);
+HRESULT get_splayer_subtitle(const wchar_t *filepath, wchar_t *out, const wchar_t **langs = NULL);
 
 inline bool compare_rect(const RECT in1, const RECT in2)
 {
