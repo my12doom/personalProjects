@@ -127,8 +127,8 @@ static HANDLE WINAPI MineCreateFileW(
 
 	if (b)
 	{
-		wchar_t exe_path[MAX_PATH] = L"Z:\\response.txt";
-// 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
+		wchar_t exe_path[MAX_PATH] = {0};
+ 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 
 		dummy_handle *p = new dummy_handle;
@@ -162,10 +162,10 @@ static BOOL WINAPI MineReadFile(
 		if (lpOverlapped)
 			ov = *lpOverlapped;
 
-		DWORD nGot = 0;
-		DWORD pos = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
-		BOOL o2 = TrueReadFile(hFile, tmp2, nNumberOfBytesToRead, &nGot, lpOverlapped);
-		DWORD pos22 = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
+// 		DWORD nGot = 0;
+// 		DWORD pos = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
+// 		BOOL o2 = TrueReadFile(hFile, tmp2, nNumberOfBytesToRead, &nGot, lpOverlapped);
+// 		DWORD pos22 = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
 
 		if (lpOverlapped)
 			*lpOverlapped = ov;
@@ -203,8 +203,8 @@ static BOOL WINAPI MineReadFile(
 			pos2 = SetFilePointer(hFile, 0, NULL, SEEK_CUR);
 		}
 
-		memcpy(tmp, lpBuffer, *lpNumberOfBytesRead);
-		int c = memcmp(tmp2, tmp, *lpNumberOfBytesRead);
+// 		memcpy(tmp, lpBuffer, *lpNumberOfBytesRead);
+// 		int c = memcmp(tmp2, tmp, *lpNumberOfBytesRead);
 
 		sprintf(tmp, "(H-%08x), read %d bytes, got %d bytes, pos: %d->%d\n", hFile, nNumberOfBytesToRead, *lpNumberOfBytesRead, pos1, pos2);
 		OutputDebugStringA(tmp);
@@ -297,9 +297,8 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 	dummy_handle *p = get_dummy(hObject);
 	if (p && p->dummy == dummy_value)
 	{
-// 		delete p;
+		delete p;
 		handle_map[hObject] = NULL;
-		return TRUE;
 	}
 
 	return TrueCloseHandle(hObject);
@@ -353,8 +352,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		if (v1 != v2 || c !=0 || p1 != p2)
 			break;
 	}
-	fclose(f);
-	fclose(f2);
+// 	fclose(f);
+// 	fclose(f2);
 
 
 
@@ -363,7 +362,7 @@ int _tmain(int argc, _TCHAR* argv[])
 // 	HRESULT hr = gb->RenderFile(L"D:\\my12doom\\doc\\left720.mkv", NULL);
 //	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://127.0.0.1/flv.flv", NULL);
 //    	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://192.168.1.209/logintest/flv.flv", NULL);
-    	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://bo3d.net/test/a-001.mkv", NULL);
+    	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://bo3d.net/test/flv.flv", NULL);
 	debug_list_filters(gb);
 	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
 	mc->Run();
