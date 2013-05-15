@@ -127,9 +127,10 @@ static HANDLE WINAPI MineCreateFileW(
 
 	if (b)
 	{
-		wchar_t exe_path[MAX_PATH] = {0};
-		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
+		wchar_t exe_path[MAX_PATH] = L"Z:\\response.txt";
+// 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->ifile.Open(lpFileName+11, 1024);
@@ -154,15 +155,57 @@ static BOOL WINAPI MineReadFile(
 	if (p && p->dummy == dummy_value)
 	{
 
+		char tmp[80000];
+		char tmp2[80000];
+
+		OVERLAPPED ov = {0};
+		if (lpOverlapped)
+			ov = *lpOverlapped;
+
+		DWORD nGot = 0;
+		DWORD pos = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
+		BOOL o2 = TrueReadFile(hFile, tmp2, nNumberOfBytesToRead, &nGot, lpOverlapped);
+		DWORD pos22 = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
+
+		if (lpOverlapped)
+			*lpOverlapped = ov;
 
 
 		myCAutoLock lck(&p->cs);
-		DWORD pos1 = SetFilePointer(hFile, 0, NULL, SEEK_CUR);
-		BOOL o = p->ifile.ReadFile(lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
-		DWORD pos2 = SetFilePointer(hFile, 0, NULL, SEEK_CUR);
 
+		DWORD pos1, pos2;
+		BOOL o;
 
-		char *tmp = new char[2048000];
+		if (lpOverlapped)
+		{
+			if (lpOverlapped->hEvent)
+				ResetEvent(lpOverlapped->hEvent);
+
+			LARGE_INTEGER li;
+			li.HighPart = lpOverlapped->OffsetHigh;
+			li.LowPart = lpOverlapped->Offset;
+			p->ifile.SetFilePointerEx(li, &li, SEEK_SET);
+			o = p->ifile.ReadFile(lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
+
+			lpOverlapped->Internal = 0;
+			lpOverlapped->InternalHigh = *lpNumberOfBytesRead;
+			lpOverlapped->Offset = 0;
+			lpOverlapped->OffsetHigh = 0;
+
+			if (lpOverlapped->hEvent)
+				SetEvent(lpOverlapped->hEvent);
+		}
+		else
+		{
+
+			pos1 = SetFilePointer(hFile, 0, NULL, SEEK_CUR);
+			o = p->ifile.ReadFile(lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
+			pos2 = SetFilePointer(hFile, 0, NULL, SEEK_CUR);
+		}
+
+		memcpy(tmp, lpBuffer, *lpNumberOfBytesRead);
+		int c = memcmp(tmp2, tmp, *lpNumberOfBytesRead);
+
 		sprintf(tmp, "(H-%08x), read %d bytes, got %d bytes, pos: %d->%d\n", hFile, nNumberOfBytesToRead, *lpNumberOfBytesRead, pos1, pos2);
 		OutputDebugStringA(tmp);
 
@@ -176,7 +219,6 @@ static BOOL WINAPI MineReadFile(
 // 		strcat(tmp, "\n");
 // 		OutputDebugStringA(tmp);
 
-		delete tmp;
 
 		return o;
 	}
@@ -235,7 +277,7 @@ static DWORD WINAPI MineSetFilePointer(__in        HANDLE hFile,
 		li.LowPart = lDistanceToMove;
 
 		char tmp[2048];
-		sprintf(tmp, "(%08x), seeek to %d method %d\n", p, (int)li.QuadPart, dwMoveMethod);
+		sprintf(tmp, "(H-%08x), seek to %d method %d\n", hFile, (int)li.QuadPart, dwMoveMethod);
 		OutputDebugStringA(tmp);
 
 		myCAutoLock lck(&p->cs);
@@ -255,7 +297,7 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 	dummy_handle *p = get_dummy(hObject);
 	if (p && p->dummy == dummy_value)
 	{
-		delete p;
+// 		delete p;
 		handle_map[hObject] = NULL;
 		return TRUE;
 	}
@@ -316,10 +358,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 
 
-//   	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://127.0.0.1/MBAFF.ts", NULL);
-// 	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://bo3d.net/test/a-001.mkv", NULL);
+//	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://127.0.0.1/MBAFF.ts", NULL);
+//   	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://bo3d.net/test/flv.flv", NULL);
 // 	HRESULT hr = gb->RenderFile(L"D:\\my12doom\\doc\\left720.mkv", NULL);
-   	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://127.0.0.1/800_480.avi", NULL);
+//	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://127.0.0.1/flv.flv", NULL);
+//    	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://192.168.1.209/logintest/flv.flv", NULL);
+    	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://bo3d.net/test/a-001.mkv", NULL);
 	debug_list_filters(gb);
 	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
 	mc->Run();
@@ -330,6 +374,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		mc->GetState(500, &fs);
 		char*  tbl[3] = {"State_Stopped", "State_Paused", "State_Running"};
 		printf("\r%s", tbl[fs]);
+		Sleep(1);
 	}
 	getch();
 
