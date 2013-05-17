@@ -470,12 +470,13 @@ W2UTF8::W2UTF8(const wchar_t *in)
 	if (!in)
 		return;
 
-	int len = WideCharToMultiByte(CP_UTF8, NULL, in, -1, NULL, 0, NULL, NULL);
+	int len = WideCharToMultiByte(CP_ACP, NULL, in, -1, NULL, 0, NULL, NULL);
 	if (len<0)
 		return;
 
 	p = (char*)malloc(len*sizeof(char));
-	assert(WideCharToMultiByte(CP_UTF8, NULL, in, -1, p, len, NULL, NULL) == len);
+	int len2 = WideCharToMultiByte(CP_ACP, NULL, in, -1, p, len, NULL, NULL);
+	assert(len == len2);
 }
 
 W2UTF8::~W2UTF8()
@@ -500,7 +501,8 @@ UTF82W::UTF82W(const char *in)
 		return;
 
 	p = (wchar_t*)malloc(len*sizeof(wchar_t));
-	assert(MultiByteToWideChar(CP_UTF8, NULL, in, -1, p, len) == len);
+	int len2 = MultiByteToWideChar(CP_UTF8, NULL, in, -1, p, len);
+	assert(len == len2);
 }
 UTF82W::~UTF82W()
 {

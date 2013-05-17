@@ -106,6 +106,7 @@ void inet_worker::run()
 	httppost *post = (httppost*)m_inet_file;
 	wchar_t range_str[200];
 	swprintf_s(range_str, L"bytes=%I64d-", m_pos);
+	if (m_pos > 0)
 	post->addHeader(L"Range", range_str);
 	int response_code = post->send_request();
 	if (response_code<200 || response_code > 299)

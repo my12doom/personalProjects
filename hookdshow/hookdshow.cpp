@@ -498,6 +498,9 @@ void test_cache()
 
 	srand(123456);
 
+	int l = GetTickCount();
+	int max_response = 0;
+	int last_tick = l;
 	for(int i=0; i<50000; i++)
 	{
 		int pos = __int64(21008892-99999) * rand() / RAND_MAX;
@@ -526,7 +529,15 @@ void test_cache()
 			int c2 = memcmp(block2, block, sizeof(block));
 			break;
 		}
+
+		max_response = max(max_response, GetTickCount() - last_tick);
+		last_tick = GetTickCount();
 	}
+
+	printf("avg speed: %d KB/s\n", __int64(50000)*99999 / (GetTickCount()-l));
+	printf("avg response time: %d ms, total %dms, max %dms\n\n", (GetTickCount()-l)/50000, GetTickCount()-l, max_response);
+
+	exit(0);
 
 	delete d;
 }
