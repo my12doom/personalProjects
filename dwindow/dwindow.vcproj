@@ -2389,11 +2389,11 @@
 			Name="HTTP"
 			>
 			<File
-				RelativePath=".\httppost.cpp"
+				RelativePath="..\httppost\httppost.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\httppost.h"
+				RelativePath="..\httppost\httppost.h"
 				>
 			</File>
 		</Filter>

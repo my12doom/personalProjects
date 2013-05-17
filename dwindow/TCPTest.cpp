@@ -23,7 +23,6 @@ HANDLE g_tcp_server_thread = NULL;
 
 
 DWORD WINAPI handler_thread(LPVOID param);
-int my_handle_req(char* data, int size, DWORD ip, int client_sock, char*line, int &p);
 HRESULT init_winsock();
 
 DWORD WINAPI TCP_server_thread(LPVOID param)
