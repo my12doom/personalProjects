@@ -11,11 +11,13 @@
 #include "CCritSec.h"
 #include <map>
 #include <assert.h>
+#include "full_cache.h"
 
 #pragma comment(lib, "detours/detours.lib")
 #pragma comment(lib, "detours/detoured.lib")
 #pragma comment(lib, "strmiids.lib")
 HRESULT debug_list_filters(IGraphBuilder *gb);
+void test_cache();
 
 FILE * f = fopen("Z:\\debug.txt", "wb");
 // #define OutputDebugStringA(x) {fprintf(f, "%s\r\n", x); fflush(f);}
@@ -88,9 +90,9 @@ static HANDLE WINAPI MineCreateFileA(
 	DWORD dwFlagsAndAttributes,
 	HANDLE hTemplateFile)
 {
-	bool b = strstr(lpFileName, "X:\\DWindow\\")==lpFileName;
+	bool b = strstr(lpFileName, "\\\\DWindow\\")==lpFileName;
 
-	HANDLE o = TrueCreateFileA( b ? lpFileName+11 : lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+	HANDLE o = TrueCreateFileA( b ? lpFileName+10 : lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 
 	if (b)
 	{
@@ -101,7 +103,7 @@ static HANDLE WINAPI MineCreateFileA(
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
-		p->ifile.Open(A2W(lpFileName+11), 1024);
+		p->ifile.Open(A2W(lpFileName+10), 1024);
 
 		myCAutoLock lck(&cs);
 		handle_map[o] = p;
@@ -121,19 +123,19 @@ static HANDLE WINAPI MineCreateFileW(
 						 DWORD dwFlagsAndAttributes,
 						 HANDLE hTemplateFile)
 {
-	bool b = wcsstr(lpFileName, L"X:\\DWindow\\")==lpFileName;
+	bool b = wcsstr(lpFileName, L"\\\\DWindow\\")==lpFileName;
 
-	HANDLE o = TrueCreateFileW( b ? lpFileName+11 : lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+	HANDLE o = TrueCreateFileW( b ? lpFileName+10 : lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 
 	if (b)
 	{
-		wchar_t exe_path[MAX_PATH] = {0};
- 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
+		wchar_t exe_path[MAX_PATH] = L"Z:\\response.txt";
+// 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
-		p->ifile.Open(lpFileName+11, 1024);
+		p->ifile.Open(lpFileName+10, 1024);
 		
 		myCAutoLock lck(&cs);
 		handle_map[o] = p;
@@ -204,7 +206,7 @@ static BOOL WINAPI MineReadFile(
 		}
 
 // 		memcpy(tmp, lpBuffer, *lpNumberOfBytesRead);
-// 		int c = memcmp(tmp2, tmp, *lpNumberOfBytesRead);
+		int c = memcmp(tmp2, tmp, *lpNumberOfBytesRead);
 
 		sprintf(tmp, "(H-%08x), read %d bytes, got %d bytes, pos: %d->%d\n", hFile, nNumberOfBytesToRead, *lpNumberOfBytesRead, pos1, pos2);
 		OutputDebugStringA(tmp);
@@ -299,12 +301,53 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 	{
 		delete p;
 		handle_map[hObject] = NULL;
+		return TRUE;
 	}
 
 	return TrueCloseHandle(hObject);
 }
+
+
+#include "full_cache.h"
+
+class test
+{
+public:
+	test(int i) throw(int)
+	{
+		if (i == 12)
+			throw(i);
+	}
+	~test()
+	{
+		printf("~test()\n");
+	}
+};
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+	test_cache();
+
+	test *p = new test(1);
+	try
+	{
+		test p2(12);
+	}
+	catch(int c)
+	{
+		printf("catch %d\n", c);
+	}
+
+	delete p;
+
+	fragment a = {1,5};
+	fragment b = {9,4};
+
+	fragment cross = cross_fragment(a,b);
+	fragment o[2];
+	int c = subtract_fragment(a,b, o);
+
+
 	DetourRestoreAfterWith();
 
 	DetourTransactionBegin();
@@ -324,45 +367,45 @@ int _tmain(int argc, _TCHAR* argv[])
 	CComPtr<IGraphBuilder> gb;
 	gb.CoCreateInstance(CLSID_FilterGraph);
 
-	FILE * f = fopen("D:\\my12doom\\doc\\left720.mp4", "rb");
-	FILE * f2 = _wfopen(L"X:\\DWindow\\http://127.0.0.1/left720.mp4", L"rb");
-
-	srand(12346);
-	for(int i=0; i<0; i++)
-	{
-		int method = rand()%2;
-		int target = abs(((rand()%32768)<<15+rand()%32768)%62034922);
-		target = method == SEEK_END ? -target : target;
-		target = method == SEEK_CUR ? rand()-16384 : target;
-
-		fseek(f, target, method);
-		fseek(f2, target, method);
-
-		char buf1[32768];
-		char buf2[32768];
-		int v1 = fread(buf1, 1, 32768, f);
-		int v2 = fread(buf2, 1, 32768, f2);
-
-		int p1 = ftell(f);
-		int p2 = ftell(f2);
-		int c = memcmp(buf1, buf2, 32768);
-
-		printf("v1, v2, method, target, c, pos1, pos2 = %d, %d, %d, %d, %d, %d, %d\n", v1, v2, method, target, c, p1, p2);
-
-		if (v1 != v2 || c !=0 || p1 != p2)
-			break;
-	}
+// 	FILE * f = fopen("D:\\my12doom\\doc\\left720.mp4", "rb");
+// 	FILE * f2 = _wfopen(L"X:\\DWindow\\http://127.0.0.1/left720.mp4", L"rb");
+// 
+// 	srand(12346);
+// 	for(int i=0; i<0; i++)
+// 	{
+// 		int method = rand()%2;
+// 		int target = abs(((rand()%32768)<<15+rand()%32768)%62034922);
+// 		target = method == SEEK_END ? -target : target;
+// 		target = method == SEEK_CUR ? rand()-16384 : target;
+// 
+// 		fseek(f, target, method);
+// 		fseek(f2, target, method);
+// 
+// 		char buf1[32768];
+// 		char buf2[32768];
+// 		int v1 = fread(buf1, 1, 32768, f);
+// 		int v2 = fread(buf2, 1, 32768, f2);
+// 
+// 		int p1 = ftell(f);
+// 		int p2 = ftell(f2);
+// 		int c = memcmp(buf1, buf2, 32768);
+// 
+// 		printf("v1, v2, method, target, c, pos1, pos2 = %d, %d, %d, %d, %d, %d, %d\n", v1, v2, method, target, c, p1, p2);
+// 
+// 		if (v1 != v2 || c !=0 || p1 != p2)
+// 			break;
+// 	}
 // 	fclose(f);
 // 	fclose(f2);
 
 
 
 //	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://127.0.0.1/MBAFF.ts", NULL);
-//   	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://bo3d.net/test/flv.flv", NULL);
+   	HRESULT hr = gb->RenderFile(L"\\\\DWindow\\http://bo3d.net/test/hrag.mp4", NULL);
 // 	HRESULT hr = gb->RenderFile(L"D:\\my12doom\\doc\\left720.mkv", NULL);
-//	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://127.0.0.1/flv.flv", NULL);
+	//HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://127.0.0.1:8080/left720.mkv", NULL);
 //    	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://192.168.1.209/logintest/flv.flv", NULL);
-    	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://bo3d.net/test/flv.flv", NULL);
+//     	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://bo3d.net/test/a-001.mkv", NULL);
 	debug_list_filters(gb);
 	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
 	mc->Run();
@@ -443,4 +486,47 @@ HRESULT debug_list_filters(IGraphBuilder *gb)
 	wprintf(L"\n");
 
 	return S_OK;
+}
+
+
+void test_cache()
+{
+
+	disk_manager *d = new disk_manager(L"http://127.0.0.1/flv.flv", L"flv.flv.config");
+
+	FILE * f = fopen("Z:\\flv.flv", "rb");
+
+	srand(123456);
+
+	for(int i=0; i<50000; i++)
+	{
+		int pos = __int64(21008892-99999) * rand() / RAND_MAX;
+
+		char block[99999] = {0};
+		char block2[99999] = {0};
+		char ref_block[99999] = {0};
+		fragment frag = {pos, pos+99999};
+		d->get(block, frag);
+
+		fseek(f, pos, SEEK_SET);
+		fread(ref_block, 1, sizeof(ref_block), f);
+
+		int c = memcmp(block, ref_block, sizeof(block)-1);
+
+		if (c != 0)
+		{
+			int j;
+			for(j=0; j<sizeof(block); j++)
+				if (block[j] != ref_block[j])
+					break;
+				
+
+			d->get(block2, frag);
+			d->get(block2, frag);
+			int c2 = memcmp(block2, block, sizeof(block));
+			break;
+		}
+	}
+
+	delete d;
 }

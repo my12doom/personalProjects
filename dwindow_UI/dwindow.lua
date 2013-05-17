@@ -228,8 +228,7 @@ end
 function GetPath(pathname)
 	local t = string.reverse(pathname)
 	t = string.sub(t, string.find(t, "\\") or 1)
-	return string.reverse(t)
-	
+	return string.reverse(t)	
 end
 
 

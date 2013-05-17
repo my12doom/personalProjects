@@ -46,7 +46,7 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
+				WarningLevel="4"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -183,6 +183,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\full_cache.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\full_cache.h"
+				>
+			</File>
+			<File
 				RelativePath=".\hookdshow.cpp"
 				>
 			</File>
@@ -200,6 +208,10 @@
 			</File>
 			<File
 				RelativePath=".\InternetFile.h"
+				>
+			</File>
+			<File
+				RelativePath="..\dwindow\runnable.cpp"
 				>
 			</File>
 			<File

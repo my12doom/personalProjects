@@ -306,7 +306,7 @@ int httppost::send_request()
 	LINE("HOST: %s", W2UTF8(m_server));
 	LINE("Accept: */*");
 	LINE("Content-Type: multipart/form-data; charset=UTF-8; boundary=%s", boundary);
-	LINE("Accept-Encoding: gzip, deflate");
+	LINE("Accept-Encoding: deflate");
 	LINE("User-Agent: Mozilla/4.0 (compatible; windows 5.1)");
 	LINE("Connection: Keep-Alive");
 	LINE("Cache-Control: no-cache");
@@ -443,4 +443,53 @@ static int wcstrim(wchar_t *str, wchar_t char_ )
 	str[len-lead-end] = NULL;
 
 	return len - lead - end;
+}
+
+
+W2UTF8::W2UTF8(const wchar_t *in)
+{
+	p = NULL;
+
+	if (!in)
+		return;
+
+	int len = WideCharToMultiByte(CP_UTF8, NULL, in, -1, NULL, 0, NULL, NULL);
+	if (len<0)
+		return;
+
+	p = (char*)malloc(len*sizeof(char));
+	assert(WideCharToMultiByte(CP_UTF8, NULL, in, -1, p, len, NULL, NULL) == len);
+}
+
+W2UTF8::~W2UTF8()
+{
+	if(p)free(p);
+}
+
+W2UTF8::operator char*()
+{
+	return p;
+}
+
+UTF82W::UTF82W(const char *in)
+{
+	p = NULL;
+
+	if (!in)
+		return;
+
+	int len = MultiByteToWideChar(CP_UTF8, NULL, in, -1, NULL, 0);
+	if (len<0)
+		return;
+
+	p = (wchar_t*)malloc(len*sizeof(wchar_t));
+	assert(MultiByteToWideChar(CP_UTF8, NULL, in, -1, p, len) == len);
+}
+UTF82W::~UTF82W()
+{
+	if(p)free(p);
+}
+UTF82W::operator wchar_t*()
+{
+	return p;
 }
