@@ -4,7 +4,7 @@
 
 static const __int64 PRELOADING_SIZE = 1536*1024;
 static const DWORD WORKER_TIMEOUT = 3000;
-static const DWORD WORKER_COUNT = 5;
+static const DWORD WORKER_COUNT = 10;
 
 
 // two helper function

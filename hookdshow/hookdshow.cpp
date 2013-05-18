@@ -21,7 +21,7 @@ void test_cache();
 
 FILE * f = fopen("Z:\\debug.txt", "wb");
 wchar_t ref_file[MAX_PATH] = L"D:\\my12doom\\doc\\MBAFF.ts";
-wchar_t URL[] = L"\\\\DWindow\\http://127.0.0.1:8080/MBAFF.ts";
+wchar_t URL[] = L"\\\\DWindow\\http://bo3d.net/test/ctm3d.mkv";
 // #define OutputDebugStringA(x) {fprintf(f, "%s\r\n", x); fflush(f);}
 
 static HANDLE (WINAPI * TrueCreateFileA)(
@@ -137,7 +137,7 @@ static HANDLE WINAPI MineCreateFileW(
 
 	if (b)
 	{
-		wchar_t *exe_path = ref_file;
+		wchar_t exe_path[MAX_PATH];
  		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 
@@ -181,6 +181,14 @@ static BOOL WINAPI MineReadFile(
 			p->ifile.get(lpBuffer, frag);
 			p->pos = frag.end;
 
+			// pre reader
+			for(int i=0; i<5; i++)
+			{
+				char buf[200];
+				fragment pre_reader = {pos+ 2048*1024*i, pos+ 2048*1024*i +100};
+				p->ifile.get(buf, pre_reader);
+			}
+
 			lpOverlapped->Internal = 0;
 			lpOverlapped->InternalHigh = frag.end - frag.start;
 			lpOverlapped->Offset = 0;
@@ -196,6 +204,14 @@ static BOOL WINAPI MineReadFile(
 			p->ifile.get(lpBuffer, frag) >= 0;
 			*lpNumberOfBytesRead = frag.end - frag.start;
 			p->pos += *lpNumberOfBytesRead;
+
+			// pre reader
+			for(int i=0; i<5; i++)
+			{
+				char buf[200];
+				fragment pre_reader = {p->pos+ 4096*1024*i, p->pos+ 2048*1024*i +100};
+				p->ifile.get(buf, pre_reader);
+			}
 		}
 
 		return TRUE;
@@ -311,7 +327,7 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	test_cache();
+// 	test_cache();
 
 	DetourRestoreAfterWith();
 
@@ -412,7 +428,7 @@ void test_cache()
 {
 
 	disk_manager *d = new disk_manager(L"flv.flv.config");
-	d->setURL(L"http://127.0.0.1:8080/flv.flv");
+	d->setURL(L"http://bo3d.net/test/flv.flv");
 
 	FILE * f = fopen("Z:\\flv.flv", "rb");
 
@@ -421,14 +437,15 @@ void test_cache()
 	int l = GetTickCount();
 	int max_response = 0;
 	int last_tick = l;
+	const int block_size = 99;
 	for(int i=0; i<500; i++)
 	{
-		int pos = __int64(21008892-99999) * rand() / RAND_MAX;
+		int pos = __int64(21008892-block_size) * rand() / RAND_MAX;
 
-		char block[99999] = {0};
-		char block2[99999] = {0};
-		char ref_block[99999] = {0};
-		fragment frag = {pos, pos+99999};
+		char block[block_size] = {0};
+		char block2[block_size] = {0};
+		char ref_block[block_size] = {0};
+		fragment frag = {pos, pos+block_size};
 		d->get(block, frag);
 
 		fseek(f, pos, SEEK_SET);
@@ -454,7 +471,7 @@ void test_cache()
 		last_tick = GetTickCount();
 	}
 
-	printf("avg speed: %d KB/s\n", __int64(50000)*99999 / (GetTickCount()-l));
+	printf("avg speed: %d KB/s\n", __int64(50000)*block_size / (GetTickCount()-l));
 	printf("avg response time: %d ms, total %dms, max %dms\n\n", (GetTickCount()-l)/50000, GetTickCount()-l, max_response);
 
 	l = GetTickCount();
