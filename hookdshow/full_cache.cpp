@@ -2,7 +2,7 @@
 #include <assert.h>
 #include "..\httppost\httppost.h"
 
-static const __int64 PRELOADING_SIZE = 1536*1024;
+static const __int64 PRELOADING_SIZE = 128*1024;
 static const DWORD WORKER_TIMEOUT = 3000;
 static const DWORD WORKER_COUNT = 10;
 
@@ -68,7 +68,7 @@ int compare_inet_worker(const void *a, const void *b)
 	return 0;
 }
 
-int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary)
+int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary, bool debug/*=false*/)
 {
 	myCAutoLock lck(&m_worker_cs);
 	for(std::list<inet_worker*>::iterator i = m_active_workers.begin(); i != m_active_workers.end(); ++i)
@@ -109,9 +109,15 @@ int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary)
 			index[0].p->signal_quit();
 		}
 
+		printf("new thread start @ %d\n", (int)pos.start);
 		inet_worker *worker = new inet_worker(m_URL.c_str(), pos.start, this);
 		m_active_workers.push_back(worker);
 		m_worker_pool.submmit(worker);
+	}
+
+	else if (debug)
+	{
+		printf("");
 	}
 
 	return 0;
@@ -172,7 +178,10 @@ void inet_worker::run()
 		// hint timeout
 		while(m_pos >= m_maxpos && !m_exit_signaled)
 			if (get_timeout_left() <= 0)
+			{
+				printf("worker %08x timeout, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size(), (int)m_pos, (int)m_maxpos);
 				return;
+			}
 			else
 				Sleep(1);
 		
@@ -181,11 +190,17 @@ void inet_worker::run()
 
 		// network error
 		if (o<=0)
+		{
+			printf("worker %08x network error, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size(), (int)m_pos, (int)m_maxpos);
 			return;
+		}
 
 		fragment frag = {m_pos, m_pos + o};
 		if (disk->feed(block, frag) != 0)
+		{
+			printf("worker %08x hit a disk wall, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size(), (int)m_pos, (int)m_maxpos);
 			return;		// hit a disk wall or disk error
+		}
 
 		m_pos += o;
 	}
@@ -200,7 +215,7 @@ void inet_worker::run()
 // 0: OK
 int inet_worker::hint(__int64 pos)
 {
-	if (pos > m_maxpos)
+	if (!responsible(pos))
 		return -1;
 
 	m_maxpos = max(m_maxpos, pos + PRELOADING_SIZE);
@@ -211,7 +226,7 @@ int inet_worker::hint(__int64 pos)
 
 bool inet_worker::responsible(__int64 pos)		// return if this worker is CURRENTLY responsible for the pos
 {
-	return pos >= m_pos && pos < m_maxpos;
+	return pos >= m_pos && pos <= m_maxpos;
 }
 
 
@@ -257,7 +272,19 @@ disk_manager::~disk_manager()
 
 int disk_manager::get(void *buf, fragment &pos)
 {
+	{
+		myCAutoLock lck2(&m_access_lock);
+		debug_info disk_item = {pos};
+		disk_item.type = pos.end - pos.start == 100 ? debug_info.preread: debug_info.read;
+		disk_item.tick = GetTickCount();
+
+		if (m_access_info.size() > 500)
+			m_access_info.pop_front();
+		m_access_info.push_back(disk_item);
+	}
+
 	// check range
+	bool debug = (pos.end - pos.start) == 100;
 	int rtn = 0;
 	if (pos.start < 0)
 		return -1;
@@ -309,7 +336,7 @@ int disk_manager::get(void *buf, fragment &pos)
 		{
 			// this fragment is not handled by any of disk fragments.
 			// start inet thread here
-			m_worker_manager->hint(frag, true);
+			m_worker_manager->hint(frag, true, debug);
 			fragment_list.push_front(frag);
 			Sleep(1);
 		}
@@ -353,6 +380,48 @@ int disk_manager::feed(void *buf, fragment pos)
 	return 0;
 }
 
+std::list<debug_info> disk_manager::debug()
+{
+	std::list<debug_info> out;
+
+	{
+		myCAutoLock lck(&m_fragments_cs);
+		for(std::list<disk_fragment*>::iterator i = m_fragments.begin(); i != m_fragments.end(); ++i)
+		{
+			debug_info disk_item = {{0,0}};
+			disk_item.type = debug_info::disk;
+			disk_item.frag.start = (*i)->m_start;
+			disk_item.frag.end = (*i)->m_pos;
+
+			out.push_back(disk_item);
+		}
+	}
+
+	{
+		myCAutoLock lck(&m_worker_manager->m_worker_cs);
+		for(std::list<inet_worker*>::iterator i = m_worker_manager->m_active_workers.begin(); i != m_worker_manager->m_active_workers.end(); ++i)
+		{
+			debug_info net_item = {{0,0}};
+			net_item.type = debug_info::net;
+			net_item.frag.start = (*i)->m_pos;
+			net_item.frag.end = (*i)->m_maxpos;
+
+			out.push_back(net_item);
+		}
+	}
+
+	{
+		myCAutoLock lck2(&m_access_lock);
+		for(std::list<debug_info>::iterator i = m_access_info.begin(); i != m_access_info.end(); ++i)
+		{
+			if (GetTickCount() - (*i).tick < WORKER_TIMEOUT)
+				out.push_back(*i);
+		}
+	}
+
+
+	return out;
+}
 
 
 

@@ -8,6 +8,7 @@
 
 class inet_worker_manager;
 class disk_manager;
+class disk_manager;
 
 typedef struct
 {
@@ -40,6 +41,7 @@ public:
 	__int64 m_pos;
 	__int64 m_maxpos;					// modified by hint();
 protected:
+	friend class disk_manager;
 	DWORD m_last_inet_time;
 	bool m_exit_signaled;
 	void *m_inet_file;
@@ -53,10 +55,11 @@ public:
 	inet_worker_manager(const wchar_t *URL, disk_manager *manager);
 	~inet_worker_manager();
 
-	int hint(fragment pos, bool open_new_worker_if_necessary);			// hint the workers to continue their work, and launch new worker if necessary
+	int hint(fragment pos, bool open_new_worker_if_necessary, bool debug = false);			// hint the workers to continue their work, and launch new worker if necessary
 
 protected:
 	friend class inet_worker;
+	friend class disk_manager;
 
 	myCCritSec m_worker_cs;
 	std::list<inet_worker*> m_active_workers;
@@ -65,6 +68,18 @@ protected:
 	disk_manager *m_manager;
 };
 
+typedef struct
+{
+	fragment frag;
+	enum
+	{
+		disk,
+		net,
+		read,
+		preread,
+	} type;
+	int tick;
+}debug_info;
 
 class disk_fragment
 {
@@ -89,6 +104,7 @@ public:
 	__int64 tell(){return m_pos;}
 
 protected:
+	friend class disk_manager;
 	myCCritSec m_cs;
 	__int64 m_pos;
 	__int64 m_start;
@@ -105,6 +121,7 @@ public:
 	int setURL(const wchar_t *URL);
 	int get(void *buf, fragment &pos);
 	__int64 getsize(){return m_filesize;}
+	std::list<debug_info> debug();
 
 protected:
 	friend class disk_fragment;
@@ -118,9 +135,11 @@ protected:
 	int feed(void *buf, fragment pos);
 
 	std::list<disk_fragment*> m_fragments;
+	std::list<debug_info> m_access_info;
 	inet_worker_manager *m_worker_manager;
 	std::wstring m_URL;
 	std::wstring m_config_file;
 	myCCritSec m_fragments_cs;
+	myCCritSec m_access_lock;
 	__int64 m_filesize;
 };

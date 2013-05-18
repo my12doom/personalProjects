@@ -21,7 +21,7 @@ void test_cache();
 
 FILE * f = fopen("Z:\\debug.txt", "wb");
 wchar_t ref_file[MAX_PATH] = L"D:\\my12doom\\doc\\MBAFF.ts";
-wchar_t URL[] = L"\\\\DWindow\\http://bo3d.net/test/ctm3d.mkv";
+wchar_t URL[] = L"\\\\DWindow\\http://bo3d.net/test/hrag.mp4";
 // #define OutputDebugStringA(x) {fprintf(f, "%s\r\n", x); fflush(f);}
 
 static HANDLE (WINAPI * TrueCreateFileA)(
@@ -121,6 +121,7 @@ static HANDLE WINAPI MineCreateFileA(
 	return o;
 }
 
+disk_manager *g_last_manager;
 
 static HANDLE WINAPI MineCreateFileW(
 						 LPCWSTR lpFileName,
@@ -144,6 +145,7 @@ static HANDLE WINAPI MineCreateFileW(
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->pos = 0;
+		g_last_manager = &p->ifile;
 		if (p->ifile.setURL(lpFileName+10) < 0)
 		{
 			CloseHandle(o);
@@ -182,10 +184,10 @@ static BOOL WINAPI MineReadFile(
 			p->pos = frag.end;
 
 			// pre reader
-			for(int i=0; i<5; i++)
+			for(int i=1; i<5; i++)
 			{
 				char buf[200];
-				fragment pre_reader = {pos+ 2048*1024*i, pos+ 2048*1024*i +100};
+				fragment pre_reader = {pos+ 4096*1024*i, pos+ 4096*1024*i +100};
 				p->ifile.get(buf, pre_reader);
 			}
 
@@ -206,10 +208,10 @@ static BOOL WINAPI MineReadFile(
 			p->pos += *lpNumberOfBytesRead;
 
 			// pre reader
-			for(int i=0; i<5; i++)
+			for(int i=1; i<5; i++)
 			{
 				char buf[200];
-				fragment pre_reader = {p->pos+ 4096*1024*i, p->pos+ 2048*1024*i +100};
+				fragment pre_reader = {p->pos+ 4096*1024*i, p->pos+ 4096*1024*i +100};
 				p->ifile.get(buf, pre_reader);
 			}
 		}
@@ -324,6 +326,7 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 
 	return TrueCloseHandle(hObject);
 }
+int debug_window(disk_manager *manager);
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -353,7 +356,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
 	mc->Run();
 
-	getch();
+	debug_window(g_last_manager);
 
 	return 0;
 }
