@@ -4,6 +4,7 @@
 
 static const __int64 PRELOADING_SIZE = 1536*1024;
 static const DWORD WORKER_TIMEOUT = 3000;
+static const DWORD WORKER_COUNT = 5;
 
 
 // two helper function
@@ -46,7 +47,7 @@ int subtract_fragment(fragment frag, fragment subtractor, fragment o[2])
 inet_worker_manager::inet_worker_manager(const wchar_t *URL, disk_manager *manager)
 :m_manager(manager)
 ,m_URL(URL)
-,m_worker_pool(2)
+,m_worker_pool(WORKER_COUNT)
 {
 
 }
@@ -54,6 +55,17 @@ inet_worker_manager::inet_worker_manager(const wchar_t *URL, disk_manager *manag
 inet_worker_manager::~inet_worker_manager()
 {
 
+}
+
+int compare_inet_worker(const void *a, const void *b)
+{
+	int *a1 = (int*)a;
+	int *b1 = (int*)b;
+	if (*a1>*b1)
+		return 1;
+	if (*b1>*a1)
+		return -1;
+	return 0;
 }
 
 int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary)
@@ -75,6 +87,28 @@ int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary)
 
 	if (!someone_responsible && open_new_worker_if_necessary)
 	{
+		// kill the most unused thread if thread pool is full
+		if (m_active_workers.size() >= WORKER_COUNT)
+		{
+			typedef struct
+			{
+				int timeout_left;
+				inet_worker *p;
+			} idx;
+			idx index[WORKER_COUNT];
+			int j=0;
+			for(std::list<inet_worker*>::iterator i = m_active_workers.begin();
+				i != m_active_workers.end() && j<WORKER_COUNT; ++i, ++j)
+			{
+				index[j].timeout_left = (*i)->get_timeout_left();
+				index[j].p = (*i);
+			}
+
+			qsort(index, WORKER_COUNT, sizeof(idx), compare_inet_worker);
+
+			index[0].p->signal_quit();
+		}
+
 		inet_worker *worker = new inet_worker(m_URL.c_str(), pos.start, this);
 		m_active_workers.push_back(worker);
 		m_worker_pool.submmit(worker);
@@ -95,6 +129,8 @@ inet_worker::inet_worker(const wchar_t *URL, __int64 start, inet_worker_manager 
 	m_URL = URL;
 	m_manager = manager;
 	m_inet_file = new httppost(URL);
+
+	m_last_inet_time = GetTickCount();
 }
 inet_worker::~inet_worker()
 {
@@ -112,6 +148,11 @@ void inet_worker::signal_quit()
 	m_exit_signaled = true;
 }
 
+int inet_worker::get_timeout_left()
+{
+	return max(0, m_last_inet_time + WORKER_TIMEOUT - GetTickCount());
+}
+
 void inet_worker::run()
 {
 	disk_manager *disk = (disk_manager*)m_manager->m_manager;
@@ -124,20 +165,19 @@ void inet_worker::run()
 	if (response_code<200 || response_code > 299)
 		return;
 
-	DWORD last_inet_time = GetTickCount();
 	char block[4096];
 
 	while(true)
 	{
 		// hint timeout
 		while(m_pos >= m_maxpos && !m_exit_signaled)
-			if (GetTickCount() > last_inet_time + WORKER_TIMEOUT)
+			if (get_timeout_left() <= 0)
 				return;
 			else
 				Sleep(1);
 		
 		int o = post->read_content(block, 4096);
-		last_inet_time = GetTickCount();
+		m_last_inet_time = GetTickCount();
 
 		// network error
 		if (o<=0)

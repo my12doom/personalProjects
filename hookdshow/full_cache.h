@@ -33,11 +33,14 @@ public:
 										// 0: OK
 	void signal_quit();
 
+	int get_timeout_left();				// get time to timeout
+
 	bool responsible(__int64 pos);		// return if this worker is CURRENTLY responsible for the pos
 
 	__int64 m_pos;
 	__int64 m_maxpos;					// modified by hint();
 protected:
+	DWORD m_last_inet_time;
 	bool m_exit_signaled;
 	void *m_inet_file;
 	inet_worker_manager *m_manager;
