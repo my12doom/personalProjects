@@ -31,12 +31,14 @@ public:
 										// return value:
 										// -1: not responsible currently and after hint()
 										// 0: OK
+	void signal_quit();
 
 	bool responsible(__int64 pos);		// return if this worker is CURRENTLY responsible for the pos
 
-protected:
 	__int64 m_pos;
 	__int64 m_maxpos;					// modified by hint();
+protected:
+	bool m_exit_signaled;
 	void *m_inet_file;
 	inet_worker_manager *m_manager;
 	std::wstring m_URL;
@@ -93,10 +95,13 @@ protected:
 class disk_manager
 {
 public:
-	disk_manager(const wchar_t *URL, const wchar_t *configfile);
+	disk_manager(const wchar_t *configfile);
+	disk_manager():m_worker_manager(NULL){disk_manager(NULL);}
 	~disk_manager();
 
-	int get(void *buf, fragment pos);
+	int setURL(const wchar_t *URL);
+	int get(void *buf, fragment &pos);
+	__int64 getsize(){return m_filesize;}
 
 protected:
 	friend class disk_fragment;
@@ -113,6 +118,6 @@ protected:
 	inet_worker_manager *m_worker_manager;
 	std::wstring m_URL;
 	std::wstring m_config_file;
-	myCCritSec m_cs;
 	myCCritSec m_fragments_cs;
+	__int64 m_filesize;
 };

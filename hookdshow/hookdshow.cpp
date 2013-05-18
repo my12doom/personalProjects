@@ -20,6 +20,8 @@ HRESULT debug_list_filters(IGraphBuilder *gb);
 void test_cache();
 
 FILE * f = fopen("Z:\\debug.txt", "wb");
+wchar_t ref_file[MAX_PATH] = L"D:\\my12doom\\doc\\MBAFF.ts";
+wchar_t URL[] = L"\\\\DWindow\\http://127.0.0.1:8080/MBAFF.ts";
 // #define OutputDebugStringA(x) {fprintf(f, "%s\r\n", x); fflush(f);}
 
 static HANDLE (WINAPI * TrueCreateFileA)(
@@ -70,8 +72,9 @@ static DWORD (WINAPI *TrueSetFilePointer)(__in        HANDLE hFile,
 typedef struct
 {
 	DWORD dummy;
-	InternetFile ifile;
+	disk_manager ifile;
 	myCCritSec cs;
+	__int64 pos;
 } dummy_handle;
 myCCritSec cs;
 std::map<HANDLE, dummy_handle*> handle_map;
@@ -103,7 +106,12 @@ static HANDLE WINAPI MineCreateFileA(
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
-		p->ifile.Open(A2W(lpFileName+10), 1024);
+		p->pos = 0;
+		if (p->ifile.setURL(A2W(lpFileName+10)) < 0)
+		{
+			CloseHandle(o);
+			return INVALID_HANDLE_VALUE;
+		}
 
 		myCAutoLock lck(&cs);
 		handle_map[o] = p;
@@ -129,14 +137,18 @@ static HANDLE WINAPI MineCreateFileW(
 
 	if (b)
 	{
-		wchar_t exe_path[MAX_PATH] = L"Z:\\response.txt";
+		wchar_t *exe_path = ref_file;
 // 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
-		p->ifile.Open(lpFileName+10, 1024);
-		
+		p->pos = 0;
+		if (p->ifile.setURL(lpFileName+10) < 0)
+		{
+			CloseHandle(o);
+			return INVALID_HANDLE_VALUE;
+		}
 		myCAutoLock lck(&cs);
 		handle_map[o] = p;
 
@@ -157,58 +169,71 @@ static BOOL WINAPI MineReadFile(
 	if (p && p->dummy == dummy_value)
 	{
 
-		char tmp[80000];
-		char tmp2[80000];
-
-		OVERLAPPED ov = {0};
-		if (lpOverlapped)
-			ov = *lpOverlapped;
-
-// 		DWORD nGot = 0;
-// 		DWORD pos = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
-// 		BOOL o2 = TrueReadFile(hFile, tmp2, nNumberOfBytesToRead, &nGot, lpOverlapped);
-// 		DWORD pos22 = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
-
-		if (lpOverlapped)
-			*lpOverlapped = ov;
-
+		char tmp[200000];
+		char tmp2[200000];
 
 		myCAutoLock lck(&p->cs);
 
 		DWORD pos1, pos2;
-		BOOL o;
+		BOOL o = TRUE;
 
 		if (lpOverlapped)
 		{
 			if (lpOverlapped->hEvent)
 				ResetEvent(lpOverlapped->hEvent);
 
-			LARGE_INTEGER li;
-			li.HighPart = lpOverlapped->OffsetHigh;
-			li.LowPart = lpOverlapped->Offset;
-			p->ifile.SetFilePointerEx(li, &li, SEEK_SET);
-			o = p->ifile.ReadFile(lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
+			__int64 pos =/* __int64(lpOverlapped->OffsetHigh) << 32 +*/ lpOverlapped->Offset;
+			fragment frag = {pos, pos+nNumberOfBytesToRead};
+			p->ifile.get(lpBuffer, frag);
+			p->pos = frag.end;
 
 			lpOverlapped->Internal = 0;
-			lpOverlapped->InternalHigh = *lpNumberOfBytesRead;
+			lpOverlapped->InternalHigh = frag.end - frag.start;
 			lpOverlapped->Offset = 0;
 			lpOverlapped->OffsetHigh = 0;
+			*lpNumberOfBytesRead = lpOverlapped->InternalHigh;
+			o = TRUE;
 
 			if (lpOverlapped->hEvent)
 				SetEvent(lpOverlapped->hEvent);
+
+			memcpy(tmp, lpBuffer, lpOverlapped->InternalHigh);
+			FILE * f = _wfopen(ref_file, L"rb");
+			fseek(f, pos, SEEK_SET);
+			fread(tmp2, 1, nNumberOfBytesToRead, f);
+			fclose(f);
+			int c = memcmp(tmp2, tmp, lpOverlapped->InternalHigh);
+			c = c + 1 - 1;
+
+			assert(c==0);
 		}
 		else
 		{
 
+			DWORD nGot = 0;
+			DWORD pos = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
+			BOOL o2 = TrueReadFile(hFile, tmp2, nNumberOfBytesToRead, &nGot, lpOverlapped);
+			DWORD pos22 = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
+
 			pos1 = SetFilePointer(hFile, 0, NULL, SEEK_CUR);
-			o = p->ifile.ReadFile(lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
+			fragment frag = {p->pos, p->pos+nNumberOfBytesToRead};
+			o = p->ifile.get(lpBuffer, frag) >= 0;
+			*lpNumberOfBytesRead = frag.end - frag.start;
+			p->pos += *lpNumberOfBytesRead;
 			pos2 = SetFilePointer(hFile, 0, NULL, SEEK_CUR);
+
+			if (*lpNumberOfBytesRead > 200)
+			{
+			memcpy(tmp, lpBuffer, *lpNumberOfBytesRead);
+			int c = memcmp(tmp2, tmp, *lpNumberOfBytesRead);
+			assert(c==0);
+			assert(pos22 == pos2 && pos22 == p->pos);
+			assert(pos == pos1);
+			}
 		}
 
-// 		memcpy(tmp, lpBuffer, *lpNumberOfBytesRead);
-		int c = memcmp(tmp2, tmp, *lpNumberOfBytesRead);
 
-		sprintf(tmp, "(H-%08x), read %d bytes, got %d bytes, pos: %d->%d\n", hFile, nNumberOfBytesToRead, *lpNumberOfBytesRead, pos1, pos2);
+		sprintf(tmp, "(H-%08x), read %d bytes, got %d bytes, pos: %d->%d\n", hFile, nNumberOfBytesToRead, *lpNumberOfBytesRead, (DWORD)p->pos, pos2);
 		OutputDebugStringA(tmp);
 
 // 		strcpy(tmp, "content: ");
@@ -231,7 +256,11 @@ static BOOL WINAPI MineGetFileSizeEx(HANDLE h, PLARGE_INTEGER lpFileSize)
 {
 	dummy_handle *p = get_dummy(h);
 	if (p && p->dummy == dummy_value)
-		return p->ifile.GetFileSizeEx(lpFileSize);
+	{
+		if (lpFileSize)
+			lpFileSize->QuadPart = p->ifile.getsize();
+		return TRUE;
+	}
 	else
 		return TrueGetFileSizeEx(h, lpFileSize);
 }
@@ -241,12 +270,12 @@ static DWORD WINAPI MineGetFileSize(_In_ HANDLE hFile,_Out_opt_ LPDWORD lpFileSi
 	dummy_handle *p = get_dummy(hFile);
 	if (p && p->dummy == dummy_value)
 	{
-		LARGE_INTEGER li = {0};
-		p->ifile.GetFileSizeEx(&li);
+		__int64 size = p->ifile.getsize();		
 
 		if (lpFileSizeHigh)
-			*lpFileSizeHigh = li.HighPart;
-		return li.LowPart;
+			*lpFileSizeHigh = (DWORD)(size>>32);
+		DWORD o = size&0xffffffff;
+		return o;
 	}
 	else
 		return TrueGetFileSize(hFile, lpFileSizeHigh);
@@ -260,8 +289,30 @@ static BOOL WINAPI MineSetFilePointerEx(HANDLE h, __in LARGE_INTEGER liDistanceT
 	dummy_handle *p = get_dummy(h);
 	if (p && p->dummy == dummy_value)
 	{
+
+		char tmp[2048];
+		sprintf(tmp, "(H-%08x), seek to %d method %d\n", h, (int)liDistanceToMove.QuadPart, dwMoveMethod);
+		OutputDebugStringA(tmp);
+
 		myCAutoLock lck(&p->cs);
-		return p->ifile.SetFilePointerEx(liDistanceToMove, lpNewFilePointer, dwMoveMethod);
+		switch(dwMoveMethod)
+		{
+		case SEEK_SET:
+			lpNewFilePointer->QuadPart = liDistanceToMove.QuadPart;
+			break;
+		case SEEK_CUR:
+			lpNewFilePointer->QuadPart = p->pos + liDistanceToMove.QuadPart;
+			break;
+		case SEEK_END:
+			lpNewFilePointer->QuadPart = p->ifile.getsize() + liDistanceToMove.QuadPart;
+			break;
+		}
+
+		p->pos = lpNewFilePointer->QuadPart;
+		
+		return TrueSetFilePointerEx(h, liDistanceToMove, lpNewFilePointer, dwMoveMethod);
+
+		return TRUE;
 	}
 	else
 		return TrueSetFilePointerEx(h, liDistanceToMove, lpNewFilePointer, dwMoveMethod);
@@ -283,12 +334,27 @@ static DWORD WINAPI MineSetFilePointer(__in        HANDLE hFile,
 		OutputDebugStringA(tmp);
 
 		myCAutoLock lck(&p->cs);
-		p->ifile.SetFilePointerEx(li, &li2, dwMoveMethod);
+
+
+		switch(dwMoveMethod)
+		{
+		case SEEK_SET:
+			li2.QuadPart = li.QuadPart;
+			break;
+		case SEEK_CUR:
+			li2.QuadPart = p->pos + li.QuadPart;
+			break;
+		case SEEK_END:
+			li2.QuadPart = p->ifile.getsize() + li.QuadPart;
+			break;
+		}
+
+
+		DWORD o = TrueSetFilePointer(hFile, lDistanceToMove, lpDistanceToMoveHigh, dwMoveMethod);
+
+		p->pos = li2.QuadPart;
 		if (lpDistanceToMoveHigh)
 			*lpDistanceToMoveHigh = li2.HighPart;
-
-// 		assert(li.QuadPart == li2.QuadPart);
-
 		return li2.LowPart;
 	}
 
@@ -299,7 +365,7 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 	dummy_handle *p = get_dummy(hObject);
 	if (p && p->dummy == dummy_value)
 	{
-		delete p;
+ 		delete p;
 		handle_map[hObject] = NULL;
 		return TRUE;
 	}
@@ -307,46 +373,53 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 	return TrueCloseHandle(hObject);
 }
 
-
-#include "full_cache.h"
-
-class test
+class runner : public Irunnable
 {
 public:
-	test(int i) throw(int)
+	runner()
 	{
-		if (i == 12)
-			throw(i);
+		m_handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+
 	}
-	~test()
+	virtual void run()
 	{
-		printf("~test()\n");
+		printf("run %08x\n", this);
+		WaitForSingleObject(m_handle, INFINITE);
+		printf("run %08x OK\n", this);
 	}
+	virtual void signal_quit()
+	{
+		printf("signal_quit %08x\n", this);
+		SetEvent(m_handle);
+	}
+	virtual void join()
+	{
+		WaitForSingleObject(m_handle, INFINITE);
+	}
+	~runner()
+	{
+		CloseHandle(m_handle);
+	}
+protected:
+	HANDLE m_handle;
 };
+
+int test_thread_pool()
+{
+	thread_pool pool(3);
+	pool.submmit(new runner);
+	pool.submmit(new runner);
+
+	Sleep(50);
+
+	return 0;
+}
+
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	test_cache();
-
-	test *p = new test(1);
-	try
-	{
-		test p2(12);
-	}
-	catch(int c)
-	{
-		printf("catch %d\n", c);
-	}
-
-	delete p;
-
-	fragment a = {1,5};
-	fragment b = {9,4};
-
-	fragment cross = cross_fragment(a,b);
-	fragment o[2];
-	int c = subtract_fragment(a,b, o);
-
+// 	test_thread_pool();
+//  	test_cache();
 
 	DetourRestoreAfterWith();
 
@@ -367,57 +440,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	CComPtr<IGraphBuilder> gb;
 	gb.CoCreateInstance(CLSID_FilterGraph);
 
-// 	FILE * f = fopen("D:\\my12doom\\doc\\left720.mp4", "rb");
-// 	FILE * f2 = _wfopen(L"X:\\DWindow\\http://127.0.0.1/left720.mp4", L"rb");
-// 
-// 	srand(12346);
-// 	for(int i=0; i<0; i++)
-// 	{
-// 		int method = rand()%2;
-// 		int target = abs(((rand()%32768)<<15+rand()%32768)%62034922);
-// 		target = method == SEEK_END ? -target : target;
-// 		target = method == SEEK_CUR ? rand()-16384 : target;
-// 
-// 		fseek(f, target, method);
-// 		fseek(f2, target, method);
-// 
-// 		char buf1[32768];
-// 		char buf2[32768];
-// 		int v1 = fread(buf1, 1, 32768, f);
-// 		int v2 = fread(buf2, 1, 32768, f2);
-// 
-// 		int p1 = ftell(f);
-// 		int p2 = ftell(f2);
-// 		int c = memcmp(buf1, buf2, 32768);
-// 
-// 		printf("v1, v2, method, target, c, pos1, pos2 = %d, %d, %d, %d, %d, %d, %d\n", v1, v2, method, target, c, p1, p2);
-// 
-// 		if (v1 != v2 || c !=0 || p1 != p2)
-// 			break;
-// 	}
-// 	fclose(f);
-// 	fclose(f2);
-
-
-
-//	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://127.0.0.1/MBAFF.ts", NULL);
-   	HRESULT hr = gb->RenderFile(L"\\\\DWindow\\http://bo3d.net/test/hrag.mp4", NULL);
-// 	HRESULT hr = gb->RenderFile(L"D:\\my12doom\\doc\\left720.mkv", NULL);
-	//HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://127.0.0.1:8080/left720.mkv", NULL);
-//    	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://192.168.1.209/logintest/flv.flv", NULL);
-//     	HRESULT hr = gb->RenderFile(L"X:\\DWindow\\http://bo3d.net/test/a-001.mkv", NULL);
+	HRESULT hr = gb->RenderFile(URL, NULL);
 	debug_list_filters(gb);
 	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
 	mc->Run();
 
-	while(true)
-	{
-		OAFilterState fs;
-		mc->GetState(500, &fs);
-		char*  tbl[3] = {"State_Stopped", "State_Paused", "State_Running"};
-		printf("\r%s", tbl[fs]);
-		Sleep(1);
-	}
 	getch();
 
 	return 0;
@@ -492,7 +519,8 @@ HRESULT debug_list_filters(IGraphBuilder *gb)
 void test_cache()
 {
 
-	disk_manager *d = new disk_manager(L"http://127.0.0.1/flv.flv", L"flv.flv.config");
+	disk_manager *d = new disk_manager(L"flv.flv.config");
+	d->setURL(L"http://127.0.0.1:8080/flv.flv");
 
 	FILE * f = fopen("Z:\\flv.flv", "rb");
 
@@ -501,7 +529,7 @@ void test_cache()
 	int l = GetTickCount();
 	int max_response = 0;
 	int last_tick = l;
-	for(int i=0; i<50000; i++)
+	for(int i=0; i<500; i++)
 	{
 		int pos = __int64(21008892-99999) * rand() / RAND_MAX;
 
@@ -537,7 +565,8 @@ void test_cache()
 	printf("avg speed: %d KB/s\n", __int64(50000)*99999 / (GetTickCount()-l));
 	printf("avg response time: %d ms, total %dms, max %dms\n\n", (GetTickCount()-l)/50000, GetTickCount()-l, max_response);
 
-	exit(0);
-
+	l = GetTickCount();
+	printf("exiting cache");
 	delete d;
+	printf("done exiting cache, %dms\n", GetTickCount()-l);
 }

@@ -2,8 +2,8 @@
 #include <assert.h>
 #include "..\httppost\httppost.h"
 
-static const __int64 PRELOADING_SIZE = 1024*1024;
-static const DWORD WORKER_TIMEOUT = 30;
+static const __int64 PRELOADING_SIZE = 1536*1024;
+static const DWORD WORKER_TIMEOUT = 3000;
 
 
 // two helper function
@@ -46,7 +46,7 @@ int subtract_fragment(fragment frag, fragment subtractor, fragment o[2])
 inet_worker_manager::inet_worker_manager(const wchar_t *URL, disk_manager *manager)
 :m_manager(manager)
 ,m_URL(URL)
-,m_worker_pool(20)
+,m_worker_pool(2)
 {
 
 }
@@ -60,7 +60,11 @@ int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary)
 {
 	myCAutoLock lck(&m_worker_cs);
 	for(std::list<inet_worker*>::iterator i = m_active_workers.begin(); i != m_active_workers.end(); ++i)
+	{
 		(*i)->hint(pos.start);
+		(*i)->hint(pos.end);
+		(*i)->hint((pos.start + pos.end)/2);
+	}
 
 	bool someone_responsible = false;
 	for(std::list<inet_worker*>::iterator i = m_active_workers.begin(); i != m_active_workers.end(); ++i)
@@ -83,6 +87,7 @@ int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary)
 // inet worker
 inet_worker::inet_worker(const wchar_t *URL, __int64 start, inet_worker_manager *manager)
 :m_inet_file(NULL)
+,m_exit_signaled(false)
 {
 	m_pos = start;
 	m_maxpos = start + PRELOADING_SIZE;
@@ -98,6 +103,13 @@ inet_worker::~inet_worker()
 	// cleanup
 	if (m_inet_file)
 		delete ((httppost*)m_inet_file);
+}
+
+void inet_worker::signal_quit()
+{
+	if (m_inet_file)
+		((httppost*)m_inet_file)->close_connection();
+	m_exit_signaled = true;
 }
 
 void inet_worker::run()
@@ -118,13 +130,14 @@ void inet_worker::run()
 	while(true)
 	{
 		// hint timeout
-		while(m_pos >= m_maxpos)
+		while(m_pos >= m_maxpos && !m_exit_signaled)
 			if (GetTickCount() > last_inet_time + WORKER_TIMEOUT)
 				return;
 			else
 				Sleep(1);
 		
 		int o = post->read_content(block, 4096);
+		last_inet_time = GetTickCount();
 
 		// network error
 		if (o<=0)
@@ -147,7 +160,7 @@ void inet_worker::run()
 // 0: OK
 int inet_worker::hint(__int64 pos)
 {
-	if (!responsible(pos))
+	if (pos > m_maxpos)
 		return -1;
 
 	m_maxpos = max(m_maxpos, pos + PRELOADING_SIZE);
@@ -166,24 +179,57 @@ bool inet_worker::responsible(__int64 pos)		// return if this worker is CURRENTL
 // disk manager
 
 
-disk_manager::disk_manager(const wchar_t *URL, const wchar_t *configfile)
+disk_manager::disk_manager(const wchar_t *configfile)
+:m_worker_manager(NULL)
 {
+	if (configfile)
+		m_config_file = configfile;
+}
+
+int disk_manager::setURL(const wchar_t *URL)
+{
+	if (m_worker_manager != NULL)
+		return -1;
+
 	m_URL = URL;
-	m_config_file = configfile;
+	m_filesize = 0;
+
+	httppost http(URL);
+	int responsecode = http.send_request();
+	if (responsecode < 200 || responsecode > 299)
+		return -2;
+	m_filesize = http.get_content_length();
+	if (m_filesize <= 0)
+		return -3;
+
 	m_worker_manager = new inet_worker_manager(URL, this);
+
+	return 0;
 }
 
 disk_manager::~disk_manager()
 {
-
+	delete m_worker_manager;
+	for(std::list<disk_fragment*>::iterator i = m_fragments.begin(); i != m_fragments.end(); ++i)
+		delete *i;
 }
 
 
-int disk_manager::get(void *buf, fragment pos)
+int disk_manager::get(void *buf, fragment &pos)
 {
-// 	myCAutoLock lck(&m_cs);
+	// check range
+	int rtn = 0;
+	if (pos.start < 0)
+		return -1;
+	if (pos.end > m_filesize)
+	{
+		pos.end = m_filesize;
+		rtn = 1;
+	}
 
-	// TODO: check range here
+	pos.start = min(pos.start, pos.end);
+	if (pos.end <= pos.start)
+		return 0;
 
 	std::list<fragment> fragment_list;
 	fragment_list.push_back(pos);
@@ -229,12 +275,11 @@ int disk_manager::get(void *buf, fragment pos)
 		}
 	}
 
-	return 0;
+	return rtn;
 }
 
 int disk_manager::feed(void *buf, fragment pos)
 {
-// 	myCAutoLock lck(&m_cs);
 	myCAutoLock lck2(&m_fragments_cs);
 
 	bool conflit = false;
@@ -260,7 +305,7 @@ int disk_manager::feed(void *buf, fragment pos)
 
 	// new fragment
 	wchar_t new_name[MAX_PATH];
-	wsprintf(new_name, L"Z:\\%d.tmp", pos.start);
+	wsprintf(new_name, L"Z:\\%08x_%d_%d.tmp", this, (int)pos.start, rand()*rand());
 	disk_fragment *p = new disk_fragment(new_name, pos.start);
 	p->put(buf, (int)(pos.end - pos.start));
 	m_fragments.push_back(p);
