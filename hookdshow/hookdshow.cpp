@@ -138,7 +138,7 @@ static HANDLE WINAPI MineCreateFileW(
 	if (b)
 	{
 		wchar_t *exe_path = ref_file;
-// 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
+ 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 
 		dummy_handle *p = new dummy_handle;
@@ -169,13 +169,7 @@ static BOOL WINAPI MineReadFile(
 	if (p && p->dummy == dummy_value)
 	{
 
-		char tmp[200000];
-		char tmp2[200000];
-
 		myCAutoLock lck(&p->cs);
-
-		DWORD pos1, pos2;
-		BOOL o = TRUE;
 
 		if (lpOverlapped)
 		{
@@ -192,62 +186,19 @@ static BOOL WINAPI MineReadFile(
 			lpOverlapped->Offset = 0;
 			lpOverlapped->OffsetHigh = 0;
 			*lpNumberOfBytesRead = lpOverlapped->InternalHigh;
-			o = TRUE;
 
 			if (lpOverlapped->hEvent)
 				SetEvent(lpOverlapped->hEvent);
-
-			memcpy(tmp, lpBuffer, lpOverlapped->InternalHigh);
-			FILE * f = _wfopen(ref_file, L"rb");
-			fseek(f, pos, SEEK_SET);
-			fread(tmp2, 1, nNumberOfBytesToRead, f);
-			fclose(f);
-			int c = memcmp(tmp2, tmp, lpOverlapped->InternalHigh);
-			c = c + 1 - 1;
-
-			assert(c==0);
 		}
 		else
 		{
-
-			DWORD nGot = 0;
-			DWORD pos = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
-			BOOL o2 = TrueReadFile(hFile, tmp2, nNumberOfBytesToRead, &nGot, lpOverlapped);
-			DWORD pos22 = TrueSetFilePointer(hFile, 0, NULL, SEEK_CUR);
-
-			pos1 = SetFilePointer(hFile, 0, NULL, SEEK_CUR);
 			fragment frag = {p->pos, p->pos+nNumberOfBytesToRead};
-			o = p->ifile.get(lpBuffer, frag) >= 0;
+			p->ifile.get(lpBuffer, frag) >= 0;
 			*lpNumberOfBytesRead = frag.end - frag.start;
 			p->pos += *lpNumberOfBytesRead;
-			pos2 = SetFilePointer(hFile, 0, NULL, SEEK_CUR);
-
-			if (*lpNumberOfBytesRead > 200)
-			{
-			memcpy(tmp, lpBuffer, *lpNumberOfBytesRead);
-			int c = memcmp(tmp2, tmp, *lpNumberOfBytesRead);
-			assert(c==0);
-			assert(pos22 == pos2 && pos22 == p->pos);
-			assert(pos == pos1);
-			}
 		}
 
-
-		sprintf(tmp, "(H-%08x), read %d bytes, got %d bytes, pos: %d->%d\n", hFile, nNumberOfBytesToRead, *lpNumberOfBytesRead, (DWORD)p->pos, pos2);
-		OutputDebugStringA(tmp);
-
-// 		strcpy(tmp, "content: ");
-// 		for(int i=0; i<*lpNumberOfBytesRead; i++)
-// 		{
-// 			char tmp2[200];
-// 			sprintf(tmp2, "%02x,", ((BYTE*)lpBuffer)[i]);
-// 			strcat(tmp, tmp2);
-// 		}
-// 		strcat(tmp, "\n");
-// 		OutputDebugStringA(tmp);
-
-
-		return o;
+		return TRUE;
 	}
 
 	return TrueReadFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
@@ -257,8 +208,7 @@ static BOOL WINAPI MineGetFileSizeEx(HANDLE h, PLARGE_INTEGER lpFileSize)
 	dummy_handle *p = get_dummy(h);
 	if (p && p->dummy == dummy_value)
 	{
-		if (lpFileSize)
-			lpFileSize->QuadPart = p->ifile.getsize();
+		lpFileSize->QuadPart = p->ifile.getsize();
 		return TRUE;
 	}
 	else
@@ -289,11 +239,6 @@ static BOOL WINAPI MineSetFilePointerEx(HANDLE h, __in LARGE_INTEGER liDistanceT
 	dummy_handle *p = get_dummy(h);
 	if (p && p->dummy == dummy_value)
 	{
-
-		char tmp[2048];
-		sprintf(tmp, "(H-%08x), seek to %d method %d\n", h, (int)liDistanceToMove.QuadPart, dwMoveMethod);
-		OutputDebugStringA(tmp);
-
 		myCAutoLock lck(&p->cs);
 		switch(dwMoveMethod)
 		{
@@ -308,9 +253,7 @@ static BOOL WINAPI MineSetFilePointerEx(HANDLE h, __in LARGE_INTEGER liDistanceT
 			break;
 		}
 
-		p->pos = lpNewFilePointer->QuadPart;
-		
-		return TrueSetFilePointerEx(h, liDistanceToMove, lpNewFilePointer, dwMoveMethod);
+		p->pos = lpNewFilePointer->QuadPart;		
 
 		return TRUE;
 	}
@@ -329,12 +272,8 @@ static DWORD WINAPI MineSetFilePointer(__in        HANDLE hFile,
 		li.HighPart = lpDistanceToMoveHigh ? *lpDistanceToMoveHigh : (lDistanceToMove>=0 ? 0 : 0xffffffff) ;
 		li.LowPart = lDistanceToMove;
 
-		char tmp[2048];
-		sprintf(tmp, "(H-%08x), seek to %d method %d\n", hFile, (int)li.QuadPart, dwMoveMethod);
-		OutputDebugStringA(tmp);
 
 		myCAutoLock lck(&p->cs);
-
 
 		switch(dwMoveMethod)
 		{
@@ -348,9 +287,6 @@ static DWORD WINAPI MineSetFilePointer(__in        HANDLE hFile,
 			li2.QuadPart = p->ifile.getsize() + li.QuadPart;
 			break;
 		}
-
-
-		DWORD o = TrueSetFilePointer(hFile, lDistanceToMove, lpDistanceToMoveHigh, dwMoveMethod);
 
 		p->pos = li2.QuadPart;
 		if (lpDistanceToMoveHigh)
@@ -373,53 +309,9 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 	return TrueCloseHandle(hObject);
 }
 
-class runner : public Irunnable
-{
-public:
-	runner()
-	{
-		m_handle = CreateEvent(NULL, FALSE, FALSE, NULL);
-
-	}
-	virtual void run()
-	{
-		printf("run %08x\n", this);
-		WaitForSingleObject(m_handle, INFINITE);
-		printf("run %08x OK\n", this);
-	}
-	virtual void signal_quit()
-	{
-		printf("signal_quit %08x\n", this);
-		SetEvent(m_handle);
-	}
-	virtual void join()
-	{
-		WaitForSingleObject(m_handle, INFINITE);
-	}
-	~runner()
-	{
-		CloseHandle(m_handle);
-	}
-protected:
-	HANDLE m_handle;
-};
-
-int test_thread_pool()
-{
-	thread_pool pool(3);
-	pool.submmit(new runner);
-	pool.submmit(new runner);
-
-	Sleep(50);
-
-	return 0;
-}
-
-
 int _tmain(int argc, _TCHAR* argv[])
 {
-// 	test_thread_pool();
-//  	test_cache();
+	test_cache();
 
 	DetourRestoreAfterWith();
 
