@@ -17,6 +17,8 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo);
 extern HRESULT dwindow_dll_go(HINSTANCE inst, HWND owner, Iplayer *p);
 void DisableSetUnhandledExceptionFilter();
+int enable_hookdshow();
+int disable_hookdshow();
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
@@ -69,6 +71,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return 0;
 	}	
 
+	enable_hookdshow();
 	dwindow_lua_init();
 	my12doomRenderer_lua_init();
 	dx_player *test = new dx_player(hinstance);

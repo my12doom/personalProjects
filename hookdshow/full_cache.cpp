@@ -2,9 +2,9 @@
 #include <assert.h>
 #include "..\httppost\httppost.h"
 
-static const __int64 PRELOADING_SIZE = 128*1024;
+static const __int64 PRELOADING_SIZE = 1024*1024;
 static const DWORD WORKER_TIMEOUT = 3000;
-static const DWORD WORKER_COUNT = 10;
+static const DWORD WORKER_COUNT = 50;
 
 
 // two helper function
@@ -186,12 +186,11 @@ void inet_worker::run()
 				Sleep(1);
 		
 		int o = post->read_content(block, 4096);
-		m_last_inet_time = GetTickCount();
 
 		// network error
 		if (o<=0)
 		{
-			printf("worker %08x network error, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size(), (int)m_pos, (int)m_maxpos);
+			printf("worker %08x shutdown or network error, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size(), (int)m_pos, (int)m_maxpos);
 			return;
 		}
 
@@ -218,7 +217,7 @@ int inet_worker::hint(__int64 pos)
 	if (!responsible(pos))
 		return -1;
 
-	m_maxpos = max(m_maxpos, pos + PRELOADING_SIZE);
+	m_maxpos = min(max(m_maxpos, pos + PRELOADING_SIZE), m_pos + PRELOADING_SIZE*2);
 
 	return 0;
 }
@@ -226,7 +225,7 @@ int inet_worker::hint(__int64 pos)
 
 bool inet_worker::responsible(__int64 pos)		// return if this worker is CURRENTLY responsible for the pos
 {
-	return pos >= m_pos && pos <= m_maxpos;
+	return pos >= m_pos && pos < m_maxpos;
 }
 
 
@@ -274,9 +273,7 @@ int disk_manager::get(void *buf, fragment &pos)
 {
 	{
 		myCAutoLock lck2(&m_access_lock);
-		debug_info disk_item = {pos};
-		disk_item.type = pos.end - pos.start == 100 ? debug_info.preread: debug_info.read;
-		disk_item.tick = GetTickCount();
+		debug_info disk_item = {pos, debug_info.read, GetTickCount()};
 
 		if (m_access_info.size() > 500)
 			m_access_info.pop_front();
@@ -345,6 +342,43 @@ int disk_manager::get(void *buf, fragment &pos)
 	return rtn;
 }
 
+int disk_manager::pre_read(fragment &pos)
+{
+	{
+		myCAutoLock lck2(&m_access_lock);
+		debug_info disk_item = {pos, debug_info.preread, GetTickCount()};
+
+		if (m_access_info.size() > 500)
+			m_access_info.pop_front();
+		m_access_info.push_back(disk_item);
+	}
+
+	std::list<fragment> fragment_list;
+	fragment_list.push_back(pos);
+
+	myCAutoLock lck2(&m_fragments_cs);
+	for(std::list<disk_fragment*>::iterator i = m_fragments.begin(); i != m_fragments.end(); ++i)
+	{
+		std::list<fragment> tmp;
+		for(std::list<fragment>::iterator j=fragment_list.begin(); j!= fragment_list.end(); j++)
+		{
+			fragment piece[2];
+			int piece_count = (*i)->remaining(*j, piece);
+
+			for(int i=0; i<piece_count; i++)
+				tmp.push_back(piece[i]);
+		}
+		fragment_list.clear();
+		std::copy(tmp.begin(), tmp.end(), std::back_inserter(fragment_list));
+	}
+
+	for(std::list<fragment>::iterator j=fragment_list.begin(); j!= fragment_list.end(); j++)
+		m_worker_manager->hint(*j, true);
+
+	return 0;
+}
+
+
 int disk_manager::feed(void *buf, fragment pos)
 {
 	myCAutoLock lck2(&m_fragments_cs);
@@ -352,7 +386,7 @@ int disk_manager::feed(void *buf, fragment pos)
 	bool conflit = false;
 	for(std::list<disk_fragment*>::iterator i = m_fragments.begin(); i != m_fragments.end(); ++i)
 	{
-		fragment left = (*i)->remaining(pos, NULL);
+		fragment left = (*i)->remaining2(pos, NULL);
 		if (memcmp(&left, &pos, sizeof(pos)) != 0)
 		{
 			conflit = true;
@@ -385,6 +419,15 @@ std::list<debug_info> disk_manager::debug()
 	std::list<debug_info> out;
 
 	{
+		myCAutoLock lck2(&m_access_lock);
+		for(std::list<debug_info>::iterator i = m_access_info.begin(); i != m_access_info.end(); ++i)
+		{
+			if (GetTickCount() - (*i).tick < WORKER_TIMEOUT && (*i).type == debug_info.preread)
+				out.push_back(*i);
+		}
+	}
+
+	{
 		myCAutoLock lck(&m_fragments_cs);
 		for(std::list<disk_fragment*>::iterator i = m_fragments.begin(); i != m_fragments.end(); ++i)
 		{
@@ -404,7 +447,7 @@ std::list<debug_info> disk_manager::debug()
 			debug_info net_item = {{0,0}};
 			net_item.type = debug_info::net;
 			net_item.frag.start = (*i)->m_pos;
-			net_item.frag.end = (*i)->m_maxpos;
+			net_item.frag.end = (*i)->m_pos;
 
 			out.push_back(net_item);
 		}
@@ -414,7 +457,7 @@ std::list<debug_info> disk_manager::debug()
 		myCAutoLock lck2(&m_access_lock);
 		for(std::list<debug_info>::iterator i = m_access_info.begin(); i != m_access_info.end(); ++i)
 		{
-			if (GetTickCount() - (*i).tick < WORKER_TIMEOUT)
+			if (GetTickCount() - (*i).tick < WORKER_TIMEOUT && (*i).type == debug_info.read)
 				out.push_back(*i);
 		}
 	}
@@ -457,9 +500,18 @@ int disk_fragment::put(void *buf, int size)
 	return 0;
 }
 
+// this function subtract pos by {m_start, m_pos}
+int disk_fragment::remaining(fragment pos, fragment out[2])
+{
+	myCAutoLock lck(&m_cs);
+
+	fragment me = {m_start, m_pos};
+	return  subtract_fragment(pos, me, out);
+}
+
 // this function subtract pos by {m_start, m_pos}, assuming there is only one piece left.
 // and shift *pointer if not NULL
-fragment disk_fragment::remaining(fragment pos, void**pointer /*= NULL*/)
+fragment disk_fragment::remaining2(fragment pos, void**pointer /*= NULL*/)
 {
 	myCAutoLock lck(&m_cs);
 

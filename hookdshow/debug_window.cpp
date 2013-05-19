@@ -1,14 +1,17 @@
+#include "stdafx.h"
 #include "resource.h"
 #include <windows.h>
+#include <DShow.h>
+#include <atlbase.h>
 #include "full_cache.h"
+#include "..\dwindow\runnable.h"
 
-disk_manager *g_manager;
-__int64 size;
+extern disk_manager *g_last_manager;
 
 // drawing
 RECT rect;
 HBRUSH brush_disk = CreateSolidBrush(RGB(0,0,255));
-HBRUSH brush_net = CreateSolidBrush(RGB(255,0,128));
+HBRUSH brush_net = CreateSolidBrush(RGB(0,0,128));
 HBRUSH brush_read = CreateSolidBrush(RGB(0,255,0));
 HBRUSH brush_preread = CreateSolidBrush(RGB(255,0,0));
 
@@ -19,8 +22,8 @@ HBITMAP bitmap;
 HGDIOBJ obj;
 HWND g_hwnd;
 
-#define blockSize 5
-#define resolution 200
+#define blockSize 10
+#define resolution 100
 
 void paint_pos(int i, int j, int type)
 {
@@ -69,6 +72,29 @@ void end_paint()
 	return;
 }
 
+HRESULT debug_list_filters(IGraphBuilder *gb);
+CComPtr<IGraphBuilder> gb;
+wchar_t URL[] = L"\\\\DWindow\\http://bo3d.net/test/ctm3d_8ma.mkv";
+class dshow_threaded_init : public Irunnable
+{
+	void run()
+	{
+
+		CoInitialize(NULL);
+
+		gb.CoCreateInstance(CLSID_FilterGraph);
+
+		HRESULT hr = gb->RenderFile(URL, NULL);
+		debug_list_filters(gb);
+		CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
+		mc->Run();
+
+		CoUninitialize();
+	}
+};
+
+thread_pool pool(2);
+
 static INT_PTR CALLBACK dialog_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
 {
 	switch( msg ) 
@@ -80,11 +106,14 @@ static INT_PTR CALLBACK dialog_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 	case WM_INITDIALOG:
 		g_hwnd = hDlg;
 		SetTimer(hDlg, 1, 100, NULL);
+		pool.submmit(new dshow_threaded_init);
 		break;
 	
 	case WM_TIMER:
+		if (g_last_manager)
 		{
-			std::list<debug_info> debug = g_manager->debug();
+			int size = g_last_manager->getsize();
+			std::list<debug_info> debug = g_last_manager->debug();
 
 			begin_paint();
 			for(std::list<debug_info>::iterator i = debug.begin(); i!= debug.end(); ++i)
@@ -115,9 +144,88 @@ static INT_PTR CALLBACK dialog_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 	return TRUE; // Handled message
 }
 
-int debug_window(disk_manager *manager)
+int debug_window()
 {
-	g_manager = manager;
-	size = manager->getsize();
-	return DialogBoxA(NULL, MAKEINTRESOURCEA(IDD_DIALOG1), NULL, dialog_proc);
+	int o = DialogBoxA(NULL, MAKEINTRESOURCEA(IDD_DIALOG1), NULL, dialog_proc);
+	gb = NULL;
+	return o;
+}
+
+
+HRESULT debug_list_filters(IGraphBuilder *gb)
+{
+	// debug: list filters
+	wprintf(L"Listing filters.\n");
+	CComPtr<IEnumFilters> pEnum;
+	CComPtr<IBaseFilter> filter;
+	gb->EnumFilters(&pEnum);
+	while(pEnum->Next(1, &filter, NULL) == S_OK)
+	{
+
+		FILTER_INFO filter_info;
+		filter->QueryFilterInfo(&filter_info);
+		if (filter_info.pGraph) filter_info.pGraph->Release();
+		wchar_t tmp[10240];
+		wchar_t tmp2[1024];
+		wchar_t friendly_name[200] = L"Unknown";
+		//GetFilterFriedlyName(filter, friendly_name, 200);
+		wcscpy(tmp, filter_info.achName);
+		wcscat(tmp, L"(");
+		wcscat(tmp, friendly_name);
+		wcscat(tmp, L")");
+
+		CComPtr<IEnumPins> ep;
+		CComPtr<IPin> pin;
+		filter->EnumPins(&ep);
+		while (ep->Next(1, &pin, NULL) == S_OK)
+		{
+			PIN_DIRECTION dir;
+			PIN_INFO pi;
+			pin->QueryDirection(&dir);
+			pin->QueryPinInfo(&pi);
+			if (pi.pFilter) pi.pFilter->Release();
+
+			CComPtr<IPin> connected;
+			PIN_INFO pi2;
+			FILTER_INFO fi;
+			pin->ConnectedTo(&connected);
+			pi2.pFilter = NULL;
+			if (connected) connected->QueryPinInfo(&pi2);
+			if (pi2.pFilter)
+			{
+				pi2.pFilter->QueryFilterInfo(&fi);
+				if (fi.pGraph) fi.pGraph->Release();
+				pi2.pFilter->Release();
+			}
+
+			wsprintfW(tmp2, L", %s %s", pi.achName, connected?L"Connected to ":L"Unconnected");
+			if (connected) wcscat(tmp2, fi.achName);
+
+			wcscat(tmp, tmp2);
+			pin = NULL;
+		}
+
+
+		wprintf(L"%s\n", tmp);
+
+		filter = NULL;
+	}
+	wprintf(L"\n");
+
+	return S_OK;
+}
+
+int disable_hookdshow();
+int enable_hookdshow();
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	enable_hookdshow();
+
+	debug_window();
+
+	disable_hookdshow();
+
+
+	return 0;
 }

@@ -95,11 +95,12 @@ public:
 	// -1: no requests completed.
 	int get(void *buf, fragment pos, fragment fragment_left[2]);
 
+	// this function subtract pos by {m_start, m_pos}
+	int remaining(fragment pos, fragment out[2]);
+
 	// this function subtract pos by {m_start, m_pos}, assuming there is only one piece left.
 	// and shift *pointer if not NULL
-	fragment remaining(fragment pos, void**pointer = NULL);
-
-
+	fragment remaining2(fragment pos, void**pointer/* = NULL*/);
 
 	__int64 tell(){return m_pos;}
 
@@ -120,6 +121,7 @@ public:
 
 	int setURL(const wchar_t *URL);
 	int get(void *buf, fragment &pos);
+	int pre_read(fragment &pos);
 	__int64 getsize(){return m_filesize;}
 	std::list<debug_info> debug();
 

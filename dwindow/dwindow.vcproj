@@ -2397,6 +2397,22 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="hookdshow"
+			>
+			<File
+				RelativePath="..\hookdshow\full_cache.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\hookdshow\full_cache.h"
+				>
+			</File>
+			<File
+				RelativePath="..\hookdshow\hookdshow.cpp"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\dwindow.manifest"
 			>

@@ -16,13 +16,7 @@
 #pragma comment(lib, "detours/detours.lib")
 #pragma comment(lib, "detours/detoured.lib")
 #pragma comment(lib, "strmiids.lib")
-HRESULT debug_list_filters(IGraphBuilder *gb);
 void test_cache();
-
-FILE * f = fopen("Z:\\debug.txt", "wb");
-wchar_t ref_file[MAX_PATH] = L"D:\\my12doom\\doc\\MBAFF.ts";
-wchar_t URL[] = L"\\\\DWindow\\http://bo3d.net/test/hrag.mp4";
-// #define OutputDebugStringA(x) {fprintf(f, "%s\r\n", x); fflush(f);}
 
 static HANDLE (WINAPI * TrueCreateFileA)(
 	LPCSTR lpFileName,
@@ -121,7 +115,7 @@ static HANDLE WINAPI MineCreateFileA(
 	return o;
 }
 
-disk_manager *g_last_manager;
+disk_manager *g_last_manager = NULL;
 
 static HANDLE WINAPI MineCreateFileW(
 						 LPCWSTR lpFileName,
@@ -145,7 +139,6 @@ static HANDLE WINAPI MineCreateFileW(
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->pos = 0;
-		g_last_manager = &p->ifile;
 		if (p->ifile.setURL(lpFileName+10) < 0)
 		{
 			CloseHandle(o);
@@ -154,6 +147,7 @@ static HANDLE WINAPI MineCreateFileW(
 		myCAutoLock lck(&cs);
 		handle_map[o] = p;
 
+		g_last_manager = &p->ifile;
 	}
 
 	return o;
@@ -184,11 +178,10 @@ static BOOL WINAPI MineReadFile(
 			p->pos = frag.end;
 
 			// pre reader
-			for(int i=1; i<5; i++)
+			for(int i=0; i<5; i++)
 			{
-				char buf[200];
-				fragment pre_reader = {pos+ 4096*1024*i, pos+ 4096*1024*i +100};
-				p->ifile.get(buf, pre_reader);
+				fragment pre_reader = {pos+nNumberOfBytesToRead+ 2048*1024*i, pos+nNumberOfBytesToRead+ 2048*1024*(i+1)};
+				p->ifile.pre_read(pre_reader);
 			}
 
 			lpOverlapped->Internal = 0;
@@ -208,11 +201,10 @@ static BOOL WINAPI MineReadFile(
 			p->pos += *lpNumberOfBytesRead;
 
 			// pre reader
-			for(int i=1; i<5; i++)
+			for(int i=0; i<5; i++)
 			{
-				char buf[200];
-				fragment pre_reader = {p->pos+ 4096*1024*i, p->pos+ 4096*1024*i +100};
-				p->ifile.get(buf, pre_reader);
+				fragment pre_reader = {p->pos+nNumberOfBytesToRead+ 2048*1024*i, p->pos+nNumberOfBytesToRead+ 2048*1024*(i+1)};
+				p->ifile.pre_read(pre_reader);
 			}
 		}
 
@@ -261,17 +253,18 @@ static BOOL WINAPI MineSetFilePointerEx(HANDLE h, __in LARGE_INTEGER liDistanceT
 		switch(dwMoveMethod)
 		{
 		case SEEK_SET:
-			lpNewFilePointer->QuadPart = liDistanceToMove.QuadPart;
+			p->pos = liDistanceToMove.QuadPart;
 			break;
 		case SEEK_CUR:
-			lpNewFilePointer->QuadPart = p->pos + liDistanceToMove.QuadPart;
+			p->pos = p->pos + liDistanceToMove.QuadPart;
 			break;
 		case SEEK_END:
-			lpNewFilePointer->QuadPart = p->ifile.getsize() + liDistanceToMove.QuadPart;
+			p->pos = p->ifile.getsize() + liDistanceToMove.QuadPart;
 			break;
 		}
 
-		p->pos = lpNewFilePointer->QuadPart;		
+		if(lpNewFilePointer)
+			lpNewFilePointer->QuadPart = p->pos;
 
 		return TRUE;
 	}
@@ -326,12 +319,9 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 
 	return TrueCloseHandle(hObject);
 }
-int debug_window(disk_manager *manager);
 
-int _tmain(int argc, _TCHAR* argv[])
+int enable_hookdshow()
 {
-// 	test_cache();
-
 	DetourRestoreAfterWith();
 
 	DetourTransactionBegin();
@@ -344,88 +334,23 @@ int _tmain(int argc, _TCHAR* argv[])
 	DetourAttach(&(PVOID&)TrueSetFilePointerEx, MineSetFilePointerEx);
 	DetourAttach(&(PVOID&)TrueSetFilePointer, MineSetFilePointer);
 	DetourAttach(&(PVOID&)TrueCloseHandle, MineCloseHandle);
-	LONG error = DetourTransactionCommit();
-
-	CoInitialize(NULL);
-
-	CComPtr<IGraphBuilder> gb;
-	gb.CoCreateInstance(CLSID_FilterGraph);
-
-	HRESULT hr = gb->RenderFile(URL, NULL);
-	debug_list_filters(gb);
-	CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
-	mc->Run();
-
-	debug_window(g_last_manager);
-
-	return 0;
+	return DetourTransactionCommit();
 }
 
-
-
-HRESULT debug_list_filters(IGraphBuilder *gb)
+int disable_hookdshow()
 {
-	// debug: list filters
-	wprintf(L"Listing filters.\n");
-	CComPtr<IEnumFilters> pEnum;
-	CComPtr<IBaseFilter> filter;
-	gb->EnumFilters(&pEnum);
-	while(pEnum->Next(1, &filter, NULL) == S_OK)
-	{
-
-		FILTER_INFO filter_info;
-		filter->QueryFilterInfo(&filter_info);
-		if (filter_info.pGraph) filter_info.pGraph->Release();
-		wchar_t tmp[10240];
-		wchar_t tmp2[1024];
-		wchar_t friendly_name[200] = L"Unknown";
-		//GetFilterFriedlyName(filter, friendly_name, 200);
-		wcscpy(tmp, filter_info.achName);
-		wcscat(tmp, L"(");
-		wcscat(tmp, friendly_name);
-		wcscat(tmp, L")");
-
-		CComPtr<IEnumPins> ep;
-		CComPtr<IPin> pin;
-		filter->EnumPins(&ep);
-		while (ep->Next(1, &pin, NULL) == S_OK)
-		{
-			PIN_DIRECTION dir;
-			PIN_INFO pi;
-			pin->QueryDirection(&dir);
-			pin->QueryPinInfo(&pi);
-			if (pi.pFilter) pi.pFilter->Release();
-
-			CComPtr<IPin> connected;
-			PIN_INFO pi2;
-			FILTER_INFO fi;
-			pin->ConnectedTo(&connected);
-			pi2.pFilter = NULL;
-			if (connected) connected->QueryPinInfo(&pi2);
-			if (pi2.pFilter)
-			{
-				pi2.pFilter->QueryFilterInfo(&fi);
-				if (fi.pGraph) fi.pGraph->Release();
-				pi2.pFilter->Release();
-			}
-
-			wsprintfW(tmp2, L", %s %s", pi.achName, connected?L"Connected to ":L"Unconnected");
-			if (connected) wcscat(tmp2, fi.achName);
-
-			wcscat(tmp, tmp2);
-			pin = NULL;
-		}
-
-
-		wprintf(L"%s\n", tmp);
-
-		filter = NULL;
-	}
-	wprintf(L"\n");
-
-	return S_OK;
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourDetach(&(PVOID&)TrueCreateFileA, MineCreateFileA);
+	DetourDetach(&(PVOID&)TrueCreateFileW, MineCreateFileW);
+	DetourDetach(&(PVOID&)TrueGetFileSizeEx, MineGetFileSizeEx);
+	DetourDetach(&(PVOID&)TrueGetFileSize, MineGetFileSize);
+	DetourDetach(&(PVOID&)TrueReadFile, MineReadFile);
+	DetourDetach(&(PVOID&)TrueSetFilePointerEx, MineSetFilePointerEx);
+	DetourDetach(&(PVOID&)TrueSetFilePointer, MineSetFilePointer);
+	DetourDetach(&(PVOID&)TrueCloseHandle, MineCloseHandle);
+	return DetourTransactionCommit();
 }
-
 
 void test_cache()
 {
