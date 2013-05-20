@@ -1,5 +1,6 @@
 #include "httppost.h"
 #include <assert.h>
+#include <Winsock2.h>
 #include <Windows.h>
 #include <wininet.h>
 #include <atlbase.h>
@@ -65,7 +66,10 @@ httppost::~httppost()
 int httppost::close_connection()
 {
 	if (m_sock)
-		closesocket(m_sock);
+	{
+		int o1 = shutdown(m_sock, SD_BOTH);
+		int o2 = closesocket(m_sock);
+	}
 	m_sock = 0;
 	return 0;
 }

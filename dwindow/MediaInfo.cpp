@@ -290,11 +290,47 @@ HRESULT MediaInfoWindow::FillTree(HWND root, const wchar_t *filename)
 		MI.Option(_T("Language"));
 	}
 
-	MI.Open(filename);
-	MI.Option(_T("Complete"));
-	MI.Option(_T("Inform"));
-	String str = MI.Inform().c_str();
-	MI.Close();
+	HANDLE h_file = CreateFileW (filename, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+	String str = L"";
+	if (h_file != INVALID_HANDLE_VALUE)
+	{
+		__int64 filesize = 0;
+		GetFileSizeEx(h_file, (LARGE_INTEGER*)&filesize);
+
+		DWORD From_Buffer_Size = 0;
+		unsigned char From_Buffer[1316];
+		MI.Open_Buffer_Init(filesize);
+
+		__int64 last_seek_target, seek_target = -5;
+
+		do
+		{
+			if (seek_target >= 0)
+				last_seek_target = seek_target;
+
+			if (!ReadFile(h_file, From_Buffer, 1316, &From_Buffer_Size, NULL) || From_Buffer_Size <= 0)
+				break;
+
+			size_t result = MI.Open_Buffer_Continue(From_Buffer, From_Buffer_Size);
+			if ((result&0x08)==0x08) // 8 = all done
+				break;
+
+			seek_target = MI.Open_Buffer_Continue_GoTo_Get();
+			if (seek_target>=0)
+				SetFilePointerEx(h_file, *(LARGE_INTEGER*)&seek_target, NULL, SEEK_SET);
+			else if (seek_target >= filesize)
+				break;
+		}
+		while (From_Buffer_Size>0 && last_seek_target != seek_target);
+		MI.Open_Buffer_Finalize();
+
+		MI.Option(_T("Complete"));
+		MI.Option(_T("Inform"));
+		str = MI.Inform().c_str();
+		MI.Close();
+
+		CloseHandle(h_file);
+	}
 	wchar_t *p = (wchar_t*)str.c_str();
 	wchar_t *p2 = wcsstr(p, L"\n");
 	wchar_t tmp[1024];

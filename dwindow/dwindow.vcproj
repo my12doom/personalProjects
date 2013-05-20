@@ -2386,18 +2386,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="HTTP"
-			>
-			<File
-				RelativePath="..\httppost\httppost.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\httppost\httppost.h"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="hookdshow"
 			>
 			<File
@@ -2410,6 +2398,14 @@
 			</File>
 			<File
 				RelativePath="..\hookdshow\hookdshow.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\httppost\httppost.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\httppost\httppost.h"
 				>
 			</File>
 		</Filter>

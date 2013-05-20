@@ -188,7 +188,7 @@ void inet_worker::run()
 		int o = post->read_content(block, 4096);
 
 		// network error
-		if (o<=0)
+		if (o<=0 || m_exit_signaled)
 		{
 			printf("worker %08x shutdown or network error, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size(), (int)m_pos, (int)m_maxpos);
 			return;

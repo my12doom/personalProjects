@@ -13,6 +13,7 @@
 #include <assert.h>
 #include "full_cache.h"
 
+static const wchar_t *HOOKDSHOW_PREFIX = L"X:\\DWindow\\";
 #pragma comment(lib, "detours/detours.lib")
 #pragma comment(lib, "detours/detoured.lib")
 #pragma comment(lib, "strmiids.lib")
@@ -87,21 +88,21 @@ static HANDLE WINAPI MineCreateFileA(
 	DWORD dwFlagsAndAttributes,
 	HANDLE hTemplateFile)
 {
-	bool b = strstr(lpFileName, "\\\\DWindow\\")==lpFileName;
+	USES_CONVERSION;
+	bool b = strstr(lpFileName, W2A(HOOKDSHOW_PREFIX))==lpFileName;
 
-	HANDLE o = TrueCreateFileA( b ? lpFileName+10 : lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+	HANDLE o;
 
 	if (b)
 	{
-		USES_CONVERSION;
 
-		wchar_t exe_path[MAX_PATH] = {0};
-		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
+		wchar_t exe_path[MAX_PATH] = L"Z:\\flv.flv";
+// 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->pos = 0;
-		if (p->ifile.setURL(A2W(lpFileName+10)) < 0)
+		if (p->ifile.setURL(A2W(lpFileName+strlen(W2A(HOOKDSHOW_PREFIX)))) < 0)
 		{
 			CloseHandle(o);
 			return INVALID_HANDLE_VALUE;
@@ -109,7 +110,10 @@ static HANDLE WINAPI MineCreateFileA(
 
 		myCAutoLock lck(&cs);
 		handle_map[o] = p;
-
+	}
+	else
+	{
+		o = TrueCreateFileA( lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 	}
 
 	return o;
@@ -126,20 +130,18 @@ static HANDLE WINAPI MineCreateFileW(
 						 DWORD dwFlagsAndAttributes,
 						 HANDLE hTemplateFile)
 {
-	bool b = wcsstr(lpFileName, L"\\\\DWindow\\")==lpFileName;
-
-	HANDLE o = TrueCreateFileW( b ? lpFileName+10 : lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+	bool b = wcsstr(lpFileName, HOOKDSHOW_PREFIX)==lpFileName;
+	HANDLE o;
 
 	if (b)
 	{
-		wchar_t exe_path[MAX_PATH];
- 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
+		wchar_t exe_path[MAX_PATH] = L"Z:\\flv.flv";
+ 		//GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
-
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->pos = 0;
-		if (p->ifile.setURL(lpFileName+10) < 0)
+		if (p->ifile.setURL(lpFileName+wcslen(HOOKDSHOW_PREFIX)) < 0)
 		{
 			CloseHandle(o);
 			return INVALID_HANDLE_VALUE;
@@ -148,6 +150,10 @@ static HANDLE WINAPI MineCreateFileW(
 		handle_map[o] = p;
 
 		g_last_manager = &p->ifile;
+	}
+	else
+	{
+		o = TrueCreateFileW( lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 	}
 
 	return o;
