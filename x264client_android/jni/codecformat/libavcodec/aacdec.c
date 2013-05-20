@@ -2494,9 +2494,9 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     int new_extradata_size;
 	
 
-    const uint8_t *new_extradata = NULL;//av_packet_get_side_data(avpkt,
-                                   //    AV_PKT_DATA_NEW_EXTRADATA,
-                                   //    &new_extradata_size);
+    const uint8_t *new_extradata = av_packet_get_side_data(avpkt,
+                                       AV_PKT_DATA_NEW_EXTRADATA,
+                                       &new_extradata_size);
 
     if (new_extradata) {
         av_free(avctx->extradata);
