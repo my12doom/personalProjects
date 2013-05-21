@@ -1,6 +1,5 @@
 #pragma once
 
-#include "InternetFile.h"
 #include "..\dwindow\runnable.h"
 #include <list>
 #include <string>

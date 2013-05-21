@@ -7,7 +7,6 @@
 #include <DShow.h>
 #include <atlbase.h>
 #include <conio.h>
-#include "InternetFile.h"
 #include "CCritSec.h"
 #include <map>
 #include <assert.h>

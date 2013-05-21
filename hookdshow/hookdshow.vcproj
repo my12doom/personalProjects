@@ -207,14 +207,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\InternetFile.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\InternetFile.h"
-				>
-			</File>
-			<File
 				RelativePath="..\dwindow\runnable.cpp"
 				>
 			</File>
