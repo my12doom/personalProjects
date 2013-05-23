@@ -2114,7 +2114,6 @@ HRESULT report_file(const wchar_t *filepath)
 	return S_OK;
 }
 
-/*
 W2UTF8::W2UTF8(const wchar_t *in)
 {
 	p = NULL;
@@ -2162,4 +2161,3 @@ UTF82W::operator wchar_t*()
 {
 	return p;
 }
-*/
