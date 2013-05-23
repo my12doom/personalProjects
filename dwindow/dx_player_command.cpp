@@ -229,9 +229,26 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 
 	CASE(L"set_subtitle_pos")
 		hr = set_subtitle_pos(myDouble(args[0]), myDouble(args[1]));
+	CASE(L"set_subtitle_pos")
+	{
+		double center_x = 0;
+		double bottom_y = 0;
+		get_subtitle_pos(&center_x, &bottom_y);
+		wcscpy2(out, myDouble(center_x));
+		wcscat2(out, L"|");
+		wcscat2(out, myDouble(bottom_y));
+		return S_OK;
+	}
 
 	CASE(L"set_subtitle_parallax")
 		hr = set_subtitle_parallax(myInt(args[0]));
+	CASE(L"get_subtitle_parallax")
+	{
+		int parallax = 0;
+		get_subtitle_parallax(&parallax);
+		wcscpy2(out, myInt(parallax));
+		return S_OK;
+	}
 
 
 

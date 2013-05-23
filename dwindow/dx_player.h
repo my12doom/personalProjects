@@ -86,8 +86,8 @@ public:
 	// subtitle control functions
 	HRESULT set_subtitle_pos(double center_x, double bottom_y);
 	HRESULT set_subtitle_parallax(int parallax);
-	HRESULT get_subtitle_pos(double *out, int which) PURE2;					// which: 0 = x, 1=y
-	HRESULT get_subtitle_parallax(int *parallax) PURE2;
+	HRESULT get_subtitle_pos(double *center_x, double *bottom_y);
+	HRESULT get_subtitle_parallax(int *parallax);
 
 	// image control functions
 	HRESULT toggle_force2d();

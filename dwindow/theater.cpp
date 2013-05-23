@@ -127,7 +127,8 @@ INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wParam, LPA
 
 			else if (id == IDC_MENU)
 			{
-				player->popup_menu(hDlg);
+				//player->popup_menu(hDlg);
+				PostMessage(player->get_window(1), WM_COMMAND, ID_VIDEO_ADJUSTCOLOR, 0);
 			}
 
 			else

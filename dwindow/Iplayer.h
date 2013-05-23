@@ -26,7 +26,9 @@ public:
 
 	// subtitle control functions
 	virtual HRESULT set_subtitle_pos(double center_x, double bottom_y) PURE;
+	virtual HRESULT get_subtitle_pos(double *center_x, double *bottom_y) PURE;
 	virtual HRESULT set_subtitle_parallax(int offset) PURE;
+	virtual HRESULT get_subtitle_parallax(int *parallax) PURE;
 
 	// image control functions
 	virtual HRESULT set_swap_eyes(bool revert) PURE;

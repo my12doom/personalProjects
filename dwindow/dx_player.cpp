@@ -3811,6 +3811,26 @@ HRESULT dx_player::set_subtitle_parallax(int parallax)
 	return S_OK;
 }
 
+HRESULT dx_player::get_subtitle_parallax(int *parallax)
+{
+	if (!parallax)
+		return E_POINTER;
+
+	*parallax = m_user_subtitle_parallax;
+	return S_OK;
+}
+
+HRESULT dx_player::get_subtitle_pos(double *center_x, double *bottom_y)
+{
+	if (!center_x || !bottom_y)
+		return E_POINTER;
+
+	*center_x = m_subtitle_center_x;
+	*bottom_y = m_subtitle_bottom_y;
+
+	return S_OK;
+}
+
 HRESULT dx_player::set_subtitle_pos(double center_x, double bottom_y)
 {
 	m_subtitle_center_x = center_x;
