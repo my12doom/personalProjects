@@ -1,16 +1,14 @@
 #include "full_cache.h"
 #include <assert.h>
+#include "httppost.h"
+#include <../3dvlog.h>
 
 static const __int64 PRELOADING_SIZE = 1024*1024;
 static const DWORD WORKER_TIMEOUT = 3000;
 static const DWORD WORKER_COUNT = 50;
 
 #ifndef LINUX
-	#include "..\httppost\httppost.h"
-#define LOGE(...)
 #else
-	#include <../3dvlog.h>
-	#include "httppost.h"
 	#include <unistd.h>
 	#include <sys/stat.h> 
 	#include <fcntl.h>
@@ -19,7 +17,6 @@ static const DWORD WORKER_COUNT = 50;
 	#define Sleep(x) usleep(x*1000)
 	#define MAX_PATH 260
 	#include <sys/time.h>
-
 	DWORD GetTickCount()
 	{
 			struct timeval tv;
@@ -182,23 +179,21 @@ int inet_worker::get_timeout_left()
 {
 	return max(0, m_last_inet_time + WORKER_TIMEOUT - GetTickCount());
 }
-class UTF82W_core
-{
-public:
-	UTF82W_core(const char *in);
-	~UTF82W_core();
-	operator wchar_t*();
-	wchar_t *p;
-};
 
+void UTF2Uni(const char *src, wchar_t *des, int count_d);
 void inet_worker::run()
 {
 	disk_manager *disk = (disk_manager*)m_manager->m_manager;
 	httppost *post = (httppost*)m_inet_file;
+
 	wchar_t range_str[200];
+	#ifdef LINUX
 	char range_str_utf[400];
 	sprintf(range_str_utf, "bytes=%lld-", m_pos);
-	wcscpy(range_str, UTF82W_core(range_str_utf));
+	UTF2Uni(range_str_utf, range_str, 200);
+	#else
+		swprintf(range_str, 200, "bytes=%lld-", m_pos);
+	#endif
 	if (m_pos > 0)
 	post->addHeader(L"Range", range_str);
 	int response_code = post->send_request();
@@ -439,12 +434,16 @@ int disk_manager::feed(void *buf, fragment pos)
 	}
 
 	// new fragment
-	wchar_t new_name[MAX_PATH];
+	wchar_t new_name[MAX_PATH] = {0};
 	#ifndef LINUX
-	swprintf(new_name, MAX_PATH, L"Z:\\%08x_%d_%d.tmp", this, (int)pos.start, rand()*rand());
+	wsprintf(new_name, "Z:\\%08x_%d_%d.tmp", this, (int)pos.start, rand()*rand());
 	#else
 	swprintf(new_name, MAX_PATH, L"/sdcard/%08x_%d_%d.tmp", this, (int)pos.start, rand()*rand());
 	#endif
+
+	FILE *f = fopen("/sdcard/test.bin", "wb");
+	fwrite(new_name, sizeof(wchar_t), MAX_PATH, f);
+	fclose(f);
 	disk_fragment *p = new disk_fragment(new_name, pos.start);
 	p->put(buf, (int)(pos.end - pos.start));
 	m_fragments.push_back(p);

@@ -16,7 +16,10 @@ LOCAL_MODULE := core
 
 
 LOCAL_SRC_FILES := thecore.cpp \
-		   decoding.cpp
+		   decoding.cpp \
+		   httppost.cpp \
+		   runnable.cpp \
+		   full_cache.cpp
 
 
 LOCAL_SRC_FILES +=$(FF_COMMON_SRC)
@@ -27,7 +30,7 @@ LOCAL_C_INCLUDES +=  $(CODECROOT) \
 		     $(YUVROOT)
 
 LOCAL_CFLAGS += -DHAVE_ARMV6=1
-LOCAL_CFLAGS += -DLIBYUV_DISABLE_X86
+LOCAL_CFLAGS += -DLIBYUV_DISABLE_X86 -DLINUX
 
 ifeq ($(BUILD_WITH_NEON),1)
 LOCAL_CFLAGS += -DHAVE_NEON=1

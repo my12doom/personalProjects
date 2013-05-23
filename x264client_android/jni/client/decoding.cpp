@@ -9,14 +9,160 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <../3dvlog.h>
+#include "runnable.h"
+#include <pthread.h>
+#include "full_cache.h"
+#include "httppost.h"
+
+#define max(a,b) ((a)>(b) ? (a) : (b))
+
+// test runnable
+class runner : public Irunnable
+{
+public:
+	runner()
+	{
+		locked = true;
+	}
+	virtual void run()
+	{
+		LOGE("run %08x\n", this);
+		while(locked)
+			usleep(100);
+		LOGE("run %08x OK\n", this);
+	}
+	virtual void signal_quit()
+	{
+		LOGE("signal_quit %08x\n", this);
+		locked = false;
+	}
+	virtual void join()
+	{
+		while(locked)
+			usleep(10000);
+	}
+	~runner()
+	{
+		LOGE("~runner()\n");
+	}
+protected:
+	bool locked;
+};
+
+int test_thread_pool()
+{
+	LOGE("test_thread_pool");
+	thread_pool pool(10);
+	pool.submmit(new runner);
+	pool.submmit(new runner);
+
+	for(int i=0; i<1000; i++)
+		usleep(50000);
+
+	return 0;
+	
+	httppost post(L"http://192.168.1.199:8080/flv.flv");
+	int response_code = post.send_request();
+
+	LOGE("http size: %d code=%d", (int)post.get_content_length(), response_code);
+	FILE *f = fopen("/sdcard/flv.flv", "wb");
+	int got = 0;
+	int total = 0;
+	char buf[4096];
+	while ((got=post.read_content(buf, 4096))>0)
+	{
+		fwrite(buf, 1, got, f);
+		total += got;
+	}
+
+	fclose(f);
+
+	return 0;
+}
+
+
+void test_cache()
+{
+	disk_manager *d = new disk_manager(L"flv.flv.config");
+	d->setURL(L"http://192.168.1.199:8080/flv.flv");
+
+	FILE * f = fopen("/sdcard/flv.flv", "rb");
+
+	srand(123456);
+
+	int l = GetTickCount();
+	int max_response = 0;
+	int last_tick = l;
+	const int block_size = 99;
+	for(int i=0; i<500; i++)
+	{
+		LOGE("test %d", i);
+		int pos = __int64(21008892-block_size) * rand() / RAND_MAX;
+
+		char block[block_size] = {0};
+		char block2[block_size] = {0};
+		char ref_block[block_size] = {0};
+		fragment frag = {pos, pos+block_size};
+		d->get(block, frag);
+
+		fseek(f, pos, SEEK_SET);
+		fread(ref_block, 1, sizeof(ref_block), f);
+
+		int c = memcmp(block, ref_block, sizeof(block)-1);
+
+		if (c != 0)
+		{
+			int j;
+			for(j=0; j<sizeof(block); j++)
+				if (block[j] != ref_block[j])
+					break;
+				
+
+			d->get(block2, frag);
+			d->get(block2, frag);
+			int c2 = memcmp(block2, block, sizeof(block));
+			LOGE("error");
+
+			FILE *e = fopen("/sdcard/t.bin", "wb");
+			fwrite(block, 1, block_size, e);
+			fwrite(block2, 1, block_size, e);
+			fclose(e);
+			break;
+		}
+
+		max_response = max(max_response, GetTickCount() - last_tick);
+		last_tick = GetTickCount();
+	}
+
+	LOGE("avg speed: %d KB/s\n", __int64(50000)*block_size / (GetTickCount()-l));
+	LOGE("avg response time: %d ms, total %dms, max %dms\n\n", (GetTickCount()-l)/50000, GetTickCount()-l, max_response);
+
+	l = GetTickCount();
+	LOGE("exiting cache");
+	delete d;
+	LOGE("done exiting cache, %dms\n", GetTickCount()-l);
+}
+
 
 #define MAX_CACHE 5
 
 int sockfd;
 
+bool utf8fromwcs(const wchar_t* wcs, size_t length, char* outbuf);
+void UTF2Uni(const char *src, wchar_t *des, int count_d);
 client::client()
 {
     pthread_mutex_init(&m_queue_mutex, NULL);
+	LOGE("client::client()");
+	wchar_t test[2000] = L"";
+	char testo[2000]={0};
+	sprintf(testo, "Hold %lld", __int64(123456789));
+	UTF2Uni(testo, test, 200);
+	utf8fromwcs(test, wcslen(test), testo);
+
+	LOGE("testo:%s, %d", testo, wcslen(test));
+
+	test_thread_pool();
 }
 
 client::~client()

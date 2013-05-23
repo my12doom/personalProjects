@@ -175,14 +175,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CFileBuffer.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CFileBuffer.h"
-				>
-			</File>
-			<File
 				RelativePath=".\debug_window.cpp"
 				>
 			</File>

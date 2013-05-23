@@ -74,7 +74,7 @@ void end_paint()
 
 HRESULT debug_list_filters(IGraphBuilder *gb);
 CComPtr<IGraphBuilder> gb;
-wchar_t URL[] = L"\\\\DWindow\\http://bo3d.net/test/ctm3d_8ma.mkv";
+wchar_t URL[] = L"http://bo3d.net/test/ctm3d_8ma.mkv";
 class dshow_threaded_init : public Irunnable
 {
 	void run()
@@ -84,7 +84,10 @@ class dshow_threaded_init : public Irunnable
 
 		gb.CoCreateInstance(CLSID_FilterGraph);
 
-		HRESULT hr = gb->RenderFile(URL, NULL);
+		wchar_t tmp[MAX_PATH];
+		wcscpy(tmp, L"X:\\DWindow\\");
+		wcscat(tmp, URL);
+		HRESULT hr = gb->RenderFile(tmp, NULL);
 		debug_list_filters(gb);
 		CComQIPtr<IMediaControl, &IID_IMediaControl> mc(gb);
 		mc->Run();

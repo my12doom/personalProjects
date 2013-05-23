@@ -8,7 +8,6 @@
 	#include <wininet.h>
 	#include <atlbase.h>
 	#pragma  comment(lib, "ws2_32.lib")
-	#define LOGE(...)
 #else
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -411,12 +410,15 @@ int httppost::send_request()
 
 					if (wcscmp(line, L"Content-Length") == 0)
 					{
-						//char utf8[1000] = {0};
-						//utf8fromwcs(value, wcslen(value), utf8);
+						#ifdef LINUX
+						char utf8[1000] = {0};
+						utf8fromwcs(value, wcslen(value), utf8);
 
-						//LOGE("Content-Length - %s", utf8);
+						LOGE("Content-Length - %s", utf8);
 						swscanf(value, L"%lld", &m_content_length);
-						//m_content_length = atoll(utf8);
+						#else
+						m_content_length = atoll(utf8);
+						#endif
 					}
 				}
 				else
@@ -540,6 +542,8 @@ W2UTF8_core::operator char*()
 	return p;
 }
 
+void UTF2Uni(const char *src, wchar_t *des, int count_d);
+
 UTF82W_core::UTF82W_core(const char *in)
 {
 	p = NULL;
@@ -570,7 +574,7 @@ UTF82W_core::operator wchar_t*()
 	return p;
 }
 
-#ifdef LINUX
+
 
 void UTF2Uni(const char *src, wchar_t *des, int count_d)
 {
@@ -674,6 +678,7 @@ bool utf8fromwcs(const wchar_t* wcs, size_t length, char* outbuf)
 	return num_errors == 0;
 }
 
+#ifdef LINUX
 FILE * _wfopen(const wchar_t *file, const wchar_t *rights)
 {
 	char file_utf[1024] = {0};

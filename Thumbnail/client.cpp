@@ -23,7 +23,7 @@ int main()
 	ShExecInfo.hInstApp = NULL;	
 	ShExecInfo.lpVerb = L"open";
 
-// 	ShellExecuteEx(&ShExecInfo);
+ 	ShellExecuteEx(&ShExecInfo);
 	HANDLE process = ShExecInfo.hProcess;
 
 	Sleep(500);
@@ -33,6 +33,7 @@ int main()
 	r.connect(L"\\\\.\\pipe\\DWindowThumbnailPipe");
 	r.open_file(L"E:\\video\\video\\8bit.mkv");
 	r.open_file(L"Z:\\testvideo\\LG2012Äê3DÊÔ³¬ìÅ´ÞÖÇÄÈ.mkv");
+	//r.open_file(L"Z:\\disney.mkv");
 	r.set_out_format(30, 128, 128);
 
 	int unkown = 0;
@@ -40,9 +41,9 @@ int main()
 	int tb = 0;
 	int mono = 0;
 
-	for(int i=0; i<100; i++)
+	for(int i=0; i<1000; i++)
 	{
-		r.seek((__int64)220*1000*i/100);
+		//r.seek((__int64)30*1000*i/100);
 		wchar_t tmp[MAX_PATH];
 		swprintf(tmp, L"E:\\video\\shots\\%d.bmp", i);
 		if (r.get_one_frame() != 0)

@@ -12,6 +12,7 @@ OPT_CFLAGS += -DCMP_HAVE_VFP -mfloat-abi=softfp -mfpu=vfp -marm -march=armv6j
 endif
 OPT_CPPFLAGS := $(OPT_CLFAGS)
 # override default
+OPT_CFLAGS += -D_LARGEFILE_SOURCE
 APP_CFLAGS := $(APP_CFLAGS) $(OPT_CFLAGS)
 APP_CPPFLAGS := $(APP_CPPFLAGS) $(OPT_CPPFLAGS) 
 # stl

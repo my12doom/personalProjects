@@ -1,6 +1,6 @@
 #pragma once
 
-#include "..\dwindow\runnable.h"
+#include "runnable.h"
 #include <wchar.h>
 #include <list>
 #include <string>
