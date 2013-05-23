@@ -141,6 +141,8 @@ HRESULT active_audio_device(int n)
 	if (n<0 || n>= audio_device_count)
 		return E_INVALIDARG;
 
+	last_refresh_time = 0;
+
 	return SetDefaultAudioPlaybackDevice(audio_devices_ids[n]);
 }
 HRESULT get_audio_device_name(int n, wchar_t *name)

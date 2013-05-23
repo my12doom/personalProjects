@@ -1263,6 +1263,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ipconfig.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ipconfig.h"
+				>
+			</File>
+			<File
 				RelativePath=".\IStereoLayout.h"
 				>
 			</File>

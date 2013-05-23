@@ -89,14 +89,26 @@ int find_phy_monitors()
 		return 0;
 
 	unsigned int i = 0;
+	int count = 0;
 	for(i=0; i<min(16, d3d->GetAdapterCount()); i++)
 	{
 		d3d->GetAdapterIdentifier(i, NULL, g_phy_ids+i);
-		g_phy_monitors[i] = d3d->GetAdapterMonitor(i);
+		g_phy_monitors[count] = d3d->GetAdapterMonitor(i);
+
+#ifdef ZHUZHU
+		MONITORINFOEX info;
+		info.cbSize = sizeof(MONITORINFOEX);
+		GetMonitorInfo(g_phy_monitors[i], &info);
+		RECT &rect = info.rcMonitor;
+		RECT rect = g_phy_monitors[count].
+		if (rect.right - rect.left == 800 && rect.bottom - rect.top == 480)
+			continue;
+#endif
+		count++;
 	}
 	d3d = NULL;
 	CoUninitialize();
-	return i;
+	return count;
 }
 
 int g_phy_monitor_count = find_phy_monitors();
