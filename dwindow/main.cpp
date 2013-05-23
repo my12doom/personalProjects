@@ -16,6 +16,10 @@ AutoSetting<bool> single_instance(L"SingleInstance", true);
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
 LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo);
 extern HRESULT dwindow_dll_go(HINSTANCE inst, HWND owner, Iplayer *p);
+namespace zhuzhu
+{
+	extern HRESULT dwindow_dll_go_zhuzhu(HINSTANCE inst, HWND owner, Iplayer *p);
+}
 void DisableSetUnhandledExceptionFilter();
 int enable_hookdshow();
 int disable_hookdshow();
@@ -94,7 +98,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	DWORD rights = get_passkey_rights();
 
 	if (rights & USER_RIGHTS_THEATER_BOX)
-		dwindow_dll_go(hinstance, NULL, test);
+		zhuzhu::dwindow_dll_go_zhuzhu(hinstance, NULL, test);
 	else
 	while (!test->is_closed())
 		Sleep(100);

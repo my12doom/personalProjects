@@ -1312,10 +1312,6 @@
 				RelativePath=".\window.rc"
 				>
 			</File>
-			<File
-				RelativePath=".\zhuzhu.rc"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Audiodownmix"
@@ -2429,6 +2425,22 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="ZHUZHU"
+			>
+			<File
+				RelativePath=".\resource1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\theater_zhuzhu.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\zhuzhu.rc"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\dwindow.manifest"
 			>
@@ -2548,10 +2560,6 @@
 					AssemblerOutput="2"
 				/>
 			</FileConfiguration>
-		</File>
-		<File
-			RelativePath=".\resource1.h"
-			>
 		</File>
 		<File
 			RelativePath=".\runnable.cpp"
