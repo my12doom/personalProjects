@@ -14,13 +14,13 @@ DWORD last_refresh_time = 0;
 HRESULT SetDefaultAudioPlaybackDevice(LPCWSTR devID)
 {	
 	IPolicyConfigVista *pPolicyConfig;
-	ERole reserved = eConsole;
 
 	HRESULT hr = CoCreateInstance(__uuidof(CPolicyConfigVistaClient), 
 		NULL, CLSCTX_ALL, __uuidof(IPolicyConfigVista), (LPVOID *)&pPolicyConfig);
 	if (SUCCEEDED(hr))
 	{
-		hr = pPolicyConfig->SetDefaultEndpoint(devID, reserved);
+		for (DWORD reserved = eConsole; reserved < ERole_enum_count; reserved ++)
+			hr = pPolicyConfig->SetDefaultEndpoint(devID, (ERole)reserved);
 		pPolicyConfig->Release();
 	}
 	return hr;

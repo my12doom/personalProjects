@@ -1159,7 +1159,7 @@ HWND dx_player::get_window(int window_id)
 }
 
 
-HRESULT dx_player::popup_menu(HWND owner)
+HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 {
 	if (m_renderer1 && m_renderer1->get_fullscreen())
 		return S_FALSE;
@@ -1416,6 +1416,8 @@ HRESULT dx_player::popup_menu(HWND owner)
 	POINT mouse_pos;
 	GetCursorPos(&mouse_pos);
 	m_dialog_open ++;
+	if (popsub >= 0)
+		menu = GetSubMenu(menu, popsub);
 	TrackPopupMenu(menu, TPM_TOPALIGN | TPM_LEFTALIGN, mouse_pos.x, mouse_pos.y, 0, owner, NULL);
 	m_dialog_open --;
 
@@ -1754,6 +1756,17 @@ LRESULT dx_player::on_timer(int id)
 	return S_OK;
 }
 
+HRESULT dx_player::set_output_channel(int channel)
+{
+	m_channel = channel;
+	set_ff_audio_formats(m_lav);
+	set_ff_output_channel(m_lav, channel);
+	if (!m_simple_audio_switching)
+		enable_audio_track(-2);
+
+	return S_OK;
+}
+
 LRESULT dx_player::on_move(int id, int x, int y)
 {
 	if (id == 1 && m_dragging_window == 1 && !m_full1)
@@ -1987,34 +2000,32 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// Bitstreaming
 	else if (uid == ID_CHANNELS_SOURCE || uid == ID_CHANNELS_2 || uid == ID_CHANNELS_51 ||  uid == ID_CHANNELS_71 || uid == ID_CHANNELS_HEADPHONE || uid == ID_CHANNELS_BITSTREAM)
 	{
+		int channel = 2;
 		switch(uid)
 		{
 		case ID_CHANNELS_SOURCE:
-			m_channel = 0;
+			channel = 0;
 			break;
 		case ID_CHANNELS_2:
-			m_channel = 2;
+			channel = 2;
 			break;
 		case ID_CHANNELS_51:
-			m_channel = 6;
+			channel = 6;
 			break;
 		case ID_CHANNELS_71:
-			m_channel = 8;
+			channel = 8;
 			break;
 		case ID_CHANNELS_HEADPHONE:
-			m_channel = 9;
+			channel = 9;
 			break;
 		case ID_CHANNELS_BITSTREAM:
-			m_channel = -1;
+			channel = -1;
 			break;
 		default:
 			assert(0);
 		}
 
-		set_ff_audio_formats(m_lav);
-		set_ff_output_channel(m_lav, m_channel);
-		if (!m_simple_audio_switching)
-			enable_audio_track(-2);
+		set_output_channel(channel);
 
 		if (m_file_loaded && m_simple_audio_switching)
 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Bitstreaming setting may not apply until next file play or audio swtiching."), L"...", MB_OK);

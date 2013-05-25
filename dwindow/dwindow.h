@@ -23,7 +23,7 @@ public:
 	HWND m_hwnd2;
 
 	void close_and_kill_thread();
-protected:
+// protected:
 	typedef struct struct_window_proc_param
 	{
 		dwindow *that;

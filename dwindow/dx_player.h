@@ -129,9 +129,10 @@ public:
 	HRESULT toggle_fullscreen();
 	HRESULT set_output_mode(int mode);
 	HRESULT set_theater(HWND owner){m_theater_owner = owner; return S_OK;}
-	HRESULT popup_menu(HWND owner);
+	HRESULT popup_menu(HWND owner, int sub = -1);
 	bool is_fullsceen(int window_id = 1){return (m_renderer1 && m_renderer1->get_fullscreen()) || ( window_id==1?m_full1:m_full2);}
 	HWND get_window(int window_id);
+	HRESULT set_output_channel(int channel);
 
 
 	POINT m_mouse;
@@ -141,8 +142,9 @@ public:
 	int init_done_flag;
 
 	wchar_t m_main_video_filename[MAX_PATH];
-
-protected:
+// #ifndef ZHUZHU
+// protected:
+// #endif
 
 	// trial
 	AutoSetting<bool> m_trial_shown;
@@ -380,7 +382,6 @@ protected:
 	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, int view);
 	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL);
 
-protected:
 	int m_width;
 	int m_height;
 	int m_ui_visible_last_change_time;

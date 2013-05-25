@@ -100,17 +100,42 @@ int find_phy_monitors()
 		info.cbSize = sizeof(MONITORINFOEX);
 		GetMonitorInfo(g_phy_monitors[i], &info);
 		RECT &rect = info.rcMonitor;
-		RECT rect = g_phy_monitors[count].
 		if (rect.right - rect.left == 800 && rect.bottom - rect.top == 480)
 			continue;
 #endif
 		count++;
 	}
 	d3d = NULL;
-	CoUninitialize();
 	return count;
 }
 
+RECT get_special_size_physical_monitor(SIZE size)
+{
+	RECT o = {0};
+
+	CoInitialize(NULL);
+	CComPtr<IDirect3D9> d3d;
+	d3d = Direct3DCreate9( D3D_SDK_VERSION );
+	if (!d3d)
+		return o;
+
+	unsigned int i = 0;
+	int count = 0;
+	for(i=0; i<min(16, d3d->GetAdapterCount()); i++)
+	{
+		d3d->GetAdapterIdentifier(i, NULL, g_phy_ids+i);
+		
+
+		MONITORINFOEX info;
+		info.cbSize = sizeof(MONITORINFOEX);
+		GetMonitorInfo(d3d->GetAdapterMonitor(i), &info);
+		RECT rect = info.rcMonitor;
+			if (rect.right - rect.left == size.cx && rect.bottom - rect.top == size.cy)
+				o = rect;
+	}
+	d3d = NULL;
+	return o;
+}
 int g_phy_monitor_count = find_phy_monitors();
 HMONITOR g_phy_monitors[16];
 HMONITOR g_logic_monitors[16];

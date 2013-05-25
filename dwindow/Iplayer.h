@@ -49,7 +49,7 @@ public:
 	virtual HRESULT toggle_fullscreen() PURE;
 	virtual HRESULT set_output_mode(int mode) PURE;
 	virtual HRESULT set_theater(HWND owner) PURE;
-	virtual HRESULT popup_menu(HWND owner) PURE;
+	virtual HRESULT popup_menu(HWND owner, int sub = -1) PURE;
 	virtual bool is_fullsceen(int window_id) PURE;
 	virtual HWND get_window(int window_id) PURE;
 
