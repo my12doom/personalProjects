@@ -146,6 +146,7 @@ Section "3DÓ°ÒôÖ÷³ÌÐò(required)"
   File "Fonts.conf"
   File "MediaInfo.dll"
   File "DevIL.dll"
+  File "detoured.dll"
   SetOutPath $INSTDIR\codec
   File "codec\*"
   SetOutPath $INSTDIR\Language
