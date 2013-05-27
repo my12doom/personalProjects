@@ -3773,10 +3773,10 @@ void dx_player::subtitle_loader::run()
 
 		free(outs[0]);
 	}
-	else
-	{
-		MessageBoxW(NULL, L"No Subtitle found", L"...", MB_OK);
-	}
+// 	else
+// 	{
+// 		MessageBoxW(NULL, L"No Subtitle found", L"...", MB_OK);
+// 	}
 }
 
 HRESULT dx_player::load_subtitle(const wchar_t *pathname, bool reset)			//FIXME : always reset 

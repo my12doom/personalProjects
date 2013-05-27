@@ -4,6 +4,8 @@
 #include <WindowsX.h>
 #include <wchar.h>
 
+// a helper function
+BOOL SetClientRect(HWND hDlg, RECT rect);
 
 class dwindow
 {

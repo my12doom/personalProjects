@@ -461,3 +461,14 @@ bool dwindow::is_visible(int id)
 		return true;
 	return false;
 }
+
+BOOL SetClientRect(HWND hDlg, RECT rect)
+{
+	LONG_PTR style = GetWindowLongPtrA(hDlg, GWL_STYLE);
+	LONG_PTR style_ex = GetWindowLongPtrA(hDlg, GWL_EXSTYLE);
+
+	if (!AdjustWindowRectEx(&rect, style, FALSE, style_ex))
+		return FALSE;
+
+	return SetWindowPos(hDlg, NULL, rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top, NULL);
+}

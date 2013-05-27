@@ -43,6 +43,18 @@ static INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wPar
 	switch( msg ) 
 	{
 
+	case WM_DRAWITEM:
+		LPDRAWITEMSTRUCT lpdis;
+		//int id;
+		//id = (int)wParam;
+		lpdis = (LPDRAWITEMSTRUCT) lParam;
+		char d[200];
+		sprintf(d, "%x, %x\n", lpdis->itemState, lpdis->itemAction);
+		OutputDebugStringA(d);
+		FillRect(lpdis->hDC, &lpdis->rcItem, (HBRUSH)(lpdis->itemState & ODS_SELECTED ? GetStockObject(BLACK_BRUSH) : GetStockObject(WHITE_BRUSH)));
+
+		break;
+
 	case WM_HSCROLL:
 		if (GetDlgCtrlID((HWND)lParam) == IDC_ZHU_PROGRESS)
 		{
