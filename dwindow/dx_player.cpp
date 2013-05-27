@@ -106,6 +106,7 @@ m_LogFont(L"LogFont", empty_logfontw),
 m_aspect_mode(L"AspectRatioMode", aspect_letterbox),
 m_subtitle_center_x(L"SubtitleX", 0.5),
 m_subtitle_bottom_y(L"SubtitleY", 0.95),
+m_user_subtitle_parallax(L"SubtitleSubtitleParallax", 0, REG_DWORD),
 m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD),
 m_swap_eyes(L"SwapEyes", false),
 m_force_2d(L"Force2D", false),
@@ -175,7 +176,6 @@ m_subtitle_loader_pool(2)
 	m_mirror2 = 0;
 	m_parallax = 0;
 	m_hexe = hExe;
-	m_user_subtitle_parallax = 0;
 	m_internel_offset = 10; // offset set to 10*0.1% of width
 	m_last_bitmap_update = timeGetTime();
 	memset(m_subtitle_cache, 0, sizeof(m_subtitle_cache));

@@ -1088,7 +1088,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;x264"
+				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;x264;..\renderer_prototype\libyuv\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;ZHUZHU"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
@@ -1112,7 +1112,7 @@
 				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;"
+				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;x264"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -1341,6 +1341,14 @@
 				>
 				<FileConfiguration
 					Name="release_vstar|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						WarningLevel="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="release_zhu|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2407,6 +2415,14 @@
 			<File
 				RelativePath="..\hookdshow\full_cache.cpp"
 				>
+				<FileConfiguration
+					Name="release_zhu|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						WarningLevel="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\hookdshow\full_cache.h"

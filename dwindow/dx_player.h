@@ -338,7 +338,7 @@ public:
 	HRESULT draw_subtitle();
 	AutoSetting<double> m_subtitle_center_x;
 	AutoSetting<double> m_subtitle_bottom_y;
-	int m_user_subtitle_parallax;
+	AutoSetting<int> m_user_subtitle_parallax;
 	int m_internel_offset;
 	int m_last_bitmap_update;
 	bool m_subtitle_has_offset;

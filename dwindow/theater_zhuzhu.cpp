@@ -9,6 +9,8 @@
 #include "dx_player.h"
 #include "ipconfig.h"
 
+#define MAX_PARALLAX 40
+#define MAX_POS_Y 0.5
 #define SB_RBUTTON 16
 namespace zhuzhu
 {
@@ -66,6 +68,33 @@ static INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wPar
 				SetDlgItemTextW(hDlg, IDC_CURRENT, tmp);
 			}
 		}
+
+		if (GetDlgCtrlID((HWND)lParam) == IDC_ZHU_VOLUME)
+		{
+			double v = ((double)SendMessage((HWND)lParam, TBM_GETPOS, 0, 0) / 1000);
+			player->set_volume(v);
+		}
+
+		if (GetDlgCtrlID((HWND)lParam) == IDC_ZHU_parallax)
+		{
+			double v = ((double)SendMessage((HWND)lParam, TBM_GETPOS, 0, 0) / 500 - 1);
+			player->set_subtitle_parallax(v*MAX_PARALLAX);
+		}
+		if (GetDlgCtrlID((HWND)lParam) == IDC_ZHU_POS_X)
+		{
+			double x, y;
+			player->get_subtitle_pos(&x, &y);
+			x = ((double)SendMessage((HWND)lParam, TBM_GETPOS, 0, 0) / 1000);
+			player->set_subtitle_pos(x, y);
+		}
+		if (GetDlgCtrlID((HWND)lParam) == IDC_ZHU_POS_Y)
+		{
+			double x, y;
+			player->get_subtitle_pos(&x, &y);
+			int l = SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
+			y = ((double)SendMessage((HWND)lParam, TBM_GETPOS, 0, 0) / 1000 - 0.5 + 0.95);
+			player->set_subtitle_pos(x, y);
+		}
 		break;
 
 	case WM_TIMER:
@@ -115,7 +144,7 @@ static INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wPar
 		if (get_special_size_physical_monitor(size).right != 0)
 			pos = get_special_size_physical_monitor(size);
 
-		SetWindowPos(hDlg, NULL, pos.left, pos.top, pos.right - pos.left, pos.bottom - pos.top, NULL);
+		SetWindowPos(hDlg, NULL, pos.left, pos.top, size.cx, size.cy, NULL);
 		SendMessage(GetDlgItem(hDlg, IDC_ZHU_PROGRESS), TBM_SETRANGEMAX, (WPARAM)TRUE, (LPARAM)1000);
 		SendMessage(GetDlgItem(hDlg, IDC_ZHU_VOLUME), TBM_SETRANGEMAX, (WPARAM)TRUE, (LPARAM)1000);
 		SendMessage(GetDlgItem(hDlg, IDC_ZHU_parallax), TBM_SETRANGEMAX, (WPARAM)TRUE, (LPARAM)1000);
@@ -130,7 +159,10 @@ static INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wPar
 			player->get_subtitle_parallax(&parallax);
 			player->get_subtitle_pos(&x, &y);
 			player->get_volume(&volume);
-			SendMessage(GetDlgItem(hDlg, IDC_ZHU_parallax), TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(500+parallax*500/20));
+			SendMessage(GetDlgItem(hDlg, IDC_ZHU_parallax), TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(500+parallax*500/MAX_PARALLAX));
+			SendMessage(GetDlgItem(hDlg, IDC_ZHU_POS_X), TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(1000*x));
+			SendMessage(GetDlgItem(hDlg, IDC_ZHU_POS_Y), TBM_SETPOS, (WPARAM)TRUE, (LPARAM)((y-0.95+0.5)*1000));
+			SendMessage(GetDlgItem(hDlg, IDC_ZHU_VOLUME), TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(volume*1000));
 
 		
 			// audio devices
@@ -436,69 +468,6 @@ HRESULT dwindow_dll_go_zhuzhu(HINSTANCE inst, HWND owner, Iplayer *p)
 HRESULT dwindow_dll_init_zhuzhu(char *passkey_big, int rev)
 {
 	return S_OK;
-}
-
-LRESULT CALLBACK VolumeProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
-{
-	WPARAM flag = 0;
-	bool mouse_event = false;
-	static bool dragging = false;
-	static int lastflag = 0;
-	switch( msg ) 
-	{
-	case WM_RBUTTONDOWN:
-		flag |= SB_RBUTTON;
-	case WM_LBUTTONDOWN:
-		SetCapture(hDlg);
-		SetFocus(hDlg);
-		mouse_event = true;
-		dragging = true;
-		break;
-	case WM_RBUTTONUP:
-		flag |= SB_RBUTTON;
-	case WM_LBUTTONUP:
-		ReleaseCapture();
-		if (dragging) mouse_event = true;
-		dragging = false;
-		break;
-	case WM_MOUSEMOVE:
-		if (dragging) mouse_event = true;
-		flag = lastflag;
-		break;
-	case WM_MBUTTONDOWN:
-		SendMessage(hDlg, TBM_SETPOS, (WPARAM)TRUE, 25);
-		threater_countrol_proc(control, WM_VSCROLL, SB_RBUTTON, 0);
-		break;
-	}
-
-	if (mouse_event)
-	{
-		RECT rc;
-		CallWindowProc((WNDPROC)g_OldVolumeProc, hDlg, TBM_GETCHANNELRECT, 0, (LPARAM)&rc);
-
-		POINT point = {LOWORD(lParam), HIWORD(lParam)};
-
-
-		int nMin = SendMessage(hDlg, TBM_GETRANGEMIN, 0, 0);
-		int nMax = SendMessage(hDlg, TBM_GETRANGEMAX, 0, 0);+1;
-
-		if (point.y >= 60000) 
-			point.y = rc.left;
-
-		// note: there is a bug in GetChannelRect, it gets the orientation of the rectangle mixed up
-		double dPos = (double)(point.y - rc.left)/(rc.right - rc.left);
-
-		int newPos = (int)(nMin + (nMax-nMin)*dPos + 0.5 *(1-dPos) - 0.5 *dPos);
-
-		SendMessage(hDlg, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)newPos);
-		SendMessage(control, WM_VSCROLL, flag, (LPARAM)hDlg);
-
-		lastflag = flag;
-
-		return false;
-	}
-
-	return 	CallWindowProc((WNDPROC)g_OldVolumeProc,hDlg ,msg, wParam, lParam);   
 }
 
 LRESULT CALLBACK ProgressProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
