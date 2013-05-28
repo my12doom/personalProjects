@@ -211,7 +211,7 @@ function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
 		self.anchors[point].frame:RemoveLayoutChild(self)
 	end
 	
-	if (frame) then
+	if frame then
 		frame:AddLayoutChild(self)
 	end
 	
