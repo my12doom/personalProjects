@@ -109,7 +109,7 @@ function BaseFrame:GetChildCount()
 	return #self.childs
 end
 
-function BaseFrame:SetRelativeTo(frame, point, anchor)
+function BaseFrame:SetRelativeTo(point, frame, anchor)
 	if self==frame or self:IsParentOf(frame) then
 		error("SetRelativeTo() failed: target is same or parent of this frame")
 		return

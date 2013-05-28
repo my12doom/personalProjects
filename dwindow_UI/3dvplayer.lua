@@ -199,8 +199,8 @@ end
 
 
 local test = BaseFrame:Create()
-test:SetRelativeTo(root, TOPLEFT)
 root:AddChild(test)
+test:SetRelativeTo(TOPLEFT)
 function test:GetRect()
 	return 0,0,self.width or 0,self.height or 0
 end

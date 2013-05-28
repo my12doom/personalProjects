@@ -5,7 +5,7 @@ local UI_show_time = 2000
 -- toolbar background
 local bg = BaseFrame:Create()
 root:AddChild(bg)
-bg:SetRelativeTo(nil, BOTTOMLEFT)
+bg:SetRelativeTo(BOTTOMLEFT)
 function bg:GetRect()
 	return 0, 0, dwindow.width, 64
 end
@@ -21,7 +21,7 @@ end
 -- right mouse button reciever
 local rbutton = BaseFrame:Create()
 root:AddChild(rbutton)
-rbutton:SetRelativeTo(root, CENTER)
+rbutton:SetRelativeTo(CENTER)
 function rbutton:GetRect()
 	return 0,0,dwindow.width,dwindow.height
 end
@@ -38,7 +38,7 @@ end
 -- LOGO
 local logo = BaseFrame:Create()
 rbutton:AddChild(logo)
-logo:SetRelativeTo(root, CENTER)
+logo:SetRelativeTo(CENTER, root)
 function logo:GetRect()
 	self.w = math.min(math.min(dwindow.width, dwindow.height-40)*3/5, 512)
 	return 0,0,self.w+0.025*self.w,self.w,0.0125*self.w,-20
@@ -98,7 +98,7 @@ end
 -- Play/Pause button
 local play = BaseFrame:Create()
 root:AddChild(play)
-play:SetRelativeTo(nil, BOTTOMLEFT)
+play:SetRelativeTo(BOTTOMLEFT)
 function play:GetRect()
 	return 0, 0, 14, 14, 14, -8
 end
@@ -120,7 +120,7 @@ end
 -- Fullscreen button
 local full = BaseFrame:Create()
 root:AddChild(full)
-full:SetRelativeTo(nil, BOTTOMRIGHT)
+full:SetRelativeTo(BOTTOMRIGHT)
 function full:GetRect()
 	return 0, 0, 14, 14, -14, -8
 end
@@ -139,7 +139,7 @@ end
 -- Volume
 local volume = BaseFrame:Create()
 root:AddChild(volume)
-volume:SetRelativeTo(full, LEFT, RIGHT)
+volume:SetRelativeTo(LEFT, full, RIGHT)
 function volume:GetRect()
 	return 0,0,34,14,-14,0
 end
@@ -158,7 +158,7 @@ end
 -- progress bar
 local progress = BaseFrame:Create()
 root:AddChild(progress)
-progress:SetRelativeTo(nil, BOTTOMLEFT)
+progress:SetRelativeTo(BOTTOMLEFT)
 function progress:GetRect()
 	local w = dwindow.width - 113 - 161 + 6
 	return 0,0,w,14,113-3,-8
@@ -187,7 +187,7 @@ end
 -- numbers
 local number_current = BaseFrame:Create()
 root:AddChild(number_current)
-number_current:SetRelativeTo(play, RIGHT, LEFT)
+number_current:SetRelativeTo(RIGHT, play, LEFT)
 function number_current:GetRect()
 	return 0,0,9*5+6*2,14,14
 end
@@ -229,7 +229,7 @@ end
 
 local number_total = BaseFrame:Create()
 root:AddChild(number_total)
-number_total:SetRelativeTo(volume, LEFT, RIGHT)
+number_total:SetRelativeTo(LEFT, volume, RIGHT)
 number_total.RenderThis = number_current.RenderThis
 function number_total:GetTime()
 	return dwindow.total()

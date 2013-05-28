@@ -5,7 +5,7 @@ if require and not BaseFrame then require("base_frame") end
 logo = BaseFrame:Create()
 logo.name = "LOGO"
 root:AddChild(logo)
-logo:SetRelativeTo(root, CENTER)
+logo:SetRelativeTo(CENTER)
 function logo:GetRect()
 	return 0,0,1920,1080
 end
@@ -24,7 +24,7 @@ end
 logo_hot = BaseFrame:Create()
 logo_hot.name = "LOGO HOT AREA"
 logo:AddChild(logo_hot)
-logo_hot:SetRelativeTo(logo, CENTER)
+logo_hot:SetRelativeTo(CENTER)
 function logo_hot:GetRect()
 	return 0,0,400,171
 end
@@ -43,7 +43,7 @@ end
 toolbar_bg = BaseFrame:Create()
 toolbar_bg.name = "toolbar_bg"
 root:AddChild(toolbar_bg)
-toolbar_bg:SetRelativeTo(root, BOTTOM)
+toolbar_bg:SetRelativeTo(BOTTOM)
 function toolbar_bg:GetRect()
 	local toolbar_height = 65
 	return 0, 0, dwindow.width, toolbar_height
@@ -130,7 +130,7 @@ for i=1,#button_pictures/2 do
 	button.RenderThis = button_RenderThis
 	button.OnMouseDown = button_OnMouseDown
 	button.name = button.pic[1]
-	button:SetRelativeTo(nil, BOTTOMRIGHT)
+	button:SetRelativeTo(BOTTOMRIGHT)
 	button.id = i
 
 	x = x - space_of_each_button
@@ -139,7 +139,7 @@ end
 progressbar = BaseFrame:Create()
 progressbar.name = "progressbar"
 toolbar_bg:AddChild(progressbar)
-progressbar:SetRelativeTo(nil, BOTTOMLEFT)
+progressbar:SetRelativeTo(BOTTOMLEFT)
 function progressbar:GetRect()
 	local r = self.parent:GetAbsAnchorPoint(RIGHT) - margin_progress_right	
 	local l = self.parent:GetAbsAnchorPoint(LEFT) + margin_progress_left
@@ -200,7 +200,7 @@ end
 number_current = BaseFrame:Create()
 number_current.name = "number_current"
 toolbar_bg:AddChild(number_current)
-number_current:SetRelativeTo(nil, BOTTOMLEFT)
+number_current:SetRelativeTo(BOTTOMLEFT)
 function number_current:GetRect()
 	return 0, 0, numbers_width * 8, numbers_height, numbers_left_margin, - numbers_bottom_margin
 end
@@ -234,7 +234,7 @@ end
 number_total = BaseFrame:Create({RenderThis = number_current.RenderThis})
 number_total.name = "number_total"
 toolbar_bg:AddChild(number_total)
-number_total:SetRelativeTo(nil, BOTTOMRIGHT)
+number_total:SetRelativeTo(BOTTOMRIGHT)
 number_total.t = 23456000
 function number_total:GetRect()
 	return 0, 0, numbers_width * 8, numbers_height, -numbers_right_margin, - numbers_bottom_margin
@@ -248,7 +248,7 @@ local last_in_time = 0
 local last_out_time = 0
 local last_in = false
 local alpha_tick = 0
-grow:SetRelativeTo(nil, BOTTOMLEFT)
+grow:SetRelativeTo(BOTTOMLEFT)
 toolbar_bg:AddChild(grow)
 grow.name = "GROW"
 
@@ -323,48 +323,3 @@ end
 function grow:HitTest()
 	return false
 end
-
---[[
-test2 = BaseFrame:Create()
-test2.name = "test2"
-test2:SetRelativeTo(test, RIGHT, LEFT)
-root:AddChild(test2)
-function test2:GetRect()
-	return 0,0,40,40
-end
-
-function test2:RenderThis()
-	return paint(0,0,40,40, get_bitmap("play.png"))
-end
-
-test3 = BaseFrame:Create()
-test3:SetRelativeTo(test, BOTTOM, TOP)
-test3.name = "test3"
-root:AddChild(test3)
-function test3:GetRect()
-	local dy = dwindow.GetTickCount()%10000
-	if dy > 5000 then dy = 10000- dy end
-	dy = dy * 500 / 5000
-	return 0,0,40,40,0,dy
-end
-
-function test3:RenderThis()
-	return paint(0,0,40,40, get_bitmap("stop.png"))
-end
-
-test4 = BaseFrame:Create()
-test4.name = "test4"
-root:AddChild(test4)
-test4:SetRelativeTo(test3, BOTTOMRIGHT, BOTTOMLEFT)
-function test4:GetRect()
-	local d = (dwindow.GetTickCount())
-	dx = math.sin(d/360)*50+40
-	dy = math.cos(d/360)*50
-	return 0,0,40,40,dx,dy
-end
-
-function test4:RenderThis()
-	return paint(0,0,40,40, get_bitmap("纱布.png"))
-end
-]]--
---if dwindow and dwindow.execute_luafile then print(dwindow.execute_luafile(GetCurrentLuaPath() .. "..\\tetris.lua")) end
