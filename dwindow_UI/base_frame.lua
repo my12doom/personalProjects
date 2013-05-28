@@ -16,6 +16,7 @@ function BaseFrame:Create()
 	local o = {}
 	o.childs = {}
 	o.anchors = {}
+	o.layoutChilds = {}		-- frames which is relatived to this frame
 	setmetatable(o, self)
 	self.__index = self
 
@@ -38,7 +39,28 @@ function BaseFrame:render(...)
 
 end
 
+-- these size / width / height is the desired values
+-- and anchor points may overwite them
+-- to get displayed size(and position), use GetAbsRect(0
+function BaseFrame:GetSize()
+	return self.width, self.height
+end
 
+function BaseFrame:SetSize(width, height)
+	if width then self.width = width end
+	if height then self.height = height end
+end
+
+function BaseFrame:SetWidth(width)
+	self.width = width
+end
+
+function BaseFrame:SetHeight(height)
+	self.height = height
+end
+
+
+-- override this function to draw your frame
 function BaseFrame:RenderThis(...)
 end
 
@@ -228,6 +250,8 @@ function BaseFrame:CalculateAbsRect()
 		end
 
 		self.l, self.r, self.t, self.b = l2+px-px2+dx,t2+py-py2+dy,r2+px-px2+dx,b2+py-py2+dy
+		
+		return
 	end
 	
 	self.l, self.r, self.t, self.b = l,t,r,b
