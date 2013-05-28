@@ -17,6 +17,7 @@ function BaseFrame:Create()
 	o.childs = {}
 	o.anchors = {}
 	o.layout_childs = {}		-- frames which are relatived to this frame
+	o.layout_parents = {}		-- frames which this frame relatives to
 	setmetatable(o, self)
 	self.__index = self
 
@@ -68,6 +69,7 @@ end
 function BaseFrame:RenderThis(...)
 end
 
+-- Parent and Child relationship functions
 function BaseFrame:AddChild(frame, pos)
 	if frame == nil then return end
 	if frame.parent ~= nil then
@@ -77,7 +79,7 @@ function BaseFrame:AddChild(frame, pos)
 
 	frame.parent = self;
 	if pos ~= nil then
-		table.insert(self.childs, n, frame)
+		table.insert(self.childs, pos, frame)
 	else
 		table.insert(self.childs, frame)
 	end
@@ -136,14 +138,84 @@ function BaseFrame:GetChildCount()
 	return #self.childs
 end
 
+-- Layout Parent and Child relationship functions
+-- caller usually don't need to call these functions
+-- they are used to maintain layout relationship
+function BaseFrame:AddLayoutChild(frame)
+	if frame == nil then return end
+	if self:IsLayoutParentOf(frame) then
+		return
+	end
+
+	table.insert(frame.layout_parents, self)
+	table.insert(self.layout_childs, frame)
+end
+
+function BaseFrame:IsLayoutParentOf(frame)
+	if frame == nil then
+		return false
+	end
+	
+	for _,v in ipairs(frame.layout_parents) do
+		if v == self then
+			return true
+		end
+	end
+	
+	return false
+end
+
+function BaseFrame:RemoveLayoutChild(frame)
+	if frame == nil then return end
+	if not self:IsLayoutParentOf(frame) then		-- illegal removal
+		error("illegal RemoveLayoutChild() " .. tostring(frame) .. " from ".. tostring(self))
+		return
+	end
+
+	for i=1,#self.layout_childs do
+		if self.layout_childs[i] == frame then
+			table.remove(self.layout_childs, i)
+			break;
+		end
+	end
+
+	for i=1,#frame.layout_parents do
+		if frame.layout_parents[i] == self then
+			table.remove(frame.layout_parents, i)
+			break;
+		end
+	end
+end
+
+function BaseFrame:GetLayoutParents()
+	return self.layout_parents
+end
+
+function BaseFrame:GetLayoutChild(n)
+	return self.layout_childs[n]
+end
+
+function BaseFrame:GetLayoutChildCount()
+	return #self.layout_childs
+end
+
+
+-- Relative function
 function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
 	if self==frame or self:IsParentOf(frame) then
 		error("SetRelativeTo() failed: target is same or parent of this frame")
 		return
 	end
 	
-	self.anchors[point] = {frame = frame, point = point, anchor = anchor, dx = dx or 0, dy = dy or 0}
-
+	if self.anchors[point] and self.anchors[point].frame then
+		self.anchors[point].frame:RemoveLayoutChild(self)
+	end
+	
+	if (frame) then
+		frame:AddLayoutChild(self)
+	end
+	
+	self.anchors[point] = {frame = frame, anchor = anchor, dx = dx or 0, dy = dy or 0}
 	self.relative_to = frame;
 	self.relative_point = point;
 	self.anchor = anchor;
@@ -333,4 +405,5 @@ function BaseFrame:BroadcastLayoutEvent(event, ...)
 	end
 end
 
+-- the root
 root = BaseFrame:Create()
