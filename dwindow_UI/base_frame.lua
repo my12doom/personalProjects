@@ -15,6 +15,7 @@ BaseFrame ={}
 function BaseFrame:Create()
 	local o = {}
 	o.childs = {}
+	o.anchors = {}
 	setmetatable(o, self)
 	self.__index = self
 
@@ -109,11 +110,13 @@ function BaseFrame:GetChildCount()
 	return #self.childs
 end
 
-function BaseFrame:SetRelativeTo(point, frame, anchor)
+function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
 	if self==frame or self:IsParentOf(frame) then
 		error("SetRelativeTo() failed: target is same or parent of this frame")
 		return
 	end
+	
+	table.insert(self.anchors, {frame = frame, point = point, anchor = anchor, dx = dx or 0, dy = dy or 0})
 
 	self.relative_to = frame;
 	self.relative_point = point;
@@ -178,7 +181,14 @@ function BaseFrame:GetAbsAnchorPoint(point)
 end
 
 -- GetRect in Screen space
+
 function BaseFrame:GetAbsRect()
+	self:CalculateAbsRect()
+	
+	return self.l, self.r, self.t, self.b
+end
+
+function BaseFrame:CalculateAbsRect()
 	local relative = self.relative_to or self.parent				-- use parent as default relative_to frame
 	local l,t,r,b = 0,0,dwindow.width or 1,dwindow.height or 1		-- use screen as default relative_to frame if no parent & relative
 	local relative_point = self.relative_point or TOPLEFT
@@ -217,10 +227,10 @@ function BaseFrame:GetAbsRect()
 			py2 = h2
 		end
 
-		return l2+px-px2+dx,t2+py-py2+dy,r2+px-px2+dx,b2+py-py2+dy
+		self.l, self.r, self.t, self.b = l2+px-px2+dx,t2+py-py2+dy,r2+px-px2+dx,b2+py-py2+dy
 	end
 	
-	return l,t,r,b
+	self.l, self.r, self.t, self.b = l,t,r,b
 end
 
 -- GetRect in parent's client space
