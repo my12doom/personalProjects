@@ -16,7 +16,7 @@ function BaseFrame:Create()
 	local o = {}
 	o.childs = {}
 	o.anchors = {}
-	o.layoutChilds = {}		-- frames which is relatived to this frame
+	o.layout_childs = {}		-- frames which are relatived to this frame
 	setmetatable(o, self)
 	self.__index = self
 
@@ -41,7 +41,7 @@ end
 
 -- these size / width / height is the desired values
 -- and anchor points may overwite them
--- to get displayed size(and position), use GetAbsRect(0
+-- to get displayed size(and position), use GetAbsRect()
 function BaseFrame:GetSize()
 	return self.width, self.height
 end
@@ -49,14 +49,18 @@ end
 function BaseFrame:SetSize(width, height)
 	if width then self.width = width end
 	if height then self.height = height end
+	
+	self:BroadcastLayoutEvent("OnSize");
 end
 
 function BaseFrame:SetWidth(width)
 	self.width = width
+	self:BroadcastLayoutEvent("OnSize");
 end
 
 function BaseFrame:SetHeight(height)
 	self.height = height
+	self:BroadcastLayoutEvent("OnSize");
 end
 
 
@@ -138,7 +142,7 @@ function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
 		return
 	end
 	
-	table.insert(self.anchors, {frame = frame, point = point, anchor = anchor, dx = dx or 0, dy = dy or 0})
+	self.anchors[point] = {frame = frame, point = point, anchor = anchor, dx = dx or 0, dy = dy or 0}
 
 	self.relative_to = frame;
 	self.relative_point = point;
@@ -291,13 +295,22 @@ end
 -- for these mouse events or focus related events, return anything other than false and nil cause it to be sent to its parents
 
 
--- Frame events
-function BaseFrame:OnSizing() end
-function BaseFrame:OnSize() end
-function BaseFrame:OnMoving() end
-function BaseFrame:OnMove() end
+-- Frame layout events, default handling is recalculate layout
+function BaseFrame:OnSizing()
+	self:CalculateAbsRect();
+end
+function BaseFrame:OnSize()
+	self:CalculateAbsRect();
+end
+function BaseFrame:OnMoving()
+	self:CalculateAbsRect();
+end
+function BaseFrame:OnMove()
+	self:CalculateAbsRect();
+end
 
-root = BaseFrame:Create()
+
+-- event delivering function
 function BaseFrame:OnEvent(event, ...)
 	return (self[event] and self[event](self, ...)) or (self.parent and self.parent:OnEvent(event, ...))
 end
@@ -311,47 +324,13 @@ function BaseFrame:BroadCastEvent(event, ...)
 	end
 end
 
-
-Thread = {}
-
-function Thread:Create(func, ...)
-
-	local o = {}
-	setmetatable(o, self)
-	self.__index = self
-	self.handle = dwindow.CreateThread(func, ...)
-	
-	return o
+function BaseFrame:BroadcastLayoutEvent(event, ...)
+	if self[event] then
+		self[event](self, ...)
+	end
+	for _,v in ipairs(self.layout_childs) do
+		v:BroadLayoutEvent(event, ...)
+	end
 end
 
-function Thread:Resume()
-	return dwindow.ResumeThread(self.handle)
-end
-
-function Thread:Suspend()
-	return dwindow:SuspendThread(self.handle)
-end
-
---function Thread:Terminate(exitcode)
---	return dwindow.TerminateThread(self.handle, exitcode or 0)
---end
-
-function Thread:Wait(timeout)
-	return dwindow.WaitForSingleObject(self.handle, timeout)
-end
-
-function Thread:Sleep(timeout)		-- direct use of dwindow.Sleep() is recommended
-	return dwindow.Sleep(timeout)
-end
-
-
-local hello = Thread:Create(function (...)
-	print("Hello Thread!",...)
-	dwindow.Sleep(1500)
-	print("Bye Thread!",...)
-end, 0,1,2,3)
-
-hello:Suspend()
-Thread.Sleep(500)
-hello:Resume()
-Thread.Sleep(500)
+root = BaseFrame:Create()

@@ -231,6 +231,51 @@ function GetPath(pathname)
 	return string.reverse(t)	
 end
 
+-- native threading support
+Thread = {}
+
+function Thread:Create(func, ...)
+
+	local o = {}
+	setmetatable(o, self)
+	self.__index = self
+	self.handle = dwindow.CreateThread(func, ...)
+	
+	return o
+end
+
+-- these two native method is not usable because it will keep root state machine locked and thus deadlock whole lua state machine
+function Thread:Resume()
+	return dwindow.ResumeThread(self.handle)
+end
+
+function Thread:Suspend()
+	return dwindow:SuspendThread(self.handle)
+end
+
+--function Thread:Terminate(exitcode)
+--	return dwindow.TerminateThread(self.handle, exitcode or 0)
+--end
+
+function Thread:Wait(timeout)
+	return dwindow.WaitForSingleObject(self.handle, timeout)
+end
+
+function Thread:Sleep(timeout)		-- direct use of dwindow.Sleep() is recommended
+	return dwindow.Sleep(timeout)
+end
+
+
+local hello = Thread:Create(function (...)
+	print("Hello Thread!",...)
+	dwindow.Sleep(1500)
+	print("Bye Thread!",...)
+end, 0,1,2,3)
+
+hello:Suspend()
+Thread.Sleep(500)
+hello:Resume()
+Thread.Sleep(500)
 
 
 
