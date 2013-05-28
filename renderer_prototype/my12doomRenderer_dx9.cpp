@@ -1184,23 +1184,25 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 		mylog("using adapter %s\n", adapter_used_desc);
 
+		DWORD creation_flag = D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED;
 		if (m_D3DEx)
 		{
+			creation_flag |= D3DCREATE_ENABLE_PRESENTSTATS;
+#ifdef ZHUZHU
+			creation_flag |= D3DCREATE_NOWINDOWCHANGES;
+#endif
 			D3DDISPLAYMODEEX display_mode = {sizeof(D3DDISPLAYMODEEX), m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight,
 				m_active_pp.FullScreen_RefreshRateInHz, m_active_pp.BackBufferFormat, D3DSCANLINEORDERING_PROGRESSIVE};
 
 			m_DeviceEx = NULL;
-			FAIL_RET(m_D3DEx->CreateDeviceEx( AdapterToUse, DeviceType,
-				m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_ENABLE_PRESENTSTATS,
+			FAIL_RET(m_D3DEx->CreateDeviceEx( AdapterToUse, DeviceType, m_hWnd, creation_flag,
 				&m_active_pp, m_active_pp.Windowed ? NULL : &display_mode, &m_DeviceEx ));
 
 			m_DeviceEx->QueryInterface(IID_IDirect3DDevice9, (void**)&m_Device);
 		}
 		else
 		{
-			hr = m_D3D->CreateDevice( AdapterToUse, DeviceType,
-				m_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
-				&m_active_pp, &m_Device );
+			hr = m_D3D->CreateDevice( AdapterToUse, DeviceType, m_hWnd, creation_flag, &m_active_pp, &m_Device );
 		}
 
 		if (FAILED(hr))
