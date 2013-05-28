@@ -124,7 +124,7 @@ static INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wPar
 
 			if (!is_draging && player->m_file_loaded)
 			{
-				SendMessage(GetDlgItem(hDlg, IDC_PROGRESS), TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(1000*((double)current/total)));
+				SendMessage(GetDlgItem(hDlg, IDC_ZHU_PROGRESS), TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(1000*((double)current/total)));
 				wchar_t tmp[200];
 				format_time_noms(total, tmp);
 				SetDlgItemTextW(hDlg, IDC_ZHU_TOTAL, tmp);
@@ -338,18 +338,23 @@ static INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wPar
 
 		case IDC_AUDIO_MODE:
 			DialogBox(inst, MAKEINTRESOURCE(IDD_ZHUZHU_AUDIO), hDlg, threater_countrol_proc);
+			player->set_theater(hDlg);
 			break;
 		case IDC_AUDIO_DEVICE:
 			DialogBox(inst, MAKEINTRESOURCE(IDD_ZHUZHU_AUDIO_DEVICE), hDlg, threater_countrol_proc);
+			player->set_theater(hDlg);
 			break;
 		case IDC_VIDEO_DEVICE:
 			DialogBox(inst, MAKEINTRESOURCE(IDD_ZHUZHU_VIDEO), hDlg, threater_countrol_proc);
+			player->set_theater(hDlg);
 			break;
 		case IDC_NETWORK:
 			DialogBox(inst, MAKEINTRESOURCE(IDD_ZHUZHU_NETWORK), hDlg, threater_countrol_proc);
+			player->set_theater(hDlg);
 			break;
 		case IDC_SYSTEM:
 			DialogBox(inst, MAKEINTRESOURCE(IDD_ZHUZHU_SYSTEM), hDlg, threater_countrol_proc);
+			player->set_theater(hDlg);
 			break;
 
 		case IDOK:
@@ -430,7 +435,7 @@ static INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wPar
 			PostMessage(player->get_window(1), WM_COMMAND, ID_SWAPEYES, 0);
 			break;
 		case IDC_ZHU_STOP:
-			player->stop();
+			player->reset();
 			break;
 		case IDC_ZHU_PLAY:
 			player->pause();
