@@ -5036,10 +5036,10 @@ HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 }
 HRESULT lua_drawer::init_cpu(int width, int height, IDirect3DDevice9 *device)
 {
-	my12doomRenderer_lua_loadscript();
-	m_device = device;
 	g_lua_manager->get_variable("width") = int(width/UIScale);
 	g_lua_manager->get_variable("height") = int(height/UIScale);
+	my12doomRenderer_lua_loadscript();
+	m_device = device;
 
 	luaState lua_state;
 	lua_getglobal(lua_state, "OnInitCPU");
