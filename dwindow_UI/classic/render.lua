@@ -71,7 +71,7 @@ function logo:OnMouseDown()
 	alpha = 1
 	dwindow.show_mouse(true)
 	dwindow.popup_menu()
-	return true
+	return false
 end
 
 local last_mousemove =  0
