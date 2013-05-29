@@ -43,13 +43,10 @@ end
 local logo = BaseFrame:Create()
 rbutton:AddChild(logo)
 
-
 function logo:PreRender()
 	self.w = math.min(math.min(dwindow.width, dwindow.height-40)*3/5, 512)
 	logo:SetRelativeTo(CENTER, rbutton, CENTER, 0.0125*self.w,-20)
-	logo:SetSize(self.w+0.025*self.w, self.w)
-	
-	print("logo:PreRender", self.w)
+	logo:SetSize(self.w+0.025*self.w, self.w)	
 end
 
 function logo:RenderThis(view)
@@ -115,7 +112,7 @@ function play:RenderThis()
 	else
 		set_bitmap_rect(res, 96,0,96+14,14)
 	end
-	paint(0,0,14,14,res,alpha)
+	paint(0,0,14,14,res,alpha)	
 end
 
 function play:OnMouseDown()
@@ -142,7 +139,7 @@ end
 -- Volume
 local volume = BaseFrame:Create()
 root:AddChild(volume)
-volume:SetRelativeTo(LEFT, full, RIGHT, -14, 0)
+volume:SetRelativeTo(RIGHT, full, LEFT, -14, 0)
 volume:SetSize(34,14)
 
 function volume:RenderThis()
@@ -156,39 +153,10 @@ function volume:RenderThis()
 	paint(0,0,34*volume,14,res,alpha)
 end
 
--- progress bar
-local progress = BaseFrame:Create()
-root:AddChild(progress)
-progress:SetRelativeTo(BOTTOMLEFT, nil, nil, 113-3, -8)
-
-function progress:PreRender()
-	progress:SetSize(dwindow.width - 113 - 161 + 6 ,14)
-end
-
-function progress:RenderThis()
-	local w = dwindow.width - 113 - 161
-	local fv = dwindow.tell() / dwindow.total()
-	fv = math.max(0,math.min(fv,1))
-	
-	local res = get_bitmap("ui.png")
-	set_bitmap_rect(res, 216,0,220,14)
-	paint(3,0,w+3,14,res,alpha)
-	set_bitmap_rect(res, 208,0,212,14)
-	paint(3,0,fv*w+3,14,res,alpha)
-end
-
-function progress:OnMouseDown(x,y,button)
-	local w = dwindow.width - 113 - 161
-	local v = (x-3) / w
-	v = math.max(0,math.min(v,1))
-	
-	dwindow.seek(dwindow.total()*v)
-end
-
 -- numbers
 local number_current = BaseFrame:Create()
 root:AddChild(number_current)
-number_current:SetRelativeTo(RIGHT, play, LEFT, 14)
+number_current:SetRelativeTo(LEFT, play, RIGHT, 14)
 number_current:SetSize(9*5+6*2,14)
 
 function number_current:GetTime()
@@ -228,7 +196,7 @@ end
 
 local number_total = BaseFrame:Create()
 root:AddChild(number_total)
-number_total:SetRelativeTo(LEFT, volume, RIGHT, -14)
+number_total:SetRelativeTo(RIGHT, volume, LEFT, -14)
 number_total.RenderThis = number_current.RenderThis
 function number_total:GetTime()
 	return dwindow.total()
@@ -238,4 +206,33 @@ number_total:SetSize(9*5+6*2,14)
 
 function number_total:GetTime()
 	return dwindow.total()
+end
+
+-- progress bar
+local progress = BaseFrame:Create()
+root:AddChild(progress)
+progress:SetRelativeTo(BOTTOMLEFT, nil, nil, 113-3, -8)
+progress:SetRelativeTo(BOTTOMRIGHT, nil, nil, -161, -8)
+progress:SetSize(nil ,14)
+
+function progress:RenderThis()
+	local l,_,r=self:GetAbsRect()
+	local w = r-l
+	local fv = dwindow.tell() / dwindow.total()
+	fv = math.max(0,math.min(fv,1))
+	
+	local res = get_bitmap("ui.png")
+	set_bitmap_rect(res, 216,0,220,14)
+	paint(3,0,w+3,14,res,alpha)
+	set_bitmap_rect(res, 208,0,212,14)
+	paint(3,0,fv*w+3,14,res,alpha)
+end
+
+function progress:OnMouseDown(x,y,button)
+	local l,_,r=self:GetAbsRect()
+	local w = r-l
+	local v = (x-3) / w
+	v = math.max(0,math.min(v,1))
+	
+	dwindow.seek(dwindow.total()*v)
 end

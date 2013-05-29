@@ -20,7 +20,7 @@ function BaseFrame:Create()
 	o.layout_parents = {}		-- frames which this frame relatives to
 	setmetatable(o, self)
 	self.__index = self
-
+	
 	return o
 end
 
@@ -331,58 +331,109 @@ function BaseFrame:GetAbsRect()
 		self:CalculateAbsRect()
 	end
 	
-	return self.l, self.r, self.t, self.b
+	return self.l, self.t, self.r, self.b
+end
+
+function BaseFrame:DebugAbsRect()
+	self.debug = true
+	self:CalculateAbsRect()
+	self.debug = false;
 end
 
 function BaseFrame:CalculateAbsRect()
-
-	for point, parameter in pairs(self.anchors) do
 	
+	local left, right, xcenter, top, bottom, ycenter
+
+	local default_anchors = {}
+	default_anchors[TOPLEFT]={frame=nil, anchor=nil, dx=0, dy=0}
+	local anchors = default_anchors
+	for k,v in pairs(self.anchors) do
+		anchors = self.anchors
 	end
 	
+	if anchors == default_anchors and self.debug then
+		print("using default anchor")
+	end
+
+	for point, parameter in pairs(anchors) do
+		
+		local frame = parameter.frame or self.parent					-- use parent as default relative_to frame
+		local anchor = parameter.anchor or point
+		
+		if frame then
+			local x, y = frame:GetAbsAnchorPoint(anchor)
+			x = x + parameter.dx
+			y = y + parameter.dy
+			
+			if self.debug then
+				print("x, y, anchor, point=", x, y, anchor, point)
+			end
+
+			
+			if bit32.band(point, LEFT) == LEFT then
+				left = x
+			elseif bit32.band(point, RIGHT) == RIGHT then
+				right = x			
+			else
+				xcenter = x
+			end
+
+			if bit32.band(point, TOP) == TOP then
+				top = y
+			elseif bit32.band(point, BOTTOM) == BOTTOM then
+				bottom = y
+			else
+				ycenter = y
+			end
+		else
+			left, top, right, bottom = 0,0,dwindow.width or 500,dwindow.height or 500		-- use screen as default relative_to frame if no parent & relative (mostly the root)
+		end	
+	end
 	
-	local relative = self.relative_to or self.parent				-- use parent as default relative_to frame
-	local l,t,r,b = 0,0,dwindow.width or 1,dwindow.height or 1		-- use screen as default relative_to frame if no parent & relative
-	local relative_point = self.relative_point or TOPLEFT
-	local anchor = self.anchor or relative_point
+	local width = self.width
+	local height = self.height
 	
-	if relative then
-		local l,t,r,b = relative:GetAbsRect()						-- get their AbsRect
-		local l2,t2,r2,b2,dx,dy = 0, 0, self.width or 50, self.height or 50, 0, 0-- get our Rect
-		local w,h = r-l, b-t										-- their width and height
-		local w2,h2 = r2-l2, b2-t2									-- out width and height
-		dx,dy = dx or 0, dy or 0
-
-		local px, py = l+w/2, t+h/2
-		if bit32.band(relative_point, LEFT) == LEFT then
-			px = l
-		elseif bit32.band(relative_point, RIGHT) == RIGHT then
-			px = l+w
-		end
-
-		if bit32.band(relative_point, TOP) == TOP then
-			py = t
-		elseif bit32.band(relative_point, BOTTOM) == BOTTOM then
-			py = t+h
-		end
-
-		local px2, py2 = w2/2, h2/2
-		if bit32.band(anchor, LEFT) == LEFT then
-			px2 = 0
-		elseif bit32.band(anchor, RIGHT) == RIGHT then
-			px2 = w2
-		end
-
-		if bit32.band(anchor, TOP) == TOP then
-			py2 = 0
-		elseif bit32.band(anchor, BOTTOM) == BOTTOM then
-			py2 = h2
-		end
-
-		self.l, self.r, self.t, self.b = l2+px-px2+dx,t2+py-py2+dy,r2+px-px2+dx,b2+py-py2+dy
-	else
-		self.l, self.r, self.t, self.b = l,t,r,b	
-	end	
+	if left and right then
+		width = right - left
+		--xcenter = (right+left)/2	--useless
+	elseif left and xcenter then
+		width = (xcenter - left) * 2
+		right = left + width
+	elseif right and xcenter then
+		width = (right - xcenter) * 2
+		left = right - width
+	elseif left and width then
+		right = left + width
+	elseif right and width then
+		left = right - width
+	elseif xcenter and width then
+		left = xcenter - width/2
+		right = xcenter + width/2
+	end
+	
+	if top and bottom then
+		height = bottom - top
+		--ycenter = (bottom+top)/2	--useless
+	elseif top and ycenter then
+		height = (ycenter - top) * 2
+		bottom = top + height
+	elseif bottom and ycenter then
+		height = (bottom - ycenter) * 2
+		top = bottom - height
+	elseif top and height then
+		bottom = top + height
+	elseif bottom and height then
+		top = bottom - height
+	elseif ycenter and height then
+		top = ycenter - height/2
+		bottom = ycenter + height/2
+	end
+	
+	self.l, self.t, self.r, self.b = left or 0, top or 0, right or 0, bottom or 0
+	
+	if self.debug then
+		print("left, right, xcenter, top, bottom, ycenter, width, height=", left, right, xcenter, top, bottom, ycenter, width, height)
+	end
 end
 
 -- GetRect in parent's client space

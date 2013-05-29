@@ -40,7 +40,8 @@ playlist:SetSize(500,54*10)
 playlist:SetRelativeTo(TOP, nil, nil, 0, t1234)
 
 function playlist:PreRender()
-	playlist:SetRelativeTo(TOP, nil, nil, 0, t1234)
+	t1234 = t1234 - 10
+	playlist:GetChild(1):SetRelativeTo(TOP, self, nil, 0, t1234)
 end
 
 function playlist:AddItem(text)
@@ -50,7 +51,7 @@ function playlist:AddItem(text)
 		item:SetRelativeTo(TOP, self)
 	else
 		local relative = self:GetChild(self:GetChildCount())
-		item:SetRelativeTo(BOTTOM, relative, TOP)
+		item:SetRelativeTo(TOP, relative, BOTTOM)
 	end
 	self:AddChild(item)
 	

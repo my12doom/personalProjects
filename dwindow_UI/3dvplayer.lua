@@ -201,9 +201,6 @@ end
 local test = BaseFrame:Create()
 root:AddChild(test)
 test:SetRelativeTo(TOPLEFT)
-function test:GetRect()
-	return 0,0,self.width or 0,self.height or 0
-end
 
 function test:RenderThis()
 	paint(0,0,self.width,self.height, self.res, 1, bilinear_mipmap_minus_one)
@@ -211,8 +208,7 @@ end
 
 function test:OnInitCPU()
 	self.res = self.res or test_get_text_bitmap("HelloWorld你好")
-	self.width = self.res.width
-	self.height = self.res.height
+	self:SetSize(self.res.width, self.res.height)
 end
 
 function test:OnMouseDown()
