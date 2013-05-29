@@ -279,8 +279,9 @@ end
 function BaseFrame:HitTest(x, y)	-- client point
 	-- default hittest: by Rect
 	local l,t,r,b = self:GetAbsRect()
+	l,t,r,b = 0,0,r-l,b-t
 	info("HitTest", x, y, self, l, t, r, b)
-	if l<=x and x<r and t<=y and y<b then
+	if 0<=x and x<r and 0<=y and y<b then
 		return true
 	else
 		return false
@@ -291,7 +292,7 @@ function BaseFrame:GetFrameByPoint(x, y) -- abs point
 	local result = nil
 	local l,t,r,b = self:GetAbsRect()
 	if l<=x and x<r and t<=y and y<b then
-		if self:HitTest(x, y) then
+		if self:HitTest(x-l, y-t) then
 			result = self
 		end
 		for i=1,self:GetChildCount() do
