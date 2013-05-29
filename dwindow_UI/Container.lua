@@ -59,6 +59,6 @@ function playlist:AddItem(text)
 end
 
 
-for i=1, 100 do
+for i=1, 200 do
 	playlist:AddItem("").id = i
 end

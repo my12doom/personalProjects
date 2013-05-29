@@ -286,3 +286,5 @@ if dwindow and dwindow.execute_luafile then
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer.lua"))
 	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Container.lua"))
 end
+
+root:BroadCastEvent("OnSize")
