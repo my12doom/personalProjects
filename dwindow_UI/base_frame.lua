@@ -144,6 +144,7 @@ end
 function BaseFrame:AddLayoutChild(frame)
 	if frame == nil then return end
 	if self:IsLayoutParentOf(frame) then
+		error("illegal AddLayoutChild() " .. tostring(frame) .. " from ".. tostring(self))
 		return
 	end
 
@@ -215,10 +216,55 @@ function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
 		frame:AddLayoutChild(self)
 	end
 	
-	self.anchors[point] = {frame = frame, anchor = anchor, dx = dx or 0, dy = dy or 0}
-	self.relative_to = frame;
-	self.relative_point = point;
-	self.anchor = anchor;
+	
+	if not table_has_reference_cycle(self) then	
+		self.anchors[point] = {frame = frame, anchor = anchor, dx = dx or 0, dy = dy or 0}
+		self.relative_to = frame;
+		self.relative_point = point;
+		self.anchor = anchor;
+		
+		print("OnSize")
+		self:BroadcastLayoutEvent("OnSize")
+		print("OnSize2")
+	else
+		print("LOOP REFERENCE")
+		if frame then
+			frame:RemoveLayoutChild(self)
+		end
+		--print("LOOP REFERENCE2")
+		--print("LOOP REFERENCE3", table_has_reference_cycle(self))
+	end
+end
+
+
+function table_has_reference_cycle(t, checker_table)
+	checker_table = checker_table or t
+
+	if checker_table == nil then return false end;
+
+	for k,v in pairs(t.layout_childs) do
+
+		--if checker_table[v] then
+		--	return true
+		--end
+
+		--checker_table[v] = true
+
+		if type(v) == "table" then
+
+			if v == checker_table then
+				return true
+			end
+
+
+			if table_has_reference_cycle(v, checker_table) then				
+				return true
+			end
+
+		end
+	end
+
+	return false
 end
 
 function BaseFrame:BringToTop(include_parent)
@@ -401,7 +447,7 @@ function BaseFrame:BroadcastLayoutEvent(event, ...)
 		self[event](self, ...)
 	end
 	for _,v in ipairs(self.layout_childs) do
-		v:BroadLayoutEvent(event, ...)
+		v:BroadcastLayoutEvent(event, ...)
 	end
 end
 

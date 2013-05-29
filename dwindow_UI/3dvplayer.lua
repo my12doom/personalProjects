@@ -72,7 +72,7 @@ end
 function json_url2table(url)
 	local bytes, response_code, headers = http.request(url)
 	
-	print(bytes, response_code, headers)
+	--print(bytes, response_code, headers)
 
 	bytes = string.gsub( bytes, "\r\n", "\\n")
 	
@@ -80,7 +80,7 @@ function json_url2table(url)
 
 	local suc,result = pcall(json.decode, bytes)
 
-	print(suc, result)
+	--print(suc, result)
 	if not istable(result) then return nil, result end
 
 	return result
@@ -188,7 +188,7 @@ function load_another()
 		dwindow.load_subtitle(v3dplayer.subtitle_url .. movie.caption)
 	end
 	
-	printtable(movie)
+	--printtable(movie)
 	end, 0)
 end
 

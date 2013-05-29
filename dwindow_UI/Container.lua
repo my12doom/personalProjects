@@ -5,7 +5,7 @@ root:AddChild(playlist)
 playlist:SetRelativeTo(TOP)
 
 function playlist_item:Create(text)
-	local o = {}
+	local o = BaseFrame:Create()
 	o.text = text
 	setmetatable(o, self)
 	self.__index = self
@@ -39,22 +39,17 @@ end
 
 
 local t1234 = 0
-function playlist:GetRect()
-	--if self:GetChildCount() <= 0 then return 0,0,500,0 end
-	--local _,t,_,b = self:GetChild(1):GetRect()
-	
+function playlist:GetRect()	
 	return 0,t1234,500,54*10
 end
 
 function playlist:PreRender()
 	t1234 = t1234 - 10
-	
-	--print(t1234)	
 end
 
 function playlist:AddItem(text)
 	local item = playlist_item:Create(text)
-		
+	
 	if self:GetChildCount() <= 0 then
 		item:SetRelativeTo(TOP, self)
 	else
