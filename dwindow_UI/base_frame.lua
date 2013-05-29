@@ -48,20 +48,25 @@ function BaseFrame:GetSize()
 end
 
 function BaseFrame:SetSize(width, height)
-	if width then self.width = width end
-	if height then self.height = height end
-	
-	self:BroadcastLayoutEvent("OnSize");
+	if self.width ~= width or self.height ~= height then
+		self.width = width
+		self.height = height	
+		self:BroadcastLayoutEvent("OnSize");
+	end
 end
 
 function BaseFrame:SetWidth(width)
-	self.width = width
-	self:BroadcastLayoutEvent("OnSize");
+	if self.width ~= width then
+		self.width = width
+		self:BroadcastLayoutEvent("OnSize");
+	end
 end
 
 function BaseFrame:SetHeight(height)
-	self.height = height
-	self:BroadcastLayoutEvent("OnSize");
+	if self.height ~= height then
+		self.height = height
+		self:BroadcastLayoutEvent("OnSize");
+	end
 end
 
 
@@ -202,6 +207,8 @@ end
 
 
 -- Relative function
+-- return true on success
+-- return false on fail (mostly due to loop reference )
 function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
 	if self==frame or self:IsParentOf(frame) then
 		error("SetRelativeTo() failed: target is same or parent of this frame")
@@ -217,38 +224,31 @@ function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
 	end
 	
 	
-	if not table_has_reference_cycle(self) then	
+	if not frame_has_loop_reference(self) then	
 		self.anchors[point] = {frame = frame, anchor = anchor, dx = dx or 0, dy = dy or 0}
 		self.relative_to = frame;
 		self.relative_point = point;
 		self.anchor = anchor;
 		
-		print("OnSize")
 		self:BroadcastLayoutEvent("OnSize")
-		print("OnSize2")
+		
 	else
-		print("LOOP REFERENCE")
 		if frame then
 			frame:RemoveLayoutChild(self)
 		end
-		--print("LOOP REFERENCE2")
-		--print("LOOP REFERENCE3", table_has_reference_cycle(self))
+		
+		return false
 	end
+	return true
 end
 
 
-function table_has_reference_cycle(t, checker_table)
+function frame_has_loop_reference(t, checker_table)
 	checker_table = checker_table or t
 
 	if checker_table == nil then return false end;
 
 	for k,v in pairs(t.layout_childs) do
-
-		--if checker_table[v] then
-		--	return true
-		--end
-
-		--checker_table[v] = true
 
 		if type(v) == "table" then
 
@@ -257,7 +257,7 @@ function table_has_reference_cycle(t, checker_table)
 			end
 
 
-			if table_has_reference_cycle(v, checker_table) then				
+			if frame_has_loop_reference(v, checker_table) then				
 				return true
 			end
 
@@ -327,12 +327,20 @@ end
 -- GetRect in Screen space
 
 function BaseFrame:GetAbsRect()
-	self:CalculateAbsRect()
+	if not(self.l and self.r and self.t and self.b) then
+		self:CalculateAbsRect()
+	end
 	
 	return self.l, self.r, self.t, self.b
 end
 
 function BaseFrame:CalculateAbsRect()
+
+	for point, parameter in pairs(self.anchors) do
+	
+	end
+	
+	
 	local relative = self.relative_to or self.parent				-- use parent as default relative_to frame
 	local l,t,r,b = 0,0,dwindow.width or 1,dwindow.height or 1		-- use screen as default relative_to frame if no parent & relative
 	local relative_point = self.relative_point or TOPLEFT
@@ -340,7 +348,7 @@ function BaseFrame:CalculateAbsRect()
 	
 	if relative then
 		local l,t,r,b = relative:GetAbsRect()						-- get their AbsRect
-		local l2,t2,r2,b2,dx,dy = self:GetRect()					-- get our Rect
+		local l2,t2,r2,b2,dx,dy = 0, 0, self.width or 50, self.height or 50, 0, 0-- get our Rect
 		local w,h = r-l, b-t										-- their width and height
 		local w2,h2 = r2-l2, b2-t2									-- out width and height
 		dx,dy = dx or 0, dy or 0
@@ -372,11 +380,9 @@ function BaseFrame:CalculateAbsRect()
 		end
 
 		self.l, self.r, self.t, self.b = l2+px-px2+dx,t2+py-py2+dy,r2+px-px2+dx,b2+py-py2+dy
-		
-		return
-	end
-	
-	self.l, self.r, self.t, self.b = l,t,r,b
+	else
+		self.l, self.r, self.t, self.b = l,t,r,b	
+	end	
 end
 
 -- GetRect in parent's client space

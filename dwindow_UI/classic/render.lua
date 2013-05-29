@@ -6,8 +6,10 @@ local UI_show_time = 2000
 local bg = BaseFrame:Create()
 root:AddChild(bg)
 bg:SetRelativeTo(BOTTOMLEFT)
-function bg:GetRect()
-	return 0, 0, dwindow.width, 64
+bg:SetSize(dwindow.width, 64)
+
+function bg:PreRender()
+	bg:SetSize(dwindow.width, 64)
 end
 
 function bg:RenderThis()
@@ -22,8 +24,10 @@ end
 local rbutton = BaseFrame:Create()
 root:AddChild(rbutton)
 rbutton:SetRelativeTo(CENTER)
-function rbutton:GetRect()
-	return 0,0,dwindow.width,dwindow.height
+rbutton:SetSize(dwindow.width,dwindow.height)
+
+function rbutton:PreRender()
+	rbutton:SetSize(dwindow.width,dwindow.height)
 end
 
 function rbutton:OnMouseDown(x,y,button)
@@ -38,12 +42,15 @@ end
 -- LOGO
 local logo = BaseFrame:Create()
 rbutton:AddChild(logo)
-logo:SetRelativeTo(CENTER, root)
-function logo:GetRect()
-	self.w = math.min(math.min(dwindow.width, dwindow.height-40)*3/5, 512)
-	return 0,0,self.w+0.025*self.w,self.w,0.0125*self.w,-20
-end
 
+
+function logo:PreRender()
+	self.w = math.min(math.min(dwindow.width, dwindow.height-40)*3/5, 512)
+	logo:SetRelativeTo(CENTER, rbutton, CENTER, 0.0125*self.w,-20)
+	logo:SetSize(self.w+0.025*self.w, self.w)
+	
+	print("logo:PreRender", self.w)
+end
 
 function logo:RenderThis(view)
 	local d = self.d
@@ -98,10 +105,8 @@ end
 -- Play/Pause button
 local play = BaseFrame:Create()
 root:AddChild(play)
-play:SetRelativeTo(BOTTOMLEFT)
-function play:GetRect()
-	return 0, 0, 14, 14, 14, -8
-end
+play:SetRelativeTo(BOTTOMLEFT, nil, nil, 14, -8)
+play:SetSize(14, 14)
 
 function play:RenderThis()
 	local res = get_bitmap("ui.png")
@@ -120,10 +125,8 @@ end
 -- Fullscreen button
 local full = BaseFrame:Create()
 root:AddChild(full)
-full:SetRelativeTo(BOTTOMRIGHT)
-function full:GetRect()
-	return 0, 0, 14, 14, -14, -8
-end
+full:SetRelativeTo(BOTTOMRIGHT, nil, nil, -14, -8)
+full:SetSize(14, 14)
 
 function full:RenderThis()
 	local res = get_bitmap("ui.png")
@@ -139,10 +142,8 @@ end
 -- Volume
 local volume = BaseFrame:Create()
 root:AddChild(volume)
-volume:SetRelativeTo(LEFT, full, RIGHT)
-function volume:GetRect()
-	return 0,0,34,14,-14,0
-end
+volume:SetRelativeTo(LEFT, full, RIGHT, -14, 0)
+volume:SetSize(34,14)
 
 function volume:RenderThis()
 	local volume =  dwindow.get_volume()
@@ -158,10 +159,10 @@ end
 -- progress bar
 local progress = BaseFrame:Create()
 root:AddChild(progress)
-progress:SetRelativeTo(BOTTOMLEFT)
-function progress:GetRect()
-	local w = dwindow.width - 113 - 161 + 6
-	return 0,0,w,14,113-3,-8
+progress:SetRelativeTo(BOTTOMLEFT, nil, nil, 113-3, -8)
+
+function progress:PreRender()
+	progress:SetSize(dwindow.width - 113 - 161 + 6 ,14)
 end
 
 function progress:RenderThis()
@@ -187,10 +188,8 @@ end
 -- numbers
 local number_current = BaseFrame:Create()
 root:AddChild(number_current)
-number_current:SetRelativeTo(RIGHT, play, LEFT)
-function number_current:GetRect()
-	return 0,0,9*5+6*2,14,14
-end
+number_current:SetRelativeTo(RIGHT, play, LEFT, 14)
+number_current:SetSize(9*5+6*2,14)
 
 function number_current:GetTime()
 	return dwindow.tell()
@@ -229,15 +228,13 @@ end
 
 local number_total = BaseFrame:Create()
 root:AddChild(number_total)
-number_total:SetRelativeTo(LEFT, volume, RIGHT)
+number_total:SetRelativeTo(LEFT, volume, RIGHT, -14)
 number_total.RenderThis = number_current.RenderThis
 function number_total:GetTime()
 	return dwindow.total()
 end
 
-function number_total:GetRect()
-	return 0,0,9*5+6*2,14,-14
-end
+number_total:SetSize(9*5+6*2,14)
 
 function number_total:GetTime()
 	return dwindow.total()

@@ -9,12 +9,9 @@ function playlist_item:Create(text)
 	o.text = text
 	setmetatable(o, self)
 	self.__index = self
+	o:SetSize(500,54)
 	
 	return o
-end
-
-function playlist_item:GetRect()
-	return 0,0,500,54
 end
 
 function playlist_item:OnReleaseCPU()
@@ -28,7 +25,7 @@ function playlist_item:RenderThis()
 
 	local text = (v3dplayer_getitem(self.id) or {}).name or "@@@@"
 	self.res = self.res or test_get_text_bitmap(text)
-	local l,t,r,b = self:GetRect()
+	local l,t,r,b = 0, 0, self:GetSize()
 	paint(l,t,r,b, get_bitmap("playlist_item_bg.png"))
 	
 	if self.res and self.res.width and self.res.height then
@@ -39,12 +36,11 @@ end
 
 
 local t1234 = 0
-function playlist:GetRect()	
-	return 0,t1234,500,54*10
-end
+playlist:SetSize(500,54*10)
+playlist:SetRelativeTo(TOP, nil, nil, 0, t1234)
 
 function playlist:PreRender()
-	t1234 = t1234 - 10
+	playlist:SetRelativeTo(TOP, nil, nil, 0, t1234)
 end
 
 function playlist:AddItem(text)
