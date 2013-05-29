@@ -1,14 +1,34 @@
 ﻿-- 3dvplayer UI renderer
 
-if require and not BaseFrame then require("base_frame") end
+local button_size = 40;
+local margin_button_right = 32;
+local margin_button_bottom = 8;
+local space_of_each_button = 62;
+local toolbar_height = 65;
+local width_progress_left = 5;
+local width_progress_right = 6;
+local margin_progress_right = 460;
+local margin_progress_left = 37;
+local progress_height = 21;
+local progress_margin_bottom = 27;
+local volume_base_width = 84;
+local volume_base_height = 317;
+local volume_margin_right = (156 - 84);
+local volume_margin_bottom = (376 - 317);
+local volume_button_zero_point = 32;
+local volume_bar_height = 265;
+local numbers_left_margin = 21;
+local numbers_right_margin = 455;
+local numbers_width = 12;
+local numbers_height = 20;
+local numbers_bottom_margin = 26;
+local hidden_progress_width = 72;
 
 logo = BaseFrame:Create()
 logo.name = "LOGO"
 root:AddChild(logo)
 logo:SetRelativeTo(CENTER)
-function logo:GetRect()
-	return 0,0,1920,1080
-end
+logo:SetSize(1920,1080)
 
 function logo:RenderThis()
 	if not dwindow.movie_loaded then
@@ -17,7 +37,11 @@ function logo:RenderThis()
 	end
 end
 
-function logo:HitTest()
+function logo:OnMouseDown(x, y, key)
+	if key == VK_RBUTTON then
+		dwindow.popup_menu()
+	end
+	
 	return false
 end
 
@@ -25,9 +49,7 @@ logo_hot = BaseFrame:Create()
 logo_hot.name = "LOGO HOT AREA"
 logo:AddChild(logo_hot)
 logo_hot:SetRelativeTo(CENTER)
-function logo_hot:GetRect()
-	return 0,0,400,171
-end
+logo_hot:SetSize(400,171)
 
 function logo_hot:RenderThis()
 	if not dwindow.movie_loaded then
@@ -37,20 +59,23 @@ function logo_hot:RenderThis()
 end
 
 function logo_hot:OnMouseDown(...)
-	return dwindow.movie_loaded or dwindow.popup_menu()
+	if dwindow.movie_loaded then
+		return false
+	end
+	dwindow.popup_menu()
+	return true
 end
 
 toolbar_bg = BaseFrame:Create()
 toolbar_bg.name = "toolbar_bg"
 root:AddChild(toolbar_bg)
-toolbar_bg:SetRelativeTo(BOTTOM)
-function toolbar_bg:GetRect()
-	local toolbar_height = 65
-	return 0, 0, dwindow.width, toolbar_height
-end
+toolbar_bg:SetRelativeTo(BOTTOMLEFT)
+toolbar_bg:SetRelativeTo(BOTTOMRIGHT)
+toolbar_bg:SetSize(nil, toolbar_height)
+print("toolbar_height=", toolbar_height)
 
 function toolbar_bg:RenderThis()
-	local l,t,r,b = self:GetRect()
+	local l,t,r,b = self:GetAbsRect()
 	local res = get_bitmap("toolbar_background.png");
 	paint(0,0,r-l,b-t, res)
 end
@@ -78,29 +103,6 @@ local button_functions =
 	dwindow.toggle_3d,
 }
 
-local button_size = 40;
-local margin_button_right = 32;
-local margin_button_bottom = 8;
-local space_of_each_button = 62;
-local toolbar_height = 65;
-local width_progress_left = 5;
-local width_progress_right = 6;
-local margin_progress_right = 460;
-local margin_progress_left = 37;
-local progress_height = 21;
-local progress_margin_bottom = 27;
-local volume_base_width = 84;
-local volume_base_height = 317;
-local volume_margin_right = (156 - 84);
-local volume_margin_bottom = (376 - 317);
-local volume_button_zero_point = 32;
-local volume_bar_height = 265;
-local numbers_left_margin = 21;
-local numbers_right_margin = 455;
-local numbers_width = 12;
-local numbers_height = 20;
-local numbers_bottom_margin = 26;
-local hidden_progress_width = 72;
 
 local function button_GetRect(self)
 	return 0, 0, space_of_each_button, button_size, self.dx, self.dy
@@ -123,29 +125,26 @@ for i=1,#button_pictures/2 do
 	local button = buttons[i] or BaseFrame:Create()
 	buttons[i] = button
 	toolbar_bg:AddChild(button)
-	button.dx = x
-	button.dy = y
 	button.pic = {button_pictures[i*2-1], button_pictures[i*2]}
-	button.GetRect = button_GetRect
 	button.RenderThis = button_RenderThis
 	button.OnMouseDown = button_OnMouseDown
 	button.name = button.pic[1]
-	button:SetRelativeTo(BOTTOMRIGHT)
+	button:SetRelativeTo(BOTTOMRIGHT, nil, nil, x, y)
+	button:SetSize(space_of_each_button, button_size)
 	button.id = i
 
 	x = x - space_of_each_button
+	
+	print("loaded button", i)
 end
 
 progressbar = BaseFrame:Create()
 progressbar.name = "progressbar"
 toolbar_bg:AddChild(progressbar)
-progressbar:SetRelativeTo(BOTTOMLEFT)
-function progressbar:GetRect()
-	local r = self.parent:GetAbsAnchorPoint(RIGHT) - margin_progress_right	
-	local l = self.parent:GetAbsAnchorPoint(LEFT) + margin_progress_left
+progressbar:SetRelativeTo(BOTTOMLEFT, nil, nil, margin_progress_left, -progress_margin_bottom+progress_height)
+progressbar:SetRelativeTo(BOTTOMRIGHT, nil, nil, -margin_progress_right, -progress_margin_bottom+progress_height)
+progressbar:SetSize(nil, progress_height)
 
-	return 0, 0, r-l, progress_height, margin_progress_left, -progress_margin_bottom+progress_height
-end
 local progress_pic =
 {
 	"progress_left_base.png",
@@ -161,13 +160,13 @@ function file(n)
 end
 
 function progressbar:OnMouseDown(x)
-	local l,_,r = self:GetRect()
+	local l,_,r = self:GetAbsRect()
 	local fv = x/(r-l)
 	dwindow.seek(dwindow.total()*fv)	
 end
 
 function progressbar:RenderThis()
-	local l,t,r,b = self:GetRect()
+	local l,t,r,b = self:GetAbsRect()
 	l,r,t,b = 0,r-l,0,b-t
 	local fv = dwindow.tell() / dwindow.total()
 	if fv > 1 then fv = 1 end
@@ -200,10 +199,8 @@ end
 number_current = BaseFrame:Create()
 number_current.name = "number_current"
 toolbar_bg:AddChild(number_current)
-number_current:SetRelativeTo(BOTTOMLEFT)
-function number_current:GetRect()
-	return 0, 0, numbers_width * 8, numbers_height, numbers_left_margin, - numbers_bottom_margin
-end
+number_current:SetRelativeTo(BOTTOMLEFT, nil, nil, numbers_left_margin, - numbers_bottom_margin)
+number_current:SetSize(numbers_width * 8, numbers_height)
 
 function number_current:RenderThis()
 	local t = dwindow.total()
@@ -231,14 +228,13 @@ function number_current:RenderThis()
 
 end
 
-number_total = BaseFrame:Create({RenderThis = number_current.RenderThis})
+number_total = BaseFrame:Create()
 number_total.name = "number_total"
 toolbar_bg:AddChild(number_total)
-number_total:SetRelativeTo(BOTTOMRIGHT)
+number_total:SetRelativeTo(BOTTOMRIGHT, nil, nil, -numbers_right_margin, - numbers_bottom_margin)
 number_total.t = 23456000
-function number_total:GetRect()
-	return 0, 0, numbers_width * 8, numbers_height, -numbers_right_margin, - numbers_bottom_margin
-end
+number_total:SetSize(numbers_width * 8, numbers_height)
+number_total.RenderThis = number_current.RenderThis
 
 
 grow = BaseFrame:Create()
@@ -248,13 +244,10 @@ local last_in_time = 0
 local last_out_time = 0
 local last_in = false
 local alpha_tick = 0
-grow:SetRelativeTo(BOTTOMLEFT)
 toolbar_bg:AddChild(grow)
 grow.name = "GROW"
-
-function grow:GetRect()
-	return 0,0,250,250,self.x-125,125
-end
+grow:SetSize(250, 250)
+grow:SetRelativeTo(BOTTOMLEFT, nil, nil, -125, 125)
 
 function grow:Stick(dt)
 	local frame = root:GetFrameByPoint(self.px or 0, self.py or 0)
@@ -267,8 +260,10 @@ function grow:Stick(dt)
 	if not isbutton then return end
 	
 	local l,t,r,b = frame:GetAbsRect()
-	local dx = (l+r)/2 - self.x
-	self.x = self.x + 0.82 * dx
+	local dx = (l+r)/2 - self.x	
+	print(self.x, dx)
+	self.x = self.x + 0.65 * dx
+	self:SetRelativeTo(BOTTOMLEFT, nil, nil, self.x-125, 125)
 end
 
 function grow:PreRender()
