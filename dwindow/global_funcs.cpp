@@ -2163,7 +2163,7 @@ W2UTF8::W2UTF8(const wchar_t *in)
 		return;
 
 	p = (char*)malloc(len*sizeof(char));
-	assert(WideCharToMultiByte(CP_UTF8, NULL, in, -1, p, len, NULL, NULL) == len);
+	WideCharToMultiByte(CP_UTF8, NULL, in, -1, p, len, NULL, NULL);
 }
 
 W2UTF8::~W2UTF8()
@@ -2188,7 +2188,7 @@ UTF82W::UTF82W(const char *in)
 		return;
 
 	p = (wchar_t*)malloc(len*sizeof(wchar_t));
-	assert(MultiByteToWideChar(CP_UTF8, NULL, in, -1, p, len) == len);
+	MultiByteToWideChar(CP_UTF8, NULL, in, -1, p, len);
 }
 UTF82W::~UTF82W()
 {
