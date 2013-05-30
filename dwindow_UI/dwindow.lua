@@ -97,6 +97,8 @@ end
 function OnInitGPU()
 	debug_print("OnInitGPU")
 	root:BroadCastEvent("OnInitGPU", last_render_time, delta_time)
+	root:BroadCastEvent("OnSize")
+
 	-- commit them to GPU (optional)
 	-- handle resize changes here (must)
 end
@@ -273,9 +275,9 @@ local hello = Thread:Create(function (...)
 end, 0,1,2,3)
 
 hello:Suspend()
-Thread.Sleep(500)
+--Thread.Sleep(500)
 hello:Resume()
-Thread.Sleep(500)
+--Thread.Sleep(500)
 
 
 
@@ -285,7 +287,7 @@ if dwindow and dwindow.execute_luafile then
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "classic\\render.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Container.lua"))
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
+	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
 end
 
 root:BroadCastEvent("OnSize")

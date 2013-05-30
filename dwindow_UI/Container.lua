@@ -59,20 +59,34 @@ function playlist_item:RenderThis()
 
 end
 
+function playlist_item:OnMouseDown()
+	if load_another then load_another(self.id) end
+end
+
+
 
 local playlist = BaseFrame:Create()
-root:AddChild(playlist)
-playlist:SetRelativeTo(TOP)
-playlist:SetSize(198,25*10+16)
-playlist.top = playlist_top:Create()
-playlist.bottom = playlist_bottom:Create()
-playlist:AddChild(playlist.top)
-playlist:AddChild(playlist.bottom)
-playlist.items = {}
+function playlist:Create()
+	local o = BaseFrame:Create()
+	setmetatable(o, self)
+	self.__index = self
+	self:SetSize(198,25*10+16)
+	self.top = playlist_top:Create()
+	self.bottom = playlist_bottom:Create()
+	self:AddChild(playlist.top)
+	self:AddChild(playlist.bottom)
+	self.items = {}
+	
+	return o
+end
 
 function playlist:PreRender()
 	self.y = (self.y or 200) - 1
 	self.top:SetRelativeTo(TOP, self, nil, 0, self.y)
+end
+
+function playlist:HitTest()
+	return false
 end
 
 function playlist:AddItem(text)
@@ -93,7 +107,10 @@ function playlist:AddItem(text)
 	return item
 end
 
+local sample = playlist:Create()
+root:AddChild(sample)
+sample:SetRelativeTo(TOP)
 
 for i=1, 50 do
-	playlist:AddItem("").id = i
+	sample:AddItem("").id = i
 end

@@ -928,6 +928,7 @@ LRESULT dx_player::on_key_down(int id, int key)
 		{
 		ui_drawer_base *p = m_renderer1->get_ui_drawer();
  		m_renderer1->set_ui_drawer(NULL);
+		my12doomRenderer_lua_loadscript();
 		m_renderer1->set_ui_drawer(p == (ui_drawer_base *)this ? m_lua : (ui_drawer_base *)this);
 		}
 		break;
@@ -3415,6 +3416,14 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		}
 	}
 
+	// http?
+	if (wcsstr_nocase(file_to_play, L"http://") == file_to_play)
+	{
+		wchar_t tmp[MAX_PATH] = L"X:\\DWindow\\";;
+		wcscat(tmp, file_to_play);
+		wcscpy(file_to_play, tmp);
+	}
+
 	// subtitle file
 	HRESULT hr = load_subtitle(pathname, false);
 	if (SUCCEEDED(hr))
@@ -4737,7 +4746,7 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 		return;
 	}
 
-	wchar_t tmp_file[MAX_PATH];
+	wchar_t tmp_file[MAX_PATH] = L"X:\\DWindow\\";
 	const wchar_t *displayname = NULL;
 	if (wcsstr_nocase(pathname, L"http://") == pathname)
 	{
@@ -5038,7 +5047,6 @@ HRESULT lua_drawer::init_cpu(int width, int height, IDirect3DDevice9 *device)
 {
 	g_lua_manager->get_variable("width") = int(width/UIScale);
 	g_lua_manager->get_variable("height") = int(height/UIScale);
-	my12doomRenderer_lua_loadscript();
 	m_device = device;
 
 	luaState lua_state;

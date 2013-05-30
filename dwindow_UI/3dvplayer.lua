@@ -172,13 +172,13 @@ function v3d_init()
 	v3d_inited = true
 end
 
-function load_another()
+function load_another(n)
 
 	Thread:Create(function()
 	v3d_init()
 
 	math.randomseed(dwindow.GetTickCount())
-	local movie = video_list:GetItem(math.random(video_list:GetCount()))
+	local movie = video_list:GetItem(n or math.random(video_list:GetCount()))
 	local addresses = string_split(movie.address or "||", "|")
 	local highest = (addresses[1] ~= "NULL" and addresses[1]) or (addresses[2] ~= "NULL" and addresses[2]) or (addresses[3] ~= "NULL" and addresses[3])
 
