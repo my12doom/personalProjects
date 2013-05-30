@@ -1,5 +1,5 @@
-﻿local playlist_top = BaseFrame:Create()
-function playlist_top:Create()
+﻿local menu_top = BaseFrame:Create()
+function menu_top:Create()
 	local o = BaseFrame:Create()
 	setmetatable(o, self)
 	self.__index = self
@@ -8,13 +8,13 @@ function playlist_top:Create()
 	return o
 end
 
-function playlist_top:RenderThis()
+function menu_top:RenderThis()
 	local l,t,r,b = 0, 0, self:GetSize()
 	paint(l,t,r,b, get_bitmap("menu_top.png"))
 end
 
-local playlist_bottom = BaseFrame:Create()
-function playlist_bottom:Create()
+local menu_bottom = BaseFrame:Create()
+function menu_bottom:Create()
 	local o = BaseFrame:Create()
 	setmetatable(o, self)
 	self.__index = self
@@ -23,13 +23,13 @@ function playlist_bottom:Create()
 	return o
 end
 
-function playlist_bottom:RenderThis()
+function menu_bottom:RenderThis()
 	local l,t,r,b = 0, 0, self:GetSize()
 	paint(l,t,r,b, get_bitmap("menu_bottom.png"))
 end
 
-local playlist_item = BaseFrame:Create()
-function playlist_item:Create(text)
+local menu_item = BaseFrame:Create()
+function menu_item:Create(text)
 	local o = BaseFrame:Create()
 	o.text = text
 	setmetatable(o, self)
@@ -39,14 +39,14 @@ function playlist_item:Create(text)
 	return o
 end
 
-function playlist_item:OnReleaseCPU()
+function menu_item:OnReleaseCPU()
 	if self.res and self.res.res then
 		dwindow.release_resource_core(self.res.res)
 	end
 	self.res = nil
 end
 
-function playlist_item:RenderThis()
+function menu_item:RenderThis()
 
 	local text = (v3dplayer_getitem(self.id) or {}).name or "@@@@"
 	self.res = self.res or test_get_text_bitmap(text)
@@ -61,20 +61,20 @@ function playlist_item:RenderThis()
 
 end
 
-function playlist_item:OnMouseDown()
+function menu_item:OnMouseDown()
 	if load_another then load_another(self.id) end
 end
 
 
 
-local playlist = BaseFrame:Create()
-function playlist:Create()
+local menu = BaseFrame:Create()
+function menu:Create()
 	local o = BaseFrame:Create()
 	setmetatable(o, self)
 	self.__index = self
 	o:SetSize(198,25*10+16)
-	o.top = playlist_top:Create()
-	o.bottom = playlist_bottom:Create()
+	o.top = menu_top:Create()
+	o.bottom = menu_bottom:Create()
 	o:AddChild(o.top)
 	o:AddChild(o.bottom)
 	o.items = {}
@@ -82,17 +82,17 @@ function playlist:Create()
 	return o
 end
 
-function playlist:PreRender()
+function menu:PreRender()
 	self.y = (self.y or 200) - 1
 	self.top:SetRelativeTo(TOP, self, nil, 0, self.y)
 end
 
-function playlist:HitTest()
+function menu:HitTest()
 	return false
 end
 
-function playlist:AddItem(text)
-	local item = playlist_item:Create(text)
+function menu:AddItem(text)
+	local item = menu_item:Create(text)
 	self:AddChild(item)
 	
 	if #self.items <= 0 then
@@ -100,16 +100,15 @@ function playlist:AddItem(text)
 	else
 		local relative = self.items[#self.items]
 		item:SetRelativeTo(TOP, relative, BOTTOM)
-		print(item, relative)
 	end
-	table.insert(self.items, item)
 	
-	print(self.bottom:SetRelativeTo(TOP, item, BOTTOM), "ADD")
+	table.insert(self.items, item)	
+	self.bottom:SetRelativeTo(TOP, item, BOTTOM)
 	
 	return item
 end
 
-local sample = playlist:Create()
+local sample = menu:Create()
 root:AddChild(sample)
 sample:SetRelativeTo(TOP)
 
