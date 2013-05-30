@@ -54,7 +54,9 @@ function playlist_item:RenderThis()
 	paint(l,t,r,b, get_bitmap("menu_item.png"))
 	
 	if self.res and self.res.width and self.res.height then
-		paint(0,0,self.res.width,self.res.height, self.res, 1, bilinear_mipmap_minus_one)
+		local dy = (25-self.res.height)/2
+		local dx = 10
+		paint(dx,dy, dx+self.res.width, dy+self.res.height, self.res, 1, bilinear_mipmap_minus_one)
 	end
 
 end

@@ -210,19 +210,24 @@ end
 -- return true on success
 -- return false on fail (mostly due to loop reference )
 function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
+	frame = frame or self.parent
+	anchor = anchor or point
+
 	if self==frame or self:IsParentOf(frame) then
 		error("SetRelativeTo() failed: target is same or parent of this frame")
-		return
+		return false
 	end
 	
-	if self.anchors[point] and self.anchors[point].frame then
+	if not frame then
+		error("SetRelativeTo(): frame=nil and self.parent = nil, no target to relative, FAILED")
+		return false
+	end
+	
+	if self.anchors[point] then
 		self.anchors[point].frame:RemoveLayoutChild(self)
 	end
 	
-	if frame then
-		frame:AddLayoutChild(self)
-	end
-	
+	frame:AddLayoutChild(self)
 	
 	if not frame_has_loop_reference(self) then	
 		self.anchors[point] = {frame = frame, anchor = anchor, dx = dx or 0, dy = dy or 0}
@@ -230,15 +235,14 @@ function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
 		self.relative_point = point;
 		self.anchor = anchor;
 		
-		self:BroadcastLayoutEvent("OnSize")
-		
+		self:BroadcastLayoutEvent("OnSize")		
 	else
-		if frame then
-			frame:RemoveLayoutChild(self)
-		end
+		frame:RemoveLayoutChild(self)
 		
+		error("SetRelativeTo(): FAILED: loop relative")
 		return false
 	end
+	
 	return true
 end
 
