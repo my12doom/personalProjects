@@ -213,11 +213,9 @@ init()
 
 local tetris = BaseFrame:Create()
 tetris.name = "TETRIS"
-tetris:SetRelativeTo(RIGHT)
+tetris:SetRelativeTo(TOPLEFT)
 root:AddChild(tetris)
-function tetris:GetRect()
-	return 0,0,40*ww+40,40*hh+40,200,-50
-end
+tetris:SetSize(40*ww+40,40*hh+40)
 
 function tetris:RenderThis()
 	local res = get_bitmap("fullscreen.png")

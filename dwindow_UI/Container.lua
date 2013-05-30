@@ -1,15 +1,40 @@
-﻿local playlist = BaseFrame:Create()
+﻿local playlist_top = BaseFrame:Create()
+function playlist_top:Create()
+	local o = BaseFrame:Create()
+	setmetatable(o, self)
+	self.__index = self
+	o:SetSize(198,3)
+	
+	return o
+end
+
+function playlist_top:RenderThis()
+	local l,t,r,b = 0, 0, self:GetSize()
+	paint(l,t,r,b, get_bitmap("menu_top.png"))
+end
+
+local playlist_bottom = BaseFrame:Create()
+function playlist_bottom:Create()
+	local o = BaseFrame:Create()
+	setmetatable(o, self)
+	self.__index = self
+	o:SetSize(198,3)
+	
+	return o
+end
+
+function playlist_bottom:RenderThis()
+	local l,t,r,b = 0, 0, self:GetSize()
+	paint(l,t,r,b, get_bitmap("menu_bottom.png"))
+end
+
 local playlist_item = BaseFrame:Create()
-
-root:AddChild(playlist)
-playlist:SetRelativeTo(TOP)
-
 function playlist_item:Create(text)
 	local o = BaseFrame:Create()
 	o.text = text
 	setmetatable(o, self)
 	self.__index = self
-	o:SetSize(500,54)
+	o:SetSize(198,25)
 	
 	return o
 end
@@ -26,7 +51,7 @@ function playlist_item:RenderThis()
 	local text = (v3dplayer_getitem(self.id) or {}).name or "@@@@"
 	self.res = self.res or test_get_text_bitmap(text)
 	local l,t,r,b = 0, 0, self:GetSize()
-	paint(l,t,r,b, get_bitmap("playlist_item_bg.png"))
+	paint(l,t,r,b, get_bitmap("menu_item.png"))
 	
 	if self.res and self.res.width and self.res.height then
 		paint(0,0,self.res.width,self.res.height, self.res, 1, bilinear_mipmap_minus_one)
@@ -35,30 +60,40 @@ function playlist_item:RenderThis()
 end
 
 
-local t1234 = 0
-playlist:SetSize(500,54*10)
-playlist:SetRelativeTo(TOP, nil, nil, 0, t1234)
+local playlist = BaseFrame:Create()
+root:AddChild(playlist)
+playlist:SetRelativeTo(TOP)
+playlist:SetSize(198,25*10+16)
+playlist.top = playlist_top:Create()
+playlist.bottom = playlist_bottom:Create()
+playlist:AddChild(playlist.top)
+playlist:AddChild(playlist.bottom)
+playlist.items = {}
 
 function playlist:PreRender()
-	t1234 = t1234 - 10
-	playlist:GetChild(1):SetRelativeTo(TOP, self, nil, 0, t1234)
+	self.y = (self.y or 200) - 1
+	self.top:SetRelativeTo(TOP, self, nil, 0, self.y)
 end
 
 function playlist:AddItem(text)
 	local item = playlist_item:Create(text)
-	
-	if self:GetChildCount() <= 0 then
-		item:SetRelativeTo(TOP, self)
-	else
-		local relative = self:GetChild(self:GetChildCount())
-		item:SetRelativeTo(TOP, relative, BOTTOM)
-	end
 	self:AddChild(item)
+	
+	if #self.items <= 0 then
+		item:SetRelativeTo(TOP, self.top, BOTTOM)
+	else
+		local relative = self.items[#self.items]
+		item:SetRelativeTo(TOP, relative, BOTTOM)
+		print(item, relative)
+	end
+	table.insert(self.items, item)
+	
+	print(self.bottom:SetRelativeTo(TOP, item, BOTTOM), "ADD")
 	
 	return item
 end
 
 
-for i=1, 200 do
+for i=1, 50 do
 	playlist:AddItem("").id = i
 end

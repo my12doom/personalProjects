@@ -435,12 +435,6 @@ function BaseFrame:CalculateAbsRect()
 	end
 end
 
--- GetRect in parent's client space
-
-function BaseFrame:GetRect()
-	return -99999,-99999,99999,99999
-end
-
 -- CONSTANTS
 VK_RBUTTON = 2
 
