@@ -97,7 +97,7 @@ end
 function OnInitGPU()
 	debug_print("OnInitGPU")
 	root:BroadCastEvent("OnInitGPU", last_render_time, delta_time)
-	root:BroadCastEvent("OnSize")
+	root:BroadCastEvent("OnLayoutChange")
 
 	-- commit them to GPU (optional)
 	-- handle resize changes here (must)
@@ -290,4 +290,4 @@ if dwindow and dwindow.execute_luafile then
 	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
 end
 
-root:BroadCastEvent("OnSize")
+root:BroadCastEvent("OnLayoutChange")

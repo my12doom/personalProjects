@@ -51,21 +51,21 @@ function BaseFrame:SetSize(width, height)
 	if self.width ~= width or self.height ~= height then
 		self.width = width
 		self.height = height	
-		self:BroadcastLayoutEvent("OnSize");
+		self:BroadcastLayoutEvent("OnLayoutChange");
 	end
 end
 
 function BaseFrame:SetWidth(width)
 	if self.width ~= width then
 		self.width = width
-		self:BroadcastLayoutEvent("OnSize");
+		self:BroadcastLayoutEvent("OnLayoutChange");
 	end
 end
 
 function BaseFrame:SetHeight(height)
 	if self.height ~= height then
 		self.height = height
-		self:BroadcastLayoutEvent("OnSize");
+		self:BroadcastLayoutEvent("OnLayoutChange");
 	end
 end
 
@@ -235,7 +235,7 @@ function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
 		self.relative_point = point;
 		self.anchor = anchor;
 		
-		self:BroadcastLayoutEvent("OnSize")		
+		self:BroadcastLayoutEvent("OnLayoutChange")		
 	else
 		frame:RemoveLayoutChild(self)
 		
@@ -468,19 +468,9 @@ end
 
 
 -- Frame layout events, default handling is recalculate layout
-function BaseFrame:OnSizing()
+function BaseFrame:OnLayoutChange()
 	self:CalculateAbsRect();
 end
-function BaseFrame:OnSize()
-	self:CalculateAbsRect();
-end
-function BaseFrame:OnMoving()
-	self:CalculateAbsRect();
-end
-function BaseFrame:OnMove()
-	self:CalculateAbsRect();
-end
-
 
 -- event delivering function
 function BaseFrame:OnEvent(event, ...)
