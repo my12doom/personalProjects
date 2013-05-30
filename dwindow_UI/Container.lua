@@ -70,12 +70,12 @@ function playlist:Create()
 	local o = BaseFrame:Create()
 	setmetatable(o, self)
 	self.__index = self
-	self:SetSize(198,25*10+16)
-	self.top = playlist_top:Create()
-	self.bottom = playlist_bottom:Create()
-	self:AddChild(playlist.top)
-	self:AddChild(playlist.bottom)
-	self.items = {}
+	o:SetSize(198,25*10+16)
+	o.top = playlist_top:Create()
+	o.bottom = playlist_bottom:Create()
+	o:AddChild(o.top)
+	o:AddChild(o.bottom)
+	o.items = {}
 	
 	return o
 end
