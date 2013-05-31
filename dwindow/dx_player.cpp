@@ -796,14 +796,22 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 
 		// yes, it is very strange
 		// because dshow objects won't get released or processed until this message get processed
-		PostMessageW(id_to_hwnd(id), DS_EVENTRELY, (WPARAM) event_code, 0);
+		LONG_PTR *e = new LONG_PTR[3];
+		e[0] = event_code;
+		e[1] = param1;
+		e[2] = param2;
+		PostMessageW(id_to_hwnd(id), DS_EVENTRELY, (WPARAM) e, 0);
 
 		return S_OK;
 	}
 
 	else if (message == DS_EVENTRELY)
 	{
-		long event_code = (long)wParam;
+		LONG_PTR *e = (LONG_PTR*)wParam;
+		long event_code = e[0];
+		LONG_PTR param1 = e[1];
+		LONG_PTR param2 = e[2];
+		delete [] e;
 
 		if (event_code == EC_COMPLETE)
 		{
@@ -815,6 +823,14 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 		{
 			dwindow_log_line("EC_VIDEO_SIZE_CHANGED");
 		}
+
+		luaState L;
+		lua_getglobal(L, "OnDirectshowEvents");
+		lua_pushinteger(L, event_code);
+		lua_pushinteger(L, param1);
+		lua_pushinteger(L, param2);
+		lua_mypcall(L, 3, 0, 0);
+
 	}
 	else if (message ==  WM_GESTURENOTIFY)
 	{

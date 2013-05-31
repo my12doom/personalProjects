@@ -2197,6 +2197,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dwindow_UI\playlist.lua"
+				>
+			</File>
+			<File
 				RelativePath="..\dwindow_UI\tetris.lua"
 				>
 			</File>

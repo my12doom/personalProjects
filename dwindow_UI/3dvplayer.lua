@@ -182,7 +182,7 @@ function load_another(n)
 	local addresses = string_split(movie.address or "||", "|")
 	local highest = (addresses[1] ~= "NULL" and addresses[1]) or (addresses[2] ~= "NULL" and addresses[2]) or (addresses[3] ~= "NULL" and addresses[3])
 
-	dwindow.reset_and_loadfile(v3dplayer.video_server .. highest)
+	playlist_play(v3dplayer.video_server .. highest)
 	
 	if movie.caption and movie.caption ~= "" then
 		dwindow.load_subtitle(v3dplayer.subtitle_url .. movie.caption)

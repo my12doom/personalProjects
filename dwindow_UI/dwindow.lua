@@ -49,7 +49,9 @@ function StartResizing() end
 
 
 -- global window or dshow or etc callback
-function OnDirectshowEvents() end
+function OnDirectshowEvents(event_code, param1, param2)
+	print("OnDirectshowEvents", event_code, param1, param2)
+end
 function OnMove() end
 function OnSize() end
 
@@ -287,7 +289,21 @@ if dwindow and dwindow.execute_luafile then
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "classic\\render.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Container.lua"))
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "playlist.lua"))
 	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
 end
 
 root:BroadCastEvent("OnLayoutChange")
+
+playlist_play("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
+playlist_add("Z:\\43522.mkv")
+playlist_add("Z:\\阿凡达.mkv")
+
+playlist_play_next()
+
+
+for i=1, playlist_get_count() do
+	print("PLAYLIST", i, playlist_get_item(i))
+end
+
+playlist_play("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")

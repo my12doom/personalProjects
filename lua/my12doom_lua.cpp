@@ -146,6 +146,13 @@ int luaCreateThread(lua_State *L)
 	return 1;
 }
 
+
+int luaFAILED(lua_State *L)
+{
+	HRESULT hr = lua_tointeger(L, -1);
+	lua_pushboolean(L, FAILED(hr));
+	return 1;
+}
 extern "C" int luaopen_cjson_safe(lua_State *l);
 
 int dwindow_lua_init () 
@@ -168,6 +175,7 @@ int dwindow_lua_init ()
   result = lua_toboolean(g_L, -1);  /* get result */
 
   g_lua_manager = new lua_manager(g_L, &g_csL);
+  g_lua_manager->get_variable("FAILED") = &luaFAILED;
   g_lua_manager->get_variable("GetTickCount") = &lua_GetTickCount;
   g_lua_manager->get_variable("execute_luafile") = &execute_luafile;
   g_lua_manager->get_variable("track_back") = &track_back;

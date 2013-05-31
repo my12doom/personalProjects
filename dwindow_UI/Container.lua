@@ -72,21 +72,16 @@ function menu:Create()
 	local o = BaseFrame:Create()
 	setmetatable(o, self)
 	self.__index = self
-	o:SetSize(198,25*10+16)
+	o:SetSize(198,25*50+16)
 	o.top = menu_top:Create()
 	o.bottom = menu_bottom:Create()
 	o:AddChild(o.top)
 	o:AddChild(o.bottom)
+	o.top:SetRelativeTo(TOP)
 	o.items = {}
 	
 	return o
 end
-
-function menu:PreRender()
-	self.y = (self.y or 200) - 1
-	self.top:SetRelativeTo(TOP, self, nil, 0, self.y)
-end
-
 function menu:HitTest()
 	return false
 end
@@ -95,12 +90,7 @@ function menu:AddItem(text)
 	local item = menu_item:Create(text)
 	self:AddChild(item)
 	
-	if #self.items <= 0 then
-		item:SetRelativeTo(TOP, self.top, BOTTOM)
-	else
-		local relative = self.items[#self.items]
-		item:SetRelativeTo(TOP, relative, BOTTOM)
-	end
+	item:SetRelativeTo(TOP, self.items[#self.items] or self.top, BOTTOM)
 	
 	table.insert(self.items, item)	
 	self.bottom:SetRelativeTo(TOP, item, BOTTOM)
@@ -111,6 +101,11 @@ end
 local sample = menu:Create()
 root:AddChild(sample)
 sample:SetRelativeTo(TOP)
+
+function sample:PreRender()
+	self.y = (self.y or 200) - 1
+	self:SetRelativeTo(TOP, nil, nil, 0, self.y)
+end
 
 for i=1, 50 do
 	sample:AddItem("").id = i
