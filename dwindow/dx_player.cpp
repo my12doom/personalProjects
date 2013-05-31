@@ -813,13 +813,8 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 		LONG_PTR param2 = e[2];
 		delete [] e;
 
-		if (event_code == EC_COMPLETE)
-		{
-			stop();
-			seek(0);
-		}
 
-		else if (event_code == EC_VIDEO_SIZE_CHANGED)
+		if (event_code == EC_VIDEO_SIZE_CHANGED)
 		{
 			dwindow_log_line("EC_VIDEO_SIZE_CHANGED");
 		}

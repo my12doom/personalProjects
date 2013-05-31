@@ -51,6 +51,16 @@ function StartResizing() end
 -- global window or dshow or etc callback
 function OnDirectshowEvents(event_code, param1, param2)
 	print("OnDirectshowEvents", event_code, param1, param2)
+	
+	local EC_COMPLETE = 1
+	if event_code == EC_COMPLETE then
+		if playlist_get_current_item() >= playlist_get_count() then
+			dwindow.stop()
+			dwindow.seek(0)
+		else
+			playlist_play_next()
+		end
+	end
 end
 function OnMove() end
 function OnSize() end
