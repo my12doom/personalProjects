@@ -1,5 +1,5 @@
 ﻿local playlist = {}
-local playing
+local playing = 0
 local get_pos
 
 function playlist_add(path, pos)
@@ -28,13 +28,13 @@ function playlist_clear()
 end
 
 function playlist_play_next()
-	if (playing or 0) < #playlist then
+	if playing< #playlist then
 		return playlist_play_item(playing+1) or playlist_play_next()
 	end
 end
 
-function playlist_play_previos()
-	if (playing or 0) > 1 then
+function playlist_play_previous()
+	if playing > 1 then
 		return playlist_play_item(playing-1)
 	end
 end

@@ -286,16 +286,16 @@ hello:Resume()
 -- load base_frame and default UI
 if dwindow and dwindow.execute_luafile then
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "base_frame.lua"))
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "classic\\render.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Container.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "playlist.lua"))
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer\\render.lua"))
 	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
 end
 
 root:BroadCastEvent("OnLayoutChange")
 
-playlist_play("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
+playlist_add("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
 playlist_add("Z:\\43522.mkv")
 playlist_add("Z:\\阿凡达.mkv")
 

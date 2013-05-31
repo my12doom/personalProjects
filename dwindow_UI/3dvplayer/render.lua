@@ -96,9 +96,9 @@ local button_functions =
 {
 	dwindow.toggle_fullscreen,
 	dwindow.set_volume,
-	dwindow.GetTickCount,
+	playlist_play_next,
 	dwindow.pause,
-	dwindow.GetTickCount,
+	playlist_play_previous,
 	dwindow.stop,
 	dwindow.toggle_3d,
 }
