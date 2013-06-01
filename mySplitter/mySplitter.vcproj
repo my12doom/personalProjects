@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;&quot;J2K-Codec\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MYSPLITTER_EXPORTS;UNICODE;_UNICODE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -66,7 +66,7 @@
 				AdditionalDependencies="..\libchecksum\debug\libchecksum.lib"
 				OutputFile="$(OutDir)/mySplitter.ax"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode"
+				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\MTDebug&quot;;&quot;J2K-Codec\lib&quot;"
 				ModuleDefinitionFile="dll.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/mySplitter.pdb"
@@ -208,7 +208,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;J2K-Codec\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MYSPLITTER_EXPORTS;UNICODE;_UNICODE"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
@@ -231,7 +231,7 @@
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)/mySplitter.ax"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Release_Unicode"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;&quot;J2K-Codec\lib&quot;"
 				ModuleDefinitionFile="dll.def"
 				GenerateDebugInformation="false"
 				SubSystem="2"
@@ -311,6 +311,14 @@
 			</File>
 			<File
 				RelativePath=".\image_stereo.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\j2k_decoder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\j2k_decoder.h"
 				>
 			</File>
 			<File

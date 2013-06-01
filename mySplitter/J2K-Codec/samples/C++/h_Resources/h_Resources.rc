@@ -1,0 +1,10 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// RCDATA
+//
+
+IDR_RCDATA1             RCDATA  DISCARDABLE     "test4.j2k"

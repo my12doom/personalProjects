@@ -1,0 +1,21 @@
+LIBRARY j2k-codec.dll
+EXPORTS
+	J2K_GetVersion		@1
+	J2K_InitLibrary		@2
+	J2K_CloseLibrary	@3
+	J2K_GetErrorStrA	@4
+	J2K_GetErrorStrW	@5
+	J2K_UnlockA			@6
+	J2K_UnlockW			@7
+	J2K_StartLogging	@8
+	J2K_StopLogging		@9
+	J2K_OpenFileA		@10
+	J2K_OpenFileW		@11
+	J2K_OpenMemory		@12
+	J2K_OpenCustom		@13
+	J2K_GetInfo			@14
+	J2K_GetMetadata		@15
+	J2K_SelectTiles		@16
+	J2K_DecodeA			@17
+	J2K_DecodeW			@18
+	J2K_Close			@19

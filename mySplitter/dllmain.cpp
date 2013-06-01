@@ -16,6 +16,7 @@
 #include "extender.h"
 #include "ssp.h"
 #include "audio_downmix.h"
+#include "j2k_decoder.h"
 
 //////////////////////////////////////////////////////////////////////////
 // This file contains the standard COM glue code required for registering the 
@@ -221,7 +222,6 @@ const AMOVIESETUP_FILTER sudYV12StereoMixer =
     MERIT_DO_NOT_USE,					// Filter merit
     3,									// Number of pins
     sudYV12StereoMixerPins,				// Pin information
-	CLSID_LegacyAmFilterCategory
 };
 
 
@@ -232,7 +232,6 @@ const AMOVIESETUP_FILTER sudYV12MonoMixer =
 	MERIT_DO_NOT_USE,					// Filter merit
 	2,									// Number of pins
 	sudYV12MonoMixerPins,				// Pin information
-	CLSID_LegacyAmFilterCategory
 };
 
 
@@ -243,7 +242,6 @@ const AMOVIESETUP_FILTER sudDWindowExtenderMono =
 	MERIT_DO_NOT_USE,					// Filter merit
 	2,									// Number of pins
 	sudDWindowExtenderMonoPins,			// Pin information
-	CLSID_LegacyAmFilterCategory
 };
 
 const AMOVIESETUP_FILTER sudDWindowExtenderStereo =
@@ -253,7 +251,6 @@ const AMOVIESETUP_FILTER sudDWindowExtenderStereo =
 	MERIT_DO_NOT_USE,					// Filter merit
 	3,									// Number of pins
 	sudDWindowExtenderStereoPins,		// Pin information
-	CLSID_LegacyAmFilterCategory
 };
 
 const AMOVIESETUP_FILTER sudDWindowSSP =
@@ -263,7 +260,6 @@ const AMOVIESETUP_FILTER sudDWindowSSP =
 	MERIT_DO_NOT_USE,					// Filter merit
 	2,									// Number of pins
 	sudDWindowSSPPins,					// Pin information
-	CLSID_LegacyAmFilterCategory
 };
 
 const AMOVIESETUP_FILTER sudDWindowAudio =
@@ -273,7 +269,15 @@ const AMOVIESETUP_FILTER sudDWindowAudio =
 	MERIT_DO_NOT_USE,					// Filter merit
 	2,									// Number of pins
 	sudDWindowAudiodownmixPins,					// Pin information
-	CLSID_LegacyAmFilterCategory
+};
+
+const AMOVIESETUP_FILTER sudJ2KDecoder =
+{
+	&CLSID_my12doomJ2KDecoder,			// Filter CLSID
+	L"my12doom's JPEG2000 Decoder",			// String name
+	MERIT_DO_NOT_USE,					// Filter merit
+	2,									// Number of pins
+	sudDWindowExtenderMonoPins,					// Pin information
 };
 
 CFactoryTemplate g_Templates[] = 
@@ -283,7 +287,8 @@ CFactoryTemplate g_Templates[] =
 	{ g_wszDWindowExtenderMono,	&CLSID_DWindowMono,	CDWindowExtenderMono::CreateInstance,   NULL, &sudDWindowExtenderMono	},
 	{ g_wszDWindowExtenderStereo,	&CLSID_DWindowStereo,	CDWindowExtenderStereo::CreateInstance,   NULL, &sudDWindowExtenderStereo	},
 	{ g_wszDWindowSSP,	&CLSID_DWindowSSP,	CDWindowSSP::CreateInstance,   NULL, &sudDWindowSSP	},
-	{ g_wszDWindowAudioDownmix,	&CLSID_DWindowAudioDownmix,	CDWindowAudioDownmix::CreateInstance,   NULL, &sudDWindowAudio	}
+	{ g_wszDWindowAudioDownmix,	&CLSID_DWindowAudioDownmix,	CDWindowAudioDownmix::CreateInstance,   NULL, &sudDWindowAudio	},
+	{ L"my12doom's JPEG2000 Decoder",	&CLSID_my12doomJ2KDecoder,	CJ2kDecoder::CreateInstance,   NULL, &sudJ2KDecoder	}
 
 };
 
@@ -297,7 +302,7 @@ int g_cTemplates = sizeof(g_Templates) / sizeof(g_Templates[0]);
 STDAPI DllRegisterServer()
 {
 #ifndef DEBUG
-	return E_FAIL;
+// 	return E_FAIL;
 #endif
     return AMovieDllRegisterServer2( TRUE );
 }
