@@ -326,6 +326,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dwindow\runnable.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\splitbase.cpp"
 				>
 			</File>
@@ -385,6 +389,10 @@
 			</File>
 			<File
 				RelativePath=".\QTransfrm.h"
+				>
+			</File>
+			<File
+				RelativePath="..\dwindow\runnable.h"
 				>
 			</File>
 			<File
