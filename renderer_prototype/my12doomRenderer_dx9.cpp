@@ -3186,6 +3186,13 @@ HRESULT my12doomRenderer::screenshot(void *Y, void*U, void*V, int stride, int wi
 	if (!m_last_rendered_sample1)
 		return E_FAIL;
 
+	if (m_last_rendered_sample1 && m_last_rendered_sample2)
+	{
+		HRESULT hr;
+		FAIL_RET(m_last_rendered_sample1->convert_to_RGB32_CPU(Y, U, V, stride, width/2, height));
+		return m_last_rendered_sample2->convert_to_RGB32_CPU((char*)Y+width/2, (char*)U+width/4, (char*)V+width/4, stride, width/2, height);
+	}
+
 	return m_last_rendered_sample1->convert_to_RGB32_CPU(Y, U, V, stride, width, height);
 }
 

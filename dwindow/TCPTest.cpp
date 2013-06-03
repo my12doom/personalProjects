@@ -105,8 +105,8 @@ DWORD WINAPI handler_thread(LPVOID param)
 	send(client_sock, "\n", 1, 0);
 	char line[1024];
 	int p = 0;
-	wchar_t *out = new wchar_t[1024000];
-	wchar_t *out2 = new wchar_t[1024000];
+	wchar_t *out = new wchar_t[1024000*20];
+	wchar_t *out2 = new wchar_t[1024000*20];
 	char *outA = new char[1024000];
 	AutoSettingString password(L"DWindowNetworkPassword", L"TestCode");
 	while ((numbytes=recv(client_sock, buf, sizeof(buf)-1, 0)) > 0) 

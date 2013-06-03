@@ -161,8 +161,6 @@ client::client()
 	utf8fromwcs(test, wcslen(test), testo);
 
 	LOGE("testo:%s, %d", testo, wcslen(test));
-
-	test_thread_pool();
 }
 
 client::~client()
