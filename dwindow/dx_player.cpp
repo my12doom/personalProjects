@@ -813,12 +813,6 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 		LONG_PTR param2 = e[2];
 		delete [] e;
 
-
-		if (event_code == EC_VIDEO_SIZE_CHANGED)
-		{
-			dwindow_log_line("EC_VIDEO_SIZE_CHANGED");
-		}
-
 		luaState L;
 		lua_getglobal(L, "OnDirectshowEvents");
 		lua_pushinteger(L, event_code);
@@ -1921,9 +1915,9 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		m_dialog_open++;
 		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), 
 			L"All Supported files\0"
-			L"*.mp4;*.mkv;*.mkv3d;*.mkv2d;*.mk3d;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso;*.3dp;*.mpo;*.jps;*.pns;*.jpg;*.png;*.gif;*.psd;*.bmp\0"
+			L"*.mp4;*.mkv;*.mxf;*.mkv3d;*.mkv2d;*.mk3d;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso;*.3dp;*.mpo;*.jps;*.pns;*.jpg;*.png;*.gif;*.psd;*.bmp\0"
 			L"Video files\0"
-			L"*.mp4;*.mkv;*.mkv3d;*.mkv2d;*.mk3d;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso\0"
+			L"*.mp4;*.mkv;*.mxf;*.mkv3d;*.mkv2d;*.mk3d;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d;*.iso\0"
 			L"Picture files\0"
 			L"*.3dp;*.mpo;*.jps;*.pns;*.jpg;*.png;*.gif;*.psd;*.bmp\0"
 			L"All Files\0"
@@ -2401,7 +2395,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 #ifndef no_dual_projector
 		wchar_t file[MAX_PATH] = L"";
 		m_dialog_open++;
-		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Audio Tracks\0*.mp3;*.dts;*.ac3;*.aac;*.m4a;*.mka\0All Files\0*.*\0\0"))
+		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Audio Tracks\0*.mp3;*.mxf;*.dts;*.ac3;*.aac;*.m4a;*.mka\0All Files\0*.*\0\0"))
 		{
 			load_audiotrack(file);
 		}
@@ -3343,6 +3337,16 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		hr = myCreateInstance(CLSID_FFDSHOW, IID_IBaseFilter, (void**)&pd10);
 		hr = set_ff_video_formats(pd10);
 		hr = m_gb->AddFilter(pd10, L"ffdshow Video Decoder");
+	}
+
+	// JPEG2000
+	if ( NULL == pin ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('C2JM')) )
+	{
+		CComPtr<IBaseFilter> j2k;
+		config_mainconcept_JPEG200_decoder();
+		hr = myCreateInstance(CLSID_MC_J2KDecoder, IID_IBaseFilter, (void**)&j2k);
+		hr = m_gb->AddFilter(j2k, L"JPEG 2000 Decoder");
 	}
 
 	// RM Video

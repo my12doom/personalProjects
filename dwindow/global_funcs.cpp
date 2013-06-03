@@ -296,9 +296,9 @@ bool browse_folder(wchar_t *out, HWND owner/* = NULL*/)
 bool open_file_dlg(wchar_t *pathname, HWND hDlg, wchar_t *filter/* = NULL*/)
 {
 	static wchar_t *default_filter = L"Video files\0"
-		L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mpls;*.3dv;*.e3d\0"
+		L"*.mp4;*.mkv;*.avi;*.rmvb;*.wmv;*.avs;*.ts;*.m2ts;*.ssif;*.mxf;*.mpls;*.3dv;*.e3d\0"
 		L"Audio files\0"
-		L"*.wav;*.ac3;*.dts;*.mp3;*.mp2;*.mpa;*.mp4;*.wma;*.flac;*.ape;*.avs\0"
+		L"*.wav;*.ac3;*.dts;*.mp3;*.mp2;*.mpa;*.mp4;*.wma;*.mka;*.mxf;*.flac;*.ape;*.avs\0"
 		L"Subtitles\0*.srt;*.sup\0"
 		L"All Files\0*.*\0"
 		L"\0";
@@ -1404,6 +1404,23 @@ HRESULT make_xvid_support_mp4v()
 		return E_FAIL;
 
 	RegCloseKey(hkey);
+	return S_OK;
+}
+
+HRESULT config_mainconcept_JPEG200_decoder()
+{
+	HKEY hkey = NULL;
+	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\MainConcept\\MainConcept MJPEG2000 Video Decoder\\Default", 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+
+	DWORD value = 1, size=4;
+	ret = RegSetValueExW(hkey, L"transform_xyz_to_rgb", 0, REG_DWORD, (const byte*)&value, size );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+
+	RegCloseKey(hkey);
+
 	return S_OK;
 }
 

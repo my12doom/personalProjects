@@ -25,6 +25,7 @@ end
 
 function playlist_clear()
 	playlist = {}
+	playing = 0
 end
 
 function playlist_play_next()

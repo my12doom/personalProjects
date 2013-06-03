@@ -99,7 +99,7 @@ local button_functions =
 	playlist_play_next,
 	dwindow.pause,
 	playlist_play_previous,
-	dwindow.stop,
+	dwindow.reset,
 	dwindow.toggle_3d,
 }
 

@@ -303,8 +303,6 @@ if dwindow and dwindow.execute_luafile then
 	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
 end
 
-root:BroadCastEvent("OnLayoutChange")
-
 playlist_add("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
 playlist_add("Z:\\43522.mkv")
 playlist_add("Z:\\阿凡达.mkv")
