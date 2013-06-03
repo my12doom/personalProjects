@@ -1424,6 +1424,23 @@ HRESULT config_mainconcept_JPEG200_decoder()
 	return S_OK;
 }
 
+HRESULT config_MXFReader()
+{
+	HKEY hkey = NULL;
+	int ret = RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\MediaLooks\\MXF Reader", 0,0,REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS | KEY_WRITE |KEY_SET_VALUE, NULL , &hkey, NULL  );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+
+	DWORD value = 4, size=4;
+	ret = RegSetValueExW(hkey, L"3DMode", 0, REG_DWORD, (const byte*)&value, size );
+	if (ret != ERROR_SUCCESS)
+		return E_FAIL;
+
+	RegCloseKey(hkey);
+
+	return S_OK;
+}
+
 HRESULT make_av_splitter_support_my_formats()
 {
 	HKEY hkey = NULL;

@@ -132,6 +132,9 @@ HRESULT myCreateInstance(CLSID clsid, IID iid, void**out)
 		return s->QueryInterface(iid, out);
 	}
 
+	if (clsid == CLSID_MXFReader)
+		config_MXFReader();
+
 	if (clsid == CLSID_AVSource)
 		make_av_splitter_support_my_formats();
 
