@@ -70,24 +70,25 @@ httppost::httppost(const wchar_t *url)
 ,m_request_content_size(0)
 ,m_request_content_sent(0)
 ,m_cb(NULL)
+,m_URL(NULL)
 {
 	setURL(url);
 };
 
 httppost::~httppost()
 {
+	close_connection();
+	if (m_sock)
+		closesocket(m_sock);
+	safe_delete(m_server);
+	safe_delete(m_object);
+	safe_delete(m_URL);
 	for(std::list<form_item>::iterator i = m_form_items.begin(); i != m_form_items.end(); ++i)
 		delete_form_item(*i);
 	for(std::map<wchar_t*, wchar_t*>::iterator i = m_headers.begin(); i!= m_headers.end(); ++i)
 		delete i->first;
 	for(std::map<wchar_t*, wchar_t*>::iterator i = m_request_headers.begin(); i!= m_request_headers.end(); ++i)
 		delete i->first;
-
-	safe_delete(m_server);
-	safe_delete(m_object);
-	close_connection();
-	if (m_sock)
-		closesocket(m_sock);
 }
 
 int httppost::close_connection()
@@ -105,17 +106,24 @@ int httppost::close_connection()
 
 int httppost::setURL(const wchar_t *url)
 {
-	safe_delete(m_server);
-	safe_delete(m_object);
-
 	if (wcslen(url) < 7 || wcschr(url+7, L'/') == NULL)
 		return -1;
 
+	safe_delete(m_server);
+	safe_delete(m_object);
+	safe_delete(m_URL);
+
+	for(std::map<wchar_t*, wchar_t*>::iterator i = m_headers.begin(); i!= m_headers.end(); ++i)
+		delete i->first;
+	m_headers.clear();
+
 	m_server = new wchar_t[wcslen(url)+1];
 	m_object = new wchar_t[wcslen(url)+1];
+	m_URL = new wchar_t[wcslen(url)+1];
 
 	wcscpy(m_object, wcschr(url+7, L'/'));
 	wcscpy(m_server, url+7);
+	wcscpy(m_URL, url);
 	*((wchar_t*)wcschr(m_server, L'/')) = NULL;
 
 	m_port = 80;
@@ -304,7 +312,7 @@ int httppost::send_item(int sock, form_item &item)
 	return 0;
 }
 
-int httppost::send_request()
+int httppost::send_request(int max_relocation/* = 5*/)
 {
 #ifndef LINUX
 	WSADATA WSAData;
@@ -375,6 +383,7 @@ int httppost::send_request()
 	char *response = new char[MAXRESPONSESIZE];
 	int got = 0;
 	int response_code = 400;
+	wchar_t *location = NULL;
 	while(recv(m_sock, &response[got], 1, 0) >0)
 	{
 		//log("%c", response[got]);
@@ -411,12 +420,30 @@ int httppost::send_request()
 
 					if (wcscmp(line, L"Content-Length") == 0)
 					{
-						//char utf8[1000] = {0};
-						//utf8fromwcs(value, wcslen(value), utf8);
+						#ifdef LINUX
+						char utf8[1000] = {0};
+						utf8fromwcs(value, wcslen(value), utf8);
 
-						//LOGE("Content-Length - %s", utf8);
+						LOGE("Content-Length - %s", utf8);
+						m_content_length = atoll(utf8);
+						#else
 						swscanf(value, L"%lld", &m_content_length);
-						//m_content_length = atoll(utf8);
+						#endif
+					}
+
+					if (wcscmp(line, L"Location") == 0)
+					{
+						if (wcsstr(value, L"http://") == value)
+						{
+							location = new wchar_t[wcslen(value)+1];
+							wcscpy(location, value);
+						}
+						else
+						{
+							location = new wchar_t[wcslen(value)+wcslen(m_URL)+2];
+							wcscpy(location, m_URL);
+							wcscpy((wchar_t*)wcsrchr(location, L'/')+1, value);
+						}
 					}
 				}
 				else
@@ -425,6 +452,14 @@ int httppost::send_request()
 
 			got = 0;
 		}
+	}
+
+	if (location && max_relocation>0)
+	{
+		LOGE("relocating to %s", W2UTF8(location));
+		setURL(location);
+		delete [] location;
+		return send_request(max_relocation-1);
 	}
 
 	return response_code;

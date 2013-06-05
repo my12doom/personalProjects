@@ -29,7 +29,7 @@ public:
 	int addFile(const wchar_t *name, const void *data, int size);
 	int addFormItem(const wchar_t *name, const wchar_t *value);
 
-	int send_request();
+	int send_request(int max_relocation = 5);
 	std::map<wchar_t*,wchar_t*> get_response_headers();
 	__int64 get_content_length();
 	int read_content(void *buf, int size);
@@ -64,6 +64,7 @@ protected:
 	std::map<wchar_t*,wchar_t*> m_request_headers;
 	wchar_t *m_object;
 	wchar_t *m_server;
+	wchar_t *m_URL;
 	int m_port;
 	int m_sock;
 	__int64 m_content_length;
