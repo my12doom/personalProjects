@@ -149,6 +149,8 @@ Section $(MAINPROGRAM_LANG)
   File "Fonts.conf"
   File "MediaInfo.dll"
   File "DevIL.dll"
+  File "detoured.dll"
+  File "IntelWiDiExtensions.dll"
   SetOutPath $INSTDIR\codec
   File "codec\*"
   SetOutPath $INSTDIR\skin

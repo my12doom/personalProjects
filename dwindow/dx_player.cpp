@@ -815,10 +815,17 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 
 		luaState L;
 		lua_getglobal(L, "OnDirectshowEvents");
-		lua_pushinteger(L, event_code);
-		lua_pushinteger(L, param1);
-		lua_pushinteger(L, param2);
-		lua_mypcall(L, 3, 0, 0);
+		if (lua_isfunction(L, -1))
+		{
+			lua_pushinteger(L, event_code);
+			lua_pushinteger(L, param1);
+			lua_pushinteger(L, param2);
+			lua_mypcall(L, 3, 0, 0);
+		}
+		else
+		{
+			lua_pop(L, -1);
+		}
 
 	}
 	else if (message ==  WM_GESTURENOTIFY)
@@ -4880,17 +4887,24 @@ HRESULT dx_player::set_parameter(int parameter, double value)
 // WiDi functions
 HRESULT dx_player::widi_initialize()
 {
+	dwindow_log_line("widi_initialize");
+
 	CoInitialize(NULL);
 
 	widi_shutdown();
-	m_widi.CoCreateInstance(CLSID_WiDiExtensions);
+	myCreateInstance(CLSID_WiDiExtensions, __uuidof(IWiDiExtensions), (void**)&m_widi);
 
 	if (!m_widi)
+	{
+		dwindow_log_line("widi_initialize : !m_widi");
+
 		return E_FAIL;
+	}
 
 	HRESULT hr = m_widi->Initialize((DWORD) m_hwnd1);
 	if (FAILED(hr))
 	{
+		dwindow_log_line("m_widi->Initialize() FAILED");
 		widi_shutdown();
 		return hr;
 	}
@@ -4901,6 +4915,7 @@ HRESULT dx_player::widi_initialize()
 	if (support != NULL)
 	{
 		m_widi_has_support = wcscmp(L"Yes", support) == 0;
+		dwindow_log_line(L"m_widi_has_support = %s", support);
 		SysFreeString(support);
 	}
 
@@ -4909,6 +4924,9 @@ HRESULT dx_player::widi_initialize()
 
 HRESULT dx_player::widi_start_scan()
 {
+	if (!m_widi)
+		return E_NOINTERFACE;
+
 	HRESULT hr = m_widi->StartScanForAdapters();
 	if (FAILED(hr))
 		return hr;

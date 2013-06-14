@@ -147,6 +147,7 @@ Section "3DÓ°ÒôÖ÷³ÌÐò(required)"
   File "MediaInfo.dll"
   File "DevIL.dll"
   File "detoured.dll"
+  File "IntelWiDiExtensions.dll"
   SetOutPath $INSTDIR\codec
   File "codec\*"
   SetOutPath $INSTDIR\Language
