@@ -2279,7 +2279,12 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 			break;
 			assert(0);
 		}
+
 	}
+
+	// deinterlace if needed ( Single field )
+	if (sample->m_interlace_flags != 0)
+		src_rect.bottom -= (src_rect.bottom-src_rect.top)/2;
 
 	if (m_output_mode == multiview)
 	{
@@ -2335,40 +2340,9 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 
 	sample->set_interlace(m_forced_deinterlace);
 
-	if (!m_forced_deinterlace)
-	{
-		// no deinterlacing
-		m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-		hr = resize_surface(NULL, sample, surface, &src_rect, &target, (resampling_method)(int)m_movie_resampling_method);
-		m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-	}
-	else
-	{
-		// using blend deinterlacing
-
-		// create a temp texture
-		CPooledTexture *deinterlace_tex = NULL;
-
-		{
-		CAutoLock lck(&m_pool_lock);
-		FAIL_RET(m_pool->CreateTexture(m_lVidWidth, m_lVidHeight, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &deinterlace_tex));
-		}
-		CComPtr<IDirect3DSurface9> deinterlace_surface;
-		deinterlace_tex->get_first_level(&deinterlace_surface);
-
-		// render to half size, with bilinear resizing
-		RECTF src_rect_half = {src_rect.left, src_rect.top/2, src_rect.right, src_rect.bottom/2};
-		m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-		hr = resize_surface(NULL, sample, deinterlace_surface, &src_rect, &src_rect_half, bilinear_no_mipmap);
-
-		// render again
-		m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-		hr = resize_surface(deinterlace_surface, NULL, surface, &src_rect_half, &target, (resampling_method)(int)m_movie_resampling_method);
-		m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-
-		delete deinterlace_tex;
-	}
-
+	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
+	hr = resize_surface(NULL, sample, surface, &src_rect, &target, (resampling_method)(int)m_movie_resampling_method);
+	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 
 	return hr;
 }

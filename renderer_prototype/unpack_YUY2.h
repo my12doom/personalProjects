@@ -7,4 +7,7 @@
 // UVUVUV   width = half width
 // ....     height = height
 
-void unpack_YUY2(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV);
+void unpack_YUY2(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV, bool deinterlace=false);
+void copy_nv12(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV, bool deinterlace=false);
+void copy_yv12(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV, bool deinterlace=false);
+void copy_p01x(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV, bool deinterlace=false);

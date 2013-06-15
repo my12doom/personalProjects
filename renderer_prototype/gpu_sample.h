@@ -31,6 +31,7 @@ public:
 	CPooledTexture *m_tex_gpu_YV12_UV;				// GPU UV plane of YV12, in L8, double height
 	CPooledTexture *m_tex_gpu_NV12_UV;				// GPU UV plane of NV12, in A8L8
 	CPooledTexture *m_tex_gpu_YUY2_UV;					// GPU YUY2 planes, in A8R8G8B8, half width
+	DWORD m_interlace_flags;
 protected:
 	bool is_ignored_line(int line);
 	CTextureAllocator *m_allocator;
@@ -60,7 +61,6 @@ protected:
 	CPooledTexture *m_tex_stereo_test_cpu;
 
 	D3DPOOL m_pool;
-	DWORD m_interlace_flags;
 	CCritSec m_sample_lock;
 
 };

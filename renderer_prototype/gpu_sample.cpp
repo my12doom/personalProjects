@@ -666,7 +666,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 		else
 			d3dlr_UV = m_tex_YUY2_UV->locked_rect;
 
-		unpack_YUY2(width, height, src, width*2, d3dlr.pBits, d3dlr.Pitch, d3dlr_UV.pBits, d3dlr.Pitch);
+		unpack_YUY2(width, height, src, width*2, d3dlr.pBits, d3dlr.Pitch, d3dlr_UV.pBits, d3dlr.Pitch, m_interlace_flags != 0);
 
 		memory_sample->GetPointer(&src);
 		if (do_cpu_test) get_layout<WORD>(src, width, height, (int*)&m_cpu_tested_result);
@@ -679,36 +679,15 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 		{
 			D3DLOCKED_RECT &d3dlr = m_surf_NV12->locked_rect;
 			dst = (BYTE*)d3dlr.pBits;
-			for(int i=0; i<m_height*3/2; i++)
-			{
-				memcpy(dst, src, m_width);
-				src += m_width;
-				dst += d3dlr.Pitch;
-			}
+			copy_nv12(width, height, src, width, dst, d3dlr.Pitch, dst+d3dlr.Pitch*height, d3dlr.Pitch/2, m_interlace_flags != 0);
 		}
 
 		else
 		{
 			// loading NV12 image as one L8 texture and one A8L8 texture
-			// load Y
 			D3DLOCKED_RECT &d3dlr = m_tex_Y->locked_rect;
-			dst = (BYTE*)d3dlr.pBits;
-			for(int i=0; i<m_height; i++)
-			{
-				memcpy(dst, src, m_width);
-				src += m_width;
-				dst += d3dlr.Pitch;
-			}
-
-			// load UV
 			D3DLOCKED_RECT &d3dlr2 = m_tex_NV12_UV->locked_rect;
-			dst = (BYTE*)d3dlr2.pBits;
-			for(int i=0; i<m_height/2; i++)
-			{
-				memcpy(dst, src, m_width);
-				src += m_width;
-				dst += d3dlr2.Pitch;
-			}
+			copy_nv12(width, height, src, width, d3dlr.pBits, d3dlr.Pitch, d3dlr2.pBits, d3dlr2.Pitch, m_interlace_flags != 0);
 		}
 
 		memory_sample->GetPointer(&src);
@@ -748,18 +727,7 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 		{
 			D3DLOCKED_RECT &d3dlr = m_surf_YV12->locked_rect;
 			dst = (BYTE*)d3dlr.pBits;
-			for(int i=0; i<m_height; i++)
-			{
-				memcpy(dst, src, m_width);
-				src += m_width;
-				dst += d3dlr.Pitch;
-			}
-			for(int i=0; i<m_height; i++)
-			{
-				memcpy(dst, src, m_width/2);
-				src += m_width/2;
-				dst += d3dlr.Pitch/2;
-			}
+			copy_yv12(m_width, m_height, src, m_width, dst, d3dlr.Pitch, dst + m_width * d3dlr.Pitch, d3dlr.Pitch/2, m_interlace_flags != 0);
 		}
 
 		else
@@ -767,23 +735,8 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 			// loading YV12 image as two L8 texture
 			// load Y
 			D3DLOCKED_RECT &d3dlr = m_tex_Y->locked_rect;
-			dst = (BYTE*)d3dlr.pBits;
-			for(int i=0; i<m_height; i++)
-			{
-				memcpy(dst, src, m_width);
-				src += m_width;
-				dst += d3dlr.Pitch;
-			}
-
-			// load UV
 			D3DLOCKED_RECT &d3dlr2 = m_tex_YV12_UV->locked_rect;
-			dst = (BYTE*)d3dlr2.pBits;
-			for(int i=0; i<m_height; i++)
-			{
-				memcpy(dst, src, m_width/2);
-				src += m_width/2;
-				dst += d3dlr2.Pitch;
-			}
+			copy_yv12(m_width, m_height, src, m_width, d3dlr.pBits, d3dlr.Pitch, d3dlr2.pBits, d3dlr2.Pitch, m_interlace_flags != 0);
 		}
 
 		memory_sample->GetPointer(&src);

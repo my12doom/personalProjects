@@ -1,7 +1,9 @@
 #include "unpack_YUY2.h"
 #include <emmintrin.h>
+#include <windows.h>
+#include <stdio.h>
 
-void unpack_YUY2(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV)
+void unpack_YUY2(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV, bool deinterlace/*=false*/)
 {
 	const __m128i mask_Y = _mm_set1_epi16(0x00ff);
 	const __m128i mask_UV = _mm_set1_epi16(0xff00);
@@ -9,7 +11,8 @@ void unpack_YUY2(int width, int height, void *src, int stride_src, void*Y, int s
 
 	for(int y=0; y<height; y++)
 	{
-		__m128i * srcI = (__m128i*)((char*)src + stride_src * y);
+		int line = !deinterlace ? y : ( ((y<<1)%height)+y/height );
+		__m128i * srcI = (__m128i*)((char*)src + stride_src * line);
 		__m128i * dstY = (__m128i*)((char*)Y + stride_Y * y);
 		__m128i * dstUV = (__m128i*)((char*)UV + stride_UV * y);
 
@@ -47,4 +50,55 @@ void unpack_YUY2(int width, int height, void *src, int stride_src, void*Y, int s
 			dstUV++;
 		}
 	}
+}
+
+void copy_nv12(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV, bool deinterlace/*=false*/)
+{
+	BYTE *dst = (BYTE*)Y;
+	for(int i=0; i<height; i++)
+	{
+		int line = !deinterlace ? i : ( ((i<<1)%height)+i/height );
+		memcpy(dst, (BYTE*)src+line*stride_src, width);
+		dst += stride_Y;
+	}
+
+	dst = (BYTE*)UV;
+	for(int i=0; i<height/2; i++)
+	{
+		int line = !deinterlace ? i : ( ((i<<1)%(height/2))+i/(height/2) );
+		memcpy(dst, (BYTE*)src +height*stride_src +line*stride_src, width);
+		dst += stride_UV;
+	}
+}
+void copy_yv12(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV, bool deinterlace/*=false*/)
+{
+	BYTE *dst = (BYTE*)Y;
+	for(int i=0; i<height; i++)
+	{
+		int line = !deinterlace ? i : ( ((i<<1)%height)+i/height );
+		memcpy(dst, (BYTE*)src+line*stride_src, width);
+		dst += stride_Y;
+	}
+
+	// load V
+	dst = (BYTE*)UV;
+	for(int i=0; i<height/2; i++)
+	{
+		int line = !deinterlace ? i : ( ((i<<1)%(height/2))+i/(height/4) );
+		memcpy(dst, (BYTE*)src +height*stride_src +line*stride_src/2, width/2);
+		dst += stride_UV;
+	}
+
+	// load U
+	for(int i=0; i<height/2; i++)
+	{
+		int line = !deinterlace ? i : ( ((i<<1)%(height/2))+i/(height/4) );
+		memcpy(dst, (BYTE*)src +height*stride_src*5/4 +line*stride_src/2, width/2);
+		dst += stride_UV;
+	}
+}
+
+void copy_p01x(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV, bool deinterlace/*=false*/)
+{
+
 }
