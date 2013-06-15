@@ -12,6 +12,7 @@
 #define MAX_PARALLAX 40
 #define MAX_POS_Y 0.5
 #define SB_RBUTTON 16
+
 namespace zhuzhu
 {
 dx_player * player = NULL;
@@ -35,6 +36,7 @@ LRESULT CALLBACK ProgressProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 void format_time(int time, wchar_t *out);
 void format_time_noms(int time, wchar_t *out);
 void format_time2(int current, int total, wchar_t *out);
+HRESULT ZHUZHU_resize_window(HWND hwnd);
 
 HWND focus = NULL;
 BOOL dhcp_enable;
@@ -147,11 +149,12 @@ static INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wPar
 		SetTimer(hDlg, 0, 33, NULL);
 		player->set_theater(hDlg);
 		localize_window(hDlg);
+		ZHUZHU_resize_window(hDlg);
 		detect_monitors();
 		RECT pos;
 		get_mixed_monitor_by_id(0, &pos, NULL);
 		SIZE size;
-		size.cx = 800;
+		size.cx = 720;
 		size.cy = 480;
 		if (get_special_size_physical_monitor(size).right != 0)
 			pos = get_special_size_physical_monitor(size);
@@ -570,4 +573,26 @@ void format_time2(int current, int total, wchar_t *out)
 	format_time(total, tmp);
 	wcscat(out, tmp);
 }
+
+
+BOOL CALLBACK ZHUZHU_resize_proc(HWND hwnd, LPARAM lParam)
+{
+	RECT rect;
+	GetWindowRect(hwnd, &rect);
+	wchar_t tmp[1024];
+	GetWindowTextW(hwnd, tmp, 1024);
+	//SetWindowPos(hwnd, NULL, rect.left, rect.top, (rect.right-rect.left)*720/800, rect.bottom-rect.top, SWP_NOMOVE);
+
+	MoveWindow(hwnd, rect.left*720/800, rect.top, (rect.right-rect.left)*720/800, rect.bottom-rect.top, TRUE);
+
+	return TRUE;
+}
+
+HRESULT ZHUZHU_resize_window(HWND hwnd)
+{
+	ZHUZHU_resize_proc(hwnd, 0);
+	EnumChildWindows(hwnd, ZHUZHU_resize_proc, NULL);
+	return S_OK;
+}
+
 }
