@@ -100,5 +100,19 @@ void copy_yv12(int width, int height, void *src, int stride_src, void*Y, int str
 
 void copy_p01x(int width, int height, void *src, int stride_src, void*Y, int stride_Y, void *UV, int stride_UV, bool deinterlace/*=false*/)
 {
+	BYTE *dst = (BYTE*)Y;
+	for(int i=0; i<height; i++)
+	{
+		int line = !deinterlace ? i : ( ((i<<1)%height)+i/height );
+		memcpy(dst, (BYTE*)src+line*stride_src, width*2);
+		dst += stride_Y;
+	}
 
+	dst = (BYTE*)UV;
+	for(int i=0; i<height/2; i++)
+	{
+		int line = !deinterlace ? i : ( ((i<<1)%(height/2))+i/(height/2) );
+		memcpy(dst, (BYTE*)src +height*stride_src +line*stride_src, width*2);
+		dst += stride_UV;
+	}
 }

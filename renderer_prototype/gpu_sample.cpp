@@ -696,27 +696,12 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 
 	else if (m_format == MEDIASUBTYPE_P010 || m_format == MEDIASUBTYPE_P016)
 	{
-		// loading NV12 image as one L8 texture and one A8L8 texture
+		// loading P01ximage as one L16 texture and one R16G16 texture
 		// load Y
 		D3DLOCKED_RECT &d3dlr = m_tex_Y->locked_rect;
-		dst = (BYTE*)d3dlr.pBits;
-		for(int i=0; i<m_height; i++)
-		{
-			memcpy(dst, src, m_width*2);
-			src += m_width*2;
-			dst += d3dlr.Pitch;
-		}
-
-		// load UV
 		D3DLOCKED_RECT &d3dlr2 = m_tex_NV12_UV->locked_rect;
-		dst = (BYTE*)d3dlr2.pBits;
-		for(int i=0; i<m_height/2; i++)
-		{
-			memcpy(dst, src, m_width*2);
-			src += m_width*2;
-			dst += d3dlr2.Pitch;
-		}
 
+		copy_p01x(width, height, src, width*2, d3dlr.pBits, d3dlr.Pitch, d3dlr2.pBits, d3dlr2.Pitch, m_interlace_flags != 0);
 		memory_sample->GetPointer(&src);
 		if (do_cpu_test) get_layout<WORD>(src+1, width, height, (int*)&m_cpu_tested_result);
 	}
