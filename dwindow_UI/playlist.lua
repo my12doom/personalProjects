@@ -30,7 +30,7 @@ end
 
 function playlist:next()
 	if playing< #playlist then
-		return playlist:play_item(playing+1) or playlist:play_next()
+		return playlist:play_item(playing+1) or playlist:next()
 	end
 end
 

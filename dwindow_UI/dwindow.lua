@@ -307,7 +307,7 @@ playlist:add("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英�
 playlist:add("Z:\\43522.mkv")
 playlist:add("Z:\\阿凡达.mkv")
 
-playlist:play_next()
+playlist:next()
 
 
 for i=1, playlist:count() do
