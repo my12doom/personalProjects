@@ -81,7 +81,7 @@ local last_mousemove =  0
 local mousex = -999
 local mousey = -999
 
-function mouse_hider:OnUpdate(t, dt)
+function mouse_hider:PreRender(t, dt)
 
 	local px, py = dwindow.get_mouse_pos()
 	if (mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 100 or ((mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 0 and alpha > 0.5) then	
@@ -93,7 +93,7 @@ function mouse_hider:OnUpdate(t, dt)
 	local old_alpha = alpha
 	local mouse_in_pannel = px>0 and px<dwindow.width and py>dwindow.height-64 and py<dwindow.height
 	local hide_mouse = not mouse_in_pannel and (t > last_mousemove + UI_show_time)
-	dwindow.show_mouse(not hide_mouse)
+	dwindow.show_mouse(not hide_mouse or dwindow.menu_open > 0)
 	
 	if hide_mouse then
 		alpha = alpha - da

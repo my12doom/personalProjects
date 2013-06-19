@@ -29,7 +29,7 @@ function BeginChild(left, top, right, bottom)
 	local new_rect = {left, top, right, bottom, left_unclip, top_unclip}
 	table.insert(rects, rect)
 	rect = new_rect
-	
+
 	dwindow.set_clip_rect_core(left, top, right, bottom)
 end
 
@@ -51,7 +51,7 @@ function StartResizing() end
 -- global window or dshow or etc callback
 function OnDirectshowEvents(event_code, param1, param2)
 	print("OnDirectshowEvents", event_code, param1, param2)
-	
+
 	local EC_COMPLETE = 1
 	if event_code == EC_COMPLETE then
 		if playlist:current_pos() >= playlist:count() then
@@ -76,28 +76,15 @@ function RenderUI(view)
 	if view == 0 then root:BroadCastEvent("PreRender", last_render_time, delta_time) end
 	local dt = dwindow.GetTickCount() -t
 	t = dwindow.GetTickCount()
-	
+
 	root:render(view)
-	
+
 	local dt2 = dwindow.GetTickCount() -t
-	
+
 	if dt > 0 or dt2 > 0 then
 		info(string.format("slow RenderUI() : PreRender() cost %dms, render() cost %dms", dt, dt2))
 	end
 end
-
--- UI update function
-local last_ui_update_time = 0
-function UpdateUI()
-	if not dwindow.menu_open or dwindow.menu_open > 0 then return end
-	
-	local delta_time = 0;
-	if last_ui_update_time > 0 then delta_time = dwindow.GetTickCount() - last_ui_update_time end
-	last_ui_update_time = dwindow.GetTickCount();
-	
-	root:BroadCastEvent("OnUpdate", last_ui_update_time, delta_time)
-end
-
 
 -- GPU resource management
 function OnInitCPU()
@@ -162,7 +149,7 @@ function get_bitmap(filename, reload)
 	if reload then unload_bitmap(filename) end
 	if bitmapcache[filename] == nil then
 		local res, width, height = dwindow.load_bitmap_core(filename)		-- width is also used as error msg output.
-		
+
 		bitmapcache[filename] = {res = res, width = width, height = height, filename=filename}
 		if not res then
 			error(width, filename)
@@ -171,7 +158,7 @@ function get_bitmap(filename, reload)
 		end
 		print("loaded", filename, width, height)
 	end
-	
+
 	-- reset ROI
 	local rtn = bitmapcache[filename]
 	rtn.left = 0
@@ -225,7 +212,7 @@ end
 function GetPath(pathname)
 	local t = string.reverse(pathname)
 	t = string.sub(t, string.find(t, "\\") or 1)
-	return string.reverse(t)	
+	return string.reverse(t)
 end
 
 -- native threading support
@@ -237,7 +224,7 @@ function Thread:Create(func, ...)
 	setmetatable(o, self)
 	self.__index = self
 	self.handle = dwindow.CreateThread(func, ...)
-	
+
 	return o
 end
 
@@ -284,18 +271,18 @@ if dwindow and dwindow.execute_luafile then
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "playlist.lua"))
 end
 
-function ReloadUI(legacy)	
+function ReloadUI(legacy)
 	print("ReloadUI()", legacy, root)
 	OnReleaseGPU()
 	OnReleaseCPU()
 	root = BaseFrame:Create()
-		
+
 	if legacy then return end
-	
+
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "classic\\render.lua"))
-	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
+	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris\\Tetris.lua"))
 	v3dplayer_add_button()
-	
+
 	-- the menu sample
 	local sample = menu:Create()
 	--root:AddChild(sample)
