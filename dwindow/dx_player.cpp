@@ -34,6 +34,7 @@ LOGFONTW empty_logfontw = {0};
 D3DDISPLAYMODE mode_auto = {0};
 proc_IMemInputPin_Receive g_old;
 int g_audio_latency = 0;
+dx_player *g_player = NULL;
 
 #include "bomb_network.h"
 
@@ -137,6 +138,7 @@ m_audio_latency(L"AudioLatency", 0, REG_DWORD),
 m_simple_audio_switching(L"SimpleAudioSwitching", false),
 m_subtitle_loader_pool(2)
 {
+	g_player = this;
 	g_audio_latency = m_audio_latency;
 
 	// touch 
@@ -1755,16 +1757,6 @@ LRESULT dx_player::on_timer(int id)
 	{
 		g_lua_manager->get_variable("menu_open") = m_dialog_open;
 
-		luaState lua_state;
-		lua_getglobal(lua_state, "UpdateUI");
-		if (lua_isfunction(lua_state, -1))
-		{
-			lua_mypcall(lua_state, 0, 0, 0);
-			lua_settop(lua_state, 0);
-		}
-		else
-			lua_pop(lua_state, 1);
-
 		return S_OK;
 	}
 
@@ -2666,7 +2658,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	{
 		widi_initialize();
 		g_renderer = m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
-		m_renderer1->set_ui_drawer(this);
+		m_renderer1->set_ui_drawer(m_lua = new lua_drawer(this));
 
 		// show it!
 		show_window(1, true);

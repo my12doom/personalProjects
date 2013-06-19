@@ -149,9 +149,11 @@ Section "3DÓ°ÒôÖ÷³ÌÐò(required)"
   File "detoured.dll"
   File "IntelWiDiExtensions.dll"
   SetOutPath $INSTDIR\codec
-  File "codec\*"
+  File /r "codec\*"
   SetOutPath $INSTDIR\Language
-  File "Language\*"
+  File /r "Language\*"
+  SetOutPath $INSTDIR\UI
+  File /r "UI\*"
   SetOutPath $INSTDIR
 
   ; Write the installation path into the registry
@@ -245,10 +247,11 @@ Section "Uninstall"
   Delete "$DESKTOP\DWindow.lnk"
 
   ; Remove directories used
-  RMDir "$SMPROGRAMS\DWindow"
-  RMDir "$INSTDIR\codec"
-  RMDir "$INSTDIR\Language"
-  RMDir "$INSTDIR"
+  RMDir /r "$SMPROGRAMS\DWindow"
+  RMDir /r "$INSTDIR\codec"
+  RMDir /r "$INSTDIR\Language"
+  RMDir /r "$INSTDIR"
+  RMDir /r "$INSTDIR\UI"
 
   ; Revese file association
   !insertmacro UnAssoc mkv

@@ -9,7 +9,6 @@
 #include "runnable.h"
 
 #pragma comment(lib, "DbgHelp")
-dx_player *g_player = NULL;
 AutoSetting<bool> single_instance(L"SingleInstance", true);
 
 // main window
@@ -80,7 +79,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	my12doomRenderer_lua_init();
 	my12doomRenderer_lua_loadscript();
 	dx_player *test = new dx_player(hinstance);
-	g_player = test;
 	BringWindowToTop(test->m_hwnd1);
 
 	if (argc>1)

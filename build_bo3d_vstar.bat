@@ -27,6 +27,9 @@ del/q dwindow_NSIS\skin\*.*
 copy/y dwindow_ui\3dvplayer\*.* dwindow_NSIS\skin
 copy/y 3rdFilter\*.* dwindow_NSIS\codec
 copy/y my12doomSource\bin\Filters_x86\*.ax dwindow_NSIS\codec
+rd/s/q dwindow_NSIS\UI
+md dwindow_NSIS\UI
+xcopy dwindow_UI\*.* dwindow_NSIS\UI /s /e /y
 
 pause
 C:\NSIS\makensisw.exe dwindow_NSIS\dwindowVSTAR.nsi

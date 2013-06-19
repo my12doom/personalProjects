@@ -152,12 +152,14 @@ Section $(MAINPROGRAM_LANG)
   File "detoured.dll"
   File "IntelWiDiExtensions.dll"
   SetOutPath $INSTDIR\codec
-  File "codec\*"
+  File /r "codec\*"
   SetOutPath $INSTDIR\skin
   File "skin\*"
   SetOutPath $INSTDIR\Language
-  File "Language\*"
+  File /r "Language\*"
   SetOutPath $INSTDIR
+  SetOutPath $INSTDIR\UI
+  File /r "UI\*"
 
   ; Write the installation path into the registry
   WriteRegStr HKLM SOFTWARE\3DVPlayer "Install_Dir" "$INSTDIR"
@@ -282,10 +284,11 @@ Section "Uninstall"
   Delete "$DESKTOP\3DVPlayer.lnk"
 
   ; Remove directories used
-  RMDir "$SMPROGRAMS\3DVPlayer"
-  RMDir "$INSTDIR\codec"
-  RMDir "$INSTDIR\Language"
-  RMDir "$INSTDIR"
+  RMDir /r "$SMPROGRAMS\3DVPlayer"
+  RMDir /r "$INSTDIR\codec"
+  RMDir /r "$INSTDIR\Language"
+  RMDir /r "$INSTDIR"
+  RMDir /r "$INSTDIR\UI"
 
   ; Revese file association
   !insertmacro UnAssoc mkv

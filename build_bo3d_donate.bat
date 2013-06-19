@@ -21,6 +21,10 @@ copy/y report_server\release\ErrorReport.exe dwindow_NSIS
 del/q dwindow_NSIS\codec\*.*
 copy/y 3rdFilter\*.* dwindow_NSIS\codec
 copy/y my12doomSource\bin\Filters_x86\*.ax dwindow_NSIS\codec
+rd/s/q dwindow_NSIS\UI
+md dwindow_NSIS\UI
+xcopy dwindow_UI\*.* dwindow_NSIS\UI /s /e /y
+rd/s/q dwindow_NSIS\UI\3dvplayer
 
 pause
 C:\NSIS\makensisw.exe dwindow_NSIS\dwindow.nsi
