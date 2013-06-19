@@ -227,12 +227,6 @@ function OnMouseEvent(event,x,y,...)
 	end
 end
 
-function OnMouseDown(x, y, key)
-	return OnMouseEvent("OnMouseDown",x,y,key)
-end
-
-
-
 -- helper functions
 function GetCurrentLuaPath(offset)
 	local info = debug.getinfo(2+(offset or 0), "Sl")
@@ -301,28 +295,30 @@ if dwindow and dwindow.execute_luafile then
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "playlist.lua"))
 end
 
-
-function ReloadUI()	
-	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
-	OnReleaseGPU();
-	OnReleaseCPU();
+function ReloadUI(legacy)	
+	print("ReloadUI()", legacy, root)
+	OnReleaseGPU()
+	OnReleaseCPU()
 	root = BaseFrame:Create()
+		
+	if legacy then return end
+	
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer\\render.lua"))
+	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
+	v3dplayer_add_button()
+	
+	-- the menu sample
+	local sample = menu:Create()
+	root:AddChild(sample)
+	sample:SetRelativeTo(TOP)
 
-	--[[
-	playlist:clear()
-	playlist:add("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
-	playlist:add("Z:\\43522.mkv")
-	playlist:add("Z:\\阿凡达.mkv")
-
-	playlist:next()
-
-
-	for i=1, playlist:count() do
-		print("PLAYLIST", i, playlist:item(i))
+	function sample:PreRender()
+		self.y = (self.y or 200) - 1
+		self:SetRelativeTo(TOP, nil, nil, 0, self.y)
 	end
 
-	playlist:play("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
-	]]--
-	
+	for i=1, 50 do
+		print("AddItem, legacy = ", legacy)
+		sample:AddItem("").id = i
+	end
 end

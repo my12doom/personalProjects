@@ -67,7 +67,7 @@ end
 
 
 
-local menu = BaseFrame:Create()
+menu = BaseFrame:Create()
 function menu:Create()
 	local o = BaseFrame:Create()
 	setmetatable(o, self)
@@ -96,17 +96,4 @@ function menu:AddItem(text)
 	self.bottom:SetRelativeTo(TOP, item, BOTTOM)
 	
 	return item
-end
-
-local sample = menu:Create()
-root:AddChild(sample)
-sample:SetRelativeTo(TOP)
-
-function sample:PreRender()
-	self.y = (self.y or 200) - 1
-	self:SetRelativeTo(TOP, nil, nil, 0, self.y)
-end
-
-for i=1, 50 do
-	sample:AddItem("").id = i
 end

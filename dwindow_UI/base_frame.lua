@@ -149,7 +149,7 @@ end
 function BaseFrame:AddLayoutChild(frame)
 	if frame == nil then return end
 	if self:IsLayoutParentOf(frame) then
-		error("illegal AddLayoutChild() " .. tostring(frame) .. " from ".. tostring(self))
+		error("illegal AddLayoutChild() : the child to add is parent of this frame " .. tostring(frame) .. " from ".. tostring(self))
 		return
 	end
 

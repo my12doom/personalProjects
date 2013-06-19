@@ -65,6 +65,7 @@ ICommandReciever *command_reciever;
 
 // constructor & destructor
 dx_player::dx_player(HINSTANCE hExe):
+m_lua(NULL),
 m_dialog_open(0),
 m_lastVideoCBTick(0),
 m_renderer1(NULL),
@@ -906,9 +907,6 @@ LRESULT dx_player::on_key_down(int id, int key)
 		lua_pushinteger(lua_state, id);
 		lua_mypcall(lua_state, 2, 0, 0);
 		lua_settop(lua_state, 0);
-
-// 			if (key != VK_F5)
-// 				return S_OK;
 	}
 	lua_settop(lua_state, 0);
 
@@ -937,16 +935,27 @@ LRESULT dx_player::on_key_down(int id, int key)
 
 	case VK_F5:
 		{
-			lua_getglobal(lua_state, "ReloadUI");
-			if (lua_isfunction(lua_state, -1))
-				lua_mypcall(lua_state, 0, 0, 0);
-			lua_settop(lua_state, 0);
 
 			ui_drawer_base *p = m_renderer1->get_ui_drawer();
  			m_renderer1->set_ui_drawer(NULL);
-			m_renderer1->set_ui_drawer(p == (ui_drawer_base *)this ? m_lua : (ui_drawer_base *)this);
+			safe_delete(m_lua);
 
-
+			if (p == (ui_drawer_base *)this)
+			{
+				m_lua = new lua_drawer(this);
+				m_renderer1->set_ui_drawer(m_lua);
+			}
+			else
+			{
+				lua_getglobal(lua_state, "ReloadUI");
+				if (lua_isfunction(lua_state, -1))
+				{
+					lua_pushboolean(lua_state, true);
+					lua_mypcall(lua_state, 1, 0, 0);
+				}
+				lua_settop(lua_state, 0);
+				m_renderer1->set_ui_drawer(this);
+			}
 		}
 		break;
 
@@ -2639,8 +2648,6 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		widi_initialize();
 		g_renderer = m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
 		m_renderer1->set_ui_drawer(this);
-		//m_renderer1->set_ui_drawer();
-		m_lua = new lua_drawer(this);
 
 		// show it!
 		show_window(1, true);
@@ -5067,6 +5074,11 @@ LRESULT dx_player::OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam)
 lua_drawer::lua_drawer(dx_player *owner)
 {
 	m_owner = owner;
+	luaState lua_state;
+	lua_getglobal(lua_state, "ReloadUI");
+	if (lua_isfunction(lua_state, -1))
+		lua_mypcall(lua_state, 0, 0, 0);
+	lua_settop(lua_state, 0);
 }
 HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 {

@@ -198,27 +198,29 @@ function v3dplayer_getitem(id)
 end
 
 
-local test = BaseFrame:Create()
-root:AddChild(test)
-test:SetRelativeTo(TOPLEFT)
+function v3dplayer_add_button()
+	local test = BaseFrame:Create()
+	root:AddChild(test)
+	test:SetRelativeTo(TOPLEFT)
 
-function test:RenderThis()
-	paint(0,0,self.width,self.height, self.res, 1, bilinear_mipmap_minus_one)
-end
-
-function test:OnInitCPU()
-	self.res = self.res or test_get_text_bitmap("HelloWorld你好")
-	self:SetSize(self.res.width, self.res.height)
-end
-
-function test:OnMouseDown()
-	print("test:OnMouseDown()", load_another)
-	if load_another then load_another() end
-end
-
-function test:OnReleaseCPU()
-	if self.res and self.res.res then
-		dwindow.release_resource_core(self.res.res)
+	function test:RenderThis()
+		paint(0,0,self.width,self.height, self.res, 1, bilinear_mipmap_minus_one)
 	end
-	self.res = nil
+
+	function test:OnInitCPU()
+		self.res = self.res or test_get_text_bitmap("HelloWorld你好")
+		self:SetSize(self.res.width, self.res.height)
+	end
+
+	function test:OnMouseDown()
+		print("test:OnMouseDown()", load_another)
+		if load_another then load_another() end
+	end
+
+	function test:OnReleaseCPU()
+		if self.res and self.res.res then
+			dwindow.release_resource_core(self.res.res)
+		end
+		self.res = nil
+	end
 end
