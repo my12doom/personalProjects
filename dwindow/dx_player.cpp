@@ -3199,17 +3199,23 @@ fail:
 
 LRESULT dx_player::on_dropfile(int id, int count, wchar_t **filenames)
 {
-
-	if (count == 1)
+	luaState lua_state;
+	lua_getglobal(lua_state, "OnMouseEvent");
+	if (lua_isfunction(lua_state, -1))
 	{
-		HRESULT hr = load_subtitle(filenames[0], false);
-		if (SUCCEEDED(hr) && m_file_loaded)
-			return S_OK;
+		POINT mouse;
+		GetCursorPos(&mouse);
+		ScreenToClient(id_to_hwnd(id), &mouse);
+		lua_pushstring(lua_state, "OnDropFile");
+		lua_pushinteger(lua_state, mouse.x/UIScale);
+		lua_pushinteger(lua_state, mouse.y/UIScale);
 
-		reset_and_loadfile(filenames[0], false);
+		for(int i=0; i<count; i++)
+			lua_pushstring(lua_state, W2UTF8(filenames[i]));
 
-		return S_OK;
+		lua_mypcall(lua_state, 3+count, 0, 0);
 	}
+	lua_settop(lua_state, 0);
 
 	return S_OK;
 }

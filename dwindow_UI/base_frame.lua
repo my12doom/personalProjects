@@ -448,7 +448,7 @@ function BaseFrame:PreRender(time, delta_time) end
 -- time events, happen on window thread timer
 function BaseFrame:PreRender(time, delta_time) end
 
--- for these mouse events or focus related events, return anything other than false and nil cause it to be sent to its parents
+-- for these mouse events or focus related events, return anything other than false and nil to block it from being sent to its parents
 function BaseFrame:OnMouseDown(button, x, y) end
 function BaseFrame:OnMouseUp(button, x, y) end
 function BaseFrame:OnClick(button, x, y) end
@@ -464,8 +464,14 @@ function BaseFrame:OnMouseEvent(event, x, y, ...)
 	local l, t = self:GetAbsRect()
 	return self[event] and self[event](self, x-l, y-t, ...)
 end
-function BaseFrame:OnDropFile(...)
-	print("BaseFrame:OnDropFile")
+function BaseFrame:OnDropFile(x, y, ...)
+	local files = table.pack(...)
+	for _,file in ipairs(files) do
+		playlist:add(file)
+	end
+	playlist:play(files[1])
+	
+	return true		-- block it from being sent to parents to avoid duplicated loading.
 end
 
 
