@@ -78,6 +78,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	enable_hookdshow();
 	dwindow_lua_init();
 	my12doomRenderer_lua_init();
+	my12doomRenderer_lua_loadscript();
 	dx_player *test = new dx_player(hinstance);
 	g_player = test;
 	BringWindowToTop(test->m_hwnd1);

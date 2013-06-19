@@ -293,25 +293,36 @@ hello:Resume()
 
 
 
--- load base_frame and default UI
+-- load base_frame
 if dwindow and dwindow.execute_luafile then
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "base_frame.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Container.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "playlist.lua"))
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer\\render.lua"))
+end
+
+
+function ReloadUI()	
 	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
+	OnReleaseGPU();
+	OnReleaseCPU();
+	root = BaseFrame:Create()
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer\\render.lua"))
+
+	--[[
+	playlist:clear()
+	playlist:add("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
+	playlist:add("Z:\\43522.mkv")
+	playlist:add("Z:\\阿凡达.mkv")
+
+	playlist:next()
+
+
+	for i=1, playlist:count() do
+		print("PLAYLIST", i, playlist:item(i))
+	end
+
+	playlist:play("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
+	]]--
+	
 end
-
-playlist:add("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
-playlist:add("Z:\\43522.mkv")
-playlist:add("Z:\\阿凡达.mkv")
-
-playlist:next()
-
-
-for i=1, playlist:count() do
-	print("PLAYLIST", i, playlist:item(i))
-end
-
-playlist:play("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")

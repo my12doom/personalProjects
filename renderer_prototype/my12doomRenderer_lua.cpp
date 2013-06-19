@@ -469,15 +469,6 @@ int my12doomRenderer_lua_loadscript()
 		lua_settop(lua_state, 0);
 	}
 
-// 	strcpy(tmp, apppath);
-// 	strcat(tmp, LUA_UI);
-// 	if (luaL_loadfile(lua_state, tmp) || lua_mypcall(lua_state, 0, 0, 0))
-// 	{
-// 		const char * result = lua_tostring(lua_state, -1);
-// 		printf("failed loading renderer lua script : %s\n", result);
-// 		lua_settop(lua_state, 0);
-// 	}
-
 	return 0;
 }
 

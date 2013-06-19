@@ -935,16 +935,21 @@ LRESULT dx_player::on_key_down(int id, int key)
 		m_renderer1->set_mask_parameter(m_renderer1->get_mask_parameter()-1);
 		break;
 
-#ifndef ZHUZHU
 	case VK_F5:
 		{
-		ui_drawer_base *p = m_renderer1->get_ui_drawer();
- 		m_renderer1->set_ui_drawer(NULL);
-		my12doomRenderer_lua_loadscript();
-		m_renderer1->set_ui_drawer(p == (ui_drawer_base *)this ? m_lua : (ui_drawer_base *)this);
+			lua_getglobal(lua_state, "ReloadUI");
+			if (lua_isfunction(lua_state, -1))
+				lua_mypcall(lua_state, 0, 0, 0);
+			lua_settop(lua_state, 0);
+
+			ui_drawer_base *p = m_renderer1->get_ui_drawer();
+ 			m_renderer1->set_ui_drawer(NULL);
+			m_renderer1->set_ui_drawer(p == (ui_drawer_base *)this ? m_lua : (ui_drawer_base *)this);
+
+
 		}
 		break;
-#endif
+
 	case VK_LEFT:
 		{
 			int t;

@@ -1,4 +1,5 @@
 ﻿playlist = {}
+local list = {}
 local playing = 0
 local get_pos
 
@@ -6,8 +7,8 @@ function playlist:add(path, pos)
 	local pos = get_pos(path)
 	if pos then return pos end
 	
-	table.insert(playlist, pos or (#playlist+1), path)
-	return pos or #playlist
+	table.insert(list, pos or (#list+1), path)
+	return pos or #list
 end
 
 function playlist:play(path)
@@ -24,12 +25,12 @@ function playlist:remove(path)
 end
 
 function playlist:clear()
-	playlist = {}
+	list = {}
 	playing = 0
 end
 
 function playlist:next()
-	if playing< #playlist then
+	if playing< #list then
 		return playlist:play_item(playing+1) or playlist:next()
 	end
 end
@@ -41,21 +42,21 @@ function playlist:previous()
 end
 
 function playlist:play_item(n)
-	if not n or n < 1 or n > #playlist then
+	if not n or n < 1 or n > #list then
 		return false
 	end
 	
 	playing = n
 	
-	return dwindow.reset_and_loadfile(playlist[n])
+	return dwindow.reset_and_loadfile(list[n])
 end
 
 function playlist:item(n)
-	return playlist[n]
+	return list[n]
 end
 
 function playlist:count()
-	return #playlist
+	return #list
 end
 
 function playlist:current_pos()
@@ -67,8 +68,8 @@ function playlist:current_item()
 end
 
 get_pos = function(path)
-	for i=1,#playlist do
-		if playlist[i] == path then
+	for i=1,#list do
+		if list[i] == path then
 			return i
 		end
 	end
