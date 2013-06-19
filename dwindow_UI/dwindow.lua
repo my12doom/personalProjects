@@ -216,17 +216,6 @@ function paint(left, top, right, bottom, bitmap, alpha, resampling_method)
 	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap)
 end
 
-
-
---- default mouse event delivering
-function OnMouseEvent(event,x,y,...)
-	local frame = root:GetFrameByPoint(x,y)
-	if frame then
-		local l,_,t = frame:GetAbsRect()
-		return frame:OnEvent(event, x-l, y-t, ...)
-	end
-end
-
 -- helper functions
 function GetCurrentLuaPath(offset)
 	local info = debug.getinfo(2+(offset or 0), "Sl")
@@ -303,13 +292,13 @@ function ReloadUI(legacy)
 		
 	if legacy then return end
 	
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer\\render.lua"))
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "classic\\render.lua"))
 	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
 	v3dplayer_add_button()
 	
 	-- the menu sample
 	local sample = menu:Create()
-	root:AddChild(sample)
+	--root:AddChild(sample)
 	sample:SetRelativeTo(TOP)
 
 	function sample:PreRender()
@@ -318,7 +307,6 @@ function ReloadUI(legacy)
 	end
 
 	for i=1, 50 do
-		print("AddItem, legacy = ", legacy)
-		sample:AddItem("").id = i
+		--sample:AddItem("").id = i
 	end
 end

@@ -459,10 +459,24 @@ function BaseFrame:OnMouseMove() end
 function BaseFrame:OnMouseWheel() end
 function BaseFrame:OnKeyDown() end
 function BaseFrame:OnKeyUp() end
-function BaseFrame:OnDropFile(a,b,c)
+
+function BaseFrame:OnMouseEvent(event, x, y, ...)
+	local l, t = self:GetAbsRect()
+	return self[event] and self[event](self, x-l, y-t, ...)
+end
+function BaseFrame:OnDropFile(...)
 	print("BaseFrame:OnDropFile")
 end
 
+
+--- default mouse event delivering
+local focus
+function OnMouseEvent(event,x,y,...)
+	local frame = focus or root:GetFrameByPoint(x,y)
+	if frame then
+		return frame:OnEvent("OnMouseEvent", event, x, y, ...)
+	end
+end
 
 -- for these mouse events or focus related events, return anything other than false and nil cause it to be sent to its parents
 

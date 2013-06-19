@@ -1222,6 +1222,9 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 #ifdef VSTAR
 	DeleteMenu(menu, ID_LOGOUT, MF_BYCOMMAND);
 #endif
+#ifdef ZHUZHU
+	DeleteMenu(menu, ID_LOGOUT, MF_BYCOMMAND);
+#endif
 	// list monitors
 	for(int i=0; i<get_mixed_monitor_count(true, true); i++)
 	{
@@ -1954,12 +1957,15 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		wchar_t left[MAX_PATH];
 		wchar_t right[MAX_PATH];
 
+		m_dialog_open++;
 		if (SUCCEEDED(open_double_file(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(1), left, right)))
 			reset_and_loadfile(left, right);
+		m_dialog_open--;
 	}
 
 	else if (uid == ID_LOGOUT)
 	{
+		m_dialog_open ++;
 		if (MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Are you sure want to logout?"), L"Are you sure?", MB_YESNO) == IDYES)
 		{
 			memset(g_passkey_big, 0, 128);
@@ -1968,11 +1974,14 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 // 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Logged out, the program will exit now, restart the program to login."), L"...", MB_OK);
 			restart_this_program();
 		}
+		m_dialog_open --;
 	}
 
 	else if (uid == ID_ABOUT)
 	{
+		m_dialog_open ++;
 		ShowAbout(m_theater_owner ? m_theater_owner : id_to_hwnd(1));
+		m_dialog_open --;
 	}
 
 	// Display Orientation
@@ -2078,7 +2087,9 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// color adjusting
 	else if (uid == ID_VIDEO_ADJUSTCOLOR)
 	{
+		m_dialog_open ++;
 		show_color_adjust(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), this);
+		m_dialog_open --;
 	}
 
 
@@ -2216,7 +2227,9 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		if (result == -1)
 			m_hd3d_prefered_mode = mode_auto;
 
+		m_dialog_open ++;
 		HRESULT hr = select_fullscreen_mode(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), modes, count, &result);
+		m_dialog_open --;
 
 		if (hr == S_OK)
 		{
@@ -2447,7 +2460,9 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		int t_latency = m_subtitle_latency;
 		double t_ratio = m_subtitle_ratio;
+		m_dialog_open ++;
 		HRESULT hr = latency_modify_dialog(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), &t_latency, &t_ratio, false);
+		m_dialog_open --;
 		m_subtitle_latency = t_latency;
 		m_subtitle_ratio = t_ratio;
 
@@ -2458,7 +2473,9 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		int t_latency = m_audio_latency;
 		double t_ratio = 1;
+		m_dialog_open ++;
 		HRESULT hr = latency_modify_dialog(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), &t_latency, &t_ratio, true);
+		m_dialog_open --;
 		m_audio_latency = g_audio_latency = t_latency;
 	}
 
@@ -2491,11 +2508,13 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 	else if (uid == ID_OPENBDFOLDER)
 	{
+		m_dialog_open ++;
 		wchar_t file[MAX_PATH] = L"";
 		if (browse_folder(file, m_theater_owner ? m_theater_owner : id_to_hwnd(id)))
 		{
 			reset_and_loadfile(file);
 		}
+		m_dialog_open --;
 	}
 
 	else if (uid == ID_PLAY) 

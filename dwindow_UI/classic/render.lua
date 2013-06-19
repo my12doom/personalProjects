@@ -74,21 +74,25 @@ function logo:OnMouseDown()
 	return false
 end
 
+
+local mouse_hider = BaseFrame:Create()
+root:AddChild(mouse_hider)
 local last_mousemove =  0
 local mousex = -999
 local mousey = -999
-function root:OnMouseMove(...)
+
+function mouse_hider:OnUpdate(t, dt)
+
 	local px, py = dwindow.get_mouse_pos()
-	if (mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 100 then	
+	if (mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 100 or ((mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 0 and alpha > 0.5) then	
 		last_mousemove = dwindow.GetTickCount()
 		mousex, mousey = dwindow.get_mouse_pos()
 	end
-end
-
-function root:OnUpdate(t, dt)
+		
 	local da = dt/UI_fading_time
 	local old_alpha = alpha
-	local hide_mouse = t > last_mousemove + UI_show_time
+	local mouse_in_pannel = px>0 and px<dwindow.width and py>dwindow.height-64 and py<dwindow.height
+	local hide_mouse = not mouse_in_pannel and (t > last_mousemove + UI_show_time)
 	dwindow.show_mouse(not hide_mouse)
 	
 	if hide_mouse then
@@ -140,7 +144,7 @@ end
 local volume = BaseFrame:Create()
 root:AddChild(volume)
 volume:SetRelativeTo(RIGHT, full, LEFT, -14, 0)
-volume:SetSize(34,14)
+volume:SetSize(34+6,14)							--本应该是34x14, 宽松3个像素来方便0%和100%
 
 function volume:RenderThis()
 	local volume =  dwindow.get_volume()
@@ -148,9 +152,14 @@ function volume:RenderThis()
 	volume = math.max(volume, 0)
 	local res = get_bitmap("ui.png")
 	set_bitmap_rect(res, 124+34,0,124+34+34,14)
-	paint(0,0,34,14,res,alpha)
+	paint(0+3,0,34+3,14,res,alpha)
 	set_bitmap_rect(res, 124,0,124+34*volume,14)
-	paint(0,0,34*volume,14,res,alpha)
+	paint(0+3,0,3+34*volume,14,res,alpha)
+end
+
+function volume:OnMouseDown(x, y)
+	v = math.min(math.max(0, (x-3)/34), 1)
+	dwindow.set_volume(v)
 end
 
 -- numbers
@@ -197,16 +206,12 @@ end
 local number_total = BaseFrame:Create()
 root:AddChild(number_total)
 number_total:SetRelativeTo(RIGHT, volume, LEFT, -14)
+number_total:SetSize(9*5+6*2,14)
 number_total.RenderThis = number_current.RenderThis
 function number_total:GetTime()
 	return dwindow.total()
 end
 
-number_total:SetSize(9*5+6*2,14)
-
-function number_total:GetTime()
-	return dwindow.total()
-end
 
 -- progress bar
 local progress = BaseFrame:Create()
