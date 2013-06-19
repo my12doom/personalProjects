@@ -51,6 +51,7 @@ const int MAX_TEXTURE_SIZE = 8192;
 AutoSetting<DWORD> TEXTURE_SIZE(L"TextureSize", 4096, REG_DWORD);
 AutoSetting<DWORD> SUBTITLE_TEXTURE_SIZE(L"SubtitleTextureSize", 2048, REG_DWORD);
 AutoSetting<DWORD> EVRQueueSize(L"EVRQueueSize", 5, REG_DWORD);
+AutoSetting<BOOL> SimplePageflipping(L"SimplePageflipping", 0, REG_DWORD);
 AutoSetting<BOOL> GPUIdle(L"GPUIdle", true, REG_DWORD);
 
 
@@ -870,7 +871,7 @@ HRESULT my12doomRenderer::create_render_targets()
 
 	if (m_swap1)
 	{
-// 		m_swap1->QueryInterface(IID_IDirect3DSwapChain9Ex, (void**)&m_swap1ex);
+ 		m_swap1->QueryInterface(IID_IDirect3DSwapChain9Ex, (void**)&m_swap1ex);
 
 		RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
 		if (m_output_mode == out_sbs)
@@ -1970,20 +1971,37 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		{
 			int frame_passed = 1;
 			m_pageflip_frames = max(0, m_pageflip_frames);
-			D3DPRESENTSTATS state;
 
-			if (m_swap1ex && SUCCEEDED(m_swap1ex->GetPresentStats(&state)) && state.PresentRefreshCount > 0)
+			if (!(BOOL)SimplePageflipping)
 			{
-				frame_passed = state.PresentRefreshCount - m_pageflip_frames;
-				m_pageflip_frames = state.PresentRefreshCount;
+				D3DPRESENTSTATS state;
+
+				if (m_swap1ex && SUCCEEDED(hr = m_swap1ex->GetPresentStats(&state)) && state.PresentRefreshCount > 0)
+				{
+					frame_passed = state.PresentRefreshCount - m_pageflip_frames;
+					m_pageflip_frames = state.PresentRefreshCount;
+
+					printf("%d,%d,%d\n", state.PresentCount, state.PresentRefreshCount, state.SyncRefreshCount);
+				}
+				else
+				{
+					double delta = (double)timeGetTime()-m_pageflipping_start;
+					if (delta/(1500/m_d3ddm.RefreshRate) > 1)
+						frame_passed =floor(delta/(1000/m_d3ddm.RefreshRate));
+
+					frame_passed = max(1, frame_passed);
+					m_pageflip_frames += frame_passed;
+				}
 			}
 			else
 			{
-				double delta = (double)timeGetTime()-m_pageflipping_start;
-				if (delta/(1500/m_d3ddm.RefreshRate) > 1)
-					frame_passed =floor(delta/(1000/m_d3ddm.RefreshRate));
-
-				frame_passed = max(1, frame_passed);
+				LARGE_INTEGER cur;
+				LARGE_INTEGER fre;
+				QueryPerformanceFrequency(&fre);
+				QueryPerformanceCounter(&cur);
+ 				float frame_counter_float = (double)(cur.QuadPart-m_first_pageflip.QuadPart) * m_d3ddm.RefreshRate / fre.QuadPart;
+ 				printf("counter: %f\n", frame_counter_float);
+// 				m_pageflip_frames = frame_counter_float;
 				m_pageflip_frames += frame_passed;
 			}
 
@@ -2192,6 +2210,8 @@ presant:
 				if (m_pageflipping_start == -1 && m_nv3d_display)
 					NvAPI_GetVBlankCounter(m_nv3d_display, &m_nv_pageflip_counter);
 				m_pageflipping_start = timeGetTime();
+				if (m_first_pageflip.QuadPart < 0)
+					QueryPerformanceCounter(&m_first_pageflip);
 			}
 
 			int l2 = timeGetTime();
@@ -3768,6 +3788,7 @@ HRESULT my12doomRenderer::set_output_mode(int mode)
 	m_output_mode = (output_mode_types)(mode % output_mode_types_max);
 
 	m_pageflipping_start = -1;
+	m_first_pageflip.QuadPart = -1;
 	set_device_state(need_resize_back_buffer);
 
 	return S_OK;

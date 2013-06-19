@@ -54,11 +54,11 @@ function OnDirectshowEvents(event_code, param1, param2)
 	
 	local EC_COMPLETE = 1
 	if event_code == EC_COMPLETE then
-		if playlist_get_current_item() >= playlist_get_count() then
+		if playlist:current_pos() >= playlist:count() then
 			dwindow.stop()
 			dwindow.seek(0)
 		else
-			playlist_play_next()
+			playlist:next()
 		end
 	end
 end
@@ -303,15 +303,15 @@ if dwindow and dwindow.execute_luafile then
 	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris.lua"))
 end
 
-playlist_add("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
-playlist_add("Z:\\43522.mkv")
-playlist_add("Z:\\阿凡达.mkv")
+playlist:add("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
+playlist:add("Z:\\43522.mkv")
+playlist:add("Z:\\阿凡达.mkv")
 
-playlist_play_next()
+playlist:play_next()
 
 
-for i=1, playlist_get_count() do
-	print("PLAYLIST", i, playlist_get_item(i))
+for i=1, playlist:count() do
+	print("PLAYLIST", i, playlist:item(i))
 end
 
-playlist_play("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
+playlist:play("Z:\\飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")

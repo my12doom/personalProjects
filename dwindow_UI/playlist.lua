@@ -1,8 +1,8 @@
-﻿local playlist = {}
+﻿playlist = {}
 local playing = 0
 local get_pos
 
-function playlist_add(path, pos)
+function playlist:add(path, pos)
 	local pos = get_pos(path)
 	if pos then return pos end
 	
@@ -10,37 +10,37 @@ function playlist_add(path, pos)
 	return pos or #playlist
 end
 
-function playlist_play(path)
+function playlist:play(path)
 	local pos = get_pos(path)
 	if (pos == playing) and playing then return end
-	return playlist_play_item(playlist_add(path))
+	return playlist:play_item(playlist:add(path))
 end
 
-function playlist_remove(path)
+function playlist:remove(path)
 	local pos = get_pos(path)
 	if pos then
 		table.remove(pos)
 	end
 end
 
-function playlist_clear()
+function playlist:clear()
 	playlist = {}
 	playing = 0
 end
 
-function playlist_play_next()
+function playlist:next()
 	if playing< #playlist then
-		return playlist_play_item(playing+1) or playlist_play_next()
+		return playlist:play_item(playing+1) or playlist:play_next()
 	end
 end
 
-function playlist_play_previous()
+function playlist:previous()
 	if playing > 1 then
-		return playlist_play_item(playing-1)
+		return playlist:play_item(playing-1)
 	end
 end
 
-function playlist_play_item(n)
+function playlist:play_item(n)
 	if not n or n < 1 or n > #playlist then
 		return false
 	end
@@ -50,18 +50,21 @@ function playlist_play_item(n)
 	return dwindow.reset_and_loadfile(playlist[n])
 end
 
-function playlist_get_item(n)
+function playlist:item(n)
 	return playlist[n]
 end
 
-function playlist_get_count()
+function playlist:count()
 	return #playlist
 end
 
-function playlist_get_current_item()
+function playlist:current_pos()
 	return playing
 end
 
+function playlist:current_item()
+	return playlist:item(playing)
+end
 
 get_pos = function(path)
 	for i=1,#playlist do

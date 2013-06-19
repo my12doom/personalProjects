@@ -476,6 +476,7 @@ protected:
 	StereoHandle m_nv3d_handle;
 	int m_pageflip_frames;
 	int m_pageflipping_start;
+	LARGE_INTEGER m_first_pageflip;
 	bool m_swapeyes;
 	bool m_force2d;
 	output_mode_types m_output_mode;
