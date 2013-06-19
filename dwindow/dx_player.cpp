@@ -924,6 +924,18 @@ LRESULT dx_player::on_key_down(int id, int key)
 		m_mirror2 ++;
 		break;
 
+
+	case VK_PRIOR:
+	case VK_NEXT:
+		{
+			lua_getglobal(lua_state, "playlist");
+			lua_getfield(lua_state, -1, key == VK_PRIOR ? "previous" : "next");
+			if (lua_isfunction(lua_state, -1))
+				lua_mypcall(lua_state, 0, 0, 0);
+			lua_settop(lua_state, 0);
+		}
+		break;
+
 	case VK_SPACE:
 		pause();
 		break;
