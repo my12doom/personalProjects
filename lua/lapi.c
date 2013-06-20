@@ -1005,7 +1005,19 @@ LUA_API int lua_dump (lua_State *L, lua_Writer writer, void *data) {
   return status;
 }
 
-
+LUA_API int lua_dump2 (lua_State *L, lua_Writer writer, void *data, int strip) {
+	int status;
+	TValue *o;
+	lua_lock(L);
+	api_checknelems(L, 1);
+	o = L->top - 1;
+	if (isLfunction(o))
+		status = luaU_dump(L, getproto(o), writer, data, strip);
+	else
+		status = 1;
+	lua_unlock(L);
+	return status;
+}
 LUA_API int  lua_status (lua_State *L) {
   return L->status;
 }
