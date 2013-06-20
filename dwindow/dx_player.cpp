@@ -2607,6 +2607,105 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		m_widi_screen_mode = ExternalOnly;
 		widi_set_screen_mode(m_widi_screen_mode);
 	}
+	else if (uid == ID_VIDEO_MOVEUPWARD)
+	{
+		return on_key_down(id, 'W');
+	}
+	else if (uid == ID_VIDEO_MOVEDOWNWARD)
+	{
+		return on_key_down(id, 'S');
+	}
+	else if (uid == ID_VIDEO_MOVELEFT)
+	{
+		return on_key_down(id, 'A');
+	}
+	else if (uid == ID_VIDEO_MOVERIGHT)
+	{
+		return on_key_down(id, 'D');
+	}
+	else if (uid == ID_VIDEO_ZOOMIN)
+	{
+		return on_key_down(id, VK_NUMPAD7);
+	}
+	else if (uid == ID_VIDEO_ZOOMOUT)
+	{
+		return on_key_down(id, VK_NUMPAD1);
+	}
+	else if (uid == ID_VIDEO_INCREASEPARALLAX)
+	{
+		return on_key_down(id, VK_MULTIPLY);
+	}
+	else if (uid == ID_VIDEO_DECREASEPARALLAX)
+	{
+		return on_key_down(id, VK_DIVIDE);
+	}
+	else if (uid == ID_VIDEO_RESET)
+	{
+		return on_key_down(id, VK_NUMPAD5);
+	}
+	else if (uid == ID_SUBTITLE_INCREASEPARALLAX)
+	{
+		return on_key_down(id, VK_NUMPAD9);
+	}
+	else if (uid == ID_SUBTITLE_DECREASEPARALLAX)
+	{
+		return on_key_down(id, VK_NUMPAD3);
+	}
+	else if (uid == ID_SUBTITLE_MOVEUP)
+	{
+		return on_key_down(id, VK_NUMPAD8);
+	}
+	else if (uid == ID_SUBTITLE_MOVEDOWN)
+	{
+		return on_key_down(id, VK_NUMPAD2);
+	}
+	else if (uid == ID_SUBTITLE_MOVELEFT)
+	{
+		return on_key_down(id, VK_NUMPAD4);
+	}
+	else if (uid == ID_SUBTITLE_MOVERIGHT)
+	{
+		return on_key_down(id, VK_NUMPAD6);
+	}
+	else if (uid == ID_SUBTITLE_RESET)
+	{
+		return on_key_down(id, VK_NUMPAD5);
+	}
+	else if (uid == ID_VIDEO_DXVA2)
+	{
+		if (!g_EVR && MessageBoxW(id_to_hwnd(id), 
+			C(L"This is a experimental feature.\r\n"
+			L"It ONLY works for most H264 video.\r\n"
+			L"It can cause a lot freeze or crash.\r\n"
+			L"It will freeze with BD3D/MPO/3DP file or left+right file"
+			L"\r\n"
+			L"Continue ?")
+			, C(L"Warning"), MB_ICONWARNING | MB_YESNO) == IDYES)
+		{
+			g_EVR = TRUE;
+			if (MessageBoxW(id_to_hwnd(id), 
+				C(L"A Reset is needed for this setting to take effect.\r\n\r\nRestart Now ?"), 
+				C(L"Warning"), MB_ICONWARNING | MB_YESNO) == IDYES)
+				restart_this_program();
+		}
+
+		else if (g_EVR)
+		{
+			g_EVR = FALSE;
+
+			if (MessageBoxW(id_to_hwnd(id), 
+				C(L"A Reset is needed for this setting to take effect.\r\n\r\nRestart Now ?"), 
+				C(L"Warning"), MB_ICONWARNING | MB_YESNO) == IDYES)
+				restart_this_program();
+		}
+	}
+
+
+
+
+
+
+
 
 	if ((m_output_mode == dual_window || m_output_mode == iz3d) && uid != ID_EXIT)
 	{
