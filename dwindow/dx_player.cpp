@@ -5101,6 +5101,7 @@ LRESULT dx_player::OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam)
 }
 
 lua_drawer::lua_drawer(dx_player *owner)
+:ui_drawer_base()
 {
 	m_owner = owner;
 	luaState lua_state;
@@ -5122,10 +5123,8 @@ HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 
 	return S_OK;
 }
-HRESULT lua_drawer::init_cpu(int width, int height, IDirect3DDevice9 *device)
+HRESULT lua_drawer::init_cpu(IDirect3DDevice9 *device)
 {
-	g_lua_manager->get_variable("width") = int(width/UIScale);
-	g_lua_manager->get_variable("height") = int(height/UIScale);
 	m_device = device;
 
 	luaState lua_state;

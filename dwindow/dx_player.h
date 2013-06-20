@@ -375,7 +375,7 @@ public:
 	// UI drawer
 
 	virtual HRESULT init_gpu(int width, int height, IDirect3DDevice9 *device);
-	virtual HRESULT init_cpu(int width, int height, IDirect3DDevice9 *device);
+	virtual HRESULT init_cpu(IDirect3DDevice9 *device);
 	virtual HRESULT invalidate_gpu();
 	virtual HRESULT invalidate_cpu();
 	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, int view, bool running);
@@ -437,7 +437,7 @@ class lua_drawer : public ui_drawer_base
 public:
 	lua_drawer(dx_player *owner);
 	virtual HRESULT init_gpu(int width, int height, IDirect3DDevice9 *device);
-	virtual HRESULT init_cpu(int width, int height, IDirect3DDevice9 *device);
+	virtual HRESULT init_cpu(IDirect3DDevice9 *device);
 	virtual HRESULT invalidate_gpu();
 	virtual HRESULT invalidate_cpu();
 	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, int view, bool running);

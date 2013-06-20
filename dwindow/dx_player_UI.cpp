@@ -327,11 +327,9 @@ HRESULT dx_player::init_gpu(int width, int height, IDirect3DDevice9 *device)
 		return S_OK;
 }
 
-HRESULT dx_player::init_cpu(int width, int height, IDirect3DDevice9 *device)
+HRESULT dx_player::init_cpu(IDirect3DDevice9 *device)
 {
 	m_Device = device;
-	m_width = width;
-	m_height = height;
 
 	D3DLOCKED_RECT d3dlr;
 	HRESULT hr;

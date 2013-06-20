@@ -137,8 +137,8 @@ function v3d_init()
 	v3dplayer.pic_url = configuration.picPath or "http://www.cnliti.com/uploadfile/"
 	v3dplayer.thumb_url = configuration.thumbPath or "http://www.cnliti.com/uploadfile/"
 	v3dplayer.subtitle_url = configuration.subtitlePath or "http://www.cnliti.com/uploadfile/subtitle/"
-	v3dplayer.speed_limit = tonumber(configuration.limitspeed) or 300
-	v3dplayer.min_3dvplayer_version = tonumber(configuration.forceupdate) or 17
+	v3dplayer.speed_limit = tonumber(configuration.limitspeed or 300)
+	v3dplayer.min_3dvplayer_version = tonumber(configuration.forceupdate or 17)
 
 	--[[
 	--printtable(v3dplayer)
