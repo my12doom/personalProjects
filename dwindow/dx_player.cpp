@@ -1453,6 +1453,7 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 
 	// CUDA
 	CheckMenuItem(menu, ID_CUDA, g_CUDA ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_DXVA2, g_EVR ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_VIDEO_DEINTERLACE, m_forced_deinterlace ? MF_CHECKED:MF_UNCHECKED);
 
 
@@ -2677,7 +2678,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			C(L"This is a experimental feature.\r\n"
 			L"It ONLY works for most H264 video.\r\n"
 			L"It can cause a lot freeze or crash.\r\n"
-			L"It will freeze with BD3D/MPO/3DP file or left+right file"
+			L"It will freeze with BD3D/MPO/3DP file or left+right file, and disable input layout detecting"
 			L"\r\n"
 			L"Continue ?")
 			, C(L"Warning"), MB_ICONWARNING | MB_YESNO) == IDYES)
