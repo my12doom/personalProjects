@@ -143,7 +143,7 @@ end
 -- Volume
 local volume = BaseFrame:Create()
 root:AddChild(volume)
-volume:SetRelativeTo(RIGHT, full, LEFT, -14, 0)
+volume:SetRelativeTo(RIGHT, full, LEFT, -14+3, 0)
 volume:SetSize(34+6,14)							--本应该是34x14, 宽松3个像素来方便0%和100%
 
 function volume:RenderThis()
@@ -162,10 +162,42 @@ function volume:OnMouseDown(x, y)
 	dwindow.set_volume(v)
 end
 
+-- Previous button
+local previous = BaseFrame:Create()
+root:AddChild(previous)
+previous:SetRelativeTo(LEFT, play, RIGHT, 14)
+previous:SetSize(14, 14)
+
+function previous:RenderThis()
+	local res = get_bitmap("ui2.png")
+	set_bitmap_rect(res, 0,0,14,14)
+	paint(0,0,14,14,res,alpha)	
+end
+
+function previous:OnMouseDown()
+	playlist:previous()
+end
+
+-- next button
+local next = BaseFrame:Create()
+root:AddChild(next)
+next:SetRelativeTo(LEFT, previous, RIGHT, 14)
+next:SetSize(14, 14)
+
+function next:RenderThis()
+	local res = get_bitmap("ui2.png")
+	set_bitmap_rect(res, 14,0,28,14)
+	paint(0,0,14,14,res,alpha)	
+end
+
+function next:OnMouseDown()
+	playlist:next()
+end
+
 -- numbers
 local number_current = BaseFrame:Create()
 root:AddChild(number_current)
-number_current:SetRelativeTo(LEFT, play, RIGHT, 14)
+number_current:SetRelativeTo(LEFT, next, RIGHT, 14)
 number_current:SetSize(9*5+6*2,14)
 
 function number_current:GetTime()
@@ -205,7 +237,7 @@ end
 
 local number_total = BaseFrame:Create()
 root:AddChild(number_total)
-number_total:SetRelativeTo(RIGHT, volume, LEFT, -14)
+number_total:SetRelativeTo(RIGHT, volume, LEFT, -14+3)
 number_total:SetSize(9*5+6*2,14)
 number_total.RenderThis = number_current.RenderThis
 function number_total:GetTime()
@@ -216,9 +248,9 @@ end
 -- progress bar
 local progress = BaseFrame:Create()
 root:AddChild(progress)
-progress:SetRelativeTo(BOTTOMLEFT, nil, nil, 113-3, -8)
-progress:SetRelativeTo(BOTTOMRIGHT, nil, nil, -161, -8)
-progress:SetSize(nil ,14)
+progress:SetRelativeTo(LEFT, number_current, RIGHT, 14-3, 0)
+progress:SetRelativeTo(RIGHT, number_total, LEFT, -14, 0)
+progress:SetHeight(14)
 
 function progress:RenderThis()
 	local l,_,r=self:GetAbsRect()
