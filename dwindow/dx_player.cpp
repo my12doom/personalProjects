@@ -2692,14 +2692,13 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 static HRESULT STDMETHODCALLTYPE new_lav_recieve( IMemInputPinC * This, IMediaSample *pSample)
 {
 	REFERENCE_TIME start, end;
+	if (SUCCEEDED(pSample->GetTime(&start, &end)))
+	{
+ 		start += (REFERENCE_TIME)g_audio_latency * 10000;
+ 		end += (REFERENCE_TIME)g_audio_latency * 10000;
 
-	pSample->GetTime(&start, &end);
-
- 	start += (REFERENCE_TIME)g_audio_latency * 10000;
- 	end += (REFERENCE_TIME)g_audio_latency * 10000;
-
-	pSample->SetTime(&start, &end);
-
+		pSample->SetTime(&start, &end);
+	}
 	return g_old(This, pSample);
 }
 
