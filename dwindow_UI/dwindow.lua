@@ -269,6 +269,7 @@ if dwindow and dwindow.execute_luafile then
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Container.lua"))
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "playlist.lua"))
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "menu.lua"))
 end
 
 function ReloadUI(legacy)

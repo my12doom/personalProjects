@@ -42,6 +42,13 @@ my12doomRenderer *g_renderer = NULL;
 double UIScale = 1.0;
 
 
+static int luaCreateMenu(lua_State *L);
+static int luaAppendMenu(lua_State *L);
+static int luaAppendSubmenu(lua_State *L);
+static int luaPopupMenu(lua_State *L);
+static int luaDestroyMenu(lua_State *L);
+int lua_menu_cb(int commandid);
+
 wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for);
 bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for)
 {
@@ -140,6 +147,14 @@ m_subtitle_loader_pool(2)
 {
 	g_player = this;
 	g_audio_latency = m_audio_latency;
+
+	// menu
+	g_lua_manager->get_variable("CreateMenu") = &luaCreateMenu;
+	g_lua_manager->get_variable("AppendMenu") = &luaAppendMenu;
+	g_lua_manager->get_variable("AppendSubmenu") = &luaAppendSubmenu;
+	g_lua_manager->get_variable("DestroyMenu") = &luaDestroyMenu;
+	g_lua_manager->get_variable("PopupMenu") = &luaPopupMenu;
+
 
 	// touch 
 	if (GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
@@ -2578,6 +2593,12 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		int monitorid = uid - 'N0';
 		set_output_monitor(1, monitorid);
+	}
+
+	// LUA menu items
+	else if (uid >= 'B0' && uid < 'F0')
+	{
+		lua_menu_cb(uid);
 	}
 
 	// widi
@@ -5282,4 +5303,110 @@ HRESULT lua_drawer::draw_nonmovie_bg(IDirect3DSurface9 *surface, int view)
 HRESULT lua_drawer::hittest(int x, int y, int *out, double *outv)
 {
 	return E_FAIL;
+}
+
+
+
+typedef struct
+{
+	HMENU handle;
+} menu_handle;
+int lua_id = 0;
+menu_handle *active_lua_menu = NULL;
+std::map<int, int> id2func;
+
+static int luaCreateMenu(lua_State *L)
+{
+	if (active_lua_menu)
+	{
+		for(std::map<int, int>::iterator i = id2func.begin(); i!=id2func.end(); ++i)
+			luaL_unref(L, LUA_REGISTRYINDEX, i->second);
+
+		DestroyMenu(active_lua_menu->handle);
+	}
+	id2func.clear();
+	lua_id = 0;
+
+	menu_handle *p = new menu_handle;
+	p->handle = CreatePopupMenu();
+	lua_pushlightuserdata(L, p);
+	return 1;
+}
+static int luaAppendMenu(lua_State *L)
+{
+	int n = lua_gettop(L);
+	if (n<4)
+		return 0;	// invalid parameter count
+
+	menu_handle * handle = (menu_handle *)lua_touserdata(L, -n);
+	const char* string = lua_tostring(L, -n+1);
+	DWORD flags = lua_tointeger(L, -n+2);
+	int func = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	AppendMenuW(handle->handle, (flags | MF_STRING) & ~MF_POPUP, lua_id + 'B0', UTF82W(string));
+	id2func[lua_id++] = func;
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
+static int luaAppendSubmenu(lua_State *L)
+{
+	int n = lua_gettop(L);
+	if (n<4)
+		return 0;	// invalid parameter count
+
+	menu_handle * handle = (menu_handle *)lua_touserdata(L, -n);
+	const char* string = lua_tostring(L, -n+1);
+	DWORD flags = lua_tointeger(L, -n+2);
+	menu_handle * sub_handle = (menu_handle *)lua_touserdata(L, -n+3);
+
+	AppendMenuW(handle->handle, (flags | MF_STRING | MF_POPUP), (UINT_PTR)sub_handle->handle, UTF82W(string));
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
+static int luaPopupMenu(lua_State *L)
+{
+	menu_handle * handle = (menu_handle *)lua_touserdata(L, -1);
+	POINT mouse_pos;
+	GetCursorPos(&mouse_pos);
+	active_lua_menu = handle;
+	g_player->m_dialog_open ++;
+	BOOL o = TrackPopupMenu(handle->handle, TPM_TOPALIGN | TPM_LEFTALIGN, mouse_pos.x, mouse_pos.y, 0, g_player->get_window(1), NULL);
+	g_player->m_dialog_open --;
+
+	return 0;
+}
+static int luaDestroyMenu(lua_State *L)
+{
+	menu_handle * handle = (menu_handle *)lua_touserdata(L, -1);
+
+	// do nothing...
+
+	return 0;
+}
+
+int lua_menu_cb(int commandid)
+{
+	if (!active_lua_menu)
+		return -1;
+
+	int id = commandid - 'B0';
+	luaState L;
+	int refid = id2func[id];
+	lua_rawgeti(L, LUA_REGISTRYINDEX, refid);
+	if (lua_istable(L, -1))
+	{
+		lua_getfield(L, -1, "on_command");
+		if (lua_isfunction(L, -1))
+		{
+			lua_insert(L, -2);
+			lua_mypcall(L, 1, 0, 0);
+		}
+	}
+	lua_settop(L, 0);
+
+	return 0;
 }

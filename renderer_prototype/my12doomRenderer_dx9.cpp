@@ -2414,7 +2414,7 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface, int view)
 		return E_POINTER;
 
 	CAutoLock lck2(&m_uidrawer_cs);
-	return m_uidrawer == NULL ? E_FAIL : m_uidrawer->draw_ui(surface, view, m_dsr0->m_State == State_Running);
+	return m_uidrawer == NULL ? S_FALSE : m_uidrawer->draw_ui(surface, view, m_dsr0->m_State == State_Running);
 }
 
 HRESULT my12doomRenderer::loadBitmap(gpu_sample **out, wchar_t *file)
