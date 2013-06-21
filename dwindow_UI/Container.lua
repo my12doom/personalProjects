@@ -1,4 +1,10 @@
-﻿local menu_top = BaseFrame:Create()
+﻿local lua_file = dwindow.loading_file
+local lua_path = GetPath(lua_file)
+local function GetCurrentLuaPath(offset)
+	return lua_path
+end
+
+local menu_top = BaseFrame:Create()
 function menu_top:Create()
 	local o = BaseFrame:Create()
 	setmetatable(o, self)

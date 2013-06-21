@@ -1,4 +1,10 @@
-﻿local ww = 10
+﻿local lua_file = dwindow.loading_file
+local lua_path = GetPath(lua_file)
+local function GetCurrentLuaPath(offset)
+	return lua_path
+end
+
+local ww = 10
 local ww = 10
 local hh = 16
 local typecount = 8
@@ -218,8 +224,8 @@ root:AddChild(tetris)
 tetris:SetSize(40*ww+40,40*hh+40)
 
 function tetris:RenderThis()
-	local res = get_bitmap("fullscreen.png")
-	local res2 = get_bitmap("stop.png")
+	local res = get_bitmap(GetCurrentLuaPath() .. "fullscreen.png")
+	local res2 = get_bitmap(GetCurrentLuaPath() .. "stop.png")
 	set_bitmap_rect(res2, 0,0,100,100)
 
 	-- paint border

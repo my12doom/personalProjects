@@ -7,6 +7,7 @@
 #include "dwindow_log.h"
 #include "zip.h"
 #include "runnable.h"
+#include <atlbase.h>
 
 #pragma comment(lib, "DbgHelp")
 AutoSetting<bool> single_instance(L"SingleInstance", true);
@@ -22,6 +23,11 @@ namespace zhuzhu
 void DisableSetUnhandledExceptionFilter();
 int enable_hookdshow();
 int disable_hookdshow();
+
+static int writer(lua_State* L, const void* p, size_t size, void* u)
+{
+	return (fwrite(p,size,1,(FILE*)u)!=1) && (size!=0);
+}
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
@@ -47,7 +53,43 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	BasicRsaCheck();
 
+	dwindow_lua_init();
+	my12doomRenderer_lua_init();
+	my12doomRenderer_lua_loadscript();
+
 	HWND pre_instance = single_instance ? FindWindowA("DWindowClass", NULL) : NULL;
+	wchar_t *argvv[] = {L"", L"compile", L"D:\\private\\dwindow_UI\\dwindow.lua", L"D:\\private\\dwindow_UI\\dwindow.bin"};
+	//argv = argvv;
+	//argc=4;
+	if (argc == 4 && wcsicmp(argv[1], L"compile") == 0)
+	{
+		// the lua compiler
+		USES_CONVERSION;
+		luaState L;
+
+		if (luaL_loadfile(L, W2A(argv[2])))
+		{
+			const char * result;
+			result = lua_tostring(L, -1);
+			printf("failed loading lua script: %s\n", result);
+		}
+		else
+		{
+			FILE * f = _wfopen(argv[3], L"wb");
+			if (!f)
+			{
+				wprintf(L"error opening output %s\n", argv[3]);
+			}
+			else
+			{
+				lua_dump2(L, writer, f, 1);
+				wprintf(L"compile OK: %s\n", argv[3]);
+				fclose(f);
+			}
+		}
+
+		ExitProcess(0);
+	}
 	if (pre_instance)
 	{
 		SendMessageW(pre_instance, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);
@@ -75,9 +117,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}	
 
 	enable_hookdshow();
-	dwindow_lua_init();
-	my12doomRenderer_lua_init();
-	my12doomRenderer_lua_loadscript();
 	dx_player *test = new dx_player(hinstance);
 	BringWindowToTop(test->m_hwnd1);
 

@@ -30,6 +30,7 @@ static int execute_luafile(lua_State *L)
 	const char *filename = NULL;
 	filename = luaL_checkstring(L, 1);
 	USES_CONVERSION;
+	g_lua_manager->get_variable("loading_file") = W2UTF8(A2W(filename));
 	if(luaL_loadfile(L, W2A(UTF82W(filename))) || lua_pcall(L, 0, 0, 0))
 	{
 		const char * result;
@@ -436,7 +437,7 @@ int lua_track_back(lua_State *L)
 	lua_Debug debug;
 	for(int level = 1; lua_getstack(L, level, &debug); level++)
 	{
-		lua_getinfo(L, "Sl", &debug);
+		int suc = lua_getinfo(L, "Sl", &debug);
 		sprintf(tmp, "%s(%d,1) : %s \n", debug.source+1, debug.currentline, level == 1 ? strrchr(err, ':')+1 : "");
 		OutputDebugStringA(tmp);
 	}

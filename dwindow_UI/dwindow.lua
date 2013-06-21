@@ -7,6 +7,20 @@ if get_resource == nil then get_resource = function() end end
 if load_bitmap_core == nil then load_bitmap_core = function() end end
 if bit32 == nil then bit32 = require("bit")end
 
+
+-- helper functions
+function GetPath(pathname)
+	local t = string.reverse(pathname)
+	t = string.sub(t, string.find(t, "\\") or 1)
+	return string.reverse(t)
+end
+local lua_file = dwindow.loading_file
+local lua_path = GetPath(lua_file)
+local function GetCurrentLuaPath(offset)
+	return lua_path
+end
+
+
 function debug_print(...)
 	--print("--DEBUG", ...)
 end
@@ -144,8 +158,6 @@ function test_get_text_bitmap(text)
 end
 
 function get_bitmap(filename, reload)
-	if string.find(filename, ":\\") ~= 2 then filename = GetCurrentLuaPath(1) .. filename end
-
 	if reload then unload_bitmap(filename) end
 	if bitmapcache[filename] == nil then
 		local res, width, height = dwindow.load_bitmap_core(filename)		-- width is also used as error msg output.
@@ -201,18 +213,6 @@ function paint(left, top, right, bottom, bitmap, alpha, resampling_method)
 	local x,y  = rect[5], rect[6]
 	local a = alpha or 1.0
 	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap)
-end
-
--- helper functions
-function GetCurrentLuaPath(offset)
-	local info = debug.getinfo(2+(offset or 0), "Sl")
-	return GetPath(string.sub(info.source, 2))
-end
-
-function GetPath(pathname)
-	local t = string.reverse(pathname)
-	t = string.sub(t, string.find(t, "\\") or 1)
-	return string.reverse(t)
 end
 
 -- native threading support
@@ -281,7 +281,7 @@ function ReloadUI(legacy)
 	if legacy then return end
 
 	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "classic\\render.lua"))
-	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris\\Tetris.lua"))
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris\\Tetris.lua"))
 	v3dplayer_add_button()
 
 	-- the menu sample

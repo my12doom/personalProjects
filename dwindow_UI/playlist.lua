@@ -1,4 +1,10 @@
-﻿playlist = {}
+﻿local lua_file = dwindow.loading_file
+local lua_path = GetPath(lua_file)
+local function GetCurrentLuaPath(offset)
+	return lua_path
+end
+
+playlist = {}
 local list = {}
 local playing = 0
 local get_pos

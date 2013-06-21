@@ -70,6 +70,12 @@ local menu_sample =
 
 ]]--
 
+local lua_file = dwindow.loading_file
+local lua_path = GetPath(lua_file)
+local function GetCurrentLuaPath(offset)
+	return lua_path
+end
+
 menu_builder = {}
 
 local MF_CHECKED = 8

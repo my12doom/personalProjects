@@ -1,4 +1,11 @@
-﻿-- 3dvplayer UI renderer
+﻿local lua_file = dwindow.loading_file
+local lua_path = GetPath(lua_file)
+local function GetCurrentLuaPath(offset)
+	return lua_path
+end
+
+
+-- 3dvplayer UI renderer
 
 local button_size = 40;
 local margin_button_right = 32;
@@ -32,7 +39,7 @@ logo:SetSize(1920,1080)
 
 function logo:RenderThis()
 	if not dwindow.movie_loaded then
-		local res = get_bitmap("logo_bg.png")
+		local res = get_bitmap(GetCurrentLuaPath() .. "logo_bg.png")
 		paint(0,0,1920,1080, res)
 	end
 end
@@ -53,7 +60,7 @@ logo_hot:SetSize(400,171)
 
 function logo_hot:RenderThis()
 	if not dwindow.movie_loaded then
-		local res = get_bitmap("logo_hot.png")
+		local res = get_bitmap(GetCurrentLuaPath() .. "logo_hot.png")
 		paint(0,0,400,171, res)
 	end
 end
@@ -76,7 +83,7 @@ print("toolbar_height=", toolbar_height)
 
 function toolbar_bg:RenderThis()
 	local l,t,r,b = self:GetAbsRect()
-	local res = get_bitmap("toolbar_background.png");
+	local res = get_bitmap(GetCurrentLuaPath() .. "toolbar_background.png");
 	paint(0,0,r-l,b-t, res)
 end
 
@@ -109,7 +116,7 @@ local function button_GetRect(self)
 end
 
 local function button_RenderThis(self)
-	paint(11,0,button_size+11,button_size, get_bitmap(self.pic[1]))
+	paint(11,0,button_size+11,button_size, get_bitmap(GetCurrentLuaPath() .. self.pic[1]))
 end
 
 local function button_OnMouseDown(self)
@@ -174,24 +181,24 @@ function progressbar:RenderThis()
 	local v = fv * r
 	
 	-- draw bottom
-	paint(0,0, width_progress_left, b, get_bitmap(file(1)))
-	paint(width_progress_left,0, r-width_progress_right, b, get_bitmap(file(2)))
-	paint(r-width_progress_right,0, r, b, get_bitmap(file(3)))
+	paint(0,0, width_progress_left, b, get_bitmap(GetCurrentLuaPath() .. file(1)))
+	paint(width_progress_left,0, r-width_progress_right, b, get_bitmap(GetCurrentLuaPath() .. file(2)))
+	paint(r-width_progress_right,0, r, b, get_bitmap(GetCurrentLuaPath() .. file(3)))
 
 	-- draw top
 	if (v > 1.5) then
-		local bmp = get_bitmap(file(4))
+		local bmp = get_bitmap(GetCurrentLuaPath() .. file(4))
 		paint(0,0,math.min(width_progress_left, v),b, bmp)
 	end
 
 	if (v > width_progress_left) then
 		local r = math.min(r-width_progress_right, v)
-		local bmp = get_bitmap(file(5))
+		local bmp = get_bitmap(GetCurrentLuaPath() .. file(5))
 		paint(width_progress_left, 0, r, b, bmp)
 	end
 
 	if (v > r - width_progress_right) then
-		local bmp = get_bitmap(file(6))
+		local bmp = get_bitmap(GetCurrentLuaPath() .. file(6))
 		paint(r-width_progress_right, 0, v, b, bmp)
 	end
 end
@@ -222,7 +229,7 @@ function number_current:RenderThis()
 
 	local x = 0
 	for i=1,#numbers do
-		paint(x, 0, x+numbers_width, numbers_height, get_bitmap(math.floor(numbers[i]) .. ".png"))
+		paint(x, 0, x+numbers_width, numbers_height, get_bitmap(GetCurrentLuaPath() .. math.floor(numbers[i]) .. ".png"))
 		x = x + numbers_width
 	end
 
@@ -310,7 +317,7 @@ function grow:OnLeave()
 end
 
 function grow:RenderThis()
-	local res = get_bitmap("grow.png")
+	local res = get_bitmap(GetCurrentLuaPath() .. "grow.png")
 	local alpha = alpha_tick / 200
 	paint(0, 0, 250, 250, res, alpha)
 end

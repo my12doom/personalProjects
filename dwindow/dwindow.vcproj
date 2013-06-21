@@ -2204,10 +2204,6 @@
 				RelativePath="..\dwindow_UI\playlist.lua"
 				>
 			</File>
-			<File
-				RelativePath="..\dwindow_UI\tetris.lua"
-				>
-			</File>
 			<Filter
 				Name="3dvplayer"
 				>
@@ -2221,6 +2217,14 @@
 				>
 				<File
 					RelativePath="..\dwindow_UI\classic\render.lua"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Tetris"
+				>
+				<File
+					RelativePath="..\dwindow_UI\Tetris\tetris.lua"
 					>
 				</File>
 			</Filter>

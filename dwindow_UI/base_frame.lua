@@ -1,4 +1,9 @@
 ﻿-- Base Frame
+local lua_file = dwindow.loading_file
+local lua_path = GetPath(lua_file)
+local function GetCurrentLuaPath(offset)
+	return lua_path
+end
 
 LEFT = 1
 RIGHT = 2

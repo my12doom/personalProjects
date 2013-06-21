@@ -462,6 +462,8 @@ int my12doomRenderer_lua_loadscript()
 	char tmp[MAX_PATH];
 	strcpy(tmp, apppath);
 	strcat(tmp, BASE_FRAME);
+	USES_CONVERSION;
+	g_lua_manager->get_variable("loading_file") = W2UTF8(A2W(tmp));
 	if (luaL_loadfile(lua_state, tmp) || lua_mypcall(lua_state, 0, 0, 0))
 	{
 		const char * result = lua_tostring(lua_state, -1);
