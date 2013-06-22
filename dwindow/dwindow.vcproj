@@ -2228,6 +2228,14 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="dwindow2"
+				>
+				<File
+					RelativePath="..\dwindow_UI\DWindow2\render.lua"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Thumbnail"

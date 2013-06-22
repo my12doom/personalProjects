@@ -9,6 +9,8 @@ public:
 	~gpu_sample();
 	HRESULT commit();
 	HRESULT decommit();
+	HRESULT commitGDI();
+	HRESULT decommitGDI();
 	HRESULT convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelShader9 *ps_yv12, IDirect3DPixelShader9 *ps_nv12, IDirect3DPixelShader9 *ps_P016, IDirect3DPixelShader9 *ps_yuy2, IDirect3DVertexBuffer9 *vb, int time);
 	HRESULT convert_to_RGB32_CPU(const wchar_t *out);
 	HRESULT convert_to_RGB32_CPU(void *Y, void*U, void*V, int stride, int width, int height);
@@ -25,12 +27,13 @@ public:
 	CLSID m_format;
 	bool m_topdown;
 	bool m_interlaced;
+	bool m_GDI_prepared;
 
 	CPooledTexture *m_tex_gpu_RGB32;				// GPU RGB32 planes, in A8R8G8B8, full width
 	CPooledTexture *m_tex_gpu_Y;					// GPU Y plane of YV12/NV12, in L8
 	CPooledTexture *m_tex_gpu_YV12_UV;				// GPU UV plane of YV12, in L8, double height
 	CPooledTexture *m_tex_gpu_NV12_UV;				// GPU UV plane of NV12, in A8L8
-	CPooledTexture *m_tex_gpu_YUY2_UV;					// GPU YUY2 planes, in A8R8G8B8, half width
+	CPooledTexture *m_tex_gpu_YUY2_UV;				// GPU YUY2 planes, in A8R8G8B8, half width
 	DWORD m_interlace_flags;
 protected:
 	bool is_ignored_line(int line);

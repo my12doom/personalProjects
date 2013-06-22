@@ -284,6 +284,21 @@ static int is_playing(lua_State *L)
 
 	return 1;
 }
+static int get_swapeyes(lua_State *L)
+{
+	bool b = false;
+	g_player->get_swap_eyes(&b);
+	lua_pushboolean(L, b);
+
+	return 1;
+}
+static int set_swapeyes(lua_State *L)
+{
+	g_player->set_swap_eyes(lua_toboolean(L, -1));
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
 
 static int is_fullscreen(lua_State *L)
 {
@@ -437,6 +452,8 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("load_subtitle") = &load_subtitle;
 	g_lua_manager->get_variable("set_movie_rect") = &set_movie_rect;
 	g_lua_manager->get_variable("get_splayer_subtitle") = &lua_get_splayer_subtitle;
+	g_lua_manager->get_variable("get_swapeyes") = &get_swapeyes;
+	g_lua_manager->get_variable("set_swapeyes") = &set_swapeyes;
 
 	return 0;
 }

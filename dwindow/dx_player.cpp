@@ -3105,6 +3105,16 @@ HRESULT dx_player::set_swap_eyes(bool swap_eyes)
 	return S_OK;
 }
 
+HRESULT dx_player::get_swap_eyes(bool *swap_eyes)
+{
+	if (!swap_eyes)
+		return E_POINTER;
+
+	*swap_eyes = m_swap_eyes;
+
+	return S_OK;
+}
+
 HRESULT dx_player::set_force_2d(bool force2d)
 {
 	m_force_2d = force2d;
@@ -5369,12 +5379,17 @@ static int luaAppendSubmenu(lua_State *L)
 
 static int luaPopupMenu(lua_State *L)
 {
-	menu_handle * handle = (menu_handle *)lua_touserdata(L, -1);
+	int n = lua_gettop(L);
+	if (n<3)
+		return 0;	// invalid parameter count
+	menu_handle * handle = (menu_handle *)lua_touserdata(L, -n+0);
+	int dx = lua_tointeger(L, -n+1);
+	int dy = lua_tointeger(L, -n+2);
 	POINT mouse_pos;
 	GetCursorPos(&mouse_pos);
 	active_lua_menu = handle;
 	g_player->m_dialog_open ++;
-	BOOL o = TrackPopupMenu(handle->handle, TPM_TOPALIGN | TPM_LEFTALIGN, mouse_pos.x, mouse_pos.y, 0, g_player->get_window(1), NULL);
+	BOOL o = TrackPopupMenu(handle->handle, TPM_TOPALIGN | TPM_LEFTALIGN, mouse_pos.x+dx, mouse_pos.y+dy, 0, g_player->get_window(1), NULL);
 	g_player->m_dialog_open --;
 
 	return 0;

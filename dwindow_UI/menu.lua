@@ -14,7 +14,12 @@ menu_item =
 	menubarbreak = false
 	seperator = false
 	sub_items = nil or a table of menu_items
-	on_command = function(menu_item) or nil	
+	on_command = function(menu_item) or nil
+	
+	fill ALL these 3 field to enable MF_OWNERDRAW
+	width = nil
+	height = nil
+	ondraw = function(menu_item) or nil	
 }
 
 A sample :
@@ -83,6 +88,7 @@ local MF_GRAYED = 1
 local MF_DISABLED = 2
 local MF_MENUBARBREAK = 32
 local MF_SEPARATOR = 0x800
+local MF_OWNERDRAW = 0x100
 
 function menu_builder:Create(template)
 	local o = {}
@@ -110,7 +116,9 @@ function menu_builder:Create(template)
 end
 
 function menu_builder:popup(x, y)
-	return dwindow.PopupMenu(self.handle)
+	local px,py = dwindow.get_mouse_pos()
+	x, y = x or px, y or py	
+	return dwindow.PopupMenu(self.handle, x-px, y-py)
 end
 
 function menu_builder:destroy()

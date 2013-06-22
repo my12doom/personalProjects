@@ -157,6 +157,8 @@ function test_get_text_bitmap(text)
 	return rtn
 end
 
+DrawText = test_get_text_bitmap
+
 function get_bitmap(filename, reload)
 	if reload then unload_bitmap(filename) end
 	if bitmapcache[filename] == nil then
@@ -280,9 +282,9 @@ function ReloadUI(legacy)
 
 	if legacy then return end
 
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "classic\\render.lua"))
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris\\Tetris.lua"))
-	v3dplayer_add_button()
+	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "DWindow2\\render.lua"))
+	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris\\Tetris.lua"))
+	--v3dplayer_add_button()
 
 	-- the menu sample
 	local sample = menu:Create()

@@ -479,6 +479,10 @@ function BaseFrame:OnDropFile(x, y, ...)
 	return true		-- block it from being sent to parents to avoid duplicated loading.
 end
 
+function BaseFrame:IsMouseOver()
+	return self == root:GetFrameByPoint(dwindow.get_mouse_pos())
+end
+
 
 --- default mouse event delivering
 local focus
@@ -489,7 +493,7 @@ function OnMouseEvent(event,x,y,...)
 	end
 end
 
--- for these mouse events or focus related events, return anything other than false and nil cause it to be sent to its parents
+-- for these mouse events or focus related events, return anything other than false and nil to block the event from being sent to its parents
 
 
 -- Frame layout events, default handling is recalculate layout
