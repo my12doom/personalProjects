@@ -10,8 +10,15 @@ if bit32 == nil then bit32 = require("bit")end
 
 -- helper functions
 function GetPath(pathname)
+	if pathname == nil then return end
 	local t = string.reverse(pathname)
 	t = string.sub(t, string.find(t, "\\") or 1)
+	return string.reverse(t)
+end
+function GetName(pathname)
+	if pathname == nil then return end
+	local t = string.reverse(pathname)
+	t = string.sub(t, 1, (string.find(t, "\\")-1) or t.length)
 	return string.reverse(t)
 end
 local lua_file = dwindow.loading_file

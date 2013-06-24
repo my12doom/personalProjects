@@ -8,6 +8,7 @@
 #include "zip.h"
 #include "runnable.h"
 #include <atlbase.h>
+#include "dshow_lua.h"
 
 #pragma comment(lib, "DbgHelp")
 AutoSetting<bool> single_instance(L"SingleInstance", true);
@@ -56,6 +57,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	dwindow_lua_init();
 	my12doomRenderer_lua_init();
 	my12doomRenderer_lua_loadscript();
+	dshow_lua_init();
 
 	HWND pre_instance = single_instance ? FindWindowA("DWindowClass", NULL) : NULL;
 	wchar_t *argvv[] = {L"", L"compile", L"D:\\private\\dwindow_UI\\dwindow.lua", L"D:\\private\\dwindow_UI\\dwindow.bin"};

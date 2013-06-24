@@ -9,22 +9,26 @@ local list = {}
 local playing = 0
 local get_pos
 
-function playlist:add(path, pos)
-	local pos = get_pos(path)
+function playlist:add(L, R, pos)
+	local pos = get_pos(L)
 	if pos then return pos end
 	
-	table.insert(list, pos or (#list+1), path)
+	table.insert(list, pos or (#list+1), {L=L,R=R})
 	return pos or #list
 end
 
-function playlist:play(path)
-	local pos = get_pos(path)
-	if (pos == playing) and playing then return end
-	return playlist:play_item(playlist:add(path))
+function playlist:play(L, R)
+	local pos = get_pos(L, R)
+	if (pos == playing) and playing then
+		if not dwindow.movie_loaded then
+			return playlist:play_item(playing)
+		end
+	end
+	return playlist:play_item(playlist:add(L, R))
 end
 
-function playlist:remove(path)
-	local pos = get_pos(path)
+function playlist:remove(L, R)
+	local pos = get_pos(L, R)
 	if pos then
 		table.remove(pos)
 	end
@@ -53,8 +57,8 @@ function playlist:play_item(n)
 	end
 	
 	playing = n
-	
-	return dwindow.reset_and_loadfile(list[n])
+		
+	return dwindow.reset_and_loadfile(list[n].L, list[n].R)
 end
 
 function playlist:item(n)
@@ -70,12 +74,12 @@ function playlist:current_pos()
 end
 
 function playlist:current_item()
-	return playlist:item(playing)
+	return playlist:item(playing) and playlist:item(playing).L, playlist:item(playing) and playlist:item(playing).R
 end
 
-get_pos = function(path)
+get_pos = function(L, R)
 	for i=1,#list do
-		if list[i] == path then
+		if list[i].L == L and list[i].R == R then
 			return i
 		end
 	end

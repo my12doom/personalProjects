@@ -29,20 +29,49 @@ function logo:RenderThis()
 	end
 end
 
+-- bottom bar
+local bottombar = BaseFrame:Create()
+oroot:AddChild(bottombar)
+bottombar:SetRelativeTo(BOTTOMLEFT)
+bottombar:SetRelativeTo(BOTTOMRIGHT)
+bottombar:SetHeight(44)
+
+function bottombar:RenderThis()
+	local res = get_bitmap(lua_path .. "bar.png")
+	paint(0,0,dwindow.width,44, res)
+end
+
 -- top bar
 local topbar = BaseFrame:Create()
 oroot:AddChild(topbar)
 topbar:SetRelativeTo(TOPLEFT)
 topbar:SetRelativeTo(TOPRIGHT)
-topbar:SetHeight(34)
-topbar.name = DrawText("飘花电影 piaohua.com 乔布斯如何改变世界 BD中英双字1024高清.mkv")
+topbar:SetHeight(30)
+topbar.item = " "
+
+function topbar:PreRender()
+	local left, right = playlist:current_item();
+	local dis = GetName(left) or " "
+	if right then dis = dis .. " + " .. GetName(right) end
+	if not dwindow.movie_loaded then dis = " " end
+	if self.item ~= dis then
+		self.item = dis
+		
+		if self.res then
+			dwindow.release_resource_core(self.res)
+		end
+		self.res = DrawText(self.item)
+	end
+end
 
 function topbar:RenderThis()
 	local res = get_bitmap(lua_path .. "bar.png")
 	paint(0,0,dwindow.width,34, res)
 	
-	local h = (34-self.name.height)/2
-	paint(15, h, 15+self.name.width, h+self.name.height, self.name)
+	if self.res then 
+		local h = (34-self.res.height)/2
+		paint(15, h, 15+self.res.width, h+self.res.height, self.res)
+	end
 end
 
 -- left right
@@ -63,8 +92,8 @@ end
 
 -- 3d/2d button
 local b3d = BaseFrame:Create()
-oroot:AddChild(b3d)
-b3d:SetRelativeTo(BOTTOMLEFT, oroot, BOTTOMLEFT, 14, -7)
+bottombar:AddChild(b3d)
+b3d:SetRelativeTo(BOTTOMLEFT, bottombar, BOTTOMLEFT, 14, -7)
 b3d:SetSize(36,30)
 
 function b3d:RenderThis()
@@ -83,8 +112,8 @@ end
 
 -- fullscreen button
 local full = BaseFrame:Create()
-oroot:AddChild(full)
-full:SetRelativeTo(BOTTOMRIGHT, oroot, nil, -14, -7)
+bottombar:AddChild(full)
+full:SetRelativeTo(BOTTOMRIGHT, bottombar, nil, -14, -7)
 full:SetSize(33,31)
 
 function full:RenderThis()
@@ -98,21 +127,96 @@ end
 
 -- play/pause button
 local play = BaseFrame:Create()
-oroot:AddChild(play)
+bottombar:AddChild(play)
 play:SetRelativeTo(BOTTOM)
 play:SetSize(109,38)
 
 function play:RenderThis()
 	if dwindow.is_playing() then
-		paint(0,0,109,38, get_bitmap(lua_path .. (self:IsMouseOver() and "pause_mouseover.png" or "pause_normal.png")))	
+		paint(0,0,109,38, get_bitmap(lua_path .. (self:IsMouseOver() and "pause_mousedown.png" or "pause_mouseover.png")))	
 	else
-		paint(0,0,109,38, get_bitmap(lua_path .. (self:IsMouseOver() and "play_mouseover.png" or "play_normal.png")))	
+		paint(0,0,109,38, get_bitmap(lua_path .. (self:IsMouseOver() and "play_mousedown.png" or "play_mouseover.png")))	
 	end
 end
 
 function play:OnMouseDown()
-	dwindow.pause()
+	if not dwindow.movie_loaded then
+		local file = dwindow.OpenFile()
+		if file then
+			playlist:play(file)
+		end
+	else
+		dwindow.pause()
+	end
+	
 	return true
+end
+
+-- progress bar
+local progress = BaseFrame:Create()
+oroot:AddChild(progress)
+progress:SetRelativeTo(TOPLEFT, bottombar, nil, 0, -8)
+progress:SetRelativeTo(TOPRIGHT, bottombar, nil, 0, -8)
+progress:SetHeight(16+6)
+
+function progress:RenderThis()
+	local v = (dwindow.tell() or 0) / (dwindow.total() or 1)
+	v = math.max(math.min(v, 1), 0)
+	local l,_,r = self:GetAbsRect()
+	
+	paint(0,8,r-l, 8+(self:IsMouseOver() and 6 or 2), get_bitmap(lua_path .. "progress_bg.png"))
+	paint(0,8,(r-l)*v,8+6, get_bitmap(lua_path .. (self:IsMouseOver() and "progress_thick.png" or "progress.png")))
+end
+
+function progress:OnMouseDown(x,y,button)
+	local l,_,r=self:GetAbsRect()
+	local w = r-l
+	local v = x/w
+	v = math.max(0,math.min(v,1))
+	
+	dwindow.seek(dwindow.total()*v)
+end
+
+-- volume bar
+local volume = BaseFrame:Create()
+bottombar:AddChild(volume)
+volume:SetRelativeTo(RIGHT, full, LEFT, -20, 0)
+volume:SetSize(68, 16+4)
+
+function volume:RenderThis()
+	local v = math.max(math.min(dwindow.get_volume(), 1), 0)
+	local l,_,r = self:GetAbsRect()
+	
+	paint(0,8,r-l, 8+4, get_bitmap(lua_path .. "volume_bg.png"))
+	paint(0,8,(r-l)*v,8+4, get_bitmap(lua_path .. "volume.png"))
+end
+
+function volume:OnMouseDown(x,y,button)
+	local l,_,r=self:GetAbsRect()
+	local w = r-l
+	local v = x/w
+	v = math.max(0,math.min(v,1))
+	
+	dwindow.set_volume(v)
+end
+
+local volume_button = BaseFrame:Create()
+bottombar:AddChild(volume_button)
+volume_button:SetRelativeTo(RIGHT, volume, LEFT, -1, 0)
+volume_button:SetSize(25, 24)
+
+function volume_button:RenderThis()
+	paint(0,0,25, 24, get_bitmap(lua_path .. (dwindow.get_volume() > 0 and "volume_button_normal.png" or "volume_button_mute.png")))
+end
+
+function volume_button:OnMouseDown()
+	if dwindow.get_volume() > 0 then
+		self.saved_volume = dwindow.get_volume()
+		dwindow.set_volume(0)
+	else
+		dwindow.set_volume(self.saved_volume or 1)
+		self.saved_volume = nil
+	end
 end
 
 -- open file button
@@ -120,7 +224,6 @@ local open = BaseFrame:Create()
 oroot:AddChild(open)
 open:SetRelativeTo(CENTER)
 open:SetSize(165,36)
-open.caption = DrawText("打开文件...")
 
 function open:RenderThis()
 	if not dwindow.movie_loaded then
@@ -131,12 +234,24 @@ function open:RenderThis()
 	end
 end
 
+function open:OnInitGPU()
+	self.caption = DrawText("打开文件...")
+end
+
+function open:OnReleaseGPU()
+	dwindow.release_resource_core(self.caption)
+end
+
 function open:HitTest()
 	return not dwindow.movie_loaded
 end
 
 function open:OnMouseDown()
-	dwindow.pause()
+	local file = dwindow.OpenFile()
+	if file then
+		playlist:play(file)
+	end
+
 	return true
 end
 
@@ -162,13 +277,30 @@ function open2:OnMouseDown()
 	{
 		{
 			string = "打开URL...",
+			on_command = function()
+				local url = dwindow.OpenURL()
+				if url then
+					playlist:play(url)
+				end
+			end
 		},
 		{
 			string = "打开左右分离文件...",
+			on_command = function()
+				local left, right = dwindow.OpenDoubleFile()
+				if left and right then
+					playlist:play(left, right)
+				end
+			end
 		},
 		{
 			string = "打开文件夹...",
-			on_command = function() dwindow.shutdown() end
+			on_command = function()
+				local folder = dwindow.OpenFolder()
+				if folder then
+					playlist:play(folder)
+				end
+			end
 		},
 	}
 	
@@ -176,4 +308,18 @@ function open2:OnMouseDown()
 	m:popup(open:GetAbsAnchorPoint(BOTTOMLEFT))
 	m:destroy()
 	return true
+end
+
+
+-- event handler
+local event = BaseFrame:Create()
+oroot:AddChild(event)
+function event:PreRender(t, dt)
+	if dwindow.is_fullscreen() then
+		dwindow.set_movie_rect(0, 0, dwindow.width, dwindow.height)
+	else
+		local l, t = topbar:GetAbsAnchorPoint(BOTTOMLEFT)
+		local r, b = bottombar:GetAbsAnchorPoint(TOPRIGHT)
+		dwindow.set_movie_rect(l, t, r, b)
+	end
 end

@@ -214,7 +214,7 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		hr = start_loading();
 
 	CASE(L"reset_and_loadfile")
-		hr = reset_and_loadfile(args[0], args[1], myBool(args[2]));
+		hr = reset_and_loadfile_core(args[0], args[1], myBool(args[2]));
 
 	CASE(L"load_subtitle")
 		hr = load_subtitle(args[0], myBool(args[1]));

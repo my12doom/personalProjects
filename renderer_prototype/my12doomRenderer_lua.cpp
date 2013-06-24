@@ -276,7 +276,24 @@ static int toggle_3d(lua_State *L)
 
 	return 0;
 }
+static int get_force2d(lua_State *L)
+{
+	bool b;
 
+	g_player->get_force_2d(&b);
+
+	lua_pushboolean(L, b);
+
+	return 1;
+}
+static int set_force2d(lua_State *L)
+{
+	bool b = lua_toboolean(L, -1);
+
+	g_player->set_force_2d(b);
+
+	return 0;
+}
 
 static int is_playing(lua_State *L)
 {
@@ -362,11 +379,12 @@ static int set_volume(lua_State *L)
 
 static int reset_and_loadfile(lua_State *L)
 {
-	const char *filename1 = lua_tostring(L, -1);
-	const char *filename2 = lua_tostring(L, -2);
-	const bool stop = lua_isboolean(L, -3) ? lua_toboolean(L, -3) : false;
+	int n = lua_gettop(L);
+	const char *filename1 = lua_tostring(L, -n+0);
+	const char *filename2 = lua_tostring(L, -n+1);
+	const bool stop = lua_isboolean(L, -n+2) ? lua_toboolean(L, -n+2) : false;
 
-	HRESULT hr = g_player->reset_and_loadfile(filename1 ? UTF82W(filename1) : NULL, filename2 ? UTF82W(filename2) : NULL, stop);
+	HRESULT hr = g_player->reset_and_loadfile_core(filename1 ? UTF82W(filename1) : NULL, filename2 ? UTF82W(filename2) : NULL, stop);
 
 	lua_pushboolean(L, SUCCEEDED(hr));
 	lua_pushinteger(L, hr);

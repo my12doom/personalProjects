@@ -191,7 +191,7 @@ float4 anaglyph(float2 tex : TEXCOORD0) : COLOR
 	float4 r = tex2D(s1, tex);
 	
 	r.r = 0;
-	l.r = 0.299 * l.r + 0.587 * l.g + 0.114 * l.b;
+	//l.r = 0.299 * l.r + 0.587 * l.g + 0.114 * l.b;
 	l.g = 0;
 	l.b = 0;
 	

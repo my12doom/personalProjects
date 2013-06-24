@@ -17,7 +17,7 @@ public:
 	// load functions
 	virtual HRESULT reset() PURE;								// unload all video and subtitle files
 	virtual HRESULT start_loading() PURE;
-	virtual HRESULT reset_and_loadfile(const wchar_t *pathname, const wchar_t *pathname2 = NULL, bool stop = false) PURE;
+	virtual HRESULT reset_and_loadfile_core(const wchar_t *pathname, const wchar_t *pathname2 = NULL, bool stop = false) PURE;
 	virtual HRESULT load_audiotrack(const wchar_t *pathname) PURE;
 	virtual HRESULT load_subtitle(const wchar_t *pathname, bool reset = true) PURE;
 	virtual HRESULT load_file(const wchar_t *pathname, bool non_mainfile = false, 

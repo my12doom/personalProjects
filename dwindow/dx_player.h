@@ -77,7 +77,8 @@ public:
 	// load functions
 	HRESULT reset();								// unload all video and subtitle files
 	HRESULT start_loading();
-	HRESULT reset_and_loadfile(const wchar_t *pathname, const wchar_t*pathname2 = NULL, bool stop = false);
+	HRESULT reset_and_loadfile_lua(const wchar_t *pathname, const wchar_t*pathname2 = NULL, bool stop = false);
+	HRESULT reset_and_loadfile_core(const wchar_t *pathname, const wchar_t*pathname2 = NULL, bool stop = false);
 	HRESULT load_audiotrack(const wchar_t *pathname);
 	HRESULT load_subtitle(const wchar_t *pathname, bool reset = true);
 	HRESULT load_file(const wchar_t *pathname, bool non_mainfile = false, int audio_track = LOADFILE_FIRST_TRACK, int video_track = LOADFILE_ALL_TRACK);			// for multi stream mkv
