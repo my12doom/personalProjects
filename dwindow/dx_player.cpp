@@ -863,7 +863,7 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 			if (copy->dwData == WM_LOADFILE)
 			{
 				data[MAX_PATH-1] = NULL;
-				reset_and_loadfile_lua(data);
+				reset_and_loadfile(data);
 			}
 			else if (copy->dwData == WM_DWINDOW_COMMAND)
 				execute_command_line(data);
@@ -1968,7 +1968,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			L"*.*\0"
 			L"\0\0"))
 		{
-			reset_and_loadfile_lua(file, false);
+			reset_and_loadfile(file, false);
 		}
 		m_dialog_open--;
 	}
@@ -1979,7 +1979,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 		m_dialog_open++;
 		if (SUCCEEDED(open_double_file(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(1), left, right)))
-			reset_and_loadfile_lua(left, right);
+			reset_and_loadfile(left, right);
 		m_dialog_open--;
 	}
 
@@ -2532,7 +2532,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		wchar_t file[MAX_PATH] = L"";
 		if (browse_folder(file, m_theater_owner ? m_theater_owner : id_to_hwnd(id)))
 		{
-			reset_and_loadfile_lua(file);
+			reset_and_loadfile(file);
 		}
 		m_dialog_open --;
 	}
@@ -2564,7 +2564,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		wchar_t tmp[MAX_PATH] = L"C:\\";
 		tmp[0] = uid;
-		reset_and_loadfile_lua(tmp);
+		reset_and_loadfile(tmp);
 	}
 
 	// audio track
@@ -3220,7 +3220,7 @@ HRESULT dx_player::reset_renderer()
 	return S_OK;
 }
 
-HRESULT dx_player::reset_and_loadfile_lua(const wchar_t *pathname, const wchar_t*pathname2 /* = NULL */, bool stop /* = false */)
+HRESULT dx_player::reset_and_loadfile(const wchar_t *pathname, const wchar_t*pathname2 /* = NULL */, bool stop /* = false */)
 {
 	luaState L;
 	lua_getglobal(L, "playlist");
