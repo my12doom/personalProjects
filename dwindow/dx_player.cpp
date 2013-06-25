@@ -1110,7 +1110,8 @@ LRESULT dx_player::on_key_down(int id, int key)
 
 LRESULT dx_player::on_nc_mouse_move(int id, int x, int y)
 {
-	return on_mouse_move(id, -10, -10);	// just to show ui, should not trigger any other events
+	return S_OK;
+	//return on_mouse_move(id, -10, -10);	// just to show ui, should not trigger any other events
 }
 
 LRESULT dx_player::on_mouse_move(int id, int x, int y)
@@ -1162,11 +1163,18 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 	return S_OK;
 }
 
+LRESULT dx_player::on_kill_focus(int id)
+{
+	lua_OnMouseEvent("OnKillFocus", 0, 0, 0);
+
+	return S_OK;
+}
 
 LRESULT dx_player::on_mouse_up(int id, int button, int x, int y)
 {
 	m_dragging = -1;
 	lua_OnMouseEvent("OnMouseUp", x, y, button);
+	ReleaseCapture();
 
 	// test for 
 	if (m_mouse_down_point.x > -100  && m_mouse_down_point.y > -100 && m_mouse_down_time > 0)
@@ -1558,6 +1566,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		return __super::on_mouse_down(id, button, x, y);
 
 	lua_OnMouseEvent("OnMouseDown", x, y, button);
+	SetCapture(id_to_hwnd(id));
 
 
 	if ( m_renderer1->get_ui_drawer() == (ui_drawer_base *)this &&
@@ -1638,10 +1647,10 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		else if (type < 0 && !m_full1 && (!m_renderer1 || !m_renderer1->get_fullscreen()))
 		{
 			// move this window
-			m_dragging_window = id;
-			ReleaseCapture();
-			SendMessage(id_to_hwnd(id), WM_NCLBUTTONDOWN, HTCAPTION, 0);
-			m_dragging_window = 0;
+// 			m_dragging_window = id;
+// 			ReleaseCapture();
+// 			SendMessage(id_to_hwnd(id), WM_NCLBUTTONDOWN, HTCAPTION, 0);
+// 			m_dragging_window = 0;
 		}
 		else if (m_full1 || m_renderer1->get_fullscreen())
 		{

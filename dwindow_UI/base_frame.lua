@@ -464,6 +464,7 @@ function BaseFrame:OnMouseMove() end
 function BaseFrame:OnMouseWheel() end
 function BaseFrame:OnKeyDown() end
 function BaseFrame:OnKeyUp() end
+function BaseFrame:OnKillFocus() end
 
 function BaseFrame:OnMouseEvent(event, x, y, ...)
 	local l, t = self:GetAbsRect()
@@ -487,17 +488,18 @@ end
 --- default mouse event delivering
 local focus
 function OnMouseEvent(event,x,y,...)
-	local frame = focus or root:GetFrameByPoint(x,y)
-	local rtn
-	
-	if frame then
-		rtn = frame:OnEvent("OnMouseEvent", event, x, y, ...)
+	if event == "OnMouseDown" then
+		focus = root:GetFrameByPoint(x,y)
 	end
 	
-	if event == "OnMouseDown" then
-		focus = frame
-	elseif event == "OnMouseUp" then
+	local frame = focus or root:GetFrameByPoint(x,y)
+	
+	if event == "OnMouseUp" or event == "OnKillFocus" then
 		focus = nil
+	end
+
+	if frame then
+		return frame:OnEvent("OnMouseEvent", event, x, y, ...)
 	end
 	
 	return rtn

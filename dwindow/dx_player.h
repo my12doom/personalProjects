@@ -257,6 +257,7 @@ public:
 	LRESULT on_key_down(int id, int key);
 	LRESULT on_paint(int id, HDC hdc);
 	LRESULT on_timer(int id);
+	LRESULT on_kill_focus(int id);
 	LRESULT on_size(int id, int type, int x, int y);
 	LRESULT on_init_dialog(int id, WPARAM wParam, LPARAM lParam);
 	LRESULT on_dropfile(int id, int count, wchar_t **filenames);

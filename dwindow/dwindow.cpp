@@ -46,6 +46,10 @@ LRESULT CALLBACK dwindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		EndPaint(hWnd, &ps);
 		break;
 
+	case WM_KILLFOCUS:
+		lr = _this->on_kill_focus(id);
+		break;
+
 	case WM_MOVE:
 		lr = _this->on_move(id, xPos, yPos);
 		break;

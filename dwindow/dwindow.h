@@ -53,6 +53,7 @@ public:
 	virtual LRESULT on_close(int id){return S_OK;}
 	virtual LRESULT on_display_change(int id){return S_OK;}
 	virtual LRESULT on_paint(int id, HDC hdc){return S_OK;}
+	virtual LRESULT on_kill_focus(int id){return S_OK;}
 	virtual LRESULT on_timer(int id){return S_OK;}
 	virtual LRESULT on_size(int id, int type, int x, int y){return S_OK;}
 	virtual LRESULT on_dropfile(int id, int count, wchar_t **filenames){return S_OK;}

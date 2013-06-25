@@ -221,24 +221,25 @@ end
 
 
 -- volume bar
+-- enlarged hittest width
 local volume = BaseFrame:Create()
 bottombar:AddChild(volume)
-volume:SetRelativeTo(RIGHT, full, LEFT, -20, 0)
-volume:SetSize(68, 16+4)
+volume:SetRelativeTo(RIGHT, full, LEFT, -20+9, 0)
+volume:SetSize(68+18, 16+4)
 
 function volume:RenderThis()
 	local v = math.max(math.min(dwindow.get_volume(), 1), 0)
 	local l,_,r = self:GetAbsRect()
 	
-	paint(0,8,r-l, 8+4, get_bitmap(lua_path .. "volume_bg.png"))
-	paint(0,8,(r-l)*v,8+4, get_bitmap(lua_path .. "volume.png"))
+	paint(9,8,9+r-l-18, 8+4, get_bitmap(lua_path .. "volume_bg.png"))
+	paint(9,8,9+(r-l-18)*v,8+4, get_bitmap(lua_path .. "volume.png"))
 end
 
 function volume:OnMouseMove(x,y,button)
 	if not self.dragging then return end
 	local l,_,r=self:GetAbsRect()
-	local w = r-l
-	local v = x/w
+	local w = r-l-18
+	local v = (x-9)/w
 	v = math.max(0,math.min(v,1))
 	
 	dwindow.set_volume(v)
@@ -259,7 +260,7 @@ local volume_slider = BaseFrame:Create()
 local volume_slider = BaseFrame:Create()
 oroot:AddChild(volume_slider)
 volume_slider:SetSize(17, 17)
-volume_slider:SetRelativeTo(CENTER, volume, LEFT)
+volume_slider:SetRelativeTo(CENTER, volume, LEFT, 9)
 
 function volume_slider:RenderThis()
 	paint(0,0,17, 17, get_bitmap(lua_path .. "slider.png"))
@@ -271,14 +272,14 @@ end
 
 function volume_slider:PreRender()
 	local l,_,r = volume:GetAbsRect()
-	self:SetRelativeTo(CENTER, volume, LEFT, (r-l)*dwindow.get_volume(), 0.5)
+	self:SetRelativeTo(CENTER, volume, LEFT, 9+(r-l-18)*dwindow.get_volume(), 0.5)
 end
 
 
 -- volume button
 local volume_button = BaseFrame:Create()
 bottombar:AddChild(volume_button)
-volume_button:SetRelativeTo(RIGHT, volume, LEFT, -1, 0)
+volume_button:SetRelativeTo(RIGHT, volume, LEFT, 5, 0)
 volume_button:SetSize(25, 24)
 
 function volume_button:RenderThis()
