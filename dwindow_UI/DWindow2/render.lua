@@ -16,6 +16,7 @@ function oroot:OnMouseDown(x,y,button)
 	return true
 end
 
+
 -- background
 local logo = BaseFrame:Create()
 oroot:AddChild(logo)
@@ -29,6 +30,7 @@ function logo:RenderThis()
 	end
 end
 
+
 -- bottom bar
 local bottombar = BaseFrame:Create()
 oroot:AddChild(bottombar)
@@ -40,6 +42,7 @@ function bottombar:RenderThis()
 	local res = get_bitmap(lua_path .. "bar.png")
 	paint(0,0,dwindow.width,44, res)
 end
+
 
 -- top bar
 local topbar = BaseFrame:Create()
@@ -74,6 +77,7 @@ function topbar:RenderThis()
 	end
 end
 
+
 -- left right
 local leftright = BaseFrame:Create()
 topbar:AddChild(leftright)
@@ -89,6 +93,7 @@ end
 function leftright:OnMouseDown()
 	dwindow.set_swapeyes(not dwindow.get_swapeyes())
 end
+
 
 -- 3d/2d button
 local b3d = BaseFrame:Create()
@@ -110,6 +115,7 @@ function b3d:OnMouseDown()
 	return true
 end
 
+
 -- fullscreen button
 local full = BaseFrame:Create()
 bottombar:AddChild(full)
@@ -124,6 +130,7 @@ function full:OnMouseDown()
 	dwindow.toggle_fullscreen()
 	return true
 end
+
 
 -- play/pause button
 local play = BaseFrame:Create()
@@ -152,6 +159,7 @@ function play:OnMouseDown()
 	return true
 end
 
+
 -- progress bar
 local progress = BaseFrame:Create()
 oroot:AddChild(progress)
@@ -168,7 +176,8 @@ function progress:RenderThis()
 	paint(0,8,(r-l)*v,8+6, get_bitmap(lua_path .. (self:IsMouseOver() and "progress_thick.png" or "progress.png")))
 end
 
-function progress:OnMouseDown(x,y,button)
+function progress:OnMouseMove(x,y,button)
+	if not self.dragging then return end
 	local l,_,r=self:GetAbsRect()
 	local w = r-l
 	local v = x/w
@@ -176,6 +185,16 @@ function progress:OnMouseDown(x,y,button)
 	
 	dwindow.seek(dwindow.total()*v)
 end
+
+function progress:OnMouseUp(x, y, button)
+	self.dragging = false;
+end
+
+function progress:OnMouseDown(...)
+	self.dragging = true
+	self:OnMouseMove(...)
+end
+
 
 -- progress slider
 local progress_slider = BaseFrame:Create()
@@ -200,6 +219,7 @@ function progress_slider:HitTest()
 	return false
 end
 
+
 -- volume bar
 local volume = BaseFrame:Create()
 bottombar:AddChild(volume)
@@ -214,7 +234,8 @@ function volume:RenderThis()
 	paint(0,8,(r-l)*v,8+4, get_bitmap(lua_path .. "volume.png"))
 end
 
-function volume:OnMouseDown(x,y,button)
+function volume:OnMouseMove(x,y,button)
+	if not self.dragging then return end
 	local l,_,r=self:GetAbsRect()
 	local w = r-l
 	local v = x/w
@@ -222,6 +243,16 @@ function volume:OnMouseDown(x,y,button)
 	
 	dwindow.set_volume(v)
 end
+
+function volume:OnMouseUp(x, y, button)
+	self.dragging = false;
+end
+
+function volume:OnMouseDown(...)
+	self.dragging = true
+	self:OnMouseMove(...)
+end
+
 
 -- volume slider
 local volume_slider = BaseFrame:Create()
@@ -263,6 +294,7 @@ function volume_button:OnMouseDown()
 		self.saved_volume = nil
 	end
 end
+
 
 -- open file button
 local open = BaseFrame:Create()
@@ -306,7 +338,7 @@ function open:OnMouseDown()
 end
 
 
--- open file button
+-- open file button drop down
 local open2 = BaseFrame:Create()
 oroot:AddChild(open2)
 open2:SetRelativeTo(LEFT, open, RIGHT)

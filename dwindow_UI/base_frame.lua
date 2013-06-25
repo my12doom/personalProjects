@@ -488,9 +488,19 @@ end
 local focus
 function OnMouseEvent(event,x,y,...)
 	local frame = focus or root:GetFrameByPoint(x,y)
+	local rtn
+	
 	if frame then
-		return frame:OnEvent("OnMouseEvent", event, x, y, ...)
+		rtn = frame:OnEvent("OnMouseEvent", event, x, y, ...)
 	end
+	
+	if event == "OnMouseDown" then
+		focus = frame
+	elseif event == "OnMouseUp" then
+		focus = nil
+	end
+	
+	return rtn
 end
 
 -- for these mouse events or focus related events, return anything other than false and nil to block the event from being sent to its parents
