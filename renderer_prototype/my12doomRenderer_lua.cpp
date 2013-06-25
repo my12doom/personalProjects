@@ -131,22 +131,100 @@ HFONT create_font(const wchar_t *facename = L"ºÚÌå", int font_height = 14)
 	return rtn;
 }
 
+static int luaCreateFont(lua_State *L)
+{
+	if(!lua_istable(L, -1))
+		return 0;
+
+	LOGFONTW lf=
+	{
+		-14,
+		0,
+		0,
+		0,
+		FW_BOLD,
+		0,
+		0,
+		0,
+		0,
+		OUT_STROKE_PRECIS,
+		CLIP_STROKE_PRECIS,
+		DEFAULT_QUALITY,
+		VARIABLE_PITCH,
+		L"ºÚÌå",
+	};
+
+	char *key_table[] =
+	{
+		"height",
+		"width",
+		"escapement",
+		"orientation",
+		"weight",
+		"italic",
+		"underline",
+		"strikeout",
+		"charset",
+		"outprecision",
+		"clipprecision",
+		"quality",
+		"pitch",
+		"name",
+	};
+
+	// the first 5 elements is LONG, then 8 BYTE, the one WCHAR[32]
+	for(int i=0; i<sizeof(key_table)/sizeof(char*); i++)
+	{
+		lua_getfield(L, -1, key_table[i]);
+		if (lua_isnil(L, -1))
+		{
+			lua_pop(L, 1);
+			continue;;
+		}
+
+		if (i<5)
+			((DWORD*)&lf)[i] = lua_tointeger(L, -1);
+		else if (i<13)
+			((BYTE*)&lf)[5*4+i] = lua_tointeger(L, -1);
+		else if (lua_tostring(L, -1))
+			lstrcpynW(lf.lfFaceName, UTF82W(lua_tostring(L, -1)), 32);
+
+		lua_pop(L,1);
+	}
+
+	lua_pushlightuserdata(L, CreateFontIndirectW(&lf));
+	return 1;
+}
+
+static int luaReleaseFont(lua_State *L)
+{
+	HFONT f = (HFONT)lua_touserdata(L, -1);
+
+	if (f)
+		DeleteObject(f);
+
+	return 0;
+}
+
 static int draw_font_core(lua_State *L)
 {
+	static HFONT default_font = create_font();
+	static RGBQUAD default_color = {255,255,255,255};
+
 	int parameter_count = -lua_gettop(L);
 	const char *text = lua_tostring(L, parameter_count+0);
+	HFONT font = (HFONT)lua_touserdata(L, parameter_count+1);
+	if (!font) font = default_font;
+	RGBQUAD color = default_color;
+	if (parameter_count == -3)
+	{
+		DWORD color_dw = lua_tointeger(L, parameter_count+2);
+		color = *(RGBQUAD*)&color_dw;
+	}
 
 	gpu_sample *sample = NULL;
-	RGBQUAD color = {255,255,255,255};
-	static HFONT font = create_font();
-	wchar_t * p = UTF82W(text);
 
-	wchar_t w[1024];
-	MultiByteToWideChar(CP_UTF8, 0, text, -1, w, 1024);
-
-
-
-	if (FAILED(g_renderer->drawFont(&sample, font, w, color)) || sample == NULL)
+	if (FAILED(g_renderer->drawFont(&sample, font, UTF82W(text), color)) || sample == NULL)
 	{
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "failed loading bitmap file");
@@ -472,6 +550,9 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("get_splayer_subtitle") = &lua_get_splayer_subtitle;
 	g_lua_manager->get_variable("get_swapeyes") = &get_swapeyes;
 	g_lua_manager->get_variable("set_swapeyes") = &set_swapeyes;
+
+	g_lua_manager->get_variable("CreateFont") = &luaCreateFont;
+	g_lua_manager->get_variable("ReleaseFont") = &luaReleaseFont;
 
 	return 0;
 }

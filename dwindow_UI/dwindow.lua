@@ -150,8 +150,8 @@ function releaseCache(is_decommit)
 	end
 end
 
-function test_get_text_bitmap(text)
-	local res, width, height = dwindow.draw_font_core(text)		-- width is also used as error msg output.
+function test_get_text_bitmap(...)
+	local res, width, height = dwindow.draw_font_core(...)		-- width is also used as error msg output.
 	if not res then
 		error(width, filename)
 		return

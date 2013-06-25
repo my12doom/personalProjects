@@ -235,13 +235,15 @@ function open:RenderThis()
 end
 
 function open:OnInitGPU()
-	self.caption = DrawText("打开文件...")
+	local font = dwindow.CreateFont({name="楷体"})
+	self.caption = DrawText("打开文件...", font, 0x00ffff)
+	dwindow.ReleaseFont(font)
 end
 
 function open:OnReleaseGPU()
 	if (self.caption and self.caption.res) then
 		dwindow.release_resource_core(self.caption.res)
-	end
+	end	
 end
 
 function open:HitTest()
