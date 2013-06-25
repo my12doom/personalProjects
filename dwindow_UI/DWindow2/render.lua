@@ -177,6 +177,29 @@ function progress:OnMouseDown(x,y,button)
 	dwindow.seek(dwindow.total()*v)
 end
 
+-- progress slider
+local progress_slider = BaseFrame:Create()
+oroot:AddChild(progress_slider)
+progress_slider:SetSize(17, 17)
+progress_slider:SetRelativeTo(CENTER, progress, LEFT)
+
+function progress_slider:RenderThis()
+	if progress:IsMouseOver() then
+		paint(0,0,17, 17, get_bitmap(lua_path .. "slider.png"))
+	end
+end
+
+function progress_slider:PreRender()
+	local v = (dwindow.tell() or 0) / (dwindow.total() or 1)
+	v = math.max(math.min(v, 1), 0)
+	local l,_,r = progress:GetAbsRect()
+	self:SetRelativeTo(CENTER, progress, LEFT, (r-l)*v, 0.5)
+end
+
+function progress_slider:HitTest()
+	return false
+end
+
 -- volume bar
 local volume = BaseFrame:Create()
 bottombar:AddChild(volume)
@@ -200,6 +223,28 @@ function volume:OnMouseDown(x,y,button)
 	dwindow.set_volume(v)
 end
 
+-- volume slider
+local volume_slider = BaseFrame:Create()
+local volume_slider = BaseFrame:Create()
+oroot:AddChild(volume_slider)
+volume_slider:SetSize(17, 17)
+volume_slider:SetRelativeTo(CENTER, volume, LEFT)
+
+function volume_slider:RenderThis()
+	paint(0,0,17, 17, get_bitmap(lua_path .. "slider.png"))
+end
+
+function volume_slider:HitTest()
+	return false;
+end
+
+function volume_slider:PreRender()
+	local l,_,r = volume:GetAbsRect()
+	self:SetRelativeTo(CENTER, volume, LEFT, (r-l)*dwindow.get_volume(), 0.5)
+end
+
+
+-- volume button
 local volume_button = BaseFrame:Create()
 bottombar:AddChild(volume_button)
 volume_button:SetRelativeTo(RIGHT, volume, LEFT, -1, 0)
@@ -243,6 +288,7 @@ end
 function open:OnReleaseGPU()
 	if (self.caption and self.caption.res) then
 		dwindow.release_resource_core(self.caption.res)
+		self.caption = nil
 	end	
 end
 
