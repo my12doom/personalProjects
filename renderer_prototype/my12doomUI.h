@@ -69,8 +69,6 @@ class ui_drawer_base
 {
 public:
 	ui_drawer_base():m_init_state(0){}
-	virtual HRESULT init(int width, int height,IDirect3DDevice9 *device);
-	virtual HRESULT uninit();
 	virtual HRESULT init_gpu(int width, int height,IDirect3DDevice9 *device) PURE;
 	virtual HRESULT init_cpu(IDirect3DDevice9 *device) PURE;
 	virtual HRESULT invalidate_gpu() PURE;

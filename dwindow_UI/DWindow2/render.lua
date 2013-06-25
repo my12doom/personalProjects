@@ -58,7 +58,7 @@ function topbar:PreRender()
 		self.item = dis
 		
 		if self.res then
-			dwindow.release_resource_core(self.res)
+			dwindow.release_resource_core(self.res.res)
 		end
 		self.res = DrawText(self.item)
 	end
@@ -239,7 +239,9 @@ function open:OnInitGPU()
 end
 
 function open:OnReleaseGPU()
-	dwindow.release_resource_core(self.caption)
+	if (self.caption and self.caption.res) then
+		dwindow.release_resource_core(self.caption.res)
+	end
 end
 
 function open:HitTest()

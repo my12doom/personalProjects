@@ -836,6 +836,8 @@ HRESULT my12doomRenderer::delete_render_targets()
 	m_swap2 = NULL;
 	m_nv3d_surface = NULL;
 	m_tex_mask = NULL;
+	if(m_Device && m_uidrawer)
+		m_uidrawer->invalidate_gpu();
 	return S_OK;
 }
 
@@ -879,7 +881,8 @@ HRESULT my12doomRenderer::create_render_targets()
 		else if (m_output_mode == out_tb)
 			tar.bottom /= 2;
 
-		if(m_Device && m_uidrawer ) m_uidrawer->init(tar.right, tar.bottom, m_Device);
+		if(m_Device && m_uidrawer)
+			m_uidrawer->init_gpu(tar.right, tar.bottom, m_Device);
 	}
 
 
@@ -1131,7 +1134,10 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			{
 				CAutoLock lck(&m_uidrawer_cs);
 				if(m_uidrawer)
-					m_uidrawer->uninit();
+				{
+					m_uidrawer->invalidate_gpu();
+					m_uidrawer->invalidate_cpu();
+				}
 			}
 
 			m_Device = NULL;
@@ -2176,8 +2182,8 @@ presant:
 	{
 		MANAGE_DEVICE;
 		static int n = timeGetTime();
-		if (timeGetTime() - n > 43)
-			printf("(%d):presant delta: %dms\n", timeGetTime(), timeGetTime()-n);
+		//if (timeGetTime() - n > 43)
+		//	printf("(%d):presant delta: %dms\n", timeGetTime(), timeGetTime()-n);
 		n = timeGetTime();
 
 
@@ -4759,7 +4765,10 @@ HRESULT my12doomRenderer::set_ui_drawer(ui_drawer_base * new_ui_drawer)
 	CAutoLock lck2(&m_frame_lock);
 	CAutoLock lck(&m_uidrawer_cs);
 	if (NULL != m_uidrawer)
-		m_uidrawer->uninit();
+	{
+		m_uidrawer->invalidate_gpu();
+		m_uidrawer->invalidate_cpu();
+	}
 
 	RECT tar = {0,0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight};
 	if (m_output_mode == out_sbs)
@@ -4769,7 +4778,11 @@ HRESULT my12doomRenderer::set_ui_drawer(ui_drawer_base * new_ui_drawer)
 
 	m_uidrawer = new_ui_drawer;
 
-	if(m_Device && m_uidrawer ) m_uidrawer->init(tar.right, tar.bottom, m_Device);
+	if(m_Device && m_uidrawer )
+	{
+		m_uidrawer->init_cpu(m_Device);
+		set_device_state(need_reset_object);
+	}
 	return S_OK;
 }
 
