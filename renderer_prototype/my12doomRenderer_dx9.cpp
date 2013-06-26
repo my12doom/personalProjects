@@ -1241,6 +1241,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 			mylog("new pool: 0x%08x\n", m_pool);
 		}
 
+		FAIL_SLEEP_RET(restore_cpu_objects());
 		FAIL_SLEEP_RET(restore_gpu_objects());
 		m_device_state = fine;	
 	}
@@ -1294,7 +1295,6 @@ HRESULT my12doomRenderer::reset()
 
 
 	invalidate_gpu_objects();
-	invalidate_cpu_objects();
 	return S_OK;
 }
 HRESULT my12doomRenderer::create_render_thread()
@@ -1514,7 +1514,13 @@ HRESULT my12doomRenderer::test_PC_level()
 // 
 	return S_OK;
 }
+HRESULT my12doomRenderer::restore_cpu_objects()
+{
+	if (m_Device && m_uidrawer)
+		m_uidrawer->init_cpu(m_Device);
 
+	return S_OK;
+}
 HRESULT my12doomRenderer::restore_gpu_objects()
 {
 	HRESULT hr;
