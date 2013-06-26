@@ -44,7 +44,7 @@ function logo:RenderThis()
 	end
 end
 
-function logo:OnMouseDown(x, y, key)
+function logo:OnClick(x, y, key)
 	if key == VK_RBUTTON then
 		dwindow.popup_menu()
 	end
@@ -65,7 +65,7 @@ function logo_hot:RenderThis()
 	end
 end
 
-function logo_hot:OnMouseDown(...)
+function logo_hot:OnClick(...)
 	if dwindow.movie_loaded then
 		return false
 	end
@@ -119,7 +119,7 @@ local function button_RenderThis(self)
 	paint(11,0,button_size+11,button_size, get_bitmap(GetCurrentLuaPath() .. self.pic[1]))
 end
 
-local function button_OnMouseDown(self)
+local function button_OnClick(self)
 	return button_functions[self.id]()
 end
 
@@ -134,7 +134,7 @@ for i=1,#button_pictures/2 do
 	toolbar_bg:AddChild(button)
 	button.pic = {button_pictures[i*2-1], button_pictures[i*2]}
 	button.RenderThis = button_RenderThis
-	button.OnMouseDown = button_OnMouseDown
+	button.OnClick = button_OnClick
 	button.name = button.pic[1]
 	button:SetRelativeTo(BOTTOMRIGHT, nil, nil, x, y)
 	button:SetSize(space_of_each_button, button_size)
@@ -166,7 +166,7 @@ function file(n)
 	return progress_pic[n]
 end
 
-function progressbar:OnMouseDown(x)
+function progressbar:OnClick(x)
 	local l,_,r = self:GetAbsRect()
 	local fv = x/(r-l)
 	dwindow.seek(dwindow.total()*fv)	

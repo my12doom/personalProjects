@@ -495,6 +495,10 @@ function OnMouseEvent(event,x,y,...)
 	local frame = focus or root:GetFrameByPoint(x,y)
 	
 	if event == "OnMouseUp" or event == "OnKillFocus" then
+		local upframe = root:GetFrameByPoint(x,y)
+		if upframe and upframe == focus then
+			upframe:OnEvent("OnMouseEvent", "OnClick", x, y, ...)
+		end
 		focus = nil
 	end
 

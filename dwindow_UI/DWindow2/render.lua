@@ -8,7 +8,7 @@ function oroot:PreRender(t, dt)
 	self:SetSize(dwindow.width, dwindow.height)
 end
 
-function oroot:OnMouseDown(x,y,button)
+function oroot:OnClick(x,y,button)
 	if button == VK_RBUTTON then
 		dwindow.show_mouse(true)
 		dwindow.popup_menu()
@@ -90,7 +90,7 @@ function leftright:RenderThis()
 	paint(0, 0, w, h, self.bmp)
 end
 
-function leftright:OnMouseDown()
+function leftright:OnClick()
 	dwindow.set_swapeyes(not dwindow.get_swapeyes())
 end
 
@@ -110,7 +110,7 @@ function b3d:RenderThis()
 	end
 end
 
-function b3d:OnMouseDown()
+function b3d:OnClick()
 	dwindow.toggle_3d()
 	return true
 end
@@ -126,7 +126,7 @@ function full:RenderThis()
 	paint(0,0,33,31, get_bitmap(lua_path .. (self:IsMouseOver() and "fullscreen_mouseover.png" or "fullscreen.png")))
 end
 
-function full:OnMouseDown()
+function full:OnClick()
 	dwindow.toggle_fullscreen()
 	return true
 end
@@ -146,7 +146,7 @@ function play:RenderThis()
 	end
 end
 
-function play:OnMouseDown()
+function play:OnClick()
 	if not dwindow.movie_loaded then
 		local file = dwindow.OpenFile()
 		if file then
@@ -286,7 +286,7 @@ function volume_button:RenderThis()
 	paint(0,0,25, 24, get_bitmap(lua_path .. (dwindow.get_volume() > 0 and "volume_button_normal.png" or "volume_button_mute.png")))
 end
 
-function volume_button:OnMouseDown()
+function volume_button:OnClick()
 	if dwindow.get_volume() > 0 then
 		self.saved_volume = dwindow.get_volume()
 		dwindow.set_volume(0)
@@ -329,7 +329,7 @@ function open:HitTest()
 	return not dwindow.movie_loaded
 end
 
-function open:OnMouseDown()
+function open:OnClick()
 	local file = dwindow.OpenFile()
 	if file then
 		playlist:play(file)
@@ -355,7 +355,7 @@ function open2:HitTest()
 	return not dwindow.movie_loaded
 end
 
-function open2:OnMouseDown()
+function open2:OnClick()
 	local m = 
 	{
 		{

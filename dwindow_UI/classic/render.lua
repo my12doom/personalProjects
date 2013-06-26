@@ -36,7 +36,7 @@ function rbutton:PreRender()
 	rbutton:SetSize(dwindow.width,dwindow.height)
 end
 
-function rbutton:OnMouseDown(x,y,button)
+function rbutton:OnClick(x,y,button)
 	if button == VK_RBUTTON then
 		alpha = 1
 		dwindow.show_mouse(true)
@@ -73,7 +73,7 @@ function logo:HitTest(x, y)
 	return dx*dx+dy*dy < r*r
 end
 
-function logo:OnMouseDown()
+function logo:OnClick()
 	alpha = 1
 	dwindow.show_mouse(true)
 	dwindow.popup_menu()
@@ -125,7 +125,7 @@ function play:RenderThis()
 	paint(0,0,14,14,res,alpha)	
 end
 
-function play:OnMouseDown()
+function play:OnClick()
 	dwindow.pause()
 end
 
@@ -141,7 +141,7 @@ function full:RenderThis()
 	paint(0,0,14,14,res,alpha)
 end
 
-function full:OnMouseDown()
+function full:OnClick()
 	print("FULL")
 	dwindow.toggle_fullscreen()
 end
@@ -163,7 +163,7 @@ function volume:RenderThis()
 	paint(0+3,0,3+34*volume,14,res,alpha)
 end
 
-function volume:OnMouseDown(x, y)
+function volume:OnClick(x, y)
 	v = math.min(math.max(0, (x-3)/34), 1)
 	dwindow.set_volume(v)
 end
@@ -180,7 +180,7 @@ function previous:RenderThis()
 	paint(0,0,14,14,res,alpha)	
 end
 
-function previous:OnMouseDown()
+function previous:OnClick()
 	playlist:previous()
 end
 
@@ -196,7 +196,7 @@ function next:RenderThis()
 	paint(0,0,14,14,res,alpha)	
 end
 
-function next:OnMouseDown()
+function next:OnClick()
 	playlist:next()
 end
 
@@ -271,7 +271,7 @@ function progress:RenderThis()
 	paint(3,0,fv*w+3,14,res,alpha)
 end
 
-function progress:OnMouseDown(x,y,button)
+function progress:OnClick(x,y,button)
 	local l,_,r=self:GetAbsRect()
 	local w = r-l
 	local v = (x-3) / w
