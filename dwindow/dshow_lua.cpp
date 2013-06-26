@@ -2,6 +2,7 @@
 #include "global_funcs.h"
 #include "dx_player.h"
 #include "open_double_file.h"
+#include "open_url.h"
 
 CCritSec cs;
 lua_manager *g_dshow_lua_manager = NULL;
@@ -40,7 +41,12 @@ static int luaOpenFolder(lua_State *L)
 
 static int luaOpenURL(lua_State *L)
 {
-	return 0;
+	wchar_t url[1024] = L"";
+	if (FAILED(open_URL(g_player->m_hexe, g_player->get_window((int)g_lua_manager->get_variable("active_view")+1), url)))
+		return 0;
+
+	lua_pushstring(L, W2UTF8(url));
+	return 1;
 }
 
 int dshow_lua_init()

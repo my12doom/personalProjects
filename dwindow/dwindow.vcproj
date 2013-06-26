@@ -1464,6 +1464,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\open_url.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\open_url.h"
+					>
+				</File>
+				<File
 					RelativePath=".\theater.cpp"
 					>
 				</File>
