@@ -2208,8 +2208,8 @@ presant:
 		else if (m_output_mode == dual_window || m_output_mode == iz3d)
 		{
 			if(m_swap1) hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, D3DPRESENT_DONOTWAIT);
-			if (FAILED(hr) && hr != DDERR_WASSTILLDRAWING)
-				set_device_state(device_lost);
+// 			if (FAILED(hr) && hr != DDERR_WASSTILLDRAWING)
+// 				set_device_state(device_lost);
 
 			if(m_swap2) if (m_swap2->Present(NULL, NULL, m_hWnd2, NULL, NULL) == D3DERR_DEVICELOST)
 				set_device_state(device_lost);
@@ -2231,8 +2231,8 @@ presant:
 			while (hr == DDERR_WASSTILLDRAWING)
 				hr = m_swap1->Present(NULL, NULL, m_hWnd, NULL, NULL);
 		// 		if (timeGetTime()-l2 > 9) mylog("Presant() cost %dms.\n", timeGetTime() - l2);
-			if (FAILED(hr))
-				set_device_state(device_lost);
+// 			if (FAILED(hr))
+// 				set_device_state(device_lost);
 
 			static int n = timeGetTime();
 			//if (timeGetTime()-n > 0)printf("delta = %d.\n", timeGetTime()-n);
