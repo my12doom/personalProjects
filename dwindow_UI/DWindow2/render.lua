@@ -1,6 +1,11 @@
 ﻿local lua_file = dwindow.loading_file
 local lua_path = GetPath(lua_file)
 
+local alpha = 0.5
+local UI_fading_time = 300
+local UI_show_time = 2000
+
+
 -- black background and right mouse reciever
 local oroot = BaseFrame:Create()
 root:AddChild(oroot)
@@ -405,4 +410,39 @@ function event:PreRender(t, dt)
 		local r, b = bottombar:GetAbsAnchorPoint(TOPRIGHT)
 		dwindow.set_movie_rect(l, t, r, b)
 	end
+end
+
+
+local mouse_hider = BaseFrame:Create()
+root:AddChild(mouse_hider)
+local last_mousemove =  0
+local mousex = -999
+local mousey = -999
+
+function mouse_hider:PreRender(t, dt)
+
+	local px, py = dwindow.get_mouse_pos()
+	if (mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 100 or ((mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 0 and alpha > 0.5) then	
+		last_mousemove = dwindow.GetTickCount()
+		mousex, mousey = dwindow.get_mouse_pos()
+	end
+		
+	local da = dt/UI_fading_time
+	local old_alpha = alpha
+	local mouse_in_pannel = (px>0 and px<dwindow.width and py>dwindow.height-44 and py<dwindow.height) -- bottombar
+	mouse_in_pannel = mouse_in_pannel or (px>0 and px<dwindow.width and py>0 and py<30)	-- topbar
+	local hide_mouse = (not mouse_in_pannel) and (t > last_mousemove + UI_show_time) and (dwindow.is_fullscreen())
+	dwindow.show_mouse(not hide_mouse or dwindow.menu_open > 0)
+	
+	if hide_mouse then
+		alpha = alpha - da
+	else
+		alpha = alpha + da
+	end
+	alpha = math.min(1, math.max(alpha, 0))
+	
+	topbar:SetRelativeTo(TOPLEFT, nil, nil, 0, -30+30*alpha)
+	topbar:SetRelativeTo(TOPRIGHT, nil, nil, 0, -30+30*alpha)
+	bottombar:SetRelativeTo(BOTTOMLEFT, nil, nil, 0, 44-44*alpha)
+	bottombar:SetRelativeTo(BOTTOMRIGHT, nil, nil, 0, 44-44*alpha)
 end
