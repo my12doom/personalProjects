@@ -1329,14 +1329,6 @@
 			Name="dx_player"
 			>
 			<File
-				RelativePath=".\dshow_lua.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\dshow_lua.h"
-				>
-			</File>
-			<File
 				RelativePath=".\dwindow.cpp"
 				>
 			</File>
@@ -1904,6 +1896,14 @@
 		<Filter
 			Name="lua"
 			>
+			<File
+				RelativePath=".\dshow_lua.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\dshow_lua.h"
+				>
+			</File>
 			<File
 				RelativePath="..\lua\my12doom_lua.cpp"
 				>

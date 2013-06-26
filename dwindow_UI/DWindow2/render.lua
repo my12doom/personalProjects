@@ -330,7 +330,7 @@ function open:HitTest()
 end
 
 function open:OnClick()
-	local file = dwindow.OpenFile()
+	local file = dialog.OpenFile()
 	if file then
 		playlist:play(file)
 	end
@@ -361,7 +361,7 @@ function open2:OnClick()
 		{
 			string = "打开URL...",
 			on_command = function()
-				local url = dwindow.OpenURL()
+				local url = dialog.OpenURL()
 				if url then
 					playlist:play(url)
 				end
@@ -370,7 +370,7 @@ function open2:OnClick()
 		{
 			string = "打开左右分离文件...",
 			on_command = function()
-				local left, right = dwindow.OpenDoubleFile()
+				local left, right = dialog.OpenDoubleFile()
 				if left and right then
 					playlist:play(left, right)
 				end
@@ -379,7 +379,7 @@ function open2:OnClick()
 		{
 			string = "打开文件夹...",
 			on_command = function()
-				local folder = dwindow.OpenFolder()
+				local folder = dialog.OpenFolder()
 				if folder then
 					playlist:play(folder)
 				end

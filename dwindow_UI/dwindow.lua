@@ -12,13 +12,13 @@ if bit32 == nil then bit32 = require("bit")end
 function GetPath(pathname)
 	if pathname == nil then return end
 	local t = string.reverse(pathname)
-	t = string.sub(t, string.find(t, "\\") or 1)
+	t = string.sub(t, string.find(t, "\\") or string.find(t, "/") or 1)
 	return string.reverse(t)
 end
 function GetName(pathname)
 	if pathname == nil then return end
 	local t = string.reverse(pathname)
-	t = string.sub(t, 1, (string.find(t, "\\")-1) or t.length)
+	t = string.sub(t, 1, ((string.find(t, "\\") or string.find(t, "/"))-1) or t.length)
 	return string.reverse(t)
 end
 local lua_file = dwindow.loading_file
@@ -41,7 +41,7 @@ function error(...)
 end
 
 
-function BeginChild(left, top, right, bottom)
+function BeginChild(left, top, right, bottom, alpha)
 	local left_unclip, top_unclip = left, top
 	left = math.max(rect[1], left)
 	top = math.max(rect[2], top)

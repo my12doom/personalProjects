@@ -7,7 +7,6 @@
 lua_State *g_L = NULL;
 CCritSec g_csL;
 lua_manager *g_lua_manager = NULL;
-const char *table_name = "dwindow";
 std::list<lua_State*> free_threads;
 
 static int lua_GetTickCount (lua_State *L) 
@@ -175,7 +174,7 @@ int dwindow_lua_init ()
 
   result = lua_toboolean(g_L, -1);  /* get result */
 
-  g_lua_manager = new lua_manager(g_L, &g_csL);
+  g_lua_manager = new lua_manager("dwindow");
   g_lua_manager->get_variable("FAILED") = &luaFAILED;
   g_lua_manager->get_variable("GetTickCount") = &lua_GetTickCount;
   g_lua_manager->get_variable("execute_luafile") = &execute_luafile;
@@ -242,12 +241,14 @@ int dwindow_lua_exit()
 	return 0;
 }
 
-lua_manager::lua_manager(lua_State *L, CCritSec *cs)
+lua_manager::lua_manager(const char* table_name)
 {
-	m_L = L;
-	m_cs = cs;
+	m_table_name = new char[strlen(table_name)+1];
+	strcpy(m_table_name, table_name);
 
-	CAutoLock lck(cs);
+	CAutoLock lck(&m_cs);
+
+	luaState L;
 
 	lua_newtable(L);
 	lua_setglobal(L, table_name);
@@ -258,6 +259,7 @@ lua_manager::~lua_manager()
 	std::list<lua_global_variable*>::iterator it;
 	for(it = m_variables.begin(); it != m_variables.end(); it++)
 		delete *it;
+	delete [] m_table_name;
 }
 
 int lua_manager::refresh()
@@ -313,10 +315,10 @@ lua_global_variable::~lua_global_variable()
 
 lua_global_variable::operator int()
 {
-	CAutoLock lck(m_manager->m_cs);
-	lua_State *L = m_manager->m_L;
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
 
-	lua_getglobal(L, table_name);
+	lua_getglobal(L, m_manager->m_table_name);
 	lua_getfield(L, -1, m_name);
 
 	int o = lua_tointeger(L, -1);
@@ -328,10 +330,10 @@ lua_global_variable::operator int()
 
 void lua_global_variable::operator=(const int in)
 {
-	CAutoLock lck(m_manager->m_cs);
-	lua_State *L = m_manager->m_L;
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
 
-	lua_getglobal(L, table_name);
+	lua_getglobal(L, m_manager->m_table_name);
 	lua_pushinteger(L, in);
 	lua_setfield(L, -2, m_name);
 	lua_pop(L, 1);
@@ -340,10 +342,10 @@ void lua_global_variable::operator=(const int in)
 
 lua_global_variable::operator bool()
 {
-	CAutoLock lck(m_manager->m_cs);
-	lua_State *L = m_manager->m_L;
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
 
-	lua_getglobal(L, table_name);
+	lua_getglobal(L, m_manager->m_table_name);
 	lua_getfield(L, -1, m_name);
 
 	int o = lua_toboolean(L, -1);
@@ -355,10 +357,10 @@ lua_global_variable::operator bool()
 
 void lua_global_variable::operator=(const bool in)
 {
-	CAutoLock lck(m_manager->m_cs);
-	lua_State *L = m_manager->m_L;
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
 
-	lua_getglobal(L, table_name);
+	lua_getglobal(L, m_manager->m_table_name);
 	lua_pushboolean(L, in ? 1 : 0);
 	lua_setfield(L, -2, m_name);
 	lua_pop(L, 1);
@@ -366,10 +368,10 @@ void lua_global_variable::operator=(const bool in)
 
 lua_global_variable::operator double()
 {
-	CAutoLock lck(m_manager->m_cs);
-	lua_State *L = m_manager->m_L;
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
 
-	lua_getglobal(L, table_name);
+	lua_getglobal(L, m_manager->m_table_name);
 	lua_getfield(L, -1, m_name);
 
 	double o = lua_tonumber(L, -1);
@@ -381,10 +383,10 @@ lua_global_variable::operator double()
 
 void lua_global_variable::operator=(const double in)
 {
-	CAutoLock lck(m_manager->m_cs);
-	lua_State *L = m_manager->m_L;
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
 
-	lua_getglobal(L, table_name);
+	lua_getglobal(L, m_manager->m_table_name);
 	lua_pushnumber(L, in);
 	lua_setfield(L, -2, m_name);
 	lua_pop(L, 1);
@@ -393,10 +395,10 @@ void lua_global_variable::operator=(const double in)
 
 lua_global_variable::operator const char*()
 {
-	CAutoLock lck(m_manager->m_cs);
-	lua_State *L = m_manager->m_L;
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
 
-	lua_getglobal(L, table_name);
+	lua_getglobal(L, m_manager->m_table_name);
 	lua_getfield(L, -1, m_name);
 
 	const char* o = lua_tostring(L, -1);
@@ -408,10 +410,10 @@ lua_global_variable::operator const char*()
 
 void lua_global_variable::operator=(const char *in)
 {
-	CAutoLock lck(m_manager->m_cs);
-	lua_State *L = m_manager->m_L;
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
 
-	lua_getglobal(L, table_name);
+	lua_getglobal(L, m_manager->m_table_name);
 	lua_pushstring(L, in);
 	lua_setfield(L, -2, m_name);
 	lua_pop(L, 1);
@@ -419,10 +421,10 @@ void lua_global_variable::operator=(const char *in)
 
 void lua_global_variable::operator=(lua_CFunction func)
 {
-	CAutoLock lck(m_manager->m_cs);
-	lua_State *L = m_manager->m_L;
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
 
-	lua_getglobal(L, table_name);
+	lua_getglobal(L, m_manager->m_table_name);
 	lua_pushcfunction(L, func);
 	lua_setfield(L, -2, m_name);
 	lua_pop(L, 1);

@@ -51,12 +51,11 @@ static int luaOpenURL(lua_State *L)
 
 int dshow_lua_init()
 {
-	luaState L;
-	//g_lua_manager = new lua_manager(L, &cs);
-	g_lua_manager->get_variable("OpenFile") = &luaOpenFile;
-	g_lua_manager->get_variable("OpenDoubleFile") = &luaOpenDoubleFile;
-	g_lua_manager->get_variable("OpenFolder") = &luaOpenFolder;
-	g_lua_manager->get_variable("OpenURL") = &luaOpenURL;
+	g_dshow_lua_manager = new lua_manager("dialog");
+	g_dshow_lua_manager->get_variable("OpenFile") = &luaOpenFile;
+	g_dshow_lua_manager->get_variable("OpenDoubleFile") = &luaOpenDoubleFile;
+	g_dshow_lua_manager->get_variable("OpenFolder") = &luaOpenFolder;
+	g_dshow_lua_manager->get_variable("OpenURL") = &luaOpenURL;
 
 	return 0;
 }

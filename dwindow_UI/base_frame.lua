@@ -74,6 +74,10 @@ function BaseFrame:SetHeight(height)
 	end
 end
 
+function BaseFrame:SetAlpha(alpha)
+	self.alpha = alpha
+end
+
 
 -- override this function to draw your frame
 function BaseFrame:RenderThis(...)

@@ -27,7 +27,7 @@ class lua_global_variable;
 class lua_manager
 {
 public:
-	lua_manager(lua_State *L, CCritSec *cs);
+	lua_manager(const char* table_name);
 	~lua_manager();
 	
 	int refresh();
@@ -36,9 +36,9 @@ public:
 
 protected:
 	friend class lua_global_variable;
-	lua_State *m_L;
-	CCritSec *m_cs;
 	std::list<lua_global_variable*> m_variables;
+	CCritSec m_cs;
+	char *m_table_name;
 };
 
 class lua_global_variable
