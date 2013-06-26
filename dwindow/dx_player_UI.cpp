@@ -187,16 +187,19 @@ HRESULT dx_player::init_gpu(int width, int height, IDirect3DDevice9 *device)
 	if (!m_ui_logo_gpu)
 	{
 		FAIL_RET(m_Device->CreateTexture(512, 512, 1, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_ui_logo_gpu, NULL));
+		FAIL_RET(m_ui_logo_cpu->AddDirtyRect(NULL));
 		FAIL_RET(m_Device->UpdateTexture(m_ui_logo_cpu, m_ui_logo_gpu));
 	}
 	if (!m_ui_tex_gpu)
 	{
 		FAIL_RET(m_Device->CreateTexture(222, 14, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_ui_tex_gpu, NULL));
+		FAIL_RET(m_ui_tex_cpu->AddDirtyRect(NULL));
 		FAIL_RET(m_Device->UpdateTexture(m_ui_tex_cpu, m_ui_tex_gpu));
 	}
 	if (!m_ui_background_gpu)
 	{
 		FAIL_RET(m_Device->CreateTexture(64, 64, 1, NULL, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_ui_background_gpu, NULL));
+		FAIL_RET(m_ui_background_cpu->AddDirtyRect(NULL));
 		FAIL_RET(m_Device->UpdateTexture(m_ui_background_cpu, m_ui_background_gpu));
 	}
 
