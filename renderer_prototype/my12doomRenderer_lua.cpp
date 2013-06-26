@@ -521,6 +521,7 @@ static int set_movie_rect(lua_State *L)
 
 int my12doomRenderer_lua_init()
 {
+	// dx9
 	g_lua_manager->get_variable("paint_core") = &paint_core;
 	g_lua_manager->get_variable("set_clip_rect_core") = &set_clip_rect_core;
 	g_lua_manager->get_variable("get_resource") = &get_resource;
@@ -529,6 +530,11 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("release_resource_core") = &release_resource_core;
 	g_lua_manager->get_variable("commit_resource_core") = &commit_resource_core;
 	g_lua_manager->get_variable("decommit_resource_core") = &decommit_resource_core;
+	g_lua_manager->get_variable("CreateFont") = &luaCreateFont;
+	g_lua_manager->get_variable("ReleaseFont") = &luaReleaseFont;
+
+
+	// dx_player
 	g_lua_manager->get_variable("get_mouse_pos") = &get_mouse_pos;
 	g_lua_manager->get_variable("play") = &play;
 	g_lua_manager->get_variable("is_playing") = &is_playing;
@@ -551,8 +557,6 @@ int my12doomRenderer_lua_init()
 	g_lua_manager->get_variable("get_swapeyes") = &get_swapeyes;
 	g_lua_manager->get_variable("set_swapeyes") = &set_swapeyes;
 
-	g_lua_manager->get_variable("CreateFont") = &luaCreateFont;
-	g_lua_manager->get_variable("ReleaseFont") = &luaReleaseFont;
 
 	return 0;
 }

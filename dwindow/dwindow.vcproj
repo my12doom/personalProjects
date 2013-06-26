@@ -1589,14 +1589,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\renderer_prototype\my12doomRenderer_lua.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\renderer_prototype\my12doomRenderer_lua.h"
-				>
-			</File>
-			<File
 				RelativePath="..\renderer_prototype\my12doomRenderer_UI.cpp"
 				>
 			</File>
@@ -1910,6 +1902,14 @@
 			</File>
 			<File
 				RelativePath="..\lua\my12doom_lua.h"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\my12doomRenderer_lua.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\renderer_prototype\my12doomRenderer_lua.h"
 				>
 			</File>
 			<Filter
