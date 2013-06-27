@@ -274,7 +274,7 @@ function grow:Stick(dt)
 end
 
 function grow:PreRender()
-	self.px, self.py = dwindow.get_mouse_pos()
+	self.px, self.py = ui.get_mouse_pos()
 	local px,py = self.px,self.py
 	
 	local r,b = toolbar_bg:GetAbsAnchorPoint(BOTTOMRIGHT)
