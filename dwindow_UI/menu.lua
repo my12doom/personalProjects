@@ -1,9 +1,6 @@
 ﻿--[[
 -- a simplified popup menu class
 -- for static menu, use BaseFrame directly
--- limitation:
--- you can have only one menu instance at a time, destroy any instance before creating new one (that should be enough for a basic program)
--- you can have only ~1024 items at max including sub items, exceeding this limit may cause undefined behavior
 
 menu_item = 
 {
@@ -90,12 +87,12 @@ local MF_MENUBARBREAK = 32
 local MF_SEPARATOR = 0x800
 local MF_OWNERDRAW = 0x100
 
-function menu_builder:Create(template)
+function menu_builder:Create(template, parent)
 	local o = {}
 	setmetatable(o, self)
 	self.__index = self
 	
-	o.handle = dwindow.CreateMenu()
+	o.handle = dwindow.CreateMenu(parent and parent.handle)
 	for _,v in ipairs(template) do
 		local flags = 0
 		flags = flags + (v.checked and MF_CHECKED or 0)
@@ -105,7 +102,7 @@ function menu_builder:Create(template)
 		flags = flags + (v.seperator and MF_SEPARATOR or 0)
 		
 		if v.sub_items then
-			local sub = menu_builder:Create(v.sub_items)
+			local sub = menu_builder:Create(v.sub_items, o)
 			dwindow.AppendSubmenu(o.handle, v.string, flags, sub.handle)
 		else
 			dwindow.AppendMenu(o.handle, v.string, flags, v)
