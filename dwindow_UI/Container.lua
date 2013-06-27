@@ -47,7 +47,7 @@ end
 
 function menu_item:OnReleaseCPU()
 	if self.res and self.res.res then
-		dwindow.release_resource_core(self.res.res)
+		dx9.release_resource_core(self.res.res)
 	end
 	self.res = nil
 end

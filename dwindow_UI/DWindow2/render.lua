@@ -66,7 +66,7 @@ function topbar:PreRender()
 		self.item = dis
 		
 		if self.res then
-			dwindow.release_resource_core(self.res.res)
+			dx9.release_resource_core(self.res.res)
 		end
 		self.res = DrawText(self.item)
 	end
@@ -318,14 +318,14 @@ function open:RenderThis()
 end
 
 function open:OnInitGPU()
-	local font = dwindow.CreateFont({name="楷体"})
+	local font = dx9.CreateFont({name="宋体", weight=0, height=13})
 	self.caption = DrawText("打开文件...", font, 0x00ffff)
-	dwindow.ReleaseFont(font)
+	dx9.ReleaseFont(font)
 end
 
 function open:OnReleaseGPU()
 	if (self.caption and self.caption.res) then
-		dwindow.release_resource_core(self.caption.res)
+		dx9.release_resource_core(self.caption.res)
 		self.caption = nil
 	end	
 end
@@ -404,11 +404,11 @@ local event = BaseFrame:Create()
 oroot:AddChild(event)
 function event:PreRender(t, dt)
 	if player.is_fullscreen() then
-		dwindow.set_movie_rect(0, 0, ui.width, ui.height)
+		dx9.set_movie_rect(0, 0, ui.width, ui.height)
 	else
 		local l, t = topbar:GetAbsAnchorPoint(BOTTOMLEFT)
 		local r, b = bottombar:GetAbsAnchorPoint(TOPRIGHT)
-		dwindow.set_movie_rect(l, t, r, b)
+		dx9.set_movie_rect(l, t, r, b)
 	end
 end
 

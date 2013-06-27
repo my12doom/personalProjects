@@ -2,11 +2,6 @@
 local rects = {}
 local bitmapcache = {}
 
-if paint_core == nil then paint_core = function() end end
-if get_resource == nil then get_resource = function() end end
-if load_bitmap_core == nil then load_bitmap_core = function() end end
-if bit32 == nil then bit32 = require("bit")end
-
 
 -- helper functions
 function GetPath(pathname)
@@ -47,16 +42,16 @@ function BeginChild(left, top, right, bottom, alpha)
 	top = math.max(rect[2], top)
 	right = math.min(rect[3], right)
 	bottom = math.min(rect[4], bottom)
-	local new_rect = {left, top, right, bottom, left_unclip, top_unclip}
+	local new_rect = {left, top, right, bottom, left_unclip, top_unclip, alpha}
 	table.insert(rects, rect)
 	rect = new_rect
 
-	dwindow.set_clip_rect_core(left, top, right, bottom)
+	dx9.set_clip_rect_core(left, top, right, bottom)
 end
 
 function EndChild(left, top, right, bottom)
 	rect = table.remove(rects)
-	dwindow.set_clip_rect_core(rects[1], rects[2], rects[3], rects[4])
+	dx9.set_clip_rect_core(rects[1], rects[2], rects[3], rects[4])
 end
 
 function IsCurrentDrawingVisible()
@@ -140,18 +135,18 @@ end
 function releaseCache(is_decommit)
 	if is_decommit then
 		for _,v in pairs(bitmapcache) do
-			dwindow.decommit_resource_core(v.res)
+			dx9.decommit_resource_core(v.res)
 		end
 	else
 		for _,v in pairs(bitmapcache) do
-			dwindow.release_resource_core(v.res)
+			dx9.release_resource_core(v.res)
 			bitmapcache = {}
 		end
 	end
 end
 
 function test_get_text_bitmap(...)
-	local res, width, height = dwindow.draw_font_core(...)		-- width is also used as error msg output.
+	local res, width, height = dx9.draw_font_core(...)		-- width is also used as error msg output.
 	if not res then
 		error(width, filename)
 		return
@@ -169,7 +164,7 @@ DrawText = test_get_text_bitmap
 function get_bitmap(filename, reload)
 	if reload then unload_bitmap(filename) end
 	if bitmapcache[filename] == nil then
-		local res, width, height = dwindow.load_bitmap_core(filename)		-- width is also used as error msg output.
+		local res, width, height = dx9.load_bitmap_core(filename)		-- width is also used as error msg output.
 
 		bitmapcache[filename] = {res = res, width = width, height = height, filename=filename}
 		if not res then
@@ -194,9 +189,9 @@ function unload_bitmap(filename, is_decommit)
 	if not tbl or type(tbl)~="table" then return end
 
 	if is_decommit then
-		dwindow.decommit_resource_core(bitmapcache[filename].res)
+		dx9.decommit_resource_core(bitmapcache[filename].res)
 	else
-		dwindow.release_resource_core(bitmapcache[filename].res)
+		dx9.release_resource_core(bitmapcache[filename].res)
 		bitmapcache[filename] = nil
 	end
 end
@@ -221,7 +216,7 @@ function paint(left, top, right, bottom, bitmap, alpha, resampling_method)
 	if not bitmap or not bitmap.res then return end
 	local x,y  = rect[5], rect[6]
 	local a = alpha or 1.0
-	return dwindow.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap)
+	return dx9.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap)
 end
 
 -- native threading support

@@ -6,6 +6,7 @@
 #include "..\dwindow\dx_player.h"
 
 extern my12doomRenderer *g_renderer;
+lua_manager *g_lua_dx9_manager = NULL;
 
 int my12doomRenderer_lua_loadscript();
 
@@ -298,17 +299,18 @@ static int set_movie_rect(lua_State *L)
 int my12doomRenderer_lua_init()
 {
 	// dx9
-	g_lua_manager->get_variable("paint_core") = &paint_core;
-	g_lua_manager->get_variable("set_clip_rect_core") = &set_clip_rect_core;
-	g_lua_manager->get_variable("get_resource") = &get_resource;
-	g_lua_manager->get_variable("load_bitmap_core") = &load_bitmap_core;
-	g_lua_manager->get_variable("draw_font_core") = &draw_font_core;
-	g_lua_manager->get_variable("release_resource_core") = &release_resource_core;
-	g_lua_manager->get_variable("commit_resource_core") = &commit_resource_core;
-	g_lua_manager->get_variable("decommit_resource_core") = &decommit_resource_core;
-	g_lua_manager->get_variable("CreateFont") = &luaCreateFont;
-	g_lua_manager->get_variable("ReleaseFont") = &luaReleaseFont;
-	g_lua_manager->get_variable("set_movie_rect") = &set_movie_rect;
+	g_lua_dx9_manager = new lua_manager("dx9");
+	g_lua_dx9_manager->get_variable("paint_core") = &paint_core;
+	g_lua_dx9_manager->get_variable("set_clip_rect_core") = &set_clip_rect_core;
+	g_lua_dx9_manager->get_variable("get_resource") = &get_resource;
+	g_lua_dx9_manager->get_variable("load_bitmap_core") = &load_bitmap_core;
+	g_lua_dx9_manager->get_variable("draw_font_core") = &draw_font_core;
+	g_lua_dx9_manager->get_variable("release_resource_core") = &release_resource_core;
+	g_lua_dx9_manager->get_variable("commit_resource_core") = &commit_resource_core;
+	g_lua_dx9_manager->get_variable("decommit_resource_core") = &decommit_resource_core;
+	g_lua_dx9_manager->get_variable("CreateFont") = &luaCreateFont;
+	g_lua_dx9_manager->get_variable("ReleaseFont") = &luaReleaseFont;
+	g_lua_dx9_manager->get_variable("set_movie_rect") = &set_movie_rect;
 
 
 	// dx_player
