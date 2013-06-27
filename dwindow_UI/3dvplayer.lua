@@ -190,7 +190,7 @@ function load_another(n)
 	playlist:play(v3dplayer.video_server .. highest)
 	
 	if movie.caption and movie.caption ~= "" then
-		dwindow.load_subtitle(v3dplayer.subtitle_url .. movie.caption)
+		player.load_subtitle(v3dplayer.subtitle_url .. movie.caption)
 	end
 	
 	--printtable(movie)

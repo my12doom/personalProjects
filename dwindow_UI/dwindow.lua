@@ -76,8 +76,8 @@ function OnDirectshowEvents(event_code, param1, param2)
 	local EC_COMPLETE = 1
 	if event_code == EC_COMPLETE then
 		if playlist:current_pos() >= playlist:count() then
-			dwindow.stop()
-			dwindow.seek(0)
+			player.stop()
+			player.seek(0)
 		else
 			playlist:next()
 		end

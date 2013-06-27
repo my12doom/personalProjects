@@ -58,7 +58,7 @@ function playlist:play_item(n)
 	
 	playing = n
 		
-	return dwindow.reset_and_loadfile(list[n].L, list[n].R)
+	return player.reset_and_loadfile(list[n].L, list[n].R)
 end
 
 function playlist:item(n)

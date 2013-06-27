@@ -1,4 +1,4 @@
 #pragma once
 #include "..\lua\my12doom_lua.h"
 
-int dshow_lua_init();
+int ui_lua_init();

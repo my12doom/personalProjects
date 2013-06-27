@@ -1,9 +1,4 @@
 ﻿-- Base Frame
-local lua_file = dwindow.loading_file
-local lua_path = GetPath(lua_file)
-local function GetCurrentLuaPath(offset)
-	return lua_path
-end
 
 LEFT = 1
 RIGHT = 2
@@ -398,7 +393,7 @@ function BaseFrame:CalculateAbsRect()
 				ycenter = y
 			end
 		else
-			left, top, right, bottom = 0,0,dwindow.width or 500,dwindow.height or 500		-- use screen as default relative_to frame if no parent & relative (mostly the root)
+			left, top, right, bottom = 0,0,ui.width or 500,ui.height or 500		-- use screen as default relative_to frame if no parent & relative (mostly the root)
 		end	
 	end
 	
@@ -485,7 +480,7 @@ function BaseFrame:OnDropFile(x, y, ...)
 end
 
 function BaseFrame:IsMouseOver()
-	return self == root:GetFrameByPoint(dwindow.get_mouse_pos())
+	return self == root:GetFrameByPoint(ui.get_mouse_pos())
 end
 
 

@@ -4,285 +4,244 @@
 #include "open_double_file.h"
 #include "open_url.h"
 
-CCritSec cs;
-lua_manager *g_dshow_lua_manager = NULL;
+lua_manager *g_player_lua_manager = NULL;
 extern dx_player *g_player;
 
-class menu_holder_window
+
+
+extern dx_player *g_player;
+
+static int pause(lua_State *L)
 {
-public:
+	g_player->pause();
 
-	HWND m_hwnd;
-	HMENU m_menu;	// use this thing to config...
-	menu_holder_window(menu_holder_window *root = NULL);
-	~menu_holder_window();
-	int & uid() {return m_root ? m_root->uid() : m_uid;}
-	std::vector<int> & id2tbl() {return m_root ? m_root->id2tbl() : m_id2tbl;}
-protected:
-
-	std::vector<int> m_id2tbl;
-	std::vector<menu_holder_window*> m_subs;
-	int m_uid;
-	menu_holder_window *m_root;
-	static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-};
-
-static int luaOpenFile(lua_State *L)
+	return 0;
+}
+static int play(lua_State *L)
 {
-	wchar_t out[1024] = L"";
-	if (!open_file_dlg(out, g_player->get_window((int)g_lua_manager->get_variable("active_view")+1)))
-		return 0;
+	g_player->play();
 
-	lua_pushstring(L, W2UTF8(out));
+	return 0;
+}
+
+static int stop(lua_State *L)
+{
+	g_player->stop();
+
+	return 0;
+}
+
+static int toggle_fullscreen(lua_State *L)
+{
+	g_player->toggle_fullscreen();
+
+	return 0;
+}
+static int toggle_3d(lua_State *L)
+{
+	g_player->toggle_force2d();
+
+	return 0;
+}
+static int get_force2d(lua_State *L)
+{
+	bool b;
+
+	g_player->get_force_2d(&b);
+
+	lua_pushboolean(L, b);
+
+	return 1;
+}
+static int set_force2d(lua_State *L)
+{
+	bool b = lua_toboolean(L, -1);
+
+	g_player->set_force_2d(b);
+
+	return 0;
+}
+
+static int is_playing(lua_State *L)
+{
+	lua_pushboolean(L, g_player->is_playing());
+
+	return 1;
+}
+static int get_swapeyes(lua_State *L)
+{
+	bool b = false;
+	g_player->get_swap_eyes(&b);
+	lua_pushboolean(L, b);
+
+	return 1;
+}
+static int set_swapeyes(lua_State *L)
+{
+	g_player->set_swap_eyes(lua_toboolean(L, -1));
+
+	lua_pushboolean(L, 1);
 	return 1;
 }
 
-static int luaOpenDoubleFile(lua_State *L)
+static int is_fullscreen(lua_State *L)
 {
-	wchar_t left[1024] = L"", right[1024] = L"";
-	if (FAILED(open_double_file(g_player->m_hexe, g_player->get_window((int)g_lua_manager->get_variable("active_view")+1), left, right)))
+	lua_pushboolean(L, g_player->is_fullsceen(1));
+
+	return 1;
+}
+
+static int tell(lua_State *L)
+{
+	int t = 0;
+	g_player->tell(&t);
+	lua_pushinteger(L, t);
+
+	return 1;
+}
+
+static int total(lua_State *L)
+{
+	int t = 0;
+	g_player->total(&t);
+	lua_pushinteger(L, t);
+
+	return 1;
+}
+
+static int seek(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	if (parameter_count >= 0)
 		return 0;
 
-	lua_pushstring(L, W2UTF8(left));
-	lua_pushstring(L, W2UTF8(right));
+	int target = lua_tonumber(L, parameter_count+0);
+	g_player->seek(target);
+
+	lua_pushboolean(L, TRUE);
+	return 1;
+}
+
+
+static int get_volume(lua_State *L)
+{
+	double v = 0;
+	g_player->get_volume(&v);
+	lua_pushnumber(L, v);
+
+	return 1;
+}
+static int set_volume(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	if (parameter_count >= 0)
+		return 0;
+
+	double v = lua_tonumber(L, parameter_count+0);
+	g_player->set_volume(v);
+
+	lua_pushboolean(L, TRUE);
+	return 1;
+}
+
+static int reset_and_loadfile(lua_State *L)
+{
+	int n = lua_gettop(L);
+	const char *filename1 = lua_tostring(L, -n+0);
+	const char *filename2 = lua_tostring(L, -n+1);
+	const bool stop = lua_isboolean(L, -n+2) ? lua_toboolean(L, -n+2) : false;
+
+	HRESULT hr = g_player->reset_and_loadfile_core(filename1 ? UTF82W(filename1) : NULL, filename2 ? UTF82W(filename2) : NULL, stop);
+
+	lua_pushboolean(L, SUCCEEDED(hr));
+	lua_pushinteger(L, hr);
 	return 2;
 }
 
-static int luaOpenFolder(lua_State *L)
+static int load_subtitle(lua_State *L)
 {
-	wchar_t out[1024] = L"";
-	if (!browse_folder(out, g_player->get_window((int)g_lua_manager->get_variable("active_view")+1)))
+	const char *filename = lua_tostring(L, -1);
+	const bool reset = lua_isboolean(L, -2) ? lua_toboolean(L, -2) : false;
+
+	HRESULT hr = g_player->load_subtitle(filename ? UTF82W(filename) : NULL, reset);
+
+	lua_pushboolean(L, SUCCEEDED(hr));
+	lua_pushinteger(L, hr);
+	return 2;
+}
+
+static int show_mouse(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	if (parameter_count >= 0)
 		return 0;
 
-	lua_pushstring(L, W2UTF8(out));
+	bool v = lua_toboolean(L, parameter_count+0);
+	g_player->show_mouse_core(v);
+
+	lua_pushboolean(L, TRUE);
 	return 1;
 }
-
-static int luaOpenURL(lua_State *L)
+static int popup_menu(lua_State *L)
 {
-	wchar_t url[1024] = L"";
-	if (FAILED(open_URL(g_player->m_hexe, g_player->get_window((int)g_lua_manager->get_variable("active_view")+1), url)))
+	g_player->popup_menu(g_player->get_window(1));
+
+	return 0;
+}
+
+static int lua_get_splayer_subtitle(lua_State *L)
+{
+	int parameter_count = lua_gettop(L);
+	if (parameter_count < 1 || lua_tostring(L, -parameter_count) == NULL)
 		return 0;
 
-	lua_pushstring(L, W2UTF8(url));
-	return 1;
-}
-
-static int luaCreateMenu(lua_State *L)
-{
-	menu_holder_window *root = (menu_holder_window*)lua_touserdata(L, -1);
-	menu_holder_window *p = new menu_holder_window(root);
-
-	lua_pushlightuserdata(L, p);
-	return 1;
-}
-static int luaAppendMenu(lua_State *L)
-{
-	int n = lua_gettop(L);
-	if (n<4)
-		return 0;	// invalid parameter count
-
-	menu_holder_window * handle = (menu_holder_window *)lua_touserdata(L, -n);
-	const char* string = lua_tostring(L, -n+1);
-	DWORD flags = lua_tointeger(L, -n+2);
-	int func = luaL_ref(L, LUA_REGISTRYINDEX);
-
-	AppendMenuW(handle->m_menu, (flags | MF_STRING) & ~MF_POPUP, handle->uid(), UTF82W(string));
-	handle->id2tbl().push_back(func);
-	handle->uid()++;
-
-	lua_pushboolean(L, 1);
-	return 1;
-}
-
-static int luaAppendSubmenu(lua_State *L)
-{
-	int n = lua_gettop(L);
-	if (n<4)
-		return 0;	// invalid parameter count
-
-	menu_holder_window * handle = (menu_holder_window *)lua_touserdata(L, -n);
-	const char* string = lua_tostring(L, -n+1);
-	DWORD flags = lua_tointeger(L, -n+2);
-	menu_holder_window * sub_handle = (menu_holder_window *)lua_touserdata(L, -n+3);
-
-	AppendMenuW(handle->m_menu, (flags | MF_STRING | MF_POPUP), (UINT_PTR)sub_handle->m_menu, UTF82W(string));
-
-	lua_pushboolean(L, 1);
-	return 1;
-}
-
-static int luaPopupMenu(lua_State *L)
-{
-	int n = lua_gettop(L);
-	if (n<3)
-		return 0;	// invalid parameter count
-	menu_holder_window * handle = (menu_holder_window *)lua_touserdata(L, -n+0);
-	int dx = lua_tointeger(L, -n+1);
-	int dy = lua_tointeger(L, -n+2);
-	POINT mouse_pos;
-	GetCursorPos(&mouse_pos);
-	g_player->m_dialog_open ++;
-	BOOL o = TrackPopupMenu(handle->m_menu, TPM_TOPALIGN | TPM_LEFTALIGN, mouse_pos.x+dx, mouse_pos.y+dy, 0, handle->m_hwnd, NULL);
-	g_player->m_dialog_open --;
-
-	return 0;
-}
-static int luaDestroyMenu(lua_State *L)
-{
-	menu_holder_window * handle = (menu_holder_window *)lua_touserdata(L, -1);
-
-	if (handle)
-		PostMessage(handle->m_hwnd, WM_CLOSE, 0, 0);		// send deconstructors message to the end of message queue (after WM_COMMAND sent by TrackPopupMenu())
-
-	return 0;
-}
-
-int dshow_lua_init()
-{
-	g_dshow_lua_manager = new lua_manager("dialog");
-	g_dshow_lua_manager->get_variable("OpenFile") = &luaOpenFile;
-	g_dshow_lua_manager->get_variable("OpenDoubleFile") = &luaOpenDoubleFile;
-	g_dshow_lua_manager->get_variable("OpenFolder") = &luaOpenFolder;
-	g_dshow_lua_manager->get_variable("OpenURL") = &luaOpenURL;
-
-
-	// menu
-	g_lua_manager->get_variable("CreateMenu") = &luaCreateMenu;
-	g_lua_manager->get_variable("AppendMenu") = &luaAppendMenu;
-	g_lua_manager->get_variable("AppendSubmenu") = &luaAppendSubmenu;
-	g_lua_manager->get_variable("DestroyMenu") = &luaDestroyMenu;
-	g_lua_manager->get_variable("PopupMenu") = &luaPopupMenu;
-
-	return 0;
-}
-
-
-
-menu_holder_window::menu_holder_window(menu_holder_window *root)
-:m_root(root)
-,m_uid(0)
-,m_hwnd(NULL)
-,m_menu(CreatePopupMenu())
-{
-	if (!root)
+	UTF82W filename (lua_tostring(L, -parameter_count));
+	const wchar_t *langs[16] = {L"eng", L"", NULL};
+	wchar_t tmp[16][200];
+	for(int i=1; i<parameter_count && i<16; i++)
 	{
-		HINSTANCE hinstance = GetModuleHandle(NULL);
-		WNDCLASSEX wcx;
-		wcx.cbSize = sizeof(wcx);
-		wcx.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;// redraw if size changes 
-		wcx.lpfnWndProc = MainWndProc;     // points to window procedure 
-		wcx.cbClsExtra = 0;                // no extra class memory 
-		wcx.cbWndExtra = 0;                // no extra window memory 
-		wcx.hInstance = hinstance;         // handle to instance 
-		wcx.hIcon = LoadIcon(NULL, IDI_APPLICATION);// predefined app. icon 
-		wcx.hCursor = LoadCursor(NULL, IDC_ARROW);  // predefined arrow 
-		wcx.hbrBackground = NULL;
-		wcx.lpszMenuName =  _T("NoMenu");    // name of menu resource 
-		wcx.lpszClassName = _T("MenuHolderClass");  // name of window class 
-		wcx.hIconSm = (HICON)LoadImage(hinstance, // small class icon 
-			MAKEINTRESOURCE(IDI_ICON1),
-			IMAGE_ICON, 
-			GetSystemMetrics(SM_CXSMICON), 
-			GetSystemMetrics(SM_CYSMICON), 
-			LR_DEFAULTCOLOR);
-
-		// Register the window class. 
-		if (!RegisterClassEx(&wcx))
-			;//return;
-
-		HWND hwnd; 	// Create the main window. 
-		hwnd = CreateWindow( 
-			_T("MenuHolderClass"),        // name of window class 
-			_T(""),					 // title-bar string 
-			WS_OVERLAPPEDWINDOW, // top-level window 
-			CW_USEDEFAULT,       // default horizontal position 
-			CW_USEDEFAULT,       // default vertical position 
-			CW_USEDEFAULT,       // default width 
-			CW_USEDEFAULT,       // default height 
-			(HWND) NULL,         // no owner window 
-			(HMENU) NULL,        // use class menu 
-			hinstance,           // handle to application instance 
-			(LPVOID) NULL);      // no window-creation data 
-
-		if (!hwnd) 
-			return; 
-
-		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
-
-		m_hwnd = hwnd;
-
-		// Show the window and send a WM_PAINT message to the window 
-		// procedure.
-		SendMessage(hwnd, WM_INITDIALOG, 0, 0);
-		ShowWindow(hwnd, SW_HIDE);
-		UpdateWindow(hwnd);
-	}
-	else
-	{
-		root->m_subs.push_back(this);
-	}
-}
-
-menu_holder_window::~menu_holder_window()
-{
-	DestroyWindow(m_hwnd);
-
- 	if (!m_root)
-		UnregisterClass(_T("MenuHolderClass"), GetModuleHandle(NULL));
-
-	luaState L;
-	for(std::vector<int>::iterator i = m_id2tbl.begin(); i!= m_id2tbl.end(); ++i)
-		luaL_unref(L, LUA_REGISTRYINDEX, *i);
-	for(std::vector<menu_holder_window*>::iterator i = m_subs.begin(); i!= m_subs.end(); ++i)
-		delete *i;
-}
-
-LRESULT CALLBACK menu_holder_window::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	LRESULT lr = S_FALSE;
-	menu_holder_window *_this = NULL;
-	_this = (menu_holder_window*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-	if (!_this)
-		return DefWindowProc(hWnd, message, wParam, lParam);
-
-	int xPos = GET_X_LPARAM(lParam);
-	int yPos = GET_Y_LPARAM(lParam);
-
-	switch (message)
-	{
-	case WM_CLOSE:
-		delete _this;
-		break;
-
-	case WM_COMMAND:
-		{
-			int id = LOWORD(wParam);
-			luaState L;
-			int refid = _this->id2tbl()[id];
-			lua_rawgeti(L, LUA_REGISTRYINDEX, refid);
-			if (lua_istable(L, -1))
-			{
-				lua_getfield(L, -1, "on_command");
-				if (lua_isfunction(L, -1))
-				{
-					lua_insert(L, -2);
-					lua_mypcall(L, 1, 0, 0);
-				}
-			}
-			lua_settop(L, 0);
-
-			DestroyWindow(hWnd);
-
-			return 0;
-		}
-		break;
-
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);;
+		wcscpy(tmp[i-1], UTF82W(lua_tostring(L, -parameter_count+i)));
+		langs[i-1] = tmp[i-1];
 	}
 
-	if (lr == S_FALSE)
-		return DefWindowProc(hWnd, message, wParam, lParam);
+	wchar_t out[5000] = {0};
+	get_splayer_subtitle(filename, out, langs);
+
+	wchar_t *outs[50] = {0};
+	int result_count = wcsexplode(out, L"|", outs, 50);
+
+	for(int i=0; i<result_count; i++)
+		lua_pushstring(L, W2UTF8(outs[i]));
+
+	for(int i=0; i<50; i++)
+		if (outs[i])
+			free(outs[i]);
+
+	return result_count;
+}
+
+int player_lua_init()
+{
+	g_player_lua_manager = new lua_manager("player");
+	g_player_lua_manager->get_variable("play") = &play;
+	g_player_lua_manager->get_variable("pause") = &pause;
+	g_player_lua_manager->get_variable("stop") = &stop;
+	g_player_lua_manager->get_variable("tell") = &tell;
+	g_player_lua_manager->get_variable("total") = &total;
+	g_player_lua_manager->get_variable("seek") = &seek;
+	g_player_lua_manager->get_variable("is_playing") = &is_playing;
+	g_player_lua_manager->get_variable("reset_and_loadfile") = &reset_and_loadfile;
+	g_player_lua_manager->get_variable("load_subtitle") = &load_subtitle;
+	g_player_lua_manager->get_variable("is_fullscreen") = &is_fullscreen;
+	g_player_lua_manager->get_variable("toggle_fullscreen") = &toggle_fullscreen;
+	g_player_lua_manager->get_variable("toggle_3d") = &toggle_3d;
+	g_player_lua_manager->get_variable("get_swapeyes") = &get_swapeyes;
+	g_player_lua_manager->get_variable("set_swapeyes") = &set_swapeyes;
+	g_player_lua_manager->get_variable("get_volume") = &get_volume;
+	g_player_lua_manager->get_variable("set_volume") = &set_volume;
+	g_player_lua_manager->get_variable("show_mouse") = &show_mouse;
+	g_player_lua_manager->get_variable("popup_menu") = &popup_menu;
+	g_player_lua_manager->get_variable("get_splayer_subtitle") = &lua_get_splayer_subtitle;
+
 	return 0;
 }

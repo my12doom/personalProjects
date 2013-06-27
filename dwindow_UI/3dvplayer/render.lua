@@ -46,7 +46,7 @@ end
 
 function logo:OnClick(x, y, key)
 	if key == VK_RBUTTON then
-		dwindow.popup_menu()
+		player.popup_menu()
 	end
 	
 	return false
@@ -69,7 +69,7 @@ function logo_hot:OnClick(...)
 	if dwindow.movie_loaded then
 		return false
 	end
-	dwindow.popup_menu()
+	player.popup_menu()
 	return true
 end
 
@@ -101,13 +101,13 @@ local button_pictures =
 
 local button_functions = 
 {
-	dwindow.toggle_fullscreen,
-	dwindow.set_volume,
+	player.toggle_fullscreen,
+	player.set_volume,
 	playlist.next,
-	dwindow.pause,
+	player.pause,
 	playlist.previous,
 	dwindow.reset,
-	dwindow.toggle_3d,
+	player.toggle_3d,
 }
 
 
@@ -169,13 +169,13 @@ end
 function progressbar:OnClick(x)
 	local l,_,r = self:GetAbsRect()
 	local fv = x/(r-l)
-	dwindow.seek(dwindow.total()*fv)	
+	player.seek(player.total()*fv)	
 end
 
 function progressbar:RenderThis()
 	local l,t,r,b = self:GetAbsRect()
 	l,r,t,b = 0,r-l,0,b-t
-	local fv = dwindow.tell() / dwindow.total()
+	local fv = player.tell() / player.total()
 	if fv > 1 then fv = 1 end
 	if fv < 0 then fv = 0 end
 	local v = fv * r
@@ -210,8 +210,8 @@ number_current:SetRelativeTo(BOTTOMLEFT, nil, nil, numbers_left_margin, - number
 number_current:SetSize(numbers_width * 8, numbers_height)
 
 function number_current:RenderThis()
-	local t = dwindow.total()
-	if self.name == "number_current" then t= dwindow.tell() end
+	local t = player.total()
+	if self.name == "number_current" then t= player.tell() end
 	local ms = t % 1000
 	local s = t / 1000
 	local h = (s / 3600) % 100

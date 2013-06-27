@@ -12,15 +12,15 @@ local UI_show_time = 2000
 local bg = BaseFrame:Create()
 root:AddChild(bg)
 bg:SetRelativeTo(BOTTOMLEFT)
-bg:SetSize(dwindow.width, 64)
+bg:SetSize(ui.width, 64)
 
 function bg:PreRender()
-	bg:SetSize(dwindow.width, 64)
+	bg:SetSize(ui.width, 64)
 end
 
 function bg:RenderThis()
 	local res = get_bitmap(GetCurrentLuaPath() .. "bg.png")
-	paint(0,0,dwindow.width,64,res,alpha)
+	paint(0,0,ui.width,64,res,alpha)
 end
 
 function bg:HitTest()
@@ -30,17 +30,17 @@ end
 local rbutton = BaseFrame:Create()
 root:AddChild(rbutton)
 rbutton:SetRelativeTo(CENTER)
-rbutton:SetSize(dwindow.width,dwindow.height)
+rbutton:SetSize(ui.width,ui.height)
 
 function rbutton:PreRender()
-	rbutton:SetSize(dwindow.width,dwindow.height)
+	rbutton:SetSize(ui.width,ui.height)
 end
 
 function rbutton:OnClick(x,y,button)
 	if button == VK_RBUTTON then
 		alpha = 1
-		dwindow.show_mouse(true)
-		dwindow.popup_menu()
+		player.show_mouse(true)
+		player.popup_menu()
 		return true
 	end
 end
@@ -50,7 +50,7 @@ local logo = BaseFrame:Create()
 rbutton:AddChild(logo)
 
 function logo:PreRender()
-	self.w = math.min(math.min(dwindow.width, dwindow.height-40)*3/5, 512)
+	self.w = math.min(math.min(ui.width, ui.height-40)*3/5, 512)
 	logo:SetRelativeTo(CENTER, rbutton, CENTER, 0.0125*self.w,-20)
 	logo:SetSize(self.w+0.025*self.w, self.w)	
 end
@@ -75,8 +75,8 @@ end
 
 function logo:OnClick()
 	alpha = 1
-	dwindow.show_mouse(true)
-	dwindow.popup_menu()
+	player.show_mouse(true)
+	player.popup_menu()
 	return true
 end
 
@@ -97,9 +97,9 @@ function mouse_hider:PreRender(t, dt)
 		
 	local da = dt/UI_fading_time
 	local old_alpha = alpha
-	local mouse_in_pannel = px>0 and px<dwindow.width and py>dwindow.height-64 and py<dwindow.height
+	local mouse_in_pannel = px>0 and px<ui.width and py>ui.height-64 and py<ui.height
 	local hide_mouse = not mouse_in_pannel and (t > last_mousemove + UI_show_time)
-	dwindow.show_mouse(not hide_mouse or dwindow.menu_open > 0)
+	player.show_mouse(not hide_mouse or dwindow.menu_open > 0)
 	
 	if hide_mouse then
 		alpha = alpha - da
@@ -117,7 +117,7 @@ play:SetSize(14, 14)
 
 function play:RenderThis()
 	local res = get_bitmap(GetCurrentLuaPath() .. "ui.png")
-	if dwindow.is_playing() then
+	if player.is_playing() then
 		set_bitmap_rect(res, 110,0,110+14,14)
 	else
 		set_bitmap_rect(res, 96,0,96+14,14)
@@ -126,7 +126,7 @@ function play:RenderThis()
 end
 
 function play:OnClick()
-	dwindow.pause()
+	player.pause()
 end
 
 -- Fullscreen button
@@ -143,7 +143,7 @@ end
 
 function full:OnClick()
 	print("FULL")
-	dwindow.toggle_fullscreen()
+	player.toggle_fullscreen()
 end
 
 -- Volume
@@ -153,7 +153,7 @@ volume:SetRelativeTo(RIGHT, full, LEFT, -14+3, 0)
 volume:SetSize(34+6,14)							--本应该是34x14, 宽松3个像素来方便0%和100%
 
 function volume:RenderThis()
-	local volume =  dwindow.get_volume()
+	local volume =  player.get_volume()
 	volume = math.min(volume, 1)
 	volume = math.max(volume, 0)
 	local res = get_bitmap(GetCurrentLuaPath() .. "ui.png")
@@ -165,7 +165,7 @@ end
 
 function volume:OnClick(x, y)
 	v = math.min(math.max(0, (x-3)/34), 1)
-	dwindow.set_volume(v)
+	player.set_volume(v)
 end
 
 -- Previous button
@@ -207,7 +207,7 @@ number_current:SetRelativeTo(LEFT, next, RIGHT, 14)
 number_current:SetSize(9*5+6*2,14)
 
 function number_current:GetTime()
-	return dwindow.tell()
+	return player.tell()
 end
 
 function number_current:RenderThis()
@@ -247,7 +247,7 @@ number_total:SetRelativeTo(RIGHT, volume, LEFT, -14+3)
 number_total:SetSize(9*5+6*2,14)
 number_total.RenderThis = number_current.RenderThis
 function number_total:GetTime()
-	return dwindow.total()
+	return player.total()
 end
 
 
@@ -261,7 +261,7 @@ progress:SetHeight(14)
 function progress:RenderThis()
 	local l,_,r=self:GetAbsRect()
 	local w = r-l
-	local fv = dwindow.tell() / dwindow.total()
+	local fv = player.tell() / player.total()
 	fv = math.max(0,math.min(fv,1))
 	
 	local res = get_bitmap(GetCurrentLuaPath() .. "ui.png")
@@ -277,5 +277,5 @@ function progress:OnClick(x,y,button)
 	local v = (x-3) / w
 	v = math.max(0,math.min(v,1))
 	
-	dwindow.seek(dwindow.total()*v)
+	player.seek(player.total()*v)
 end

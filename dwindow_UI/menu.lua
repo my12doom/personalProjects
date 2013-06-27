@@ -72,12 +72,6 @@ local menu_sample =
 
 ]]--
 
-local lua_file = dwindow.loading_file
-local lua_path = GetPath(lua_file)
-local function GetCurrentLuaPath(offset)
-	return lua_path
-end
-
 menu_builder = {}
 
 local MF_CHECKED = 8
@@ -92,7 +86,7 @@ function menu_builder:Create(template, parent)
 	setmetatable(o, self)
 	self.__index = self
 	
-	o.handle = dwindow.CreateMenu(parent and parent.handle)
+	o.handle = ui.CreateMenu(parent and parent.handle)
 	for _,v in ipairs(template) do
 		local flags = 0
 		flags = flags + (v.checked and MF_CHECKED or 0)
@@ -103,9 +97,9 @@ function menu_builder:Create(template, parent)
 		
 		if v.sub_items then
 			local sub = menu_builder:Create(v.sub_items, o)
-			dwindow.AppendSubmenu(o.handle, v.string, flags, sub.handle)
+			ui.AppendSubmenu(o.handle, v.string, flags, sub.handle)
 		else
-			dwindow.AppendMenu(o.handle, v.string, flags, v)
+			ui.AppendMenu(o.handle, v.string, flags, v)
 		end
 	end	
 	
@@ -113,12 +107,12 @@ function menu_builder:Create(template, parent)
 end
 
 function menu_builder:popup(x, y)
-	local px,py = dwindow.get_mouse_pos()
+	local px,py = ui.get_mouse_pos()
 	x, y = x or px, y or py	
-	return dwindow.PopupMenu(self.handle, x-px, y-py)
+	return ui.PopupMenu(self.handle, x-px, y-py)
 end
 
 function menu_builder:destroy()
-	return dwindow.DestroyMenu(self.handle)
+	return ui.DestroyMenu(self.handle)
 end
 

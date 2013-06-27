@@ -1912,6 +1912,14 @@
 				RelativePath="..\renderer_prototype\my12doomRenderer_lua.h"
 				>
 			</File>
+			<File
+				RelativePath=".\ui_lua.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ui_lua.h"
+				>
+			</File>
 			<Filter
 				Name="lua_source"
 				>

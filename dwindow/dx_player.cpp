@@ -5258,13 +5258,15 @@ lua_drawer::lua_drawer(dx_player *owner)
 }
 HRESULT lua_drawer::init_gpu(int width, int height, IDirect3DDevice9 *device)
 {
-	g_lua_manager->get_variable("width") = int(width/UIScale);
-	g_lua_manager->get_variable("height") = int(height/UIScale);
-
 	luaState lua_state;
+	lua_getglobal(lua_state, "ui");
+	lua_pushinteger(lua_state, int(width/UIScale));
+	lua_setfield(lua_state, -2, "width");
+	lua_pushinteger(lua_state, int(height/UIScale));
+	lua_setfield(lua_state, -2, "height");
+
 	lua_getglobal(lua_state, "OnInitGPU");
-	if (lua_isfunction(lua_state, -1))
-		lua_mypcall(lua_state, 0, 0, 0);
+	lua_mypcall(lua_state, 0, 0, 0);
 	lua_settop(lua_state, 0);
 
 	return S_OK;

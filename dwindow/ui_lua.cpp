@@ -1,10 +1,9 @@
-#include "dshow_lua.h"
+#include "ui_lua.h"
 #include "global_funcs.h"
 #include "dx_player.h"
 #include "open_double_file.h"
 #include "open_url.h"
 
-CCritSec cs;
 lua_manager *g_lua_ui_manager = NULL;
 extern dx_player *g_player;
 
@@ -128,6 +127,7 @@ static int luaPopupMenu(lua_State *L)
 
 	return 0;
 }
+
 static int luaDestroyMenu(lua_State *L)
 {
 	menu_holder_window * handle = (menu_holder_window *)lua_touserdata(L, -1);
@@ -138,7 +138,21 @@ static int luaDestroyMenu(lua_State *L)
 	return 0;
 }
 
-int dshow_lua_init()
+extern double UIScale;
+static int get_mouse_pos(lua_State *L)
+{
+	POINT p;
+	GetCursorPos(&p);
+	HWND wnd = g_player->get_window((int)g_lua_manager->get_variable("active_view")+1);
+	ScreenToClient(wnd, &p);
+
+	lua_pushinteger(L, p.x/UIScale);
+	lua_pushinteger(L, p.y/UIScale);
+
+	return 2;
+}
+
+int ui_lua_init()
 {
 	g_lua_ui_manager = new lua_manager("ui");
 	g_lua_ui_manager->get_variable("OpenFile") = &luaOpenFile;
@@ -153,6 +167,8 @@ int dshow_lua_init()
 	g_lua_ui_manager->get_variable("AppendSubmenu") = &luaAppendSubmenu;
 	g_lua_ui_manager->get_variable("DestroyMenu") = &luaDestroyMenu;
 	g_lua_ui_manager->get_variable("PopupMenu") = &luaPopupMenu;
+
+	g_lua_ui_manager->get_variable("get_mouse_pos") = &get_mouse_pos;
 
 	return 0;
 }

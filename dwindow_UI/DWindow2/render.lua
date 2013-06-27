@@ -10,13 +10,13 @@ local UI_show_time = 2000
 local oroot = BaseFrame:Create()
 root:AddChild(oroot)
 function oroot:PreRender(t, dt)
-	self:SetSize(dwindow.width, dwindow.height)
+	self:SetSize(ui.width, ui.height)
 end
 
 function oroot:OnClick(x,y,button)
 	if button == VK_RBUTTON then
-		dwindow.show_mouse(true)
-		dwindow.popup_menu()
+		player.show_mouse(true)
+		player.popup_menu()
 	end
 	return true
 end
@@ -45,7 +45,7 @@ bottombar:SetHeight(44)
 
 function bottombar:RenderThis()
 	local res = get_bitmap(lua_path .. "bar.png")
-	paint(0,0,dwindow.width,44, res)
+	paint(0,0,ui.width,44, res)
 end
 
 
@@ -74,7 +74,7 @@ end
 
 function topbar:RenderThis()
 	local res = get_bitmap(lua_path .. "bar.png")
-	paint(0,0,dwindow.width,34, res)
+	paint(0,0,ui.width,34, res)
 	
 	if self.res then 
 		local h = (34-self.res.height)/2
@@ -96,7 +96,7 @@ function leftright:RenderThis()
 end
 
 function leftright:OnClick()
-	dwindow.set_swapeyes(not dwindow.get_swapeyes())
+	player.set_swapeyes(not player.get_swapeyes())
 end
 
 
@@ -116,7 +116,7 @@ function b3d:RenderThis()
 end
 
 function b3d:OnClick()
-	dwindow.toggle_3d()
+	player.toggle_3d()
 	return true
 end
 
@@ -132,7 +132,7 @@ function full:RenderThis()
 end
 
 function full:OnClick()
-	dwindow.toggle_fullscreen()
+	player.toggle_fullscreen()
 	return true
 end
 
@@ -144,7 +144,7 @@ play:SetRelativeTo(BOTTOM)
 play:SetSize(109,38)
 
 function play:RenderThis()
-	if dwindow.is_playing() then
+	if player.is_playing() then
 		paint(0,0,109,38, get_bitmap(lua_path .. (self:IsMouseOver() and "pause_mousedown.png" or "pause_mouseover.png")))	
 	else
 		paint(0,0,109,38, get_bitmap(lua_path .. (self:IsMouseOver() and "play_mousedown.png" or "play_mouseover.png")))	
@@ -158,7 +158,7 @@ function play:OnClick()
 			playlist:play(file)
 		end
 	else
-		dwindow.pause()
+		player.pause()
 	end
 	
 	return true
@@ -173,7 +173,7 @@ progress:SetRelativeTo(TOPRIGHT, bottombar, nil, 0, -8)
 progress:SetHeight(16+6)
 
 function progress:RenderThis()
-	local v = (dwindow.tell() or 0) / (dwindow.total() or 1)
+	local v = (player.tell() or 0) / (player.total() or 1)
 	v = math.max(math.min(v, 1), 0)
 	local l,_,r = self:GetAbsRect()
 	
@@ -188,7 +188,7 @@ function progress:OnMouseMove(x,y,button)
 	local v = x/w
 	v = math.max(0,math.min(v,1))
 	
-	dwindow.seek(dwindow.total()*v)
+	player.seek(player.total()*v)
 end
 
 function progress:OnMouseUp(x, y, button)
@@ -214,7 +214,7 @@ function progress_slider:RenderThis()
 end
 
 function progress_slider:PreRender()
-	local v = (dwindow.tell() or 0) / (dwindow.total() or 1)
+	local v = (player.tell() or 0) / (player.total() or 1)
 	v = math.max(math.min(v, 1), 0)
 	local l,_,r = progress:GetAbsRect()
 	self:SetRelativeTo(CENTER, progress, LEFT, (r-l)*v, 0.5)
@@ -233,7 +233,7 @@ volume:SetRelativeTo(RIGHT, full, LEFT, -20+9, 0)
 volume:SetSize(68+18, 16+4)
 
 function volume:RenderThis()
-	local v = math.max(math.min(dwindow.get_volume(), 1), 0)
+	local v = math.max(math.min(player.get_volume(), 1), 0)
 	local l,_,r = self:GetAbsRect()
 	
 	paint(9,8,9+r-l-18, 8+4, get_bitmap(lua_path .. "volume_bg.png"))
@@ -247,7 +247,7 @@ function volume:OnMouseMove(x,y,button)
 	local v = (x-9)/w
 	v = math.max(0,math.min(v,1))
 	
-	dwindow.set_volume(v)
+	player.set_volume(v)
 end
 
 function volume:OnMouseUp(x, y, button)
@@ -277,7 +277,7 @@ end
 
 function volume_slider:PreRender()
 	local l,_,r = volume:GetAbsRect()
-	self:SetRelativeTo(CENTER, volume, LEFT, 9+(r-l-18)*dwindow.get_volume(), 0.5)
+	self:SetRelativeTo(CENTER, volume, LEFT, 9+(r-l-18)*player.get_volume(), 0.5)
 end
 
 
@@ -288,15 +288,15 @@ volume_button:SetRelativeTo(RIGHT, volume, LEFT, 5, 0)
 volume_button:SetSize(25, 24)
 
 function volume_button:RenderThis()
-	paint(0,0,25, 24, get_bitmap(lua_path .. (dwindow.get_volume() > 0 and "volume_button_normal.png" or "volume_button_mute.png")))
+	paint(0,0,25, 24, get_bitmap(lua_path .. (player.get_volume() > 0 and "volume_button_normal.png" or "volume_button_mute.png")))
 end
 
 function volume_button:OnClick()
-	if dwindow.get_volume() > 0 then
-		self.saved_volume = dwindow.get_volume()
-		dwindow.set_volume(0)
+	if player.get_volume() > 0 then
+		self.saved_volume = player.get_volume()
+		player.set_volume(0)
 	else
-		dwindow.set_volume(self.saved_volume or 1)
+		player.set_volume(self.saved_volume or 1)
 		self.saved_volume = nil
 	end
 end
@@ -335,7 +335,7 @@ function open:HitTest()
 end
 
 function open:OnClick()
-	local file = dialog.OpenFile()
+	local file = ui.OpenFile()
 	if file then
 		playlist:play(file)
 	end
@@ -366,7 +366,7 @@ function open2:OnClick()
 		{
 			string = "打开URL...",
 			on_command = function()
-				local url = dialog.OpenURL()
+				local url = ui.OpenURL()
 				if url then
 					playlist:play(url)
 				end
@@ -375,7 +375,7 @@ function open2:OnClick()
 		{
 			string = "打开左右分离文件...",
 			on_command = function()
-				local left, right = dialog.OpenDoubleFile()
+				local left, right = ui.OpenDoubleFile()
 				if left and right then
 					playlist:play(left, right)
 				end
@@ -384,7 +384,7 @@ function open2:OnClick()
 		{
 			string = "打开文件夹...",
 			on_command = function()
-				local folder = dialog.OpenFolder()
+				local folder = ui.OpenFolder()
 				if folder then
 					playlist:play(folder)
 				end
@@ -403,8 +403,8 @@ end
 local event = BaseFrame:Create()
 oroot:AddChild(event)
 function event:PreRender(t, dt)
-	if dwindow.is_fullscreen() then
-		dwindow.set_movie_rect(0, 0, dwindow.width, dwindow.height)
+	if player.is_fullscreen() then
+		dwindow.set_movie_rect(0, 0, ui.width, ui.height)
 	else
 		local l, t = topbar:GetAbsAnchorPoint(BOTTOMLEFT)
 		local r, b = bottombar:GetAbsAnchorPoint(TOPRIGHT)
@@ -421,18 +421,18 @@ local mousey = -999
 
 function mouse_hider:PreRender(t, dt)
 
-	local px, py = dwindow.get_mouse_pos()
+	local px, py = ui.get_mouse_pos()
 	if (mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 100 or ((mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 0 and alpha > 0.5) then	
 		last_mousemove = dwindow.GetTickCount()
-		mousex, mousey = dwindow.get_mouse_pos()
+		mousex, mousey = ui.get_mouse_pos()
 	end
 		
 	local da = dt/UI_fading_time
 	local old_alpha = alpha
-	local mouse_in_pannel = (px>0 and px<dwindow.width and py>dwindow.height-44 and py<dwindow.height) -- bottombar
-	mouse_in_pannel = mouse_in_pannel or (px>0 and px<dwindow.width and py>0 and py<30)	-- topbar
-	local hide_mouse = (not mouse_in_pannel) and (t > last_mousemove + UI_show_time) and (dwindow.is_fullscreen())
-	dwindow.show_mouse(not hide_mouse or dwindow.menu_open > 0)
+	local mouse_in_pannel = (px>0 and px<ui.width and py>ui.height-44 and py<ui.height) -- bottombar
+	mouse_in_pannel = mouse_in_pannel or (px>0 and px<ui.width and py>0 and py<30)	-- topbar
+	local hide_mouse = (not mouse_in_pannel) and (t > last_mousemove + UI_show_time) and (player.is_fullscreen())
+	player.show_mouse(not hide_mouse or dwindow.menu_open > 0)
 	
 	if hide_mouse then
 		alpha = alpha - da
