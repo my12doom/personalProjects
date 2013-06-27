@@ -250,8 +250,13 @@ lua_manager::lua_manager(const char* table_name)
 
 	luaState L;
 
-	lua_newtable(L);
-	lua_setglobal(L, table_name);
+	lua_getglobal(L, table_name);
+	if (!lua_istable(L, -1))
+	{
+		lua_newtable(L);
+		lua_setglobal(L, table_name);
+	}
+	lua_settop(L,0);
 }
 
 lua_manager::~lua_manager()
