@@ -89,10 +89,10 @@ local mousey = -999
 
 function mouse_hider:PreRender(t, dt)
 
-	local px, py = dwindow.get_mouse_pos()
+	local px, py = ui.get_mouse_pos()
 	if (mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 100 or ((mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 0 and alpha > 0.5) then	
 		last_mousemove = dwindow.GetTickCount()
-		mousex, mousey = dwindow.get_mouse_pos()
+		mousex, mousey = ui.get_mouse_pos()
 	end
 		
 	local da = dt/UI_fading_time
