@@ -1540,9 +1540,10 @@ HRESULT dx_player::lua_OnMouseEvent(char *event, int x, int y, int button)
 		lua_pushinteger(lua_state, button);
 		lua_mypcall(lua_state, 4, 0, 0);
 	}
+	bool b = lua_toboolean(lua_state, -1);
 	lua_settop(lua_state, 0);
 
-	return S_OK;
+	return b ? S_OK : S_FALSE;
 }
 
 LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
@@ -1916,6 +1917,9 @@ LRESULT dx_player::on_double_click(int id, int button, int x, int y)
 	if (hittest(x, y, id_to_hwnd(id), NULL) == hit_brightness)
 		for(int i=0; i<color_adjust_max; i++)
 			set_parameter(i, 0.5);
+
+	else if (lua_OnMouseEvent("OnDoubleClick", x, y, button) == S_OK)
+		;
 
 	else if (button == VK_LBUTTON && hittest(x, y, id_to_hwnd(id), NULL) < 0)
 		toggle_fullscreen();
