@@ -66,7 +66,6 @@ bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for)
 ICommandReciever *command_reciever;
 
 // constructor & destructor
-#define GET_CONST(x) g_lua_setting_manager->get_const(x)
 dx_player::dx_player(HINSTANCE hExe)
 :m_lua(NULL)
 ,m_dialog_open(0)
@@ -74,8 +73,8 @@ dx_player::dx_player(HINSTANCE hExe)
 ,m_renderer1(NULL)
 ,dwindow(m_screen1, m_screen2)
 ,m_lFontPointSize(L"FontSize", 40)
-,m_FontName(L"Font", g_active_language == CHINESE ? L"ºÚÌå" : L"Arial")
-,m_FontStyle(L"FontStyle", L"Regular")
+,m_FontName(GET_CONST("Font"))
+,m_FontStyle(GET_CONST("FontStyle"))
 ,m_font_color(L"FontColor", 0x00ffffff)
 ,m_input_layout(L"InputLayout", input_layout_auto, REG_DWORD)
 ,m_output_mode(L"OutputMode", anaglyph, REG_DWORD)
@@ -87,10 +86,10 @@ dx_player::dx_player(HINSTANCE hExe)
 ,m_aspect(L"Aspect", -1)
 ,m_subtitle_latency(L"SubtitleLatency", 0, REG_DWORD)
 ,m_subtitle_ratio(L"SubtitleRatio", 1.0)
-,m_saved_screen1(L"Screen1", rect_zero)
-,m_saved_screen2(L"Screen2", rect_zero)
-,m_saved_rect1(L"Window1", rect_zero)
-,m_saved_rect2(L"Window2", rect_zero)
+,m_saved_screen1(GET_CONST("Screen1"))
+,m_saved_screen2(GET_CONST("Screen2"))
+,m_saved_rect1(GET_CONST("Window1"))
+,m_saved_rect2(GET_CONST("Window2"))
 ,m_useInternalAudioDecoder(L"InternalAudioDecoder", true)
 ,m_channel(L"AudioChannel", 2, REG_DWORD)
 ,m_normalize_audio(L"NormalizeAudio", 16.0)
@@ -110,7 +109,7 @@ dx_player::dx_player(HINSTANCE hExe)
 ,m_aspect_mode(L"AspectRatioMode", aspect_letterbox)
 ,m_subtitle_center_x(L"SubtitleX", 0.5)
 ,m_subtitle_bottom_y(L"SubtitleY", 0.95)
-,m_user_subtitle_parallax(L"SubtitleSubtitleParallax", 0, REG_DWORD)
+,m_user_subtitle_parallax(L"SubtitleParallax", 0, REG_DWORD)
 ,m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD)
 ,m_swap_eyes(L"SwapEyes", false)
 ,m_force_2d(L"Force2D", false)
@@ -229,7 +228,7 @@ typedef struct
 } monitor_rect_t;
 
 monitor_rect_t zero_monitor_rect = {0};
-AutoSetting<monitor_rect_t> g_saved_monitor_rects(L"MonitorRects", zero_monitor_rect);
+AutoSettingO<monitor_rect_t> g_saved_monitor_rects(L"MonitorRects", zero_monitor_rect);
 
 HRESULT dx_player::detect_monitors()
 {
@@ -319,6 +318,14 @@ bool dx_player::rect_visible(RECT rect)
 	}
 
 	return rtn;
+}
+
+inline void NormalizeRect(lua_const *in)
+{
+	RECT r2 = *in;
+	RECT *rect = &r2;
+	RECT normal = {min(rect->left, rect->right), min(rect->top, rect->bottom), max(rect->left, rect->right), max(rect->top, rect->bottom)};
+	*in = normal;
 }
 
 HRESULT dx_player::init_window_size_positions()
@@ -3598,10 +3605,10 @@ const wchar_t *get_default_daemon_exe()
 	return the_buffer;
 }
 
-AutoSettingString daemon_drive(L"DaemonDrive", L"dt,0");
-AutoSettingString daemon_exe(L"DaemonExe", get_default_daemon_exe());
 HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = false */, int audio_track /* = MKV_FIRST_TRACK */, int video_track /* = MKV_ALL_TRACK */)
 {
+	lua_const &daemon_drive = GET_CONST("DaemonDrive");
+	lua_const &daemon_exe = GET_CONST("DaemonExe");
 	wchar_t file_to_play[MAX_PATH];
 	wcscpy(file_to_play, pathname);
 
@@ -3610,12 +3617,12 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	{
 
 		wchar_t cmdline[MAX_PATH];
-		swprintf(cmdline, L"-get_letter %s", (wchar_t*)daemon_drive);
+		swprintf(cmdline, L"-get_letter %s", (const wchar_t*)daemon_drive);
 		int letter = shellexecute_and_wait(daemon_exe, cmdline);
 		if (letter < 0)
 			return E_FAIL;
 
-		swprintf(cmdline, L"-mount %s,\"%s\"", (wchar_t*)daemon_drive, pathname);
+		swprintf(cmdline, L"-mount %s,\"%s\"", (const wchar_t*)daemon_drive, pathname);
 		int o = shellexecute_and_wait(daemon_exe, cmdline);
 		if (o < 0)
 			return E_FAIL;
@@ -4090,6 +4097,8 @@ HRESULT dx_player::set_subtitle_pos(double center_x, double bottom_y)
 HRESULT dx_player::select_font(bool show_dlg)
 {
 	CHOOSEFONTW cf={0};
+	wchar_t style[2048] = {0};
+	wcscpy(style, m_FontStyle);
 	memset(&cf, 0, sizeof(cf));
 	LOGFONTW lf=m_LogFont; 
 	HDC hdc;
@@ -4103,7 +4112,7 @@ HRESULT dx_player::select_font(bool show_dlg)
 	// Initialize members of the LOGFONT structure.
 	if (memcmp(&lf, &empty_logfontw, sizeof(lf)) == 0)
 	{
-		lstrcpynW(lf.lfFaceName, m_FontName, 32);
+		lstrcpynW(lf.lfFaceName, (const wchar_t*)m_FontName, 32);
 		lf.lfHeight = lHeight;      // Logical units
 		lf.lfCharSet = GB2312_CHARSET;
 		lf.lfOutPrecision =  OUT_STROKE_PRECIS;
@@ -4122,7 +4131,7 @@ HRESULT dx_player::select_font(bool show_dlg)
 	cf.lCustData   = 0L; 
 	cf.lpfnHook    = (LPCFHOOKPROC)NULL; 
 	cf.hInstance   = (HINSTANCE) NULL; 
-	cf.lpszStyle   = m_FontStyle; 
+	cf.lpszStyle   = style;
 	cf.nFontType   = SCREEN_FONTTYPE; 
 	cf.nSizeMin    = 0; 
 	cf.lpTemplateName = NULL; 
@@ -4132,10 +4141,8 @@ HRESULT dx_player::select_font(bool show_dlg)
 
 	if (show_dlg)
 		ChooseFontW(&cf);
-
-	lstrcpynW(m_FontName, lf.lfFaceName, sizeof(m_FontName)/sizeof(TCHAR));
-	m_FontStyle.save();
-	m_FontName.save();
+	m_FontName = lf.lfFaceName;
+	m_FontStyle = style;
 	m_LogFont = lf;
 	m_lFontPointSize = cf.iPointSize / 10;  // Specified in 1/10 point units
 	//m_font_color = cf.rgbColors;

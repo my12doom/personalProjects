@@ -336,23 +336,57 @@ function set_setting(name, value)
 	core.ApplySetting(name)
 end
 
-function save_settings()
-	print("SAVING SETTINGS")
-	return core.cjson().encode(setting)
+function format_table(t, level)
+	level = level or 1
+	leveld1 = level > 1 and level -1 or 0
+	local o = {}
+	local lead = ""
+	for i=1,level do
+		lead = "\t" .. lead
+	end
+	
+	local leadd1 = ""
+	for i=1,leveld1 do
+		leadd1 = "\t" .. leadd1
+	end
+
+	table.insert(o, leadd1 .. "{")
+	for k,v in pairs(t) do
+		local vv
+		if type(v) == "table" then
+			vv = format_table(v, (level or 0) + 1)
+		elseif type(v) == "string" then
+			v = string.gsub(v, "\r", "\\r")
+			v = string.gsub(v, "\n", "\\n")			
+			vv = "\"" .. string.gsub(v, "\\", "\\\\") .."\""
+		else
+			vv = tostring(v)
+		end
+		
+		table.insert(o, string.format("%s = %s,", k, vv))
+	end
+	
+	return "\r\n" .. table.concat(o, "\r\n"..lead) .."\r\n".. leadd1 .. "}"
 end
 
-function load_settings(json)
-	print("LOADING SETTINGS")
-	local json_decoder = core.cjson();
-	local suc,result = pcall(json_decoder.decode, json)
-	if suc and type(result) == "table" then		
-		for k,v in pairs(result) do
-			print(k, "=", v, type(v))
-			setting[k] = v
+function merge_table(op, tomerge)
+	for k,v in pairs(tomerge) do
+		if type(v) == "table" and type(op[k]) == "table" then
+			merge_table(op[k], v)
+		else
+			op[k] = v
 		end
-		return true
-	else
-		print("FAILED", result)
-		return false
 	end
+end
+
+function core.save_settings()
+	print("SAVING SETTINGS")
+	
+	return core.WriteConfigFile("tmpsetting = " .. format_table(setting) .. "\r\nmerge_table(setting, tmpsetting)\r\n")
+end
+
+function core.load_settings()
+	print("LOADING SETTINGS")
+	
+	return core.execute_luafile(core.GetConfigFile())
 end

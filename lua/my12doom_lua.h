@@ -72,13 +72,17 @@ class lua_const
 {
 public:
 	operator int();
+	operator DWORD();
 	operator double();
 	operator const wchar_t*();
 	operator bool();
+	operator RECT();
 	int& operator=(const int in);
+	DWORD& operator=(const DWORD in);
 	double& operator=(const double in);
 	wchar_t*& operator=(const wchar_t* in);
 	bool& operator=(const bool in);
+	RECT& operator=(const RECT in);
 
 	int read_from_lua();
 protected:
@@ -93,6 +97,7 @@ protected:
 		double d;
 		bool b;
 		wchar_t *s;
+		RECT r;
 	} m_value;
 	enum
 	{
@@ -100,8 +105,10 @@ protected:
 		_double,
 		_bool,
 		_string,
+		_rect,
 	} m_type;
 };
 
 extern lua_manager *g_lua_core_manager;
 extern lua_manager *g_lua_setting_manager;
+#define GET_CONST(x) (dwindow_lua_init() == 0 ? g_lua_setting_manager : g_lua_setting_manager)->get_const(x)

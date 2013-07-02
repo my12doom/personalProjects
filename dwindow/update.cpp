@@ -1,10 +1,7 @@
 #include "update.h"
 #include "global_funcs.h"
+#include "..\lua\my12doom_lua.h"
 #include "..\libass\charset.h"
-
-AutoSetting<DWORD> latest_rev(L"LatestRev", 0, REG_DWORD);
-AutoSettingString latest_url(L"LatestUrl",L"");
-AutoSettingString latest_description(L"LatestDescription",L"");
 
 DWORD WINAPI check_update_thread(LPVOID);
 HANDLE g_thread = INVALID_HANDLE_VALUE;
@@ -27,6 +24,10 @@ HRESULT get_update_result(wchar_t *description, int *new_rev, wchar_t *url)
 {
 	if (g_thread == INVALID_HANDLE_VALUE)
 		return E_FAIL;
+
+	lua_const &latest_rev = GET_CONST("LatestRev");//, 0, REG_DWORD);
+	lua_const &latest_url = GET_CONST("LatestUrl");//,L"");
+	lua_const &latest_description = GET_CONST("LatestDescription");//;,L"");
 
 	if (description)
 		wcscpy(description, latest_description);
@@ -68,11 +69,20 @@ DWORD WINAPI check_update_thread(LPVOID)
 	if (wcsexplode(dataw, L"\n", exploded, 3)<3)
 		return -1;
 
+	lua_const &latest_rev = GET_CONST("LatestRev");//, 0, REG_DWORD);
+	lua_const &latest_url = GET_CONST("LatestUrl");//,L"");
+	lua_const &latest_description = GET_CONST("LatestDescription");//;,L"");
+
 	latest_rev = _wtoi(exploded[0]);
 	latest_url = exploded[1];
-	latest_description = exploded[2];
-	wcs_replace(latest_description, L"\n", L"\r\r");
-	wcs_replace(latest_description, L"\r\r", L"\r\n");
+	wchar_t *p = new wchar_t[wcslen(exploded[2])*2];
+	wcscpy(p, exploded[2]);
+
+	wcs_replace(p, L"\n", L"\r\r");
+	wcs_replace(p, L"\r\r", L"\r\n");
+	latest_description = p;
+
+	delete [] p;
 
 	for(int i=0; i<3; i++)
 		if (exploded[i])

@@ -188,6 +188,28 @@ bool save_D3D_setting(const WCHAR *key, const void *data, int len, DWORD REG_TYP
 int load_setting(const WCHAR *key, void *data, int len);
 int load_D3D_setting(const WCHAR *key, void *data, int len);
 bool del_setting(const WCHAR *key);
+
+
+class W2UTF8
+{
+public:
+	W2UTF8(const wchar_t *in);
+	~W2UTF8();
+	operator char*();
+	char *p;
+};
+
+class UTF82W
+{
+public:
+	UTF82W(const char *in);
+	~UTF82W();
+	operator wchar_t*();
+	wchar_t *p;
+};
+
+#include "..\lua\my12doom_lua.h"
+
 template<class ValueType>
 class AutoSetting
 {
@@ -199,6 +221,11 @@ public:
 		m_reg_type = reg_type;
 		load_setting(key, &m_value, sizeof(ValueType));
 		save_setting(m_key, &m_value, sizeof(ValueType), m_reg_type);
+
+		if (g_lua_setting_manager)
+		{
+			g_lua_setting_manager->get_const(W2UTF8(key)) = default_value;
+		}
 	}
 	~AutoSetting()
 	{
@@ -228,50 +255,52 @@ protected:
 	ValueType m_value;
 };
 
-
-class AutoSettingString
+template<class ValueType>
+class AutoSettingO
 {
 public:
-	void save()
-	{
-		save_setting(m_key, m_value, 20480, REG_SZ);
-	}
-	AutoSettingString(const wchar_t*key, const wchar_t *default_value)
+	AutoSettingO(const wchar_t *key, const ValueType default_value, DWORD reg_type = REG_BINARY)
 	{
 		wcscpy(m_key, key);
-		m_value = new wchar_t[20480];
-		wcscpy(m_value, default_value);
-		load_setting(m_key, m_value, 20480);
-		save_setting(m_key, m_value, 20480, REG_SZ);
+		m_value = default_value;
+		m_reg_type = reg_type;
+		load_setting(key, &m_value, sizeof(ValueType));
+		save_setting(m_key, &m_value, sizeof(ValueType), m_reg_type);
 	}
-	~AutoSettingString()
+	~AutoSettingO()
 	{
-		save();
-		delete m_value;
+		save_setting(m_key, &m_value, sizeof(ValueType), m_reg_type);
 	}
-	operator wchar_t*()
+	operator ValueType()
 	{
 		return m_value;
 	}
-	wchar_t* operator=(const wchar_t*in)
+	ValueType* operator& ()
 	{
-		if (wcscmp(in, m_value))
+		return &m_value;
+	}
+	ValueType& operator= (ValueType in)
+	{
+		if (memcmp(&in, &m_value, sizeof(in)))
 		{
-			wcscpy(m_value, in);
-			save_setting(m_key, m_value, 20480, REG_SZ);
+			m_value = in;
+			save_setting(m_key, &m_value, sizeof(ValueType), m_reg_type);
 		}
 		return m_value;
 	}
+
 protected:
+	DWORD m_reg_type;
 	wchar_t m_key[256];
-	wchar_t *m_value;
+	ValueType m_value;
 };
+
 
 
 // localization
 enum{ENGLISH, CHINESE};
 typedef DWORD localization_language;
-extern AutoSetting<localization_language> g_active_language;
+extern AutoSetting<int> g_active_language;
 const wchar_t *C(const wchar_t *English);
 HRESULT add_localization(const wchar_t *English, const wchar_t *Localized = NULL);
 HRESULT set_localization_language(localization_language language);
@@ -529,20 +558,45 @@ __forceinline void BasicRsaCheck()
 }
 
 
-class W2UTF8
+class AutoSettingString
 {
 public:
-	W2UTF8(const wchar_t *in);
-	~W2UTF8();
-	operator char*();
-	char *p;
-};
+	void save()
+	{
+		save_setting(m_key, m_value, 20480, REG_SZ);
+	}
+	AutoSettingString(const wchar_t*key, const wchar_t *default_value)
+	{
+		if (g_lua_setting_manager)
+		{
+			g_lua_setting_manager->get_const(W2UTF8(key)) = default_value;
+		}
 
-class UTF82W
-{
-public:
-	UTF82W(const char *in);
-	~UTF82W();
-	operator wchar_t*();
-	wchar_t *p;
+		wcscpy(m_key, key);
+		m_value = new wchar_t[20480];
+		wcscpy(m_value, default_value);
+		load_setting(m_key, m_value, 20480);
+		save_setting(m_key, m_value, 20480, REG_SZ);
+	}
+	~AutoSettingString()
+	{
+		save();
+		delete m_value;
+	}
+	operator wchar_t*()
+	{
+		return m_value;
+	}
+	wchar_t* operator=(const wchar_t*in)
+	{
+		if (wcscmp(in, m_value))
+		{
+			wcscpy(m_value, in);
+			save_setting(m_key, m_value, 20480, REG_SZ);
+		}
+		return m_value;
+	}
+protected:
+	wchar_t m_key[256];
+	wchar_t *m_value;
 };

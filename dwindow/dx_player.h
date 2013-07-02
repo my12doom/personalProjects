@@ -168,7 +168,7 @@ public:
 	BSTR m_widi_adapters[MAX_WIDI_ADAPTERS][255];
 	bool m_widi_scanning;
 	bool m_widi_connected;
-	AutoSetting<DWORD> m_widi_screen_mode;
+	AutoSetting<int> m_widi_screen_mode;
 	AutoSetting<int> m_widi_resolution_width;
 	AutoSetting<int> m_widi_resolution_height;
 	HRESULT widi_initialize();
@@ -188,10 +188,10 @@ public:
 	LRESULT OnWiDiAdapterDiscovered(WPARAM wParam, LPARAM lParam);
 
 	// saved screen settings
-	AutoSetting<RECT> m_saved_screen1;
-	AutoSetting<RECT> m_saved_screen2;
-	AutoSetting<RECT> m_saved_rect1;
-	AutoSetting<RECT> m_saved_rect2;
+	lua_const &m_saved_screen1;
+	lua_const &m_saved_screen2;
+	lua_const &m_saved_rect1;
+	lua_const &m_saved_rect2;
 	HRESULT detect_monitors();
 	HRESULT set_output_monitor(int out_id, int monitor_id);
 	HRESULT init_window_size_positions();
@@ -208,7 +208,7 @@ public:
 	thread_pool m_subtitle_loader_pool;
 	HINSTANCE m_hexe;
 	AutoSetting<double> m_aspect;/*(L"AlwaysShowRight", false)*/;
-	AutoSetting<DWORD> m_aspect_mode;
+	AutoSetting<int> m_aspect_mode;
 	int m_mirror1;
 	int m_mirror2;			// 0x0:no mirror, 0x1 mirror horizontal, 0x2 mirror vertical, 0x3(0x3=0x1|0x2) mirror both
 	AutoSetting<bool> m_swap_eyes;
@@ -221,7 +221,7 @@ public:
 	CComPtr<IStereoLayout> m_stereo_layout;
 	AutoSetting<int> m_movie_resizing;/*(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD)*/;
 	AutoSetting<int> m_subtitle_resizing;/*(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD)*/;
-	AutoSetting<D3DDISPLAYMODE> m_hd3d_prefered_mode;
+	AutoSettingO<D3DDISPLAYMODE> m_hd3d_prefered_mode;
 	std::list<x264*> m_x264_encoder;
 	CCritSec m_x264_encoder_lock;
 
@@ -354,9 +354,9 @@ public:
 	AutoSetting<DWORD> m_font_color/*L"FontColor", 0x00ffffff)*/;
 	AutoSetting<LONG> m_lFontPointSize/*(L"FontSize", 40)*/;
 	AutoSetting<bool> m_display_subtitle;
-	AutoSettingString m_FontName/*(L"Font", L"Arial")*/;
-	AutoSettingString m_FontStyle/*(L"FontStyle", L"Regular")*/;
-	AutoSetting<LOGFONTW> m_LogFont;
+	lua_const &m_FontName/*(L"Font", L"Arial")*/;
+	lua_const &m_FontStyle/*(L"FontStyle", L"Regular")*/;
+	AutoSettingO<LOGFONTW> m_LogFont;
 	HRESULT select_font(bool show_dlg);
 	// end font
 

@@ -95,6 +95,18 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		ExitProcess(0);
 	}
+
+	else if (argc == 2 && wcsicmp(argv[1], L"uninstall") == 0)
+	{
+		luaState L;
+		lua_getglobal(L, "core");
+		lua_getfield(L, -1, "GetConfigFile");
+		lua_mypcall(L, 0, 1, 0);
+		UTF82W configfile(lua_tostring(L, -1));
+		_wremove(configfile);
+		ExitProcess(0);
+	}
+
 	if (pre_instance)
 	{
 		SendMessageW(pre_instance, WM_SYSCOMMAND, (WPARAM)SC_RESTORE, 0);

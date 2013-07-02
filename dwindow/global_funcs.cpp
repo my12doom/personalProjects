@@ -25,7 +25,7 @@ char *g_server_address = "http://bo3d.net:80/";
 #endif
 
 // public variables
-AutoSetting<localization_language> g_active_language(L"Language", get_system_default_lang(), REG_DWORD);
+AutoSetting<int> g_active_language(L"Language", get_system_default_lang(), REG_DWORD);
 AutoSettingString g_bar_server(L"BarServer", L"");
 char g_passkey[32];
 char g_passkey_big[128];
@@ -852,7 +852,7 @@ enum bitsteaming_support_types
 	bitsteaming_support_TRUEHD = 0x10,
 };
 
-AutoSetting<DWORD> bitsteaming_support(L"BitstreamingSetting", 0xf);		// ac3¡¢eac3¡¢dts¡¢dtshm£¬ no truehd
+AutoSetting<int> bitsteaming_support(L"BitstreamingSetting", 0xf);		// ac3¡¢eac3¡¢dts¡¢dtshm£¬ no truehd
 
 HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active)
 {

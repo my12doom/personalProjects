@@ -70,9 +70,12 @@ static int luaOpenURL(lua_State *L)
 
 static int luaStartDragging(lua_State *L)
 {
-	HWND hwnd = g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1);
+	int view = (int)g_player_lua_manager->get_variable("active_view")+1;
+	HWND hwnd = g_player->get_window(view);
 	ReleaseCapture();
+	g_player->m_dragging_window = view;
 	SendMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+	g_player->m_dragging_window = 0;
 
 	lua_pushboolean(L, 1);
 	return 1;
@@ -82,9 +85,12 @@ static int luaStartResizing(lua_State *L)
 	int pos = HTBOTTOMRIGHT;
 	if (lua_gettop(L)>0)
 		pos = lua_tointeger(L, -1);
-	HWND hwnd = g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1);
+	int view = (int)g_player_lua_manager->get_variable("active_view")+1;
+	HWND hwnd = g_player->get_window(view);
 	ReleaseCapture();
+	g_player->m_dragging_window = view;
 	SendMessage(hwnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, 0);
+	g_player->m_dragging_window = 0;
 
 	lua_pushboolean(L, 1);
 	return 1;

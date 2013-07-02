@@ -169,10 +169,54 @@ int luaFAILED(lua_State *L)
 	lua_pushboolean(L, FAILED(hr));
 	return 1;
 }
-extern "C" int luaopen_cjson_safe(lua_State *l);
 
+
+int luaGetConfigFile(lua_State *L)
+{
+	wchar_t config_file[MAX_PATH];
+	wcscpy(config_file, dwindow_log_get_filename());
+	wcscpy(wcsrchr(config_file, '\\'), L"\\config.lua");
+
+	lua_pushstring(L, W2UTF8(config_file));
+	return 1;
+}
+
+int luaWriteConfigFile(lua_State *L)
+{
+	if (lua_gettop(L) < 1)
+		return 0;
+	if (!lua_isstring(L, -1))
+		return 0;
+
+	wchar_t config_file[MAX_PATH];
+	wcscpy(config_file, dwindow_log_get_filename());
+	wcscpy(wcsrchr(config_file, '\\'), L"\\config.lua");
+
+	FILE * f = _wfopen(config_file, L"wb");
+	if (!f)
+		return 0;
+
+	const char * p = lua_tostring(L, -1);
+	fwrite(p, 1, strlen(p), f);
+	fclose(f);
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
+int luaGetSystemDefaultLCID(lua_State *L)
+{
+	lua_pushinteger(L, GetSystemDefaultLCID());
+	return 1;
+}
+
+extern "C" int luaopen_cjson_safe(lua_State *l);
+bool lua_inited = false;
 int dwindow_lua_init () 
 {
+	if (lua_inited)
+		return 0;
+
 	dwindow_lua_exit();
 	CAutoLock lck(&g_csL);
 	int result;
@@ -211,7 +255,12 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("TerminateThread") = &luaTerminateThread;
 
 	g_lua_core_manager->get_variable("cjson") = &luaopen_cjson_safe;
+	
+	g_lua_core_manager->get_variable("GetConfigFile") = &luaGetConfigFile;
+	g_lua_core_manager->get_variable("WriteConfigFile") = &luaWriteConfigFile;
+	g_lua_core_manager->get_variable("GetSystemDefaultLCID") = &luaGetSystemDefaultLCID;
 
+	lua_inited = true;
 	return 0;
 }
 
@@ -296,6 +345,7 @@ int lua_manager::refresh()
 
 int lua_manager::delete_variable(const char*name)
 {
+	CAutoLock lck(&m_cs);
 	std::list<lua_variable*>::iterator it;
 	for(it = m_variables.begin(); it != m_variables.end(); it++)
 	{
@@ -313,6 +363,7 @@ int lua_manager::delete_variable(const char*name)
 
 lua_variable & lua_manager::get_variable(const char*name)
 {
+	CAutoLock lck(&m_cs);
 	std::list<lua_variable*>::iterator it;
 	for(it = m_variables.begin(); it != m_variables.end(); it++)
 	{
@@ -329,6 +380,7 @@ lua_variable & lua_manager::get_variable(const char*name)
 
 lua_const & lua_manager::get_const(const char*name)
 {
+	CAutoLock lck(&m_cs);
 	std::list<lua_const*>::iterator it;
 	for(it = m_consts.begin(); it != m_consts.end(); it++)
 	{
@@ -495,6 +547,22 @@ int lua_const::read_from_lua()
 		m_type = _double;
 		m_value.d = lua_tonumber(L, -1);
 	}
+	else if (lua_type(L, -1) == LUA_TTABLE)
+	{
+		m_type = _rect;
+		lua_getfield(L, -1, "left");
+		m_value.r.left = lua_tointeger(L, -1);
+		lua_pop(L,1);
+		lua_getfield(L, -1, "right");
+		m_value.r.right = lua_tointeger(L, -1);
+		lua_pop(L,1);
+		lua_getfield(L, -1, "top");
+		m_value.r.top = lua_tointeger(L, -1);
+		lua_pop(L,1);
+		lua_getfield(L, -1, "bottom");
+		m_value.r.bottom = lua_tointeger(L, -1);
+		lua_pop(L,1);
+	}
 	else if (lua_type(L, -1) == LUA_TSTRING)
 	{
 		const char * s = lua_tostring(L, -1);
@@ -512,7 +580,7 @@ int lua_const::read_from_lua()
 	{
 		// lua variable not found, undefined behavior
 #ifdef DEBUG
-		DebugBreak();	
+		//DebugBreak();	
 #endif
 		return -1;
 	}
@@ -552,13 +620,37 @@ int& lua_const::operator=(const int in)
 	return m_value.i;
 }
 
+lua_const::operator DWORD()
+{
+	if (m_type != _int && m_type != _double)
+		return 0;
+
+	return m_type == _int ? m_value.i : (m_value.d+0.5);
+}
+
+DWORD& lua_const::operator=(const DWORD in)
+{
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
+
+	lua_getglobal(L, m_manager->m_table_name);
+	m_value.i = in;
+	lua_pushinteger(L, m_value.i);
+	lua_setfield(L, -2, m_name);
+	lua_pop(L, 1);
+
+	if (m_type == _string && m_value.s) delete m_value.s;
+	m_type = _int;
+
+	return *(DWORD*)&m_value.i;
+}
 
 lua_const::operator bool()
 {
-	if (m_type != _bool)
+	if (m_type != _bool && m_type != _int)
 		return 0;
 
-	return m_value.b;
+	return m_type == _bool ? m_value.b : (m_value.i != 0);
 }
 
 bool& lua_const::operator=(const bool in)
@@ -606,7 +698,7 @@ double& lua_const::operator=(const double in)
 
 lua_const::operator const wchar_t*()
 {
-	if (m_type != _double)
+	if (m_type != _string)
 		return 0;
 
 	return m_value.s;
@@ -628,6 +720,40 @@ wchar_t *& lua_const::operator=(const wchar_t *in)
 	wcscpy(m_value.s, in);
 
 	return m_value.s;
+}
+
+lua_const::operator RECT()
+{
+	RECT zero = {0};
+	if (m_type != _rect)
+		return zero;
+
+	return m_value.r;
+}
+
+RECT & lua_const::operator=(const RECT in)
+{
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
+
+	lua_getglobal(L, m_manager->m_table_name);
+	lua_newtable(L);
+	lua_pushinteger(L, in.left);
+	lua_setfield(L, -2, "left");
+	lua_pushinteger(L, in.right);
+	lua_setfield(L, -2, "right");
+	lua_pushinteger(L, in.top);
+	lua_setfield(L, -2, "top");
+	lua_pushinteger(L, in.bottom);
+	lua_setfield(L, -2, "bottom");
+	lua_setfield(L, -2, m_name);
+	lua_pop(L, 1);
+
+	if (m_type == _string && m_value.s) delete m_value.s;
+	m_type = _rect;
+	m_value.r = in;
+
+	return m_value.r;
 }
 
 
@@ -656,57 +782,28 @@ int lua_mypcall(lua_State *L, int n, int r, int flag)
 	lua_pushcfunction(L, &lua_track_back);
 	lua_insert(L, lua_gettop(L) - n - 1);
 	int o = lua_pcall(L, n, r, lua_gettop(L) - n - 1);
-	lua_pop(L, 1);
+	lua_remove(L, -r-1);
 	return o;
+}
+
+int lua_load_settings()
+{
+	luaState L;
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "load_settings");
+	lua_mypcall(L, 0, 0, 0);
+	lua_settop(L, 0);
+
+	return 0;
 }
 
 int lua_save_settings()
 {
 	luaState L;
-	lua_getglobal(L, "save_settings");
-	lua_pcall(L, 0, 1, 0);
-
-	wchar_t config_file[MAX_PATH];
-	wcscpy(config_file, dwindow_log_get_filename());
-	wcscpy(wcsrchr(config_file, '\\'), L"\\config.cfg");
-	
-	FILE * f = _wfopen(config_file, L"wb");
-	if (!f)
-	{
-		lua_pop(L, 1);
-		return -1;
-	}
-
-	const char *content = lua_tostring(L, -1);
-	fwrite(content, 1, strlen(content), f);
-	fclose(f);	
-
-	lua_pop(L, 1);
-	return 0;
-}
-
-int lua_load_settings()
-{
-	wchar_t config_file[MAX_PATH];
-	wcscpy(config_file, dwindow_log_get_filename());
-	wcscpy(wcsrchr(config_file, '\\'), L"\\config.cfg");
-
-	FILE * f = _wfopen(config_file, L"rb");
-	if (!f)
-		return -1;
-
-	fseek(f, 0, SEEK_END);
-	int size = ftell(f);
-	char *p = new char[size];
-	fseek(f, 0, SEEK_SET);
-	size = fread(p, 1, size, f);
-	p[size] = NULL;
-	fclose(f);
-
-	luaState L;
-	lua_getglobal(L, "load_settings");
-	lua_pushstring(L, p);
-	lua_pcall(L, 1, 0, 0);
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "save_settings");
+	lua_mypcall(L, 0, 0, 0);
+	lua_settop(L, 0);
 
 	return 0;
 }

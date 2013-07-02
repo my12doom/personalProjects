@@ -108,7 +108,7 @@ DWORD WINAPI handler_thread(LPVOID param)
 	wchar_t *out = new wchar_t[1024000*20];
 	wchar_t *out2 = new wchar_t[1024000*20];
 	char *outA = new char[1024000];
-	AutoSettingString password(L"DWindowNetworkPassword", L"TestCode");
+	lua_const &password = g_lua_setting_manager->get_const("DWindowNetworkPassword");
 	while ((numbytes=recv(client_sock, buf, sizeof(buf)-1, 0)) > 0) 
 	{
 		int code_page = CP_ACP;
