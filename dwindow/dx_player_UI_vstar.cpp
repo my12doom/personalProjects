@@ -26,11 +26,9 @@ HRESULT dx_player::init_gpu(int width, int height, IDirect3DDevice9 *device)
 	return S_OK;
 }
 
-HRESULT dx_player::init_cpu(int width, int height, IDirect3DDevice9 *device)
+HRESULT dx_player::init_cpu(IDirect3DDevice9 *device)
 {
 	m_Device = device;
-	m_width = width;
-	m_height = height;
 
 	if (m_UI_logo == NULL) m_renderer1->loadBitmap(&m_UI_logo, L"skin\\logo2.jpg");
 	if (m_toolbar_background == NULL) m_renderer1->loadBitmap(&m_toolbar_background, L"skin\\toolbar_background.png");
@@ -116,7 +114,7 @@ HRESULT dx_player::invalidate_cpu()
 
 AutoSetting<double> g_scale(L"UIScale", 1.0);
 
-HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view, bool running)
+HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view)
 {
 	if (!m_file_loaded)
 		draw_nonmovie_bg(surface, view);
@@ -170,7 +168,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view, bool running)
 	{
 		RECTF rect = {x, y, x+button_size, y+button_size};
 		int select = i;
-		if (select == 3 && running) 
+		if (select == 3 && is_playing()) 
 			select = 7;
 		if (select == 6 && (bool)m_force_2d)
 			select = 8;

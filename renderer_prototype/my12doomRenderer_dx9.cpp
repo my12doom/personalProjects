@@ -29,6 +29,7 @@
 #include "PixelShaders\P016.h"
 #include "..\dwindow\dwindow_log.h"
 #include "..\dwindow\IPinHook.h"
+#include "..\dwindow\dx_player.h"
 
 enum helper_sample_format
 {
@@ -2262,6 +2263,13 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	HRESULT hr;
 	if (!surface)
 		return E_POINTER;
+
+	{
+		CAutoLock lck2(&m_uidrawer_cs);
+		hr = m_uidrawer == NULL ? S_FALSE : m_uidrawer->pre_render_movie(surface, view);
+	}
+
+
 	view = m_force2d ? 0 : view;
 
 	CComPtr<IDirect3DSurface9> src;
@@ -2426,7 +2434,7 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface, int view)
 		return E_POINTER;
 
 	CAutoLock lck2(&m_uidrawer_cs);
-	return m_uidrawer == NULL ? S_FALSE : m_uidrawer->draw_ui(surface, view, m_dsr0->m_State == State_Running);
+	return m_uidrawer == NULL ? S_FALSE : m_uidrawer->draw_ui(surface, view);
 }
 
 HRESULT my12doomRenderer::loadBitmap(gpu_sample **out, wchar_t *file)
@@ -3047,6 +3055,9 @@ DWORD WINAPI my12doomRenderer::test_thread(LPVOID param)
 
 	return 0;
 }
+
+extern dx_player *g_player;
+
 DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 {
 	my12doomRenderer *_this = (my12doomRenderer*)param;
@@ -3063,7 +3074,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 	{
 		if (_this->m_output_mode != pageflipping && GPUIdle)
 		{
-			if (timeGetTime() - _this->m_last_frame_time < 333)
+			if (timeGetTime() - _this->m_last_frame_time < 333 && g_player->is_playing())
 			{
 				if (WaitForSingleObject(_this->m_render_event, 1) != WAIT_TIMEOUT)
 				{

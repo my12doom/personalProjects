@@ -1,4 +1,4 @@
-﻿local lua_file = dwindow.loading_file
+﻿local lua_file = core.loading_file
 local lua_path = GetPath(lua_file)
 local function GetCurrentLuaPath(offset)
 	return lua_path
@@ -46,8 +46,8 @@ function menu_item:Create(text)
 end
 
 function menu_item:OnReleaseCPU()
-	if self.res and self.res.res then
-		dx9.release_resource_core(self.res.res)
+	if self.res then
+		self.res:release()
 	end
 	self.res = nil
 end
@@ -83,7 +83,7 @@ function menu:Create()
 	o.bottom = menu_bottom:Create()
 	o:AddChild(o.top)
 	o:AddChild(o.bottom)
-	o.top:SetRelativeTo(TOP)
+	o.top:SetPoint(TOP)
 	o.items = {}
 	
 	return o
@@ -96,10 +96,10 @@ function menu:AddItem(text)
 	local item = menu_item:Create(text)
 	self:AddChild(item)
 	
-	item:SetRelativeTo(TOP, self.items[#self.items] or self.top, BOTTOM)
+	item:SetPoint(TOP, self.items[#self.items] or self.top, BOTTOM)
 	
 	table.insert(self.items, item)	
-	self.bottom:SetRelativeTo(TOP, item, BOTTOM)
+	self.bottom:SetPoint(TOP, item, BOTTOM)
 	
 	return item
 end

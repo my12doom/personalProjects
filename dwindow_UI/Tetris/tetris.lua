@@ -1,4 +1,4 @@
-﻿local lua_file = dwindow.loading_file
+﻿local lua_file = core.loading_file
 local lua_path = GetPath(lua_file)
 local function GetCurrentLuaPath(offset)
 	return lua_path
@@ -219,13 +219,13 @@ init()
 
 local tetris = BaseFrame:Create()
 tetris.name = "TETRIS"
-tetris:SetRelativeTo(TOPLEFT)
+tetris:SetPoint(TOPLEFT)
 root:AddChild(tetris)
 tetris:SetSize(40*ww+40,40*hh+40)
 
 function tetris:RenderThis()
-	local res = get_bitmap(GetCurrentLuaPath() .. "fullscreen.png")
-	local res2 = get_bitmap(GetCurrentLuaPath() .. "stop.png")
+	local res = get_bitmap(lua_path .. "fullscreen.png")
+	local res2 = get_bitmap(lua_path .. "stop.png")
 	set_bitmap_rect(res2, 0,0,100,100)
 
 	-- paint border
@@ -260,9 +260,9 @@ function tetris:RenderThis()
 end
 
 function tetris:PreRender()
-	if dwindow.GetTickCount() - (self.tick or 0)  > 400 then
+	if core.GetTickCount() - (self.tick or 0)  > 400 then
 		Step()
-		self.tick = dwindow.GetTickCount()
+		self.tick = core.GetTickCount()
 	end
 end
 

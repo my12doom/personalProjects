@@ -1,4 +1,4 @@
-﻿local lua_file = dwindow.loading_file
+﻿local lua_file = core.loading_file
 local lua_path = GetPath(lua_file)
 local function GetCurrentLuaPath(offset)
 	return lua_path
@@ -20,7 +20,7 @@ end
 function playlist:play(L, R)
 	local pos = get_pos(L, R)
 	if (pos == playing) and playing then
-		if not dwindow.movie_loaded then
+		if not player.movie_loaded then
 			return playlist:play_item(playing)
 		end
 	end

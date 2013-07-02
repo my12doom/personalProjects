@@ -281,6 +281,14 @@ static int myprint(lua_State *L)
 // renderer things
 static int set_movie_rect(lua_State *L)
 {
+	if (lua_gettop(L) >= 1 && lua_isnil(L, -1))
+	{
+		g_renderer->set_movie_scissor_rect(NULL);
+		lua_pushboolean(L, TRUE);
+		return 1;
+	}
+
+
 	int parameter_count = -lua_gettop(L);
 	if (parameter_count > -4)
 		return 0;
@@ -341,7 +349,7 @@ int my12doomRenderer_lua_loadscript()
 	strcpy(tmp, apppath);
 	strcat(tmp, BASE_FRAME);
 	USES_CONVERSION;
-	g_lua_manager->get_variable("loading_file") = W2UTF8(A2W(tmp));
+	g_lua_core_manager->get_variable("loading_file") = A2W(tmp);
 	if (luaL_loadfile(lua_state, tmp) || lua_mypcall(lua_state, 0, 0, 0))
 	{
 		const char * result = lua_tostring(lua_state, -1);

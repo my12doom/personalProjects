@@ -3,15 +3,29 @@
 #include <list>
 #include <list>
 #include "..\dwindow\global_funcs.h"
+#include "..\dwindow\dwindow_log.h"
 
 lua_State *g_L = NULL;
 CCritSec g_csL;
-lua_manager *g_lua_manager = NULL;
+lua_manager *g_lua_core_manager = NULL;
+lua_manager *g_lua_setting_manager = NULL;
 std::list<lua_State*> free_threads;
 
 static int lua_GetTickCount (lua_State *L) 
 {
 	lua_pushinteger(L, timeGetTime());
+	return 1;
+}
+
+static int lua_ApplySetting(lua_State *L)
+{
+	const char *name = lua_tostring(L, -1);
+	if (!name)
+		return 0;
+
+	g_lua_setting_manager->get_const(name).read_from_lua();
+
+	lua_pushboolean(L, 1);
 	return 1;
 }
 
@@ -29,7 +43,7 @@ static int execute_luafile(lua_State *L)
 	const char *filename = NULL;
 	filename = luaL_checkstring(L, 1);
 	USES_CONVERSION;
-	g_lua_manager->get_variable("loading_file") = W2UTF8(A2W(filename));
+	g_lua_core_manager->get_variable("loading_file") = UTF82W(filename);
 	if(luaL_loadfile(L, W2A(UTF82W(filename))) || lua_pcall(L, 0, 0, 0))
 	{
 		const char * result;
@@ -101,7 +115,9 @@ int luaTerminateThread(lua_State *L)
 	HANDLE h = (HANDLE)lua_touserdata(L, n+0);
 	if (h == NULL)
 		return 0;
-	DWORD timeout = lua_tointeger(L, n+2);
+	DWORD timeout = INFINITE;
+	if (n== -2)
+		timeout = lua_tointeger(L, n+1);
 	DWORD o = WaitForSingleObject(h, timeout);
 
 	lua_pushinteger(L, o);
@@ -157,41 +173,46 @@ extern "C" int luaopen_cjson_safe(lua_State *l);
 
 int dwindow_lua_init () 
 {
-  dwindow_lua_exit();
-  CAutoLock lck(&g_csL);
-  int result;
-  g_L = luaL_newstate();  /* create state */
-  if (g_L == NULL) {
+	dwindow_lua_exit();
+	CAutoLock lck(&g_csL);
+	int result;
+	g_L = luaL_newstate();  /* create state */
+	if (g_L == NULL) {
 	  return EXIT_FAILURE;
-  }
+	}
 
-  /* open standard libraries */
-  luaL_checkversion(g_L);
-  lua_gc(g_L, LUA_GCSTOP, 0);  /* stop collector during initialization */
-  luaL_openlibs(g_L);  /* open libraries */
-  lua_gc(g_L, LUA_GCRESTART, 0);
+	/* open standard libraries */
+	luaL_checkversion(g_L);
+	lua_gc(g_L, LUA_GCSTOP, 0);  /* stop collector during initialization */
+	luaL_openlibs(g_L);  /* open libraries */
+	lua_gc(g_L, LUA_GCRESTART, 0);
 
 
-  result = lua_toboolean(g_L, -1);  /* get result */
+	result = lua_toboolean(g_L, -1);  /* get result */
 
-  g_lua_manager = new lua_manager("dwindow");
-  g_lua_manager->get_variable("FAILED") = &luaFAILED;
-  g_lua_manager->get_variable("GetTickCount") = &lua_GetTickCount;
-  g_lua_manager->get_variable("execute_luafile") = &execute_luafile;
-  g_lua_manager->get_variable("track_back") = &track_back;
-  g_lua_manager->get_variable("http_request") = &http_request;
-  g_lua_manager->get_variable("Sleep") = &lua_Sleep;
+	// setting
+	g_lua_setting_manager = new lua_manager("setting");
 
-  // threads
-  g_lua_manager->get_variable("ResumeThread") = &luaResumeThread;
-  g_lua_manager->get_variable("SuspendThread") = &luaSuspendThread;
-  g_lua_manager->get_variable("WaitForSingleObject") = &luaWaitForSingleObject;
-  g_lua_manager->get_variable("CreateThread") = &luaCreateThread;
-  g_lua_manager->get_variable("TerminateThread") = &luaTerminateThread;
+	// utils
+	g_lua_core_manager = new lua_manager("core");
+	g_lua_core_manager->get_variable("ApplySetting") = &lua_ApplySetting;
+	g_lua_core_manager->get_variable("FAILED") = &luaFAILED;
+	g_lua_core_manager->get_variable("GetTickCount") = &lua_GetTickCount;
+	g_lua_core_manager->get_variable("execute_luafile") = &execute_luafile;
+	g_lua_core_manager->get_variable("track_back") = &track_back;
+	g_lua_core_manager->get_variable("http_request") = &http_request;
+	g_lua_core_manager->get_variable("Sleep") = &lua_Sleep;
 
-  g_lua_manager->get_variable("cjson") = &luaopen_cjson_safe;
+	// threads
+	g_lua_core_manager->get_variable("ResumeThread") = &luaResumeThread;
+	g_lua_core_manager->get_variable("SuspendThread") = &luaSuspendThread;
+	g_lua_core_manager->get_variable("WaitForSingleObject") = &luaWaitForSingleObject;
+	g_lua_core_manager->get_variable("CreateThread") = &luaCreateThread;
+	g_lua_core_manager->get_variable("TerminateThread") = &luaTerminateThread;
 
-  return 0;
+	g_lua_core_manager->get_variable("cjson") = &luaopen_cjson_safe;
+
+	return 0;
 }
 
 lua_State * dwindow_lua_get_thread()
@@ -261,7 +282,7 @@ lua_manager::lua_manager(const char* table_name)
 
 lua_manager::~lua_manager()
 {
-	std::list<lua_global_variable*>::iterator it;
+	std::list<lua_variable*>::iterator it;
 	for(it = m_variables.begin(); it != m_variables.end(); it++)
 		delete *it;
 	delete [] m_table_name;
@@ -275,12 +296,12 @@ int lua_manager::refresh()
 
 int lua_manager::delete_variable(const char*name)
 {
-	std::list<lua_global_variable*>::iterator it;
+	std::list<lua_variable*>::iterator it;
 	for(it = m_variables.begin(); it != m_variables.end(); it++)
 	{
 		if (strcmp((*it)->m_name, name) == 0)
 		{
-			lua_global_variable *tmp = *it;
+			lua_variable *tmp = *it;
 			m_variables.remove(*it);
 			delete tmp;
 			return 1;
@@ -290,9 +311,9 @@ int lua_manager::delete_variable(const char*name)
 	return 0;
 }
 
-lua_global_variable & lua_manager::get_variable(const char*name)
+lua_variable & lua_manager::get_variable(const char*name)
 {
-	std::list<lua_global_variable*>::iterator it;
+	std::list<lua_variable*>::iterator it;
 	for(it = m_variables.begin(); it != m_variables.end(); it++)
 	{
 		if (strcmp((*it)->m_name, name) == 0)
@@ -301,24 +322,40 @@ lua_global_variable & lua_manager::get_variable(const char*name)
 		}
 	}
 
-	lua_global_variable * p = new lua_global_variable(name, this);
+	lua_variable * p = new lua_variable(name, this);
 	m_variables.push_back(p);
 	return *p;
 }
 
-lua_global_variable::lua_global_variable(const char*name, lua_manager *manager)
+lua_const & lua_manager::get_const(const char*name)
+{
+	std::list<lua_const*>::iterator it;
+	for(it = m_consts.begin(); it != m_consts.end(); it++)
+	{
+		if (strcmp((*it)->m_name, name) == 0)
+		{
+			return **it;
+		}
+	}
+
+	lua_const * p = new lua_const(name, this);
+	m_consts.push_back(p);
+	return *p;
+}
+
+lua_variable::lua_variable(const char*name, lua_manager *manager)
 {
 	m_manager = manager;
 	m_name = new char [strlen(name)+1];
 	strcpy(m_name, name);
 }
 
-lua_global_variable::~lua_global_variable()
+lua_variable::~lua_variable()
 {
 	delete m_name;
 };
 
-lua_global_variable::operator int()
+lua_variable::operator int()
 {
 	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
@@ -333,7 +370,7 @@ lua_global_variable::operator int()
 	return o;
 }
 
-void lua_global_variable::operator=(const int in)
+void lua_variable::operator=(const int in)
 {
 	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
@@ -345,7 +382,7 @@ void lua_global_variable::operator=(const int in)
 }
 
 
-lua_global_variable::operator bool()
+lua_variable::operator bool()
 {
 	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
@@ -360,7 +397,7 @@ lua_global_variable::operator bool()
 	return o == 0;
 }
 
-void lua_global_variable::operator=(const bool in)
+void lua_variable::operator=(const bool in)
 {
 	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
@@ -371,7 +408,7 @@ void lua_global_variable::operator=(const bool in)
 	lua_pop(L, 1);
 }
 
-lua_global_variable::operator double()
+lua_variable::operator double()
 {
 	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
@@ -386,7 +423,7 @@ lua_global_variable::operator double()
 	return o;
 }
 
-void lua_global_variable::operator=(const double in)
+void lua_variable::operator=(const double in)
 {
 	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
@@ -398,33 +435,33 @@ void lua_global_variable::operator=(const double in)
 }
 
 
-lua_global_variable::operator const char*()
+// lua_global_variable::operator const wchar_t*()
+// {
+// 	CAutoLock lck(&m_manager->m_cs);
+// 	luaState L;
+// 
+// 	lua_getglobal(L, m_manager->m_table_name);
+// 	lua_getfield(L, -1, m_name);
+// 
+// 	const char* o = lua_tostring(L, -1);
+// 
+// 	lua_pop(L, 2);
+// 
+// 	return o;
+// }
+
+void lua_variable::operator=(const wchar_t *in)
 {
 	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
 
 	lua_getglobal(L, m_manager->m_table_name);
-	lua_getfield(L, -1, m_name);
-
-	const char* o = lua_tostring(L, -1);
-
-	lua_pop(L, 2);
-
-	return o;
-}
-
-void lua_global_variable::operator=(const char *in)
-{
-	CAutoLock lck(&m_manager->m_cs);
-	luaState L;
-
-	lua_getglobal(L, m_manager->m_table_name);
-	lua_pushstring(L, in);
+	lua_pushstring(L, W2UTF8(in));
 	lua_setfield(L, -2, m_name);
 	lua_pop(L, 1);
 }
 
-void lua_global_variable::operator=(lua_CFunction func)
+void lua_variable::operator=(lua_CFunction func)
 {
 	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
@@ -434,6 +471,165 @@ void lua_global_variable::operator=(lua_CFunction func)
 	lua_setfield(L, -2, m_name);
 	lua_pop(L, 1);
 }
+
+
+
+// const
+lua_const::lua_const(const char*name, lua_manager *manager)
+{
+	m_manager = manager;
+	m_name = new char [strlen(name)+1];
+	strcpy(m_name, name);
+
+	read_from_lua();
+}
+
+int lua_const::read_from_lua()
+{
+	luaState L;
+	lua_getglobal(L, m_manager->m_table_name);
+	lua_getfield(L, -1, m_name);
+	
+	if (lua_type(L, -1) == LUA_TNUMBER)
+	{
+		m_type = _double;
+		m_value.d = lua_tonumber(L, -1);
+	}
+	else if (lua_type(L, -1) == LUA_TSTRING)
+	{
+		const char * s = lua_tostring(L, -1);
+		UTF82W w(s);
+		m_type = _string;
+		m_value.s = new wchar_t[wcslen(w)+1];
+		wcscpy(m_value.s, w);
+	}
+	else if (lua_type(L, -1) == LUA_TBOOLEAN)
+	{
+		m_type = _bool;
+		m_value.b = lua_toboolean(L, -1);
+	}
+	else
+	{
+		// lua variable not found, undefined behavior
+#ifdef DEBUG
+		DebugBreak();	
+#endif
+		return -1;
+	}
+
+	lua_pop(L,2);
+
+	return 0;
+}
+
+lua_const::~lua_const()
+{
+	delete m_name;
+};
+
+lua_const::operator int()
+{
+	if (m_type != _int && m_type != _double)
+		return 0;
+	
+	return m_type == _int ? m_value.i : (m_value.d+0.5);
+}
+
+int& lua_const::operator=(const int in)
+{
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
+
+	lua_getglobal(L, m_manager->m_table_name);
+	lua_pushinteger(L, in);
+	lua_setfield(L, -2, m_name);
+	lua_pop(L, 1);
+
+	if (m_type == _string && m_value.s) delete m_value.s;
+	m_type = _int;
+	m_value.i = in;
+
+	return m_value.i;
+}
+
+
+lua_const::operator bool()
+{
+	if (m_type != _bool)
+		return 0;
+
+	return m_value.b;
+}
+
+bool& lua_const::operator=(const bool in)
+{
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
+
+	lua_getglobal(L, m_manager->m_table_name);
+	lua_pushboolean(L, in ? 1 : 0);
+	lua_setfield(L, -2, m_name);
+	lua_pop(L, 1);
+
+	if (m_type == _string && m_value.s) delete m_value.s;
+	m_type = _bool;
+	m_value.b = in;
+
+	return m_value.b;
+}
+
+lua_const::operator double()
+{
+	if (m_type != _double)
+		return 0;
+
+	return m_value.d;
+}
+
+double& lua_const::operator=(const double in)
+{
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
+
+	lua_getglobal(L, m_manager->m_table_name);
+	lua_pushnumber(L, in);
+	lua_setfield(L, -2, m_name);
+	lua_pop(L, 1);
+
+	if (m_type == _string && m_value.s) delete m_value.s;
+	m_type = _double;
+	m_value.d = in;
+
+	return m_value.d;
+}
+
+
+lua_const::operator const wchar_t*()
+{
+	if (m_type != _double)
+		return 0;
+
+	return m_value.s;
+}
+
+wchar_t *& lua_const::operator=(const wchar_t *in)
+{
+	CAutoLock lck(&m_manager->m_cs);
+	luaState L;
+
+	lua_getglobal(L, m_manager->m_table_name);
+	lua_pushstring(L, W2UTF8(in));
+	lua_setfield(L, -2, m_name);
+	lua_pop(L, 1);
+
+	if (m_type == _string && m_value.s) delete m_value.s;
+	m_type = _string;
+	m_value.s = new wchar_t[wcslen(in)+1];
+	wcscpy(m_value.s, in);
+
+	return m_value.s;
+}
+
 
 int lua_track_back(lua_State *L)
 {
@@ -462,4 +658,55 @@ int lua_mypcall(lua_State *L, int n, int r, int flag)
 	int o = lua_pcall(L, n, r, lua_gettop(L) - n - 1);
 	lua_pop(L, 1);
 	return o;
+}
+
+int lua_save_settings()
+{
+	luaState L;
+	lua_getglobal(L, "save_settings");
+	lua_pcall(L, 0, 1, 0);
+
+	wchar_t config_file[MAX_PATH];
+	wcscpy(config_file, dwindow_log_get_filename());
+	wcscpy(wcsrchr(config_file, '\\'), L"\\config.cfg");
+	
+	FILE * f = _wfopen(config_file, L"wb");
+	if (!f)
+	{
+		lua_pop(L, 1);
+		return -1;
+	}
+
+	const char *content = lua_tostring(L, -1);
+	fwrite(content, 1, strlen(content), f);
+	fclose(f);	
+
+	lua_pop(L, 1);
+	return 0;
+}
+
+int lua_load_settings()
+{
+	wchar_t config_file[MAX_PATH];
+	wcscpy(config_file, dwindow_log_get_filename());
+	wcscpy(wcsrchr(config_file, '\\'), L"\\config.cfg");
+
+	FILE * f = _wfopen(config_file, L"rb");
+	if (!f)
+		return -1;
+
+	fseek(f, 0, SEEK_END);
+	int size = ftell(f);
+	char *p = new char[size];
+	fseek(f, 0, SEEK_SET);
+	size = fread(p, 1, size, f);
+	p[size] = NULL;
+	fclose(f);
+
+	luaState L;
+	lua_getglobal(L, "load_settings");
+	lua_pushstring(L, p);
+	lua_pcall(L, 1, 0, 0);
+
+	return 0;
 }

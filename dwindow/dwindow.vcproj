@@ -1897,6 +1897,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\DWindowLuaAPI.lua"
+				>
+			</File>
+			<File
 				RelativePath="..\lua\my12doom_lua.cpp"
 				>
 			</File>
@@ -2221,6 +2225,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dwindow_UI\default_setting.lua"
+				>
+			</File>
+			<File
 				RelativePath="..\dwindow_UI\dwindow.lua"
 				>
 			</File>
@@ -2230,6 +2238,10 @@
 			</File>
 			<File
 				RelativePath="..\dwindow_UI\playlist.lua"
+				>
+			</File>
+			<File
+				RelativePath="..\dwindow_UI\Language\zhCN.lua"
 				>
 			</File>
 			<Filter

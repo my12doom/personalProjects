@@ -24,6 +24,7 @@
 #include "IStereoLayout.h"
 #include "color_adjust.h"
 #include "IntelWiDiExtensions_i.h"
+#include "..\lua\my12doom_lua.h"
 
 #define _AFX
 #define __AFX_H__
@@ -149,7 +150,7 @@ public:
 
 	// trial
 	AutoSetting<bool> m_trial_shown;
-	AutoSetting<DWORD> m_server_port/*(L"DWindowNetworkPort", 8080, REG_DWORD)*/;
+	lua_const &m_server_port/*(L"DWindowNetworkPort", 8080, REG_DWORD)*/;
 
 	// theater
 	HWND m_theater_owner;
@@ -360,15 +361,15 @@ public:
 	// end font
 
 	// color adjust 
-	AutoSetting<double> m_saturation;
-	AutoSetting<double> m_luminance;
-	AutoSetting<double> m_hue;
-	AutoSetting<double> m_contrast;
+	lua_const &m_saturation;
+	lua_const &m_luminance;
+	lua_const &m_hue;
+	lua_const &m_contrast;
 
-	AutoSetting<double> m_saturation2;
-	AutoSetting<double> m_luminance2;
-	AutoSetting<double> m_hue2;
-	AutoSetting<double> m_contrast2;
+	lua_const &m_saturation2;
+	lua_const &m_luminance2;
+	lua_const &m_hue2;
+	lua_const &m_contrast2;
 
 	HRESULT set_parameter(int parameter, double value);
 	HRESULT get_parameter(int parameter, double *value);
@@ -380,7 +381,7 @@ public:
 	virtual HRESULT init_cpu(IDirect3DDevice9 *device);
 	virtual HRESULT invalidate_gpu();
 	virtual HRESULT invalidate_cpu();
-	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, int view, bool running);
+	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, int view);
 	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, int view);
 	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL);
 
@@ -442,7 +443,8 @@ public:
 	virtual HRESULT init_cpu(IDirect3DDevice9 *device);
 	virtual HRESULT invalidate_gpu();
 	virtual HRESULT invalidate_cpu();
-	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, int view, bool running);
+	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, int view);
+	virtual HRESULT pre_render_movie(IDirect3DSurface9 *surface, int view);
 	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, int view);
 	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL);
 

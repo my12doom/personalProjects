@@ -25,6 +25,7 @@ rd/s/q dwindow_NSIS\UI
 md dwindow_NSIS\UI
 xcopy dwindow_UI\*.* dwindow_NSIS\UI /s /e /y
 rd/s/q dwindow_NSIS\UI\3dvplayer
+for /r %%f in (dwindow_NSIS\UI\*.lua) do dwindow_NSIS\StereoPlayer.exe compile %%f %%f
 
 pause
 C:\NSIS\makensisw.exe dwindow_NSIS\dwindow.nsi

@@ -13,6 +13,9 @@ extern "C"
 int dwindow_lua_init();
 int dwindow_lua_exit();
 int lua_mypcall(lua_State *L, int n, int r, int flag);
+int lua_save_settings();
+int lua_load_settings();
+
 class luaState
 {
 public:
@@ -22,7 +25,8 @@ public:
 	lua_State * L;
 };
 
-class lua_global_variable;
+class lua_variable;
+class lua_const;
 
 class lua_manager
 {
@@ -31,36 +35,73 @@ public:
 	~lua_manager();
 	
 	int refresh();
-	lua_global_variable & get_variable(const char*name);
+	lua_variable & get_variable(const char*name);
+	lua_const & get_const(const char*name);
 	int delete_variable(const char*name);
 
 protected:
-	friend class lua_global_variable;
-	std::list<lua_global_variable*> m_variables;
+	friend class lua_variable;
+	friend class lua_const;
+	std::list<lua_variable*> m_variables;
+	std::list<lua_const*> m_consts;
 	CCritSec m_cs;
 	char *m_table_name;
 };
 
-class lua_global_variable
+class lua_variable
 {
 public:
 	operator int();
 	operator double();
-	operator const char*();
 	operator const wchar_t*();
 	operator bool();
 	void operator=(const int in);
 	void operator=(const double in);
-	void operator=(const char* in);
 	void operator=(const wchar_t* in);
 	void operator=(const bool in);
 	void operator=(lua_CFunction func);		// write only
 protected:
 	friend class lua_manager;
-	lua_global_variable(const char*name, lua_manager *manager);
-	~lua_global_variable();
+	lua_variable(const char*name, lua_manager *manager);
+	~lua_variable();
 	lua_manager *m_manager;
 	char *m_name;
 };
 
-extern lua_manager *g_lua_manager;
+class lua_const
+{
+public:
+	operator int();
+	operator double();
+	operator const wchar_t*();
+	operator bool();
+	int& operator=(const int in);
+	double& operator=(const double in);
+	wchar_t*& operator=(const wchar_t* in);
+	bool& operator=(const bool in);
+
+	int read_from_lua();
+protected:
+	friend class lua_manager;
+	lua_const(const char*name, lua_manager *manager);
+	~lua_const();
+	lua_manager *m_manager;
+	char *m_name;
+	union
+	{
+		int i;
+		double d;
+		bool b;
+		wchar_t *s;
+	} m_value;
+	enum
+	{
+		_int,
+		_double,
+		_bool,
+		_string,
+	} m_type;
+};
+
+extern lua_manager *g_lua_core_manager;
+extern lua_manager *g_lua_setting_manager;

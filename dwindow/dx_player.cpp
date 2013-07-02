@@ -35,6 +35,7 @@ D3DDISPLAYMODE mode_auto = {0};
 proc_IMemInputPin_Receive g_old;
 int g_audio_latency = 0;
 dx_player *g_player = NULL;
+extern lua_manager *g_player_lua_manager;
 
 #include "bomb_network.h"
 
@@ -65,78 +66,79 @@ bool wcs_endwith_nocase(const wchar_t *search_in, const wchar_t *search_for)
 ICommandReciever *command_reciever;
 
 // constructor & destructor
-dx_player::dx_player(HINSTANCE hExe):
-m_lua(NULL),
-m_dialog_open(0),
-m_lastVideoCBTick(0),
-m_renderer1(NULL),
-dwindow(m_screen1, m_screen2),
-m_lFontPointSize(L"FontSize", 40),
-m_FontName(L"Font", g_active_language == CHINESE ? L"ºÚÌå" : L"Arial"),
-m_FontStyle(L"FontStyle", L"Regular"),
-m_font_color(L"FontColor", 0x00ffffff),
-m_input_layout(L"InputLayout", input_layout_auto, REG_DWORD),
-m_output_mode(L"OutputMode", anaglyph, REG_DWORD),
-m_mask_mode(L"MaskMode", row_interlace, REG_DWORD),
-m_display_subtitle(L"DisplaySubtitle", true),
-m_anaglygh_left_color(L"AnaglyghLeftColor", RGB(255,0,0)),
-m_anaglygh_right_color(L"AnaglyghRightColor", RGB(0,255,255)),
-m_volume(L"Volume", 1.0),
-m_aspect(L"Aspect", -1),
-m_subtitle_latency(L"SubtitleLatency", 0, REG_DWORD),
-m_subtitle_ratio(L"SubtitleRatio", 1.0),
-m_saved_screen1(L"Screen1", rect_zero),
-m_saved_screen2(L"Screen2", rect_zero),
-m_saved_rect1(L"Window1", rect_zero),
-m_saved_rect2(L"Window2", rect_zero),
-m_useInternalAudioDecoder(L"InternalAudioDecoder", true),
-m_channel(L"AudioChannel", 2, REG_DWORD),
-m_normalize_audio(L"NormalizeAudio", 16.0),
-m_forced_deinterlace(L"ForcedDeinterlace", false),
-m_saturation(L"Saturation", 0.5),
-m_luminance(L"Luminance", 0.5),
-m_hue(L"Hue", 0.5),
-m_contrast(L"Contrast", 0.5),
-m_saturation2(L"Saturation2", 0.5),
-m_luminance2(L"Luminance2", 0.5),
-m_hue2(L"Hue2", 0.5),
-m_contrast2(L"Contrast2", 0.5),
-m_theater_owner(NULL),
-m_tell_thread(NULL),
-m_trial_shown(L"Trial", false),
-m_LogFont(L"LogFont", empty_logfontw),
-m_aspect_mode(L"AspectRatioMode", aspect_letterbox),
-m_subtitle_center_x(L"SubtitleX", 0.5),
-m_subtitle_bottom_y(L"SubtitleY", 0.95),
-m_user_subtitle_parallax(L"SubtitleSubtitleParallax", 0, REG_DWORD),
-m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD),
-m_swap_eyes(L"SwapEyes", false),
-m_force_2d(L"Force2D", false),
-m_movie_pos_x(L"MoviePosX", 0),
-m_movie_pos_y(L"MoviePosY", 0),
-m_has_multi_touch(false),
-m_widi_has_support(false),
-m_widi_inited(false),
-m_widi_scanning(false),
-m_widi_connected(false),
-m_widi_num_adapters_found(0),
-m_widi_screen_mode(L"WidiScreenMode", Clone, REG_DWORD),
-m_widi_resolution_width(L"WidiScreenWidth", 0, REG_DWORD),
-m_widi_resolution_height(L"WidiScreenHeight", 0, REG_DWORD),
-m_toolbar_background(NULL),
-m_UI_logo(NULL),
-m_dragging_window(0),
-m_resize_window_on_open(L"OnOpen", FALSE, REG_DWORD),
-m_movie_resizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD),
-m_subtitle_resizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD),
-m_server_port(L"DWindowNetworkPort", 0xb03d, REG_DWORD),
-m_renderer_reset_done(0),
-m_hd3d_prefered_mode(L"HD3DPreferedMode", mode_auto),
-m_audio_latency(L"AudioLatency", 0, REG_DWORD),
+#define GET_CONST(x) g_lua_setting_manager->get_const(x)
+dx_player::dx_player(HINSTANCE hExe)
+:m_lua(NULL)
+,m_dialog_open(0)
+,m_lastVideoCBTick(0)
+,m_renderer1(NULL)
+,dwindow(m_screen1, m_screen2)
+,m_lFontPointSize(L"FontSize", 40)
+,m_FontName(L"Font", g_active_language == CHINESE ? L"ºÚÌå" : L"Arial")
+,m_FontStyle(L"FontStyle", L"Regular")
+,m_font_color(L"FontColor", 0x00ffffff)
+,m_input_layout(L"InputLayout", input_layout_auto, REG_DWORD)
+,m_output_mode(L"OutputMode", anaglyph, REG_DWORD)
+,m_mask_mode(L"MaskMode", row_interlace, REG_DWORD)
+,m_display_subtitle(L"DisplaySubtitle", true)
+,m_anaglygh_left_color(L"AnaglyghLeftColor", RGB(255,0,0))
+,m_anaglygh_right_color(L"AnaglyghRightColor", RGB(0,255,255))
+,m_volume(L"Volume", 1.0)
+,m_aspect(L"Aspect", -1)
+,m_subtitle_latency(L"SubtitleLatency", 0, REG_DWORD)
+,m_subtitle_ratio(L"SubtitleRatio", 1.0)
+,m_saved_screen1(L"Screen1", rect_zero)
+,m_saved_screen2(L"Screen2", rect_zero)
+,m_saved_rect1(L"Window1", rect_zero)
+,m_saved_rect2(L"Window2", rect_zero)
+,m_useInternalAudioDecoder(L"InternalAudioDecoder", true)
+,m_channel(L"AudioChannel", 2, REG_DWORD)
+,m_normalize_audio(L"NormalizeAudio", 16.0)
+,m_forced_deinterlace(L"ForcedDeinterlace", false)
+,m_saturation(g_lua_setting_manager->get_const("Saturation"))
+,m_luminance(g_lua_setting_manager->get_const("Luminance"))
+,m_hue(g_lua_setting_manager->get_const("Hue"))
+,m_contrast(g_lua_setting_manager->get_const("Contrast"))
+,m_saturation2(g_lua_setting_manager->get_const("Saturation2"))
+,m_luminance2(g_lua_setting_manager->get_const("Luminance2"))
+,m_hue2(g_lua_setting_manager->get_const("Hue2"))
+,m_contrast2(g_lua_setting_manager->get_const("Contrast2"))
+,m_theater_owner(NULL)
+,m_tell_thread(NULL)
+,m_trial_shown(L"Trial", false)
+,m_LogFont(L"LogFont", empty_logfontw)
+,m_aspect_mode(L"AspectRatioMode", aspect_letterbox)
+,m_subtitle_center_x(L"SubtitleX", 0.5)
+,m_subtitle_bottom_y(L"SubtitleY", 0.95)
+,m_user_subtitle_parallax(L"SubtitleSubtitleParallax", 0, REG_DWORD)
+,m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD)
+,m_swap_eyes(L"SwapEyes", false)
+,m_force_2d(L"Force2D", false)
+,m_movie_pos_x(L"MoviePosX", 0)
+,m_movie_pos_y(L"MoviePosY", 0)
+,m_has_multi_touch(false)
+,m_widi_has_support(false)
+,m_widi_inited(false)
+,m_widi_scanning(false)
+,m_widi_connected(false)
+,m_widi_num_adapters_found(0)
+,m_widi_screen_mode(L"WidiScreenMode", Clone, REG_DWORD)
+,m_widi_resolution_width(L"WidiScreenWidth", 0, REG_DWORD)
+,m_widi_resolution_height(L"WidiScreenHeight", 0, REG_DWORD)
+,m_toolbar_background(NULL)
+,m_UI_logo(NULL)
+,m_dragging_window(0)
+,m_resize_window_on_open(L"OnOpen", FALSE, REG_DWORD)
+,m_movie_resizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD)
+,m_subtitle_resizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD)
+,m_server_port(GET_CONST("DWindowNetworkPort"))
+,m_renderer_reset_done(0)
+,m_hd3d_prefered_mode(L"HD3DPreferedMode", mode_auto)
+,m_audio_latency(L"AudioLatency", 0, REG_DWORD)
 #ifdef VSTAR
 #endif
-m_simple_audio_switching(L"SimpleAudioSwitching", false),
-m_subtitle_loader_pool(2)
+,m_simple_audio_switching(L"SimpleAudioSwitching", false)
+,m_subtitle_loader_pool(2)
 {
 	g_player = this;
 	g_audio_latency = m_audio_latency;
@@ -1778,7 +1780,22 @@ LRESULT dx_player::on_timer(int id)
 
 	if (id == 3) // lua UpdateUI()
 	{
-		g_lua_manager->get_variable("menu_open") = m_dialog_open;
+		if (this->m_dialog_open <= 0)
+		{
+			luaState lua_state;
+			lua_getglobal(lua_state, "UpdateUI");
+			if (lua_isfunction(lua_state, -1))
+			{
+				lua_mypcall(lua_state, 0, 0, 0);
+				lua_settop(lua_state, 0);
+			}
+			else
+				lua_pop(lua_state, 1);
+		}
+		else
+		{
+			show_mouse(true);
+		}
 
 		return S_OK;
 	}
@@ -2899,6 +2916,7 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_subtitle_resizing((resampling_method)(int)m_subtitle_resizing);
 	m_renderer1->HD3D_set_prefered_mode(m_hd3d_prefered_mode);
 
+	g_player_lua_manager->get_variable("movie_loaded") = false;
 	m_file_loaded = false;
 	m_active_audio_track = 0;
 	m_active_subtitle_track = 0;
@@ -3844,6 +3862,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		if (!non_mainfile)
 		{
 			m_srenderer = m_grenderer.GetSubtitleRenderer();
+			g_player_lua_manager->get_variable("movie_loaded") = true;
 			m_file_loaded = true;
 			SetWindowTextW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), file_to_play);
 			SetWindowTextW(m_theater_owner ? m_theater_owner : id_to_hwnd(2), file_to_play);
@@ -4990,8 +5009,6 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	if (!f)
 		return;
 	fclose(f);
-
-	m_renderer->load_file(m_pathname);
 }
 
 subtitle_file_handler::~subtitle_file_handler()
@@ -5303,12 +5320,25 @@ HRESULT lua_drawer::invalidate_cpu()
 
 	return S_OK;
 }
-HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, int view, bool running)
+HRESULT lua_drawer::pre_render_movie(IDirect3DSurface9 *surface, int view)
 {
 	m_device->SetRenderTarget(0, surface);
 
-	g_lua_manager->get_variable("running") = running;
-	g_lua_manager->get_variable("movie_loaded") = m_owner->m_file_loaded;
+	luaState lua_state;
+	lua_getglobal(lua_state, "PreRender");
+	if (lua_isfunction(lua_state, -1))
+	{
+		lua_pushinteger(lua_state, view);
+		lua_mypcall(lua_state, 1, 0, 0);
+		lua_settop(lua_state, 0);
+	}
+	else
+		lua_pop(lua_state, 1);
+
+	return S_OK;
+}HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, int view)
+{
+	m_device->SetRenderTarget(0, surface);
 
 	luaState lua_state;
 	lua_getglobal(lua_state, "RenderUI");

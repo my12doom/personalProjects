@@ -30,6 +30,7 @@ copy/y my12doomSource\bin\Filters_x86\*.ax dwindow_NSIS\codec
 rd/s/q dwindow_NSIS\UI
 md dwindow_NSIS\UI
 xcopy dwindow_UI\*.* dwindow_NSIS\UI /s /e /y
+for /r %%f in (dwindow_NSIS\UI\*.lua) do dwindow_NSIS\StereoPlayer.exe compile %%f %%f
 
 pause
 C:\NSIS\makensisw.exe dwindow_NSIS\dwindowVSTAR.nsi

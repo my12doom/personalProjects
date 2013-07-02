@@ -188,6 +188,12 @@ static int popup_menu(lua_State *L)
 
 	return 0;
 }
+static int reset(lua_State *L)
+{
+	g_player->reset();
+
+	return 0;
+}
 
 static int lua_get_splayer_subtitle(lua_State *L)
 {
@@ -230,6 +236,7 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("total") = &total;
 	g_player_lua_manager->get_variable("seek") = &seek;
 	g_player_lua_manager->get_variable("is_playing") = &is_playing;
+	g_player_lua_manager->get_variable("reset") = &reset;
 	g_player_lua_manager->get_variable("reset_and_loadfile") = &reset_and_loadfile;
 	g_player_lua_manager->get_variable("load_subtitle") = &load_subtitle;
 	g_player_lua_manager->get_variable("is_fullscreen") = &is_fullscreen;

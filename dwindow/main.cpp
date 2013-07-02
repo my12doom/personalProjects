@@ -60,6 +60,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	my12doomRenderer_lua_loadscript();
 	ui_lua_init();
 	player_lua_init();
+	lua_load_settings();
 
 	HWND pre_instance = single_instance ? FindWindowA("DWindowClass", NULL) : NULL;
 	wchar_t *argvv[] = {L"", L"compile", L"D:\\private\\dwindow_UI\\dwindow.lua", L"D:\\private\\dwindow_UI\\dwindow.bin"};
@@ -145,10 +146,12 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	while (!test->is_closed())
 		Sleep(100);
 
-	HANDLE killer = CreateThread(NULL, NULL, killer_thread2, new DWORD(3000), NULL, NULL);
+	lua_save_settings();
+
+ 	HANDLE killer = CreateThread(NULL, NULL, killer_thread2, new DWORD(3000), NULL, NULL);
 	bar_logout();
 	delete test;
-	WaitForSingleObject(killer, 3000);
+ 	WaitForSingleObject(killer, 3000);
 	return 0;
 }
 

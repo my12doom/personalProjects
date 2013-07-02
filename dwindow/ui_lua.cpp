@@ -6,6 +6,7 @@
 
 lua_manager *g_lua_ui_manager = NULL;
 extern dx_player *g_player;
+extern lua_manager *g_player_lua_manager;
 
 class menu_holder_window
 {
@@ -29,7 +30,7 @@ protected:
 static int luaOpenFile(lua_State *L)
 {
 	wchar_t out[1024] = L"";
-	if (!open_file_dlg(out, g_player->get_window((int)g_lua_manager->get_variable("active_view")+1)))
+	if (!open_file_dlg(out, g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1)))
 		return 0;
 
 	lua_pushstring(L, W2UTF8(out));
@@ -39,7 +40,7 @@ static int luaOpenFile(lua_State *L)
 static int luaOpenDoubleFile(lua_State *L)
 {
 	wchar_t left[1024] = L"", right[1024] = L"";
-	if (FAILED(open_double_file(g_player->m_hexe, g_player->get_window((int)g_lua_manager->get_variable("active_view")+1), left, right)))
+	if (FAILED(open_double_file(g_player->m_hexe, g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1), left, right)))
 		return 0;
 
 	lua_pushstring(L, W2UTF8(left));
@@ -50,7 +51,7 @@ static int luaOpenDoubleFile(lua_State *L)
 static int luaOpenFolder(lua_State *L)
 {
 	wchar_t out[1024] = L"";
-	if (!browse_folder(out, g_player->get_window((int)g_lua_manager->get_variable("active_view")+1)))
+	if (!browse_folder(out, g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1)))
 		return 0;
 
 	lua_pushstring(L, W2UTF8(out));
@@ -60,10 +61,32 @@ static int luaOpenFolder(lua_State *L)
 static int luaOpenURL(lua_State *L)
 {
 	wchar_t url[1024] = L"";
-	if (FAILED(open_URL(g_player->m_hexe, g_player->get_window((int)g_lua_manager->get_variable("active_view")+1), url)))
+	if (FAILED(open_URL(g_player->m_hexe, g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1), url)))
 		return 0;
 
 	lua_pushstring(L, W2UTF8(url));
+	return 1;
+}
+
+static int luaStartDragging(lua_State *L)
+{
+	HWND hwnd = g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1);
+	ReleaseCapture();
+	SendMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
+static int luaStartResizing(lua_State *L)
+{
+	int pos = HTBOTTOMRIGHT;
+	if (lua_gettop(L)>0)
+		pos = lua_tointeger(L, -1);
+	HWND hwnd = g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1);
+	ReleaseCapture();
+	SendMessage(hwnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, 0);
+
+	lua_pushboolean(L, 1);
 	return 1;
 }
 
@@ -143,7 +166,7 @@ static int get_mouse_pos(lua_State *L)
 {
 	POINT p;
 	GetCursorPos(&p);
-	HWND wnd = g_player->get_window((int)g_lua_manager->get_variable("active_view")+1);
+	HWND wnd = g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1);
 	ScreenToClient(wnd, &p);
 
 	lua_pushinteger(L, p.x/UIScale);
@@ -167,6 +190,9 @@ int ui_lua_init()
 	g_lua_ui_manager->get_variable("AppendSubmenu") = &luaAppendSubmenu;
 	g_lua_ui_manager->get_variable("DestroyMenu") = &luaDestroyMenu;
 	g_lua_ui_manager->get_variable("PopupMenu") = &luaPopupMenu;
+
+	g_lua_ui_manager->get_variable("StartDragging") = &luaStartDragging;
+	g_lua_ui_manager->get_variable("StartResizing") = &luaStartResizing;
 
 	g_lua_ui_manager->get_variable("get_mouse_pos") = &get_mouse_pos;
 

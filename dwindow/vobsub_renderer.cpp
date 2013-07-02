@@ -12,7 +12,7 @@ HRESULT VobSubRenderer::load_file(wchar_t *filename, int langid)
 		return E_FAIL;
 
 	wchar_t * ext = filename + wcslen(filename) - 3;
-	if (wcs_endwith_nocase(ext, L".idx"))
+	if (wcs_endwith_nocase(ext, L"idx"))
 	{
 		wchar_t sub[1024];
 		wcscpy(sub, filename);
@@ -23,7 +23,7 @@ HRESULT VobSubRenderer::load_file(wchar_t *filename, int langid)
 
 	}
 
-	else if (wcs_endwith_nocase(ext, L".sub"))
+	else if (wcs_endwith_nocase(ext, L"sub"))
 	{
 		wchar_t idx[1024];
 		wcscpy(idx, filename);

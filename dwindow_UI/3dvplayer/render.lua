@@ -1,9 +1,5 @@
-﻿local lua_file = dwindow.loading_file
+﻿local lua_file = core.loading_file
 local lua_path = GetPath(lua_file)
-local function GetCurrentLuaPath(offset)
-	return lua_path
-end
-
 
 -- 3dvplayer UI renderer
 
@@ -34,12 +30,12 @@ local hidden_progress_width = 72;
 logo = BaseFrame:Create()
 logo.name = "LOGO"
 root:AddChild(logo)
-logo:SetRelativeTo(CENTER)
+logo:SetPoint(CENTER)
 logo:SetSize(1920,1080)
 
 function logo:RenderThis()
-	if not dwindow.movie_loaded then
-		local res = get_bitmap(GetCurrentLuaPath() .. "logo_bg.png")
+	if not player.movie_loaded then
+		local res = get_bitmap(lua_path .. "logo_bg.png")
 		paint(0,0,1920,1080, res)
 	end
 end
@@ -55,18 +51,18 @@ end
 logo_hot = BaseFrame:Create()
 logo_hot.name = "LOGO HOT AREA"
 logo:AddChild(logo_hot)
-logo_hot:SetRelativeTo(CENTER)
+logo_hot:SetPoint(CENTER)
 logo_hot:SetSize(400,171)
 
 function logo_hot:RenderThis()
-	if not dwindow.movie_loaded then
-		local res = get_bitmap(GetCurrentLuaPath() .. "logo_hot.png")
+	if not player.movie_loaded then
+		local res = get_bitmap(lua_path .. "logo_hot.png")
 		paint(0,0,400,171, res)
 	end
 end
 
 function logo_hot:OnClick(...)
-	if dwindow.movie_loaded then
+	if player.movie_loaded then
 		return false
 	end
 	player.popup_menu()
@@ -76,14 +72,14 @@ end
 toolbar_bg = BaseFrame:Create()
 toolbar_bg.name = "toolbar_bg"
 root:AddChild(toolbar_bg)
-toolbar_bg:SetRelativeTo(BOTTOMLEFT)
-toolbar_bg:SetRelativeTo(BOTTOMRIGHT)
+toolbar_bg:SetPoint(BOTTOMLEFT)
+toolbar_bg:SetPoint(BOTTOMRIGHT)
 toolbar_bg:SetSize(nil, toolbar_height)
 print("toolbar_height=", toolbar_height)
 
 function toolbar_bg:RenderThis()
-	local l,t,r,b = self:GetAbsRect()
-	local res = get_bitmap(GetCurrentLuaPath() .. "toolbar_background.png");
+	local l,t,r,b = self:GetRect()
+	local res = get_bitmap(lua_path .. "toolbar_background.png");
 	paint(0,0,r-l,b-t, res)
 end
 
@@ -106,7 +102,7 @@ local button_functions =
 	playlist.next,
 	player.pause,
 	playlist.previous,
-	dwindow.reset,
+	player.reset,
 	player.toggle_3d,
 }
 
@@ -116,7 +112,7 @@ local function button_GetRect(self)
 end
 
 local function button_RenderThis(self)
-	paint(11,0,button_size+11,button_size, get_bitmap(GetCurrentLuaPath() .. self.pic[1]))
+	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[1]))
 end
 
 local function button_OnClick(self)
@@ -136,7 +132,7 @@ for i=1,#button_pictures/2 do
 	button.RenderThis = button_RenderThis
 	button.OnClick = button_OnClick
 	button.name = button.pic[1]
-	button:SetRelativeTo(BOTTOMRIGHT, nil, nil, x, y)
+	button:SetPoint(BOTTOMRIGHT, nil, nil, x, y)
 	button:SetSize(space_of_each_button, button_size)
 	button.id = i
 
@@ -148,8 +144,8 @@ end
 progressbar = BaseFrame:Create()
 progressbar.name = "progressbar"
 toolbar_bg:AddChild(progressbar)
-progressbar:SetRelativeTo(BOTTOMLEFT, nil, nil, margin_progress_left, -progress_margin_bottom+progress_height)
-progressbar:SetRelativeTo(BOTTOMRIGHT, nil, nil, -margin_progress_right, -progress_margin_bottom+progress_height)
+progressbar:SetPoint(BOTTOMLEFT, nil, nil, margin_progress_left, -progress_margin_bottom+progress_height)
+progressbar:SetPoint(BOTTOMRIGHT, nil, nil, -margin_progress_right, -progress_margin_bottom+progress_height)
 progressbar:SetSize(nil, progress_height)
 
 local progress_pic =
@@ -167,13 +163,13 @@ function file(n)
 end
 
 function progressbar:OnClick(x)
-	local l,_,r = self:GetAbsRect()
+	local l,_,r = self:GetRect()
 	local fv = x/(r-l)
 	player.seek(player.total()*fv)	
 end
 
 function progressbar:RenderThis()
-	local l,t,r,b = self:GetAbsRect()
+	local l,t,r,b = self:GetRect()
 	l,r,t,b = 0,r-l,0,b-t
 	local fv = player.tell() / player.total()
 	if fv > 1 then fv = 1 end
@@ -181,24 +177,24 @@ function progressbar:RenderThis()
 	local v = fv * r
 	
 	-- draw bottom
-	paint(0,0, width_progress_left, b, get_bitmap(GetCurrentLuaPath() .. file(1)))
-	paint(width_progress_left,0, r-width_progress_right, b, get_bitmap(GetCurrentLuaPath() .. file(2)))
-	paint(r-width_progress_right,0, r, b, get_bitmap(GetCurrentLuaPath() .. file(3)))
+	paint(0,0, width_progress_left, b, get_bitmap(lua_path .. file(1)))
+	paint(width_progress_left,0, r-width_progress_right, b, get_bitmap(lua_path .. file(2)))
+	paint(r-width_progress_right,0, r, b, get_bitmap(lua_path .. file(3)))
 
 	-- draw top
 	if (v > 1.5) then
-		local bmp = get_bitmap(GetCurrentLuaPath() .. file(4))
+		local bmp = get_bitmap(lua_path .. file(4))
 		paint(0,0,math.min(width_progress_left, v),b, bmp)
 	end
 
 	if (v > width_progress_left) then
 		local r = math.min(r-width_progress_right, v)
-		local bmp = get_bitmap(GetCurrentLuaPath() .. file(5))
+		local bmp = get_bitmap(lua_path .. file(5))
 		paint(width_progress_left, 0, r, b, bmp)
 	end
 
 	if (v > r - width_progress_right) then
-		local bmp = get_bitmap(GetCurrentLuaPath() .. file(6))
+		local bmp = get_bitmap(lua_path .. file(6))
 		paint(r-width_progress_right, 0, v, b, bmp)
 	end
 end
@@ -206,7 +202,7 @@ end
 number_current = BaseFrame:Create()
 number_current.name = "number_current"
 toolbar_bg:AddChild(number_current)
-number_current:SetRelativeTo(BOTTOMLEFT, nil, nil, numbers_left_margin, - numbers_bottom_margin)
+number_current:SetPoint(BOTTOMLEFT, nil, nil, numbers_left_margin, - numbers_bottom_margin)
 number_current:SetSize(numbers_width * 8, numbers_height)
 
 function number_current:RenderThis()
@@ -229,7 +225,7 @@ function number_current:RenderThis()
 
 	local x = 0
 	for i=1,#numbers do
-		paint(x, 0, x+numbers_width, numbers_height, get_bitmap(GetCurrentLuaPath() .. math.floor(numbers[i]) .. ".png"))
+		paint(x, 0, x+numbers_width, numbers_height, get_bitmap(lua_path .. math.floor(numbers[i]) .. ".png"))
 		x = x + numbers_width
 	end
 
@@ -238,7 +234,7 @@ end
 number_total = BaseFrame:Create()
 number_total.name = "number_total"
 toolbar_bg:AddChild(number_total)
-number_total:SetRelativeTo(BOTTOMRIGHT, nil, nil, -numbers_right_margin, - numbers_bottom_margin)
+number_total:SetPoint(BOTTOMRIGHT, nil, nil, -numbers_right_margin, - numbers_bottom_margin)
 number_total.t = 23456000
 number_total:SetSize(numbers_width * 8, numbers_height)
 number_total.RenderThis = number_current.RenderThis
@@ -254,7 +250,7 @@ local alpha_tick = 0
 toolbar_bg:AddChild(grow)
 grow.name = "GROW"
 grow:SetSize(250, 250)
-grow:SetRelativeTo(BOTTOMLEFT, nil, nil, -125, 125)
+grow:SetPoint(BOTTOMLEFT, nil, nil, -125, 125)
 
 function grow:Stick(dt)
 	local frame = root:GetFrameByPoint(self.px or 0, self.py or 0)
@@ -266,40 +262,40 @@ function grow:Stick(dt)
 	end
 	if not isbutton then return end
 	
-	local l,t,r,b = frame:GetAbsRect()
+	local l,t,r,b = frame:GetRect()
 	local dx = (l+r)/2 - self.x	
 	print(self.x, dx)
 	self.x = self.x + 0.65 * dx
-	self:SetRelativeTo(BOTTOMLEFT, nil, nil, self.x-125, 125)
+	self:SetPoint(BOTTOMLEFT, nil, nil, self.x-125, 125)
 end
 
 function grow:PreRender()
 	self.px, self.py = ui.get_mouse_pos()
 	local px,py = self.px,self.py
 	
-	local r,b = toolbar_bg:GetAbsAnchorPoint(BOTTOMRIGHT)
+	local r,b = toolbar_bg:GetPoint(BOTTOMRIGHT)
 	r,b = r - margin_button_right, b - margin_button_bottom
-	local l,t = toolbar_bg:GetAbsAnchorPoint(BOTTOMRIGHT)
+	local l,t = toolbar_bg:GetPoint(BOTTOMRIGHT)
 	l,t = l - margin_progress_right, t - margin_button_bottom - button_size
 	local dt = 0;
 	if l<=px and px<r and t<=py and py<b then
 		if not last_in then 
 			self:OnEnter()
 		else
-			alpha_tick = alpha_tick + (dwindow.GetTickCount() - last_in_time)+2
-			dt = dwindow.GetTickCount() - last_in_time
+			alpha_tick = alpha_tick + (core.GetTickCount() - last_in_time)+2
+			dt = core.GetTickCount() - last_in_time
 		end
 		last_in = true
-		last_in_time = dwindow.GetTickCount()
+		last_in_time = core.GetTickCount()
 	else
 		if last_in then
 			self:OnLeave()
 		else
-			alpha_tick = alpha_tick - (dwindow.GetTickCount() - last_out_time)*0.8
-			dt = dwindow.GetTickCount() - last_out_time
+			alpha_tick = alpha_tick - (core.GetTickCount() - last_out_time)*0.8
+			dt = core.GetTickCount() - last_out_time
 		end
 		last_in = false
-		last_out_time = dwindow.GetTickCount()
+		last_out_time = core.GetTickCount()
 	end
 	
 	alpha_tick = math.max(alpha_tick, 0)
@@ -317,7 +313,7 @@ function grow:OnLeave()
 end
 
 function grow:RenderThis()
-	local res = get_bitmap(GetCurrentLuaPath() .. "grow.png")
+	local res = get_bitmap(lua_path .. "grow.png")
 	local alpha = alpha_tick / 200
 	paint(0, 0, 250, 250, res, alpha)
 end

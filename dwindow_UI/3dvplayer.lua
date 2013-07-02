@@ -1,5 +1,5 @@
-﻿local http = {request = dwindow.http_request}
-local lua_file = dwindow.loading_file
+﻿local http = {request = core.http_request}
+local lua_file = core.loading_file
 local lua_path = GetPath(lua_file)
 local function GetCurrentLuaPath(offset)
 	return lua_path
@@ -81,7 +81,7 @@ function json_url2table(url)
 
 	bytes = string.gsub( bytes, "\r\n", "\\n")
 	
-	local json = dwindow.cjson()
+	local json = core.cjson()
 
 	local suc,result = pcall(json.decode, bytes)
 
@@ -182,7 +182,7 @@ function load_another(n)
 	Thread:Create(function()
 	v3d_init()
 
-	math.randomseed(dwindow.GetTickCount())
+	math.randomseed(core.GetTickCount())
 	local movie = video_list:GetItem(n or math.random(video_list:GetCount()))
 	local addresses = string_split(movie.address or "||", "|")
 	local highest = (addresses[1] ~= "NULL" and addresses[1]) or (addresses[2] ~= "NULL" and addresses[2]) or (addresses[3] ~= "NULL" and addresses[3])
@@ -206,7 +206,7 @@ end
 function v3dplayer_add_button()
 	local test = BaseFrame:Create()
 	root:AddChild(test)
-	test:SetRelativeTo(TOPLEFT)
+	test:SetPoint(TOPLEFT)
 
 	function test:RenderThis()
 		paint(0,0,self.width,self.height, self.res, 1, bilinear_mipmap_minus_one)
@@ -218,13 +218,12 @@ function v3dplayer_add_button()
 	end
 
 	function test:OnMouseDown()
-		print("test:OnMouseDown()", load_another)
 		if load_another then load_another() end
 	end
 
 	function test:OnReleaseCPU()
 		if self.res and self.res.res then
-			dwindow.release_resource_core(self.res.res)
+			core.release_resource_core(self.res.res)
 		end
 		self.res = nil
 	end

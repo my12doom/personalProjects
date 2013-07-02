@@ -432,7 +432,7 @@ HRESULT dx_player::invalidate_cpu()
 	m_ui_background_cpu = NULL;
 	return S_OK;
 }
-HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view, bool running)
+HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view)
 {
 	if (!m_file_loaded)
 		draw_nonmovie_bg(surface, view);
@@ -498,7 +498,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view, bool running)
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, i*200+160+4*s2, 2 );
 	}
 
-	if(!running)
+	if(!is_playing())
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, PLAYBUTTON*4, 2 );
 	else
 		hr = m_Device->DrawPrimitive( D3DPT_TRIANGLESTRIP, PAUSEBUTTON*4, 2 );

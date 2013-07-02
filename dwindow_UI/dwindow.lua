@@ -16,12 +16,8 @@ function GetName(pathname)
 	t = string.sub(t, 1, ((string.find(t, "\\") or string.find(t, "/"))-1) or t.length)
 	return string.reverse(t)
 end
-local lua_file = dwindow.loading_file
+local lua_file = core.loading_file
 local lua_path = GetPath(lua_file)
-local function GetCurrentLuaPath(offset)
-	return lua_path
-end
-
 
 function debug_print(...)
 	--print("--DEBUG", ...)
@@ -59,11 +55,6 @@ function IsCurrentDrawingVisible()
 end
 
 
--- some controlling function
-function StartDragging() end
-function StartResizing() end
-
-
 -- global window or dshow or etc callback
 function OnDirectshowEvents(event_code, param1, param2)
 	print("OnDirectshowEvents", event_code, param1, param2)
@@ -81,26 +72,66 @@ end
 function OnMove() end
 function OnSize() end
 
+-- pre render
+local last_pre_render_time = 0
+function PreRender(view)
+	local delta_time = 0;
+	if last_pre_render_time > 0 then delta_time = core.GetTickCount() - last_pre_render_time end
+	last_pre_render_time = core.GetTickCount();
+	if view ==0 then root:BroadCastEvent("PreRender", last_pre_render_time, delta_time) end
+end
 
 -- the Main Render function
 local last_render_time = 0
 function RenderUI(view)
 	local delta_time = 0;
-	if last_render_time > 0 then delta_time = dwindow.GetTickCount() - last_render_time end
-	last_render_time = dwindow.GetTickCount();
-	local t = dwindow.GetTickCount()
-	if view == 0 then root:BroadCastEvent("PreRender", last_render_time, delta_time) end
-	local dt = dwindow.GetTickCount() -t
-	t = dwindow.GetTickCount()
+	if last_render_time > 0 then delta_time = core.GetTickCount() - last_render_time end
+	last_render_time = core.GetTickCount();
+	local t = core.GetTickCount()
+	if view == 0 then root:BroadCastEvent("PreRenderUI", last_render_time, delta_time) end
+	local dt = core.GetTickCount() -t
+	t = core.GetTickCount()
 
 	root:render(view)
 
-	local dt2 = dwindow.GetTickCount() -t
+	local dt2 = core.GetTickCount() -t
 
 	if dt > 0 or dt2 > 0 then
 		info(string.format("slow RenderUI() : PreRender() cost %dms, render() cost %dms", dt, dt2))
 	end
 end
+
+local last_update_time = 0
+function UpdateUI()
+	local delta_time = 0;
+	if last_render_time > 0 then delta_time = core.GetTickCount() - last_render_time end
+	root:BroadCastEvent("OnUpdate", last_update_time, delta_time)
+	last_update_time = core.GetTickCount()
+end
+
+-- resource base class
+local resource_base ={}
+
+function resource_base:create(handle, width, height)
+	local o = {handle = handle, width = width, height = height}
+	setmetatable(o, self)
+	self.__index = self	
+	
+	return o
+end
+
+function resource_base:commit()
+	return dx9.commit_resource_core(self.handle)
+end
+
+function resource_base:decommit()
+	return dx9.decommit_resource_core(self.handle)
+end
+
+function resource_base:release()
+	return dx9.release_resource_core(self.handle)
+end
+
 
 -- GPU resource management
 function OnInitCPU()
@@ -135,13 +166,13 @@ end
 function releaseCache(is_decommit)
 	if is_decommit then
 		for _,v in pairs(bitmapcache) do
-			dx9.decommit_resource_core(v.res)
+			dx9.decommit_resource_core(v.handle)
 		end
 	else
 		for _,v in pairs(bitmapcache) do
-			dx9.release_resource_core(v.res)
-			bitmapcache = {}
+			dx9.release_resource_core(v.handle)
 		end
+		bitmapcache = {}
 	end
 end
 
@@ -151,12 +182,7 @@ function test_get_text_bitmap(...)
 		error(width, filename)
 		return
 	end
-	local rtn = {res = res, width = width, height = height, filename=filename}
-	rtn.left = 0
-	rtn.right = 0
-	rtn.top = 0
-	rtn.bottom = 0
-	return rtn
+	return resource_base:create(res, width, height)
 end
 
 DrawText = test_get_text_bitmap
@@ -166,7 +192,8 @@ function get_bitmap(filename, reload)
 	if bitmapcache[filename] == nil then
 		local res, width, height = dx9.load_bitmap_core(filename)		-- width is also used as error msg output.
 
-		bitmapcache[filename] = {res = res, width = width, height = height, filename=filename}
+		bitmapcache[filename] = resource_base:create(res, width, height)
+		bitmapcache[filename].filename = filename
 		if not res then
 			error(width, filename)
 			bitmapcache[filename].width = nil
@@ -189,9 +216,9 @@ function unload_bitmap(filename, is_decommit)
 	if not tbl or type(tbl)~="table" then return end
 
 	if is_decommit then
-		dx9.decommit_resource_core(bitmapcache[filename].res)
+		dx9.decommit_resource_core(bitmapcache[filename].handle)
 	else
-		dx9.release_resource_core(bitmapcache[filename].res)
+		dx9.release_resource_core(bitmapcache[filename].handle)
 		bitmapcache[filename] = nil
 	end
 end
@@ -213,10 +240,10 @@ lanczos_onepass = 3
 bilinear_mipmap = 4
 
 function paint(left, top, right, bottom, bitmap, alpha, resampling_method)
-	if not bitmap or not bitmap.res then return end
+	if not bitmap or not bitmap.handle then return end
 	local x,y  = rect[5], rect[6]
 	local a = alpha or 1.0
-	return dx9.paint_core(left+x, top+y, right+x, bottom+y, bitmap.res, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap)
+	return dx9.paint_core(left+x, top+y, right+x, bottom+y, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap)
 end
 
 -- native threading support
@@ -227,36 +254,36 @@ function Thread:Create(func, ...)
 	local o = {}
 	setmetatable(o, self)
 	self.__index = self
-	self.handle = dwindow.CreateThread(func, ...)
+	self.handle = core.CreateThread(func, ...)
 
 	return o
 end
 
 -- these two native method is not usable because it will keep root state machine locked and thus deadlock whole lua state machine
 function Thread:Resume()
-	return dwindow.ResumeThread(self.handle)
+	return core.ResumeThread(self.handle)
 end
 
 function Thread:Suspend()
-	return dwindow:SuspendThread(self.handle)
+	return core:SuspendThread(self.handle)
 end
 
 --function Thread:Terminate(exitcode)
---	return dwindow.TerminateThread(self.handle, exitcode or 0)
+--	return core.TerminateThread(self.handle, exitcode or 0)
 --end
 
 function Thread:Wait(timeout)
-	return dwindow.WaitForSingleObject(self.handle, timeout)
+	return core.WaitForSingleObject(self.handle, timeout)
 end
 
-function Thread:Sleep(timeout)		-- direct use of dwindow.Sleep() is recommended
-	return dwindow.Sleep(timeout)
+function Thread:Sleep(timeout)		-- direct use of core.Sleep() is recommended
+	return core.Sleep(timeout)
 end
 
 
 local hello = Thread:Create(function (...)
 	print("Hello Thread!",...)
-	dwindow.Sleep(1500)
+	core.Sleep(1500)
 	print("Bye Thread!",...)
 end, 0,1,2,3)
 
@@ -268,12 +295,13 @@ hello:Resume()
 
 
 -- load base_frame
-if dwindow and dwindow.execute_luafile then
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "base_frame.lua"))
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "3dvplayer.lua"))
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Container.lua"))
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "playlist.lua"))
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "menu.lua"))
+if core and core.execute_luafile then
+	print(core.execute_luafile(lua_path .. "base_frame.lua"))
+	print(core.execute_luafile(lua_path .. "3dvplayer.lua"))
+	print(core.execute_luafile(lua_path .. "Container.lua"))
+	print(core.execute_luafile(lua_path .. "playlist.lua"))
+	print(core.execute_luafile(lua_path .. "menu.lua"))
+	print(core.execute_luafile(lua_path .. "default_setting.lua"))
 end
 
 function ReloadUI(legacy)
@@ -284,21 +312,47 @@ function ReloadUI(legacy)
 
 	if legacy then return end
 
-	print(dwindow.execute_luafile(GetCurrentLuaPath() .. "DWindow2\\render.lua"))
-	--print(dwindow.execute_luafile(GetCurrentLuaPath() .. "Tetris\\Tetris.lua"))
+	print(core.execute_luafile(lua_path .. "DWindow2\\render.lua"))
+	--print(core.execute_luafile(lua_path .. "Tetris\\Tetris.lua"))
 	--v3dplayer_add_button()
 
 	-- the menu sample
 	local sample = menu:Create()
 	--root:AddChild(sample)
-	sample:SetRelativeTo(TOP)
+	sample:SetPoint(TOP)
 
 	function sample:PreRender()
 		self.y = (self.y or 200) - 1
-		self:SetRelativeTo(TOP, nil, nil, 0, self.y)
+		self:SetPoint(TOP, nil, nil, 0, self.y)
 	end
 
 	for i=1, 50 do
 		--sample:AddItem("").id = i
+	end
+end
+
+function set_setting(name, value)
+	setting[name] = value
+	core.ApplySetting(name)
+end
+
+function save_settings()
+	print("SAVING SETTINGS")
+	return core.cjson().encode(setting)
+end
+
+function load_settings(json)
+	print("LOADING SETTINGS")
+	local json_decoder = core.cjson();
+	local suc,result = pcall(json_decoder.decode, json)
+	if suc and type(result) == "table" then		
+		for k,v in pairs(result) do
+			print(k, "=", v, type(v))
+			setting[k] = v
+		end
+		return true
+	else
+		print("FAILED", result)
+		return false
 	end
 end

@@ -12,7 +12,7 @@ BOTTOMRIGHT = BOTTOM + RIGHT
 
 BaseFrame ={}
 
-function BaseFrame:Create()
+function BaseFrame:Create(parent)
 	local o = {}
 	o.childs = {}
 	o.anchors = {}
@@ -20,6 +20,10 @@ function BaseFrame:Create()
 	o.layout_parents = {}		-- frames which this frame relatives to
 	setmetatable(o, self)
 	self.__index = self
+	
+	if parent then
+		parent:AddChild(o)
+	end
 	
 	return o
 end
@@ -31,7 +35,7 @@ function BaseFrame:render(...)
 	for i=1,#self.childs do
 		local v = self.childs[i]
 		if v and v.render then
-			local l,t,r,b = v:GetAbsRect();
+			local l,t,r,b = v:GetRect();
 			BeginChild(l,t,r,b)
 			if IsCurrentDrawingVisible() then v:render(...) end
 			EndChild(l,t,r,b)
@@ -42,7 +46,7 @@ end
 
 -- these size / width / height is the desired values
 -- and anchor points may overwite them
--- to get displayed size(and position), use GetAbsRect()
+-- to get displayed size(and position), use GetRect()
 function BaseFrame:GetSize()
 	return self.width, self.height
 end
@@ -83,7 +87,7 @@ function BaseFrame:AddChild(frame, pos)
 	if frame == nil then return end
 	if frame.parent ~= nil then
 		error("illegal AddChild(), frame already have a parent : adding " .. tostring(frame) .. " to ".. tostring(self))
-		return
+		return false
 	end
 
 	frame.parent = self;
@@ -92,6 +96,8 @@ function BaseFrame:AddChild(frame, pos)
 	else
 		table.insert(self.childs, frame)
 	end
+	
+	return true
 end
 
 function BaseFrame:IsParentOf(frame, includeParentParent)
@@ -114,7 +120,7 @@ function BaseFrame:RemoveChild(frame)
 	if frame == nil then return end
 	if frame.parent ~= self then		-- illegal removal
 		error("illegal RemoveChild() " .. tostring(frame) .. " from ".. tostring(self))
-		return
+		return false
 	end
 
 	for i=1,#self.childs do
@@ -125,6 +131,8 @@ function BaseFrame:RemoveChild(frame)
 	end
 
 	frame.parent = nil
+	
+	return true
 end
 
 function BaseFrame:RemoveFromParent()
@@ -154,11 +162,13 @@ function BaseFrame:AddLayoutChild(frame)
 	if frame == nil then return end
 	if self:IsLayoutParentOf(frame) then
 		error("illegal AddLayoutChild() : the child to add is parent of this frame " .. tostring(frame) .. " from ".. tostring(self))
-		return
+		return false
 	end
 
 	table.insert(frame.layout_parents, self)
 	table.insert(self.layout_childs, frame)
+	
+	return true
 end
 
 function BaseFrame:IsLayoutParentOf(frame)
@@ -213,17 +223,17 @@ end
 -- Relative function
 -- return true on success
 -- return false on fail (mostly due to loop reference )
-function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
+function BaseFrame:SetPoint(point, frame, anchor, dx, dy)
 	frame = frame or self.parent
 	anchor = anchor or point
 
 	if self==frame or self:IsParentOf(frame) then
-		error("SetRelativeTo() failed: target is same or parent of this frame")
+		error("SetPoint() failed: target is same or parent of this frame")
 		return false
 	end
 	
 	if not frame then
-		error("SetRelativeTo(): frame=nil and self.parent = nil, no target to relative, FAILED")
+		error("SetPoint(): frame=nil and self.parent = nil, no target to relative, FAILED")
 		return false
 	end
 	
@@ -243,7 +253,7 @@ function BaseFrame:SetRelativeTo(point, frame, anchor, dx, dy)
 	else
 		frame:RemoveLayoutChild(self)
 		
-		error("SetRelativeTo(): FAILED: loop relative")
+		error("SetPoint(): FAILED: loop relative")
 		return false
 	end
 	
@@ -286,7 +296,7 @@ end
 
 function BaseFrame:HitTest(x, y)	-- client point
 	-- default hittest: by Rect
-	local l,t,r,b = self:GetAbsRect()
+	local l,t,r,b = self:GetRect()
 	l,t,r,b = 0,0,r-l,b-t
 	info("HitTest", x, y, self, l, t, r, b)
 	if 0<=x and x<r and 0<=y and y<b then
@@ -298,7 +308,7 @@ end
 
 function BaseFrame:GetFrameByPoint(x, y) -- abs point
 	local result = nil
-	local l,t,r,b = self:GetAbsRect()
+	local l,t,r,b = self:GetRect()
 	if l<=x and x<r and t<=y and y<b then
 		if self:HitTest(x-l, y-t) then
 			result = self
@@ -312,8 +322,8 @@ function BaseFrame:GetFrameByPoint(x, y) -- abs point
 	return result
 end
 
-function BaseFrame:GetAbsAnchorPoint(point)
-	local l, t, r, b = self:GetAbsRect()
+function BaseFrame:GetPoint(point)
+	local l, t, r, b = self:GetRect()
 	local w, h = r-l, b-t
 	local px, py = l+w/2, t+h/2
 	if bit32.band(point, LEFT) == LEFT then
@@ -333,7 +343,7 @@ end
 
 -- GetRect in Screen space
 
-function BaseFrame:GetAbsRect()
+function BaseFrame:GetRect()
 	if not(self.l and self.r and self.t and self.b) then
 		self:CalculateAbsRect()
 	end
@@ -368,7 +378,7 @@ function BaseFrame:CalculateAbsRect()
 		local anchor = parameter.anchor or point
 		
 		if frame then
-			local x, y = frame:GetAbsAnchorPoint(anchor)
+			local x, y = frame:GetPoint(anchor)
 			x = x + parameter.dx
 			y = y + parameter.dy
 			
@@ -453,9 +463,9 @@ function BaseFrame:PreRender(time, delta_time) end
 function BaseFrame:PreRender(time, delta_time) end
 
 -- for these mouse events or focus related events, return anything other than false and nil to block it from being sent to its parents
-function BaseFrame:OnMouseDown(button, x, y) end
+function BaseFrame:OnMouseDown(button, x, y) return self.OnClick end
 function BaseFrame:OnMouseUp(button, x, y) end
-function BaseFrame:OnClick(button, x, y) end
+--function BaseFrame:OnClick(button, x, y) end
 function BaseFrame:OnDoubleClick(button, x, y) end
 function BaseFrame:OnMouseOver() end
 function BaseFrame:OnMouseLeave() end
@@ -466,11 +476,14 @@ function BaseFrame:OnKeyUp() end
 function BaseFrame:OnKillFocus() end
 
 function BaseFrame:OnMouseEvent(event, x, y, ...)
-	local l, t = self:GetAbsRect()
+	local l, t = self:GetRect()
 	return self[event] and self[event](self, x-l, y-t, ...)
 end
 function BaseFrame:OnDropFile(x, y, ...)
 	local files = table.pack(...)
+	if #files == 1 and player.load_subtitle(files[1]) then
+		return true
+	end
 	for _,file in ipairs(files) do
 		playlist:add(file)
 	end
@@ -504,8 +517,6 @@ function OnMouseEvent(event,x,y,...)
 	if frame then
 		return frame:OnEvent("OnMouseEvent", event, x, y, ...)
 	end
-	
-	return rtn
 end
 
 -- for these mouse events or focus related events, return anything other than false and nil to block the event from being sent to its parents
