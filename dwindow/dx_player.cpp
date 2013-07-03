@@ -1398,9 +1398,9 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 
 	// Aspect Ratio
 	if ((double)m_aspect < 0) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
-	if ((double)m_aspect == 2.35) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
-	if ((double)m_aspect == (double)16/9) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
-	if ((double)m_aspect == (double)4/3) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
+	if (abs((double)m_aspect - (double)2.35/1) < 0.0001) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
+	if (abs((double)m_aspect - (double)16/9) < 0.0001) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
+	if (abs((double)m_aspect - (double)4/3) < 0.0001) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
 
 	// Aspect Ratio Mode
 	if ((int)m_aspect_mode == aspect_letterbox) CheckMenuItem(menu, ID_ASPECTRATIO_LETTERBOX, MF_CHECKED);
