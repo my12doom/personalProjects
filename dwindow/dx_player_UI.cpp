@@ -512,7 +512,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view)
 
 	float ps_const[12] = {	222.0f,  14.0f,  124.0f, 0.0f,
 		34.0f, 14.0f, 1.0f, 1.0f, 
-		m_volume, alpha, 0.0f, 0.0f};
+		(double)m_volume, alpha, 0.0f, 0.0f};
 	// texture width, texture height, top_item_start_x, top_item_start_y
 	// item_width, item_height, repeat x, repeat y
 	// value1, alpha, reserved..
