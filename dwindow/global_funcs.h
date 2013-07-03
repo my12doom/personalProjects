@@ -226,6 +226,10 @@ public:
 		{
 			g_lua_setting_manager->get_const(W2UTF8(key)) = default_value;
 		}
+		else
+		{
+			wprintf(L"lua failed for %s\n", key);
+		}
 	}
 	~AutoSetting()
 	{
@@ -307,12 +311,6 @@ HRESULT set_localization_language(localization_language language);
 HRESULT localize_menu(HMENU menu);
 HRESULT localize_window(HWND hwnd);
 localization_language get_system_default_lang();
-
-
-// CUDA
-extern AutoSetting<bool> g_CUDA;
-extern AutoSetting<BOOL> g_EVR;//(L"EVR", FALSE, REG_DWORD);
-
 
 // forceinline functions
 

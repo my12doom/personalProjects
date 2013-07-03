@@ -6,7 +6,6 @@
 double current_values[color_adjust_max];
 IColorAdjustCB *g_cb = NULL;
 bool preview;
-AutoSetting<bool> sync(L"SyncAdjust", true);
 int slider2type(HWND hDlg, HWND slider)
 {
 	if (slider == GetDlgItem(hDlg, IDC_SAT))
@@ -83,11 +82,11 @@ INT_PTR CALLBACK color_adjust_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 			}
 			else if (id == IDC_SYNC)
 			{
-				sync = (BST_CHECKED == SendMessage(GetDlgItem(hDlg, IDC_SYNC), BM_GETCHECK, 0, 0));
+				GET_CONST("SyncAdjust") = (bool)(BST_CHECKED == SendMessage(GetDlgItem(hDlg, IDC_SYNC), BM_GETCHECK, 0, 0));
 
 				for(int i=color_adjust_max/2; i<color_adjust_max; i++)
 				{
-					EnableWindow(GetDlgItem(hDlg, type2IDC(i)), !sync);
+					EnableWindow(GetDlgItem(hDlg, type2IDC(i)), !GET_CONST("SyncAdjust"));
 				}
 			}
 
@@ -112,10 +111,10 @@ INT_PTR CALLBACK color_adjust_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 			preview = true;
 			SendMessage(GetDlgItem(hDlg, IDC_PREVIEW), BM_SETCHECK, TRUE, 0);
 
-			SendMessage(GetDlgItem(hDlg, IDC_SYNC), BM_SETCHECK, sync, 0);
+			SendMessage(GetDlgItem(hDlg, IDC_SYNC), BM_SETCHECK, (bool)GET_CONST("SyncAdjust"), 0);
 
 			for(int i=color_adjust_max/2; i<color_adjust_max; i++)
-				EnableWindow(GetDlgItem(hDlg, type2IDC(i)), !sync);
+				EnableWindow(GetDlgItem(hDlg, type2IDC(i)), !GET_CONST("SyncAdjust"));
 
 		}
 		break;
@@ -127,7 +126,7 @@ INT_PTR CALLBACK color_adjust_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 			int type = slider2type(hDlg, slider);
 			if (type != -1 && g_cb && ((LOWORD(wParam) == SB_THUMBTRACK) || (LOWORD(wParam) == SB_PAGEDOWN || (LOWORD(wParam) == SB_PAGEUP))))
 			{
-				if (!sync)
+				if (!GET_CONST("SyncAdjust"))
 				{
 					current_values[type] = (double)value/65535;
 					g_cb->set_parameter(type, preview ? current_values[type] : 0.5);

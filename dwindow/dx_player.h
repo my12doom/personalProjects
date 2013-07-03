@@ -149,7 +149,7 @@ public:
 // #endif
 
 	// trial
-	AutoSetting<bool> m_trial_shown;
+	lua_const &m_trial_shown;
 	lua_const &m_server_port/*(L"DWindowNetworkPort", 8080, REG_DWORD)*/;
 
 	// theater
@@ -168,9 +168,9 @@ public:
 	BSTR m_widi_adapters[MAX_WIDI_ADAPTERS][255];
 	bool m_widi_scanning;
 	bool m_widi_connected;
-	AutoSetting<int> m_widi_screen_mode;
-	AutoSetting<int> m_widi_resolution_width;
-	AutoSetting<int> m_widi_resolution_height;
+	lua_const &m_widi_screen_mode;
+	lua_const &m_widi_resolution_width;
+	lua_const &m_widi_resolution_height;
 	HRESULT widi_initialize();
 	HRESULT widi_start_scan();
 	HRESULT widi_get_adapter_by_id(int id, wchar_t *out);
@@ -207,20 +207,20 @@ public:
 	};
 	thread_pool m_subtitle_loader_pool;
 	HINSTANCE m_hexe;
-	AutoSetting<double> m_aspect;/*(L"AlwaysShowRight", false)*/;
-	AutoSetting<int> m_aspect_mode;
+	lua_const &m_aspect;/*(L"AlwaysShowRight", false)*/;
+	lua_const &m_aspect_mode;
 	int m_mirror1;
 	int m_mirror2;			// 0x0:no mirror, 0x1 mirror horizontal, 0x2 mirror vertical, 0x3(0x3=0x1|0x2) mirror both
-	AutoSetting<bool> m_swap_eyes;
-	AutoSetting<bool> m_force_2d;
-	AutoSetting<double> m_movie_pos_y;
-	AutoSetting<double> m_movie_pos_x;
-	AutoSetting<BOOL> m_resize_window_on_open;	// FALSE
+	lua_const &m_swap_eyes;
+	lua_const &m_force_2d;
+	lua_const &m_movie_pos_y;
+	lua_const &m_movie_pos_x;
+	lua_const &m_resize_window_on_open;	// FALSE
 	double m_parallax;
 	bool m_is_remux_file;
 	CComPtr<IStereoLayout> m_stereo_layout;
-	AutoSetting<int> m_movie_resizing;/*(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD)*/;
-	AutoSetting<int> m_subtitle_resizing;/*(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD)*/;
+	lua_const &m_movie_resizing;/*(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD)*/;
+	lua_const &m_subtitle_resizing;/*(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD)*/;
 	AutoSettingO<D3DDISPLAYMODE> m_hd3d_prefered_mode;
 	std::list<x264*> m_x264_encoder;
 	CCritSec m_x264_encoder_lock;
@@ -266,7 +266,7 @@ public:
 	// end window handler
 
 	// helper
-	AutoSetting<bool> m_simple_audio_switching;		// true: call enable_audio_track() to reconnect filter after audio setting changed,  false: no call
+	lua_const &m_simple_audio_switching;		// true: call enable_audio_track() to reconnect filter after audio setting changed,  false: no call
 	int m_active_audio_track;
 	int m_active_subtitle_track;
 	HRESULT enable_audio_track(int track);			// special track: -1: disable all, -2: reconnect current,
@@ -294,10 +294,10 @@ public:
 	int m_mouse_down_time;
 	double m_dragging_value;
 	OAFilterState m_filter_state;
-	AutoSetting<double> m_volume;	// = 1.0
-	AutoSetting<bool> m_useInternalAudioDecoder;		// = true
-	AutoSetting<double> m_normalize_audio;	// = false
-	AutoSetting<int> m_channel;	// = false
+	lua_const &m_volume;	// = 1.0
+	lua_const &m_useInternalAudioDecoder;		// = true
+	lua_const &m_normalize_audio;	// = false
+	lua_const &m_channel;	// = false
 	HRESULT show_ui(bool show);
 	HRESULT show_volume_bar(bool show);
 	HRESULT on_dshow_event();		//"on move window"
@@ -315,13 +315,13 @@ public:
 
 	// renderer and input layout and output mode and deinterlacing
 	my12doomRenderer *m_renderer1;
-	AutoSetting<DWORD> m_input_layout; /* = input_layout_auto*/
-	AutoSetting<DWORD> m_output_mode;  /* = anaglyph*/
-	AutoSetting<DWORD> m_mask_mode;	   /* = row_interlace */
-	AutoSetting<DWORD> m_anaglygh_left_color;	   /* = RED */
-	AutoSetting<DWORD> m_anaglygh_right_color;	   /* = CYAN */
-	AutoSetting<bool> m_forced_deinterlace;
-	AutoSetting<DWORD> m_display_orientation;
+	lua_const &m_input_layout; /* = input_layout_auto*/
+	lua_const &m_output_mode;  /* = anaglyph*/
+	lua_const &m_mask_mode;	   /* = row_interlace */
+	lua_const &m_anaglygh_left_color;	   /* = RED */
+	lua_const &m_anaglygh_right_color;	   /* = CYAN */
+	lua_const &m_forced_deinterlace;
+	lua_const &m_display_orientation;
 
 	// subtitle control
 	typedef struct rendered_subtitle2_struct : public rendered_subtitle
@@ -339,21 +339,21 @@ public:
 	CCritSec m_subtitle_cache_sec;
 	int m_lastCBtime;
 	HRESULT draw_subtitle();
-	AutoSetting<double> m_subtitle_center_x;
-	AutoSetting<double> m_subtitle_bottom_y;
-	AutoSetting<int> m_user_subtitle_parallax;
+	lua_const &m_subtitle_center_x;
+	lua_const &m_subtitle_bottom_y;
+	lua_const &m_user_subtitle_parallax;
 	int m_internel_offset;
 	int m_last_bitmap_update;
 	bool m_subtitle_has_offset;
-	AutoSetting<int> m_audio_latency;
-	AutoSetting<int> m_subtitle_latency;
-	AutoSetting<double> m_subtitle_ratio;
+	lua_const &m_audio_latency;
+	lua_const &m_subtitle_latency;
+	lua_const &m_subtitle_ratio;
 
 	// font
 	HFONT m_font;
-	AutoSetting<DWORD> m_font_color/*L"FontColor", 0x00ffffff)*/;
-	AutoSetting<LONG> m_lFontPointSize/*(L"FontSize", 40)*/;
-	AutoSetting<bool> m_display_subtitle;
+	lua_const &m_font_color/*L"FontColor", 0x00ffffff)*/;
+	lua_const &m_lFontPointSize/*(L"FontSize", 40)*/;
+	lua_const &m_display_subtitle;
 	lua_const &m_FontName/*(L"Font", L"Arial")*/;
 	lua_const &m_FontStyle/*(L"FontStyle", L"Regular")*/;
 	AutoSettingO<LOGFONTW> m_LogFont;

@@ -14,10 +14,6 @@ using namespace MediaInfoDLL;
 HTREEITEM InsertTreeviewItem(const HWND hTv, const wchar_t *text, HTREEITEM htiParent);
 void DoEvents();
 
-
-AutoSetting<int> g_MediaInfoWindowWidth(L"MediaInfoWidth", 640, REG_DWORD);
-AutoSetting<int> g_MediaInfoWindowHeight(L"MediaInfoHeight", 334, REG_DWORD);
-
 class MediaInfoWindow
 {
 public:
@@ -94,8 +90,8 @@ DWORD MediaInfoWindow::pump()
 		WS_OVERLAPPEDWINDOW, // top-level window 
 		CW_USEDEFAULT,       // default horizontal position 
 		CW_USEDEFAULT,       // default vertical position 
-		g_MediaInfoWindowWidth,       // default width 
-		g_MediaInfoWindowHeight,       // default height 
+		GET_CONST("MediaInfoWidth"),       // default width 
+		GET_CONST("MediaInfoHeight"),       // default height 
 		(HWND) m_parent,         // no owner window 
 		(HMENU) NULL,        // use class menu 
 		hinstance,           // handle to application instance 
@@ -174,8 +170,8 @@ LRESULT MediaInfoWindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 				style,
 				0,
 				100,
-				g_MediaInfoWindowWidth,
-				g_MediaInfoWindowHeight,
+				GET_CONST("MediaInfoWidth"),
+				GET_CONST("MediaInfoHeight"),
 				hWnd,
 				(HMENU) IDC_TREE,
 				GetModuleHandle(NULL),
@@ -196,8 +192,10 @@ LRESULT MediaInfoWindow::MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 		{
 			RECT rect;
 			GetClientRect(hWnd, &rect);
-			g_MediaInfoWindowWidth = rect.right;
-			g_MediaInfoWindowHeight = rect.bottom;
+			RECT pos;
+			GetWindowRect(hWnd, &pos);
+			GET_CONST("MediaInfoWidth") = pos.right - pos.left;
+			GET_CONST("MediaInfoHeight") = pos.bottom - pos.top;
 			MoveWindow(tree, 0, 0, rect.right, rect.bottom-50, TRUE);
 			MoveWindow(copy_button, 0, rect.bottom-50, rect.right, 50, TRUE);
 			SetWindowTextW(copy_button, C(L"Copy To Clipboard"));

@@ -12,7 +12,6 @@
 #include "dshow_lua.h"
 
 #pragma comment(lib, "DbgHelp")
-AutoSetting<bool> single_instance(L"SingleInstance", true);
 
 // main window
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
@@ -62,7 +61,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	player_lua_init();
 	lua_load_settings();
 
-	HWND pre_instance = single_instance ? FindWindowA("DWindowClass", NULL) : NULL;
+	HWND pre_instance = GET_CONST("SingleInstance") ? FindWindowA("DWindowClass", NULL) : NULL;
 	wchar_t *argvv[] = {L"", L"compile", L"D:\\private\\dwindow_UI\\dwindow.lua", L"D:\\private\\dwindow_UI\\dwindow.bin"};
 	//argv = argvv;
 	//argc=4;

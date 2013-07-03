@@ -1,4 +1,4 @@
-#pragma  once
+#pragma once
 #include <d3d9.h>
 #include <streams.h>
 #include <atlbase.h>
@@ -13,6 +13,7 @@
 #include "my12doomAutoShader.h"
 #include "gpu_sample.h"
 #include "evr\EVRPresenter.h"
+#include "..\dwindow\global_funcs.h"
 
 void SetThreadName( DWORD dwThreadID, LPCSTR szThreadName);
 
@@ -304,6 +305,13 @@ protected:
 
 protected:
 	friend class my12doomRendererDShow;
+
+	// settings
+	lua_const & TEXTURE_SIZE;//(L"TextureSize", 4096, REG_DWORD);
+	lua_const & SUBTITLE_TEXTURE_SIZE;//(L"SubtitleTextureSize", 2048, REG_DWORD);
+	lua_const & EVRQueueSize;//(L"EVRQueueSize", 5, REG_DWORD);
+	lua_const & SimplePageflipping;//(L"SimplePageflipping", 0, REG_DWORD);
+	lua_const & GPUIdle;//(L"GPUIdle", true, REG_DWORD);
 
 	// dshow related things
 	bool m_recreating_dshow_renderer;

@@ -28,7 +28,6 @@
 #define DS_EVENT (WM_USER + 4)
 #define DS_EVENTRELY (WM_USER + 6)
 #define TOGGLE_FULLSCREEN_REPLY (WM_USER + 8)
-AutoSetting<BOOL> g_ExclusiveMode(L"ExclusiveMode", false, REG_DWORD);
 RECT rect_zero = {0,0,0,0};
 LOGFONTW empty_logfontw = {0};
 D3DDISPLAYMODE mode_auto = {0};
@@ -71,73 +70,74 @@ dx_player::dx_player(HINSTANCE hExe)
 ,m_dialog_open(0)
 ,m_lastVideoCBTick(0)
 ,m_renderer1(NULL)
-,dwindow(m_screen1, m_screen2)
-,m_lFontPointSize(L"FontSize", 40)
-,m_FontName(GET_CONST("Font"))
-,m_FontStyle(GET_CONST("FontStyle"))
-,m_font_color(L"FontColor", 0x00ffffff)
-,m_input_layout(L"InputLayout", input_layout_auto, REG_DWORD)
-,m_output_mode(L"OutputMode", anaglyph, REG_DWORD)
-,m_mask_mode(L"MaskMode", row_interlace, REG_DWORD)
-,m_display_subtitle(L"DisplaySubtitle", true)
-,m_anaglygh_left_color(L"AnaglyghLeftColor", RGB(255,0,0))
-,m_anaglygh_right_color(L"AnaglyghRightColor", RGB(0,255,255))
-,m_volume(L"Volume", 1.0)
-,m_aspect(L"Aspect", -1)
-,m_subtitle_latency(L"SubtitleLatency", 0, REG_DWORD)
-,m_subtitle_ratio(L"SubtitleRatio", 1.0)
-,m_saved_screen1(GET_CONST("Screen1"))
-,m_saved_screen2(GET_CONST("Screen2"))
-,m_saved_rect1(GET_CONST("Window1"))
-,m_saved_rect2(GET_CONST("Window2"))
-,m_useInternalAudioDecoder(L"InternalAudioDecoder", true)
-,m_channel(L"AudioChannel", 2, REG_DWORD)
-,m_normalize_audio(L"NormalizeAudio", 16.0)
-,m_forced_deinterlace(L"ForcedDeinterlace", false)
-,m_saturation(g_lua_setting_manager->get_const("Saturation"))
-,m_luminance(g_lua_setting_manager->get_const("Luminance"))
-,m_hue(g_lua_setting_manager->get_const("Hue"))
-,m_contrast(g_lua_setting_manager->get_const("Contrast"))
-,m_saturation2(g_lua_setting_manager->get_const("Saturation2"))
-,m_luminance2(g_lua_setting_manager->get_const("Luminance2"))
-,m_hue2(g_lua_setting_manager->get_const("Hue2"))
-,m_contrast2(g_lua_setting_manager->get_const("Contrast2"))
 ,m_theater_owner(NULL)
 ,m_tell_thread(NULL)
-,m_trial_shown(L"Trial", false)
-,m_LogFont(L"LogFont", empty_logfontw)
-,m_aspect_mode(L"AspectRatioMode", aspect_letterbox)
-,m_subtitle_center_x(L"SubtitleX", 0.5)
-,m_subtitle_bottom_y(L"SubtitleY", 0.95)
-,m_user_subtitle_parallax(L"SubtitleParallax", 0, REG_DWORD)
-,m_display_orientation(L"DisplayOrientation", horizontal, REG_DWORD)
-,m_swap_eyes(L"SwapEyes", false)
-,m_force_2d(L"Force2D", false)
-,m_movie_pos_x(L"MoviePosX", 0)
-,m_movie_pos_y(L"MoviePosY", 0)
 ,m_has_multi_touch(false)
 ,m_widi_has_support(false)
 ,m_widi_inited(false)
 ,m_widi_scanning(false)
 ,m_widi_connected(false)
 ,m_widi_num_adapters_found(0)
-,m_widi_screen_mode(L"WidiScreenMode", Clone, REG_DWORD)
-,m_widi_resolution_width(L"WidiScreenWidth", 0, REG_DWORD)
-,m_widi_resolution_height(L"WidiScreenHeight", 0, REG_DWORD)
 ,m_toolbar_background(NULL)
 ,m_UI_logo(NULL)
 ,m_dragging_window(0)
-,m_resize_window_on_open(L"OnOpen", FALSE, REG_DWORD)
-,m_movie_resizing(L"MovieResampling", bilinear_mipmap_minus_one, REG_DWORD)
-,m_subtitle_resizing(L"SubtitleResampling", bilinear_mipmap_minus_one, REG_DWORD)
-,m_server_port(GET_CONST("DWindowNetworkPort"))
 ,m_renderer_reset_done(0)
-,m_hd3d_prefered_mode(L"HD3DPreferedMode", mode_auto)
-,m_audio_latency(L"AudioLatency", 0, REG_DWORD)
-#ifdef VSTAR
-#endif
-,m_simple_audio_switching(L"SimpleAudioSwitching", false)
 ,m_subtitle_loader_pool(2)
+
+,dwindow(m_screen1, m_screen2)
+
+,m_saved_screen1(GET_CONST("Screen1"))
+,m_saved_screen2(GET_CONST("Screen2"))
+,m_saved_rect1(GET_CONST("Window1"))
+,m_saved_rect2(GET_CONST("Window2"))
+,m_FontName(GET_CONST("Font"))
+,m_FontStyle(GET_CONST("FontStyle"))
+,m_saturation(GET_CONST("Saturation"))
+,m_luminance(GET_CONST("Luminance"))
+,m_hue(GET_CONST("Hue"))
+,m_contrast(GET_CONST("Contrast"))
+,m_saturation2(GET_CONST("Saturation2"))
+,m_luminance2(GET_CONST("Luminance2"))
+,m_hue2(GET_CONST("Hue2"))
+,m_contrast2(GET_CONST("Contrast2"))
+,m_trial_shown(GET_CONST("Trial"))
+,m_server_port(GET_CONST("DWindowNetworkPort"))
+
+,m_lFontPointSize(GET_CONST("FontSize"))//40)
+,m_font_color(GET_CONST("FontColor"))//0x00ffffff)
+,m_input_layout(GET_CONST("InputLayout"))//input_layout_auto))//REG_DWORD)
+,m_output_mode(GET_CONST("OutputMode"))//anaglyph))//REG_DWORD)
+,m_mask_mode(GET_CONST("MaskMode"))//row_interlace))//REG_DWORD)
+,m_display_subtitle(GET_CONST("DisplaySubtitle"))//true)
+,m_anaglygh_left_color(GET_CONST("AnaglyghLeftColor"))//RGB(255,0,0))
+,m_anaglygh_right_color(GET_CONST("AnaglyghRightColor"))//RGB(0,255,255))
+,m_volume(GET_CONST("Volume"))//1.0)
+,m_aspect(GET_CONST("Aspect"))//-1)
+,m_subtitle_latency(GET_CONST("SubtitleLatency"))//0))//REG_DWORD)
+,m_subtitle_ratio(GET_CONST("SubtitleRatio"))//1.0)
+,m_useInternalAudioDecoder(GET_CONST("InternalAudioDecoder"))//true)
+,m_channel(GET_CONST("AudioChannel"))//2))//REG_DWORD)
+,m_normalize_audio(GET_CONST("NormalizeAudio"))//16.0)
+,m_forced_deinterlace(GET_CONST("ForcedDeinterlace"))//false)
+,m_LogFont(L"LogFont", empty_logfontw)
+,m_aspect_mode(GET_CONST("AspectRatioMode"))//aspect_letterbox)
+,m_subtitle_center_x(GET_CONST("SubtitleX"))//0.5)
+,m_subtitle_bottom_y(GET_CONST("SubtitleY"))//0.95)
+,m_user_subtitle_parallax(GET_CONST("SubtitleParallax"))//0))//REG_DWORD)
+,m_display_orientation(GET_CONST("DisplayOrientation"))//horizontal))//REG_DWORD)
+,m_swap_eyes(GET_CONST("SwapEyes"))//false)
+,m_force_2d(GET_CONST("Force2D"))//false)
+,m_movie_pos_x(GET_CONST("MoviePosX"))//0)
+,m_movie_pos_y(GET_CONST("MoviePosY"))//0)
+,m_widi_screen_mode(GET_CONST("WidiScreenMode"))//Clone))//REG_DWORD)
+,m_widi_resolution_width(GET_CONST("WidiScreenWidth"))//0))//REG_DWORD)
+,m_widi_resolution_height(GET_CONST("WidiScreenHeight"))//0))//REG_DWORD)
+,m_resize_window_on_open(GET_CONST("OnOpen"))//FALSE))//REG_DWORD)
+,m_movie_resizing(GET_CONST("MovieResampling"))//bilinear_mipmap_minus_one))//REG_DWORD)
+,m_subtitle_resizing(GET_CONST("SubtitleResampling"))//bilinear_mipmap_minus_one))//REG_DWORD)
+,m_hd3d_prefered_mode(L"HD3DPreferedMode", mode_auto)
+,m_audio_latency(GET_CONST("AudioLatency"))//0))//REG_DWORD)
+,m_simple_audio_switching(GET_CONST("SimpleAudioSwitching"))//false)
 {
 	g_player = this;
 	g_audio_latency = m_audio_latency;
@@ -748,7 +748,6 @@ LRESULT dx_player::DecodeGesture(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	}
 }
 
-AutoSetting<DWORD> ignore_to_rev(L"IgnoreRev", 0, REG_DWORD);
 DWORD WINAPI update_hint_thread(LPVOID)
 {
 	int rev;
@@ -757,7 +756,7 @@ DWORD WINAPI update_hint_thread(LPVOID)
 
 	get_update_result(description, &rev, url);
 
-	if (rev > my12doom_rev && rev > ignore_to_rev)
+	if (rev > my12doom_rev && rev > (int)GET_CONST("IgnoreRev"))
 	{
 		int o = show_update_confirm(NULL);
 		if ( o == update_update)
@@ -766,7 +765,7 @@ DWORD WINAPI update_hint_thread(LPVOID)
 		}
 		else if (o == update_dontask)
 		{
-			ignore_to_rev = rev;
+			GET_CONST("IgnoreRev") = rev;
 		}
 	}
 
@@ -906,7 +905,6 @@ LRESULT dx_player::on_display_change(int id)
 	}
 	return S_OK;
 }
-extern AutoSetting<double> g_scale;
 
 LRESULT dx_player::on_key_down(int id, int key)
 {
@@ -1021,20 +1019,20 @@ LRESULT dx_player::on_key_down(int id, int key)
 
 	case 'W':
 	//case VK_NUMPAD7:									// image up
-		set_movie_pos(m_movie_pos_x, m_movie_pos_y - 0.005);
+		set_movie_pos(m_movie_pos_x, (double)m_movie_pos_y - 0.005);
 		break;
 
 	case 'S':
 	//case VK_NUMPAD1:
-		set_movie_pos(m_movie_pos_x, m_movie_pos_y + 0.005);		// down
+		set_movie_pos(m_movie_pos_x, (double)m_movie_pos_y + 0.005);		// down
 		break;
 
 	case 'A':
-		set_movie_pos(m_movie_pos_x-0.005, m_movie_pos_y);
+		set_movie_pos((double)m_movie_pos_x-0.005, (double)m_movie_pos_y);
 		break;
 
 	case 'D':
-		set_movie_pos(m_movie_pos_x+0.005, m_movie_pos_y);
+		set_movie_pos((double)m_movie_pos_x+0.005, (double)m_movie_pos_y);
 		break;
 
 	case VK_NUMPAD1:
@@ -1066,27 +1064,27 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case VK_NUMPAD4:		//subtitle left
-		set_subtitle_pos(m_subtitle_center_x - 0.0025, m_subtitle_bottom_y);
+		set_subtitle_pos((double)m_subtitle_center_x - 0.0025, m_subtitle_bottom_y);
 		break;
 
 	case VK_NUMPAD6:		//right
-		set_subtitle_pos(m_subtitle_center_x + 0.0025, m_subtitle_bottom_y);
+		set_subtitle_pos((double)m_subtitle_center_x + 0.0025, m_subtitle_bottom_y);
 		break;
 
 	case VK_NUMPAD8:		//up
-		set_subtitle_pos(m_subtitle_center_x, m_subtitle_bottom_y - 0.0025);
+		set_subtitle_pos(m_subtitle_center_x, (double)m_subtitle_bottom_y - 0.0025);
 		break;
 
 	case VK_NUMPAD2:		//down
-		set_subtitle_pos(m_subtitle_center_x, m_subtitle_bottom_y + 0.0025);
+		set_subtitle_pos(m_subtitle_center_x, (double)m_subtitle_bottom_y + 0.0025);
 		break;
 
 	case VK_NUMPAD9:
-		set_subtitle_parallax(m_user_subtitle_parallax + 1);
+		set_subtitle_parallax((int)m_user_subtitle_parallax + 1);
 		break;
 		
 	case VK_NUMPAD3:
-		set_subtitle_parallax(m_user_subtitle_parallax - 1);
+		set_subtitle_parallax((int)m_user_subtitle_parallax - 1);
 		break;
 
 	case VK_MULTIPLY:
@@ -1279,9 +1277,9 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 	}
 
 	// WiDi
-	CheckMenuItem(menu, ID_INTEL_CLONE,				m_widi_screen_mode == Clone ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_INTEL_EXTENDED,			m_widi_screen_mode == Extended ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_INTEL_EXTERNALONLY,		m_widi_screen_mode == ExternalOnly ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INTEL_CLONE,				(int)m_widi_screen_mode == Clone ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INTEL_EXTENDED,			(int)m_widi_screen_mode == Extended ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INTEL_EXTERNALONLY,		(int)m_widi_screen_mode == ExternalOnly ? MF_CHECKED:MF_UNCHECKED);
 
 	if (m_widi_has_support)
 	{
@@ -1363,52 +1361,52 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 		DeleteMenu(sub_open_BD, ID_OPENBLURAY3D_NONE, MF_BYCOMMAND);
 
 	// quality
-	CheckMenuItem(menu, ID_VIDEO_BESTQUALITY,		m_movie_resizing == lanczos ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_VIDEO_BETTERQUALITY,		m_movie_resizing == bilinear_mipmap_minus_one ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_VIDEO_NORMALQUALITY,		m_movie_resizing == bilinear_no_mipmap ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_BESTQUALITY,		(int)m_movie_resizing == lanczos ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_BETTERQUALITY,		(int)m_movie_resizing == bilinear_mipmap_minus_one ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_NORMALQUALITY,		(int)m_movie_resizing == bilinear_no_mipmap ? MF_CHECKED:MF_UNCHECKED);
 
 
 	// input mode
-	CheckMenuItem(menu, ID_INPUTLAYOUT_AUTO,		m_input_layout == input_layout_auto ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_INPUTLAYOUT_SIDEBYSIDE,	m_input_layout == side_by_side ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_INPUTLAYOUT_TOPBOTTOM,	m_input_layout == top_bottom ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_INPUTLAYOUT_MONOSCOPIC,	m_input_layout == mono2d ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INPUTLAYOUT_AUTO,		(int)m_input_layout == input_layout_auto ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INPUTLAYOUT_SIDEBYSIDE,	(int)m_input_layout == side_by_side ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INPUTLAYOUT_TOPBOTTOM,	(int)m_input_layout == top_bottom ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_INPUTLAYOUT_MONOSCOPIC,	(int)m_input_layout == mono2d ? MF_CHECKED:MF_UNCHECKED);
 
 	// output mode
-	CheckMenuItem(menu, ID_OUTPUTMODE_AMDHD3D,				m_output_mode == hd3d ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_NVIDIA3DVISION,		m_output_mode == NV3D ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_INTEL,				m_output_mode == intel3d ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_MONOSCOPIC2D,			m_output_mode == mono ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_ROWINTERLACE,			m_output_mode == masking && m_mask_mode == row_interlace ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_3DVSTARDEMO,			m_output_mode == masking && m_mask_mode == subpixel_row_interlace ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_LINEINTERLACE,		m_output_mode == masking && m_mask_mode == line_interlace? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_CHECKBOARDINTERLACE,	m_output_mode == masking && m_mask_mode == checkboard_interlace ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR,		m_output_mode == dual_window ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_SBS,	m_output_mode == out_sbs ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_TB,		m_output_mode == out_tb ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_IZ3D,					m_output_mode == iz3d ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_GERNERAL120HZGLASSES,	m_output_mode == pageflipping ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				m_output_mode == out_hsbs ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_AMDHD3D,				(int)m_output_mode == hd3d ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_NVIDIA3DVISION,		(int)m_output_mode == NV3D ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_INTEL,				(int)m_output_mode == intel3d ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_MONOSCOPIC2D,			(int)m_output_mode == mono ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_ROWINTERLACE,			(int)m_output_mode == masking && (int)m_mask_mode == row_interlace ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_3DVSTARDEMO,			(int)m_output_mode == masking && (int)m_mask_mode == subpixel_row_interlace ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_LINEINTERLACE,		(int)m_output_mode == masking && (int)m_mask_mode == line_interlace? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_CHECKBOARDINTERLACE,	(int)m_output_mode == masking && (int)m_mask_mode == checkboard_interlace ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR,		(int)m_output_mode == dual_window ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_SBS,	(int)m_output_mode == out_sbs ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_DUALPROJECTOR_TB,		(int)m_output_mode == out_tb ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_IZ3D,					(int)m_output_mode == iz3d ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_GERNERAL120HZGLASSES,	(int)m_output_mode == pageflipping ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_SBS,				(int)m_output_mode == out_hsbs ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_3DTV_TB,				(int)m_output_mode == out_htb ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_OUTPUTMODE_ANAGLYPH,				(int)m_output_mode == anaglyph ? MF_CHECKED:MF_UNCHECKED);
 
 	// quality
 
 	// Display Orientation
-	CheckMenuItem(menu, ID_DISPLAYORIENTATION_VERTICAL,		m_display_orientation == vertical ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_DISPLAYORIENTATION_HORIZONTAL,	m_display_orientation == horizontal ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_DISPLAYORIENTATION_VERTICAL,		(int)m_display_orientation == vertical ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_DISPLAYORIENTATION_HORIZONTAL,	(int)m_display_orientation == horizontal ? MF_CHECKED:MF_UNCHECKED);
 
 	// Aspect Ratio
-	if (m_aspect == -1) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
-	if (m_aspect == 2.35) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
-	if (m_aspect == (double)16/9) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
-	if (m_aspect == (double)4/3) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
+	if ((double)m_aspect < 0) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
+	if ((double)m_aspect == 2.35) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
+	if ((double)m_aspect == (double)16/9) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
+	if ((double)m_aspect == (double)4/3) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
 
 	// Aspect Ratio Mode
-	if (m_aspect_mode == aspect_letterbox) CheckMenuItem(menu, ID_ASPECTRATIO_LETTERBOX, MF_CHECKED);
-	if (m_aspect_mode == aspect_vertical_fill) CheckMenuItem(menu, ID_ASPECTRATIO_VERTICAL, MF_CHECKED);
-	if (m_aspect_mode == aspect_horizontal_fill) CheckMenuItem(menu, ID_ASPECTRATIO_HORIZONTAL, MF_CHECKED);
-	if (m_aspect_mode == aspect_stretch) CheckMenuItem(menu, ID_ASPECTRATIO_STRETCH, MF_CHECKED);
+	if ((int)m_aspect_mode == aspect_letterbox) CheckMenuItem(menu, ID_ASPECTRATIO_LETTERBOX, MF_CHECKED);
+	if ((int)m_aspect_mode == aspect_vertical_fill) CheckMenuItem(menu, ID_ASPECTRATIO_VERTICAL, MF_CHECKED);
+	if ((int)m_aspect_mode == aspect_horizontal_fill) CheckMenuItem(menu, ID_ASPECTRATIO_HORIZONTAL, MF_CHECKED);
+	if ((int)m_aspect_mode == aspect_stretch) CheckMenuItem(menu, ID_ASPECTRATIO_STRETCH, MF_CHECKED);
 
 	// subtitle menu
 	CheckMenuItem(menu, ID_SUBTITLE_DISPLAYSUBTITLE, MF_BYCOMMAND | (m_display_subtitle ? MF_CHECKED : MF_UNCHECKED));
@@ -1428,14 +1426,14 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 	}
 
 	// ffdshow Audio Decoder and downmixing
-	CheckMenuItem(menu, ID_AUDIO_NORMALIZE, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_normalize_audio > 1.0)) ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_AUDIO_USELAV, MF_BYCOMMAND | (m_useInternalAudioDecoder ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_CHANNELS_BITSTREAM, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == -1)) ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_CHANNELS_SOURCE, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 0)) ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_CHANNELS_2, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 2)) ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_CHANNELS_51, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 6)) ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_CHANNELS_71, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 8)) ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(menu, ID_CHANNELS_HEADPHONE, MF_BYCOMMAND | ((m_useInternalAudioDecoder && (m_channel == 9)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_AUDIO_NORMALIZE, MF_BYCOMMAND | (((bool)m_useInternalAudioDecoder && ((double)m_normalize_audio > 1.0)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_AUDIO_USELAV, MF_BYCOMMAND | ((bool)m_useInternalAudioDecoder ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_BITSTREAM, MF_BYCOMMAND | (((bool)m_useInternalAudioDecoder && ((int)m_channel == -1)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_SOURCE, MF_BYCOMMAND | (((bool)m_useInternalAudioDecoder && ((int)m_channel == 0)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_2, MF_BYCOMMAND | (((bool)m_useInternalAudioDecoder && ((int)m_channel == 2)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_51, MF_BYCOMMAND | (((bool)m_useInternalAudioDecoder && ((int)m_channel == 6)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_71, MF_BYCOMMAND | (((bool)m_useInternalAudioDecoder && ((int)m_channel == 8)) ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(menu, ID_CHANNELS_HEADPHONE, MF_BYCOMMAND | (((bool)m_useInternalAudioDecoder && ((int)m_channel == 9)) ? MF_CHECKED : MF_UNCHECKED));
 	//CheckMenuItem(menu, ID_AUDIO_DOWNMIX, MF_BYCOMMAND | (m_channel == 2 ? MF_CHECKED : MF_UNCHECKED));
 
 	// audio tracks
@@ -1469,8 +1467,8 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 	CheckMenuItem(menu, ID_SWAPEYES, m_swap_eyes ? MF_CHECKED:MF_UNCHECKED);
 
 	// CUDA
-	CheckMenuItem(menu, ID_CUDA, g_CUDA ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_VIDEO_DXVA2, g_EVR ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_CUDA, GET_CONST("CUDA") ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_DXVA2, GET_CONST("EVR") ? MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(menu, ID_VIDEO_DEINTERLACE, m_forced_deinterlace ? MF_CHECKED:MF_UNCHECKED);
 
 
@@ -1509,7 +1507,7 @@ int dx_player::hittest(int x, int y, HWND hwnd, double *v)
 	GetClientRect(hwnd, &r);
 	int total_width = r.right - r.left;
 	int height = r.bottom - r.top;
-	if (m_output_mode == out_tb)
+	if ((int)m_output_mode == out_tb)
 	{
 		//if (hit_y < height/2)
 		//	hit_y += height/2;
@@ -1517,18 +1515,18 @@ int dx_player::hittest(int x, int y, HWND hwnd, double *v)
 		y %= height;
 	}
 
-	if (m_output_mode == out_htb)
+	if ((int)m_output_mode == out_htb)
 	{
 		y = (y%(height/2)) * 2;
 	}
 
-	if (m_output_mode == out_sbs)
+	if ((int)m_output_mode == out_sbs)
 	{
 		total_width /= 2;
 		x %= total_width;
 	}
 
-	if (m_output_mode == out_hsbs)
+	if ((int)m_output_mode == out_hsbs)
 	{
 		x *= 2;
 		x %= total_width;
@@ -1700,24 +1698,24 @@ LRESULT dx_player::on_timer(int id)
 			int hit_x = mouse1.x;
 			int hit_y = mouse1.y;
 
-			if (m_output_mode == out_tb)
+			if ((int)m_output_mode == out_tb)
 			{
 				height /= 2;
 				hit_y %= height;
 			}
 
-			if (m_output_mode == out_htb)
+			if ((int)m_output_mode == out_htb)
 			{
 				hit_y = (hit_y%(height/2)) * 2;
 			}
 
-			if (m_output_mode == out_sbs)
+			if ((int)m_output_mode == out_sbs)
 			{
 				total_width /= 2;
 				hit_x %= total_width;
 			}
 
-			if (m_output_mode == out_hsbs)
+			if ((int)m_output_mode == out_hsbs)
 			{
 				hit_x *= 2;
 				hit_x %= total_width;
@@ -1735,24 +1733,24 @@ LRESULT dx_player::on_timer(int id)
 			int hit_x = mouse2.x;
 			int hit_y = mouse2.y;
 
-			if (m_output_mode == out_tb)
+			if ((int)m_output_mode == out_tb)
 			{
 				height /= 2;
 				hit_y %= height;
 			}
 
-			if (m_output_mode == out_htb)
+			if ((int)m_output_mode == out_htb)
 			{
 				hit_y = (hit_y%(height/2)) * 2;
 			}
 
-			if (m_output_mode == out_sbs)
+			if ((int)m_output_mode == out_sbs)
 			{
 				total_width /= 2;
 				hit_x %= total_width;
 			}
 
-			if (m_output_mode == out_hsbs)
+			if ((int)m_output_mode == out_hsbs)
 			{
 				hit_x *= 2;
 				hit_x %= total_width;
@@ -2072,7 +2070,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// normalizing
 	else if (uid == ID_AUDIO_NORMALIZE)
 	{
-		m_normalize_audio = m_normalize_audio > 1 ? 0 : 16.0;
+		m_normalize_audio = (int)m_normalize_audio > 1 ? 0 : 16.0;
 		set_ff_audio_normalizing(m_lav, m_normalize_audio);
 	}
 	// Bitstreaming
@@ -2112,7 +2110,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// CUDA
 	else if (uid == ID_CUDA)
 	{
-		g_CUDA = !g_CUDA;
+		GET_CONST("CUDA") = !GET_CONST("CUDA");
 		if (m_file_loaded) MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"CUDA setting will apply on next file play."), L"...", MB_OK);
 	}
 
@@ -2711,7 +2709,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uid == ID_VIDEO_DXVA2)
 	{
-		if (!g_EVR && MessageBoxW(id_to_hwnd(id), 
+		if (!GET_CONST("EVR") && MessageBoxW(id_to_hwnd(id), 
 			C(L"This is a experimental feature.\r\n"
 			L"It ONLY works for most H264 video.\r\n"
 			L"It can cause a lot freeze or crash.\r\n"
@@ -2720,16 +2718,16 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			L"Continue ?")
 			, C(L"Warning"), MB_ICONWARNING | MB_YESNO) == IDYES)
 		{
-			g_EVR = TRUE;
+			GET_CONST("EVR") = TRUE;
 			if (MessageBoxW(id_to_hwnd(id), 
 				C(L"A Reset is needed for this setting to take effect.\r\n\r\nRestart Now ?"), 
 				C(L"Warning"), MB_ICONWARNING | MB_YESNO) == IDYES)
 				restart_this_program();
 		}
 
-		else if (g_EVR)
+		else if (GET_CONST("EVR"))
 		{
-			g_EVR = FALSE;
+			GET_CONST("EVR") = FALSE;
 
 			if (MessageBoxW(id_to_hwnd(id), 
 				C(L"A Reset is needed for this setting to take effect.\r\n\r\nRestart Now ?"), 
@@ -2745,7 +2743,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 
 
-	if ((m_output_mode == dual_window || m_output_mode == iz3d) && uid != ID_EXIT)
+	if (((int)m_output_mode == dual_window || (int)m_output_mode == iz3d) && uid != ID_EXIT)
 	{
 		show_window(2, true);
 		on_move(1, 0, 0);		// to correct second window position
@@ -2811,7 +2809,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 
 		// show it!
 		show_window(1, true);
-		show_window(2, m_output_mode == dual_window || m_output_mode == iz3d);
+		show_window(2, (int)m_output_mode == dual_window || (int)m_output_mode == iz3d);
 
 		unsigned char passkey_big_decrypted[128];
 		RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
@@ -2881,7 +2879,7 @@ HRESULT dx_player::exit_direct_show()
 
 	if(m_gb)
 	{
-		if (g_EVR)
+		if (GET_CONST("EVR"))
 		{
 			m_gb->RemoveFilter(m_renderer1->m_evr);
 			m_gb->RemoveFilter(m_renderer1->m_evr2);
@@ -2952,8 +2950,8 @@ HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, I
 
 	// latency and ratio
 	REFERENCE_TIME time_for_offset_metadata = TimeStart;
-	TimeStart -= m_subtitle_latency * 10000;
-	TimeStart /= m_subtitle_ratio;
+	TimeStart -= (int)m_subtitle_latency * 10000;
+	TimeStart /= (double)m_subtitle_ratio;
 
 	int ms_start = (int)(TimeStart / 10000.0 + 0.5);
 	int ms_end = (int)(TimeEnd / 10000.0 + 0.5);
@@ -3008,8 +3006,8 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 
 	// latency and ratio
 	REFERENCE_TIME time_for_offset_metadata = TimeStart;
-	TimeStart -= m_subtitle_latency * 10000;
-	TimeStart /= m_subtitle_ratio;
+	TimeStart -= (int)m_subtitle_latency * 10000;
+	TimeStart /= (double)m_subtitle_ratio;
 
 	m_internel_offset = 5;
 	bool movie_has_offset_metadata = false;
@@ -3087,8 +3085,8 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 
 			hr = m_renderer1->set_subtitle(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
 				sub.height,
-				sub.left + (m_subtitle_center_x-0.5),
-				sub.top + (m_subtitle_bottom_y-0.95),
+				sub.left + ((double)m_subtitle_center_x-0.5),
+				sub.top + ((double)m_subtitle_bottom_y-0.95),
 				sub.gpu_shadow);
 
 			free(sub.data);
@@ -3196,7 +3194,7 @@ HRESULT dx_player::show_volume_bar(bool show)
 
 HRESULT dx_player::start_loading()
 {
-	if(g_EVR)
+	if(GET_CONST("EVR"))
 	{
 		m_gb->AddFilter(m_renderer1->m_evr, L"EVR #1");
 		m_gb->AddFilter(m_renderer1->m_evr2, L"EVR #2");
@@ -3267,7 +3265,7 @@ HRESULT dx_player::reset_and_loadfile_core(const wchar_t *pathname, const wchar_
 	{
 		hr = load_file(pathname2);
 		CComPtr<IPin> pin;
-		if (g_EVR)
+		if (GET_CONST("EVR"))
 		{
 			GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &pin);
 			if (!pin)
@@ -3295,7 +3293,7 @@ HRESULT dx_player::reset_and_loadfile_core(const wchar_t *pathname, const wchar_
 	hr = end_loading();
 	if (FAILED(hr))
 		goto fail;
-	if (m_channel == -1) // bitstreaming workaround
+	if ((int)m_channel == -1) // bitstreaming workaround
 	{
 		seek(1000);
 		seek(0);
@@ -3362,8 +3360,7 @@ HRESULT dx_player::reset_and_loadfile_core(const wchar_t *pathname, const wchar_
 			tmp2[i] = tmp[i];
 		int found = 0;
 		list_subtitle_track(tmp2, connected, &found);
-		AutoSetting<BOOL> always_download_subtitle(L"AlwaysDownloadSubtitle", FALSE, REG_DWORD);
-		if (found <= 0 || (BOOL)always_download_subtitle)
+		if (found <= 0 || GET_CONST("AlwaysDownloadSubtitle"))
 			m_subtitle_loader_pool.submmit(new subtitle_loader(this));
 	}
 
@@ -3493,7 +3490,7 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1VCC')) ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('1vcc')))
 	{
-		if (g_EVR)
+		if (GET_CONST("EVR"))
 		{
 			CComPtr<IBaseFilter> ffdshow_dxva;
 			hr = myCreateInstance(CLSID_ffdshowDXVA, IID_IBaseFilter, (void**)&ffdshow_dxva);
@@ -3579,7 +3576,7 @@ connecting:
 
 	CComPtr<IPin> renderer_input;
 	
-	if (g_EVR)
+	if (GET_CONST("EVR"))
 	{
 		GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &renderer_input);
 		if (!renderer_input)
@@ -3891,14 +3888,13 @@ HRESULT dx_player::end_loading()
 	RemoveUselessFilters(m_gb);
 
 	CComPtr<IPin> renderer1_input;
-	if (g_EVR)
+	if (GET_CONST("EVR"))
 		GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &renderer1_input);
 	else
 		GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer1_input);
 
 
-	AutoSetting<bool> video_only(L"ForceVideo", true);
-	if (renderer1_input && (bool)video_only)
+	if (renderer1_input && GET_CONST("FourceVideo"))
 	{
 		dwindow_log_line(L"no video stream found.");
 		return E_FAIL;
@@ -4126,7 +4122,7 @@ HRESULT dx_player::select_font(bool show_dlg)
 	cf.hwndOwner   = NULL; 
 	cf.hDC         = (HDC)NULL; 
 	cf.lpLogFont   = &lf; 
-	cf.iPointSize  = m_lFontPointSize * 10; 
+	cf.iPointSize  = (int)m_lFontPointSize * 10; 
 	cf.rgbColors   = m_font_color; 
 	cf.lCustData   = 0L; 
 	cf.lpfnHook    = (LPCFHOOKPROC)NULL; 
@@ -4189,7 +4185,7 @@ HRESULT dx_player::toggle_fullscreen()
 HRESULT dx_player::toggle_fullscreen_core()
 {
 
-	if (m_output_mode == dual_window || m_output_mode == iz3d)
+	if ((int)m_output_mode == dual_window || (int)m_output_mode == iz3d)
 	{
 		//show_window(2, !m_full2);		// show/hide it before set fullscreen, or you may got a strange window
 		show_window(2, true);
@@ -4198,8 +4194,8 @@ HRESULT dx_player::toggle_fullscreen_core()
 		//show_window(2, m_full2);		// show/hide it again
 	}
 
-	else if (m_output_mode != intel3d &&
-		 (m_output_mode == pageflipping || m_output_mode == NV3D || m_output_mode == hd3d || g_ExclusiveMode))
+	else if ((int)m_output_mode != intel3d &&
+		 ((int)m_output_mode == pageflipping || (int)m_output_mode == NV3D || (int)m_output_mode == hd3d || GET_CONST("ExclusiveMode")))
 	{
 		if (m_renderer1)
 			m_renderer1->set_fullscreen(!m_renderer1->get_fullscreen());

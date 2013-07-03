@@ -215,9 +215,9 @@ static INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wPar
 			Button_SetCheck (GetDlgItem(hDlg, ID_STEREO+mode), TRUE);
 
 			// video device
-			if(player->m_output_mode == hd3d)
+			if((int)player->m_output_mode == hd3d)
 				Button_SetCheck (GetDlgItem(hDlg, IDC_HD3D), TRUE);
-			if(player->m_output_mode == dual_window)
+			if((int)player->m_output_mode == (int)dual_window)
 				Button_SetCheck (GetDlgItem(hDlg, IDC_DUALPROJECTOR), TRUE);
 
 			// monitors

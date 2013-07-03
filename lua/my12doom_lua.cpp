@@ -580,7 +580,8 @@ int lua_const::read_from_lua()
 	{
 		// lua variable not found, undefined behavior
 #ifdef DEBUG
-		//DebugBreak();	
+		printf("%s not found in setting\n", m_name);
+		DebugBreak();	
 #endif
 		return -1;
 	}
@@ -597,10 +598,14 @@ lua_const::~lua_const()
 
 lua_const::operator int()
 {
-	if (m_type != _int && m_type != _double)
-		return 0;
-	
-	return m_type == _int ? m_value.i : (m_value.d+0.5);
+	if (m_type == _int)
+		return m_value.i;
+	if (m_type == _double)
+		return m_value.d+0.5;
+	if (m_type == _bool)
+		return m_value.b ? 1 : 0;
+
+	return 0;
 }
 
 int& lua_const::operator=(const int in)
@@ -672,10 +677,11 @@ bool& lua_const::operator=(const bool in)
 
 lua_const::operator double()
 {
-	if (m_type != _double)
-		return 0;
-
-	return m_value.d;
+	if (m_type == _double)
+		return m_value.d;
+	if (m_type == _int)
+		return m_value.i;
+	return 0;
 }
 
 double& lua_const::operator=(const double in)

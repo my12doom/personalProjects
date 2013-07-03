@@ -720,9 +720,6 @@ coremvc_hooker::~coremvc_hooker()
 	afterCreateCoreMVC();
 }
 
-AutoSetting<bool> g_CUDA(L"CUDA", false);
-AutoSetting<BOOL> g_EVR(L"EVR", FALSE, REG_DWORD);
-
 HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 {
 	CComQIPtr<IPropertyBag, &IID_IPropertyBag> pbag(decoder);
@@ -733,7 +730,7 @@ HRESULT ActiveCoreMVC(IBaseFilter *decoder)
 		hr = write_property(pbag, L"low_latency=0");
 		hr = write_property(pbag, L"di=9");
 // 		hr = write_property(pbag, L"use_dxva=1");
-		hr = write_property(pbag, g_CUDA ? L"use_cuda=1" : L"use_cuda=0");
+		hr = write_property(pbag, GET_CONST("CUDA") ? L"use_cuda=1" : L"use_cuda=0");
 		hr = write_property(pbag, L"app_mode=1");
 		return hr;
 	}
@@ -852,8 +849,6 @@ enum bitsteaming_support_types
 	bitsteaming_support_TRUEHD = 0x10,
 };
 
-AutoSetting<int> bitsteaming_support(L"BitstreamingSetting", 0xf);		// ac3¡¢eac3¡¢dts¡¢dtshm£¬ no truehd
-
 HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active)
 {
 	if (filter == NULL)
@@ -865,6 +860,7 @@ HRESULT set_ff_audio_bitstreaming(IBaseFilter *filter, bool active)
 
 	HRESULT hr = S_OK;
 	int enable = active ? 1 : 0;
+	int bitsteaming_support = GET_CONST("BitstreamingSetting");
 	hr = cfg->putParam(IDFF_aoutpassthroughAC3, enable && (bitsteaming_support & bitsteaming_support_AC3));
 	hr = cfg->putParam(IDFF_aoutpassthroughDTS, enable && (bitsteaming_support & bitsteaming_support_DTS));
 	hr = cfg->putParam(IDFF_aoutpassthroughTRUEHD, enable && (bitsteaming_support & bitsteaming_support_TRUEHD));

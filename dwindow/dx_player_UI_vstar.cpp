@@ -112,36 +112,35 @@ HRESULT dx_player::invalidate_cpu()
 	return S_OK;
 }
 
-AutoSetting<double> g_scale(L"UIScale", 1.0);
-
 HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view)
 {
 	if (!m_file_loaded)
 		draw_nonmovie_bg(surface, view);
 
-	const double button_size = 40 * g_scale * g_scale;
-	const double margin_button_right = 32 * g_scale;
-	const double margin_button_bottom = 8 * g_scale;
-	const double space_of_each_button = 62 * g_scale;
-	const double toolbar_height = 65 * g_scale;
-	const double width_progress_left = 5 * g_scale;
-	const double width_progress_right = 6 * g_scale;
-	const double margin_progress_right = 460 * g_scale;
-	const double margin_progress_left = 37 * g_scale;
-	const double progress_height = 21 * g_scale;
-	const double progress_margin_bottom = 27 * g_scale;
-	const double volume_base_width = 84 * g_scale;
-	const double volume_base_height = 317 * g_scale;
-	const double volume_margin_right = (156 - 84) * g_scale;
-	const double volume_margin_bottom = (376 - 317) * g_scale;
-	const double volume_button_zero_point = 32 * g_scale;
-	const double volume_bar_height = 265 * g_scale;
-	const double numbers_left_margin = 21 * g_scale;
-	const double numbers_right_margin = 455 * g_scale;
-	const double numbers_width = 12 * g_scale;
-	const double numbers_height = 20 * g_scale;
+	double UIScale = GET_CONST("UIScale");
+	const double button_size = 40 * UIScale * UIScale;
+	const double margin_button_right = 32 * UIScale;
+	const double margin_button_bottom = 8 * UIScale;
+	const double space_of_each_button = 62 * UIScale;
+	const double toolbar_height = 65 * UIScale;
+	const double width_progress_left = 5 * UIScale;
+	const double width_progress_right = 6 * UIScale;
+	const double margin_progress_right = 460 * UIScale;
+	const double margin_progress_left = 37 * UIScale;
+	const double progress_height = 21 * UIScale;
+	const double progress_margin_bottom = 27 * UIScale;
+	const double volume_base_width = 84 * UIScale;
+	const double volume_base_height = 317 * UIScale;
+	const double volume_margin_right = (156 - 84) * UIScale;
+	const double volume_margin_bottom = (376 - 317) * UIScale;
+	const double volume_button_zero_point = 32 * UIScale;
+	const double volume_bar_height = 265 * UIScale;
+	const double numbers_left_margin = 21 * UIScale;
+	const double numbers_right_margin = 455 * UIScale;
+	const double numbers_width = 12 * UIScale;
+	const double numbers_height = 20 * UIScale;
 	const double numbers_bottom_margin = 26;
-	const double hidden_progress_width = 72 * g_scale;
+	const double hidden_progress_width = 72 * UIScale;
 
 	// calculate alpha
 	bool showui = m_show_ui && m_theater_owner == NULL;
@@ -305,7 +304,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view)
 
 
 	// draw volume button
-	double ypos = volume_button_zero_point + volume_bar_height * (1-m_volume);
+	double ypos = volume_button_zero_point + volume_bar_height * (1-(double)m_volume);
 	RECTF button_rect = {volume_rect.left + volume_base_width/2 - button_size/2,  volume_rect.top + ypos - 20};
 	button_rect.bottom = button_rect.top + button_size;
 	button_rect.right = button_rect.left + button_size;
@@ -333,29 +332,30 @@ HRESULT dx_player::hittest(int x, int y, int *out, double *out_value /* = NULL *
 	if (out_value)
 		*out_value = 0;
 
-	const double button_size = 40 * g_scale * g_scale;
-	const double margin_button_right = 32 * g_scale;
-	const double margin_button_bottom = 8 * g_scale;
-	const double space_of_each_button = 62 * g_scale;
-	const double toolbar_height = 65 * g_scale;
-	const double width_progress_left = 5 * g_scale;
-	const double width_progress_right = 6 * g_scale;
-	const double margin_progress_right = 460 * g_scale;
-	const double margin_progress_left = 37 * g_scale;
-	const double progress_height = 21 * g_scale;
-	const double progress_margin_bottom = 27 * g_scale;
-	const double volume_base_width = 84 * g_scale;
-	const double volume_base_height = 317 * g_scale;
-	const double volume_margin_right = (156 - 84) * g_scale;
-	const double volume_margin_bottom = (376 - 317) * g_scale;
-	const double volume_button_zero_point = 32 * g_scale;
-	const double volume_bar_height = 265 * g_scale;
-	const double numbers_left_margin = 21 * g_scale;
-	const double numbers_right_margin = 455 * g_scale;
-	const double numbers_width = 12 * g_scale;
-	const double numbers_height = 20 * g_scale;
+	double UIScale = GET_CONST("UIScale");
+	const double button_size = 40 * UIScale * UIScale;
+	const double margin_button_right = 32 * UIScale;
+	const double margin_button_bottom = 8 * UIScale;
+	const double space_of_each_button = 62 * UIScale;
+	const double toolbar_height = 65 * UIScale;
+	const double width_progress_left = 5 * UIScale;
+	const double width_progress_right = 6 * UIScale;
+	const double margin_progress_right = 460 * UIScale;
+	const double margin_progress_left = 37 * UIScale;
+	const double progress_height = 21 * UIScale;
+	const double progress_margin_bottom = 27 * UIScale;
+	const double volume_base_width = 84 * UIScale;
+	const double volume_base_height = 317 * UIScale;
+	const double volume_margin_right = (156 - 84) * UIScale;
+	const double volume_margin_bottom = (376 - 317) * UIScale;
+	const double volume_button_zero_point = 32 * UIScale;
+	const double volume_bar_height = 265 * UIScale;
+	const double numbers_left_margin = 21 * UIScale;
+	const double numbers_right_margin = 455 * UIScale;
+	const double numbers_width = 12 * UIScale;
+	const double numbers_height = 20 * UIScale;
 	const double numbers_bottom_margin = 26;
-	const double hidden_progress_width = 72 * g_scale;
+	const double hidden_progress_width = 72 * UIScale;
 
 
 	// hidden volume and brightness 

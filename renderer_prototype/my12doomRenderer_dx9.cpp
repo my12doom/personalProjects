@@ -24,7 +24,6 @@
 #include <dvdmedia.h>
 #include <math.h>
 #include <assert.h>
-#include "..\dwindow\global_funcs.h"
 #include "..\lua\my12doom_lua.h"
 #include "PixelShaders\P016.h"
 #include "..\dwindow\dwindow_log.h"
@@ -49,11 +48,7 @@ int lockrect_surface = 0;
 int lockrect_texture = 0;
 __int64 lockrect_texture_cycle = 0;
 const int MAX_TEXTURE_SIZE = 8192;
-AutoSetting<DWORD> TEXTURE_SIZE(L"TextureSize", 4096, REG_DWORD);
-AutoSetting<DWORD> SUBTITLE_TEXTURE_SIZE(L"SubtitleTextureSize", 2048, REG_DWORD);
-AutoSetting<DWORD> EVRQueueSize(L"EVRQueueSize", 5, REG_DWORD);
-AutoSetting<BOOL> SimplePageflipping(L"SimplePageflipping", 0, REG_DWORD);
-AutoSetting<BOOL> GPUIdle(L"GPUIdle", true, REG_DWORD);
+
 
 
 IDirect3DTexture9* helper_get_texture(gpu_sample *sample, helper_sample_format format);
@@ -93,10 +88,15 @@ HRESULT mylog(const char *format, ...)
 	return S_OK;
 }
 
-my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/):
-m_left_queue(_T("left queue"))
+my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/)
+:m_left_queue(_T("left queue"))
 ,m_right_queue(_T("right queue"))
 ,m_presenter(NULL)
+,TEXTURE_SIZE(GET_CONST("TextureSize"))
+,SUBTITLE_TEXTURE_SIZE(GET_CONST("SubtitleTextureSize"))
+,EVRQueueSize(GET_CONST("EVRQueueSize"))
+,SimplePageflipping(GET_CONST("SimplePageflipping"))
+,GPUIdle(GET_CONST("GPUIdle"))
 {
 	timeBeginPeriod(1);
 
@@ -233,7 +233,7 @@ void my12doomRenderer::init_variables()
 	m_dsr0->QueryInterface(IID_IBaseFilter, (void**)&m_dshow_renderer1);
 	m_dsr1->QueryInterface(IID_IBaseFilter, (void**)&m_dshow_renderer2);
 
-	if(g_EVR)
+	if(GET_CONST("EVR"))
 	{
 		//  EVR creation and configuration
 		if (!m_evr) m_evr.CoCreateInstance(CLSID_EnhancedVideoRenderer);
@@ -1733,7 +1733,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		if (m_subtitle_mem && m_subtitle)
 		{
 			int l2 = timeGetTime();
-			RECT dirty = {0,0,min(m_subtitle_pixel_width+32, m_subtitle_mem->locked_rect.Pitch/4), min(m_subtitle_pixel_height+32, min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE))};
+			RECT dirty = {0,0,min(m_subtitle_pixel_width+32, m_subtitle_mem->locked_rect.Pitch/4), min(m_subtitle_pixel_height+32, min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE))};
 			m_subtitle_mem->Unlock();
 			int l3 = timeGetTime();
 			//m_pool->UpdateTexture(m_subtitle_mem, m_subtitle, &dirty);
@@ -2410,7 +2410,7 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 
 	{
 		CAutoLock lck(&m_pool_lock);
-		if (!m_subtitle && FAILED( hr = m_pool->CreateTexture(min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE), min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE), D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_subtitle)))
+		if (!m_subtitle && FAILED( hr = m_pool->CreateTexture(min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE), min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE), D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_subtitle)))
 			return hr;
 	}
 
@@ -2905,14 +2905,14 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 			vertex[i].w = 1.0f;
 		}
 
-		vertex[0].tu = (float)0 / TEXTURE_SIZE;
-		vertex[0].tv = (float)0 / TEXTURE_SIZE;
-		vertex[1].tu = (float)width_d / TEXTURE_SIZE;
-		vertex[1].tv = (float)0 / TEXTURE_SIZE;
-		vertex[2].tu = (float)0 / TEXTURE_SIZE;
-		vertex[2].tv = (float)height_s / TEXTURE_SIZE;
-		vertex[3].tu = (float)width_d / TEXTURE_SIZE;
-		vertex[3].tv = (float)height_s / TEXTURE_SIZE;
+		vertex[0].tu = (float)0 / (double)TEXTURE_SIZE;
+		vertex[0].tv = (float)0 / (double)TEXTURE_SIZE;
+		vertex[1].tu = (float)width_d / (double)TEXTURE_SIZE;
+		vertex[1].tv = (float)0 / (double)TEXTURE_SIZE;
+		vertex[2].tu = (float)0 / (double)TEXTURE_SIZE;
+		vertex[2].tv = (float)height_s / (double)TEXTURE_SIZE;
+		vertex[3].tu = (float)width_d / (double)TEXTURE_SIZE;
+		vertex[3].tv = (float)height_s / (double)TEXTURE_SIZE;
 
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
@@ -2920,7 +2920,7 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		ps[1] = (float)height_d/height_s;
 		ps[1] = ps[1] > 0 ? ps[1] : -ps[1];
 		ps[1] = ps[1] > 1 ? 1 : ps[1];
-		ps[2] = ps[3] = TEXTURE_SIZE;
+		ps[2] = ps[3] = (double)TEXTURE_SIZE;
 		m_Device->SetPixelShaderConstantF(0, ps, 1);
 		if (height_s != height_d)
 			m_Device->SetPixelShader(m_lanczosY);
@@ -3072,7 +3072,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 	//SetThreadAffinityMask(GetCurrentThread(), 1);
 	while(!_this->m_render_thread_exit)
 	{
-		if (_this->m_output_mode != pageflipping && GPUIdle)
+		if (_this->m_output_mode != pageflipping && _this->GPUIdle)
 		{
 			if (timeGetTime() - _this->m_last_frame_time < 333 && g_player->is_playing())
 			{
@@ -3563,8 +3563,8 @@ HRESULT my12doomRenderer::generate_mask()
 	else if (m_mask_mode == row_interlace)
 	{
 		// init row mask texture
-		D3DCOLOR one_line[MAX_TEXTURE_SIZE];
-		for(DWORD i=0; i<TEXTURE_SIZE; i++)
+		D3DCOLOR one_line[(int)MAX_TEXTURE_SIZE];
+		for(DWORD i=0; i<(int)TEXTURE_SIZE; i++)
 			one_line[i] = i%2 == 0 ? 0 : D3DCOLOR_ARGB(255,255,255,255);
 
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
@@ -3584,8 +3584,8 @@ HRESULT my12doomRenderer::generate_mask()
 	else if (m_mask_mode == checkboard_interlace)
 	{
 		// init row mask texture
-		D3DCOLOR one_line[MAX_TEXTURE_SIZE];
-		for(DWORD i=0; i<TEXTURE_SIZE; i++)
+		D3DCOLOR one_line[(int)MAX_TEXTURE_SIZE];
+		for(DWORD i=0; i<(int)TEXTURE_SIZE; i++)
 			one_line[i] = i%2 == 0 ? 0 : D3DCOLOR_ARGB(255,255,255,255);
 
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
@@ -3596,8 +3596,8 @@ HRESULT my12doomRenderer::generate_mask()
 	}
 	else if (m_mask_mode == subpixel_row_interlace)
 	{
-		D3DCOLOR one_line[MAX_TEXTURE_SIZE];
-		for(DWORD i=0; i<TEXTURE_SIZE; i++)
+		D3DCOLOR one_line[(int)MAX_TEXTURE_SIZE];
+		for(DWORD i=0; i<(int)TEXTURE_SIZE; i++)
 			one_line[i] = i%2 == 0 ? D3DCOLOR_ARGB(255,255,0,255) : D3DCOLOR_ARGB(255,0,255,0);
 
 		for(DWORD i=0; i<m_active_pp.BackBufferHeight; i++)
@@ -3608,8 +3608,8 @@ HRESULT my12doomRenderer::generate_mask()
 	}
 	else if (m_mask_mode == subpixel_45_interlace)
 	{
-		D3DCOLOR one_line[6][MAX_TEXTURE_SIZE];
-		for(DWORD i=0; i<TEXTURE_SIZE; i++)
+		D3DCOLOR one_line[6][(int)MAX_TEXTURE_SIZE];
+		for(DWORD i=0; i<(int)TEXTURE_SIZE; i++)
 		{
 			one_line[0][i] = i%2 == 0 ? D3DCOLOR_ARGB(255,255,255,255) : D3DCOLOR_ARGB(255,0,0,0);
 			one_line[1][i] = i%2 == 0 ? D3DCOLOR_ARGB(255,255,255,0) : D3DCOLOR_ARGB(255,0,0,255);
@@ -4105,20 +4105,20 @@ HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float 
 			CAutoLock lck(&m_pool_lock);
 			if (!m_pool)
 				return VFW_E_WRONG_STATE;
-			FAIL_RET(m_pool->CreateTexture(min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE), min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE), NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &tex_mem));
+			FAIL_RET(m_pool->CreateTexture(min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE), min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE), NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &tex_mem));
 		}
 
 		// copying
 		BYTE *src = (BYTE*)data;
 		BYTE *dst = (BYTE*) tex_mem->locked_rect.pBits;
-		for(int y=0; y<min(TEXTURE_SIZE,height); y++)
+		for(int y=0; y<min((int)TEXTURE_SIZE,height); y++)
 		{
 			memcpy(dst, src, min(width*4, tex_mem->locked_rect.Pitch));
 			memset(dst+width*4, 0, 32*4);
 			dst += tex_mem->locked_rect.Pitch;
 			src += width*4;
 		}
-		memset(dst, 0, tex_mem->locked_rect.Pitch * min(min(TEXTURE_SIZE, SUBTITLE_TEXTURE_SIZE)-height, 32));
+		memset(dst, 0, tex_mem->locked_rect.Pitch * min(min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE)-height, 32));
 
 
 		{
@@ -4926,7 +4926,7 @@ HRESULT my12doomRenderer::CreateVideoSamples(IMFMediaType *pFormat, VideoSampleL
 	//UpdateDestRect();
 
 	// Create the video samples.
-	for (int i = 0; i < EVRQueueSize; i++)
+	for (int i = 0; i < (int)EVRQueueSize; i++)
 	{
 		// Create a new swap chain.
 		CHECK_HR(hr = m_Device->CreateRenderTarget(pp.BackBufferWidth, pp.BackBufferHeight, pp.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &pSurface, NULL));
