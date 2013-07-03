@@ -1558,8 +1558,8 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 	if (!m_gb)
 		return __super::on_mouse_down(id, button, x, y);
 
-	lua_OnMouseEvent("OnMouseDown", x, y, button);
 	SetCapture(id_to_hwnd(id));
+	lua_OnMouseEvent("OnMouseDown", x, y, button);
 
 
 	if ( m_renderer1->get_ui_drawer() == (ui_drawer_base *)this &&
@@ -3002,7 +3002,12 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	m_current_time = TimeStart / 10000;
 	if (!m_display_subtitle || !m_renderer1 
 		/*|| timeGetTime()-m_last_bitmap_update < 200*/)	// only update bitmap once per 200ms 
+	{
+		if (m_renderer1)
+			m_renderer1->set_subtitle(NULL, 0, 0, 0, 0, 0, 0);
+
 		return S_OK;
+	}
 
 	// latency and ratio
 	REFERENCE_TIME time_for_offset_metadata = TimeStart;

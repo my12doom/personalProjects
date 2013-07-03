@@ -89,7 +89,7 @@ static int luaStartResizing(lua_State *L)
 	HWND hwnd = g_player->get_window(view);
 	ReleaseCapture();
 	g_player->m_dragging_window = view;
-	SendMessage(hwnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, 0);
+	SendMessage(hwnd, WM_NCLBUTTONDOWN, pos, 0);
 	g_player->m_dragging_window = 0;
 
 	lua_pushboolean(L, 1);

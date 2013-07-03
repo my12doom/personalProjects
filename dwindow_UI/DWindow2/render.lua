@@ -160,9 +160,13 @@ end
 
 function play:OnClick()
 	if not player.movie_loaded then
-		local file = ui.OpenFile()
-		if file then
-			playlist:play(file)
+		if playlist:count() > 0 then
+			playlist:play_item(playlist:current_pos())
+		else
+			local file = ui.OpenFile()
+			if file then
+				playlist:play(file)
+			end
 		end
 	else
 		player.pause()
@@ -440,8 +444,8 @@ function mouse_hider:OnUpdate(t, dt)
 		
 	local da = dt/UI_fading_time
 	local old_alpha = alpha
-	local mouse_in_pannel = (px>0 and px<ui.width and py>ui.height-44 and py<ui.height) -- bottombar
-	mouse_in_pannel = mouse_in_pannel or (px>0 and px<ui.width and py>0 and py<30)	-- topbar
+	local mouse_in_pannel = (px>=0 and px<ui.width and py>=ui.height-44 and py<ui.height) -- bottombar
+	mouse_in_pannel = mouse_in_pannel or (px>=0 and px<ui.width and py>0 and py<30)	-- topbar
 	local hide_mouse = (not mouse_in_pannel) and (t > last_mousemove + UI_show_time) and (player.is_fullscreen())
 	player.show_mouse(not hide_mouse)
 	

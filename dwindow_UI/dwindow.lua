@@ -280,19 +280,15 @@ function Thread:Sleep(timeout)		-- direct use of core.Sleep() is recommended
 	return core.Sleep(timeout)
 end
 
-
-local hello = Thread:Create(function (...)
-	print("Hello Thread!",...)
-	core.Sleep(1500)
-	print("Bye Thread!",...)
-end, 0,1,2,3)
-
-hello:Suspend()
---Thread.Sleep(500)
-hello:Resume()
---Thread.Sleep(500)
-
-
+function merge_table(op, tomerge)
+	for k,v in pairs(tomerge) do
+		if type(v) == "table" and type(op[k]) == "table" then
+			merge_table(op[k], v)
+		else
+			op[k] = v
+		end
+	end
+end
 
 -- load base_frame
 if core and core.execute_luafile then
@@ -363,20 +359,14 @@ function format_table(t, level)
 			vv = tostring(v)
 		end
 		
-		table.insert(o, string.format("%s = %s,", k, vv))
+		if type(k) == "string" then
+			table.insert(o, string.format("%s = %s,", k, vv))
+		else
+			table.insert(o, string.format("%s,", vv))
+		end
 	end
 	
 	return "\r\n" .. table.concat(o, "\r\n"..lead) .."\r\n".. leadd1 .. "}"
-end
-
-function merge_table(op, tomerge)
-	for k,v in pairs(tomerge) do
-		if type(v) == "table" and type(op[k]) == "table" then
-			merge_table(op[k], v)
-		else
-			op[k] = v
-		end
-	end
 end
 
 function core.save_settings()
@@ -389,4 +379,13 @@ function core.load_settings()
 	print("LOADING SETTINGS")
 	
 	return core.execute_luafile(core.GetConfigFile())
+end
+
+function core.set_setting(key, value)
+	setting[key] = value
+	core.ApplySetting(key)
+end
+
+function core.get_setting(key)
+	return setting[key]
 end

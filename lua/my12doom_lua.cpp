@@ -316,8 +316,6 @@ lua_manager::lua_manager(const char* table_name)
 	m_table_name = new char[strlen(table_name)+1];
 	strcpy(m_table_name, table_name);
 
-	CAutoLock lck(&m_cs);
-
 	luaState L;
 
 	lua_getglobal(L, table_name);
@@ -409,7 +407,6 @@ lua_variable::~lua_variable()
 
 lua_variable::operator int()
 {
-	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
 
 	lua_getglobal(L, m_manager->m_table_name);
@@ -424,7 +421,6 @@ lua_variable::operator int()
 
 void lua_variable::operator=(const int in)
 {
-	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
 
 	lua_getglobal(L, m_manager->m_table_name);
@@ -436,7 +432,6 @@ void lua_variable::operator=(const int in)
 
 lua_variable::operator bool()
 {
-	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
 
 	lua_getglobal(L, m_manager->m_table_name);
@@ -451,7 +446,6 @@ lua_variable::operator bool()
 
 void lua_variable::operator=(const bool in)
 {
-	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
 
 	lua_getglobal(L, m_manager->m_table_name);
@@ -462,7 +456,6 @@ void lua_variable::operator=(const bool in)
 
 lua_variable::operator double()
 {
-	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
 
 	lua_getglobal(L, m_manager->m_table_name);
@@ -477,7 +470,6 @@ lua_variable::operator double()
 
 void lua_variable::operator=(const double in)
 {
-	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
 
 	lua_getglobal(L, m_manager->m_table_name);
@@ -489,7 +481,6 @@ void lua_variable::operator=(const double in)
 
 // lua_global_variable::operator const wchar_t*()
 // {
-// 	CAutoLock lck(&m_manager->m_cs);
 // 	luaState L;
 // 
 // 	lua_getglobal(L, m_manager->m_table_name);
@@ -504,7 +495,6 @@ void lua_variable::operator=(const double in)
 
 void lua_variable::operator=(const wchar_t *in)
 {
-	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
 
 	lua_getglobal(L, m_manager->m_table_name);
@@ -515,7 +505,6 @@ void lua_variable::operator=(const wchar_t *in)
 
 void lua_variable::operator=(lua_CFunction func)
 {
-	CAutoLock lck(&m_manager->m_cs);
 	luaState L;
 
 	lua_getglobal(L, m_manager->m_table_name);
@@ -776,7 +765,13 @@ int lua_track_back(lua_State *L)
 		sprintf(tmp, "%s(%d,1) : %s \n", debug.source+1, debug.currentline, level == 1 ? strrchr(err, ':')+1 : "");
 		OutputDebugStringA(tmp);
 	}
-	DebugBreak();
+	if (MessageBoxA(NULL, "Debug ? ", "Debug ? " , MB_YESNO) == IDYES)
+	{
+		lua_getglobal(L, "debug");
+		lua_getfield(L, -1, "debug");
+		lua_mypcall(L, 0, 0, NULL);
+		lua_pop(L, 1);
+	}
 #endif
 
 	lua_pushstring(L, err);

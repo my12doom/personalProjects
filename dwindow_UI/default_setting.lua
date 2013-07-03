@@ -1,6 +1,6 @@
 ﻿print("LOADING DEFAULT SETTINGS")
 
-setting = 
+default_setting = 
 {
 	MoviePosX = 0,
 	Luminance = 0.5,
@@ -75,3 +75,4 @@ setting =
 	ForceVideo = true,
 	AlwaysDownloadSubtitle = false,
 }
+merge_table(setting, default_setting)
