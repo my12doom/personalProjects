@@ -1680,8 +1680,8 @@ HRESULT my12doomRenderer::render_helper(IDirect3DSurface9 *surfaces[], int nview
 		FAIL_RET(clear(p));
 		FAIL_RET(draw_movie(p, view));
 		FAIL_RET(draw_subtitle(p, view));
-		FAIL_RET(adjust_temp_color(p, view));
 		FAIL_RET(draw_ui(p, i));
+		FAIL_RET(adjust_temp_color(p, view));
 	}
 
 	return hr;
@@ -2041,10 +2041,10 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 				draw_movie(back_buffer, view);
 				QueryPerformanceCounter(&l3);
 				draw_subtitle(back_buffer, view);
-				adjust_temp_color(back_buffer, view);
 				QueryPerformanceCounter(&l4);
 				draw_ui(back_buffer, view);
 				QueryPerformanceCounter(&l5);
+				adjust_temp_color(back_buffer, view);
 			}
 
 			else
@@ -2095,8 +2095,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			clear(back_buffer);
 			draw_movie(back_buffer, view);
 			draw_subtitle(back_buffer, view);
-			adjust_temp_color(back_buffer, view);
 			draw_ui(back_buffer, view);
+			adjust_temp_color(back_buffer, view);
 
 			// set render target to swap chain2
 			if (m_swap2)
@@ -2110,8 +2110,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 				clear(back_buffer2);
 				draw_movie(back_buffer2, view);
 				draw_subtitle(back_buffer2, view);
-				adjust_temp_color(back_buffer2, view);
 				draw_ui(back_buffer2, view);
+				adjust_temp_color(back_buffer2, view);
 			}
 
 		}
