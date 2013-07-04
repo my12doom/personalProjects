@@ -210,6 +210,12 @@ int luaGetSystemDefaultLCID(lua_State *L)
 	return 1;
 }
 
+static int lua_restart_this_program(lua_State *L)
+{
+	restart_this_program();
+	return 1;
+}
+
 extern "C" int luaopen_cjson_safe(lua_State *l);
 bool lua_inited = false;
 int dwindow_lua_init () 
@@ -259,6 +265,7 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("GetConfigFile") = &luaGetConfigFile;
 	g_lua_core_manager->get_variable("WriteConfigFile") = &luaWriteConfigFile;
 	g_lua_core_manager->get_variable("GetSystemDefaultLCID") = &luaGetSystemDefaultLCID;
+	g_lua_core_manager->get_variable("restart_this_program") = &lua_restart_this_program;
 
 	lua_inited = true;
 	return 0;

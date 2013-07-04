@@ -226,6 +226,247 @@ static int lua_get_splayer_subtitle(lua_State *L)
 	return result_count;
 }
 
+static int widi_start_scan(lua_State *L)
+{
+	lua_pushboolean(L, SUCCEEDED(g_player->widi_start_scan()));
+	return 1;}
+static int widi_get_adapters(lua_State *L)
+{
+
+	int c = g_player->m_widi_num_adapters_found;
+	for(int i = 0; i<c; i++)
+	{
+		wchar_t o[500] = L"";
+		g_player->widi_get_adapter_by_id(i, o);
+		lua_pushstring(L, W2UTF8(o));
+	}
+
+	return c;
+}
+static int widi_get_adapter_information(lua_State *L)
+{
+	int n = lua_gettop(L);
+	int i = lua_tointeger(L, -n+0);
+	const char *p = lua_tostring(L, -n+1);
+	wchar_t o[500] = L"";
+	g_player->widi_get_adapter_information(i, o, p ? UTF82W(p) : NULL);
+
+	lua_pushstring(L, W2UTF8(o));
+	return 1;
+}
+static int widi_connect(lua_State *L)
+{
+	int n = lua_gettop(L);
+	int i = lua_tointeger(L, -n+0);
+	DWORD mode = GET_CONST("WidiScreenMode");
+	if (n>=2)
+		mode = lua_tointeger(L, -n+1);
+	
+	lua_pushboolean(L, SUCCEEDED(g_player->widi_connect(i, mode)));
+	return 1;
+}
+static int widi_set_screen_mode(lua_State *L)
+{
+	GET_CONST("WidiScreenMode");
+	int n = lua_gettop(L);
+	DWORD mode = GET_CONST("WidiScreenMode");
+	if (n>=1)
+		mode = lua_tointeger(L, -n+0);
+
+	lua_pushboolean(L, SUCCEEDED(g_player->widi_set_screen_mode(mode)));
+	return 1;
+}
+static int widi_disconnect(lua_State *L)
+{
+	int id = -1;
+	int n = lua_gettop(L);
+	if (n>=1)
+		id = lua_tointeger(L, -n+0);
+	lua_pushboolean(L, SUCCEEDED(g_player->widi_disconnect(id)));
+	return 1;
+}
+
+static int enable_audio_track(lua_State *L)
+{
+	if (lua_gettop(L) != 1)
+		return 0;
+
+	int id = lua_tointeger(L, -1);
+	lua_pushboolean(L, SUCCEEDED(g_player->enable_audio_track(id)));
+	return 1;
+}
+static int enable_subtitle_track(lua_State *L)
+{
+	if (lua_gettop(L) != 1)
+		return 0;
+
+	int id = lua_tointeger(L, -1);
+	lua_pushboolean(L, SUCCEEDED(g_player->enable_subtitle_track(id)));
+	return 1;
+}
+static int list_audio_track(lua_State *L)
+{
+	wchar_t tmp[32][1024];
+	wchar_t *tmp2[32];
+	bool connected[32];
+	for(int i=0; i<32; i++)
+		tmp2[i] = tmp[i];
+	int found = 0;
+	g_player->list_audio_track(tmp2, connected, &found);
+
+	for(int i=0; i<found; i++)
+	{
+		lua_pushstring(L, W2UTF8(tmp[i]));
+		lua_pushboolean(L, connected[i]);
+	}
+
+	return found * 2;
+}
+static int list_subtitle_track(lua_State *L)
+{
+	wchar_t tmp[32][1024];
+	wchar_t *tmp2[32];
+	bool connected[32];
+	for(int i=0; i<32; i++)
+		tmp2[i] = tmp[i];
+	int found = 0;
+	g_player->list_subtitle_track(tmp2, connected, &found);
+
+	for(int i=0; i<found; i++)
+	{
+		lua_pushstring(L, W2UTF8(tmp[i]));
+		lua_pushboolean(L, connected[i]);
+	}
+
+	return found * 2;
+}
+
+static int lua_find_main_movie(lua_State *L)
+{
+	if (lua_gettop(L) != 1)
+		return 0;
+	const char *p = lua_tostring(L, -1);
+
+	wchar_t o[MAX_PATH];
+	if (FAILED(find_main_movie(UTF82W(p), o)))
+		return 0;
+
+	lua_pushstring(L, W2UTF8(o));
+	return 1;
+}
+static int enum_bd(lua_State *L)
+{
+	int n = 0;
+	for(int i=L'Z'; i>L'B'; i--)
+	{
+		wchar_t tmp[MAX_PATH] = L"C:\\";
+		wchar_t tmp2[MAX_PATH];
+		tmp[0] = i;
+		tmp[4] = NULL;
+		if (GetDriveTypeW(tmp) == DRIVE_CDROM)
+		{
+			n++;
+			lua_pushstring(L, W2UTF8(tmp));
+			if (!GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
+			{
+				// no disc
+				lua_pushnil(L);
+				lua_pushboolean(L, false);
+			}
+			else if (FAILED(find_main_movie(tmp, tmp2)))
+			{
+				// not bluray
+				GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0);
+				lua_pushstring(L, W2UTF8(tmp2));
+				lua_pushboolean(L, false);
+			}
+			else
+			{
+				GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0);
+				lua_pushstring(L, W2UTF8(tmp2));
+				lua_pushboolean(L, true);
+			}
+
+		}
+	}
+
+	return n*3;
+}
+static int enum_drive(lua_State *L)
+{
+	int n = 0;
+
+#ifdef ZHUZHU
+	for(int i=3; i<26; i++)
+#else
+	for(int i=0; i<26; i++)
+#endif
+	{
+		wchar_t path[50];
+		wchar_t volume_name[MAX_PATH];
+		swprintf(path, L"%c:\\", L'A'+i);
+		if (GetVolumeInformationW(path, volume_name, MAX_PATH, NULL, NULL, NULL, NULL, 0))
+#ifdef ZHUZHU
+			if (GetDriveTypeW(path) != DRIVE_CDROM)
+#endif
+		{
+			lua_pushstring(L, W2UTF8(path));
+			n++;
+		}
+	}
+
+	return n;
+
+}
+static int enum_folder(lua_State *L)
+{
+	int n = 0;
+	if (lua_gettop(L) != 1)
+		return 0;
+
+	const char * p = lua_tostring(L, -1);
+	if (!p)
+		return 0;
+
+	wchar_t path[1024];
+	wcscpy(path, UTF82W(p));
+	if (path[wcslen(path)-1] != L'\\')
+		wcscat(path, L"\\");
+	wcscat(path, L"*.*");
+
+	WIN32_FIND_DATAW find_data;
+	HANDLE find_handle = FindFirstFileW(path, &find_data);
+
+	if (find_handle != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
+			if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)!=0
+				&& wcscmp(L".",find_data.cFileName ) !=0
+				&& wcscmp(L"..", find_data.cFileName) !=0
+				)
+			{
+				wchar_t tmp[MAX_PATH];
+				wcscpy(tmp, find_data.cFileName);
+				wcscat(tmp, L"\\");
+				lua_pushstring(L, W2UTF8(tmp));
+			}
+			else if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
+
+			{
+				lua_pushstring(L, W2UTF8(find_data.cFileName));
+			}
+
+			n++;
+		}
+		while( FindNextFile(find_handle, &find_data ) );
+	}
+
+	return n;
+}
+
+
+
 int player_lua_init()
 {
 	g_player_lua_manager = new lua_manager("player");
@@ -249,6 +490,24 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("show_mouse") = &show_mouse;
 	g_player_lua_manager->get_variable("popup_menu") = &popup_menu;
 	g_player_lua_manager->get_variable("get_splayer_subtitle") = &lua_get_splayer_subtitle;
+
+	g_player_lua_manager->get_variable("enable_audio_track") = &enable_audio_track;
+	g_player_lua_manager->get_variable("enable_subtitle_track") = &enable_subtitle_track;
+	g_player_lua_manager->get_variable("list_audio_track") = &list_audio_track;
+	g_player_lua_manager->get_variable("list_subtitle_track") = &list_subtitle_track;
+
+	g_player_lua_manager->get_variable("find_main_movie") = &lua_find_main_movie;
+	g_player_lua_manager->get_variable("enum_bd") = &enum_bd;
+	g_player_lua_manager->get_variable("enum_drive") = &enum_drive;
+	g_player_lua_manager->get_variable("enum_folder") = &enum_folder;
+
+	// widi
+	g_player_lua_manager->get_variable("widi_start_scan") = &widi_start_scan;
+	g_player_lua_manager->get_variable("widi_get_adapters") = &widi_get_adapters;
+	g_player_lua_manager->get_variable("widi_get_adapter_information") = &widi_get_adapter_information;
+	g_player_lua_manager->get_variable("widi_connect") = &widi_connect;
+	g_player_lua_manager->get_variable("widi_set_screen_mode") = &widi_set_screen_mode;
+	g_player_lua_manager->get_variable("widi_disconnect") = &widi_disconnect;
 
 	return 0;
 }

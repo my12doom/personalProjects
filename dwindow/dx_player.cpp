@@ -5017,6 +5017,8 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 	if (!f)
 		return;
 	fclose(f);
+
+	m_renderer->load_file(m_pathname);
 }
 
 subtitle_file_handler::~subtitle_file_handler()

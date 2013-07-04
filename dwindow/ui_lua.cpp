@@ -197,9 +197,9 @@ int ui_lua_init()
 	g_lua_ui_manager->get_variable("DestroyMenu") = &luaDestroyMenu;
 	g_lua_ui_manager->get_variable("PopupMenu") = &luaPopupMenu;
 
+	// window
 	g_lua_ui_manager->get_variable("StartDragging") = &luaStartDragging;
 	g_lua_ui_manager->get_variable("StartResizing") = &luaStartResizing;
-
 	g_lua_ui_manager->get_variable("get_mouse_pos") = &get_mouse_pos;
 
 	return 0;
