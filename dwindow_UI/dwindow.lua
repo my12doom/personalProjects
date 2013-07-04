@@ -13,7 +13,7 @@ end
 function GetName(pathname)
 	if pathname == nil then return end
 	local t = string.reverse(pathname)
-	t = string.sub(t, 1, ((string.find(t, "\\") or string.find(t, "/"))-1) or t.length)
+	t = string.sub(t, 1, ((string.find(t, "\\") or string.find(t, "/")  or t:len())-1))
 	return string.reverse(t)
 end
 local lua_file = core.loading_file
