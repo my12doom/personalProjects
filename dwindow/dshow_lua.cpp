@@ -465,6 +465,133 @@ static int enum_folder(lua_State *L)
 	return n;
 }
 
+static int set_output_channel(lua_State *L)
+{
+	int channel = lua_tointeger(L, -1);
+	lua_pushboolean(L, SUCCEEDED(g_player->set_output_channel(channel)));
+	return 1;
+}
+
+static int set_input_layout(lua_State *L)
+{
+	int layout = lua_tointeger(L, -1);
+	g_player->m_input_layout = layout;
+	lua_pushboolean(L, SUCCEEDED(g_player->m_renderer1->set_input_layout(layout)));
+	return 1;
+}
+
+static int set_output_mode(lua_State *L)
+{
+	int mode = lua_tointeger(L, -1);
+	lua_pushboolean(L, SUCCEEDED(g_player->set_output_mode(mode)));
+	return 1;
+}
+
+static int set_mask_mode(lua_State *L)
+{
+	int mode = lua_tointeger(L, -1);
+	g_player->m_mask_mode = mode;
+	lua_pushboolean(L, SUCCEEDED(g_player->m_renderer1->set_mask_mode(mode)));
+	return 1;
+}
+
+static int set_zoom_factor(lua_State *L)
+{
+	int n = lua_gettop(L);
+	double factor = 1.0;
+	int x = -99999;
+	int y = -99999;
+	if (n >= 1)
+		factor = lua_tonumber(L, -n+0);
+	if (n >= 2)
+		x = lua_tonumber(L, -n+1);
+	if (n >= 3)
+		y = lua_tonumber(L, -n+2);
+
+
+	lua_pushboolean(L, SUCCEEDED(g_player->m_renderer1->set_zoom_factor(factor, x, y)));
+	return 1;
+}
+
+static int set_subtitle_pos(lua_State *L)
+{
+	int n = lua_gettop(L);
+	double x = g_player->m_subtitle_center_x;
+	double y = g_player->m_subtitle_bottom_y;
+	if (n>=1 && lua_isnumber(L, -n+0))
+		x = lua_tonumber(L, -n+0);
+	if (n>=2 && lua_isnumber(L, -n+1))
+		y = lua_tonumber(L, -n+1);
+
+	lua_pushboolean(L, SUCCEEDED(g_player->set_subtitle_pos(x, y)));
+	return 1;
+}
+
+static int set_subtitle_parallax(lua_State *L)
+{
+	int n = lua_gettop(L);
+	double p = g_player->m_user_subtitle_parallax;
+	if (n>=1 && lua_isnumber(L, -n+0))
+		p = lua_tonumber(L, -n+0);
+	lua_pushboolean(L, SUCCEEDED(g_player->set_subtitle_parallax(p)));
+	return 1;
+}
+
+static int set_subtitle_latency_stretch(lua_State *L)
+{
+	int n = lua_gettop(L);
+	if (n>=1 && lua_isnumber(L, -n+0))
+		GET_CONST("SubtitleLatency") = lua_tonumber(L, -n+0);
+	if (n>=2 && lua_isnumber(L, -n+1))
+		GET_CONST("SubtitleRatio") = lua_tonumber(L, -n+1);
+
+	lua_pushboolean(L, SUCCEEDED(g_player->draw_subtitle()));
+	return 1;
+}
+
+static int get_input_layout(lua_State *L)
+{
+	lua_pushinteger(L, g_player->m_input_layout);
+	return 1;
+}
+static int get_output_mode(lua_State *L)
+{
+	lua_pushinteger(L, g_player->m_output_mode);
+	return 1;
+}
+static int get_mask_mode(lua_State *L)
+{
+	lua_pushinteger(L, g_player->m_mask_mode);
+	return 1;
+}
+static int get_zoom_factor(lua_State *L)
+{
+	lua_pushnumber(L, g_player->m_renderer1->get_zoom_factor());
+	return 1;
+}
+static int get_subtitle_pos(lua_State *L)
+{
+	lua_pushnumber(L, g_player->m_subtitle_center_x);
+	lua_pushnumber(L, g_player->m_subtitle_bottom_y);
+	return 2;
+}
+static int get_subtitle_parallax(lua_State *L)
+{
+	lua_pushnumber(L, g_player->m_user_subtitle_parallax);
+	return 1;
+}
+static int get_subtitle_latency_stretch(lua_State *L)
+{
+	lua_pushnumber(L, GET_CONST("SubtitleLatency"));
+	lua_pushnumber(L, GET_CONST("SubtitleRatio"));
+	return 2;
+}
+static int get_output_channel(lua_State *L)
+{
+	lua_pushinteger(L, g_player->m_channel);
+	return 1;
+}
+
 
 
 int player_lua_init()
@@ -500,6 +627,27 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("enum_bd") = &enum_bd;
 	g_player_lua_manager->get_variable("enum_drive") = &enum_drive;
 	g_player_lua_manager->get_variable("enum_folder") = &enum_folder;
+
+	g_player_lua_manager->get_variable("set_output_channel") = &set_output_channel;
+	g_player_lua_manager->get_variable("set_input_layout") = &set_input_layout;
+	g_player_lua_manager->get_variable("set_output_mode") = &set_output_mode;
+	g_player_lua_manager->get_variable("set_mask_mode") = &set_mask_mode;
+	g_player_lua_manager->get_variable("set_zoom_factor") = &set_zoom_factor;
+	g_player_lua_manager->get_variable("set_subtitle_pos") = &set_subtitle_pos;
+	g_player_lua_manager->get_variable("set_subtitle_parallax") = &set_subtitle_parallax;
+	g_player_lua_manager->get_variable("set_subtitle_latency_stretch") = &set_subtitle_latency_stretch;
+
+	
+
+	g_player_lua_manager->get_variable("get_output_channel") = &get_output_channel;
+	g_player_lua_manager->get_variable("get_input_layout") = &get_input_layout;
+	g_player_lua_manager->get_variable("get_output_mode") = &get_output_mode;
+	g_player_lua_manager->get_variable("get_mask_mode") = &get_mask_mode;
+	g_player_lua_manager->get_variable("get_zoom_factor") = &get_zoom_factor;
+	g_player_lua_manager->get_variable("get_subtitle_pos") = &get_subtitle_pos;
+	g_player_lua_manager->get_variable("get_subtitle_parallax") = &get_subtitle_parallax;
+	g_player_lua_manager->get_variable("get_subtitle_latency_stretch") = &get_subtitle_latency_stretch;
+	
 
 	// widi
 	g_player_lua_manager->get_variable("widi_start_scan") = &widi_start_scan;
