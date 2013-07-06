@@ -4,7 +4,7 @@ local lua_path = GetPath(lua_file)
 local alpha = 0.5
 local UI_fading_time = 300
 local UI_show_time = 2000
-
+local playlist_list
 
 -- black background and right mouse reciever
 local oroot = BaseFrame:Create()
@@ -99,7 +99,7 @@ leftright:SetSize(leftright.bmp.width, leftright.bmp.height)
 
 function leftright:RenderThis()
 	local w,h = self:GetSize()
-	paint(0, 0, w, h, self.bmp)
+	--paint(0, 0, w, h, self.bmp)
 end
 
 function leftright:OnClick()
@@ -107,23 +107,102 @@ function leftright:OnClick()
 end
 
 
+
+
+-- playlist button
+local playlist_button = BaseFrame:Create()
+bottombar:AddChild(playlist_button)
+playlist_button:SetPoint(BOTTOMLEFT, bottombar, BOTTOMLEFT, 14, -7)
+playlist_button:SetSize(36,30)
+
+function playlist_button:RenderThis()
+	paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "playlist_mouseover.png" or "playlist_normal.png")))	
+end
+
+function playlist_button:OnClick()
+	-- TODO: show playlist
+	if playlist_list.showing then
+		playlist_list:hide()
+	else
+		playlist_list:show()
+	end
+	
+	return true
+end
+
+function playlist_button:HitTest(x, y)
+	return x >= 10 and y>= 8 and x<= 25 and y <= 21
+end
+
+
+-- setting_buttons button
+local setting_button = BaseFrame:Create()
+bottombar:AddChild(setting_button)
+setting_button:SetPoint(LEFT, playlist_button, RIGHT, -18, 0)
+setting_button:SetSize(36,30)
+
+function setting_button:RenderThis()
+	paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "setting_mouseover.png" or "setting_normal.png")))	
+end
+
+function setting_button:HitTest(x, y)
+	return x >= 10 and y>= 8 and x<= 25 and y <= 21
+end
+
+function playlist:OnClick()
+	-- TODO: show setting_buttons window	
+	return true
+end
+
 -- 3d/2d button
 local b3d = BaseFrame:Create()
 bottombar:AddChild(b3d)
-b3d:SetPoint(BOTTOMLEFT, bottombar, BOTTOMLEFT, 14, -7)
+b3d:SetPoint(LEFT, setting_button, RIGHT, -18, 0)
 b3d:SetSize(36,30)
 
 function b3d:RenderThis()
-	-- todo: get 3d state
-	if enabled3D then
-		paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "3d_mouseover.png" or "3d_normal.png")))	
-	else
+	if not player.movie_loaded then return end
+	
+	if dx9.is2DMovie() then
 		paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "2d_mouseover.png" or "2d_normal.png")))	
+	else
+		paint(0,0,36,30, get_bitmap(lua_path .. (dx9.is2DRendering() and "3d_normal.png" or "3d_mouseover.png")))	
 	end
 end
 
+function b3d:HitTest(x, y)
+	return x >= 10 and y>= 8 and x<= 25 and y <= 21
+end
+
 function b3d:OnClick()
+	if not player.movie_loaded then return end
 	player.toggle_3d()
+	return true
+end
+
+-- LR button
+local LR = BaseFrame:Create()
+bottombar:AddChild(LR)
+LR:SetPoint(LEFT, b3d, RIGHT, -18, 0)
+LR:SetSize(36,30)
+
+function LR:RenderThis()
+	if not player.movie_loaded or dx9.is2DMovie() then return end
+	
+	if setting.SwapEyes then
+		paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "RL_mouseover.png" or "RL_normal.png")))
+	else
+		paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "LR_mouseover.png" or "LR_normal.png")))			
+	end
+end
+
+function LR:HitTest(x, y)
+	return x >= 10 and y>= 8 and x<= 25 and y <= 21
+end
+
+function LR:OnClick()
+	if not player.movie_loaded or dx9.is2DMovie() then return end
+	player.set_swapeyes(not setting.SwapEyes)
 	return true
 end
 
@@ -358,6 +437,90 @@ function open:OnClick()
 	return true
 end
 
+-- the "playlist"
+playlist_list = BaseFrame:Create()
+oroot:AddChild(playlist_list)
+playlist_list.dragging = false
+setting.playlist_width = 180
+playlist_list:SetWidth(setting.playlist_width)
+playlist_list:SetPoint(TOPLEFT, topbar, BOTTOMLEFT, -setting.playlist_width)
+playlist_list:SetPoint(BOTTOMLEFT, bottombar, TOPLEFT, -setting.playlist_width)
+
+function playlist_list:RenderThis()
+	local l,t,r,b = self:GetRect()
+	paint(0,0,r-l,b-t, get_bitmap(lua_path .. "open_more.png"))
+end
+
+function playlist_list:PreRender(t, dt)
+	self.pos = self.pos or 0
+	local pre_pos = self.pos
+	local da = dt/UI_fading_time
+	if self.showing then
+		self.pos = self.pos + da
+	else
+		self.pos = self.pos - da
+	end
+	
+	self.pos = math.max(0, self.pos)
+	self.pos = math.min(1, self.pos)
+	
+	if self.pos ~= pre_pos then
+		local l,_,r = self:GetRect()
+		playlist_list:SetPoint(TOPLEFT, topbar, BOTTOMLEFT, -setting.playlist_width *(1 - self.pos) )
+		playlist_list:SetPoint(BOTTOMLEFT, bottombar, TOPLEFT, -setting.playlist_width *(1 - self.pos) )
+	end
+end
+
+function playlist_list:OnMouseDown(x, y)
+	if x > setting.playlist_width - 5 then
+		self.dragging = true
+	end
+	
+	return true
+end
+
+function playlist_list:OnMouseMove(x, y)
+	if self.dragging then
+		local l = self:GetRect()
+		local x = ui.get_mouse_pos()
+		setting.playlist_width = (x - l)
+		setting.playlist_width = math.max(10, setting.playlist_width)
+		
+		self:SetWidth(setting.playlist_width)
+	end
+end
+
+function playlist_list:OnMouseUp()
+	self.dragging = false
+	return true
+end
+
+function playlist_list:hide()
+	if self.dragging then return end
+	self.showing = false
+end
+
+function playlist_list:show()
+	if self.dragging then return end
+	self.showing = true
+end
+
+-- the close button
+local playlist_close = BaseFrame:Create()
+playlist_list:AddChild(playlist_close)
+playlist_close:SetSize(30,30)
+playlist_close:SetPoint(RIGHT)
+
+function playlist_close:RenderThis()
+	paint(0, 0, 30, 30, get_bitmap(lua_path .. "playlist_close.png"))
+end
+
+function playlist_close:OnClick()
+	playlist_list:hide()
+	
+	return true
+end
+
 
 -- open file button drop down
 local open2 = BaseFrame:Create()
@@ -446,6 +609,7 @@ function mouse_hider:OnUpdate(t, dt)
 	local old_alpha = alpha
 	local mouse_in_pannel = (px>=0 and px<ui.width and py>=ui.height-44 and py<ui.height) -- bottombar
 	mouse_in_pannel = mouse_in_pannel or (px>=0 and px<ui.width and py>0 and py<30)	-- topbar
+	mouse_in_pannel = mouse_in_pannel or (playlist_list.showing and px >= 0 and px <= setting.playlist_width)	-- playlist
 	local hide_mouse = (not mouse_in_pannel) and (t > last_mousemove + UI_show_time) and (player.is_fullscreen())
 	player.show_mouse(not hide_mouse)
 	
@@ -460,4 +624,12 @@ function mouse_hider:OnUpdate(t, dt)
 	topbar:SetPoint(TOPRIGHT, nil, nil, 0, -30+30*alpha)
 	bottombar:SetPoint(BOTTOMLEFT, nil, nil, 0, 44-44*alpha)
 	bottombar:SetPoint(BOTTOMRIGHT, nil, nil, 0, 44-44*alpha)
+	
+	if (alpha < 0.1) then
+		playlist_list:hide()
+	end
+	
+	if (px < 5) then
+		playlist_list:show()
+	end
 end

@@ -273,9 +273,19 @@ static int myprint(lua_State *L)
 	return 0;
 }
 
+static int is2DRendering(lua_State *L)
+{
+	bool b = g_renderer->is2DRendering();
+	lua_pushboolean(L, b);
+	return 1;
+}
 
-
-//// IPLayer functions
+static int is2DMovie(lua_State *L)
+{
+	bool b = g_renderer->is2DMovie();
+	lua_pushboolean(L, b);
+	return 1;
+}
 
 
 // renderer things
@@ -319,10 +329,8 @@ int my12doomRenderer_lua_init()
 	g_lua_dx9_manager->get_variable("CreateFont") = &luaCreateFont;
 	g_lua_dx9_manager->get_variable("ReleaseFont") = &luaReleaseFont;
 	g_lua_dx9_manager->get_variable("set_movie_rect") = &set_movie_rect;
-
-
-	// dx_player
-
+	g_lua_dx9_manager->get_variable("is2DRendering") = &is2DRendering;
+	g_lua_dx9_manager->get_variable("is2DMovie") = &is2DMovie;
 
 	return 0;
 }

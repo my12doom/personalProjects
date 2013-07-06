@@ -221,6 +221,8 @@ public:
 	HRESULT screenshot(const wchar_t*file);	// movie only
 	HRESULT screenshot(void *Y, void*U, void*V, int stride, int width, int height);	// movie only
 	HRESULT get_movie_desc(int *width, int*height);
+	bool is2DMovie();
+	bool is2DRendering();
 
 
 	// settings SET function
@@ -558,7 +560,6 @@ protected:
 
 	// input layout detector
 	input_layout_types get_active_input_layout();
-	bool is2Dimage();
 	double get_active_aspect();
 	int m_sbs;
 	int m_normal;
