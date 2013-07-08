@@ -1536,7 +1536,7 @@ HRESULT localize_menu(HMENU menu)
 			wchar_t text[1024];
 			GetMenuStringW(menu, i, text, 1024, MF_BYPOSITION);
 
-			const wchar_t *local = C(text);
+			UTF82W &local = C(text);
 			if (sub)
 				ModifyMenuW(menu, i, MF_BYPOSITION | MF_POPUP, (UINT_PTR)sub, local);
 			else
@@ -2219,6 +2219,12 @@ UTF82W::UTF82W(const char *in)
 
 	p = (wchar_t*)malloc(len*sizeof(wchar_t));
 	MultiByteToWideChar(CP_UTF8, NULL, in, -1, p, len);
+}
+
+UTF82W::UTF82W(UTF82W &o)
+{
+	p = new wchar_t[wcslen(o.p)+1];
+	wcscpy(p, o.p);
 }
 UTF82W::~UTF82W()
 {

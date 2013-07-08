@@ -6,10 +6,12 @@ setting.playlist.list = {}
 local get_pos
 
 function playlist:add(L, R, pos)
-	local pos = get_pos(L)
+	local pos = get_pos(L, R)
 	if pos then return pos end
 	
 	table.insert(setting.playlist.list, pos or (#setting.playlist.list+1), {L=L,R=R})
+	print(root, root.BroadCastEvent)
+	root:BroadCastEvent("OnPlaylistChange")
 	return pos or #setting.playlist.list
 end
 
@@ -25,14 +27,20 @@ end
 
 function playlist:remove(L, R)
 	local pos = get_pos(L, R)
+	return self:remove_item(pos)
+end
+
+function playlist:remove_item(pos)
 	if pos then
-		table.remove(pos)
+		table.remove(setting.playlist.list, pos)
+		root:BroadCastEvent("OnPlaylistChange")
 	end
 end
 
 function playlist:clear()
 	setting.playlist.list = {}
 	setting.playlist.playing = 0
+	root:BroadCastEvent("OnPlaylistChange")
 end
 
 function playlist:next()

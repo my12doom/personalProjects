@@ -1545,7 +1545,7 @@ HRESULT dx_player::lua_OnMouseEvent(char *event, int x, int y, int button)
 		lua_pushinteger(lua_state, x/UIScale);
 		lua_pushinteger(lua_state, y/UIScale);
 		lua_pushinteger(lua_state, button);
-		lua_mypcall(lua_state, 4, 0, 0);
+		lua_mypcall(lua_state, 4, 1, 0);
 	}
 	bool b = lua_toboolean(lua_state, -1);
 	lua_settop(lua_state, 0);

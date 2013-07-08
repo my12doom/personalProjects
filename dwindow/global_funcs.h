@@ -202,6 +202,7 @@ public:
 class UTF82W
 {
 public:
+	UTF82W(UTF82W &o);
 	UTF82W(const char *in);
 	~UTF82W();
 	operator wchar_t*();
@@ -305,7 +306,7 @@ protected:
 enum{ENGLISH, CHINESE};
 typedef DWORD localization_language;
 extern AutoSetting<int> g_active_language;
-const wchar_t *C(const wchar_t *English);
+UTF82W C(const wchar_t *English);
 HRESULT add_localization(const wchar_t *English, const wchar_t *Localized = NULL);
 HRESULT set_localization_language(localization_language language);
 HRESULT localize_menu(HMENU menu);

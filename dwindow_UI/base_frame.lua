@@ -135,6 +135,16 @@ function BaseFrame:RemoveChild(frame)
 	return true
 end
 
+function BaseFrame:RemoveAllChilds()
+	local t = {}
+	for _,v in ipairs(self.childs) do
+		table.insert(t, v)
+	end
+	for _,v in ipairs(t) do
+		v:RemoveFromParent()
+	end
+end
+
 function BaseFrame:RemoveFromParent()
 	if self.parent then
 		self.parent:RemoveChild(self)

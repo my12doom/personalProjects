@@ -1,10 +1,15 @@
 ﻿local lua_file = core.loading_file
 local lua_path = GetPath(lua_file)
+core.execute_luafile(lua_path .. "menu.lua")
 
 local alpha = 0.5
 local UI_fading_time = 300
 local UI_show_time = 2000
 local playlist_list
+local playlist_button = BaseFrame:Create()
+local playlist_close = BaseFrame:Create()
+local font = dx9.CreateFont({name="宋体", height = 12, weight=0})
+local font_black = dx9.CreateFont({name="宋体", height = 16, weight=0})
 
 -- black background and right mouse reciever
 local oroot = BaseFrame:Create()
@@ -16,14 +21,20 @@ end
 function oroot:OnMouseDown(x, y, button)
 	if button ~= VK_RBUTTON and not player.is_fullscreen() then
 		ui.StartDragging()
-	end
-	
+	end	
+	playlist_list:hide()
 	return true
 end
 
+tttt = 0
 function oroot:OnClick(x,y,button)
 	if button == VK_RBUTTON then
-		player.popup_menu()
+		if tttt % 2 == 1 then
+			player.popup_menu()
+		else
+			popup3dvstar();
+		end
+		tttt = tttt + 1
 	end
 	return true
 end
@@ -41,7 +52,6 @@ function logo:RenderThis()
 		paint(0,0,1024,600, res)
 	end
 end
-
 
 -- bottom bar
 local bottombar = BaseFrame:Create()
@@ -75,7 +85,7 @@ function topbar:PreRender()
 		if self.res then
 			self.res:release()
 		end
-		self.res = DrawText(self.item)
+		self.res = DrawText(self.item, font_black)
 	end
 end
 
@@ -89,28 +99,7 @@ function topbar:RenderThis()
 	end
 end
 
-
--- left right
-local leftright = BaseFrame:Create()
-topbar:AddChild(leftright)
-leftright:SetPoint(RIGHT)
-leftright.bmp = DrawText("LEFT / RIGHT")
-leftright:SetSize(leftright.bmp.width, leftright.bmp.height)
-
-function leftright:RenderThis()
-	local w,h = self:GetSize()
-	--paint(0, 0, w, h, self.bmp)
-end
-
-function leftright:OnClick()
-	player.set_swapeyes(not player.get_swapeyes())
-end
-
-
-
-
 -- playlist button
-local playlist_button = BaseFrame:Create()
 bottombar:AddChild(playlist_button)
 playlist_button:SetPoint(BOTTOMLEFT, bottombar, BOTTOMLEFT, 14, -7)
 playlist_button:SetSize(36,30)
@@ -150,7 +139,7 @@ function setting_button:HitTest(x, y)
 end
 
 function playlist:OnClick()
-	-- TODO: show setting_buttons window	
+	-- TODO: show setting_buttons window
 	return true
 end
 
@@ -437,6 +426,81 @@ function open:OnClick()
 	return true
 end
 
+-- playlist items
+local playlist_item = BaseFrame:Create()
+function playlist_item:Create(text)
+	local o = BaseFrame:Create()
+	setmetatable(o, self)
+	self.__index = self
+	o:SetHeight(28)
+	o.text = text
+	
+	return o
+end
+
+function playlist_item:OnReleaseGPU()
+	if self.res then
+		self.res:release()
+	end
+	self.res = nil
+end
+
+function playlist_item:RenderThis()
+
+	self.res = self.res or DrawText(self.text, font, 0x1a6eb0)
+	local l,t,r,b = self:GetRect()
+	l, t, r, b = 0, 0, r-l, b-t
+	
+	if self.id == playlist:current_pos() then
+		paint(l,t,r,b, get_bitmap(lua_path .. "menu_item.png"))
+	end
+	
+	if self.res and self.res.width and self.res.height then
+		local dy = (28-self.res.height)/2
+		local dx = 10
+		paint(dx,dy, dx+self.res.width, dy+self.res.height, self.res, 1, bilinear_mipmap_minus_one)
+	end
+
+end
+
+function playlist_item:OnDoubleClick()
+	playlist:play_item(self.id)
+	
+	return true
+end
+
+function playlist_item:OnClick(x, y, button)
+	if button ~= VK_RBUTTON then return end
+	local m = 
+	{
+		{
+			string = "删除该条目",
+			id = self.id,
+			on_command = function(v)
+				playlist:remove_item(v.id)
+			end
+		},
+		{
+			string = "播放该条目",
+			id = self.id,
+			on_command = function(v)
+				playlist:play_item(v.id)
+			end
+		},
+		{
+			string = "清空",
+			id = self.id,
+			on_command = function(v)
+				playlist:clear()
+			end
+		},
+	}
+	
+	m = menu_builder:Create(m)
+	m:popup()
+	m:destroy()
+	return true
+end
 -- the "playlist"
 playlist_list = BaseFrame:Create()
 oroot:AddChild(playlist_list)
@@ -448,7 +512,13 @@ playlist_list:SetPoint(BOTTOMLEFT, bottombar, TOPLEFT, -setting.playlist_width)
 
 function playlist_list:RenderThis()
 	local l,t,r,b = self:GetRect()
-	paint(0,0,r-l,b-t, get_bitmap(lua_path .. "open_more.png"))
+	local res = get_bitmap(lua_path .. "blue.bmp")
+	--paint(0,0,r-l,b-t, )
+	paint(0, 0, r-l, b-t, get_bitmap(lua_path .. "playlist_bg.png"))
+	paint(0, 0, r-l, 2, res)
+	--paint(0, 0, 2, b-t, res)
+	paint(0, b-t-2, r-l, b-t, res)
+	paint(r-l-2, 0, r-l, b-t, res)
 end
 
 function playlist_list:PreRender(t, dt)
@@ -479,6 +549,31 @@ function playlist_list:OnMouseDown(x, y)
 	return true
 end
 
+function playlist_list:OnPlaylistChange()
+	print("playlist_list:OnPlaylistChange()")
+	self:RemoveAllChilds()
+	
+	for i=1, playlist:count() do
+		local item = playlist:item(i)
+		local text = GetName(item.L) or " "
+		if item.R then text = text .. " + " .. GetName(item.R) end
+				
+		local obj = playlist_item:Create(text)
+		obj.id = i
+		self:AddChild(obj)
+		if i == 1 then
+			obj:SetPoint(TOPLEFT)
+			obj:SetPoint(TOPRIGHT)
+		else
+			local last = self:GetChild(i-1)
+			obj:SetPoint(TOPLEFT, last, BOTTOMLEFT)
+			obj:SetPoint(TOPRIGHT, last, BOTTOMRIGHT)
+		end
+	end
+	
+	playlist_list:AddChild(playlist_close)
+end
+
 function playlist_list:OnMouseMove(x, y)
 	if self.dragging then
 		local l = self:GetRect()
@@ -505,9 +600,10 @@ function playlist_list:show()
 	self.showing = true
 end
 
+-- load the playlist now
+playlist_list:OnPlaylistChange()
+
 -- the close button
-local playlist_close = BaseFrame:Create()
-playlist_list:AddChild(playlist_close)
 playlist_close:SetSize(30,30)
 playlist_close:SetPoint(RIGHT)
 
@@ -629,7 +725,7 @@ function mouse_hider:OnUpdate(t, dt)
 		playlist_list:hide()
 	end
 	
-	if (px < 5) then
+	if (px < 5 and px >= 0 and py >= 0 and py < ui.height) then
 		playlist_list:show()
 	end
 end

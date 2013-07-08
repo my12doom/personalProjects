@@ -765,7 +765,7 @@
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\libass\lib;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;x264"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				RandomizedBaseAddress="1"
@@ -2271,6 +2271,10 @@
 			<Filter
 				Name="dwindow2"
 				>
+				<File
+					RelativePath="..\dwindow_UI\DWindow2\menu.lua"
+					>
+				</File>
 				<File
 					RelativePath="..\dwindow_UI\DWindow2\render.lua"
 					>

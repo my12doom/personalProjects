@@ -297,6 +297,7 @@ if core and core.execute_luafile then
 	print(core.execute_luafile(lua_path .. "Container.lua"))
 	print(core.execute_luafile(lua_path .. "playlist.lua"))
 	print(core.execute_luafile(lua_path .. "menu.lua"))
+	print(core.execute_luafile(lua_path .. "Language\\zhCN.lua"))
 	print(core.execute_luafile(lua_path .. "default_setting.lua"))
 end
 
@@ -360,6 +361,9 @@ function format_table(t, level)
 		end
 		
 		if type(k) == "string" then
+			k = string.gsub(k, "\r", "\\r")
+			k = string.gsub(k, "\n", "\\n")
+			k = "[\"" .. string.gsub(k, "\\", "\\\\") .."\"]"
 			table.insert(o, string.format("%s = %s,", k, vv))
 		else
 			table.insert(o, string.format("%s,", vv))

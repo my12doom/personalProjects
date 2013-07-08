@@ -65,7 +65,7 @@ INT_PTR CALLBACK fullscreen_modes_proc( HWND hDlg, UINT msg, WPARAM wParam, LPAR
 				wsprintfW(tmp, L"%dx%d @ %dHz (%s)\n", g_modes[i].Width, g_modes[i].Height,g_modes[i].RefreshRate, p&&p[0]?p:L"Unknown Format");
 				SendMessageW(combobox, CB_ADDSTRING, NULL, (LPARAM)tmp);
 			}
-			SendMessageW(combobox, CB_ADDSTRING, NULL, (LPARAM)C(L"Auto Detect"));
+			SendMessageW(combobox, CB_ADDSTRING, NULL, (LPARAM)(const wchar_t*)C(L"Auto Detect"));
 			SendMessageW(combobox, CB_SETCURSEL, g_selected>=0 && g_selected<g_modes_count ? g_selected : g_modes_count, 0);
 		}
 		break;

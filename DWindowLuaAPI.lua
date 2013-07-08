@@ -165,6 +165,7 @@ nil = RenderThis(view)				-- override this to draw your own frame!
 success = AddChild(frame, pos)		-- modification not recommended
 is = IsParentOf(frame, includeParentParent)
 success = RemoveChild(frame)
+nil = RemoveAllChilds()
 nil = RemoveFromParent()
 frame = GetParent()
 frame = GetChild(n)					-- index start from 1
