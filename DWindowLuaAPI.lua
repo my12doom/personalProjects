@@ -50,7 +50,7 @@ main = find_main_movie(path)
 nil = restart_this_program()
 path, volume_name, is_bluray, ... = enum_bd
 path, ... = enum_drive()
-file, ... = enum_folder(path)
+{file, ...} = enum_folder(path)
 succ = set_output_channel()
 channel = get_output_channel()
 

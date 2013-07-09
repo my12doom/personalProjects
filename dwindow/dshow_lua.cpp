@@ -437,10 +437,13 @@ static int enum_folder(lua_State *L)
 	WIN32_FIND_DATAW find_data;
 	HANDLE find_handle = FindFirstFileW(path, &find_data);
 
+	lua_newtable(L);
+
 	if (find_handle != INVALID_HANDLE_VALUE)
 	{
 		do
 		{
+			n++;
 			if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)!=0
 				&& wcscmp(L".",find_data.cFileName ) !=0
 				&& wcscmp(L"..", find_data.cFileName) !=0
@@ -449,20 +452,22 @@ static int enum_folder(lua_State *L)
 				wchar_t tmp[MAX_PATH];
 				wcscpy(tmp, find_data.cFileName);
 				wcscat(tmp, L"\\");
+				lua_pushinteger(L, n);
 				lua_pushstring(L, W2UTF8(tmp));
+				lua_settable(L, -3);
 			}
 			else if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
 
 			{
+				lua_pushinteger(L, n);
 				lua_pushstring(L, W2UTF8(find_data.cFileName));
+				lua_settable(L, -3);
 			}
-
-			n++;
 		}
 		while( FindNextFile(find_handle, &find_data ) );
 	}
 
-	return n;
+	return 1;
 }
 
 static int set_output_channel(lua_State *L)

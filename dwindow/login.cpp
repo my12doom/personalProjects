@@ -192,7 +192,7 @@ DWORD WINAPI spinner_thread(LPVOID p)
 	int c = 0;
 	HWND o = GetDlgItem(g_login_window, uid);
 
-	const wchar_t *name = uid == IDOK ? C(L"Login") : C(L"Start Activation");
+	UTF82W name = uid == IDOK ? C(L"Login") : C(L"Start Activation");
 	while(++c)
 	{
 		wchar_t tmp[200];

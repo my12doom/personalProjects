@@ -48,18 +48,16 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return -1;
 	}
 
-	check_login();
-
-	save_passkey();
-
-	BasicRsaCheck();
 
 	dwindow_lua_init();
-	my12doomRenderer_lua_init();
-	my12doomRenderer_lua_loadscript();
 	ui_lua_init();
 	player_lua_init();
-	lua_load_settings();
+	my12doomRenderer_lua_init();
+	my12doomRenderer_lua_loadscript();
+
+	check_login();
+	save_passkey();
+	BasicRsaCheck();
 
 	HWND pre_instance = GET_CONST("SingleInstance") ? FindWindowA("DWindowClass", NULL) : NULL;
 	wchar_t *argvv[] = {L"", L"compile", L"D:\\private\\dwindow_UI\\dwindow.lua", L"D:\\private\\dwindow_UI\\dwindow.bin"};

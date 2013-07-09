@@ -1450,6 +1450,30 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 	if (found != 0)
 		DeleteMenu(sub_audio, ID_AUDIO_NONE, MF_BYCOMMAND);
 
+	// languages
+	HMENU sub_language = GetSubMenu(menu, 16);
+	lua_const &lcid =  GET_CONST("LCID");
+	luaState L;
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "get_language_list");
+	lua_mypcall(L, 0, 1, 0);
+	int n = lua_objlen(L, -1);
+	if (n>0)
+	{
+		DeleteMenu(sub_language, ID_LANGUAGE_ENGLISH, MF_BYCOMMAND);
+		for(int i=1; i<=n; i++)
+		{
+			lua_pushinteger(L, i);
+			lua_gettable(L, -2);
+			UTF82W w(lua_tostring(L, -1));
+			InsertMenuW(sub_language, i, MF_STRING | MF_BYPOSITION | (wcscmp(lcid, w) == 0 ? MF_CHECKED : MF_UNCHECKED), 'L0'+i-1, w);
+			lua_pop(L, 1);
+		}
+	}
+	lua_settop(L, 0);
+
+
+
 	// subtitle tracks
 	list_subtitle_track(tmp2, connected, &found);
 	for(int i=0; i<found; i++)
@@ -2570,13 +2594,26 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	{
 		SendMessage(id_to_hwnd(2), WM_CLOSE, 0, 0);
 	}
-	else if (uid == ID_LANGUAGE_CHINESE)
+	else if (uid >= 'L0' && uid < 'M0')
 	{
-		set_localization_language(CHINESE);
-	}
-	else if (uid == ID_LANGUAGE_ENGLISH)
-	{
-		set_localization_language(ENGLISH);
+		luaState L;
+		int lid = uid - 'L0' + 1;
+		lua_getglobal(L, "core");
+		lua_getfield(L, -1, "get_language_list");
+		lua_mypcall(L, 0, 1, 0);
+		int n = lua_objlen(L, -1);
+		if (lid <= n )
+		{
+			lua_pushinteger(L, lid);
+			lua_gettable(L, -2);
+			const char *language = lua_tostring(L, -1);
+			lua_getglobal(L, "core");
+			lua_getfield(L, -1, "set_language");
+			lua_pushstring(L, language);
+			lua_mypcall(L, 1, 0, 0);
+		}
+
+		lua_settop(L, 0);
 	}
 
 	// open drive

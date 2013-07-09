@@ -307,8 +307,6 @@ enum{ENGLISH, CHINESE};
 typedef DWORD localization_language;
 extern AutoSetting<int> g_active_language;
 UTF82W C(const wchar_t *English);
-HRESULT add_localization(const wchar_t *English, const wchar_t *Localized = NULL);
-HRESULT set_localization_language(localization_language language);
 HRESULT localize_menu(HMENU menu);
 HRESULT localize_window(HWND hwnd);
 localization_language get_system_default_lang();

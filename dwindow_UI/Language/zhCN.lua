@@ -1,5 +1,8 @@
-﻿L_zhCN = 
+﻿local L_zhCN = 
 {
+	LCID = {"简体中文", 2052, 3076},
+	
+
 	["Source Aspect"] = "来源宽高比",
 	["Don't ask again"] = "不再提示",
 	["(Fonts Loading)"] = "（字体正在载入中）",
@@ -219,10 +222,8 @@
 	["Bitstreaming setting may not apply until next file play or audio swtiching."] = "源码输出已设置，可能需要重新播放或音轨切换时生效",
 	["Stretch"] = "拉伸",
 	["Output 2"] = "输出2",
+	["This is a experimental feature.\r\nIt ONLY works for most H264 video.\r\nIt can cause a lot freeze or crash.\r\nIt will freeze with BD3D/MPO/3DP file or left+right file, and disable input layout detecting\r\nContinue ?"] = 
+				"这仍是一个实验性的功能.\r\n它只适用于在比较低配置的机器上播放H264视频.\r\n它不是很稳定，可能会造成失去响应或是异常退出.\r\n它会使蓝光3D、MPO、3DP、左右分离文件无法播放, 影片格式自动检测失效.\r\n\r\n是否继续？",
 }
 
-LL = L_zhCN
-
-function L(english)
-	return LL[english] or english
-end
+core.add_language(L_zhCN)

@@ -280,6 +280,7 @@ function Thread:Sleep(timeout)		-- direct use of core.Sleep() is recommended
 	return core.Sleep(timeout)
 end
 
+-- helper functions and settings
 function merge_table(op, tomerge)
 	for k,v in pairs(tomerge) do
 		if type(v) == "table" and type(op[k]) == "table" then
@@ -288,17 +289,6 @@ function merge_table(op, tomerge)
 			op[k] = v
 		end
 	end
-end
-
--- load base_frame
-if core and core.execute_luafile then
-	print(core.execute_luafile(lua_path .. "base_frame.lua"))
-	print(core.execute_luafile(lua_path .. "3dvplayer.lua"))
-	print(core.execute_luafile(lua_path .. "Container.lua"))
-	print(core.execute_luafile(lua_path .. "playlist.lua"))
-	print(core.execute_luafile(lua_path .. "menu.lua"))
-	print(core.execute_luafile(lua_path .. "Language\\zhCN.lua"))
-	print(core.execute_luafile(lua_path .. "default_setting.lua"))
 end
 
 function ReloadUI(legacy)
@@ -392,4 +382,16 @@ end
 
 function core.get_setting(key)
 	return setting[key]
+end
+
+-- load base_frame
+if core and core.execute_luafile then
+	print(core.execute_luafile(lua_path .. "base_frame.lua"))
+	print(core.execute_luafile(lua_path .. "3dvplayer.lua"))
+	print(core.execute_luafile(lua_path .. "Container.lua"))
+	print(core.execute_luafile(lua_path .. "playlist.lua"))
+	print(core.execute_luafile(lua_path .. "menu.lua"))
+	print(core.execute_luafile(lua_path .. "default_setting.lua"))
+	core.load_settings();
+	print(core.execute_luafile(lua_path .. "language.lua"))
 end

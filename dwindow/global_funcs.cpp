@@ -2154,6 +2154,8 @@ DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter)
 
 HRESULT restart_this_program()
 {
+	lua_save_settings();
+
 	wchar_t reset_exe[MAX_PATH];
 	wcscpy(reset_exe, g_apppath);
 	wcscat(reset_exe, L"reset.exe");
