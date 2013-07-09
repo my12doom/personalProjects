@@ -1,87 +1,85 @@
-﻿function popup3dvstar()
+﻿function popup_dwindow2()
 	local m = 
 	{
 		{
-			string = "打开文件...",
+			string = L("Open File..."),
 			on_command = function(v)
-				playlist:remove_item(v.id)
+				local url = ui.OpenURL()
+				if url then
+					playlist:play(url)
+				end
 			end
 		},
 		{
-			string = "打开文件夹...",
+			string = L("Open Left And Right File..."),
 			on_command = function(v)
-				playlist:play_item(v.id)
+				local left, right = ui.OpenDoubleFile()
+				if left and right then
+					playlist:play(left, right)
+				end
 			end
 		},
 		{
-			string = "关闭文件",
-			grayed = not player.movie_loaded,
+			string = L("Open BluRay3D"),
 			on_command = function(v)
 				playlist:clear()
 			end
 		},
 		{
-			string = "打开文件夹...",
-			seperator = true,
-		},
-		{
-			string = "播放\tSpace",
-		},
-		{
-			string = "暂停\tSpace",
-		},
-		{
-			string = "停止",
-		},
-		{
-			string = "上一曲\tPageUp",
-		},
-		{
-			string = "下一曲\tPageDown",
-		},
-		{
-			string = "播放列表",
-			sub_items =
-			{
-				{
-					string = "Item1",
-					checked = true
-				},
-				{
-					string = "Item2",
-				},
-				{
-					seperator = true,
-				},
-				{
-					string = "清空",
-				},
-			},
-		},		
-		{
-			seperator = true,
-		},
-		{
-			string = "切换到2D模式",
-		},
-		{
-			string = "切换到3D模式",
-		},
-		{
-			string = "交换左右眼",
+			string = L("Close"),
+			grayed = not player.movie_loaded,
 		},
 		{
 			seperator = true,
 		},
 		{
-			string = "高级设置...",
+			string = L("Video"),
 		},
 		{
-			string = "关于...",
+			string = L("Audio"),
 		},
 		{
-			string = "退出...",
+			string = L("Subtitle"),
 		},
+		{
+			string = L("Movie Layout"),
+		},
+		{
+			string = L("Viewing Device"),
+		},
+		{
+			seperator = true,
+		},
+		{
+			string = L("Play\t(Space)"),
+		},
+		{
+			string = L("Fullscreen\t(Alt+Enter)"),
+		},
+		{
+			string = L("Swap Left/Right\t(Tab)"),
+		},
+		{
+			seperator = true,
+		},
+		
+		
+		{
+			string = L("Media Infomation..."),
+		},
+		{
+			string = L("Language"),
+		},
+		{
+			string = L("About..."),
+		},
+		{
+			string = L("Logout..."),
+		},
+		{
+			string = L("Exit"),
+		},
+		
 	}
 	
 	m = menu_builder:Create(m)

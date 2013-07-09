@@ -74,5 +74,7 @@ default_setting =
 	VSTAR = false,	
 	ForceVideo = true,
 	AlwaysDownloadSubtitle = false,
+	MAX_WIDTH = 300,
+	MAX_HEIGHT = 200,
 }
 merge_table(setting, default_setting)

@@ -11,6 +11,13 @@ local playlist_close = BaseFrame:Create()
 local font = dx9.CreateFont({name="宋体", height = 12, weight=0})
 local font_black = dx9.CreateFont({name="宋体", height = 16, weight=0})
 
+setting.MAX_WIDTH = 417
+setting.MAX_HEIGHT = 277
+core.ApplySetting("MAX_WIDTH")
+core.ApplySetting("MAX_HEIGHT")
+
+
+
 -- black background and right mouse reciever
 local oroot = BaseFrame:Create()
 root:AddChild(oroot)
@@ -30,10 +37,12 @@ tttt = 0
 function oroot:OnClick(x,y,button)
 	if button == VK_RBUTTON then
 		if tttt % 2 == 1 then
-			player.popup_menu()
+			--player.popup_menu()
 		else
-			popup3dvstar();
+			--player.popup_menu()
+			--popup3dvstar();
 		end
+		popup_dwindow2()
 		tttt = tttt + 1
 	end
 	return true

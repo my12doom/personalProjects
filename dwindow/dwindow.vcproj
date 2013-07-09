@@ -740,7 +740,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include;x264"
-				PreprocessorDefinitions="WIN32;_NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;_NDEBUG;_WINDOWS;UNICODE;_UNICODE;LUA_COMPAT_ALL;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
@@ -2247,6 +2247,10 @@
 			<Filter
 				Name="3dvplayer"
 				>
+				<File
+					RelativePath="..\dwindow_UI\3dvplayer\menu.lua"
+					>
+				</File>
 				<File
 					RelativePath="..\dwindow_UI\3dvplayer\render.lua"
 					>

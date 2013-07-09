@@ -1975,13 +1975,8 @@ LRESULT dx_player::on_double_click(int id, int button, int x, int y)
 
 LRESULT dx_player::on_getminmaxinfo(int id, MINMAXINFO *info)
 {
-	info->ptMinTrackSize.x = 300;
-	info->ptMinTrackSize.y = 200;
-
-#ifdef VSTAR
-	info->ptMinTrackSize.x = 559;
-	info->ptMinTrackSize.y = 338;
-#endif
+	info->ptMinTrackSize.x = (int)GET_CONST("MAX_WIDTH");
+	info->ptMinTrackSize.y = (int)GET_CONST("MAX_HEIGHT");
 
 	return S_OK;
 }

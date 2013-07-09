@@ -267,6 +267,10 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("GetSystemDefaultLCID") = &luaGetSystemDefaultLCID;
 	g_lua_core_manager->get_variable("restart_this_program") = &lua_restart_this_program;
 
+#ifdef VSTAR
+	g_lua_core_manager->get_variable("v") = true;
+#endif
+
 	lua_inited = true;
 	return 0;
 }

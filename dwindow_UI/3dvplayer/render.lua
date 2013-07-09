@@ -1,6 +1,13 @@
 ﻿local lua_file = core.loading_file
 local lua_path = GetPath(lua_file)
 
+core.execute_luafile(lua_path .. "menu.lua")
+setting.MAX_WIDTH = 559
+setting.MAX_HEIGHT = 338
+core.ApplySetting("MAX_WIDTH")
+core.ApplySetting("MAX_HEIGHT")
+
+
 -- 3dvplayer UI renderer
 
 local button_size = 40;
@@ -42,11 +49,19 @@ end
 
 function logo:OnClick(x, y, key)
 	if key == VK_RBUTTON then
-		player.popup_menu()
+		popup3dvstar()
 	end
 	
 	return false
 end
+
+function logo:OnMouseDown(x, y, button)
+	if button ~= VK_RBUTTON and not player.is_fullscreen() then
+		ui.StartDragging()
+	end	
+	return true
+end
+
 
 logo_hot = BaseFrame:Create()
 logo_hot.name = "LOGO HOT AREA"
@@ -59,14 +74,6 @@ function logo_hot:RenderThis()
 		local res = get_bitmap(lua_path .. "logo_hot.png")
 		paint(0,0,400,171, res)
 	end
-end
-
-function logo_hot:OnClick(...)
-	if player.movie_loaded then
-		return false
-	end
-	player.popup_menu()
-	return true
 end
 
 toolbar_bg = BaseFrame:Create()
@@ -136,9 +143,7 @@ for i=1,#button_pictures/2 do
 	button:SetSize(space_of_each_button, button_size)
 	button.id = i
 
-	x = x - space_of_each_button
-	
-	print("loaded button", i)
+	x = x - space_of_each_button	
 end
 
 progressbar = BaseFrame:Create()
@@ -263,8 +268,7 @@ function grow:Stick(dt)
 	if not isbutton then return end
 	
 	local l,t,r,b = frame:GetRect()
-	local dx = (l+r)/2 - self.x	
-	print(self.x, dx)
+	local dx = (l+r)/2 - self.x
 	self.x = self.x + 0.65 * dx
 	self:SetPoint(BOTTOMLEFT, nil, nil, self.x-125, 125)
 end
@@ -305,11 +309,9 @@ function grow:PreRender()
 end
 
 function grow:OnEnter()
-	print("OnEnter")
 end
 
 function grow:OnLeave()
-	print("OnLeave")
 end
 
 function grow:RenderThis()

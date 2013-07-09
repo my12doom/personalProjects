@@ -299,7 +299,7 @@ function ReloadUI(legacy)
 
 	if legacy then return end
 
-	print(core.execute_luafile(lua_path .. "DWindow2\\render.lua"))
+	print(core.execute_luafile(lua_path .. (core.v and "3dvplayer" or "DWindow2" ).. "\\render.lua"))
 	--print(core.execute_luafile(lua_path .. "Tetris\\Tetris.lua"))
 	--v3dplayer_add_button()
 
@@ -343,17 +343,19 @@ function format_table(t, level)
 		if type(v) == "table" then
 			vv = format_table(v, (level or 0) + 1)
 		elseif type(v) == "string" then
+			v = string.gsub(v, "\\", "\\\\")
 			v = string.gsub(v, "\r", "\\r")
-			v = string.gsub(v, "\n", "\\n")			
-			vv = "\"" .. string.gsub(v, "\\", "\\\\") .."\""
+			v = string.gsub(v, "\n", "\\n")
+			vv = "\"" .. v .."\""
 		else
 			vv = tostring(v)
 		end
 		
 		if type(k) == "string" then
+			k = string.gsub(k, "\\", "\\\\")
 			k = string.gsub(k, "\r", "\\r")
 			k = string.gsub(k, "\n", "\\n")
-			k = "[\"" .. string.gsub(k, "\\", "\\\\") .."\"]"
+			k = "[\"" .. k .."\"]"
 			table.insert(o, string.format("%s = %s,", k, vv))
 		else
 			table.insert(o, string.format("%s,", vv))

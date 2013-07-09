@@ -120,10 +120,6 @@ int height
 x, y = get_mouse_pos()
 }
 
-
-settings = {
-}
-
 core = {
 success = ApplySetting(setting_name)
 string_buffer, response_code = http_request(url)
