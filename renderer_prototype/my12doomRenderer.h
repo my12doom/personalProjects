@@ -203,14 +203,15 @@ public:
 	HRESULT test_device_state();		// S_OK : all fine, S_FALSE : need reset/resize, but can continue rendering, E_FAIL: can't render at all
 
 	// color adjust controll
-	double m_saturation1;
-	double m_luminance1;
-	double m_hue1;
-	double m_contrast1;
-	double m_saturation2;
-	double m_luminance2;
-	double m_hue2;
-	double m_contrast2;
+	lua_const &m_saturation;
+	lua_const &m_luminance;
+	lua_const &m_hue;
+	lua_const &m_contrast;
+
+	lua_const &m_saturation2;
+	lua_const &m_luminance2;
+	lua_const &m_hue2;
+	lua_const &m_contrast2;
 
 	// public functions
 	HRESULT pump();

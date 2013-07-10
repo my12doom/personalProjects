@@ -92,14 +92,6 @@ dx_player::dx_player(HINSTANCE hExe)
 ,m_saved_rect2(GET_CONST("Window2"))
 ,m_FontName(GET_CONST("Font"))
 ,m_FontStyle(GET_CONST("FontStyle"))
-,m_saturation(GET_CONST("Saturation"))
-,m_luminance(GET_CONST("Luminance"))
-,m_hue(GET_CONST("Hue"))
-,m_contrast(GET_CONST("Contrast"))
-,m_saturation2(GET_CONST("Saturation2"))
-,m_luminance2(GET_CONST("Luminance2"))
-,m_hue2(GET_CONST("Hue2"))
-,m_contrast2(GET_CONST("Contrast2"))
 ,m_trial_shown(GET_CONST("Trial"))
 ,m_server_port(GET_CONST("DWindowNetworkPort"))
 
@@ -1127,11 +1119,10 @@ LRESULT dx_player::on_mouse_move(int id, int x, int y)
 	}
 	else if (type == hit_brightness && GetAsyncKeyState(VK_LBUTTON) < 0 && m_dragging == hit_brightness)
 	{
-		double v2;
-		get_parameter(luminance, &v2);
+		double v2 = GET_CONST("Luminance");
 		v2 += (v-m_dragging_value)/5;
-		set_parameter(luminance, v2);
-		set_parameter(luminance2, v2);
+		GET_CONST("Luminance") = v2;
+		GET_CONST("Luminance2") = v2;
 // 		set_parameter(saturation, v2*2);
 // 		set_parameter(saturation2, v2*2);
 		m_dragging_value = v;
@@ -1960,11 +1951,12 @@ LRESULT dx_player::on_paint(int id, HDC hdc)
 LRESULT dx_player::on_double_click(int id, int button, int x, int y)
 {
 	// reset color adjusting parameter
-	if (hittest(x, y, id_to_hwnd(id), NULL) == hit_brightness)
-		for(int i=0; i<color_adjust_max; i++)
-			set_parameter(i, 0.5);
-
-	else if (lua_OnMouseEvent("OnDoubleClick", x, y, button) == S_OK)
+// 	if (hittest(x, y, id_to_hwnd(id), NULL) == hit_brightness)
+// 		for(int i=0; i<color_adjust_max; i++)
+// 			set_parameter(i, 0.5);
+// 
+// 	else 
+	if (lua_OnMouseEvent("OnDoubleClick", x, y, button) == S_OK)
 		;
 
 	else if (button == VK_LBUTTON && hittest(x, y, id_to_hwnd(id), NULL) < 0)
@@ -1986,6 +1978,44 @@ LRESULT dx_player::on_close(int id)
 	widi_shutdown();
 	return S_OK;
 }
+
+HRESULT dx_player::show_hd3d_fullscreen_mode_dialog()
+{
+	int count = 0;
+	m_renderer1->HD3DGetAvailable3DModes(NULL, &count);
+	D3DDISPLAYMODE *modes = NULL;
+	if (count>0)
+		modes = new D3DDISPLAYMODE[count];
+	m_renderer1->HD3DGetAvailable3DModes(modes, &count);
+	int result = -1;
+	for(int i=0; i<count; i++)
+	{
+		D3DDISPLAYMODE &this_mode = modes[i];
+		if (this_mode.Width == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Width && 
+			this_mode.Height == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Height && 
+			this_mode.RefreshRate == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).RefreshRate &&
+			this_mode.Format == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Format)
+			result = i;
+	}
+	if (result == -1)
+		m_hd3d_prefered_mode = mode_auto;
+
+	m_dialog_open ++;
+	HRESULT hr = select_fullscreen_mode(m_hexe, get_window(-1), modes, count, &result);
+	m_dialog_open --;
+
+	if (hr == S_OK)
+	{
+		m_hd3d_prefered_mode = result >=0 ? modes[result] : mode_auto;
+		m_renderer1->HD3D_set_prefered_mode(m_hd3d_prefered_mode);
+	}
+
+	if (modes)
+		delete [] modes;
+
+	return S_OK;
+}
+
 LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 {
 	int uid = LOWORD(wParam);
@@ -2147,7 +2177,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_VIDEO_ADJUSTCOLOR)
 	{
 		m_dialog_open ++;
-		show_color_adjust(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), this);
+		show_color_adjust(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id));
 		m_dialog_open --;
 	}
 
@@ -2267,37 +2297,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 	else if (uid == ID_HD3D_FULLSCREEN_MODE)
 	{
-		int count = 0;
-		m_renderer1->HD3DGetAvailable3DModes(NULL, &count);
-		D3DDISPLAYMODE *modes = NULL;
-		if (count>0)
-			modes = new D3DDISPLAYMODE[count];
-		m_renderer1->HD3DGetAvailable3DModes(modes, &count);
-		int result = -1;
-		for(int i=0; i<count; i++)
-		{
-			D3DDISPLAYMODE &this_mode = modes[i];
-			if (this_mode.Width == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Width && 
-				this_mode.Height == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Height && 
-				this_mode.RefreshRate == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).RefreshRate &&
-				this_mode.Format == ((D3DDISPLAYMODE)m_hd3d_prefered_mode).Format)
-				result = i;
-		}
-		if (result == -1)
-			m_hd3d_prefered_mode = mode_auto;
-
-		m_dialog_open ++;
-		HRESULT hr = select_fullscreen_mode(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), modes, count, &result);
-		m_dialog_open --;
-
-		if (hr == S_OK)
-		{
-			m_hd3d_prefered_mode = result >=0 ? modes[result] : mode_auto;
-			m_renderer1->HD3D_set_prefered_mode(m_hd3d_prefered_mode);
-		}
-
-		if (modes)
-			delete [] modes;
+		show_hd3d_fullscreen_mode_dialog();
 	}
 	else if (uid == ID_OUTPUTMODE_MONOSCOPIC2D)
 	{
@@ -2775,17 +2775,6 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 
 
-	if (((int)m_output_mode == dual_window || (int)m_output_mode == iz3d) && uid != ID_EXIT)
-	{
-		show_window(2, true);
-		on_move(1, 0, 0);		// to correct second window position
-		on_move(2, 0, 0);		// to correct second window position
-		set_fullscreen(2, m_full1);
-	}
-	else
-	{
-		show_window(2, false);
-	}
 	reset_timer(1, 2000);
 	return S_OK;
 }
@@ -2937,14 +2926,6 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_aspect(m_aspect);
 	m_renderer1->set_aspect_mode(m_aspect_mode);
 	m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
-	m_renderer1->m_saturation1 = m_saturation;;
-	m_renderer1->m_luminance1 = m_luminance;
-	m_renderer1->m_hue1 = m_hue;
-	m_renderer1->m_contrast1 = m_contrast;
-	m_renderer1->m_saturation2 = m_saturation2;
-	m_renderer1->m_luminance2 = m_luminance2;
-	m_renderer1->m_hue2 = m_hue2;
-	m_renderer1->m_contrast2 = m_contrast2;
 	m_renderer1->set_display_orientation(m_display_orientation);
 	m_renderer1->set_vsync(true);
 	m_renderer1->set_swap_eyes(m_swap_eyes);
@@ -4210,6 +4191,19 @@ HRESULT dx_player::set_output_mode(int mode)
 	if (toggle)
 		toggle_fullscreen();
 
+	if (((int)m_output_mode == dual_window || (int)m_output_mode == iz3d))
+	{
+		show_window(2, true);
+		on_move(1, 0, 0);		// to correct second window position
+		on_move(2, 0, 0);		// to correct second window position
+		set_fullscreen(2, m_full1);
+	}
+	else
+	{
+		show_window(2, false);
+	}
+
+
 	return hr;
 }
 
@@ -5058,76 +5052,6 @@ subtitle_file_handler::~subtitle_file_handler()
 	if (m_renderer)
 		delete m_renderer;
 	m_renderer = NULL;
-}
-
-HRESULT dx_player::get_parameter(int parameter, double *value)
-{
-	switch(parameter)
-	{
-	case saturation:
-		*value = m_saturation;
-		break;
-	case luminance:
-		*value = m_luminance;
-		break;
-	case hue:
-		*value = m_hue;
-		break;
-	case contrast:
-		*value = m_contrast;
-		break;
-
-	case saturation2:
-		*value = m_saturation2;
-		break;
-	case luminance2:
-		*value = m_luminance2;
-		break;
-	case hue2:
-		*value = m_hue2;
-		break;
-	case contrast2:
-		*value = m_contrast2;
-		break;
-	default:
-		return E_FAIL;
-	}
-	return S_OK;
-}
-
-HRESULT dx_player::set_parameter(int parameter, double value)
-{
-	switch(parameter)
-	{
-	case saturation:
-		m_renderer1->m_saturation1 = m_saturation = value;
-		break;
-	case luminance:
-		m_renderer1->m_luminance1 = m_luminance = value;
-		break;
-	case hue:
-		m_renderer1->m_hue1 = m_hue = value;
-		break;
-	case contrast:
-		m_renderer1->m_contrast1 = m_contrast = value;
-		break;
-
-	case saturation2:
-		m_renderer1->m_saturation2 = m_saturation2 = value;
-		break;
-	case luminance2:
-		m_renderer1->m_luminance2 = m_luminance2 = value;
-		break;
-	case hue2:
-		m_renderer1->m_hue2 = m_hue2 = value;
-		break;
-	case contrast2:
-		m_renderer1->m_contrast2 = m_contrast2 = value;
-		break;
-	default:
-		return E_FAIL;
-	}
-	return S_OK;
 }
 
 // WiDi functions

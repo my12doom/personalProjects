@@ -3,6 +3,8 @@
 #include "dx_player.h"
 #include "open_double_file.h"
 #include "open_url.h"
+#include "color_adjust.h"
+#include "latency_dialog.h"
 
 lua_manager *g_player_lua_manager = NULL;
 extern dx_player *g_player;
@@ -164,6 +166,19 @@ static int load_subtitle(lua_State *L)
 	const bool reset = lua_isboolean(L, -2) ? lua_toboolean(L, -2) : false;
 
 	HRESULT hr = g_player->load_subtitle(filename ? UTF82W(filename) : NULL, reset);
+
+	lua_pushboolean(L, SUCCEEDED(hr));
+	lua_pushinteger(L, hr);
+	return 2;
+}
+
+static int load_audio_track(lua_State *L)
+{
+	const char *filename = lua_tostring(L, -1);
+	if (!filename)
+		return 0;
+
+	HRESULT hr = g_player->load_audiotrack(filename ? UTF82W(filename) : NULL);
 
 	lua_pushboolean(L, SUCCEEDED(hr));
 	lua_pushinteger(L, hr);
@@ -357,7 +372,7 @@ static int lua_find_main_movie(lua_State *L)
 static int enum_bd(lua_State *L)
 {
 	int n = 0;
-	for(int i=L'Z'; i>L'B'; i--)
+	for(int i=L'B'; i<=L'Z'; i++)
 	{
 		wchar_t tmp[MAX_PATH] = L"C:\\";
 		wchar_t tmp2[MAX_PATH];
@@ -597,6 +612,94 @@ static int get_output_channel(lua_State *L)
 	return 1;
 }
 
+static int enum_monitors(lua_State *L)
+{
+	bool horizontal = true;
+	bool vertical = true;
+	int n = lua_gettop(L);
+	if (n>=1)
+		horizontal = lua_toboolean(L, -n+0);
+	if (n>=2)
+		vertical = lua_toboolean(L, -n+1);
+
+	for(int i=0; i<get_mixed_monitor_count(horizontal, vertical); i++)
+	{
+		RECT rect;// = g_logic_monitor_rects[i];
+		wchar_t tmp[256];
+
+		get_mixed_monitor_by_id(i, &rect, tmp, horizontal, vertical);
+
+		lua_pushinteger(L, rect.left);
+		lua_pushinteger(L, rect.top);
+		lua_pushinteger(L, rect.right);
+		lua_pushinteger(L, rect.bottom);
+		lua_pushstring(L, W2UTF8(tmp));
+	}
+
+	return get_mixed_monitor_count(horizontal, vertical) * 5;
+}
+
+static int set_monitor(lua_State *L)
+{
+	int window_id = 0;
+	int monitor_id = 0;
+	int n = lua_gettop(L);
+	if (n<2)
+		return 0;
+
+	window_id = lua_tointeger(L, -n+0);
+	monitor_id = lua_tointeger(L, -n+1);
+
+	lua_pushboolean(L, SUCCEEDED(g_player->set_output_monitor(window_id, monitor_id)));
+	return 1;
+}
+
+static int show_color_adjust_dialog(lua_State *L)
+{
+	g_player->m_dialog_open ++;
+
+	show_color_adjust(GetModuleHandle(NULL), g_player->get_window(-1));
+
+	g_player->m_dialog_open --;
+
+	return 0;
+}
+static int show_hd3d_fullscreen_mode_dialog(lua_State *L)
+{
+	g_player->show_hd3d_fullscreen_mode_dialog();
+
+	return 0;
+}
+static int show_latency_ratio_dialog(lua_State *L)
+{
+	int n = lua_gettop(L);
+	if (n<3)
+		return 0;
+	bool for_audio = lua_toboolean(L, -n+0);
+	int latency = lua_tointeger(L, -n+1);
+	double ratio = lua_tonumber(L, -n+2);
+
+	g_player->m_dialog_open ++;
+	HRESULT hr = latency_modify_dialog(g_player->m_hexe, g_player->get_window(-1), &latency, &ratio, for_audio);
+	g_player->m_dialog_open --;
+
+	lua_pushinteger(L, latency);
+	lua_pushnumber(L, ratio);
+
+	return 2;	
+}
+static int message_box(lua_State *L)
+{
+	int n = lua_gettop(L);
+	if (n<3)
+		return 0;
+	const char *text = lua_tostring(L, -n+0);
+	const char *caption = lua_tostring(L, -n+0);
+	int button = lua_tointeger(L, -n+0);
+
+	lua_pushinteger(L, MessageBoxW(g_player->get_window(-1), UTF82W(text), UTF82W(caption), button));
+	return 1;
+}
 
 
 int player_lua_init()
@@ -612,6 +715,7 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("reset") = &reset;
 	g_player_lua_manager->get_variable("reset_and_loadfile") = &reset_and_loadfile;
 	g_player_lua_manager->get_variable("load_subtitle") = &load_subtitle;
+	g_player_lua_manager->get_variable("load_audio_track") = &load_audio_track;
 	g_player_lua_manager->get_variable("is_fullscreen") = &is_fullscreen;
 	g_player_lua_manager->get_variable("toggle_fullscreen") = &toggle_fullscreen;
 	g_player_lua_manager->get_variable("toggle_3d") = &toggle_3d;
@@ -621,6 +725,13 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("set_volume") = &set_volume;
 	g_player_lua_manager->get_variable("show_mouse") = &show_mouse;
 	g_player_lua_manager->get_variable("popup_menu") = &popup_menu;
+	g_player_lua_manager->get_variable("enum_monitors") = &enum_monitors;
+	g_player_lua_manager->get_variable("set_monitor") = &set_monitor;
+	g_player_lua_manager->get_variable("show_color_adjust_dialog") = &show_color_adjust_dialog;
+	g_player_lua_manager->get_variable("show_hd3d_fullscreen_mode_dialog") = &show_hd3d_fullscreen_mode_dialog;
+	g_player_lua_manager->get_variable("show_latency_ratio_dialog") = &show_latency_ratio_dialog;
+	g_player_lua_manager->get_variable("message_box") = &message_box;
+
 	g_player_lua_manager->get_variable("get_splayer_subtitle") = &lua_get_splayer_subtitle;
 
 	g_player_lua_manager->get_variable("enable_audio_track") = &enable_audio_track;

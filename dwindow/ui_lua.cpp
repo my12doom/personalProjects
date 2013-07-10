@@ -29,9 +29,30 @@ protected:
 
 static int luaOpenFile(lua_State *L)
 {
+	int n = lua_gettop(L);
+	wchar_t * filter = NULL;
+	wchar_t *p = NULL;
+	for(int i=0; i<n/2; i++)
+	{
+		if (!filter)
+		{
+			filter = new wchar_t[10240];
+			memset(filter, 0, sizeof(wchar_t) & 10240);
+			p = filter;
+		}
+
+		wcscpy(p, UTF82W(lua_tostring(L, -n+i*2)));
+		p += wcslen(p)+1;
+		wcscpy(p, UTF82W(lua_tostring(L, -n+i*2+1)));
+		p += wcslen(p)+1;
+	}
+
 	wchar_t out[1024] = L"";
-	if (!open_file_dlg(out, g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1)))
+	if (!open_file_dlg(out, g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1), filter))
 		return 0;
+
+	if (filter)
+		delete [] filter;
 
 	lua_pushstring(L, W2UTF8(out));
 	return 1;

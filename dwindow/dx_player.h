@@ -69,7 +69,7 @@ public:
 };
 
 class lua_drawer;
-class dx_player : protected Imy12doomRendererCallback, public dwindow, protected IColorAdjustCB, public Iplayer, public ui_drawer_base
+class dx_player : protected Imy12doomRendererCallback, public dwindow, public Iplayer, public ui_drawer_base
 {
 public:
 	dx_player(HINSTANCE hExe);
@@ -135,6 +135,7 @@ public:
 	bool is_fullsceen(int window_id = 1){return (m_renderer1 && m_renderer1->get_fullscreen()) || ( window_id==1?m_full1:m_full2);}
 	HWND get_window(int window_id);
 	HRESULT set_output_channel(int channel);
+	HRESULT show_hd3d_fullscreen_mode_dialog();
 
 
 	POINT m_mouse;
@@ -359,20 +360,6 @@ public:
 	AutoSettingO<LOGFONTW> m_LogFont;
 	HRESULT select_font(bool show_dlg);
 	// end font
-
-	// color adjust 
-	lua_const &m_saturation;
-	lua_const &m_luminance;
-	lua_const &m_hue;
-	lua_const &m_contrast;
-
-	lua_const &m_saturation2;
-	lua_const &m_luminance2;
-	lua_const &m_hue2;
-	lua_const &m_contrast2;
-
-	HRESULT set_parameter(int parameter, double value);
-	HRESULT get_parameter(int parameter, double *value);
 
 
 	// UI drawer

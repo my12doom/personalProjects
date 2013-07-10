@@ -24,6 +24,7 @@ movie_loaded = bool (variable)
 nil = reset()
 success, HRESULT = reset_and_loadfile(file1, file2, stop)
 success, HRESULT = load_subtitle(filename, reset)
+success, HRESULT = load_audio_track(filename)
 bool = is_fullscreen()
 nil = toggle_fullscreen()
 nil = toggle_3d()
@@ -69,9 +70,13 @@ factor = get_zoom_factor()
 x, y = get_subtitle_pos()
 dp = get_subtitle_parallax()
 latency, stretch = get_subtitle_latency_stretch()
-
+left, top, right, bottom, description, ... = enum_monitors(horizontal_span, vertical_span)
 
 -- TODO:
+nil = show_color_adjust_dialog()
+nil = show_hd3d_fullscreen_mode_dialog()
+latency, ratio = show_latency_ratio_dialog(for_audio, latency, ratio)
+button = message_box(content, caption, buttons)
 
 
 
@@ -83,16 +88,6 @@ SwapEyes
 Force2D
 MoviePosX
 MoviePosY
-
-Saturation
-Luminance
-Hue
-Contrast
-Saturation2
-Luminance2
-Hue2
-Contrast2
-
 
 DisplaySubtitle
 Aspect
@@ -113,7 +108,7 @@ nil = PopupMenu(handle, dx, dy)
 nil = DestroyMenu(root_handle)
 folder = OpenFolder()
 url = OpenURL()
-file = OpenFile()
+file = OpenFile(description1, extension1, description2, extension2, ...)
 left, right = OpenDoubleFile()
 int width
 int height

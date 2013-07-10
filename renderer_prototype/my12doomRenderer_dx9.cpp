@@ -97,6 +97,14 @@ my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/)
 ,EVRQueueSize(GET_CONST("EVRQueueSize"))
 ,SimplePageflipping(GET_CONST("SimplePageflipping"))
 ,GPUIdle(GET_CONST("GPUIdle"))
+,m_saturation(GET_CONST("Saturation"))
+,m_luminance(GET_CONST("Luminance"))
+,m_hue(GET_CONST("Hue"))
+,m_contrast(GET_CONST("Contrast"))
+,m_saturation2(GET_CONST("Saturation2"))
+,m_luminance2(GET_CONST("Luminance2"))
+,m_hue2(GET_CONST("Hue2"))
+,m_contrast2(GET_CONST("Contrast2"))
 {
 	timeBeginPeriod(1);
 
@@ -284,12 +292,6 @@ void my12doomRenderer::init_variables()
 	m_color2 = D3DCOLOR_XRGB(0, 255, 255);
 	m_normal = m_sbs = m_tb = 0;
 	m_forced_deinterlace = false;
-
-	// color adjust
-	m_saturation1 =
-	m_luminance1 =
-	m_hue1 =
-	m_contrast1 = 0.5;
 
 	// ui & bitmap
 	m_has_subtitle = false;
@@ -2540,7 +2542,7 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 	// create a temp texture, copy the surface to it, render to it, and then copy back again
 	HRESULT hr = S_OK;
 	bool left = view == 0;
-	double saturation1 = m_saturation1;
+	double saturation1 = m_saturation;
 	double saturation2 = m_saturation2;
 
 #ifndef no_dual_projector
@@ -2553,8 +2555,8 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 		saturation2 = max(saturation2, -2);
 	}
 #endif
-	if ( (left && (abs(saturation1-0.5)>0.005 || abs(m_luminance1-0.5)>0.005 || abs(m_hue1-0.5)>0.005 || abs(m_contrast1-0.5)>0.005)) || 
-		(!left && (abs(saturation2-0.5)>0.005 || abs(m_luminance2-0.5)>0.005 || abs(m_hue2-0.5)>0.005 || abs(m_contrast2-0.5)>0.005)))
+	if ( (left && (abs((double)saturation1-0.5)>0.005 || abs((double)m_luminance-0.5)>0.005 || abs((double)m_hue-0.5)>0.005 || abs((double)m_contrast-0.5)>0.005)) || 
+		(!left && (abs((double)saturation2-0.5)>0.005 || abs((double)m_luminance2-0.5)>0.005 || abs((double)m_hue2-0.5)>0.005 || abs((double)m_contrast2-0.5)>0.005)))
 	{
 		// creating
 		CAutoLock lck(&m_pool_lock);
@@ -2599,8 +2601,8 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 		hr = m_Device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 		hr = m_Device->SetTexture( 0, tex_src->texture );
 		hr = m_Device->SetPixelShader(m_ps_color_adjust);
-		float ps_parameter[4] = {saturation1, m_luminance1, m_hue1, m_contrast1};
-		float ps_parameter2[4] = {saturation2, m_luminance2, m_hue2, m_contrast2};
+		float ps_parameter[4] = {(double)saturation1, (double)m_luminance, (double)m_hue, (double)m_contrast};
+		float ps_parameter2[4] = {(double)saturation2, (double)m_luminance2, (double)m_hue2, (double)m_contrast2};
 		hr = m_Device->SetPixelShaderConstantF(0, left?ps_parameter:ps_parameter2, 1);
 
 		hr = m_Device->SetFVF( FVF_Flags );

@@ -566,7 +566,8 @@ function playlist_list:OnPlaylistChange()
 		local item = playlist:item(i)
 		local text = GetName(item.L) or " "
 		if item.R then text = text .. " + " .. GetName(item.R) end
-				
+		if text == "" then text = item.L end
+		
 		local obj = playlist_item:Create(text)
 		obj.id = i
 		self:AddChild(obj)

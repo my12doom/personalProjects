@@ -18,11 +18,15 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include <wchar.h>
+#include <Windows.h>
 
 
 static int luaB_print (lua_State *L) {
   int n = lua_gettop(L);  /* number of arguments */
   int i;
+  int len;
+  wchar_t *w;
   lua_getglobal(L, "tostring");
   for (i=1; i<=n; i++) {
     const char *s;
@@ -35,7 +39,15 @@ static int luaB_print (lua_State *L) {
       return luaL_error(L,
          LUA_QL("tostring") " must return a string to " LUA_QL("print"));
     if (i>1) luai_writestring("\t", 1);
-    luai_writestring(s, l);
+    //luai_writestring(s, l);
+
+	len = MultiByteToWideChar(CP_UTF8, NULL, s, l, NULL, 0);
+	w = malloc(sizeof(wchar_t) * (len+1));
+	w[len] = NULL;
+	MultiByteToWideChar(CP_UTF8, NULL, s, l, w, len);
+	wprintf(w);
+	free(w);
+
     lua_pop(L, 1);  /* pop result */
   }
   luai_writeline();
