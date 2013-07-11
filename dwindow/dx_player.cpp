@@ -32,7 +32,6 @@ RECT rect_zero = {0,0,0,0};
 LOGFONTW empty_logfontw = {0};
 D3DDISPLAYMODE mode_auto = {0};
 proc_IMemInputPin_Receive g_old;
-int g_audio_latency = 0;
 dx_player *g_player = NULL;
 extern lua_manager *g_player_lua_manager;
 
@@ -124,7 +123,6 @@ dx_player::dx_player(HINSTANCE hExe)
 ,m_simple_audio_switching(GET_CONST("SimpleAudioSwitching"))//false)
 {
 	g_player = this;
-	g_audio_latency = m_audio_latency;
 
 	// touch 
 	if (GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
@@ -2499,7 +2497,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		m_dialog_open ++;
 		HRESULT hr = latency_modify_dialog(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(id), &t_latency, &t_ratio, true);
 		m_dialog_open --;
-		m_audio_latency = g_audio_latency = t_latency;
+		m_audio_latency = t_latency;
 	}
 
 	else if (uid == ID_SUBTITLE_FONT)
@@ -2814,8 +2812,8 @@ static HRESULT STDMETHODCALLTYPE new_lav_recieve( IMemInputPinC * This, IMediaSa
 	REFERENCE_TIME start, end;
 	if (SUCCEEDED(pSample->GetTime(&start, &end)))
 	{
- 		start += (REFERENCE_TIME)g_audio_latency * 10000;
- 		end += (REFERENCE_TIME)g_audio_latency * 10000;
+ 		start += (REFERENCE_TIME)(int)g_player->m_audio_latency * 10000;
+ 		end += (REFERENCE_TIME)(int)g_player->m_audio_latency * 10000;
 
 		pSample->SetTime(&start, &end);
 	}

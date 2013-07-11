@@ -215,7 +215,7 @@ SectionEnd
 ; Uninstaller
 
 Section "Uninstall"
-  
+  ExecWait '"$INSTDIR\StereoPlayer.exe" uninstall'
   ; Remove registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow"
   DeleteRegKey HKCU "SOFTWARE\DWindow"
