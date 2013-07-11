@@ -119,9 +119,14 @@ HRESULT GetFileSourceMediaInfo(const wchar_t *filename, wchar_t *format)
 	return S_OK;
 }
 
+#include "IntelWiDiExtensions_i.h"
+
 HRESULT myCreateInstance(CLSID clsid, IID iid, void**out)
 {
-	if (clsid == CLSID_my12doomImageSource)
+	if (clsid == __uuidof(IWiDiExtensions) && (DWORD)(LOBYTE(LOWORD(GetVersion()))) < 7)
+		return E_FAIL;
+
+	if (clsid == CLSID_my12doomImageSource )
 	{
 		HRESULT hr;
 		my12doomImageSource *s = (my12doomImageSource *)my12doomImageSource::CreateInstance(NULL, &hr);

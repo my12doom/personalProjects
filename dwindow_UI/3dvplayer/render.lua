@@ -66,7 +66,7 @@ end
 logo_hot = BaseFrame:Create()
 logo_hot.name = "LOGO HOT AREA"
 logo:AddChild(logo_hot)
-logo_hot:SetPoint(CENTER)
+logo_hot:SetPoint(CENTER, nil, nil, 0, -50)
 logo_hot:SetSize(400,171)
 
 function logo_hot:RenderThis()

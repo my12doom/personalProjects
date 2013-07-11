@@ -169,7 +169,7 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view)
 		int select = i;
 		if (select == 3 && is_playing()) 
 			select = 7;
-		if (select == 6 && (bool)m_force_2d)
+		if (select == 6 && (bool)m_renderer1->m_force2d)
 			select = 8;
 		m_renderer1->Draw(surface,m_buttons[select], NULL, &rect, alpha);
 
