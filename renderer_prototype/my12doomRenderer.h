@@ -227,7 +227,6 @@ public:
 
 
 	// settings SET function
-	HRESULT set_movie_resizing(resampling_method method);
 	HRESULT set_subtitle_resizing(resampling_method method);
 	HRESULT set_ui_drawer(ui_drawer_base * new_ui_drawer);
 	HRESULT set_input_layout(int layout);
@@ -256,7 +255,6 @@ public:
 																									// if you saved these two variables, remember to get it from renderer.
 
 	// settings GET function
-	resampling_method get_movie_resizing();
 	resampling_method get_subtitle_resizing();
 	RECTF get_movie_scissor_rect();
 	ui_drawer_base *get_ui_drawer();
@@ -273,15 +271,15 @@ public:
 	double get_subtitle_parallax(){return m_subtitle_parallax;}
 	double get_parallax(){return m_parallax;}
 	bool get_2dto3d(){return m_convert3d;}
-	aspect_mode_types get_aspect_mode(){return m_aspect_mode;}
+	aspect_mode_types get_aspect_mode(){return (aspect_mode_types)(int)m_aspect_mode;}
 	HRESULT intel_get_caps(IGFX_S3DCAPS *caps);
 	int get_display_orientation(){return m_display_orientation;}
 	bool get_vsync(){return m_vertical_sync;}
 	float get_zoom_factor(){return m_zoom_factor;}
 
 protected:
-	resampling_method  m_movie_resampling_method;
-	resampling_method  m_subtitle_resampling_method;
+	lua_const & m_movie_resizing;
+	lua_const & m_subtitle_resizing;
 	display_orientation m_display_orientation;
 	double m_parallax;
 	bool m_has_subtitle;
@@ -291,12 +289,12 @@ protected:
 	CCritSec m_subtitle_lock;
 	int m_subtitle_pixel_width, m_subtitle_pixel_height;
 	float m_subtitle_fleft, m_subtitle_ftop, m_subtitle_fwidth, m_subtitle_fheight;
-	double m_movie_offset_x /*= -0.0*/;
-	double m_movie_offset_y /*= 0.0*/;
+	lua_const &m_movie_offset_x /*= -0.0*/;
+	lua_const &m_movie_offset_y /*= 0.0*/;
 	double m_subtitle_parallax;
 	bool m_gpu_shadow;
 	double m_source_aspect /*= (double)m_lVidWidth / m_lVidHeight*/;
-	double m_forced_aspect /* = -1 */;
+	lua_const &m_forced_aspect /* = -1 */;
 	int m_pass1_width;
 	int m_pass1_height;
 	Imy12doomRendererCallback *m_cb;
@@ -493,7 +491,7 @@ protected:
 	output_mode_types m_output_mode;
 	input_layout_types m_input_layout;
 	bool m_convert3d;			// = false
-	aspect_mode_types m_aspect_mode;
+	lua_const &m_aspect_mode;
 	mask_mode_types m_mask_mode;
 	int m_mask_parameter;
 	HWND m_hWnd;

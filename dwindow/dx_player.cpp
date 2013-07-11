@@ -104,7 +104,6 @@ dx_player::dx_player(HINSTANCE hExe)
 ,m_anaglygh_left_color(GET_CONST("AnaglyghLeftColor"))//RGB(255,0,0))
 ,m_anaglygh_right_color(GET_CONST("AnaglyghRightColor"))//RGB(0,255,255))
 ,m_volume(GET_CONST("Volume"))//1.0)
-,m_aspect(GET_CONST("Aspect"))//-1)
 ,m_subtitle_latency(GET_CONST("SubtitleLatency"))//0))//REG_DWORD)
 ,m_subtitle_ratio(GET_CONST("SubtitleRatio"))//1.0)
 ,m_useInternalAudioDecoder(GET_CONST("InternalAudioDecoder"))//true)
@@ -112,21 +111,16 @@ dx_player::dx_player(HINSTANCE hExe)
 ,m_normalize_audio(GET_CONST("NormalizeAudio"))//16.0)
 ,m_forced_deinterlace(GET_CONST("ForcedDeinterlace"))//false)
 ,m_LogFont(L"LogFont", empty_logfontw)
-,m_aspect_mode(GET_CONST("AspectRatioMode"))//aspect_letterbox)
 ,m_subtitle_center_x(GET_CONST("SubtitleX"))//0.5)
 ,m_subtitle_bottom_y(GET_CONST("SubtitleY"))//0.95)
 ,m_user_subtitle_parallax(GET_CONST("SubtitleParallax"))//0))//REG_DWORD)
 ,m_display_orientation(GET_CONST("DisplayOrientation"))//horizontal))//REG_DWORD)
 ,m_swap_eyes(GET_CONST("SwapEyes"))//false)
 ,m_force_2d(GET_CONST("Force2D"))//false)
-,m_movie_pos_x(GET_CONST("MoviePosX"))//0)
-,m_movie_pos_y(GET_CONST("MoviePosY"))//0)
 ,m_widi_screen_mode(GET_CONST("WidiScreenMode"))//Clone))//REG_DWORD)
 ,m_widi_resolution_width(GET_CONST("WidiScreenWidth"))//0))//REG_DWORD)
 ,m_widi_resolution_height(GET_CONST("WidiScreenHeight"))//0))//REG_DWORD)
 ,m_resize_window_on_open(GET_CONST("OnOpen"))//FALSE))//REG_DWORD)
-,m_movie_resizing(GET_CONST("MovieResampling"))//bilinear_mipmap_minus_one))//REG_DWORD)
-,m_subtitle_resizing(GET_CONST("SubtitleResampling"))//bilinear_mipmap_minus_one))//REG_DWORD)
 ,m_hd3d_prefered_mode(L"HD3DPreferedMode", mode_auto)
 ,m_audio_latency(GET_CONST("AudioLatency"))//0))//REG_DWORD)
 ,m_simple_audio_switching(GET_CONST("SimpleAudioSwitching"))//false)
@@ -1011,38 +1005,28 @@ LRESULT dx_player::on_key_down(int id, int key)
 
 	case 'W':
 	//case VK_NUMPAD7:									// image up
-		set_movie_pos(m_movie_pos_x, (double)m_movie_pos_y - 0.005);
+		m_renderer1->set_movie_pos(2, m_renderer1->get_movie_pos(2)-0.005);
 		break;
 
 	case 'S':
-	//case VK_NUMPAD1:
-		set_movie_pos(m_movie_pos_x, (double)m_movie_pos_y + 0.005);		// down
+	//case VK_NUMPAD1:									// image down
+		m_renderer1->set_movie_pos(2, m_renderer1->get_movie_pos(2)+0.005);
 		break;
 
 	case 'A':
-		set_movie_pos((double)m_movie_pos_x-0.005, (double)m_movie_pos_y);
+		m_renderer1->set_movie_pos(1, m_renderer1->get_movie_pos(1)-0.005);
 		break;
 
 	case 'D':
-		set_movie_pos((double)m_movie_pos_x+0.005, (double)m_movie_pos_y);
+		m_renderer1->set_movie_pos(1, m_renderer1->get_movie_pos(1)+0.005);
 		break;
 
 	case VK_NUMPAD1:
-		if (m_renderer1)
-		{
-			m_renderer1->set_zoom_factor(m_renderer1->get_zoom_factor() / 1.05);
-			m_movie_pos_x = m_renderer1->get_movie_pos(1);
-			m_movie_pos_y = m_renderer1->get_movie_pos(2);
-		}
+		m_renderer1->set_zoom_factor(m_renderer1->get_zoom_factor() / 1.05);
 		break;
 
 	case VK_NUMPAD7:
-		if (m_renderer1)
-		{
-			m_renderer1->set_zoom_factor(m_renderer1->get_zoom_factor() * 1.05);
-			m_movie_pos_x = m_renderer1->get_movie_pos(1);
-			m_movie_pos_y = m_renderer1->get_movie_pos(2);
-		}
+		m_renderer1->set_zoom_factor(m_renderer1->get_zoom_factor() * 1.05);
 		break;
 
 
@@ -1352,9 +1336,9 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 		DeleteMenu(sub_open_BD, ID_OPENBLURAY3D_NONE, MF_BYCOMMAND);
 
 	// quality
-	CheckMenuItem(menu, ID_VIDEO_BESTQUALITY,		(int)m_movie_resizing == lanczos ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_VIDEO_BETTERQUALITY,		(int)m_movie_resizing == bilinear_mipmap_minus_one ? MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(menu, ID_VIDEO_NORMALQUALITY,		(int)m_movie_resizing == bilinear_no_mipmap ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_BESTQUALITY,		(int)m_renderer1->m_movie_resizing == lanczos ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_BETTERQUALITY,		(int)m_renderer1->m_movie_resizing == bilinear_mipmap_minus_one ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_VIDEO_NORMALQUALITY,		(int)m_renderer1->m_movie_resizing == bilinear_no_mipmap ? MF_CHECKED:MF_UNCHECKED);
 
 
 	// input mode
@@ -1388,16 +1372,16 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 	CheckMenuItem(menu, ID_DISPLAYORIENTATION_HORIZONTAL,	(int)m_display_orientation == horizontal ? MF_CHECKED:MF_UNCHECKED);
 
 	// Aspect Ratio
-	if ((double)m_aspect < 0) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
-	if (abs((double)m_aspect - (double)2.35/1) < 0.0001) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
-	if (abs((double)m_aspect - (double)16/9) < 0.0001) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
-	if (abs((double)m_aspect - (double)4/3) < 0.0001) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
+	if ((double)m_renderer1->m_forced_aspect < 0) CheckMenuItem(menu, ID_ASPECTRATIO_DEFAULT, MF_CHECKED);
+	if (abs((double)m_renderer1->m_forced_aspect - (double)2.35/1) < 0.0001) CheckMenuItem(menu, ID_ASPECTRATIO_235, MF_CHECKED);
+	if (abs((double)m_renderer1->m_forced_aspect - (double)16/9) < 0.0001) CheckMenuItem(menu, ID_ASPECTRATIO_169, MF_CHECKED);
+	if (abs((double)m_renderer1->m_forced_aspect - (double)4/3) < 0.0001) CheckMenuItem(menu, ID_ASPECTRATIO_43, MF_CHECKED);
 
 	// Aspect Ratio Mode
-	if ((int)m_aspect_mode == aspect_letterbox) CheckMenuItem(menu, ID_ASPECTRATIO_LETTERBOX, MF_CHECKED);
-	if ((int)m_aspect_mode == aspect_vertical_fill) CheckMenuItem(menu, ID_ASPECTRATIO_VERTICAL, MF_CHECKED);
-	if ((int)m_aspect_mode == aspect_horizontal_fill) CheckMenuItem(menu, ID_ASPECTRATIO_HORIZONTAL, MF_CHECKED);
-	if ((int)m_aspect_mode == aspect_stretch) CheckMenuItem(menu, ID_ASPECTRATIO_STRETCH, MF_CHECKED);
+	if ((int)m_renderer1->m_aspect_mode == aspect_letterbox) CheckMenuItem(menu, ID_ASPECTRATIO_LETTERBOX, MF_CHECKED);
+	if ((int)m_renderer1->m_aspect_mode == aspect_vertical_fill) CheckMenuItem(menu, ID_ASPECTRATIO_VERTICAL, MF_CHECKED);
+	if ((int)m_renderer1->m_aspect_mode == aspect_horizontal_fill) CheckMenuItem(menu, ID_ASPECTRATIO_HORIZONTAL, MF_CHECKED);
+	if ((int)m_renderer1->m_aspect_mode == aspect_stretch) CheckMenuItem(menu, ID_ASPECTRATIO_STRETCH, MF_CHECKED);
 
 	// subtitle menu
 	CheckMenuItem(menu, ID_SUBTITLE_DISPLAYSUBTITLE, MF_BYCOMMAND | (m_display_subtitle ? MF_CHECKED : MF_UNCHECKED));
@@ -2111,9 +2095,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// quality
 	else if (uid == ID_VIDEO_BESTQUALITY || uid == ID_VIDEO_BETTERQUALITY || uid == ID_VIDEO_NORMALQUALITY)
 	{
-		m_movie_resizing = m_subtitle_resizing = (uid == ID_VIDEO_BESTQUALITY) ? lanczos : (uid == ID_VIDEO_BETTERQUALITY ? bilinear_mipmap_minus_one : bilinear_no_mipmap);
-		m_renderer1->set_movie_resizing((resampling_method)(int) m_movie_resizing);
-		m_renderer1->set_subtitle_resizing((resampling_method) (int)m_subtitle_resizing);
+		m_renderer1->m_movie_resizing = m_renderer1->m_subtitle_resizing = (uid == ID_VIDEO_BESTQUALITY) ? lanczos : (uid == ID_VIDEO_BETTERQUALITY ? bilinear_mipmap_minus_one : bilinear_no_mipmap);
 	}
 
 	// normalizing
@@ -2422,59 +2404,43 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// aspect ratio
 	else if (uid == ID_ASPECTRATIO_DEFAULT)
 	{
-		m_aspect = -1;
-		if (m_renderer1)
-			m_renderer1->set_aspect(m_aspect);
+		m_renderer1->set_aspect(-1);
 	}
 
 	else if (uid == ID_ASPECTRATIO_169)
 	{
-		m_aspect = (double)16/9;
-		if (m_renderer1)
-			m_renderer1->set_aspect(m_aspect);
+		m_renderer1->set_aspect((double)16/9);
 	}
 
 	else if (uid == ID_ASPECTRATIO_43)
 	{
-		m_aspect = (double)4/3;
-		if (m_renderer1)
-			m_renderer1->set_aspect(m_aspect);
+		m_renderer1->set_aspect((double)4/3);
 	}
 
 	else if (uid == ID_ASPECTRATIO_235)
 	{
-		m_aspect = 2.35;
-		if (m_renderer1)
-			m_renderer1->set_aspect(m_aspect);
+		m_renderer1->set_aspect(2.35);
 	}
 
 	// aspect ratio mode
 	else if (uid == ID_ASPECTRATIO_LETTERBOX)
 	{
-		m_aspect_mode = aspect_letterbox;
-		if (m_renderer1)
-			m_renderer1->set_aspect_mode(m_aspect_mode);
+		m_renderer1->set_aspect_mode(aspect_letterbox);
 	}
 
 	else if (uid == ID_ASPECTRATIO_VERTICAL)
 	{
-		m_aspect_mode = aspect_vertical_fill;
-		if (m_renderer1)
-			m_renderer1->set_aspect_mode(m_aspect_mode);
+		m_renderer1->set_aspect_mode(aspect_vertical_fill);
 	}
 
 	else if (uid == ID_ASPECTRATIO_HORIZONTAL)
 	{
-		m_aspect_mode = aspect_horizontal_fill;
-		if (m_renderer1)
-			m_renderer1->set_aspect_mode(m_aspect_mode);
+		m_renderer1->set_aspect_mode(aspect_horizontal_fill);
 	}
 
 	else if (uid == ID_ASPECTRATIO_STRETCH)
 	{
-		m_aspect_mode = aspect_stretch;
-		if (m_renderer1)
-			m_renderer1->set_aspect_mode(m_aspect_mode);
+		m_renderer1->set_aspect_mode(aspect_stretch);
 	}
 
 	// swap eyes
@@ -2923,15 +2889,11 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->set_mask_color(1, color_GDI2ARGB(m_anaglygh_left_color));
 	m_renderer1->set_mask_color(2, color_GDI2ARGB(m_anaglygh_right_color));
 	m_renderer1->set_subtitle_parallax((double)m_internel_offset/1000 + (double)m_user_subtitle_parallax/1920);
-	m_renderer1->set_aspect(m_aspect);
-	m_renderer1->set_aspect_mode(m_aspect_mode);
 	m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
 	m_renderer1->set_display_orientation(m_display_orientation);
 	m_renderer1->set_vsync(true);
 	m_renderer1->set_swap_eyes(m_swap_eyes);
 	m_renderer1->set_force_2d(m_force_2d);
-	m_renderer1->set_movie_resizing((resampling_method)(int)m_movie_resizing);
-	m_renderer1->set_subtitle_resizing((resampling_method)(int)m_subtitle_resizing);
 	m_renderer1->HD3D_set_prefered_mode(m_hd3d_prefered_mode);
 
 	g_player_lua_manager->get_variable("movie_loaded") = false;
@@ -3182,14 +3144,11 @@ HRESULT dx_player::toggle_force2d()
 
 HRESULT dx_player::set_movie_pos(double x, double y)
 {
-	m_movie_pos_x = x;
-	m_movie_pos_y = y;
+	if (m_renderer1)
+		m_renderer1->set_movie_pos(1, x);
 
 	if (m_renderer1)
-		m_renderer1->set_movie_pos(1, m_movie_pos_x);
-
-	if (m_renderer1)
-		m_renderer1->set_movie_pos(2, m_movie_pos_y);
+		m_renderer1->set_movie_pos(2, y);
 
 	return S_OK;
 }

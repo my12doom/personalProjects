@@ -105,6 +105,12 @@ my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/)
 ,m_luminance2(GET_CONST("Luminance2"))
 ,m_hue2(GET_CONST("Hue2"))
 ,m_contrast2(GET_CONST("Contrast2"))
+,m_movie_offset_x(GET_CONST("MoviePosX"))//0)
+,m_movie_offset_y(GET_CONST("MoviePosY"))//0)
+,m_forced_aspect(GET_CONST("Aspect"))//-1)
+,m_aspect_mode(GET_CONST("AspectRatioMode"))//aspect_letterbox)
+,m_movie_resizing(GET_CONST("MovieResampling"))//bilinear_mipmap_minus_one))//REG_DWORD)
+,m_subtitle_resizing(GET_CONST("SubtitleResampling"))//bilinear_mipmap_minus_one))//REG_DWORD)
 {
 	timeBeginPeriod(1);
 
@@ -280,8 +286,6 @@ void my12doomRenderer::init_variables()
 	m_movie_offset_x = 0.0;
 	m_movie_offset_y = 0.0;
 	m_source_aspect = 1.0;
-	m_forced_aspect = -1;
-	m_aspect_mode = aspect_letterbox;
 
 	// input / output
 	m_input_layout = input_layout_auto;
@@ -2383,7 +2387,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	sample->set_interlace(m_forced_deinterlace);
 
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-	hr = resize_surface(NULL, sample, surface, &src_rect, &target, (resampling_method)(int)m_movie_resampling_method);
+	hr = resize_surface(NULL, sample, surface, &src_rect, &target, (resampling_method)(int)m_movie_resizing);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 
 	return hr;
@@ -2425,7 +2429,7 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 	RECT scissor = get_movie_scissor_rect();
 	m_Device->SetScissorRect(&scissor);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-	hr = resize_surface(src, NULL, surface, &src_rect, &dst_rect, (resampling_method)(int)m_subtitle_resampling_method);
+	hr = resize_surface(src, NULL, surface, &src_rect, &dst_rect, (resampling_method)(int)m_subtitle_resizing);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 
 	return hr;
@@ -3255,8 +3259,8 @@ bool my12doomRenderer::is2DRendering()
 
 double my12doomRenderer::get_active_aspect()
 {
-	if (m_forced_aspect > 0)
-		return m_forced_aspect;
+	if ((double)m_forced_aspect > 0)
+		return (double)m_forced_aspect;
 
 	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
 	if (dual_stream || get_active_input_layout() == mono2d)
@@ -3308,12 +3312,12 @@ HRESULT my12doomRenderer::calculate_movie_position_unscaled(RECTF *position)
 	if (delta_w > 0)
 	{
 		// letterbox left and right (default), or vertical fill(vertical is already full)
-		if (m_aspect_mode == aspect_letterbox || m_aspect_mode == aspect_vertical_fill)
+		if ((int)m_aspect_mode == aspect_letterbox || (int)m_aspect_mode == aspect_vertical_fill)
 		{
 			tar.left += delta_w/2;
 			tar.right -= delta_w/2;
 		}
-		else if (m_aspect_mode == aspect_horizontal_fill)
+		else if ((int)m_aspect_mode == aspect_horizontal_fill)
 		{
 			// extent horizontally, top and bottom cut
 			// (delta_h < 0)
@@ -3327,12 +3331,12 @@ HRESULT my12doomRenderer::calculate_movie_position_unscaled(RECTF *position)
 	else if (delta_h > 0)
 	{
 		// letterbox top and bottome (default)
-		if (m_aspect_mode == aspect_letterbox || m_aspect_mode == aspect_horizontal_fill)
+		if ((int)m_aspect_mode == aspect_letterbox || (int)m_aspect_mode == aspect_horizontal_fill)
 		{
 			tar.top += delta_h/2;
 			tar.bottom -= delta_h/2;
 		}
-		else if (m_aspect_mode == aspect_vertical_fill)
+		else if ((int)m_aspect_mode == aspect_vertical_fill)
 		{
 			// extent vertically, top and bottom cut
 			// (delta_w < 0)
@@ -3396,10 +3400,10 @@ HRESULT my12doomRenderer::calculate_movie_position(RECTF *position)
 	// offsets
 	float tar_width = P3.right - P3.left;
 	float tar_height = P3.bottom - P3.top;
-	P3.left += tar_width * m_movie_offset_x;
-	P3.right += tar_width * m_movie_offset_x;
-	P3.top += tar_height * m_movie_offset_y;
-	P3.bottom += tar_height * m_movie_offset_y;
+	P3.left += tar_width * (double)m_movie_offset_x;
+	P3.right += tar_width * (double)m_movie_offset_x;
+	P3.top += tar_height * (double)m_movie_offset_y;
+	P3.bottom += tar_height * (double)m_movie_offset_y;
 
 	*position = P3;
 	return S_OK;
@@ -3779,26 +3783,6 @@ HRESULT my12doomRenderer::set_input_layout(int layout)
 	return S_OK;
 }
 
-HRESULT my12doomRenderer::set_movie_resizing(resampling_method method)
-{
-	m_movie_resampling_method = method;
-	return S_OK;
-}
-HRESULT my12doomRenderer::set_subtitle_resizing(resampling_method method)
-{
-	m_subtitle_resampling_method = method;
-	return S_OK;
-}
-resampling_method my12doomRenderer::get_movie_resizing()
-{
-	return m_movie_resampling_method;
-}
-resampling_method my12doomRenderer::get_subtitle_resizing()
-{
-	return m_subtitle_resampling_method;
-}
-
-
 HRESULT my12doomRenderer::set_output_mode(int mode)
 {
 	if (m_output_mode == mode)
@@ -3937,7 +3921,7 @@ HRESULT my12doomRenderer::set_movie_pos(int dimention, double offset)		// diment
 
 HRESULT my12doomRenderer::set_aspect_mode(int mode)
 {
-	if (m_aspect_mode == mode)
+	if ((int)m_aspect_mode == mode)
 		return S_OK;
 
 	m_aspect_mode = (aspect_mode_types)mode;
@@ -4044,9 +4028,9 @@ double my12doomRenderer::get_movie_pos(int dimention)
 		calculate_movie_position(&r);
 
 		if (dimention == 3)
-			return m_movie_offset_x * (r.right - r.left);
+			return (double)m_movie_offset_x * (r.right - r.left);
 		else
-			return m_movie_offset_y *(r.bottom - r.top);
+			return (double)m_movie_offset_y *(r.bottom - r.top);
 	}
 	else
 		return 0.0;

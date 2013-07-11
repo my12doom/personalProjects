@@ -52,16 +52,19 @@ nil = restart_this_program()
 path, volume_name, is_bluray, ... = enum_bd
 path, ... = enum_drive()
 {file, ...} = enum_folder(path)
-succ = set_output_channel()
+succ = set_output_channel(channel)
 channel = get_output_channel()
+succ = set_normalize_audio(normalize)
+normalize = get_output_channel()
 
-succ = set_input_layout()
-succ = set_output_mode()
-succ = set_mask_mode()
-succ = set_zoom_factor()
-succ = set_subtitle_pos()
-succ = set_subtitle_parallax()
-succ = set_subtitle_latency_stretch()
+succ = set_input_layout(layout)
+succ = set_output_mode(mode)
+succ = set_mask_mode(mode)
+succ = set_zoom_factor(factor, center_x, center_y)
+succ = set_subtitle_pos(x, y)
+succ = set_subtitle_parallax(parallax)
+succ = set_subtitle_latency_stretch(latency, stretch)
+succ = set_parallax(parallax)
 
 layout = get_input_layout()
 mode = get_output_mode()
@@ -70,6 +73,7 @@ factor = get_zoom_factor()
 x, y = get_subtitle_pos()
 dp = get_subtitle_parallax()
 latency, stretch = get_subtitle_latency_stretch()
+parallax = get_parallax()
 left, top, right, bottom, description, ... = enum_monitors(horizontal_span, vertical_span)
 
 -- TODO:
@@ -86,13 +90,6 @@ button = message_box(content, caption, buttons)
 
 SwapEyes
 Force2D
-MoviePosX
-MoviePosY
-
-DisplaySubtitle
-Aspect
-AspectRatioMode
-MovieResampling
 
 -- dx9
 dx9.lockframe()

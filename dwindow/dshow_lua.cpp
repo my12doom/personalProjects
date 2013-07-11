@@ -5,6 +5,8 @@
 #include "open_url.h"
 #include "color_adjust.h"
 #include "latency_dialog.h"
+#include "MediaInfo.h"
+#include "AboudWindow.h"
 
 lua_manager *g_player_lua_manager = NULL;
 extern dx_player *g_player;
@@ -492,6 +494,20 @@ static int set_output_channel(lua_State *L)
 	return 1;
 }
 
+static int set_normalize_audio(lua_State *L)
+{
+	bool normalize = lua_toboolean(L, -1);
+	g_player->m_normalize_audio = normalize ? 16.0 : 0;
+	
+	lua_pushboolean(L, SUCCEEDED(set_ff_audio_normalizing(g_player->m_lav, g_player->m_normalize_audio)));
+	return 1;
+}
+static int get_normalize_audio(lua_State *L)
+{
+	lua_pushboolean(L, (double)g_player->m_normalize_audio > 1.0);
+	return 1;
+}
+
 static int set_input_layout(lua_State *L)
 {
 	int layout = lua_tointeger(L, -1);
@@ -568,6 +584,15 @@ static int set_subtitle_latency_stretch(lua_State *L)
 	lua_pushboolean(L, SUCCEEDED(g_player->draw_subtitle()));
 	return 1;
 }
+static int set_parallax(lua_State *L)
+{
+	int n = lua_gettop(L);
+	double p = g_player->m_renderer1->get_parallax();
+	if (n>=1 && lua_isnumber(L, -n+0))
+		p = lua_tonumber(L, -n+0);
+	lua_pushboolean(L, SUCCEEDED(g_player->m_renderer1->set_parallax(p)));
+	return 1;
+}
 
 static int get_input_layout(lua_State *L)
 {
@@ -605,6 +630,11 @@ static int get_subtitle_latency_stretch(lua_State *L)
 	lua_pushnumber(L, GET_CONST("SubtitleLatency"));
 	lua_pushnumber(L, GET_CONST("SubtitleRatio"));
 	return 2;
+}
+static int get_parallax(lua_State *L)
+{
+	lua_pushnumber(L, g_player->m_renderer1->get_parallax());
+	return 1;
 }
 static int get_output_channel(lua_State *L)
 {
@@ -694,13 +724,47 @@ static int message_box(lua_State *L)
 	if (n<3)
 		return 0;
 	const char *text = lua_tostring(L, -n+0);
-	const char *caption = lua_tostring(L, -n+0);
-	int button = lua_tointeger(L, -n+0);
+	const char *caption = lua_tostring(L, -n+1);
+	int button = lua_tointeger(L, -n+2);
 
 	lua_pushinteger(L, MessageBoxW(g_player->get_window(-1), UTF82W(text), UTF82W(caption), button));
 	return 1;
 }
 
+static int show_media_info_lua(lua_State *L)
+{
+	int n = lua_gettop(L);
+	if (n<1)
+		return 0;
+	const char *filename = lua_tostring(L, -n+0);
+
+
+	show_media_info(UTF82W(filename), g_player->m_full1 ? g_player->get_window(-1) : NULL);
+	lua_pushboolean(L, true);
+	return 1;
+}
+
+static int show_about(lua_State *L)
+{
+	ShowAbout(g_player->get_window(-1));
+	return 0;
+}
+
+static int lua_exit(lua_State *L)
+{
+	SendMessage(g_player->get_window(1), WM_CLOSE, 0, 0);
+	SendMessage(g_player->get_window(2), WM_CLOSE, 0, 0);
+	return 0;
+}
+
+static int logout(lua_State *L)
+{
+	memset(g_passkey_big, 0, 128);
+	save_passkey();
+
+	lua_pushboolean(L, true);
+	return 1;
+}
 
 int player_lua_init()
 {
@@ -731,6 +795,10 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("show_hd3d_fullscreen_mode_dialog") = &show_hd3d_fullscreen_mode_dialog;
 	g_player_lua_manager->get_variable("show_latency_ratio_dialog") = &show_latency_ratio_dialog;
 	g_player_lua_manager->get_variable("message_box") = &message_box;
+	g_player_lua_manager->get_variable("show_media_info") = &show_media_info_lua;
+	g_player_lua_manager->get_variable("show_about") = &show_about;
+	g_player_lua_manager->get_variable("logout") = &logout;
+	g_player_lua_manager->get_variable("exit") = &lua_exit;
 
 	g_player_lua_manager->get_variable("get_splayer_subtitle") = &lua_get_splayer_subtitle;
 
@@ -745,6 +813,7 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("enum_folder") = &enum_folder;
 
 	g_player_lua_manager->get_variable("set_output_channel") = &set_output_channel;
+	g_player_lua_manager->get_variable("set_normalize_audio") = &set_normalize_audio;
 	g_player_lua_manager->get_variable("set_input_layout") = &set_input_layout;
 	g_player_lua_manager->get_variable("set_output_mode") = &set_output_mode;
 	g_player_lua_manager->get_variable("set_mask_mode") = &set_mask_mode;
@@ -752,9 +821,11 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("set_subtitle_pos") = &set_subtitle_pos;
 	g_player_lua_manager->get_variable("set_subtitle_parallax") = &set_subtitle_parallax;
 	g_player_lua_manager->get_variable("set_subtitle_latency_stretch") = &set_subtitle_latency_stretch;
+	g_player_lua_manager->get_variable("set_parallax") = &set_parallax;
 
 	
 
+	g_player_lua_manager->get_variable("get_normalize_audio") = &get_normalize_audio;
 	g_player_lua_manager->get_variable("get_output_channel") = &get_output_channel;
 	g_player_lua_manager->get_variable("get_input_layout") = &get_input_layout;
 	g_player_lua_manager->get_variable("get_output_mode") = &get_output_mode;
@@ -763,6 +834,7 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("get_subtitle_pos") = &get_subtitle_pos;
 	g_player_lua_manager->get_variable("get_subtitle_parallax") = &get_subtitle_parallax;
 	g_player_lua_manager->get_variable("get_subtitle_latency_stretch") = &get_subtitle_latency_stretch;
+	g_player_lua_manager->get_variable("get_parallax") = &get_parallax;
 	
 
 	// widi
