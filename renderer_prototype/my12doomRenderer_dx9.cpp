@@ -111,6 +111,8 @@ my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/)
 ,m_aspect_mode(GET_CONST("AspectRatioMode"))//aspect_letterbox)
 ,m_movie_resizing(GET_CONST("MovieResampling"))//bilinear_mipmap_minus_one))//REG_DWORD)
 ,m_subtitle_resizing(GET_CONST("SubtitleResampling"))//bilinear_mipmap_minus_one))//REG_DWORD)
+,m_swap_eyes(GET_CONST("SwapEyes"))//false)
+,m_force2d(GET_CONST("Force2D"))//false)
 {
 	timeBeginPeriod(1);
 
@@ -289,7 +291,6 @@ void my12doomRenderer::init_variables()
 
 	// input / output
 	m_input_layout = input_layout_auto;
-	m_swapeyes = false;
 	m_mask_mode = row_interlace;
 	m_mask_parameter = 0;
 	m_color1 = D3DCOLOR_XRGB(255, 0, 0);
@@ -1677,7 +1678,7 @@ HRESULT my12doomRenderer::render_helper(IDirect3DSurface9 *surfaces[], int nview
 	HRESULT hr = S_OK;
 	for(int i=0; i<nview; i++)
 	{
-		int view = (i<2&&m_swapeyes)?1-i:i;
+		int view = (i<2&&m_swap_eyes)?1-i:i;
 
 		IDirect3DSurface9 *p = surfaces[i];
 		if (!p)
@@ -2037,7 +2038,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 	// 				mylog("delta=%d.\n", (int)delta);
 	// 			}
 
-				int swap_offset = m_swapeyes ? 1 : 0;
+				int swap_offset = m_swap_eyes ? 1 : 0;
 				int view = (m_pageflip_frames+swap_offset)%2;
 
 				LARGE_INTEGER l1, l2, l3, l4, l5;
@@ -2096,7 +2097,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		}
 		else if (m_output_mode == dual_window)
 		{
-			int view = m_swapeyes ? 1 : 0;
+			int view = m_swap_eyes ? 1 : 0;
 
 			clear(back_buffer);
 			draw_movie(back_buffer, view);
@@ -3853,7 +3854,7 @@ DWORD my12doomRenderer::get_mask_color(int id)
 HRESULT my12doomRenderer::set_swap_eyes(bool swap)
 {
 	CAutoLock lck(&m_frame_lock);
-	m_swapeyes = swap;
+	m_swap_eyes = swap;
 
 	reload_image();
 	repaint_video();
@@ -3889,7 +3890,7 @@ int my12doomRenderer::get_mask_parameter()
 
 bool my12doomRenderer::get_swap_eyes()
 {
-	return m_swapeyes;
+	return m_swap_eyes;
 }
 
 bool my12doomRenderer::get_fullscreen()

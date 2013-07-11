@@ -115,8 +115,6 @@ dx_player::dx_player(HINSTANCE hExe)
 ,m_subtitle_bottom_y(GET_CONST("SubtitleY"))//0.95)
 ,m_user_subtitle_parallax(GET_CONST("SubtitleParallax"))//0))//REG_DWORD)
 ,m_display_orientation(GET_CONST("DisplayOrientation"))//horizontal))//REG_DWORD)
-,m_swap_eyes(GET_CONST("SwapEyes"))//false)
-,m_force_2d(GET_CONST("Force2D"))//false)
 ,m_widi_screen_mode(GET_CONST("WidiScreenMode"))//Clone))//REG_DWORD)
 ,m_widi_resolution_width(GET_CONST("WidiScreenWidth"))//0))//REG_DWORD)
 ,m_widi_resolution_height(GET_CONST("WidiScreenHeight"))//0))//REG_DWORD)
@@ -1000,7 +998,7 @@ LRESULT dx_player::on_key_down(int id, int key)
 		break;
 
 	case VK_TAB:
-		set_swap_eyes(!m_swap_eyes);
+		set_swap_eyes(!m_renderer1->m_swap_eyes);
 		break;
 
 	case 'W':
@@ -1463,7 +1461,7 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 		CheckMenuItem(menu, ID_LANGUAGE_CHINESE, MF_CHECKED | MF_BYCOMMAND);
 
 	// swap
-	CheckMenuItem(menu, ID_SWAPEYES, m_swap_eyes ? MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(menu, ID_SWAPEYES, m_renderer1->m_swap_eyes ? MF_CHECKED:MF_UNCHECKED);
 
 	// CUDA
 	CheckMenuItem(menu, ID_CUDA, GET_CONST("CUDA") ? MF_CHECKED:MF_UNCHECKED);
@@ -1629,7 +1627,7 @@ LRESULT dx_player::on_mouse_down(int id, int button, int x, int y)
 		}
 		else if (type == hit_3d_swtich)
 		{
-			set_force_2d(!m_force_2d);
+			set_force_2d(!m_renderer1->m_force2d);
 		}
 		else if (type == hit_stop)
 		{
@@ -2446,7 +2444,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// swap eyes
 	else if (uid == ID_SWAPEYES)
 	{
-		set_swap_eyes(!m_swap_eyes);
+		set_swap_eyes(!m_renderer1->m_swap_eyes);
 	}
 
 	else if (uid == ID_LOADAUDIOTRACK)
@@ -2892,8 +2890,6 @@ HRESULT dx_player::exit_direct_show()
 	m_renderer1->m_forced_deinterlace = m_forced_deinterlace;
 	m_renderer1->set_display_orientation(m_display_orientation);
 	m_renderer1->set_vsync(true);
-	m_renderer1->set_swap_eyes(m_swap_eyes);
-	m_renderer1->set_force_2d(m_force_2d);
 	m_renderer1->HD3D_set_prefered_mode(m_hd3d_prefered_mode);
 
 	g_player_lua_manager->get_variable("movie_loaded") = false;
@@ -3090,12 +3086,7 @@ HRESULT dx_player::on_dshow_event()
 
 HRESULT dx_player::set_swap_eyes(bool swap_eyes)
 {
-	m_swap_eyes = swap_eyes;
-
-	if (m_renderer1)
-	{
-		m_renderer1->set_swap_eyes(m_swap_eyes);
-	}
+	m_renderer1->set_swap_eyes(swap_eyes);
 
 	return S_OK;
 }
@@ -3105,19 +3096,14 @@ HRESULT dx_player::get_swap_eyes(bool *swap_eyes)
 	if (!swap_eyes)
 		return E_POINTER;
 
-	*swap_eyes = m_swap_eyes;
+	*swap_eyes = m_renderer1->m_swap_eyes;
 
 	return S_OK;
 }
 
 HRESULT dx_player::set_force_2d(bool force2d)
 {
-	m_force_2d = force2d;
-
-	if (m_renderer1)
-	{
-		m_renderer1->set_force_2d(force2d);
-	}
+	m_renderer1->set_force_2d(force2d);
 
 	return S_OK;
 }
@@ -3126,18 +3112,13 @@ HRESULT dx_player::get_force_2d(bool *force2d)
 	if (!force2d)
 		return E_POINTER;
 
-	*force2d = m_force_2d;
+	*force2d = m_renderer1->m_force2d;
 
 	return S_OK;
 }
 HRESULT dx_player::toggle_force2d()
 {
-	m_force_2d = !m_force_2d;
-
-	if (m_renderer1)
-	{
-		m_renderer1->set_force_2d(m_force_2d);
-	}
+	m_renderer1->set_force_2d(!m_renderer1->m_force2d);
 
 	return S_OK;
 }

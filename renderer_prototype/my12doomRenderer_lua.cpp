@@ -36,6 +36,17 @@ static int paint_core(lua_State *L)
 	return 1;
 }
 
+static int lock_frame(lua_State *L)
+{
+	g_renderer->m_frame_lock.Lock();
+	return 0;
+}
+static int unlock_frame(lua_State *L)
+{
+	g_renderer->m_frame_lock.Unlock();
+	return 0;
+}
+
 static int set_clip_rect_core(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
@@ -331,6 +342,8 @@ int my12doomRenderer_lua_init()
 	g_lua_dx9_manager->get_variable("set_movie_rect") = &set_movie_rect;
 	g_lua_dx9_manager->get_variable("is2DRendering") = &is2DRendering;
 	g_lua_dx9_manager->get_variable("is2DMovie") = &is2DMovie;
+	g_lua_dx9_manager->get_variable("lock_frame") = &lock_frame;
+	g_lua_dx9_manager->get_variable("unlock_frame") = &unlock_frame;
 
 	return 0;
 }

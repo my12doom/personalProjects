@@ -256,7 +256,7 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 		hr = set_swap_eyes(myBool(args[0]));
 	CASE(L"get_swapeyes")
 	{
-		wcscpy2(out, myBool((bool)m_swap_eyes));
+		wcscpy2(out, myBool((bool)m_renderer1->m_swap_eyes));
 		return S_OK;
 	}
 

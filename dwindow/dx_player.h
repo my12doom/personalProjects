@@ -210,8 +210,6 @@ public:
 	HINSTANCE m_hexe;
 	int m_mirror1;
 	int m_mirror2;			// 0x0:no mirror, 0x1 mirror horizontal, 0x2 mirror vertical, 0x3(0x3=0x1|0x2) mirror both
-	lua_const &m_swap_eyes;
-	lua_const &m_force_2d;
 	lua_const &m_resize_window_on_open;	// FALSE
 	double m_parallax;
 	bool m_is_remux_file;

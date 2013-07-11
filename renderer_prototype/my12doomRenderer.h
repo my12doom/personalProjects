@@ -212,6 +212,7 @@ public:
 	lua_const &m_luminance2;
 	lua_const &m_hue2;
 	lua_const &m_contrast2;
+	CCritSec m_frame_lock;
 
 	// public functions
 	HRESULT pump();
@@ -486,8 +487,8 @@ protected:
 	int m_pageflip_frames;
 	int m_pageflipping_start;
 	LARGE_INTEGER m_first_pageflip;
-	bool m_swapeyes;
-	bool m_force2d;
+	lua_const &m_swap_eyes;
+	lua_const &m_force2d;
 	output_mode_types m_output_mode;
 	input_layout_types m_input_layout;
 	bool m_convert3d;			// = false
@@ -509,7 +510,6 @@ protected:
 	D3DPRESENT_PARAMETERS   m_active_pp2;
 	D3DDISPLAYMODE m_d3ddm;
 	HANDLE m_device_not_reseting;
-	CCritSec m_frame_lock;
 	CCritSec m_device_lock;
 	HANDLE m_render_event;
 	int m_device_threadid;

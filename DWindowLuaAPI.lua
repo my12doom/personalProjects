@@ -10,6 +10,8 @@ resource = get_resource(id)
 success = set_clip_rect_core(left, top, right, bottom)
 success = set_movie_rect(left, top, right, bottom)
 font = CreateFont(table{height, width, escapement, orientation, weight, italic, underline, strikeout, charset, outprecision, clipprecision, quality, pitch, name})
+nil = dx9.lockframe()
+nil = dx9.unlockframe()
 }
 
 player = {
@@ -82,18 +84,6 @@ nil = show_hd3d_fullscreen_mode_dialog()
 latency, ratio = show_latency_ratio_dialog(for_audio, latency, ratio)
 button = message_box(content, caption, buttons)
 
-
-
-
-
--- move to renderer & lua
-
-SwapEyes
-Force2D
-
--- dx9
-dx9.lockframe()
-dx9.unlockframe()
 }
 
 
