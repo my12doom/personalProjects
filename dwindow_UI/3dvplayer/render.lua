@@ -93,6 +93,7 @@ end
 -- buttons
 local button_pictures =
 {
+	"setting.png", "",
 	"fullscreen.png", "",
 	"volume.png", "",
 	"next.png", "",
@@ -104,6 +105,7 @@ local button_pictures =
 
 local button_functions = 
 {
+	player.show_settings,
 	player.toggle_fullscreen,
 	player.set_volume,
 	playlist.next,

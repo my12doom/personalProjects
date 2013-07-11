@@ -230,6 +230,17 @@ if core.v then
 	L_zhCN["DWindow %s version\r\nrevision %d\r\nBuild Time:%s\r\n"] = "3DVPlayer%s版\r\n内部版本号：%d\r\n编译日期：%s\r\n"
 	L_zhCN["About DWindow"] = "关于3DVPlayer"
 	L_zhCN["HTTPPLACEHOLDER"] = "http://www.3dvstar.com/"
+	L_zhCN["Play	(Space)"] = "播放	(Space)"
+	L_zhCN["Pause	(Space)"] = "暂停	(Space)"
+	L_zhCN["Open Folder..."] = "打开文件夹..."
+	L_zhCN["Close File"] = "关闭文件"
+	L_zhCN["Playlist"] = "播放列表"
+	L_zhCN["Previous\t(PageUp)"] = "上一曲\t(PageUp)"
+	L_zhCN["Next\t(PageDown)"] = "下一曲\t(PageDown)"
+	L_zhCN["Swap Eyes"] = "交换左右眼"
+	L_zhCN["Settings..."] = "高级设置..."
+	L_zhCN["Switch To 2D Mode"] = "切换到2D模式"
+	L_zhCN["Switch To 3D Mode"] = "切换到3D模式"
 end
 
 core.add_language(L_zhCN)

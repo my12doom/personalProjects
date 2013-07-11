@@ -10,7 +10,6 @@ function playlist:add(L, R, pos)
 	if pos then return pos end
 	
 	table.insert(setting.playlist.list, pos or (#setting.playlist.list+1), {L=L,R=R})
-	print(root, root.BroadCastEvent)
 	root:BroadCastEvent("OnPlaylistChange")
 	return pos or #setting.playlist.list
 end
