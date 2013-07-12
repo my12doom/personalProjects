@@ -2183,6 +2183,100 @@ HRESULT report_file(const wchar_t *filepath)
 	return S_OK;
 }
 
+// 检测文件关联情况
+// strExt: 要检测的扩展名(例如: ".txt")
+// strAppKey: ExeName扩展名在注册表中的键值(例如: "txtfile")
+// 返回TRUE: 表示已关联，FALSE: 表示未关联
+BOOL CheckFileAssociation(const wchar_t *strExt, const wchar_t *strAppKey)
+{
+	int nRet=FALSE;
+	HKEY hExtKey;
+	wchar_t szPath[_MAX_PATH];  
+	DWORD dwSize=sizeof(szPath);  
+	if(RegOpenKey(HKEY_CLASSES_ROOT,strExt,&hExtKey)==ERROR_SUCCESS)
+	{
+		RegQueryValueEx(hExtKey,NULL,NULL,NULL,(LPBYTE)szPath,&dwSize);
+		if(wcsicmp(szPath,strAppKey)==0)
+		{
+			nRet=TRUE;
+		}
+		RegCloseKey(hExtKey);
+		return nRet;
+	}
+	return nRet;
+}
+
+// 注册文件关联
+// strExe: 要检测的扩展名(例如: ".txt")
+// strAppName: 要关联的应用程序名(例如: "C:/MyApp/MyApp.exe")
+// strAppKey: ExeName扩展名在注册表中的键值(例如: "txtfile")
+// strDefaultIcon: 扩展名为strAppName的图标文件(例如: "C:/MyApp/MyApp.exe,0")
+// strDescribe: 文件类型描述
+void  RegisterFileAssociation(const wchar_t *strExt, const wchar_t *strAppName, const wchar_t *strAppKey, const wchar_t *strDefaultIcon, const wchar_t *strDescribe)
+{
+	wchar_t strTemp[_MAX_PATH];
+	int len = sizeof(strTemp);
+	HKEY hKey;
+
+	RegCreateKey(HKEY_CLASSES_ROOT,strExt,&hKey);
+	RegQueryValueExW(hKey, L"", 0, NULL, (LPBYTE)strTemp, (LPDWORD)&len);
+	if(wcscmp(strTemp, strAppKey))
+		RegSetValue(hKey,L"dwindowbackup",REG_SZ,strTemp,(wcslen(strTemp)+1)*sizeof(wchar_t));
+	RegSetValue(hKey,L"",REG_SZ,strAppKey,(wcslen(strAppKey)+1)*sizeof(wchar_t));
+	RegCloseKey(hKey);
+
+	RegCreateKey(HKEY_CLASSES_ROOT,strAppKey,&hKey);
+	RegSetValue(hKey,L"",REG_SZ,strDescribe,(wcslen(strDescribe)+1)*sizeof(wchar_t));
+	RegCloseKey(hKey);
+
+	swprintf(strTemp,L"%s\\DefaultIcon",strAppKey);
+	RegCreateKey(HKEY_CLASSES_ROOT,strTemp,&hKey);
+	RegSetValue(hKey,L"",REG_SZ,strDefaultIcon,(wcslen(strDefaultIcon)+1)*sizeof(wchar_t));
+	RegCloseKey(hKey);
+
+	swprintf(strTemp,L"%s\\Shell",strAppKey);
+	RegCreateKey(HKEY_CLASSES_ROOT,strTemp,&hKey);
+	RegSetValue(hKey,L"",REG_SZ,L"Open",(wcslen(L"Open")+1)*sizeof(wchar_t));
+	RegCloseKey(hKey);
+
+	swprintf(strTemp,L"%s\\Shell\\Open\\Command",strAppKey);
+	RegCreateKey(HKEY_CLASSES_ROOT,strTemp,&hKey);
+	swprintf(strTemp,L"%s \"%%1\"",strAppName);
+	RegSetValue(hKey,L"",REG_SZ,strTemp,(wcslen(strTemp)+1)*sizeof(wchar_t));
+	RegCloseKey(hKey);
+
+	RegOpenKeyExW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts", 0, 
+		KEY_WRITE  | DELETE , &hKey);
+	DWORD o = RegDeleteKey(hKey, strExt);
+	RegCloseKey(hKey);
+
+}
+
+int UnregisterFileAssociation(const wchar_t *strExt)
+{
+	wchar_t strTemp[_MAX_PATH];
+	int len = sizeof(strTemp);
+	HKEY hKey;
+
+	swprintf(strTemp, L"%s\\dwindowbackup", strExt);
+	RegCreateKey(HKEY_CLASSES_ROOT,strTemp,&hKey);
+	if (ERROR_SUCCESS == RegQueryValueExW(hKey, L"", 0, NULL, (LPBYTE)strTemp, (LPDWORD)&len) && len > 0)
+	{
+		RegCloseKey(hKey);
+		RegCreateKey(HKEY_CLASSES_ROOT,strExt,&hKey);
+		RegSetValue(hKey,L"",REG_SZ,strTemp,(wcslen(strTemp)+1)*sizeof(wchar_t));
+		RegDeleteKey(hKey, L"dwindowbackup");
+	}
+	else
+	{
+		RegCloseKey(hKey);
+		return -1;
+	}
+
+	RegCloseKey(hKey);
+	return 0;
+}
+
 W2UTF8::W2UTF8(const wchar_t *in)
 {
 	p = NULL;
@@ -2236,3 +2330,4 @@ UTF82W::operator wchar_t*()
 {
 	return p;
 }
+

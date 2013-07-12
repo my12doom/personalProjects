@@ -97,7 +97,6 @@ static int load_bitmap_core(lua_State *L)
 HFONT create_font(const wchar_t *facename = L"ºÚÌå", int font_height = 14)
 {
 	LOGFONTW lf={0};
-	;
 	lf.lfHeight = -font_height;
 	lf.lfCharSet = GB2312_CHARSET;
 	lf.lfOutPrecision =  OUT_STROKE_PRECIS;

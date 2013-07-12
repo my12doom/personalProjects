@@ -1388,6 +1388,18 @@
 				RelativePath=".\private_filter.h"
 				>
 			</File>
+			<File
+				RelativePath=".\resource3.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SetDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SetDlg.rc"
+				>
+			</File>
 			<Filter
 				Name="GUI"
 				>

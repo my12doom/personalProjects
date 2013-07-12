@@ -24,9 +24,13 @@ pass:
 }
 
 CsrtRendererCore::CsrtRendererCore(HFONT font, DWORD fontcolor)
+:m_font_color(GET_CONST("FontColor"))
+,m_font_size(GET_CONST("FontSize"))
+,m_font_name(GET_CONST("Font"))
+,m_last_font_size(0)
 {
+	m_last_font_name[0] = NULL;
 	m_font = font;
-	m_font_color = fontcolor;
 	m_aspect = 16.0/9.0;
 	reset();
 }
@@ -124,6 +128,24 @@ HRESULT CsrtRendererCore::render(const wchar_t *text, rendered_subtitle *out, bo
 	HDC hdc = GetDC(NULL);
 	HDC hdcBmp = CreateCompatibleDC(hdc);
 
+	if (m_last_font_size != (int)m_font_size || wcscmp(m_last_font_name, m_font_name) !=0)
+	{
+		m_last_font_size = m_font_size;
+		wcscpy(m_last_font_name, m_font_name);
+
+		LOGFONTW lf={0};
+		lf.lfHeight = -m_last_font_size;
+		lf.lfCharSet = GB2312_CHARSET;
+		lf.lfOutPrecision =  OUT_STROKE_PRECIS;
+		lf.lfClipPrecision = CLIP_STROKE_PRECIS;
+		lf.lfQuality = DEFAULT_QUALITY;
+		lf.lfPitchAndFamily = VARIABLE_PITCH;
+		lf.lfWeight = FW_BOLD*3;
+		lstrcpynW(lf.lfFaceName, m_font_name, 32);
+
+		m_font = CreateFontIndirectW(&lf); 
+	}
+
 	HFONT hOldFont = (HFONT) SelectObject(hdcBmp, m_font);
 
 	RECT rect = {0,0,1920,int(1920/m_aspect)};
@@ -158,9 +180,9 @@ HRESULT CsrtRendererCore::render(const wchar_t *text, rendered_subtitle *out, bo
 
 	BYTE *data = (BYTE*)out->data;
 	DWORD *data_dw = (DWORD*)out->data;
-	unsigned char color_r = (BYTE)(m_font_color       & 0xff);
-	unsigned char color_g = (BYTE)((m_font_color>>8)  & 0xff);
-	unsigned char color_b = (BYTE)((m_font_color>>16) & 0xff);
+	unsigned char color_r = (BYTE)((DWORD)m_font_color       & 0xff);
+	unsigned char color_g = (BYTE)(((DWORD)m_font_color>>8)  & 0xff);
+	unsigned char color_b = (BYTE)(((DWORD)m_font_color>>16) & 0xff);
 	DWORD color = (color_r<<16) | (color_g <<8) | (color_b);// reverse big endian
 
 	for(int i=0; i<out->width_pixel * out->height_pixel; i++)

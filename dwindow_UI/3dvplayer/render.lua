@@ -17,7 +17,7 @@ local space_of_each_button = 62;
 local toolbar_height = 65;
 local width_progress_left = 5;
 local width_progress_right = 6;
-local margin_progress_right = 460;
+local margin_progress_right = 522;
 local margin_progress_left = 37;
 local progress_height = 21;
 local progress_margin_bottom = 27;
@@ -28,7 +28,7 @@ local volume_margin_bottom = (376 - 317);
 local volume_button_zero_point = 32;
 local volume_bar_height = 265;
 local numbers_left_margin = 21;
-local numbers_right_margin = 455;
+local numbers_right_margin = 455+62;
 local numbers_width = 12;
 local numbers_height = 20;
 local numbers_bottom_margin = 26;
@@ -93,7 +93,6 @@ end
 -- buttons
 local button_pictures =
 {
-	"setting.png", "",
 	"fullscreen.png", "",
 	"volume.png", "",
 	"next.png", "",
@@ -101,11 +100,11 @@ local button_pictures =
 	"previous.png", "",
 	"stop.png", "",
 	"3d.png", "2d.png",
+	"setting.png", "",
 }
 
 local button_functions = 
 {
-	player.show_settings,
 	player.toggle_fullscreen,
 	player.set_volume,
 	playlist.next,
@@ -113,6 +112,7 @@ local button_functions =
 	playlist.previous,
 	player.reset,
 	player.toggle_3d,
+	player.show_setting,
 }
 
 
@@ -213,6 +213,8 @@ number_current:SetPoint(BOTTOMLEFT, nil, nil, numbers_left_margin, - numbers_bot
 number_current:SetSize(numbers_width * 8, numbers_height)
 
 function number_current:RenderThis()
+	if not player.movie_loaded then return end
+
 	local t = player.total()
 	if self.name == "number_current" then t= player.tell() end
 	local ms = t % 1000

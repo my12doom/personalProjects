@@ -7,7 +7,6 @@
 #ifndef lstate_h
 #define lstate_h
 #include <Windows.h>
-#define LoadString LoadString
 #include "lua.h"
 
 #include "lobject.h"

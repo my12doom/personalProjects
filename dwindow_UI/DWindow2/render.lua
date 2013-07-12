@@ -147,8 +147,8 @@ function setting_button:HitTest(x, y)
 	return x >= 10 and y>= 8 and x<= 25 and y <= 21
 end
 
-function playlist:OnClick()
-	-- TODO: show setting_buttons window
+function setting_button:OnClick()
+	player.show_setting()
 	return true
 end
 

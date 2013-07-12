@@ -30,8 +30,16 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 	return (fwrite(p,size,1,(FILE*)u)!=1) && (size!=0);
 }
 
+#include <Shlobj.h>
+#pragma comment(lib, "Shell32.lib")
+void  RegisterFileAssociation(const wchar_t *strExt, const wchar_t *strAppName, const wchar_t *strAppKey, const wchar_t *strDefaultIcon, const wchar_t *strDescribe);
+int UnregisterFileAssociation(const wchar_t *strExt);
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
+	//RegisterFileAssociation(L".mkv", L"\"D:\\Program Files (x86)\\DWindow\\StereoPlayer.exe\"", L"ssiffile", L"\"D:\\Program Files (x86)\\DWindow\\StereoPlayer.exe\",0", L"HelloSSIF");
+	//UnregisterFileAssociation(L".mkv");
+
+	//SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_DWORD | SHCNF_FLUSH, NULL, NULL);
  	SetUnhandledExceptionFilter(my_handler);
 	DisableSetUnhandledExceptionFilter();
 	CoInitialize(NULL);

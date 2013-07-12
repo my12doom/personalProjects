@@ -766,6 +766,13 @@ static int logout(lua_State *L)
 	return 1;
 }
 
+extern int setting_dlg(HWND parent);
+static int show_setting(lua_State *L)
+{
+	setting_dlg(g_player->get_window(-1));
+	return 0;
+}
+
 int player_lua_init()
 {
 	g_player_lua_manager = new lua_manager("player");
@@ -797,6 +804,7 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("message_box") = &message_box;
 	g_player_lua_manager->get_variable("show_media_info") = &show_media_info_lua;
 	g_player_lua_manager->get_variable("show_about") = &show_about;
+	g_player_lua_manager->get_variable("show_setting") = &show_setting;
 	g_player_lua_manager->get_variable("logout") = &logout;
 	g_player_lua_manager->get_variable("exit") = &lua_exit;
 

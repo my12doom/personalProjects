@@ -1,6 +1,7 @@
 #pragma once
 #include "..\CSubtitle.h"
 #include "srt_parser.h"
+#include "..\lua\my12doom_lua.h"
 
 class CsrtRendererCore : public CSubtitleRenderer
 {
@@ -26,7 +27,12 @@ protected:
 	// font
 	double m_aspect;		// default = 16/9
 	HFONT m_font;
-	DWORD m_font_color;
+	lua_const &m_font_color;
+	lua_const &m_font_size;
+	lua_const &m_font_name;
+
+	wchar_t m_last_font_name[200];
+	int m_last_font_size;
 };
 
 class CAssRendererFallback : public CsrtRendererCore

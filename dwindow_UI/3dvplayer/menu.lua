@@ -104,6 +104,7 @@
 		},
 		{
 			string = L("Settings..."),
+			on_command = function() player.show_setting() end
 		},
 		{
 			string = L("About..."),
