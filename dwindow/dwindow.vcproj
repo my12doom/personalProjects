@@ -1289,6 +1289,10 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
+				RelativePath=".\about.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\digit.bmp"
 				>
 			</File>
@@ -1306,6 +1310,10 @@
 			</File>
 			<File
 				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SetDlg.rc"
 				>
 			</File>
 			<File
@@ -1394,10 +1402,6 @@
 			</File>
 			<File
 				RelativePath=".\SetDlg.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\SetDlg.rc"
 				>
 			</File>
 			<Filter

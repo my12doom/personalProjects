@@ -191,3 +191,4 @@ success = SetPoint(point, frame, anchor, dx, dy)
 
 -- helper functions
 has_loop = frame_has_loop_reference(frame)			-- detect layout reference loop
+nil = apply_adv_settings()

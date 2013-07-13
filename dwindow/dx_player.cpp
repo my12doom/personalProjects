@@ -429,10 +429,6 @@ HRESULT dx_player::reset()
 	// set event notify
 	CComQIPtr<IMediaEventEx, &IID_IMediaEventEx> event_ex(m_gb);
 	event_ex->SetNotifyWindow((OAHWND)id_to_hwnd(1), DS_EVENT, 0);
-
-	// caption
-	set_window_text(1, L"");
-	set_window_text(2, L"");
 	
 	// repaint
 	InvalidateRect(m_hwnd1, NULL, FALSE);
@@ -1658,6 +1654,7 @@ LRESULT dx_player::on_timer(int id)
 {
 	if (m_renderer1)
 	{
+		m_renderer1->pump();
 #ifndef no_dual_projector
 		if (timeGetTime() - m_renderer1->m_last_reset_time > TRAIL_TIME_1 &&!m_trial_shown && is_trial_version())
 		{
@@ -1896,9 +1893,6 @@ LRESULT dx_player::on_size(int id, int type, int x, int y)
 		m_saved_rect2 = rect2;
 		SetWindowPos(id_to_hwnd(1), NULL, 0, 0, rect2.right - rect2.left, rect2.bottom - rect2.top, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
 	}
-
-	if (m_renderer1)
-		m_renderer1->pump();
 	return S_OK;
 }
 
@@ -3258,15 +3252,15 @@ HRESULT dx_player::reset_and_loadfile_core(const wchar_t *pathname, const wchar_
 	RECT rect;
 	m_renderer1->get_movie_desc(&w, &h);
 	GetClientRect(id_to_hwnd(1), &rect);
-	if ((BOOL)m_resize_window_on_open)
+	if ((BOOL)m_resize_window_on_open && !m_full1)
 		set_window_client_rect(1, w, h);
 	play();
 
 	// search and load subtitles
 	wchar_t file_to_search[MAX_PATH];
 	wchar_t file_folder[MAX_PATH];
-	GetWindowTextW(m_hwnd1, file_to_search, MAX_PATH);
-	GetWindowTextW(m_hwnd1, file_folder, MAX_PATH);
+	wcscpy(file_to_search, pathname);
+	wcscpy(file_folder, pathname);
 	for(int i=wcslen(file_to_search)-1; i>0; i--)
 		if (file_to_search[i] == L'.')
 		{
@@ -3326,10 +3320,6 @@ HRESULT dx_player::reset_and_loadfile_core(const wchar_t *pathname, const wchar_
 	return hr;
 fail:
 	reset();
-#ifndef ZHUZHU
-	show_media_info(pathname, m_theater_owner ? m_theater_owner : id_to_hwnd(1));
-#endif
-	set_window_text(1, C(L"Open Failed"));
 	return hr;
 }
 
@@ -3824,8 +3814,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 			m_srenderer = m_grenderer.GetSubtitleRenderer();
 			g_player_lua_manager->get_variable("movie_loaded") = true;
 			m_file_loaded = true;
-			SetWindowTextW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), file_to_play);
-			SetWindowTextW(m_theater_owner ? m_theater_owner : id_to_hwnd(2), file_to_play);
+			//SetWindowTextW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), file_to_play);
+			//SetWindowTextW(m_theater_owner ? m_theater_owner : id_to_hwnd(2), file_to_play);
 		}
 	}
 

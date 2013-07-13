@@ -773,6 +773,19 @@ static int show_setting(lua_State *L)
 	return 0;
 }
 
+static int set_window_text(lua_State *L)
+{
+	int n = lua_gettop(L);
+	if (n>0)
+	{
+		if (lua_tostring(L, 1))
+			SetWindowTextW(g_player->get_window(1), UTF82W(lua_tostring(L, 1)));
+		if (lua_tostring(L, 2))
+			SetWindowTextW(g_player->get_window(2), UTF82W(lua_tostring(L, 2)));
+	}
+	return 0;
+}
+
 int player_lua_init()
 {
 	g_player_lua_manager = new lua_manager("player");
@@ -805,6 +818,7 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("show_media_info") = &show_media_info_lua;
 	g_player_lua_manager->get_variable("show_about") = &show_about;
 	g_player_lua_manager->get_variable("show_setting") = &show_setting;
+	g_player_lua_manager->get_variable("set_window_text") = &set_window_text;
 	g_player_lua_manager->get_variable("logout") = &logout;
 	g_player_lua_manager->get_variable("exit") = &lua_exit;
 

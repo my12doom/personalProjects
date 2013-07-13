@@ -15,6 +15,7 @@ setting.MAX_WIDTH = 417
 setting.MAX_HEIGHT = 277
 core.ApplySetting("MAX_WIDTH")
 core.ApplySetting("MAX_HEIGHT")
+player.set_window_text(L("DWindow"), L("DWindow"))
 
 
 

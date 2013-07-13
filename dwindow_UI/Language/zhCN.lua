@@ -28,6 +28,8 @@
 	["About..."] = "关于...",
 	["Dual Projector - Vertical Span Mode"] = "双投影 - 垂直跨越模式",
 	["Latency && Stretch..."] = "延迟与拉伸...",
+	["Latency && Stretch"] = "延迟与拉伸",
+	["Latency"] = "延迟",
 	["Color..."] = "颜色...",
 	["Feature under development"] = "尚未完成的功能",
 	["Copy To Clipboard"] = "复制到剪贴板",
@@ -224,23 +226,53 @@
 	["Output 2"] = "输出2",
 	["This is a experimental feature.\r\nIt ONLY works for most H264 video.\r\nIt can cause a lot freeze or crash.\r\nIt will freeze with BD3D/MPO/3DP file or left+right file, and disable input layout detecting\r\nContinue ?"] = 
 				"这仍是一个实验性的功能.\r\n它只适用于在比较低配置的机器上播放H264视频.\r\n它不是很稳定，可能会造成失去响应或是异常退出.\r\n它会使蓝光3D、MPO、3DP、左右分离文件无法播放, 影片格式自动检测失效.\r\n\r\n是否继续？",
+	["Play	(Space)"] = "播放	(Space)",
+	["Pause	(Space)"] = "暂停	(Space)",
+	["Open Folder..."] = "打开文件夹...",
+	["Close File"] = "关闭文件",
+	["Playlist"] = "播放列表",
+	["Previous\t(PageUp)"] = "上一曲\t(PageUp)",
+	["Next\t(PageDown)"] = "下一曲\t(PageDown)",
+	["Swap Eyes"] = "交换左右眼",
+	["Settings..."] = "高级设置...",
+	["Switch To 2D Mode"] = "切换到2D模式",
+	["Switch To 3D Mode"] = "切换到3D模式",
+	["General"] = "常规",
+	["Color"] = "色彩",
+	["File Association"] = "文件关联",
+	["About"] = "关于",
+	["OK"] = "确定",
+	["Cancel"] = "取消",
+	["Apply"] = "应用",
+	["Force 2D"] = "强制显示2D",
+	["Input Mode"] = "输入模式",
+	["Ouput Mode"] = "输出模式",
+	["Topmost"] = "在最前",
+	["Always"] = "总是",
+	["Never"] = "从不",
+	["When Playing"] = "当播放时",
+	["Font"] = "字体",
+	["Font Size"] = "字体大小",
+	["Font Color"] = "字体颜色",
+	["Left Eye"] = "左眼",
+	["Right Eye"] = "右眼",
+	["Right Eye"] = "右眼",
+	["Exclusive Mode"] = "全屏独占模式",
+	["Low GPU Usage Mode"] = "低CPU占用模式",
+	["Color Controll"] = "色彩控制",
+	["Select Color"] = "选择颜色",
+	["Select All"] = "全选",
+	["Select None"] = "全不选",
+	["Output Mode"] = "输出模式",
+	["Fullscreen Output"] = "全屏输出",
+	["Resize Window to fit video resolution"] = "窗口适应视频尺寸大小",
+	["Save Video Position"] = "记忆上次播放位置",
 }
 
 if core.v then
 	L_zhCN["DWindow %s version\r\nrevision %d\r\nBuild Time:%s\r\n"] = "3DVPlayer%s版\r\n内部版本号：%d\r\n编译日期：%s\r\n"
 	L_zhCN["About DWindow"] = "关于3DVPlayer"
 	L_zhCN["HTTPPLACEHOLDER"] = "http://www.3dvstar.com/"
-	L_zhCN["Play	(Space)"] = "播放	(Space)"
-	L_zhCN["Pause	(Space)"] = "暂停	(Space)"
-	L_zhCN["Open Folder..."] = "打开文件夹..."
-	L_zhCN["Close File"] = "关闭文件"
-	L_zhCN["Playlist"] = "播放列表"
-	L_zhCN["Previous\t(PageUp)"] = "上一曲\t(PageUp)"
-	L_zhCN["Next\t(PageDown)"] = "下一曲\t(PageDown)"
-	L_zhCN["Swap Eyes"] = "交换左右眼"
-	L_zhCN["Settings..."] = "高级设置..."
-	L_zhCN["Switch To 2D Mode"] = "切换到2D模式"
-	L_zhCN["Switch To 3D Mode"] = "切换到3D模式"
 end
 
 core.add_language(L_zhCN)

@@ -3,31 +3,25 @@
 // Used by SetDlg.rc
 //
 #define IDD_DLG_MAIN                    101
-#define IDD_DLG_ORDINARY                102
 #define IDD_DIALOG1                     103
 #define IDD_DIALOG2                     104
-#define IDD_DLG_VIDEO                   104
 #define IDD_DIALOG3                     105
-#define IDD_DLG_VIDEO_TWO               105
-#define IDD_DLG_3D                      106
 #define IDD_DIALOG4                     107
-#define IDD_DLG_VOICE                   107
 #define IDD_DIALOG5                     108
-#define IDD_DLG_SUBTITLE                108
 #define IDD_DIALOG6                     109
-#define IDD_DLG_RALE                    109
 #define IDD_DIALOG7                     110
-#define IDD_DLG_HOTKEY                  110
 #define IDD_DIALOG8                     111
-#define IDD_DLG_PRTSCR                  111
+#define IDB_BITMAP1                     113
+#define IDB_BITMAP2                     115
+#define IDB_BITMAP3                     116
+#define IDB_BMP_ABOUT                   116
 #define IDC_BTN_VIDEO                   1001
 #define IDC_BTN_AUDIO                   1002
+#define IDC_BTN_VIDEO_TWO               1002
 #define IDC_BTN_3D                      1003
 #define IDC_BTN_ORDINARY                1004
 #define IDC_BTN_SOUND                   1005
 #define IDC_BTN_SUBTITLE                1006
-#define IDC_BTN_HOTBTN                  1007
-#define IDC_BTN_PRTSCR                  1008
 #define IDC_BTN_BACK2DEFUALT            1009
 #define IDC_ORD_STATIC_ONTOP2           1009
 #define IDC_BTN_ABOUT                   1010
@@ -83,7 +77,6 @@
 #define IDC_SUBTITLE_BTN_RESET          1058
 #define IDC_SUBTITLE_COM_STYLE          1059
 #define IDC_SUBTITLE_COM_SIZE           1060
-#define IDC_SUBTITLE_COM_COLOR          1061
 #define IDC_SUBTITLE_STATIC_STYLE       1062
 #define IDC_SUBTITLE_STATIC_SIZE        1063
 #define IDC_SUBTITLE_STATIC_COLOR       1064
@@ -97,27 +90,16 @@
 #define IDC_RELA_CHECK_RMVB             1072
 #define IDC_RELA_BTN_ALL_SELECT         1073
 #define IDC_RELA_BTN_ALL_CANCEL         1074
-#define IDC_HOTKEY_STATIC_BACK_FIVE     1075
-#define IDC_HOTKEY_STATIC_EXCHANGE      1076
-#define IDC_HOTKEY_STATIC_STEP_FIVE     1077
-#define IDC_HOTKEY_STATIC_SUB           1078
-#define IDC_HOTKEY_STATIC_FULL_SCREEN_MODE 1079
-#define IDC_HOTKEY_STATIC_ADD           1080
-#define IDC_HOTKEY_STATIC_PAUSE         1081
-#define IDC_HOTKEY_STATIC_MEANING       1082
-#define IDC_HOTKEY_EDIT_BACK_FIVE       1083
-#define IDC_HOTKEY_EDIT_EXCHANGE        1084
-#define IDC_HOTKEY_GROUP_NULL           1085
 #define IDC_PRTSCR_BTN_OPEN_PATH        1086
 #define IDC_PRTSCR_COM_SAVE_CONT        1087
 #define IDC_PRTSCR_COM_SAVE_FORMAT      1088
 #define IDC_PRTSCR_STATIC_SAVE_PATH     1089
 #define IDC_PRTSCR_STATIC_SAVE_FORMAT   1090
 #define IDC_PRTSCR_EDIT_SAVE_PATH       1091
-#define IDC_HOTKEY_BTN_RESET            1092
-#define IDC_HOTKEY_BTN_APPLY            1093
-#define IDC_BUTTON1                     1093
 #define IDC_SUBTITLE_BTN_SELECT_COLOR   1093
+#define IDC_CHECK1                      1094
+#define IDC_VIDEO_CHECK_ONSHOW          1094
+#define IDC_ABOUT_STATIC_PIC            1095
 #define IDC_ORD_STATIC_LANGUAGE         1120
 #define IDC_ORD_COM_LANGUAGE            1121
 #define IDC_VIDEO_RADIO_SAME_CONTROL    1122
@@ -125,30 +107,18 @@
 #define IDC_VIDEO_GROUP_COLOR_CTROL     1124
 #define IDC_VIDEO_GROUP_COLOR_CTROL_LEFT 1125
 #define IDC_VIDEO_GROUP_COLOR_CTROL_RIGHT 1126
-#define IDC_VIDEO_BTN_PAGE_ONE          1127
 #define IDC_3D_CHECK_SHOW2D             1128
-#define IDC_VIDEO_BTN_PAGE_TWO          1129
 #define IDC_3D_CHECK_EXCHANGE           1130
 #define IDC_3D_COM_INPUT_MODE           1131
 #define IDC_3D_COM_OUTPUT_MODE          1132
 #define IDC_3D_COM_FALL_MODE_ONE        1133
-#define IDC_3D_COM_FALL_MODE_TWO        1134
 #define IDC_3D_SLIDER_INPUT_MODE        1135
 #define IDC_3D_STATIC_INPUT_MODE        1136
 #define IDC_3D_STATIC_OUTPUT_MODE       1137
 #define IDC_3D_STATIC_FALL_MODE_ONE     1138
-#define IDC_3D_STATIC_FALL_MODE_TWO     1139
 #define IDC_VOICE_COM_CHANNEL           1140
-#define IDC_HOTKEY_EDIT_STEP_FIVE       1141
-#define IDC_HOTKEY_EDIT_SUB             1142
-#define IDC_HOTKEY_EDIT_FULL_SCREEN_MODE 1143
-#define IDC_HOTKEY_EDIT_ADD             1144
-#define IDC_HOTKEY_EDIT_PAUSE           1145
-#define IDC_HOTKEY_STATIC_HOTKEY        1146
-#define IDC_ORD_RADIO_ALWAY             1191
-#define IDC_ORD_RADIO_WHENPLAY          1192
-#define IDC_ORD_RADIO_NEVER             1193
 #define IDC_ORD_STATIC_ONTOP            1194
+#define IDC_ORD_COM_TOPMOST             1195
 #define IDC_ORD_RADIO_ONTRAY            1195
 #define IDC_ORD_RADIO_CLOSE             1196
 #define IDC_ORD_STATIC_CLOSE            1197
@@ -160,14 +130,15 @@
 #define IDC_RELA_CHECK_WMV              1278
 #define IDC_RELA_CHECK_AV               1279
 #define IDC_RELA_CHECK_VOB              1280
+#define IDC_ABOUT_BACK                  1593
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        112
+#define _APS_NEXT_RESOURCE_VALUE        117
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1094
+#define _APS_NEXT_CONTROL_VALUE         1099
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -1,12 +1,15 @@
 ﻿local lua_file = core.loading_file
 local lua_path = GetPath(lua_file)
+volume_bar = BaseFrame:Create()
 
 core.execute_luafile(lua_path .. "menu.lua")
-setting.MAX_WIDTH = 559
-setting.MAX_HEIGHT = 338
+setting.MAX_WIDTH = 746
+setting.MAX_HEIGHT = 461
 core.ApplySetting("MAX_WIDTH")
 core.ApplySetting("MAX_HEIGHT")
-
+local UI_fading_time = 300
+local UI_show_time = 2000
+player.set_window_text("3DVPlayer", "3DVPlayer")
 
 -- 3dvplayer UI renderer
 
@@ -25,7 +28,7 @@ local volume_base_width = 84;
 local volume_base_height = 317;
 local volume_margin_right = (156 - 84);
 local volume_margin_bottom = (376 - 317);
-local volume_button_zero_point = 32;
+local volume_button_zero_point = 26;
 local volume_bar_height = 265;
 local numbers_left_margin = 21;
 local numbers_right_margin = 455+62;
@@ -37,7 +40,7 @@ local hidden_progress_width = 72;
 logo = BaseFrame:Create()
 logo.name = "LOGO"
 root:AddChild(logo)
-logo:SetPoint(CENTER)
+logo:SetPoint(CENTER, nil, nil, 0, -20)
 logo:SetSize(1920,1080)
 
 function logo:RenderThis()
@@ -59,6 +62,31 @@ function logo:OnMouseDown(x, y, button)
 	if button ~= VK_RBUTTON and not player.is_fullscreen() then
 		ui.StartDragging()
 	end	
+	return true
+end
+
+local open = BaseFrame:Create()
+root:AddChild(open)
+open:SetPoint(CENTER, nil, nil, 0, 60)
+open:SetSize(230,70)
+
+function open:RenderThis()
+	if not player.movie_loaded then
+		paint(0,0,230,70, get_bitmap(lua_path .. (setting.LCID == "简体中文" and "open.png" or "open_en.png")))
+	end
+end
+
+
+function open:HitTest()
+	return not player.movie_loaded
+end
+
+function open:OnClick()
+	local file = ui.OpenFile()
+	if file then
+		playlist:play(file)
+	end
+
 	return true
 end
 
@@ -103,12 +131,31 @@ local button_pictures =
 	"setting.png", "",
 }
 
+function show_volume_bar()
+	volume_bar:show()
+end
+
+function start_play_or_pause()
+	if not player.movie_loaded then
+		if playlist:count() > 0 then
+			playlist:play_item(playlist:current_pos())
+		else
+			local file = ui.OpenFile()
+			if file then
+				playlist:play(file)
+			end
+		end
+	else
+		player.pause()
+	end
+end
+
 local button_functions = 
 {
 	player.toggle_fullscreen,
-	player.set_volume,
+	show_volume_bar,
 	playlist.next,
-	player.pause,
+	start_play_or_pause,
 	playlist.previous,
 	player.reset,
 	player.toggle_3d,
@@ -146,6 +193,10 @@ for i=1,#button_pictures/2 do
 	button.id = i
 
 	x = x - space_of_each_button	
+end
+
+buttons[4].RenderThis = function(self)
+	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[player.is_playing() and 2 or 1]))
 end
 
 progressbar = BaseFrame:Create()
@@ -247,6 +298,79 @@ number_total:SetPoint(BOTTOMRIGHT, nil, nil, -numbers_right_margin, - numbers_bo
 number_total.t = 23456000
 number_total:SetSize(numbers_width * 8, numbers_height)
 number_total.RenderThis = number_current.RenderThis
+
+
+root:AddChild(volume_bar)
+volume_bar:SetPoint(BOTTOMRIGHT, nil, nil, 84-156, 317-376)
+volume_bar:SetSize(84, 317)
+volume_bar.alpha = 0
+volume_bar.volume = player.get_volume()
+function volume_bar:RenderThis()
+	if self.alpha < 0.05 then return end
+	paint(0,0,84,317, get_bitmap(lua_path .. "volume_base.png"), self.alpha)
+	
+	-- the button
+	local ypos = volume_button_zero_point + (317-volume_button_zero_point*2) * (1-player.get_volume());
+	paint (22, ypos-20, 62, ypos + 20, get_bitmap(lua_path .. "volume_button.png"), self.alpha)
+end
+
+function volume_bar:hide()
+	self.showing = false
+end
+
+function volume_bar:show()
+	self.last_show = core.GetTickCount()
+	self.showing = true
+end
+
+function volume_bar:OnUpdate(t, dt)
+	local da = dt/UI_fading_time
+	if self.showing or self.dragging then
+		self.alpha = self.alpha + da
+	else
+		self.alpha = self.alpha - da
+	end
+	
+	self.alpha = math.max(0, self.alpha)
+	self.alpha = math.min(1, self.alpha)	
+	
+	if self.volume ~= player.get_volume() then
+		self:show()
+		self.volume = player.get_volume()
+	elseif core.GetTickCount() > (self.last_show or 0)+UI_show_time  then
+		self:hide()
+	end
+end
+
+function volume_bar:HitTest()
+	return self.alpha > 0
+end
+
+
+function volume_bar:OnMouseMove(x,y,button)
+	if not self.dragging then return end
+	local _,t,_,b=self:GetRect()
+	local h = b-t-volume_button_zero_point*2
+	local v = 1-(y-volume_button_zero_point)/h
+	v = math.max(0,math.min(v,1))
+		
+	player.set_volume(v)
+end
+
+function volume_bar:OnMouseUp(x, y, button)
+	self.dragging = false;
+end
+
+function volume_bar:OnMouseDown(...)
+	self.dragging = true
+	self:OnMouseMove(...)
+	
+	return true
+end
+
+
+
+
 
 
 grow = BaseFrame:Create()

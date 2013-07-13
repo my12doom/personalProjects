@@ -323,6 +323,14 @@ function set_setting(name, value)
 	core.ApplySetting(name)
 end
 
+function apply_adv_settings()
+	player.set_output_channel(setting.AudioChannel)
+	player.set_normalize_audio(setting.NormalizeAudio > 1)
+	player.set_input_layout(setting.InputLayout)
+	player.set_mask_mode(setting.MaskMode)
+	player.set_output_mode(setting.OutputMode)
+end
+
 function format_table(t, level)
 	level = level or 1
 	leveld1 = level > 1 and level -1 or 0
