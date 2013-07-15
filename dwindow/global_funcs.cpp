@@ -1632,6 +1632,9 @@ HRESULT update_file_association(bool uac /*= false*/)
 	}
 	lua_settop(L, 0);
 
+	if (uac)
+		SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_DWORD | SHCNF_FLUSH, NULL, NULL);
+
 	return S_OK;
 }
 

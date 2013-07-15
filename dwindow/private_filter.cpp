@@ -123,7 +123,8 @@ HRESULT GetFileSourceMediaInfo(const wchar_t *filename, wchar_t *format)
 
 HRESULT myCreateInstance(CLSID clsid, IID iid, void**out)
 {
-	if (clsid == __uuidof(IWiDiExtensions) && (DWORD)(LOBYTE(LOWORD(GetVersion()))) < 7)
+	DWORD os = LOBYTE(LOWORD(GetVersion()));
+	if (iid == __uuidof(IWiDiExtensions) && os < 6)
 		return E_FAIL;
 
 	if (clsid == CLSID_my12doomImageSource )

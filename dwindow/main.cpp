@@ -34,10 +34,6 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 #pragma comment(lib, "Shell32.lib")
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
-	//RegisterFileAssociation(L".mkv", L"\"D:\\Program Files (x86)\\DWindow\\StereoPlayer.exe\"", L"ssiffile", L"\"D:\\Program Files (x86)\\DWindow\\StereoPlayer.exe\",0", L"HelloSSIF");
-	//UnregisterFileAssociation(L".mkv");
-
-	//SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_DWORD | SHCNF_FLUSH, NULL, NULL);
  	SetUnhandledExceptionFilter(my_handler);
 	DisableSetUnhandledExceptionFilter();
 	CoInitialize(NULL);
