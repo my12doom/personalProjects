@@ -775,7 +775,9 @@ static int logout(lua_State *L)
 extern int setting_dlg(HWND parent);
 static int show_setting(lua_State *L)
 {
+	g_player->m_dialog_open++;
 	setting_dlg(g_player->get_window(-1));
+	g_player->m_dialog_open--;
 	return 0;
 }
 
