@@ -1565,6 +1565,76 @@ HRESULT localize_window(HWND hwnd)
 	return S_OK;
 }
 
+HRESULT update_file_association(bool uac /*= false*/)
+{
+	wchar_t exefile[MAX_PATH] = {0};
+	GetModuleFileNameW(NULL, exefile, MAX_PATH);
+
+	luaState L;
+	lua_getglobal(L, "setting");
+	lua_getfield(L, -1, "FileAssociation");
+	lua_pushnil(L);
+	while (lua_next(L, -2) != 0)
+	{
+		printf("%s - %s\n",
+			lua_tostring(L, -2),
+			lua_toboolean(L, -1) ? "True" : "False");
+
+		wchar_t ext[200];
+		wchar_t description[300];
+		wchar_t entry[200];
+		wchar_t cmd[500];
+		wchar_t icon[500];
+		swprintf(cmd, L"\"%s\"", exefile);
+		swprintf(icon, L"\"%s\",0", exefile);
+
+		wcscpy(ext, L".");
+		wcscat(ext, UTF82W(lua_tostring(L, -2)));
+		wcscpy(entry, L"dwindow.");
+		wcscat(entry, UTF82W(lua_tostring(L, -2)));
+		wcscpy(description, UTF82W(lua_tostring(L, -2)));
+		wcscat(description, C(L" File"));
+
+		int res = 0;
+		if (lua_toboolean(L, -1))
+		{
+			res = RegisterFileAssociation(ext, cmd, entry, icon, description);
+		}
+		else
+		{
+			res = UnregisterFileAssociation(ext);
+		}
+
+		if (res<0 && uac)
+		{
+			lua_save_settings();
+
+			SHELLEXECUTEINFO ShExecInfo = {0};
+			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+			ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+			ShExecInfo.hwnd = NULL;
+			ShExecInfo.lpFile = exefile;
+			ShExecInfo.lpParameters = _T("");	
+			ShExecInfo.lpDirectory = NULL;
+			ShExecInfo.nShow = SW_SHOW;
+			ShExecInfo.hInstApp = NULL;	
+			ShExecInfo.lpVerb = _T("open");
+
+			if ((DWORD)(LOBYTE(LOWORD(GetVersion()))) >= 6)
+				ShExecInfo.lpVerb = _T("runas");
+
+			ShellExecuteEx(&ShExecInfo);
+
+			break;
+		}
+
+		lua_pop(L, 1);
+	}
+	lua_settop(L, 0);
+
+	return S_OK;
+}
+
 const WCHAR* soft_key= L"Software\\DWindow";
 bool save_setting(const WCHAR *key, const void *data, int len, DWORD REG_TYPE)
 {
@@ -2212,7 +2282,7 @@ BOOL CheckFileAssociation(const wchar_t *strExt, const wchar_t *strAppKey)
 // strAppKey: ExeName扩展名在注册表中的键值(例如: "txtfile")
 // strDefaultIcon: 扩展名为strAppName的图标文件(例如: "C:/MyApp/MyApp.exe,0")
 // strDescribe: 文件类型描述
-void  RegisterFileAssociation(const wchar_t *strExt, const wchar_t *strAppName, const wchar_t *strAppKey, const wchar_t *strDefaultIcon, const wchar_t *strDescribe)
+int RegisterFileAssociation(const wchar_t *strExt, const wchar_t *strAppName, const wchar_t *strAppKey, const wchar_t *strDefaultIcon, const wchar_t *strDescribe)
 {
 	wchar_t strTemp[_MAX_PATH];
 	int len = sizeof(strTemp);
@@ -2222,7 +2292,12 @@ void  RegisterFileAssociation(const wchar_t *strExt, const wchar_t *strAppName, 
 	RegQueryValueExW(hKey, L"", 0, NULL, (LPBYTE)strTemp, (LPDWORD)&len);
 	if(wcscmp(strTemp, strAppKey))
 		RegSetValue(hKey,L"dwindowbackup",REG_SZ,strTemp,(wcslen(strTemp)+1)*sizeof(wchar_t));
-	RegSetValue(hKey,L"",REG_SZ,strAppKey,(wcslen(strAppKey)+1)*sizeof(wchar_t));
+	DWORD o = RegSetValue(hKey,L"",REG_SZ,strAppKey,(wcslen(strAppKey)+1)*sizeof(wchar_t));
+	if (o != ERROR_SUCCESS)
+	{
+		RegCloseKey(hKey);
+		return -1;
+	}
 	RegCloseKey(hKey);
 
 	RegCreateKey(HKEY_CLASSES_ROOT,strAppKey,&hKey);
@@ -2245,11 +2320,11 @@ void  RegisterFileAssociation(const wchar_t *strExt, const wchar_t *strAppName, 
 	RegSetValue(hKey,L"",REG_SZ,strTemp,(wcslen(strTemp)+1)*sizeof(wchar_t));
 	RegCloseKey(hKey);
 
-	RegOpenKeyExW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts", 0, 
-		KEY_WRITE  | DELETE , &hKey);
-	DWORD o = RegDeleteKey(hKey, strExt);
+	RegOpenKeyExW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts", 0, KEY_WRITE  | DELETE , &hKey);
+	o = RegDeleteKey(hKey, strExt);
 	RegCloseKey(hKey);
 
+	return 0;
 }
 
 int UnregisterFileAssociation(const wchar_t *strExt)
@@ -2265,12 +2340,16 @@ int UnregisterFileAssociation(const wchar_t *strExt)
 		RegCloseKey(hKey);
 		RegCreateKey(HKEY_CLASSES_ROOT,strExt,&hKey);
 		RegSetValue(hKey,L"",REG_SZ,strTemp,(wcslen(strTemp)+1)*sizeof(wchar_t));
-		RegDeleteKey(hKey, L"dwindowbackup");
+		if (ERROR_SUCCESS != RegDeleteKey(hKey, L"dwindowbackup"))
+		{
+			RegCloseKey(hKey);
+			return -1;
+		}
 	}
 	else
 	{
 		RegCloseKey(hKey);
-		return -1;
+		return 1;
 	}
 
 	RegCloseKey(hKey);

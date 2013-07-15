@@ -1,4 +1,4 @@
-; example2.nsi
+ï»¿; example2.nsi
 ;
 ; This script is based on example1.nsi, but it remember the directory, 
 ; has uninstall support and (optionally) installs start menu shortcuts.
@@ -20,7 +20,7 @@
 ;SetCompressor /SOLID lzma
 
 ; The name of the installer
-Name "3DÓ°Òô"
+Name "3Då½±éŸ³"
 
 ; The file to write
 OutFile "dwindow_setup.exe"
@@ -129,7 +129,7 @@ RequestExecutionLevel admin
 ;--------------------------------
 ; The stuff to install
 
-Section "3DÓ°ÒôÖ÷³ÌĞò(required)"
+Section "3Då½±éŸ³ä¸»ç¨‹åº(required)"
 
   SectionIn RO
   
@@ -160,7 +160,7 @@ Section "3DÓ°ÒôÖ÷³ÌĞò(required)"
   WriteRegStr HKLM SOFTWARE\DWindow "Install_Dir" "$INSTDIR"
   
   ; Write the uninstall keys for Windows
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow" "DisplayName" "3DÓ°Òô"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow" "DisplayName" "3Då½±éŸ³"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow" "UninstallString" '"$INSTDIR\uninstall.exe"'
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DWindow" "NoRepair" 1
@@ -169,38 +169,38 @@ Section "3DÓ°ÒôÖ÷³ÌĞò(required)"
 SectionEnd
 
 ; Optional section (can be disabled by the user)
-Section "¿ªÊ¼²Ëµ¥¿ì½İ·½Ê½"
+Section "å¼€å§‹èœå•å¿«æ·æ–¹å¼"
 
-  CreateDirectory "$SMPROGRAMS\3DÓ°Òô"
-  CreateShortCut "$SMPROGRAMS\3DÓ°Òô\3DÓ°Òô.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer.exe" 0
-  CreateShortCut "$SMPROGRAMS\3DÓ°Òô\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+  CreateDirectory "$SMPROGRAMS\3Då½±éŸ³"
+  CreateShortCut "$SMPROGRAMS\3Då½±éŸ³\3Då½±éŸ³.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer.exe" 0
+  CreateShortCut "$SMPROGRAMS\3Då½±éŸ³\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
   
 SectionEnd
 
 ; Optional section (can be disabled by the user)
-Section "×ÀÃæ¿ì½İ·½Ê½"
+Section "æ¡Œé¢å¿«æ·æ–¹å¼"
 
-  CreateShortCut "$DESKTOP\3DÓ°Òô.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer.exe" 0
+  CreateShortCut "$DESKTOP\3Då½±éŸ³.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer.exe" 0
 
 SectionEnd
 
-SectionGroup /e "ÎÄ¼ş¹ØÁª"
+SectionGroup /e "æ–‡ä»¶å…³è”"
 
-Section "mkvÎÄ¼ş"
-!insertmacro Assoc mkv "mkv" "MKV ÎÄ¼ş" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,1"
+Section "mkvæ–‡ä»¶"
+!insertmacro Assoc mkv "mkv" "MKV æ–‡ä»¶" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,1"
 SectionEnd
 
-Section "mkv3dÎÄ¼ş"
-!insertmacro Assoc mkv3d "mkv3d" "3D MKV ÎÄ¼ş" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,1"
-!insertmacro Assoc mk3d "mk3d" "3D MKV ÎÄ¼ş" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,1"
+Section "mkv3dæ–‡ä»¶"
+!insertmacro Assoc mkv3d "mkv3d" "3D MKV æ–‡ä»¶" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,1"
+!insertmacro Assoc mk3d "mk3d" "3D MKV æ–‡ä»¶" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,1"
 SectionEnd
 
-Section "ssifÎÄ¼ş"
-!insertmacro Assoc ssif "ssif" "3D MKV ÎÄ¼ş" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+Section "ssifæ–‡ä»¶"
+!insertmacro Assoc ssif "ssif" "3D MKV æ–‡ä»¶" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
 SectionEnd
 
-Section "mpls²¥·ÅÁĞ±í"
-!insertmacro Assoc mpls "mpls" "3D MKV ÎÄ¼ş" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
+Section "mplsæ’­æ”¾åˆ—è¡¨"
+!insertmacro Assoc mpls "mpls" "3D MKV æ–‡ä»¶" "$INSTDIR\StereoPlayer.exe" "$INSTDIR\StereoPlayer.exe,0"
 SectionEnd
 
 
@@ -242,8 +242,8 @@ Section "Uninstall"
   Delete $INSTDIR\Language\*.*
 
   ; Remove shortcuts, if any
-  Delete "$SMPROGRAMS\3DÓ°Òô\*.*"
-  RMDir "$SMPROGRAMS\3DÓ°Òô"
+  Delete "$SMPROGRAMS\3Då½±éŸ³\*.*"
+  RMDir "$SMPROGRAMS\3Då½±éŸ³"
   Delete "$DESKTOP\DWindow.lnk"
 
   ; Remove directories used

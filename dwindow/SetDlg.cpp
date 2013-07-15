@@ -91,6 +91,7 @@ HWND Subtitle[20] = {0};
 HWND About[20] = {0};
 HWND Relation[20] = {0};
 BOOL g_OnShow = TRUE;
+Relationship assoc;
 
 tagcolor saveOnShow;
 
@@ -147,7 +148,7 @@ tagLuaSetting TestSet[] =
     {IDC_SUBTITLE_EDIT_LATE_SHOW_SIZE, "SubtitleRatio", TYPE_EDIT},         //29
     //add
     {IDC_VIDEO_CHECK_DEINTERLACE, "ForcedDeinterlace", TYPE_CHECK},          //30
-    {IDC_ORD_COM_TOPMOST, "TopMost", TYPE_COMBO},          //30
+    {IDC_ORD_COM_TOPMOST, "Topmost", TYPE_COMBO},          //30
 
     //relation
     {IDC_RELA_CHECK_MP4, "mp4", -1},
@@ -295,9 +296,9 @@ BOOL CALLBACK SetProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
             SendMessageW(GetDlgItem(hwndDlg, IDC_VOICE_COM_CHANNEL), CB_INSERTSTRING, 0, (WPARAM)(const wchar_t*)C(L"Stereo"));
             SendMessageW(GetDlgItem(hwndDlg, IDC_VOICE_COM_CHANNEL), CB_INSERTSTRING, 0, (WPARAM)(const wchar_t*)C(L"Source"));
 
-            SendMessageW(GetDlgItem(hwndDlg, IDC_ORD_COM_TOPMOST), CB_INSERTSTRING, 0, (WPARAM)(const wchar_t*)C(L"Never"));
-            SendMessageW(GetDlgItem(hwndDlg, IDC_ORD_COM_TOPMOST), CB_INSERTSTRING, 0, (WPARAM)(const wchar_t*)C(L"When Playing"));
-            SendMessageW(GetDlgItem(hwndDlg, IDC_ORD_COM_TOPMOST), CB_INSERTSTRING, 0, (WPARAM)(const wchar_t*)C(L"Always"));
+            SendMessageW(GetDlgItem(hwndDlg, IDC_ORD_COM_TOPMOST), CB_INSERTSTRING, -1, (WPARAM)(const wchar_t*)C(L"Never"));
+            SendMessageW(GetDlgItem(hwndDlg, IDC_ORD_COM_TOPMOST), CB_INSERTSTRING, -1, (WPARAM)(const wchar_t*)C(L"When Playing"));
+			SendMessageW(GetDlgItem(hwndDlg, IDC_ORD_COM_TOPMOST), CB_INSERTSTRING, -1, (WPARAM)(const wchar_t*)C(L"Always"));
 
             g_AboutPic = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_BMP_ABOUT));
 
@@ -856,34 +857,49 @@ void LoadSetting(HWND hWnd)
 	{
 		lua_getfield(L, -1, "mp4");
 		bool nbool = lua_toboolean(L, -1);
+		assoc.mp4 = nbool;
 		SendMessage(GetDlgItem(hWnd, IDC_RELA_CHECK_MP4), BM_SETCHECK, nbool ? BST_CHECKED : BST_UNCHECKED, 0);
 		lua_pop(L,1);
+
 		lua_getfield(L, -1, "avi");
 		nbool = lua_toboolean(L, -1);
+		assoc.avi = nbool;
 		SendMessage(GetDlgItem(hWnd, IDC_RELA_CHECK_AVI), BM_SETCHECK, nbool ? BST_CHECKED : BST_UNCHECKED, 0);
 		lua_pop(L,1);
+
 		lua_getfield(L, -1, "rmvb");
 		nbool = lua_toboolean(L, -1);
+		assoc.rmvb = nbool;
 		SendMessage(GetDlgItem(hWnd, IDC_RELA_CHECK_RMVB), BM_SETCHECK, nbool ? BST_CHECKED : BST_UNCHECKED, 0);
 		lua_pop(L,1);
-		lua_getfield(L, -1, "_3dv");
+
+		lua_getfield(L, -1, "3dv");
 		nbool = lua_toboolean(L, -1);
+		assoc._3dv = nbool;
 		SendMessage(GetDlgItem(hWnd, IDC_RELA_CHECK_3DV), BM_SETCHECK, nbool ? BST_CHECKED : BST_UNCHECKED, 0);
 		lua_pop(L,1);
+
 		lua_getfield(L, -1, "ts");
 		nbool = lua_toboolean(L, -1);
+		assoc.ts = nbool;
 		SendMessage(GetDlgItem(hWnd, IDC_RELA_CHECK_TS), BM_SETCHECK, nbool ? BST_CHECKED : BST_UNCHECKED, 0);
 		lua_pop(L,1);
+
 		lua_getfield(L, -1, "mkv");
 		nbool = lua_toboolean(L, -1);
+		assoc.mkv = nbool;
 		SendMessage(GetDlgItem(hWnd, IDC_RELA_CHECK_MKV), BM_SETCHECK, nbool ? BST_CHECKED : BST_UNCHECKED, 0);
 		lua_pop(L,1);
+
 		lua_getfield(L, -1, "wmv");
 		nbool = lua_toboolean(L, -1);
+		assoc.wmv = nbool;
 		SendMessage(GetDlgItem(hWnd, IDC_RELA_CHECK_WMV), BM_SETCHECK, nbool ? BST_CHECKED : BST_UNCHECKED, 0);
 		lua_pop(L,1);
+
 		lua_getfield(L, -1, "vob");
 		nbool = lua_toboolean(L, -1);
+		assoc.vob = nbool;
 		SendMessage(GetDlgItem(hWnd, IDC_RELA_CHECK_VOB), BM_SETCHECK, nbool ? BST_CHECKED : BST_UNCHECKED, 0);
 		lua_pop(L,1);
 	}
@@ -1003,7 +1019,8 @@ void ApplySetting(HWND hWnd)
         nVal = 1;
     else if (nRet == 5)
         nVal = -1;
-    GET_CONST(TestSet[21].arrSettingName) = nVal;
+    //GET_CONST(TestSet[21].arrSettingName) = nVal;
+	g_player->set_output_channel(nVal);
 
     GetDlgItemTextW(hWnd, TestSet[25].nCtrlID, szVal, 100);
     //MultiByteToWideChar(CP_ACP, 0, szVal, -1, (LPWSTR)szwVal, 100);
@@ -1066,32 +1083,33 @@ void ApplySetting(HWND hWnd)
     else if (nRet == BST_UNCHECKED)
         rela.vob = false;
 
-	tagRelation in = rela;
-
-
-
 	luaState L;
 	lua_getglobal(L, "setting");
 	lua_newtable(L);
-	lua_pushboolean(L, in.mp4 ? 1 : 0);
+	lua_pushboolean(L, rela.mp4 ? 1 : 0);
 	lua_setfield(L, -2, "mp4");
-	lua_pushboolean(L, in.avi ? 1 : 0);
+	lua_pushboolean(L, rela.avi ? 1 : 0);
 	lua_setfield(L, -2, "avi");
-	lua_pushboolean(L, in.rmvb ? 1 : 0);
+	lua_pushboolean(L, rela.rmvb ? 1 : 0);
 	lua_setfield(L, -2, "rmvb");
-	lua_pushboolean(L, in._3dv ? 1 : 0);
-	lua_setfield(L, -2, "_3dv");
-	lua_pushboolean(L, in.ts ? 1 : 0);
+	lua_pushboolean(L, rela._3dv ? 1 : 0);
+	lua_setfield(L, -2, "3dv");
+	lua_pushboolean(L, rela.ts ? 1 : 0);
 	lua_setfield(L, -2, "ts");
-	lua_pushboolean(L, in.mkv ? 1 : 0);
+	lua_pushboolean(L, rela.mkv ? 1 : 0);
 	lua_setfield(L, -2, "mkv");
-	lua_pushboolean(L, in.wmv ? 1 : 0);
+	lua_pushboolean(L, rela.wmv ? 1 : 0);
 	lua_setfield(L, -2, "wmv");
-	lua_pushboolean(L, in.vob ? 1 : 0);
+	lua_pushboolean(L, rela.vob ? 1 : 0);
 	lua_setfield(L, -2, "vob");
 	lua_setfield(L, -2, "FileAssociation");
 	lua_pop(L, 1);
 
+	if (memcmp(&rela, &assoc, sizeof(rela)) != 0)
+	{
+		update_file_association(true);
+		assoc = rela;
+	}
 
 	// language
 	lua_getglobal(L, "core");

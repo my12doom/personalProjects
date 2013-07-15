@@ -131,7 +131,7 @@ RequestExecutionLevel admin
 ; The stuff to install
 
 LangString MAINPROGRAM_LANG ${LANG_ENGLISH} "3DVPlayer Program(required)"
-LangString MAINPROGRAM_LANG ${LANG_SIMPCHINESE} "3DVPlayer÷˜≥Ã–Ú(±ÿ—°)"
+LangString MAINPROGRAM_LANG ${LANG_SIMPCHINESE} "3DVPlayer‰∏ªÁ®ãÂ∫è(ÂøÖÈÄâ)"
 Section $(MAINPROGRAM_LANG)
 
   SectionIn RO
@@ -175,7 +175,7 @@ SectionEnd
 
 ; Optional section (can be disabled by the user)
 LangString STARTMENU_LANG ${LANG_ENGLISH} "Start Menu Shortcuts"
-LangString STARTMENU_LANG ${LANG_SIMPCHINESE} "ø™ º≤Àµ•øÏΩ›∑Ω Ω"
+LangString STARTMENU_LANG ${LANG_SIMPCHINESE} "ÂºÄÂßãËèúÂçïÂø´Êç∑ÊñπÂºè"
 Section $(STARTMENU_LANG)
 
   CreateDirectory "$SMPROGRAMS\3DVPlayer"
@@ -186,7 +186,7 @@ SectionEnd
 
 ; Optional section (can be disabled by the user)
 LangString DESKTOP_LANG ${LANG_ENGLISH} "Desktop Shortcuts"
-LangString DESKTOP_LANG ${LANG_SIMPCHINESE} "◊¿√ÊøÏΩ›∑Ω Ω"
+LangString DESKTOP_LANG ${LANG_SIMPCHINESE} "Ê°åÈù¢Âø´Êç∑ÊñπÂºè"
 Section $(DESKTOP_LANG)
 
   CreateShortCut "$DESKTOP\3DVPlayer.lnk" "$INSTDIR\StereoPlayer.exe" "" "$INSTDIR\StereoPlayer.exe" 0
@@ -194,7 +194,7 @@ Section $(DESKTOP_LANG)
 SectionEnd
 
 LangString ASSOC_LANG ${LANG_ENGLISH} "File association"
-LangString ASSOC_LANG ${LANG_SIMPCHINESE} "Œƒº˛πÿ¡™"
+LangString ASSOC_LANG ${LANG_SIMPCHINESE} "Êñá‰ª∂ÂÖ≥ËÅî"
 SectionGroup /e $(ASSOC_LANG)
 
 Section "3dv"

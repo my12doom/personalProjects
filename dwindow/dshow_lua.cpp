@@ -531,6 +531,12 @@ static int set_mask_mode(lua_State *L)
 	return 1;
 }
 
+static int set_topmost(lua_State *L)
+{
+	g_player->set_topmost(lua_tointeger(L, lua_gettop(L)));
+	return 0;
+}
+
 static int set_zoom_factor(lua_State *L)
 {
 	int n = lua_gettop(L);
@@ -819,6 +825,7 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("show_about") = &show_about;
 	g_player_lua_manager->get_variable("show_setting") = &show_setting;
 	g_player_lua_manager->get_variable("set_window_text") = &set_window_text;
+	g_player_lua_manager->get_variable("set_topmost") = &set_topmost;
 	g_player_lua_manager->get_variable("logout") = &logout;
 	g_player_lua_manager->get_variable("exit") = &lua_exit;
 

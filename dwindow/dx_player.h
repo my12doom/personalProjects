@@ -57,6 +57,13 @@ enum dx_player_outputmode
 	dx_player_outputmode_max,
 };
 
+enum dx_player_topmost
+{
+	never,
+	playing,
+	always,
+};
+
 class subtitle_file_handler
 {
 public:
@@ -136,6 +143,8 @@ public:
 	HWND get_window(int window_id);
 	HRESULT set_output_channel(int channel);
 	HRESULT show_hd3d_fullscreen_mode_dialog();
+	HRESULT set_topmost(DWORD topmost);
+	DWORD get_topmost(){return (int)m_topmost;}
 
 
 	POINT m_mouse;
@@ -193,6 +202,8 @@ public:
 	lua_const &m_saved_screen2;
 	lua_const &m_saved_rect1;
 	lua_const &m_saved_rect2;
+	lua_const &m_topmost;
+	bool m_topmost_state;
 	HRESULT detect_monitors();
 	HRESULT set_output_monitor(int out_id, int monitor_id);
 	HRESULT init_window_size_positions();

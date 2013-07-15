@@ -329,6 +329,7 @@ function apply_adv_settings()
 	player.set_input_layout(setting.InputLayout)
 	player.set_mask_mode(setting.MaskMode)
 	player.set_output_mode(setting.OutputMode)
+	player.set_topmost(setting.Topmost)
 end
 
 function format_table(t, level)

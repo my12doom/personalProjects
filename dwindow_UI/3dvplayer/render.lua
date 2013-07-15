@@ -9,6 +9,10 @@ core.ApplySetting("MAX_WIDTH")
 core.ApplySetting("MAX_HEIGHT")
 local UI_fading_time = 300
 local UI_show_time = 2000
+local alpha = 1
+local last_mousemove =  0
+local mousex = -999
+local mousey = -999
 player.set_window_text("3DVPlayer", "3DVPlayer")
 
 -- 3dvplayer UI renderer
@@ -65,6 +69,28 @@ function logo:OnMouseDown(x, y, button)
 	return true
 end
 
+function logo:OnUpdate(t, dt)
+
+	local px, py = ui.get_mouse_pos()
+	if (mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 100 or ((mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 0 and alpha > 0.5) then	
+		last_mousemove = core.GetTickCount()
+		mousex, mousey = ui.get_mouse_pos()
+	end
+		
+	local da = dt/UI_fading_time
+	local old_alpha = alpha
+	local mouse_in_pannel = px>=0 and px<ui.width and py>=ui.height-toolbar_height and py<ui.height
+	local hide_mouse = not mouse_in_pannel and (t > last_mousemove + UI_show_time)
+	player.show_mouse(not hide_mouse)
+	
+	if hide_mouse then
+		alpha = alpha - da
+	else
+		alpha = alpha + da
+	end
+	alpha = math.min(1, math.max(alpha, 0))	
+end
+
 local open = BaseFrame:Create()
 root:AddChild(open)
 open:SetPoint(CENTER, nil, nil, 0, 60)
@@ -115,7 +141,7 @@ print("toolbar_height=", toolbar_height)
 function toolbar_bg:RenderThis()
 	local l,t,r,b = self:GetRect()
 	local res = get_bitmap(lua_path .. "toolbar_background.png");
-	paint(0,0,r-l,b-t, res)
+	paint(0,0,r-l,b-t, res, alpha)
 end
 
 -- buttons
@@ -168,7 +194,7 @@ local function button_GetRect(self)
 end
 
 local function button_RenderThis(self)
-	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[1]))
+	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[1]), alpha)
 end
 
 local function button_OnClick(self)
@@ -196,7 +222,7 @@ for i=1,#button_pictures/2 do
 end
 
 buttons[4].RenderThis = function(self)
-	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[player.is_playing() and 2 or 1]))
+	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[player.is_playing() and 2 or 1]), alpha)
 end
 
 progressbar = BaseFrame:Create()
@@ -235,25 +261,25 @@ function progressbar:RenderThis()
 	local v = fv * r
 	
 	-- draw bottom
-	paint(0,0, width_progress_left, b, get_bitmap(lua_path .. file(1)))
-	paint(width_progress_left,0, r-width_progress_right, b, get_bitmap(lua_path .. file(2)))
-	paint(r-width_progress_right,0, r, b, get_bitmap(lua_path .. file(3)))
+	paint(0,0, width_progress_left, b, get_bitmap(lua_path .. file(1)), alpha)
+	paint(width_progress_left,0, r-width_progress_right, b, get_bitmap(lua_path .. file(2)), alpha)
+	paint(r-width_progress_right,0, r, b, get_bitmap(lua_path .. file(3)), alpha)
 
 	-- draw top
 	if (v > 1.5) then
 		local bmp = get_bitmap(lua_path .. file(4))
-		paint(0,0,math.min(width_progress_left, v),b, bmp)
+		paint(0,0,math.min(width_progress_left, v),b, bmp, alpha)
 	end
 
 	if (v > width_progress_left) then
 		local r = math.min(r-width_progress_right, v)
 		local bmp = get_bitmap(lua_path .. file(5))
-		paint(width_progress_left, 0, r, b, bmp)
+		paint(width_progress_left, 0, r, b, bmp, alpha)
 	end
 
 	if (v > r - width_progress_right) then
 		local bmp = get_bitmap(lua_path .. file(6))
-		paint(r-width_progress_right, 0, v, b, bmp)
+		paint(r-width_progress_right, 0, v, b, bmp, alpha)
 	end
 end
 
@@ -285,7 +311,7 @@ function number_current:RenderThis()
 
 	local x = 0
 	for i=1,#numbers do
-		paint(x, 0, x+numbers_width, numbers_height, get_bitmap(lua_path .. math.floor(numbers[i]) .. ".png"))
+		paint(x, 0, x+numbers_width, numbers_height, get_bitmap(lua_path .. math.floor(numbers[i]) .. ".png"), alpha)
 		x = x + numbers_width
 	end
 

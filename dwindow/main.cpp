@@ -32,8 +32,6 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 
 #include <Shlobj.h>
 #pragma comment(lib, "Shell32.lib")
-void  RegisterFileAssociation(const wchar_t *strExt, const wchar_t *strAppName, const wchar_t *strAppKey, const wchar_t *strDefaultIcon, const wchar_t *strDescribe);
-int UnregisterFileAssociation(const wchar_t *strExt);
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
 	//RegisterFileAssociation(L".mkv", L"\"D:\\Program Files (x86)\\DWindow\\StereoPlayer.exe\"", L"ssiffile", L"\"D:\\Program Files (x86)\\DWindow\\StereoPlayer.exe\",0", L"HelloSSIF");
@@ -67,10 +65,18 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	save_passkey();
 	BasicRsaCheck();
 
+	// always do File Association
+	update_file_association();
+
+
 	HWND pre_instance = GET_CONST("SingleInstance") ? FindWindowA("DWindowClass", NULL) : NULL;
 	wchar_t *argvv[] = {L"", L"compile", L"D:\\private\\dwindow_UI\\dwindow.lua", L"D:\\private\\dwindow_UI\\dwindow.bin"};
 	//argv = argvv;
 	//argc=4;
+
+	if (argc == 2 && wcsicmp(argv[1], L"association") == 0)
+		ExitProcess(0);
+
 	if (argc == 4 && wcsicmp(argv[1], L"compile") == 0)
 	{
 		// the lua compiler

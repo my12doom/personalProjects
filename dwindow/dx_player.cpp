@@ -121,8 +121,12 @@ dx_player::dx_player(HINSTANCE hExe)
 ,m_hd3d_prefered_mode(L"HD3DPreferedMode", mode_auto)
 ,m_audio_latency(GET_CONST("AudioLatency"))//0))//REG_DWORD)
 ,m_simple_audio_switching(GET_CONST("SimpleAudioSwitching"))//false)
+,m_topmost(GET_CONST("Topmost"))
+,m_topmost_state(false)
 {
 	g_player = this;
+
+	set_topmost(m_topmost);
 
 	// touch 
 	if (GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
@@ -1773,6 +1777,8 @@ LRESULT dx_player::on_timer(int id)
 			SystemParametersInfo(SPI_SETPOWEROFFACTIVE, 0, 0, SPIF_SENDWININICHANGE); // this might not be needed at all...
 			SystemParametersInfo(SPI_SETPOWEROFFACTIVE, fSaverActive, 0, SPIF_SENDWININICHANGE);
 		}
+
+		set_topmost(m_topmost);
 	}
 
 	if (id == 3) // lua UpdateUI()
@@ -1793,7 +1799,6 @@ LRESULT dx_player::on_timer(int id)
 		{
 			show_mouse(true);
 		}
-
 		return S_OK;
 	}
 
@@ -1815,8 +1820,30 @@ LRESULT dx_player::on_timer(int id)
 	return S_OK;
 }
 
+HRESULT dx_player::set_topmost(DWORD topmost)
+{
+	m_topmost = topmost;
+
+	bool top = false;
+	if (topmost == always)
+		top = true;
+	if (topmost == playing && is_playing())
+		top = true;
+	
+	if (top != m_topmost_state)
+	{
+		m_topmost_state = top;
+		SetWindowPos(m_hwnd1, top ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+		SetWindowPos(m_hwnd2, top ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+	}
+
+	return S_OK;
+}
+
 HRESULT dx_player::set_output_channel(int channel)
 {
+	if (channel == (int)m_channel)
+		return S_OK;
 	m_channel = channel;
 	set_ff_audio_formats(m_lav);
 	set_ff_output_channel(m_lav, channel);

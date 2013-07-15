@@ -156,6 +156,9 @@ HRESULT restart_this_program();
 HRESULT report_file(const wchar_t *filepath);
 HRESULT get_splayer_subtitle(const wchar_t *filepath, wchar_t *out, const wchar_t **langs = NULL);
 RECT get_special_size_physical_monitor(SIZE size);
+HRESULT update_file_association(bool uac = false);
+int  RegisterFileAssociation(const wchar_t *strExt, const wchar_t *strAppName, const wchar_t *strAppKey, const wchar_t *strDefaultIcon, const wchar_t *strDescribe);
+int UnregisterFileAssociation(const wchar_t *strExt);
 
 inline bool compare_rect(const RECT in1, const RECT in2)
 {
