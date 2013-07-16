@@ -75,6 +75,8 @@ static int luaOpenFolder(lua_State *L)
 	if (!browse_folder(out, g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1)))
 		return 0;
 
+	if (out[wcslen(out)] != L'\\')
+		wcscat(out, L"\\");
 	lua_pushstring(L, W2UTF8(out));
 	return 1;
 }
