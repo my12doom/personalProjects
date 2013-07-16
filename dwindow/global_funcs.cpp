@@ -1573,6 +1573,11 @@ HRESULT update_file_association(bool uac /*= false*/)
 	luaState L;
 	lua_getglobal(L, "setting");
 	lua_getfield(L, -1, "FileAssociation");
+	if (!lua_istable(L, -1))
+	{
+		lua_settop(L, 0);
+		return E_FAIL;
+	}
 	lua_pushnil(L);
 	while (lua_next(L, -2) != 0)
 	{
