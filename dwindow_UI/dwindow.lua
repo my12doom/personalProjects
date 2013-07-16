@@ -199,7 +199,7 @@ function get_bitmap(filename, reload)
 			bitmapcache[filename].width = nil
 			bitmapcache[filename].error_msg = width
 		end
-		print("loaded", filename, width, height)
+		--print("loaded", filename, width, height)
 	end
 
 	-- reset ROI

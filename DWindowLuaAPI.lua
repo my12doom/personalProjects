@@ -39,6 +39,7 @@ nil = popup_menu()
 ... = get_splayer_subtitle(filename)
 
 --
+has_support = widi_has_support()
 succ = widi_start_scan()
 ... = widi_get_adapters()
 info = widi_get_adapter_information(id, info)

@@ -83,7 +83,46 @@
 					string = "Clear",
 				},
 			},
-		},		
+		},
+		{
+			string = "Intel® WiDi",
+			sub_items = 
+			{
+				{
+					string = L("No Adaptors Found"),
+				},
+				{
+					seperator = true,
+				},
+				{
+					string = L("Scan For Available Adapters"),
+					on_command = function() player.widi_start_scan() end
+				},
+				{
+					string = L("Disconnect"),
+					on_command = function() player.widi_disconnect() end
+				},
+				{
+					seperator = true,
+				},
+				{
+					string = L("Screen Mode"),
+					grayed = true,
+				},
+				{
+					string = L("Clone"),
+					on_command = function() player.widi_set_screen_mode(2) end
+				},
+				{
+					string = L("Extended"),
+					on_command = function() player.widi_set_screen_mode(3) end
+				},
+				{
+					string = L("External Only"),
+					on_command = function() player.widi_set_screen_mode(4) end
+				},
+			},
+		},
 		{
 			seperator = true,
 		},
@@ -129,8 +168,27 @@
 	table.insert(t, {seperator = true})
 	table.insert(t, {string = "清空", on_command = function(v) playlist:clear() end})	
 	m[10].sub_items = t
+	-- widi
+	if not player.widi_has_support() then
+		table.remove(m, 11)
+	else
+		local p = m[11].sub_items
+		
+		local found = false
+		for i,v in ipairs(table.pack(player.widi_get_adapters())) do
+			found = true
+			local desc = player.widi_get_adapter_information(i-1) .. "(" .. L(player.widi_get_adapter_information(i-1, "State")) .. ")"
+			table.insert(p, 2, {string=desc, id = i, on_command = function(v) player.widi_connect(v.id-1)end})
+		end
+		
+		if found then
+			table.remove(p, 1)
+		end	
+		
+	end
 	
 	m = menu_builder:Create(m)
 	m:popup()
 	m:destroy()	
+	
 end

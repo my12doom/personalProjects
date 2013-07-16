@@ -77,6 +77,15 @@ static int http_request(lua_State *L)
 
 static int track_back(lua_State *L)
 {
+	const char* err = lua_tostring(L, -1);
+	char tmp[10240];
+	lua_Debug debug;
+	for(int level = 1; lua_getstack(L, level, &debug); level++)
+	{
+		int suc = lua_getinfo(L, "Sl", &debug);
+		sprintf(tmp, "%s(%d,1)\n", debug.source+1, debug.currentline);
+		OutputDebugStringA(tmp);
+	}
 	return 0;
 }
 

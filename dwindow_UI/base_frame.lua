@@ -171,7 +171,8 @@ end
 function BaseFrame:AddLayoutChild(frame)
 	if frame == nil then return end
 	if self:IsLayoutParentOf(frame) then
-		error("illegal AddLayoutChild() : the child to add is parent of this frame " .. tostring(frame) .. " from ".. tostring(self))
+		info("illegal AddLayoutChild() : the child to add is already parent of this frame " .. tostring(frame) .. " from ".. tostring(self))
+		--core.track_back()
 		return false
 	end
 

@@ -246,10 +246,10 @@ static int lua_get_splayer_subtitle(lua_State *L)
 static int widi_start_scan(lua_State *L)
 {
 	lua_pushboolean(L, SUCCEEDED(g_player->widi_start_scan()));
-	return 1;}
+	return 1;
+}
 static int widi_get_adapters(lua_State *L)
 {
-
 	int c = g_player->m_widi_num_adapters_found;
 	for(int i = 0; i<c; i++)
 	{
@@ -264,7 +264,9 @@ static int widi_get_adapter_information(lua_State *L)
 {
 	int n = lua_gettop(L);
 	int i = lua_tointeger(L, -n+0);
-	const char *p = lua_tostring(L, -n+1);
+	const char *p = NULL;
+	if (n>1)
+		p = lua_tostring(L, -n+1);
 	wchar_t o[500] = L"";
 	g_player->widi_get_adapter_information(i, o, p ? UTF82W(p) : NULL);
 
@@ -284,13 +286,17 @@ static int widi_connect(lua_State *L)
 }
 static int widi_set_screen_mode(lua_State *L)
 {
-	GET_CONST("WidiScreenMode");
 	int n = lua_gettop(L);
 	DWORD mode = GET_CONST("WidiScreenMode");
 	if (n>=1)
 		mode = lua_tointeger(L, -n+0);
 
 	lua_pushboolean(L, SUCCEEDED(g_player->widi_set_screen_mode(mode)));
+	return 1;
+}
+static int widi_has_support(lua_State *L)
+{
+	lua_pushboolean(L, g_player->m_widi_has_support);
 	return 1;
 }
 static int widi_disconnect(lua_State *L)
@@ -869,6 +875,7 @@ int player_lua_init()
 	
 
 	// widi
+	g_player_lua_manager->get_variable("widi_has_support") = &widi_has_support;
 	g_player_lua_manager->get_variable("widi_start_scan") = &widi_start_scan;
 	g_player_lua_manager->get_variable("widi_get_adapters") = &widi_get_adapters;
 	g_player_lua_manager->get_variable("widi_get_adapter_information") = &widi_get_adapter_information;

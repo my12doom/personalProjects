@@ -22,7 +22,7 @@ player.set_window_text(L("DWindow"), L("DWindow"))
 -- black background and right mouse reciever
 local oroot = BaseFrame:Create()
 root:AddChild(oroot)
-function oroot:PreRender(t, dt)
+function oroot:OnInitGPU(t, dt)
 	self:SetSize(ui.width, ui.height)
 end
 

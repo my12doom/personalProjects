@@ -494,6 +494,46 @@ function popup_dwindow2()
 			},
 		},
 		{
+			string = "Intel® WiDi",
+			sub_items = 
+			{
+				{
+					string = L("No Adaptors Found"),
+				},
+				{
+					seperator = true,
+				},
+				{
+					string = L("Scan For Available Adapters"),
+					on_command = function() player.widi_start_scan() end
+				},
+				{
+					string = L("Disconnect"),
+					on_command = function() player.widi_disconnect() end
+				},
+				{
+					seperator = true,
+				},
+				{
+					string = L("Screen Mode"),
+					grayed = true,
+				},
+				{
+					string = L("Clone"),
+					on_command = function() player.widi_set_screen_mode(2) end
+				},
+				{
+					string = L("Extended"),
+					on_command = function() player.widi_set_screen_mode(3) end
+				},
+				{
+					string = L("External Only"),
+					on_command = function() player.widi_set_screen_mode(4) end
+				},
+			},
+		},
+		
+		{
 			seperator = true,
 		},
 		{
@@ -561,9 +601,9 @@ function popup_dwindow2()
 			end})
 
 	-- language
-	m[17].sub_items = {}
+	m[18].sub_items = {}
 	for _,v in pairs(core.get_language_list()) do
-		table.insert(m[17].sub_items, {checked = v == setting.LCID, string=v, on_command = function(t) core.set_language(t.string) end})
+		table.insert(m[18].sub_items, {checked = v == setting.LCID, string=v, on_command = function(t) core.set_language(t.string) end})
 		print(v)
 	end
 	
@@ -602,6 +642,26 @@ function popup_dwindow2()
 		for i=1, #auds/2 do
 			table.insert(aud, 1, {string = auds[i*2-1], checked = auds[i*2], id = i-1, on_command = function(t) player.enable_audio_track(t.id) end})
 		end
+	end
+	
+	
+	-- widi
+	if not player.widi_has_support() then
+		table.remove(m, 11)
+	else
+		local p = m[11].sub_items
+		
+		local found = false
+		for i,v in ipairs(table.pack(player.widi_get_adapters())) do
+			found = true
+			local desc = player.widi_get_adapter_information(v) .. "(" .. L(player.widi_get_adapter_information(v, "State")) .. ")"
+			table.insert(p, 2, {string=desc, id = i, on_command = function(v) player.widi_connect(v.id-1)end})
+		end
+		
+		if found then
+			table.remove(p, 1)
+		end	
+		
 	end
 	
 	

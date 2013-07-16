@@ -497,15 +497,11 @@ gpu_sample::gpu_sample(IDirect3DDevice9 *device, IDirect3DSurface9 *surface, CTe
 	JIF(allocator->CreateTexture(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_gpu_RGB32));
 	m_tex_gpu_RGB32->get_first_level(&dst);
 
-	static bool read = false;
-	static bool use_ATI_DXVA_workaround;
-	if (!read)
-	{
-		use_ATI_DXVA_workaround = GET_CONST("ATIDXVAWorkaround");
-		read = true;
-	}
+	static lua_const *use_ATI_DXVA_workaround = NULL;
+	if (!use_ATI_DXVA_workaround)
+		use_ATI_DXVA_workaround = &GET_CONST("ATIDXVAWorkaround");
 
-	if (use_ATI_DXVA_workaround)
+	if (*use_ATI_DXVA_workaround)
 	{
 		JIF(device->CreateRenderTarget(desc.Width, desc.Height, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, FALSE, &tmp, NULL));
 		hr = device->StretchRect(surface, NULL, tmp, NULL, D3DTEXF_LINEAR);
