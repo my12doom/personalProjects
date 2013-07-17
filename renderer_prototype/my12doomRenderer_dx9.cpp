@@ -753,12 +753,10 @@ retry:
 		CAutoLock lck(&m_queue_lock);
 		if ( 1- (fn & 0x1))
 		{
-			printf("left(%f)", frn);
 			m_left_queue.AddTail(loaded_sample);
 		}
 		else
 		{
-			printf("right(%f)", frn);
 			m_right_queue.AddTail(loaded_sample);
 		}
 	}
