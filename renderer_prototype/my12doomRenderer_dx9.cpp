@@ -428,6 +428,8 @@ HRESULT my12doomRenderer::CheckMediaType(const CMediaType *pmt, int id)
 	m_last_frame_time = 0;
 	m_dsr0->set_queue_size(m_remux_mode ? my12doom_queue_size : my12doom_queue_size/2-1);
 	m_dsr0->set_queue_size(my12doom_queue_size/2-1);
+	if (m_remux_mode)
+		m_frame_length = (m_lVidHeight == 1280) ? 83416 : 208541;
 
 	if (id == 0 && SUCCEEDED(hr))
 	{
@@ -513,7 +515,7 @@ HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 	}
 
 	int l2 = timeGetTime();
-	if (!m_dsr1->is_connected() &&!m_remux_mode)
+	if (!m_dsr1->is_connected() && !m_remux_mode && (int)m_input_layout != frame_sequence)
 	{
 		// single stream
 		CAutoLock lck(&m_queue_lock);
@@ -542,19 +544,11 @@ HRESULT my12doomRenderer::DoRender(int id, IMediaSample *media_sample)
 	else
 	{
 		// pd10
-		if (m_remux_mode)
+		int fn;
+		if (m_remux_mode || ((int)m_input_layout == frame_sequence) && !m_dsr1->is_connected())
 		{
-			int fn;
-			if (m_lVidHeight == 1280)
-			{
-				fn = (int)((double)(start+m_dsr0->m_thisstream)/10000*120/1001 + 0.5);
-				start = (REFERENCE_TIME)(fn - (fn&1) +2) *1001*10000/120;
-			}
-			else
-			{
-				fn = (int)((double)(start+m_dsr0->m_thisstream)/10000*48/1001 + 0.5);
-				start = (REFERENCE_TIME)(fn - (fn&1) +2) *1001*10000/48;
-			}
+			fn = (int)((double)(start+m_dsr0->m_thisstream)/m_frame_length + 0.5);
+			start = (REFERENCE_TIME)(fn - (fn&1) +2) *m_frame_length;
 		}
 
 find_match:
@@ -609,7 +603,7 @@ match_end:
 					if(abs((int)(sample_right->m_start - matched_time)) > m_frame_length/2)
 					{
 						printf("drop right\n");
-						(m_remux_mode?m_dsr0:m_dsr1)->drop_packets(1);
+						(m_remux_mode || ((int)m_input_layout == frame_sequence && !m_dsr1->is_connected()) ?m_dsr0:m_dsr1)->drop_packets(1);
 						delete sample_right;
 					}
 					else
@@ -624,7 +618,7 @@ match_end:
 			{
 				printf("drop a matched pair\n");
 				m_dsr0->drop_packets(1);
-				(m_remux_mode?m_dsr0:m_dsr1)->drop_packets(1);
+				(m_remux_mode || ((int)m_input_layout == frame_sequence && !m_dsr1->is_connected()) ? m_dsr0 : m_dsr1)->drop_packets(1);
 				delete sample_left;
 				delete sample_right;
 				sample_left = NULL;
@@ -674,7 +668,7 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 
 	//mylog("%s : %dms\n", id==0?"left":"right", (int)(start/10000));
 
-	bool dual_stream = m_remux_mode || (m_dsr0->is_connected() && m_dsr1->is_connected() );
+	bool dual_stream = (int)m_input_layout == frame_sequence || m_remux_mode || (m_dsr0->is_connected() && m_dsr1->is_connected() );
 	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
 	bool need_detect = !dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect;
 	gpu_sample * loaded_sample = NULL;
@@ -733,32 +727,26 @@ retry:
 	}
 
 	int l2 = timeGetTime();
-	if (!m_dsr1->is_connected() && !m_remux_mode)
+	if (!m_dsr1->is_connected() && !m_remux_mode && (int)m_input_layout != frame_sequence)
 	{
 		// single stream
 		CAutoLock lck(&m_queue_lock);
 		m_left_queue.AddTail(loaded_sample);
 	}
 
-	else if (m_remux_mode)
+	else if (m_remux_mode || ((int)m_input_layout == frame_sequence && !m_dsr1->is_connected()))
 	{
 		// PD10 remux
 		// time and frame number
 		REFERENCE_TIME TimeStart, TimeEnd;
 		media_sample->GetTime(&TimeStart, &TimeEnd);
 		int fn;
-		if (m_lVidHeight == 1280)
-		{
-			fn = (int)((double)(TimeStart+m_dsr0->m_thisstream)/10000*120/1001 + 0.5);
-			loaded_sample->m_start = (REFERENCE_TIME)(fn - (fn&1)) *1001*10000/120;
-		}
-		else
-		{
-			fn = (int)((double)(TimeStart+m_dsr0->m_thisstream)/10000*48/1001 + 0.5);
-			loaded_sample->m_start = (REFERENCE_TIME)(fn - (fn&1)) *1001*10000/48;
-		}
 
-		float frn = (float)(TimeStart+m_dsr0->m_thisstream)/10000*48/1001 + 0.5;
+		fn = (int)((double)(TimeStart+m_dsr0->m_thisstream)/m_frame_length + 0.5);
+		loaded_sample->m_start = (REFERENCE_TIME)(fn - (fn&1)) *m_frame_length;
+
+
+		float frn = (float)(TimeStart+m_dsr0->m_thisstream)/m_frame_length + 0.5;
 		loaded_sample->m_end = loaded_sample->m_start + 1;
 		loaded_sample->m_fn = fn;
 
@@ -1554,7 +1542,7 @@ HRESULT my12doomRenderer::restore_gpu_objects()
 	int l = timeGetTime();
 	m_pass1_width = m_lVidWidth;
 	m_pass1_height = m_lVidHeight;
-	if (!(m_dsr0->is_connected() && m_dsr1->is_connected()) && !m_remux_mode)
+	if (!(m_dsr0->is_connected() && m_dsr1->is_connected()) && !m_remux_mode && (int)m_input_layout != frame_sequence)
 	{
 		input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
 		if (input == side_by_side)
@@ -2281,7 +2269,7 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 
 	CComPtr<IDirect3DSurface9> src;
 
-	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
+	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode || (int)m_input_layout == frame_sequence;
 	CAutoLock rendered_lock(&m_rendered_packet_lock);
 	gpu_sample *sample = dual_stream ? (view == 0 ? m_last_rendered_sample1 : m_last_rendered_sample2) : m_last_rendered_sample1;
 
@@ -3246,7 +3234,8 @@ bool my12doomRenderer::is2DMovie()
 		|| m_convert3d
 		|| (m_dsr0->is_connected() && m_dsr1->is_connected())
 		|| (!m_dsr0->is_connected() && !m_dsr1->is_connected())
-		|| m_remux_mode);
+		|| m_remux_mode
+		|| (int)m_input_layout == frame_sequence);
 }
 
 bool my12doomRenderer::is2DRendering()
@@ -3255,7 +3244,8 @@ bool my12doomRenderer::is2DRendering()
 		|| m_convert3d
 		|| (m_dsr0->is_connected() && m_dsr1->is_connected())
 		|| (!m_dsr0->is_connected() && !m_dsr1->is_connected())
-		|| m_remux_mode) || m_output_mode == mono|| m_force2d;
+		|| m_remux_mode
+		|| (int)m_input_layout == frame_sequence) || m_output_mode == mono|| m_force2d;
 }
 
 double my12doomRenderer::get_active_aspect()
@@ -3263,7 +3253,7 @@ double my12doomRenderer::get_active_aspect()
 	if ((double)m_forced_aspect > 0)
 		return (double)m_forced_aspect;
 
-	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode;
+	bool dual_stream = (m_dsr0->is_connected() && m_dsr1->is_connected()) || m_remux_mode || (int)m_input_layout == frame_sequence;
 	if (dual_stream || get_active_input_layout() == mono2d)
 		return m_source_aspect;
 	else if (get_active_input_layout() == side_by_side)

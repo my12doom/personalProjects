@@ -374,6 +374,11 @@ function popup_dwindow2()
 					on_command = function() player.set_input_layout(1) end
 				},
 				{
+					string = L("Frame Sequential"),
+					checked = setting.InputLayout == 3,
+					on_command = function() player.set_input_layout(3) end
+				},
+				{
 					string = L("Monoscopic"),
 					checked = setting.InputLayout == 2,
 					on_command = function() player.set_input_layout(2) end

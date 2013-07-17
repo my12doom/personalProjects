@@ -1007,18 +1007,8 @@ void ApplySetting(HWND hWnd)
     GET_CONST(TestSet[18].arrSettingName) = nVal;
 
     nRet = SendMessage(GetDlgItem(hWnd, TestSet[21].nCtrlID), CB_GETCURSEL, 0, 0);
-    if (nRet == 0)
-        nVal = 0;
-    else if (nRet == 1)
-        nVal = 2;
-    else if (nRet == 2)
-        nVal = 6;
-    else if (nRet == 3)
-        nVal = 8;
-    else if (nRet == 4)
-        nVal = 1;
-    else if (nRet == 5)
-        nVal = -1;
+	int tbl[] = {0, 2, 6, 8, 1, -1};
+	nVal = tbl[nRet];
     //GET_CONST(TestSet[21].arrSettingName) = nVal;
 	g_player->set_output_channel(nVal);
 
@@ -1083,30 +1073,31 @@ void ApplySetting(HWND hWnd)
     else if (nRet == BST_UNCHECKED)
         rela.vob = false;
 
-	luaState L;
-	lua_getglobal(L, "setting");
-	lua_newtable(L);
-	lua_pushboolean(L, rela.mp4 ? 1 : 0);
-	lua_setfield(L, -2, "mp4");
-	lua_pushboolean(L, rela.avi ? 1 : 0);
-	lua_setfield(L, -2, "avi");
-	lua_pushboolean(L, rela.rmvb ? 1 : 0);
-	lua_setfield(L, -2, "rmvb");
-	lua_pushboolean(L, rela._3dv ? 1 : 0);
-	lua_setfield(L, -2, "3dv");
-	lua_pushboolean(L, rela.ts ? 1 : 0);
-	lua_setfield(L, -2, "ts");
-	lua_pushboolean(L, rela.mkv ? 1 : 0);
-	lua_setfield(L, -2, "mkv");
-	lua_pushboolean(L, rela.wmv ? 1 : 0);
-	lua_setfield(L, -2, "wmv");
-	lua_pushboolean(L, rela.vob ? 1 : 0);
-	lua_setfield(L, -2, "vob");
-	lua_setfield(L, -2, "FileAssociation");
-	lua_pop(L, 1);
 
+	luaState L;
 	if (memcmp(&rela, &assoc, sizeof(rela)) != 0)
 	{
+		lua_getglobal(L, "setting");
+		lua_newtable(L);
+		lua_pushboolean(L, rela.mp4 ? 1 : 0);
+		lua_setfield(L, -2, "mp4");
+		lua_pushboolean(L, rela.avi ? 1 : 0);
+		lua_setfield(L, -2, "avi");
+		lua_pushboolean(L, rela.rmvb ? 1 : 0);
+		lua_setfield(L, -2, "rmvb");
+		lua_pushboolean(L, rela._3dv ? 1 : 0);
+		lua_setfield(L, -2, "3dv");
+		lua_pushboolean(L, rela.ts ? 1 : 0);
+		lua_setfield(L, -2, "ts");
+		lua_pushboolean(L, rela.mkv ? 1 : 0);
+		lua_setfield(L, -2, "mkv");
+		lua_pushboolean(L, rela.wmv ? 1 : 0);
+		lua_setfield(L, -2, "wmv");
+		lua_pushboolean(L, rela.vob ? 1 : 0);
+		lua_setfield(L, -2, "vob");
+		lua_setfield(L, -2, "FileAssociation");
+		lua_pop(L, 1);
+
 		update_file_association(true);
 		assoc = rela;
 	}

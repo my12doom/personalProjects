@@ -22,6 +22,7 @@
 	["Move Down	(NumPad 2)"] = "向下移动字幕	(NumPad 2)",
 	["Exit"] = "退出",
 	["Side By Side"] = "左右格式",
+	["Frame Sequential"] = "帧序列格式",
 	["Connected"] = "已连接上",
 	["Dual Projector - Horizontal Span Mode"] = "双投影 - 水平跨越模式",
 	["Default(Letterbox)"] = "默认(黑边)",
