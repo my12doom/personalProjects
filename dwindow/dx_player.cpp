@@ -2800,6 +2800,7 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		widi_initialize();
 		g_renderer = m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
 #ifdef ZHUZHU
+		m_lua = new lua_drawer(this);
 		m_renderer1->set_ui_drawer(this);
 #else
 		m_renderer1->set_ui_drawer(m_lua = new lua_drawer(this));

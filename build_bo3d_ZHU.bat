@@ -35,6 +35,12 @@ copy/y mySplitter\release_mt\mySplitter.ax dwindow_NSIS\codec
 copy/y my12doomSource\bin\Filters_x86\E3DSource.ax dwindow_NSIS\codec\E3DSource.ax
 copy/y my12doomSource\bin\Filters_x86\my12doomSource.ax dwindow_NSIS\codec\my12doomSource.ax
 copy/y my12doomSource\bin\Filters_x86\MP4Splitter.ax dwindow_NSIS\codec\MP4Splitter.ax
+rd/s/q dwindow_NSIS\UI
+md dwindow_NSIS\UI
+xcopy dwindow_UI\*.* dwindow_NSIS\UI /s /e /y
+rd/s/q dwindow_NSIS\UI\3dvplayer
+rd/s/q dwindow_NSIS\UI\DWindow2
+for /r %%f in (dwindow_NSIS\UI\*.lua) do dwindow_NSIS\StereoPlayer.exe compile %%f %%f
 
 #x264 tools
 copy/y pd10\release\pd10.dll tools\
