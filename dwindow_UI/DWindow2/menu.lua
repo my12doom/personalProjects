@@ -552,6 +552,7 @@ function popup_dwindow2()
 		},
 		{
 			string = L("Swap Left/Right\t(Tab)"),
+			checked = setting.SwapEyes,
 			on_command = function() player.set_swapeyes(not player.get_swapeyes()) end
 		},
 		{
@@ -609,7 +610,6 @@ function popup_dwindow2()
 	m[18].sub_items = {}
 	for _,v in pairs(core.get_language_list()) do
 		table.insert(m[18].sub_items, {checked = v == setting.LCID, string=v, on_command = function(t) core.set_language(t.string) end})
-		print(v)
 	end
 	
 	-- monitors

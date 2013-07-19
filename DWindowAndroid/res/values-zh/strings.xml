@@ -20,5 +20,6 @@
     <string name="NeedNewVersion">请更新版本</string>
     <string name="LoadSubtitle">载入外部字幕....</string>
     <string name="GoToParent">返回上一层</string>
+    <string name="toggle2d">切换 2D</string>
     
 </resources>

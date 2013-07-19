@@ -903,17 +903,6 @@ LRESULT dx_player::on_key_down(int id, int key)
 
 	switch (key)
 	{
-	case '1':
-//  		g_scale = g_scale + 0.01;
-		m_mirror1 ++;
-		break;
-
-	case '2':
-//  		g_scale = g_scale - 0.01;
-		m_mirror2 ++;
-		break;
-
-
 	case VK_PRIOR:
 	case VK_NEXT:
 		{
@@ -936,7 +925,7 @@ LRESULT dx_player::on_key_down(int id, int key)
 		m_renderer1->set_mask_parameter(m_renderer1->get_mask_parameter()-1);
 		break;
 
-	case VK_F5:
+	case VK_F6:
 		{
 
 			ui_drawer_base *p = m_renderer1->get_ui_drawer();
@@ -964,7 +953,8 @@ LRESULT dx_player::on_key_down(int id, int key)
 
 	case VK_LEFT:
 		{
-			int t;
+			int t, mt;
+			total(&mt);
 			tell(&t);
 			seek(max(0, t-5000));
 		}
@@ -2809,7 +2799,11 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	{
 		widi_initialize();
 		g_renderer = m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
+#ifdef ZHUZHU
+		m_renderer1->set_ui_drawer(this);
+#else
 		m_renderer1->set_ui_drawer(m_lua = new lua_drawer(this));
+#endif
 
 		// show it!
 		show_window(1, true);

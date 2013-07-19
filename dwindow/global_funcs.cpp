@@ -92,13 +92,13 @@ int find_phy_monitors()
 	int count = 0;
 	for(i=0; i<min(16, d3d->GetAdapterCount()); i++)
 	{
-		d3d->GetAdapterIdentifier(i, NULL, g_phy_ids+i);
+		d3d->GetAdapterIdentifier(i, NULL, g_phy_ids+count);
 		g_phy_monitors[count] = d3d->GetAdapterMonitor(i);
 
 #ifdef ZHUZHU
 		MONITORINFOEX info;
 		info.cbSize = sizeof(MONITORINFOEX);
-		GetMonitorInfo(g_phy_monitors[i], &info);
+		GetMonitorInfo(g_phy_monitors[count], &info);
 		RECT &rect = info.rcMonitor;
 		if (rect.right - rect.left == 720 && rect.bottom - rect.top == 480)
 			continue;

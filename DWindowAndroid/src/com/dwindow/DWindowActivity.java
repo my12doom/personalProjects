@@ -66,7 +66,7 @@ public class DWindowActivity extends Activity {
 	private int volume = 100;
 	private boolean playing = false;
 	private boolean disconnectIsFromUser = false;
-	
+	private boolean is2D = false;
 	private boolean thisActivityVisible = false; 
 	private Thread shotThread;
 	private Vector<String>availableIPs;
@@ -253,6 +253,17 @@ public class DWindowActivity extends Activity {
 			{
 				disconnectIsFromUser = true;
 				conn.execute_command("shutdown");
+			}
+        });
+        
+        
+        Button btn_toggle2d = (Button)findViewById(R.id.btn_toggle2d);
+        btn_toggle2d.setOnClickListener(new OnClickListener()
+        {
+			public void onClick(View v) 
+			{
+				is2D = !is2D;
+				conn.execute_command("set_output_mode|" + (is2D?"3":"11"));
 			}
         });
     }

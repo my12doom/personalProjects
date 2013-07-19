@@ -59,6 +59,7 @@
 				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
+				WarnAsError="false"
 				DebugInformationFormat="4"
 				DisableSpecificWarnings="4995;4996;4018"
 			/>
@@ -765,7 +766,7 @@
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\libass\lib;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;x264"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				RandomizedBaseAddress="1"

@@ -20,5 +20,6 @@
     <string name="NeedNewVersion">Need New Version</string>
     <string name="LoadSubtitle">Load Subtitle....</string>
     <string name="GoToParent">Go To Parent</string>
+    <string name="toggle2d">Toggle 2D</string>
     
 </resources>

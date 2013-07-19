@@ -114,5 +114,11 @@
             android:layout_height="50dip"
             android:text="@string/Shutdown"
            android:layout_marginTop="0dp" />
+        <Button
+            android:id="@+id/btn_toggle2d"
+            android:layout_width="fill_parent"
+            android:layout_height="50dip"
+            android:text="@string/toggle2d"
+           android:layout_marginTop="0dp" />
         </LinearLayout>
 </RelativeLayout>

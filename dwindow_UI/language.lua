@@ -43,16 +43,8 @@ function core.set_language(new_language)
 		end
 	end
 	
-	print("core.set_language", new_language, setting.LCID)
-	local n = 0
-	for k,v in pairs(LL) do
-		if n < 10 then
-			print("LANG:", k, v)
-			n = n + 1
-		end
-	end
-	
 	core.ApplySetting("LCID")
+	root:BroadCastEvent("OnLanguageChange")
 end
 
 function core.get_language_list()

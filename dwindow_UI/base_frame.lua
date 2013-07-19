@@ -435,8 +435,8 @@ function BaseFrame:CalculateAbsRect()
 	elseif right and width then
 		left = right - width
 	elseif xcenter and width then
-		left = xcenter - width/2
-		right = xcenter + width/2
+		left = math.floor(xcenter - width/2)
+		right = math.floor(xcenter + width/2)
 	end
 	
 	if top and bottom then
@@ -453,8 +453,8 @@ function BaseFrame:CalculateAbsRect()
 	elseif bottom and height then
 		top = bottom - height
 	elseif ycenter and height then
-		top = ycenter - height/2
-		bottom = ycenter + height/2
+		top = math.floor(ycenter - height/2)
+		bottom = math.floor(ycenter + height/2)
 	end
 	
 	self.l, self.t, self.r, self.b = left or 0, top or 0, right or 0, bottom or 0

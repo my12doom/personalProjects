@@ -404,15 +404,15 @@ open:SetSize(165,36)
 function open:RenderThis()
 	if not player.movie_loaded then
 		paint(0,0,165,36, get_bitmap(lua_path .. "open.png"))
-		local x = (165-self.caption.width)/2
-		local y = (36-self.caption.height)/2
+		local x = math.floor((165-self.caption.width)/2)
+		local y = math.floor((36-self.caption.height)/2)
 		paint(x,y,x+self.caption.width, y+self.caption.height, self.caption)
 	end
 end
 
 function open:OnInitGPU()
 	local font = dx9.CreateFont({name="宋体", weight=0, height=13})
-	self.caption = DrawText("打开文件...", font, 0x00ffff)
+	self.caption = DrawText(L("Open File..."), font, 0x00ffff)
 	dx9.ReleaseFont(font)
 end
 
@@ -421,6 +421,13 @@ function open:OnReleaseGPU()
 		self.caption:release()
 		self.caption = nil
 	end	
+end
+
+function open:OnLanguageChange()
+	dx9.lock_frame()
+	self:OnReleaseGPU()
+	self:OnInitGPU()
+	dx9.unlock_frame()
 end
 
 function open:HitTest()
