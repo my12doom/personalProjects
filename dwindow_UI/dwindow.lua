@@ -302,20 +302,6 @@ function ReloadUI(legacy)
 	print(core.execute_luafile(lua_path .. (core.v and "3dvplayer" or "DWindow2" ).. "\\render.lua"))
 	--print(core.execute_luafile(lua_path .. "Tetris\\Tetris.lua"))
 	--v3dplayer_add_button()
-
-	-- the menu sample
-	local sample = menu:Create()
-	--root:AddChild(sample)
-	sample:SetPoint(TOP)
-
-	function sample:PreRender()
-		self.y = (self.y or 200) - 1
-		self:SetPoint(TOP, nil, nil, 0, self.y)
-	end
-
-	for i=1, 50 do
-		--sample:AddItem("").id = i
-	end
 end
 
 function set_setting(name, value)
