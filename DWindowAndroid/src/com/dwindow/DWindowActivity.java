@@ -129,6 +129,10 @@ public class DWindowActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) 
     {
 		super.onCreate(savedInstanceState);
+		
+		int h = new x264().hello();
+		int t = new x264().test();
+		
 		//getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		//requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.main);

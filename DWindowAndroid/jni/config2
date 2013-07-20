@@ -1,0 +1,17 @@
+#!/bin/sh 
+export TMPDIR="/tmp/"
+export NDKROOT="/opt/android-ndk-r8c"
+export PRJ_ROOT="/home/hl/linphone_3.5.2"
+export PREBUILT=$NDKROOT/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86
+export SYSROOT=$NDKROOT/platforms/android-9/arch-arm
+export CC=$PREBUILT/bin/arm-linux-androideabi-gcc
+export LD=$PREBUILT/bin/arm-linux-androideabi-ld
+export AS=$PREBUILT/bin/arm-linux-androideabi-gcc
+export AR=$PREBUILT/bin/arm-linux-androideabi-ar
+export RANLIB=$PREBUILT/bin/arm-linux-androideabi-ranlib
+export STRIP=$PREBUILT/bin/arm-linux-androideabi-strip
+CFLAGS="--sysroot=$NDKROOT/platforms/android-9/arch-arm -fPIC -DX264_VERSION -DANDROID -DHAVE_PTHREAD -D__ARM_ARCH_7__ -D__ARM_ARCH_7A__ -march=armv7-a -fomit-frame-pointer  -mfloat-abi=softfp -mfpu=neon  -I$NDKROOT/platforms/android-9/arch-arm/usr/include"
+export CFLAGS
+LDFLAGS="-Wl,-T,$PREBUILT/arm-linux-androideabi/lib/ldscripts/armelf_linux_eabi.x -Wl,-rpath-link=$NDKROOT/platforms/android-9/arch-arm/usr/lib -L$NDKROOT/platforms/android-9/arch-arm/usr/lib -nostdlib -lc -lm -ldl -lgcc"
+export LDFLAGS
+./configure --prefix=$PRJ_ROOT/libs -cross-prefix=arm-linux-androideabi --host=arm-linux --enable-pic --enable-strip --enable-thread --enable-static
