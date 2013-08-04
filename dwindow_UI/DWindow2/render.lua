@@ -538,7 +538,7 @@ function playlist_list:RenderThis()
 	paint(r-l-2, 0, r-l, b-t, res)
 end
 
-function playlist_list:PreRender(t, dt)
+function playlist_list:OnUpdate(t, dt)
 	self.pos = self.pos or 0
 	local pre_pos = self.pos
 	local da = dt/UI_fading_time
