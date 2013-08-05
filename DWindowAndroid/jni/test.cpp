@@ -5,7 +5,10 @@
 extern "C"
 {
 #include <x264.h>
+#include <cpu.h>
+#include <osdep.h>
 }
+#include <pthread.h>
 
 // x264 variables
 uint8_t *yuv_buffer = NULL;
@@ -30,15 +33,17 @@ int x264_init()
 
 	// init encoder
 	x264_param_t param;
+	x264_threading_init();
 	x264_param_default_preset(&param, "ultrafast", "zerolatency");
 	x264_param_apply_profile(&param, "baseline");
 	//param.i_threads = 1;
-	param.i_frame_reference = 1;
+	param.i_frame_reference = 3;
 	param.i_width = width;
 	param.i_height = height;
 	param.i_fps_num = 24000;
 	param.i_fps_den = 1001;
 	param.i_csp = X264_CSP_I420;
+	param.i_threads = 2;
 
 	param.i_keyint_max = 25;
 	//  	param.b_intra_refresh = 1;
@@ -151,9 +156,11 @@ JNIEXPORT jint NAME(test)( JNIEnv * env, jobject obj)
 {
 	FILE *f = fopen("/sdcard/sbs.yuv", "rb");
 	x264_init();
+	LOGE("CPU count:%d", x264_cpu_num_processors());
+//	LOGE("pthread CPU count:%d", pthread_num_processors_np());
 	for(int i=0; i<100; i++)
 	{
-		LOGE("memset() %d/100",i);
+		//LOGE("reading %d/100",i);
 		fread(yuv_buffer, 1, yuv_size, f);
 		LOGE("%d/100",i);
 		x264_capture();
