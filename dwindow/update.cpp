@@ -44,12 +44,21 @@ bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *r
 DWORD WINAPI check_update_thread(LPVOID)
 {
 //  	Sleep(30*1000);
-
+	char url[512] = {0};
 	int buffersize = 1024*1024;
 	char *data = (char*)malloc(buffersize);
+	DWORD volume_c_sn = 0;
+	wchar_t volume_name[MAX_PATH];
+#ifdef VSTAR
+	GetVolumeInformationW(L"C:\\", volume_name, MAX_PATH, &volume_c_sn, NULL, NULL, NULL, NULL);
+	__int64 x = (__int64)volume_c_sn * volume_c_sn;
+	sprintf(url, "%s%s&v=%d&id=%016llx", g_server_address, g_server_counter, my12doom_rev, x);
+	download_url(url, data, &buffersize);
+	buffersize = 1024*1024;
+#endif
+
 	char *data2 = (char*)malloc(buffersize);
 	wchar_t *dataw = (wchar_t*)malloc(buffersize*sizeof(wchar_t));
-	char url[512] = {0};
 	strcpy(url, g_server_address);
 	strcat(url, g_server_update);
 	strcat(url, "?lang=");
@@ -59,6 +68,8 @@ DWORD WINAPI check_update_thread(LPVOID)
 	memset(data2, 0, buffersize);
 	memset(dataw, 0, buffersize*sizeof(wchar_t));
  	download_url(url, data, &buffersize);
+	if (data[strlen(data)-1] != '\n')
+		strcpy(&data[strlen(data)], "\n");
 	buffersize++;
 	strcat(data, "\r\n");
 	ConvertToUTF8(data, strlen(data)+1, data2, buffersize);

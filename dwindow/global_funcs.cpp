@@ -21,7 +21,11 @@
 #if 0
 char *g_server_address = "http://127.0.0.1/";
 #else
+#ifdef VSTAR
+char *g_server_address = "http://www.cnliti.com/api/pc/";
+#else
 char *g_server_address = "http://bo3d.net:80/";
+#endif
 #endif
 
 // public variables
@@ -1865,6 +1869,7 @@ DWORD WINAPI killer_thread(LPVOID time)
 
 DWORD WINAPI ad_thread(LPVOID lpParame)
 {
+#ifndef VSTAR
 	char url[512+1];
 
 	strcpy(url, g_server_address);
@@ -1873,7 +1878,7 @@ DWORD WINAPI ad_thread(LPVOID lpParame)
 	while (FAILED(download_url(url, g_ad_address, &size)))
 		Sleep(30*1000);
 
-
+#endif
 	return 0;
 }
 

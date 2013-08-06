@@ -1,7 +1,7 @@
 #include <Windows.h>
 #include "my12doom_lua.h"
 #include <list>
-#include <list>
+#include <math.h>
 #include "..\dwindow\global_funcs.h"
 #include "..\dwindow\dwindow_log.h"
 
@@ -610,7 +610,7 @@ lua_const::operator int()
 	if (m_type == _int)
 		return m_value.i;
 	if (m_type == _double)
-		return m_value.d+0.5;
+		return floor(m_value.d+0.5);
 	if (m_type == _bool)
 		return m_value.b ? 1 : 0;
 

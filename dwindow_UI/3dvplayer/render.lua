@@ -225,6 +225,12 @@ buttons[4].RenderThis = function(self)
 	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[player.is_playing() and 2 or 1]), alpha)
 end
 
+
+buttons[7].RenderThis = function(self)
+	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[dx9.is2DRendering() and 2 or 1]), alpha)
+end
+
+
 progressbar = BaseFrame:Create()
 progressbar.name = "progressbar"
 toolbar_bg:AddChild(progressbar)

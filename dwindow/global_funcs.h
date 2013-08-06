@@ -47,7 +47,8 @@ extern char *g_server_address;
 #define g_server_E3D "w32.php"
 #define g_server_gen_key "gen_key.php"
 #ifdef VSTAR
-#define g_server_update "updatev1.php"		// VSTAR update
+#define g_server_update "op=updateCheck"		// VSTAR update
+#define g_server_counter "op=launcher"		// normal update
 #else
 #define g_server_update "update.php"		// normal update
 #endif
