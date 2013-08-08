@@ -10,10 +10,9 @@
 #include "adc.h"
 #include "stm32f10x_i2c.h"
 #include "stm32f10x_spi.h"
-
+#include "I2C.h"
 
 // I2C functions
-void I2C_Configuration(void);
 
 
 // ADC1转换的电压值通过MDA方式传到SRAM
@@ -33,28 +32,7 @@ void Delay(__IO uint32_t nCount)
 
 void I2C_Configuration(void)
 {
-	I2C_InitTypeDef I2C_InitStructure;
-	GPIO_InitTypeDef GPIO_InitStructure;
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2,ENABLE); //?I2C??? 
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 
-	/* PB10,11 SCL and SDA */  
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11; 
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;  
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD; // ?????? 
-	GPIO_Init(GPIOB, &GPIO_InitStructure);       
-
-	I2C_DeInit(I2C2);
-	I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
-	I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
-	I2C_InitStructure.I2C_OwnAddress1 = MPU6050SlaveAddress;
-	I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
-	I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-	I2C_InitStructure.I2C_ClockSpeed = 100000;
-	I2C_Cmd(I2C2, ENABLE);
-	I2C_Init(I2C2, &I2C_InitStructure);
-
-	I2C_AcknowledgeConfig(I2C2, ENABLE);
 }
 
 unsigned char I2c_Buf[10];
@@ -515,6 +493,17 @@ void swap(void *p, int size)
   * @param  None
   * @retval : None
   */
+#define	BMP085_SlaveAddress 0xee
+#define OSS 0
+
+short I2C_Double_Read(u8 slave, u8 reg)
+{
+	short o;
+	I2C_ReadReg(slave, reg, (u8*)&o, 2);
+	swap(&o, 2);
+	
+	return o;
+}
 
 int main(void)
 {
@@ -528,8 +517,88 @@ int main(void)
 	//I2C_Configuration();
 	SPI_NRF_Init();
 	printf("NRF_Check() = %d\r\n", NRF_Check());
-		NRF_RX_Mode();
+
+
+	printf("I2C init\r\n");
+	I2C_init(0x30);
+	printf("I2C init OK\r\n");
+
+	do
+	{
+		short ac1;
+		short ac2; 
+		short ac3; 
+		unsigned short ac4;
+		unsigned short ac5;
+		unsigned short ac6;
+		short b1; 
+		short b2;
+		short mb;
+		short mc;
+		short md;		
+
+		printf("start BMP085\r\n");
+		
+		ac1 = I2C_Double_Read(BMP085_SlaveAddress, 0xAA);
+		ac2 = I2C_Double_Read(BMP085_SlaveAddress, 0xAC);
+		ac3 = I2C_Double_Read(BMP085_SlaveAddress, 0xAE);
+		ac4 = I2C_Double_Read(BMP085_SlaveAddress, 0xB0);
+		ac5 = I2C_Double_Read(BMP085_SlaveAddress, 0xB2);
+		ac6 = I2C_Double_Read(BMP085_SlaveAddress, 0xB4);
+		b1 =  I2C_Double_Read(BMP085_SlaveAddress, 0xB6);
+		b2 =  I2C_Double_Read(BMP085_SlaveAddress, 0xB8);
+		mb =  I2C_Double_Read(BMP085_SlaveAddress, 0xBA);
+		mc =  I2C_Double_Read(BMP085_SlaveAddress, 0xBC);
+		md =  I2C_Double_Read(BMP085_SlaveAddress, 0xBE);
+
+		printf("BMP085 initialized, ac1=%d,ac2=%d,ac3=%d,ac4=%d,ac5=%d,ac6=%d,b1=%d,b2=%d,mb=%d,mc=%d,md=%d\r\n", ac1, ac2, ac3, ac4, ac5, ac6, b1, b2, mb, mc, md);
+		
+		while(1)
+		{
+			long x1, x2, b5, b6, x3, b3, p;
+			unsigned long b4, b7;
+			long  temperature;
+			long  pressure;
+					
+			I2C_WriteReg(BMP085_SlaveAddress, 0xF4, 0x2E);
+			Delay(0xfffff);			
+			temperature = I2C_Double_Read(BMP085_SlaveAddress, 0xF6);
+			I2C_WriteReg(BMP085_SlaveAddress, 0xF4, 0x34 + (OSS << 6));
+			Delay(0xfffff);
+			pressure = I2C_Double_Read(BMP085_SlaveAddress, 0xF6);
+			pressure &= 0x0000FFFF;
+			
+			x1 = ((long)temperature - ac6) * ac5 >> 15;
+			x2 = ((long) mc << 11) / (x1 + md);
+			b5 = x1 + x2;
+			temperature = (b5 + 8) >> 4;
+			
+			b6 = b5 - 4000;
+			x1 = (b2 * (b6 * b6 >> 12)) >> 11;
+			x2 = ac2 * b6 >> 11;
+			x3 = x1 + x2;
+			b3 = (((long)ac1 * 4 + x3) + 2)/4;
+			x1 = ac3 * b6 >> 13;
+			x2 = (b1 * (b6 * b6 >> 12)) >> 16;
+			x3 = ((x1 + x2) + 2) >> 2;
+			b4 = (ac4 * (unsigned long) (x3 + 32768)) >> 15;
+			b7 = ((unsigned long) pressure - b3) * (50000 >> OSS);
+			if( b7 < 0x80000000)
+				p = (b7 * 2) / b4 ;
+			else  
+				p = (b7 / b4) * 2;
+			x1 = (p >> 8) * (p >> 8);
+			x1 = (x1 * 3038) >> 16;
+			x2 = (-7357 * p) >> 16;
+			pressure = p + ((x1 + x2 + 3791) >> 4);
+			
+			
+			
+			printf("I2C data = %d, %d\r\n", temperature, pressure);
+		}
+	}while(0);
 	
+	NRF_RX_Mode();
 	while(1)
 	{
 		//i = NRF_Tx_Dat(data);
