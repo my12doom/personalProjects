@@ -23,6 +23,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
+#include "misc.h"
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
@@ -127,6 +128,7 @@ void PendSV_Handler(void)
 {
 }
 
+u32 g_systick = 0;
 /**
   * @brief  This function handles SysTick Handler.
   * @param  None
@@ -134,8 +136,43 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
+	g_systick++;
 }
 
+u32 GetSysTickCount(void)
+{
+	return g_systick;
+}
+void SysTick_Configuration(void) 
+
+{ 
+
+    //SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);//时钟除8 
+
+    //SysTick_SetReload(250000);                                                  //计数周期长度 
+
+    //SysTick_CounterCmd(SysTick_Counter_Enable);                 //启动计时器 
+
+    //SysTick_ITConfig(ENABLE);                                                      //打开中断 
+
+} 
+
+void msdelay(u32 us)
+{
+	u32 current = GetSysTickCount();
+	u32 target = current + us;
+
+	if (current <= target)
+	{
+		while(GetSysTickCount() < target)
+			;
+	}
+	else
+	{
+		while (GetSysTickCount() > current || GetSysTickCount() < target)
+			;
+	}
+}
 /******************************************************************************/
 /*                 STM32F10x Peripherals Interrupt Handlers                   */
 /*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */

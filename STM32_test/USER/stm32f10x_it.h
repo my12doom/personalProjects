@@ -33,6 +33,7 @@
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
+/* Exported variables ------------------------------------------------------- */
 /* Exported functions ------------------------------------------------------- */
 
 void NMI_Handler(void);
@@ -44,6 +45,9 @@ void SVC_Handler(void);
 void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
+u32 GetSysTickCount(void);
+void SysTick_Configuration(void);
+void udelay(u32 us);
 
 #ifdef __cplusplus
 }
