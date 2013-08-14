@@ -315,6 +315,59 @@ function progress_slider:HitTest()
 	return false
 end
 
+local function create_time_texture(time, color)
+	local second = (time/1000)%60
+	local minute = time/60000
+	return DrawText(string.format("%02d:%02d", minute, second), font, color or 0x00ffff)
+end
+
+-- current time: to top of progress slider
+local current_time = BaseFrame:Create()
+oroot:AddChild(current_time)
+current_time:SetSize(37, 14)
+current_time:SetPoint(BOTTOM, progress_slider, TOP)
+
+function current_time:RenderThis()
+	if progress:IsMouseOver() then
+		if self.texture then
+			self.texture:release()
+		end
+		self.texture = create_time_texture(player.tell())
+		if not self.texture then return end
+		paint(0,0,self.texture.width, self.texture.height, self.texture)
+	end
+end
+
+function current_time:OnReleaseGPU()
+	if self.texture then
+		self.texture:release()
+	end
+end
+
+function current_time:HitTest()
+	return false
+end
+
+--total time : to top right of progress bar
+local total_time = BaseFrame:Create()
+oroot:AddChild(total_time)
+total_time:SetSize(37, 14)
+total_time:SetPoint(BOTTOMRIGHT, progress, TOPRIGHT, nil, 3)
+
+function total_time:RenderThis()
+	if self.texture then
+		self.texture:release()
+	end
+	self.texture = create_time_texture(player.total(), 0x00333333)
+	if not self.texture then return end
+	paint(0,0,self.texture.width, self.texture.height, self.texture)
+end
+
+function total_time:OnReleaseGPU()
+	if self.texture then
+		self.texture:release()
+	end
+end
 
 -- volume bar
 -- enlarged hittest width

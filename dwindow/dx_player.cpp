@@ -5189,6 +5189,14 @@ lua_drawer::lua_drawer(dx_player *owner)
 {
 	m_owner = owner;
 	luaState lua_state;
+	lua_getglobal(lua_state, "ui");
+	lua_pushinteger(lua_state, 640);
+	lua_setfield(lua_state, -2, "width");
+	lua_pushinteger(lua_state, 480);
+	lua_setfield(lua_state, -2, "height");
+	lua_getglobal(lua_state, "OnInitGPU");
+	lua_mypcall(lua_state, 0, 0, 0);
+
 	lua_getglobal(lua_state, "ReloadUI");
 	if (lua_isfunction(lua_state, -1))
 		lua_mypcall(lua_state, 0, 0, 0);
