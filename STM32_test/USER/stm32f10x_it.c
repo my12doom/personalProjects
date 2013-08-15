@@ -157,22 +157,52 @@ void SysTick_Configuration(void)
 
 } 
 
+void USART1_IRQHandler(void)
+{
+    unsigned int i;
+		int p = 0;
+    if(USART_GetFlagStatus(USART1,USART_IT_RXNE)==SET)
+    {
+        i = USART_ReceiveData(USART1);
+				p = 1;
+        while(USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) ;
+    }
+
+    if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
+    {
+        USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+    }
+		if (p)
+        USART_SendData(USART1,i);
+}
+
 void msdelay(u32 us)
 {
-	u32 current = GetSysTickCount();
-	u32 target = current + us;
+	tickdelay(GetSysTickCount(), us);
+}
 
-	if (current <= target)
+void tickdelay(u32 start, u32 delta)
+{
+	u32 target = start + delta;
+
+	if (start <= target)
 	{
 		while(GetSysTickCount() < target)
 			;
 	}
 	else
 	{
-		while (GetSysTickCount() > current || GetSysTickCount() < target)
+		while (GetSysTickCount() > start || GetSysTickCount() < target)
 			;
 	}
 }
+u32 tickdelta(u32 start, u32 end)
+{
+	if (end>start)
+		return end-start;
+	return (((u32)0xffffffff) - start) + end;
+}
+
 /******************************************************************************/
 /*                 STM32F10x Peripherals Interrupt Handlers                   */
 /*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */

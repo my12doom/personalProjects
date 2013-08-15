@@ -13,6 +13,8 @@
 #include "I2C.h"
 #include "stm32f10x_it.h"
 #include "NRF24L01.h"
+#include "math.h"
+#include "stm32f10x_usart.h"
 
 // I2C functions
 
@@ -32,75 +34,33 @@ void Delay(__IO uint32_t nCount)
 #define MPU6050SlaveAddress 0xD0
 #define MPU6050_REG_WHO_AM_I 0x75
 
-unsigned char I2c_Buf[10];
-
-/*************************************************** 
-**函数名:I2C_ReadTmp 
-**功能:读取 tmp101的 2个字节温度 
-***************************************************/ 
-
-void I2C_ReadTmp(void) 
-{
-	/*检测总线是否忙 就是看  SCL 或SDA是否为 低  */ 
-	//printf("1");
-	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)); 
-   
-	/*允许1字节1 应答模式*/ 
-	I2C_AcknowledgeConfig(I2C2, ENABLE); 
- 
-	/* 发送起始位  */ 
-     I2C_GenerateSTART(I2C2, ENABLE); 
-
-	//printf("2");
-     while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT)); /*EV5,主模式*/ 
- 
-     /*发送器件地址(写)*/ 
-     I2C_Send7bitAddress(I2C2, MPU6050SlaveAddress, I2C_Direction_Transmitter); 
-	
-	//printf("3");
-     while (!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
-	
-			/*发送Pointer Register*/ 
-     I2C_SendData(I2C2, MPU6050_REG_WHO_AM_I);
-	//printf("4");
-     while (!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED)); /*数据已发送*/
-   
-			/*起始位*/ 
-			I2C_GenerateSTART(I2C2, ENABLE); 
-	//printf("5");
-			while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT)); 
- 
-			/*发送器件地址(读)*/ 
-			I2C_Send7bitAddress(I2C2, MPU6050SlaveAddress, I2C_Direction_Receiver); 
-	//printf("6");
-			while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)); 
-
-			/* 读Temperature Register*/ 
-			//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_RECEIVED)); /* EV7 */
-			//I2c_Buf[0]= I2C_ReceiveData(I2C2); 
- 
- 
-    /*● 为了在收到最后一个字节后产生一个NACK脉冲，在读倒数第二个数据字节之后(在倒数第二个RxNE事件之后)必须清除ACK 位。 
-			● 为了产生一个停止/重起始条件，软件必须在读倒数第二个数据字节之后(在倒数第二个RxNE 事件之后)设置 STOP/START 位。 
-			● 只接收一个字节时，刚好在EV6 之后(EV6_1时，清除ADDR之后)要关闭应答和停止条件的产生位。*/ 
-     I2C_AcknowledgeConfig(I2C2, DISABLE); //最后一位后要关闭应答的
-     I2C_GenerateSTOP(I2C2, ENABLE);   //发送停止位
- 
-	//printf("7");
-				while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_RECEIVED)); /* EV7 */ 
-				I2c_Buf[1]= I2C_ReceiveData(I2C2); 
-            
-		/*再次允许应答模式*/ 
-	//printf("8,");
-		I2C_AcknowledgeConfig(I2C2, ENABLE); 
-} 
-
+// Gyro and accelerator registers
+#define	SMPLRT_DIV		0x19	//??????,???:0x07(125Hz)
+#define	MPU6050_CONFIG			0x1A	//??????,???:0x06(5Hz)
+#define	GYRO_CONFIG		0x1B	//??????????,???:0x18(???,2000deg/s)
+#define	ACCEL_CONFIG	0x1C	//?????????????????,???:0x01(???,2G,5Hz)
+#define	ACCEL_XOUT_H	0x3B
+#define	ACCEL_XOUT_L	0x3C
+#define	ACCEL_YOUT_H	0x3D
+#define	ACCEL_YOUT_L	0x3E
+#define	ACCEL_ZOUT_H	0x3F
+#define	ACCEL_ZOUT_L	0x40
+#define	TEMP_OUT_H		0x41
+#define	TEMP_OUT_L		0x42
+#define	GYRO_XOUT_H		0x43
+#define	GYRO_XOUT_L		0x44	
+#define	GYRO_YOUT_H		0x45
+#define	GYRO_YOUT_L		0x46
+#define	GYRO_ZOUT_H		0x47
+#define	GYRO_ZOUT_L		0x48
+#define	PWR_MGMT_1		0x6B	//????,???:0x00(????)
+#define	WHO_AM_I		0x75	//IIC?????(????0x68,??)
 
 typedef struct
 {
 	short mag_x;
-	short mag_y;
 	short mag_z;
+	short mag_y;
 	
 	short accel_x;
 	short accel_y;
@@ -130,13 +90,9 @@ void swap(void *p, int size)
 		pp[size-1-i] = tmp;
 	}
 }
-/**
-  * @brief  Main program.
-  * @param  None
-  * @retval : None
-  */
 #define	BMP085_SlaveAddress 0xee
 #define OSS 0
+#define	HMC5883SlaveAddress 0x3C
 
 short I2C_Double_Read(u8 slave, u8 reg)
 {
@@ -147,48 +103,179 @@ short I2C_Double_Read(u8 slave, u8 reg)
 	return o;
 }
 
+int abs(int i)
+{
+	if (i>0)
+		return i;
+	return -i;
+}
+
+
+#define PI 3.14159265
+
 int main(void)
 {
 	int i=0;
 	int result;
 	float avg;
+	int total_tx = 0;
 	u8 data[32] = {0};
+	GPIO_InitTypeDef GPIO_InitStructure;
 
 	// Basic Initialization
 	USART1_Config();
 	SPI_NRF_Init();
 	printf("NRF_Check() = %d\r\n", NRF_Check());
-	SysTick_Config(72000);
+	SysTick_Config(720);
 
-	// msdelay test
+	/*
+	NRF_TX_Mode();
 	while(1)
 	{
-		GPIO_SetBits(GPIOA,GPIO_Pin_1);
-		msdelay(5);
-		GPIO_ResetBits(GPIOA,GPIO_Pin_1);
-		msdelay(5);
-		GPIO_SetBits(GPIOA,GPIO_Pin_1);
-		msdelay(5);
-		GPIO_ResetBits(GPIOA,GPIO_Pin_1);
-		msdelay(5);
-		GPIO_SetBits(GPIOA,GPIO_Pin_1);
-		msdelay(5);
-		GPIO_ResetBits(GPIOA,GPIO_Pin_1);
-		msdelay(5);
-		GPIO_SetBits(GPIOA,GPIO_Pin_1);
-		msdelay(5);
-		GPIO_ResetBits(GPIOA,GPIO_Pin_1);
-		msdelay(5);
-		GPIO_SetBits(GPIOA,GPIO_Pin_1);
-		msdelay(5);
-		GPIO_ResetBits(GPIOA,GPIO_Pin_1);
-		msdelay(5);
+		u8 result = NRF_Tx_Dat(data);
+		
+		if (result == TX_OK)
+		{
+			printf("\rTX_OK count : %d", total_tx ++);			
+		}
 	}
+	*/
 	
-
 	printf("I2C init\r\n");
 	I2C_init(0x30);
 	printf("I2C init OK\r\n");
+	
+	do
+	{
+		u8 who_am_i = 0;
+		float pitch = 0;
+		float pitchI = 0;
+		float roll = 0;
+		float yaw = 0;
+		float yawI = 0;
+		float bx = 0;
+		float by = 0;
+		float bz = 0;
+		float accel_max = 0;
+		sensor_data *p = (sensor_data*)data;
+		printf("start MPU6050\r\n");
+		I2C_WriteReg(MPU6050SlaveAddress, PWR_MGMT_1, 0x00);
+		I2C_WriteReg(MPU6050SlaveAddress, SMPLRT_DIV, 0x07);
+		I2C_WriteReg(MPU6050SlaveAddress, MPU6050_CONFIG, 0x06);
+		I2C_WriteReg(MPU6050SlaveAddress, GYRO_CONFIG, 0x18);
+		I2C_WriteReg(MPU6050SlaveAddress, ACCEL_CONFIG, 0x08);
+		
+		I2C_ReadReg(MPU6050SlaveAddress, WHO_AM_I, &who_am_i, 1);
+		printf("MPU6050 initialized, WHO_AM_I=%x\r\n", who_am_i);
+		
+		I2C_WriteReg(HMC5883SlaveAddress, 0x02, 0x00);
+
+		
+		for(i=0; i<1000; i++)
+		{
+			I2C_ReadReg(MPU6050SlaveAddress, ACCEL_XOUT_H, (u8*)&p->accel_x, 14);
+			I2C_ReadReg(HMC5883SlaveAddress, 0x03, (u8*)&p->mag_x, 6);
+			
+			swap(&p->mag_x, 2);
+			swap(&p->mag_y, 2);
+			swap(&p->mag_z, 2);
+			swap(&p->gyro_x, 2);
+			swap(&p->gyro_y, 2);
+			swap(&p->gyro_z, 2);
+			swap(&p->accel_x, 2);
+			swap(&p->accel_y, 2);
+			swap(&p->accel_z, 2);
+			
+			bx+= p->gyro_x;
+			by+= p->gyro_y;
+			bz+= p->gyro_z;
+			accel_max += (p->accel_x*p->accel_x+ p->accel_y*p->accel_y + p->accel_z * p->accel_z);
+			msdelay(100);
+		}
+		
+		bx /= 1000;
+		by /= 1000;
+		bz /= 1000;
+		accel_max /= 1000;
+		accel_max = sqrt(accel_max);
+		
+		printf("MPU6050 base value measured, b xyz=%f,%f,%f, accel_max=%f \r\n", bx, by, bz, accel_max);
+				
+		i=0;
+		while(1)
+		{
+			float pitch_accel;
+			float pitch_mag;
+			static const float factor = 0.995;
+			static const float factor_1 = 1-factor;
+			int start_tick = GetSysTickCount();
+			int centerx = -1;
+			int centery = -142;
+			int centerz = -42;
+			float yaw_mag;
+			
+			GPIO_ResetBits(GPIOA, GPIO_Pin_4);
+			
+			I2C_ReadReg(MPU6050SlaveAddress, ACCEL_XOUT_H, (u8*)&p->accel_x, 14);
+			I2C_ReadReg(HMC5883SlaveAddress, 0x03, (u8*)&p->mag_x, 6);
+			
+			swap(&p->mag_x, 2);
+			swap(&p->mag_y, 2);
+			swap(&p->mag_z, 2);
+			swap(&p->gyro_x, 2);
+			swap(&p->gyro_y, 2);
+			swap(&p->gyro_z, 2);
+			swap(&p->accel_x, 2);
+			swap(&p->accel_y, 2);
+			swap(&p->accel_z, 2);
+			
+			pitch +=  p->gyro_x - bx ;
+			pitchI += p->gyro_x - bx ;
+			roll += p->gyro_y - by;
+			
+			pitch_accel = -atan(-(float)p->accel_y / p->accel_z) * 180 / PI;
+			if (pitch_accel > 0)
+				pitch_accel = -180 + pitch_accel;
+			
+			
+			pitch = factor*pitch + factor_1* pitch_accel*17500/9;
+			
+			GPIO_SetBits(GPIOA, GPIO_Pin_4);
+//			if(i++ %10== 0)
+//			{
+				//printf("xyz=%f,%f,%f, dx,dy,dz = %d,%d,%d, angel(pitch,roll,yaw, pitch_accel)=%f,%f,%f,%f\r\n", pitch, roll, yaw, p->gyro_x, p->gyro_y, p->gyro_z, pitch*9/17500, roll*9/17500 , yaw*9/17500, pitch_accel);
+				//printf("accel xyz = %d, %d, %d, pitch_accel = %f\r\n", p->accel_x, p->accel_y, p->accel_z, pitch_accel);
+//				printf("pitch, pitch_accel, pitchI=%f,%f, %f \r\n", pitch*9/17500, pitch_accel, pitchI*9/17500);
+//			}
+			
+			/*
+			for(i=0; i<6; i++)
+			{
+				USART_SendData(USART1, data[i]);
+				while( USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET );
+			}
+			USART_SendData(USART1, 0xb0);
+			while( USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET );
+			USART_SendData(USART1, 0x3d);
+			while( USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET );
+			*/
+			
+			
+			yaw_mag = atan2(p->mag_x - centerx, p->mag_y - centery) * 180.0 / PI;
+			yaw += p->gyro_z - bz;
+			yawI += p->gyro_z - bz;
+			yaw = yaw*factor + factor_1* yaw_mag*17500/9;
+			
+			printf("yaw, yawI, yaw_mag = %f, %f, %f\r\n", yaw*9/17500, yawI*9/17500, yaw_mag);
+			
+			
+			while(GetSysTickCount()-start_tick < 800)
+				;
+		}
+		
+		
+		
+	}while(0);
 
 	do
 	{
@@ -324,12 +411,8 @@ int main(void)
 		
 		avg /= 200.0f;
 	
-		printf("The current AD value = %f V, The current AD value = 0x%04X \r\n",avg, ADC_ConvertedValue);
+		printf("The current AD value = %f V, The current AD value = 0x%04X \r\n",avg, ADC_ConvertedValue);		
 		
-		
-		// I2C test
-		I2C_ReadTmp();
-		printf("I2C result=%02X", I2c_Buf[1]);
 	}
 }
 /******************* (C) COPYRIGHT 2012 ***************** *****END OF FILE************/

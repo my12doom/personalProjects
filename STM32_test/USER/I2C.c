@@ -28,6 +28,8 @@ int I2C_init(u8 OwnAddress1)
 	
 	GPIO_ResetBits(GPIOB, GPIO_Pin_10);
 	GPIO_ResetBits(GPIOB, GPIO_Pin_11);
+	
+	return 0;
 }
 
 int I2C_ReadReg(u8 SlaveAddress, u8 startRegister, u8*out, int count)
