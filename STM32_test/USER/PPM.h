@@ -1,8 +1,11 @@
 #ifndef __PPM_H__
 #define __PPM_H__
 
-extern int g_ppm_input[4];
-extern int g_ppm_output[8];
+#include "stm32f10x.h"
+
+// constants and enums
+extern u16 g_ppm_input[4];
+extern u16 g_ppm_output[8];
 
 enum PPM_OUTPUT_CHANNEL
 {
@@ -17,7 +20,7 @@ enum PPM_OUTPUT_CHANNEL
 	PPM_OUTPUT_CHANNEL_ALL = 0xff,
 };
 
-// this function configure PPM input and output
+// configure PPM input and output
 // PPM output is 100Hz
 // it always configure TIM3 with REMAP  = 10, output pin = PB0, PB1, PB4, PB5
 // if input disabled, it configure TIM4 with REMAP  = 00, output pin = PB6~9

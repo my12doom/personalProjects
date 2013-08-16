@@ -15,6 +15,7 @@
 #include "NRF24L01.h"
 #include "math.h"
 #include "stm32f10x_usart.h"
+#include "PPM.h"
 
 // I2C functions
 
@@ -116,17 +117,31 @@ int abs(int i)
 int main(void)
 {
 	int i=0;
+	int j=0;
 	int result;
 	float avg;
 	int total_tx = 0;
 	u8 data[32] = {0};
 	GPIO_InitTypeDef GPIO_InitStructure;
 
+
 	// Basic Initialization
 	USART1_Config();
 	SPI_NRF_Init();
 	printf("NRF_Check() = %d\r\n", NRF_Check());
 	SysTick_Config(720);
+	PPM_init(1);
+
+	while(1)
+	{
+		i++;
+		for(j=0; j<8; j++)
+			g_ppm_output[j] = 1000+ abs(1000 - ((i/100) % 2000));
+		PPM_update_output_channel(PPM_OUTPUT_CHANNEL2);
+		if (i % 2000 == 0)
+			printf("\r PPM input = %d, %d, %d, %d", g_ppm_input[0], g_ppm_input[1], g_ppm_input[2], g_ppm_input[3]);
+		;
+	}
 
 	/*
 	NRF_TX_Mode();
