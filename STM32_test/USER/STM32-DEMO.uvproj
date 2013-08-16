@@ -431,6 +431,11 @@
               <FileType>1</FileType>
               <FilePath>.\NRF24L01.c</FilePath>
             </File>
+            <File>
+              <FileName>PPM.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\PPM.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -475,6 +480,16 @@
               <FileName>misc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\FWlib\src\misc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f10x_tim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FWlib\src\stm32f10x_tim.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f10x_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FWlib\src\stm32f10x_exti.c</FilePath>
             </File>
           </Files>
         </Group>

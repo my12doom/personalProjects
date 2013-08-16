@@ -167,7 +167,7 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>129</LineNumber>
+          <LineNumber>125</LineNumber>
           <EnabledFlag>1</EnabledFlag>
           <Address>0</Address>
           <ByteObject>0</ByteObject>
@@ -176,14 +176,14 @@
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
           <BreakIfRCount>0</BreakIfRCount>
-          <Filename>E:\private\STM32_test\USER\main.c</Filename>
+          <Filename>E:\private\STM32_test\USER\I2C.c</Filename>
           <ExecCommand></ExecCommand>
           <Expression></Expression>
         </Bp>
         <Bp>
           <Number>1</Number>
           <Type>0</Type>
-          <LineNumber>144</LineNumber>
+          <LineNumber>128</LineNumber>
           <EnabledFlag>1</EnabledFlag>
           <Address>0</Address>
           <ByteObject>0</ByteObject>
@@ -192,17 +192,55 @@
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
           <BreakIfRCount>0</BreakIfRCount>
-          <Filename>E:\private\STM32_test\USER\main.c</Filename>
+          <Filename>E:\private\STM32_test\USER\I2C.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
+        </Bp>
+        <Bp>
+          <Number>2</Number>
+          <Type>0</Type>
+          <LineNumber>150</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>0</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>0</BreakIfRCount>
+          <Filename>E:\private\STM32_test\USER\I2C.c</Filename>
           <ExecCommand></ExecCommand>
           <Expression></Expression>
         </Bp>
       </Breakpoint>
+      <WatchWindow1>
+        <Ww>
+          <count>0</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>g_ppm_output</ItemText>
+        </Ww>
+        <Ww>
+          <count>1</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>data</ItemText>
+        </Ww>
+        <Ww>
+          <count>2</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>temperature</ItemText>
+        </Ww>
+        <Ww>
+          <count>3</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>rawdata</ItemText>
+        </Ww>
+      </WatchWindow1>
       <DebugFlag>
         <trace>0</trace>
         <periodic>0</periodic>
         <aLwin>0</aLwin>
         <aCover>0</aCover>
-        <aSer1>1</aSer1>
+        <aSer1>0</aSer1>
         <aSer2>0</aSer2>
         <aPa>0</aPa>
         <viewmode>1</viewmode>
@@ -245,7 +283,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>142</TopLine>
+      <TopLine>138</TopLine>
       <CurrentLine>151</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\CMSIS\startup\startup_stm32f10x_hd.s</PathWithFileName>
@@ -269,8 +307,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>119</TopLine>
-      <CurrentLine>130</CurrentLine>
+      <TopLine>137</TopLine>
+      <CurrentLine>138</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\main.c</PathWithFileName>
       <FilenameWithoutPath>main.c</FilenameWithoutPath>
@@ -283,10 +321,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>20</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>136</TopLine>
-      <CurrentLine>137</CurrentLine>
+      <TopLine>138</TopLine>
+      <CurrentLine>139</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\stm32f10x_it.c</PathWithFileName>
       <FilenameWithoutPath>stm32f10x_it.c</FilenameWithoutPath>
@@ -299,9 +337,9 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>40</ColumnNumber>
+      <ColumnNumber>41</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>97</TopLine>
+      <TopLine>99</TopLine>
       <CurrentLine>106</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\usart1.c</PathWithFileName>
@@ -333,8 +371,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>17</TopLine>
-      <CurrentLine>26</CurrentLine>
+      <TopLine>65</TopLine>
+      <CurrentLine>78</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\I2C.c</PathWithFileName>
       <FilenameWithoutPath>I2C.c</FilenameWithoutPath>
@@ -347,13 +385,29 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>4</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>73</TopLine>
-      <CurrentLine>74</CurrentLine>
+      <TopLine>74</TopLine>
+      <CurrentLine>89</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\NRF24L01.c</PathWithFileName>
       <FilenameWithoutPath>NRF24L01.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>2</GroupNumber>
+      <FileNumber>8</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <ColumnNumber>2</ColumnNumber>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <TopLine>15</TopLine>
+      <CurrentLine>31</CurrentLine>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\PPM.c</PathWithFileName>
+      <FilenameWithoutPath>PPM.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -367,14 +421,14 @@
     <RteFlg>0</RteFlg>
     <File>
       <GroupNumber>3</GroupNumber>
-      <FileNumber>8</FileNumber>
+      <FileNumber>9</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>52</TopLine>
-      <CurrentLine>24</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\FWlib\src\stm32f10x_rcc.c</PathWithFileName>
       <FilenameWithoutPath>stm32f10x_rcc.c</FilenameWithoutPath>
@@ -383,7 +437,7 @@
     </File>
     <File>
       <GroupNumber>3</GroupNumber>
-      <FileNumber>9</FileNumber>
+      <FileNumber>10</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -399,7 +453,7 @@
     </File>
     <File>
       <GroupNumber>3</GroupNumber>
-      <FileNumber>10</FileNumber>
+      <FileNumber>11</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -415,7 +469,7 @@
     </File>
     <File>
       <GroupNumber>3</GroupNumber>
-      <FileNumber>11</FileNumber>
+      <FileNumber>12</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -431,7 +485,7 @@
     </File>
     <File>
       <GroupNumber>3</GroupNumber>
-      <FileNumber>12</FileNumber>
+      <FileNumber>13</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -447,14 +501,14 @@
     </File>
     <File>
       <GroupNumber>3</GroupNumber>
-      <FileNumber>13</FileNumber>
+      <FileNumber>14</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1052</TopLine>
-      <CurrentLine>1057</CurrentLine>
+      <TopLine>1030</TopLine>
+      <CurrentLine>1031</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\FWlib\src\stm32f10x_i2c.c</PathWithFileName>
       <FilenameWithoutPath>stm32f10x_i2c.c</FilenameWithoutPath>
@@ -463,7 +517,7 @@
     </File>
     <File>
       <GroupNumber>3</GroupNumber>
-      <FileNumber>14</FileNumber>
+      <FileNumber>15</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -479,7 +533,7 @@
     </File>
     <File>
       <GroupNumber>3</GroupNumber>
-      <FileNumber>15</FileNumber>
+      <FileNumber>16</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -493,6 +547,38 @@
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
+    <File>
+      <GroupNumber>3</GroupNumber>
+      <FileNumber>17</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <ColumnNumber>0</ColumnNumber>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <TopLine>1576</TopLine>
+      <CurrentLine>1588</CurrentLine>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\FWlib\src\stm32f10x_tim.c</PathWithFileName>
+      <FilenameWithoutPath>stm32f10x_tim.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>3</GroupNumber>
+      <FileNumber>18</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <ColumnNumber>0</ColumnNumber>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\FWlib\src\stm32f10x_exti.c</PathWithFileName>
+      <FilenameWithoutPath>stm32f10x_exti.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
   </Group>
 
   <Group>
@@ -503,7 +589,7 @@
     <RteFlg>0</RteFlg>
     <File>
       <GroupNumber>4</GroupNumber>
-      <FileNumber>16</FileNumber>
+      <FileNumber>19</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -519,7 +605,7 @@
     </File>
     <File>
       <GroupNumber>4</GroupNumber>
-      <FileNumber>17</FileNumber>
+      <FileNumber>20</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>

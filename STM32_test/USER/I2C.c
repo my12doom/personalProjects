@@ -89,9 +89,8 @@ int I2C_ReadReg(u8 SlaveAddress, u8 startRegister, u8*out, int count)
 int I2C_WriteReg(u8 SlaveAddress, u8 Register, u8 data)
 {
 	// wait for bus
-
 	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY));
-
+	
 	// start
 	I2C_GenerateSTART(I2C2, ENABLE);
 	while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT)); 
@@ -108,6 +107,43 @@ int I2C_WriteReg(u8 SlaveAddress, u8 Register, u8 data)
 	// send data
 	I2C_SendData(I2C2, data); 
 	while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+
+
+	// stop
+	I2C_GenerateSTOP(I2C2, ENABLE);	
+	return 0;
+}
+
+int I2C_WriteReg2(u8 SlaveAddress, u8 Register, u8 data)
+{
+	int wait = 5000;
+	// wait for bus
+	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY) && (wait>0))
+		wait--;
+	
+	if (wait<=0)
+		return -1;
+
+	// start
+	I2C_GenerateSTART(I2C2, ENABLE);
+	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT)); 
+	msdelay(100);
+
+	// send slave address
+	I2C_Send7bitAddress(I2C2, SlaveAddress, I2C_Direction_Transmitter);
+	msdelay(100);
+	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
+
+	// send Register address
+	I2C_SendData(I2C2, Register);
+	msdelay(100);
+	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+
+
+	// send data
+	I2C_SendData(I2C2, data); 
+	msdelay(100);
+	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
 
 	// stop
