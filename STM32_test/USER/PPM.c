@@ -128,7 +128,7 @@ static void Timer_Config(int enable_input)
 	// configure interrupt for input if needed
 	if (enable_input)
 	{
-		NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+		//NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
 		EXTI_ClearITPendingBit(EXTI_Line6);
 		EXTI_ClearITPendingBit(EXTI_Line7);

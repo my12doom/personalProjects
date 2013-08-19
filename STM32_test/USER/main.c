@@ -16,6 +16,7 @@
 #include "math.h"
 #include "stm32f10x_usart.h"
 #include "PPM.h"
+#include "sdio_sdcard.h"
 
 // I2C functions
 
@@ -152,22 +153,97 @@ int main(void)
 	float temperature;
   int64_t off;//  = (((int64_t)_C[1]) << 16) + ((_C[3] * dT) >> 7);
   int64_t sens;// = (((int64_t)_C[0]) << 15) + ((_C[2] * dT) >> 8);
-	float pressure;
+	float pressure = -1;
+	u32 Status;
+	SD_Error err;
+	int block_to_test;
+	extern SD_CardInfo SDCardInfo;
+	SysTick_Config(720);
 
+	// HX711 test
+	/*
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	
+	GPIO_ResetBits(GPIOB, GPIO_Pin_0 | GPIO_Pin_1);
+	
+	while(1)
+	{
+		while (i=GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_1))
+			;
+		
+		result = 0;
+		for(i=0; i<24; i++)
+		{
+			GPIO_SetBits(GPIOB, GPIO_Pin_0);
+			msdelay(2);
+			result <<= 1;
+			result |= GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_1);			
+			GPIO_ResetBits(GPIOB, GPIO_Pin_0);
+			msdelay(2);
+		}
+		
+		GPIO_SetBits(GPIOB, GPIO_Pin_0);
+		msdelay(2);
+		GPIO_ResetBits(GPIOB, GPIO_Pin_0);
+		msdelay(2);
+		
+		if (result & 0x800000)
+			result |= 0xff000000;
+		
+		printf("\rresult=%d", -result+58730);
+		if (result)
+			printf("\n");
+
+	}
+	*/
 
 	// Basic Initialization
 	USART1_Config();
 	SPI_NRF_Init();
-	printf("NRF_Check() = %d\r\n", NRF_Check());
-	SysTick_Config(720);
+	i = NRF_Check();
+	printf("NRF_Check() = %d", i);
 	PPM_init(1);
-	
-	printf("I2C init\r\n");
 	I2C_init(0x30);
-	printf("I2C init OK\r\n");
 	
+	// SD Card test
+	/*
+	NRF_TX_Mode();
+	while(1)
+	{
+		u8 result = NRF_Tx_Dat(data);
+		
+		if (result == TX_OK)
+		{
+			printf("\rTX_OK count : %d", total_tx ++);
+		}
+	}
+	*/
+	
+	
+	/*
+	while(1)
+	{
+		i++;
+		for(j=0; j<8; j++)
+			g_ppm_output[j] = 1000+ abs(1000 - ((i/100) % 2000));
+		PPM_update_output_channel(PPM_OUTPUT_CHANNEL2);
+		if (i % 2000 == 0)
+			printf("\r PPM input = %d, %d, %d, %d", g_ppm_input[0], g_ppm_input[1], g_ppm_input[2], g_ppm_input[3]);
+		;
+	}
+	*/
+
 
 	// MS5611 test
+	/*
 	I2C_WriteReg(MS5611Address, MS561101BA_RESET, 0x00);	
 	msdelay(1000);
 	for(i=0; i<6; i++)
@@ -200,32 +276,10 @@ int main(void)
 
 		printf("temperature, pressure = %f, %f\r\n", temperature, pressure);
 	}
-
-	/*
-	while(1)
-	{
-		i++;
-		for(j=0; j<8; j++)
-			g_ppm_output[j] = 1000+ abs(1000 - ((i/100) % 2000));
-		PPM_update_output_channel(PPM_OUTPUT_CHANNEL2);
-		if (i % 2000 == 0)
-			printf("\r PPM input = %d, %d, %d, %d", g_ppm_input[0], g_ppm_input[1], g_ppm_input[2], g_ppm_input[3]);
-		;
-	}
 	*/
 
-	/*
-	NRF_TX_Mode();
-	while(1)
-	{
-		u8 result = NRF_Tx_Dat(data);
-		
-		if (result == TX_OK)
-		{
-			printf("\rTX_OK count : %d", total_tx ++);			
-		}
-	}
-	*/
+
+	
 
 	do
 	{
@@ -233,12 +287,18 @@ int main(void)
 		float pitch = 0;
 		float pitchI = 0;
 		float roll = 0;
+		float rollI = 0;
 		float yaw = 0;
 		float yawI = 0;
 		float bx = 0;
 		float by = 0;
 		float bz = 0;
 		float accel_max = 0;
+		float accel_avg_x = 0;
+		float accel_avg_y = 0;
+		float accel_avg_z = 0;
+		float roll_target = 0;
+		float pitch_target = 0;
 		sensor_data *p = (sensor_data*)data;
 		printf("start MPU6050\r\n");
 		msdelay(1000);
@@ -289,20 +349,41 @@ int main(void)
 			by+= p->gyro_y;
 			bz+= p->gyro_z;
 			accel_max += (p->accel_x*p->accel_x+ p->accel_y*p->accel_y + p->accel_z * p->accel_z);
+			accel_avg_x += p->accel_x;
+			accel_avg_y += p->accel_y;
+			accel_avg_z += p->accel_z;
 			msdelay(100);
 		}
 		
 		bx /= 1000;
 		by /= 1000;
 		bz /= 1000;
+		accel_avg_x /= 1000;
+		accel_avg_y /= 1000;
+		accel_avg_z /= 1000;
 		accel_max /= 1000;
 		accel_max = sqrt(accel_max);
+		pitch = -atan(-(float)p->accel_x / sqrt(p->accel_z*p->accel_z+p->accel_y*p->accel_y)) * 180 / PI;
+		//if (pitch > 0)
+		//	pitch = -180 + pitch;
 		
-		printf("MPU6050 base value measured, b xyz=%f,%f,%f, accel_max=%f \r\n", bx, by, bz, accel_max);
+		roll = -atan(-(float)p->accel_y / p->accel_z) * 180 / PI;
+		//if (roll > 0)
+		//	roll = -180 + roll;
+		
+		pitch = pitch*17500/9;
+		roll = roll*17500/9;
+		
+		roll_target = roll;
+		pitch_target = pitch;
+		
+		
+		printf("MPU6050 base value measured, b xyz=%f,%f,%f, accel_max=%f, roll,pitch=%f,%f \r\n", bx, by, bz, accel_max, roll, pitch);
 				
 		i=0;
 		while(1)
 		{
+			float roll_accel;
 			float pitch_accel;
 			float pitch_mag;
 			static const float factor = 0.995;
@@ -330,24 +411,33 @@ int main(void)
 			swap(&p->accel_y, 2);
 			swap(&p->accel_z, 2);
 			
-			pitch +=  p->gyro_x - bx ;
-			pitchI += p->gyro_x - bx ;
-			roll += p->gyro_y - by;
+			pitch +=  p->gyro_y - by ;
+			pitchI += p->gyro_y - by ;
+			roll += p->gyro_x - bx;
+			rollI += p->gyro_x - bx;
 			
-			pitch_accel = -atan(-(float)p->accel_y / p->accel_z) * 180 / PI;
-			if (pitch_accel > 0)
-				pitch_accel = -180 + pitch_accel;
+			pitch_accel = -atan(-(float)p->accel_x / sqrt(p->accel_z*p->accel_z+p->accel_y*p->accel_y)) * 180 / PI;
+			//if (pitch_accel > 0)
+			//	pitch_accel = -180 + pitch_accel;
 			
+			roll_accel = -atan(-(float)p->accel_y / p->accel_z) * 180 / PI;
+			//if (roll_accel > 0)
+			//	roll_accel = -180 + roll_accel;
 			
 			pitch = factor*pitch + factor_1* pitch_accel*17500/9;
+			roll = factor*roll + factor_1* roll_accel*17500/9;
+			
+			//printf("\rrawdata:%d, %d, %d                ", p->accel_x, p->accel_y, p->accel_z);
 			
 			GPIO_SetBits(GPIOA, GPIO_Pin_4);
-//			if(i++ %10== 0)
-//			{
+			if(i++ %10== 0)
+			{
 				//printf("xyz=%f,%f,%f, dx,dy,dz = %d,%d,%d, angel(pitch,roll,yaw, pitch_accel)=%f,%f,%f,%f\r\n", pitch, roll, yaw, p->gyro_x, p->gyro_y, p->gyro_z, pitch*9/17500, roll*9/17500 , yaw*9/17500, pitch_accel);
 				//printf("accel xyz = %d, %d, %d, pitch_accel = %f\r\n", p->accel_x, p->accel_y, p->accel_z, pitch_accel);
-//				printf("pitch, pitch_accel, pitchI=%f,%f, %f \r\n", pitch*9/17500, pitch_accel, pitchI*9/17500);
-//			}
+				//printf("pitch, pitchI, pitch_accel, roll, rollI, roll_accel=%f,%f,%f,%f,%f,%f \r\n", pitch*9/17500, pitchI*9/17500, pitch_accel, roll*9/17500, rollI*9/17500, roll_accel);
+				
+				printf("\rdelta roll,pitch=%f, %f", (roll - roll_target)*9/17500, (pitch - pitch_target)*9/17500);
+			}
 			
 			/*
 			for(i=0; i<6; i++)
@@ -362,12 +452,14 @@ int main(void)
 			*/
 			
 			
+			/*
 			yaw_mag = atan2(p->mag_x - centerx, p->mag_y - centery) * 180.0 / PI;
 			yaw += p->gyro_z - bz;
 			yawI += p->gyro_z - bz;
 			yaw = yaw*factor + factor_1* yaw_mag*17500/9;
 			
 			printf("yaw, yawI, yaw_mag, time = %f, %f, %f, %f\r\n", yaw*9/17500, yawI*9/17500, yaw_mag, (float)GetSysTickCount()/100000.0f);
+			*/
 			
 			
 			while(GetSysTickCount()-start_tick < 800)
