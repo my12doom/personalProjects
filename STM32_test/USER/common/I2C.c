@@ -7,11 +7,11 @@ int I2C_init(u8 OwnAddress1)
 	GPIO_InitTypeDef GPIO_InitStructure;
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2,ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
-
+	
 	/* PB10,11 SCL and SDA */  
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11; 
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;  
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);       
 
 	I2C_DeInit(I2C2);
@@ -23,12 +23,23 @@ int I2C_init(u8 OwnAddress1)
 	I2C_InitStructure.I2C_ClockSpeed = 100000;
 	I2C_Cmd(I2C2, ENABLE);
 	I2C_Init(I2C2, &I2C_InitStructure);
-
 	I2C_AcknowledgeConfig(I2C2, ENABLE);
 	
+	// bit banging reset
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, DISABLE);
 	GPIO_ResetBits(GPIOB, GPIO_Pin_10);
+	msdelay(10);
 	GPIO_ResetBits(GPIOB, GPIO_Pin_11);
+	msdelay(10);
+	GPIO_SetBits(GPIOB, GPIO_Pin_10);
+	msdelay(10);
+	GPIO_SetBits(GPIOB, GPIO_Pin_10);
+	msdelay(10);
 	
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);       
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2,ENABLE);	
+
 	return 0;
 }
 

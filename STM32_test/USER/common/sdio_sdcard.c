@@ -15,7 +15,6 @@
  * ×÷Õß    £º±£Áô 
 **********************************************************************************/
 #include "sdio_sdcard.h"
-#include "usart1.h"
 #include <stm32f10x_sdio.h>
 #include <misc.h>
 

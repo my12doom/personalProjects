@@ -9,7 +9,7 @@
  *           ------------------------
  * ¿â°æ±¾  £ºST3.5.0
 **********************************************************************************/
-#include "usart1.h"
+#include "printf.h"
 #include <stdarg.h>
 #include <misc.h>
 
@@ -60,6 +60,17 @@ void USART1_Config(void)
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 }
 
+#if 0
+int fputc(int ch, FILE *f)
+{
+	USART_SendData(USART1, (unsigned char) ch);
+	while (!(USART1->SR & USART_FLAG_TXE));
+	
+	return (ch);
+}
+
+#else
+
 #define ITM_Port8(n)    (*((volatile unsigned char *)(0xE0000000+4*n)))
 
 #define ITM_Port16(n)   (*((volatile unsigned short*)(0xE0000000+4*n)))
@@ -93,4 +104,4 @@ int fputc(int ch, FILE *f) {
 
 }
 
-
+#endif
