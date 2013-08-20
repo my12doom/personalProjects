@@ -82,6 +82,18 @@ int min(int a, int b)
 	return b;
 }
 
+int max(int a, int b)
+{
+	if (a>b)
+		return a;
+	return b;
+}
+int min(int a, int b)
+{
+	if (a<b)
+		return a;
+	return b;
+}
 
 #define PI 3.14159265
 
@@ -259,7 +271,16 @@ int main(void)
 				//	dx, dy, dz, (int)sqrt(dx*dx+dy*dy+dz*dz));
 			}
 			
-			//printf("%d\t%d\t%d\r\n", p->mag_x, p->mag_y, p->mag_z);
+			g_ppm_output[0] = 1500 - (roll - roll_target)*9/17500 * 25;
+			g_ppm_output[1] = 1500 + (pitch - pitch_target)*9/17500 * 12;
+			
+			g_ppm_output[0] = max(1000, g_ppm_output[0]);
+			g_ppm_output[0] = min(2000, g_ppm_output[0]);
+			g_ppm_output[1] = max(1000, g_ppm_output[1]);
+			g_ppm_output[1] = min(2000, g_ppm_output[1]);
+			
+			PPM_update_output_channel(PPM_OUTPUT_CHANNEL0);
+			PPM_update_output_channel(PPM_OUTPUT_CHANNEL1);
 			
 			/*
 			for(i=0; i<6; i++)

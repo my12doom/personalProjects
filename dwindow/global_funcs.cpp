@@ -104,7 +104,7 @@ int find_phy_monitors()
 		info.cbSize = sizeof(MONITORINFOEX);
 		GetMonitorInfo(g_phy_monitors[count], &info);
 		RECT &rect = info.rcMonitor;
-		if (rect.right - rect.left == 720 && rect.bottom - rect.top == 480)
+		if (rect.right - rect.left == 800 && rect.bottom - rect.top == 480)
 			continue;
 #endif
 		count++;

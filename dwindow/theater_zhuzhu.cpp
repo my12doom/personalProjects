@@ -154,7 +154,7 @@ static INT_PTR CALLBACK threater_countrol_proc( HWND hDlg, UINT msg, WPARAM wPar
 		RECT pos;
 		get_mixed_monitor_by_id(0, &pos, NULL);
 		SIZE size;
-		size.cx = 720;
+		size.cx = 800;
 		size.cy = 480;
 		if (get_special_size_physical_monitor(size).right != 0)
 			pos = get_special_size_physical_monitor(size);
@@ -583,7 +583,7 @@ BOOL CALLBACK ZHUZHU_resize_proc(HWND hwnd, LPARAM lParam)
 	GetWindowTextW(hwnd, tmp, 1024);
 	//SetWindowPos(hwnd, NULL, rect.left, rect.top, (rect.right-rect.left)*720/800, rect.bottom-rect.top, SWP_NOMOVE);
 
-	MoveWindow(hwnd, rect.left*720/800, rect.top, (rect.right-rect.left)*720/800, rect.bottom-rect.top, TRUE);
+	//MoveWindow(hwnd, rect.left*720/800, rect.top, (rect.right-rect.left)*720/800, rect.bottom-rect.top, TRUE);
 
 	return TRUE;
 }
