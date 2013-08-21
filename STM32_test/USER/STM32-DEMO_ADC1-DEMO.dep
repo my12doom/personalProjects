@@ -1,5 +1,5 @@
 Dependencies for Project 'STM32-DEMO', Target 'ADC1-DEMO': (DO NOT MODIFY !)
-F (.\main.c)(0x52147E8E)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\main.o" --omf_browse "..\Output\main.crf" --depend "..\Output\main.d")
+F (.\main.c)(0x52148A9E)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\main.o" --omf_browse "..\Output\main.crf" --depend "..\Output\main.d")
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
 I (..\CMSIS\core_cm3.h)(0x4D523B58)
 I (C:\Keil\ARM\ARMCC\bin\..\include\stdint.h)(0x50F96150)
@@ -233,7 +233,7 @@ I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_exti.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_tim.h)(0x4D783BB4)
 I (..\FWlib\inc\misc.h)(0x5204995B)
-F (.\common\printf.c)(0x52146E47)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\printf.o" --omf_browse "..\Output\printf.crf" --depend "..\Output\printf.d")
+F (.\common\printf.c)(0x52147F03)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\printf.o" --omf_browse "..\Output\printf.crf" --depend "..\Output\printf.d")
 I (common\printf.h)(0x52146DC8)
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
 I (..\CMSIS\core_cm3.h)(0x4D523B58)

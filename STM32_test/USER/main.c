@@ -129,7 +129,7 @@ int main(void)
 		int t = TIM2->CNT - t;
 		int t2;
 		int delta[10] = {0};
-		while(1)
+		while(0)
 		{
 			GPIO_SetBits(GPIOA, GPIO_Pin_5);
 			
@@ -199,6 +199,7 @@ int main(void)
 		float accel_avg_z = 0;
 		float roll_target = 0;
 		float pitch_target = 0;
+		float yaw_target = 0;
 		sensor_data *p = (sensor_data*)data;
 		int z0=0, z1=0;
 		
@@ -209,18 +210,6 @@ int main(void)
 		
 		init_MS5611();
 		
-		while(1)
-		{
-			int k[2];
-			int kk;
-			kk = read_MS5611(k);
-			if (kk)
-				z1++;
-			else
-				z0++;
-			printf("\r %d,%d, %d(%d:%d)      ", k[0], k[1], kk, z0, z1);
-		}
-
 		for(i=0; i<1000; i++)
 		{
 			read_MPU6050(&p->accel_x);
@@ -245,9 +234,11 @@ int main(void)
 		accel_max /= 1000;
 		accel_max = sqrt(accel_max);
 		pitch = -atan(-(float)p->accel_x / sqrt(p->accel_z*p->accel_z+p->accel_y*p->accel_y)) * 180 / PI *17500/9;
-		roll = -atan(-(float)p->accel_y / p->accel_z) * 180 / PI *17500/9;		
+		roll = -atan(-(float)p->accel_y / p->accel_z) * 180 / PI *17500/9;
+		yaw = atan2(p->mag_x, p->mag_y) * 180.0 / PI*17500/9;
 		roll_target = roll;
 		pitch_target = pitch;
+		yaw_target = yaw;
 		
 		
 		printf("MPU6050 base value measured, b xyz=%f,%f,%f, accel_max=%f, roll,pitch=%f,%f \r\n", bx, by, bz, accel_max, roll, pitch);
@@ -299,14 +290,15 @@ int main(void)
 			
 			g_ppm_output[0] = 1500 - (roll - roll_target)*9/17500 * 25;
 			g_ppm_output[1] = 1500 + (pitch - pitch_target)*9/17500 * 12;
+			g_ppm_output[2] = 1500 + (yaw - yaw_target)*9/17500 * 12;
 			
-			g_ppm_output[0] = max(1000, g_ppm_output[0]);
-			g_ppm_output[0] = min(2000, g_ppm_output[0]);
-			g_ppm_output[1] = max(1000, g_ppm_output[1]);
-			g_ppm_output[1] = min(2000, g_ppm_output[1]);
+			for(i=0; i<3; i++)
+			{
+				g_ppm_output[i] = max(1000, g_ppm_output[i]);
+				g_ppm_output[i] = min(2000, g_ppm_output[i]);
+			}
 			
-			PPM_update_output_channel(PPM_OUTPUT_CHANNEL0);
-			PPM_update_output_channel(PPM_OUTPUT_CHANNEL1);
+			PPM_update_output_channel(PPM_OUTPUT_CHANNEL0 | PPM_OUTPUT_CHANNEL1 | PPM_OUTPUT_CHANNEL2);
 			
 			/*
 			for(i=0; i<6; i++)
@@ -322,8 +314,10 @@ int main(void)
 			
 			
 			
-			printf("yaw, yawI, yaw_mag, time = %f, %f, %f, %f\r\n", yaw*9/17500, yawI*9/17500, yaw_mag, (float)GetSysTickCount()/100000.0f);
+			//printf("yaw, yawI, yaw_mag, time = %f, %f, %f, %f\r\n", yaw*9/17500, yawI*9/17500, yaw_mag, (float)GetSysTickCount()/100000.0f);
 			//printf("%d\t%d\t%d\r", p->mag_x, p->mag_y, p->mag_z);
+			
+			printf("\r roll, pitch, yaw = %f, %f, %f", roll*9/17500, pitch*9/17500, yaw*9/17500);
 			
 			while(getus()-start_tick < 8000)
 				;
