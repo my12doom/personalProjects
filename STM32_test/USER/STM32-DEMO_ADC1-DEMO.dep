@@ -1,5 +1,5 @@
 Dependencies for Project 'STM32-DEMO', Target 'ADC1-DEMO': (DO NOT MODIFY !)
-F (.\main.c)(0x52133EC0)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\main.o" --omf_browse "..\Output\main.crf" --depend "..\Output\main.d")
+F (.\main.c)(0x52147E8E)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\main.o" --omf_browse "..\Output\main.crf" --depend "..\Output\main.d")
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
 I (..\CMSIS\core_cm3.h)(0x4D523B58)
 I (C:\Keil\ARM\ARMCC\bin\..\include\stdint.h)(0x50F96150)
@@ -10,21 +10,20 @@ I (..\FWlib\inc\stm32f10x_dma.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_gpio.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_rcc.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
-I (common/printf.h)(0x4E3BEBF1)
-I (C:\Keil\ARM\ARMCC\bin\..\include\stdio.h)(0x50F96150)
+I (common/printf.h)(0x52146DC8)
 I (common/adc.h)(0x4E3399E1)
-I (..\FWlib\inc\stm32f10x_i2c.h)(0x4D783BB4)
-I (..\FWlib\inc\stm32f10x_spi.h)(0x4D783BB4)
-I (common/I2C.h)(0x521329A8)
-I (stm32f10x_it.h)(0x52099022)
+I (common/I2C.h)(0x52141F53)
 I (common/NRF24L01.h)(0x521320DA)
 I (C:\Keil\ARM\ARMCC\bin\..\include\math.h)(0x50F96150)
 I (common/PPM.h)(0x520D8968)
 I (common/sdio_sdcard.h)(0x4F3BB426)
+I (common/common.h)(0x52132AA8)
+I (common/timer.h)(0x52147B75)
 I (sensors/HMC5883.h)(0x5213267B)
 I (sensors/MPU6050.h)(0x52132EE4)
 I (sensors/MS5611.h)(0x5213357A)
-F (.\stm32f10x_it.c)(0x52131D8C)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\stm32f10x_it.o" --omf_browse "..\Output\stm32f10x_it.crf" --depend "..\Output\stm32f10x_it.d")
+I (C:\Keil\ARM\ARMCC\bin\..\include\stdio.h)(0x50F96150)
+F (.\stm32f10x_it.c)(0x52146FC0)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\stm32f10x_it.o" --omf_browse "..\Output\stm32f10x_it.crf" --depend "..\Output\stm32f10x_it.d")
 I (stm32f10x_it.h)(0x52099022)
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
 I (..\CMSIS\core_cm3.h)(0x4D523B58)
@@ -190,8 +189,8 @@ I (..\FWlib\inc\stm32f10x_dma.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_gpio.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_rcc.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
-F (.\common\I2C.c)(0x5213154C)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\i2c.o" --omf_browse "..\Output\i2c.crf" --depend "..\Output\i2c.d")
-I (common\I2C.h)(0x521329A8)
+F (.\common\I2C.c)(0x52147027)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\i2c.o" --omf_browse "..\Output\i2c.crf" --depend "..\Output\i2c.d")
+I (common\I2C.h)(0x52141F53)
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
 I (..\CMSIS\core_cm3.h)(0x4D523B58)
 I (C:\Keil\ARM\ARMCC\bin\..\include\stdint.h)(0x50F96150)
@@ -203,7 +202,8 @@ I (..\FWlib\inc\stm32f10x_gpio.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_rcc.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_i2c.h)(0x4D783BB4)
-F (.\common\NRF24L01.c)(0x52132063)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\nrf24l01.o" --omf_browse "..\Output\nrf24l01.crf" --depend "..\Output\nrf24l01.d")
+I (common\timer.h)(0x52147B75)
+F (.\common\NRF24L01.c)(0x5214704F)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\nrf24l01.o" --omf_browse "..\Output\nrf24l01.crf" --depend "..\Output\nrf24l01.d")
 I (common\NRF24L01.h)(0x521320DA)
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
 I (..\CMSIS\core_cm3.h)(0x4D523B58)
@@ -217,6 +217,7 @@ I (..\FWlib\inc\stm32f10x_rcc.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_spi.h)(0x4D783BB4)
 I (..\USER\stm32f10x_it.h)(0x52099022)
+I (common\..\common\timer.h)(0x52147B75)
 F (.\common\PPM.c)(0x520F312A)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\ppm.o" --omf_browse "..\Output\ppm.crf" --depend "..\Output\ppm.d")
 I (common\PPM.h)(0x520D8968)
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
@@ -232,8 +233,8 @@ I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_exti.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_tim.h)(0x4D783BB4)
 I (..\FWlib\inc\misc.h)(0x5204995B)
-F (.\common\printf.c)(0x52131E0C)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\printf.o" --omf_browse "..\Output\printf.crf" --depend "..\Output\printf.d")
-I (common\printf.h)(0x4E3BEBF1)
+F (.\common\printf.c)(0x52146E47)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\printf.o" --omf_browse "..\Output\printf.crf" --depend "..\Output\printf.d")
+I (common\printf.h)(0x52146DC8)
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
 I (..\CMSIS\core_cm3.h)(0x4D523B58)
 I (C:\Keil\ARM\ARMCC\bin\..\include\stdint.h)(0x50F96150)
@@ -244,9 +245,10 @@ I (..\FWlib\inc\stm32f10x_dma.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_gpio.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_rcc.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
-I (C:\Keil\ARM\ARMCC\bin\..\include\stdio.h)(0x50F96150)
+I (common\config.h)(0x52146E4B)
 I (C:\Keil\ARM\ARMCC\bin\..\include\stdarg.h)(0x50F9614E)
 I (..\FWlib\inc\misc.h)(0x5204995B)
+I (C:\Keil\ARM\ARMCC\bin\..\include\stdio.h)(0x50F96150)
 F (.\common\sdio_sdcard.c)(0x52131E06)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\sdio_sdcard.o" --omf_browse "..\Output\sdio_sdcard.crf" --depend "..\Output\sdio_sdcard.d")
 I (common\sdio_sdcard.h)(0x4F3BB426)
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
@@ -261,10 +263,23 @@ I (..\FWlib\inc\stm32f10x_rcc.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_sdio.h)(0x520F106D)
 I (..\FWlib\inc\misc.h)(0x5204995B)
-F (.\common\timer.c)(0x52131A06)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\timer.o" --omf_browse "..\Output\timer.crf" --depend "..\Output\timer.d")
-F (.\sensors\HMC5883.c)(0x52132B50)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\hmc5883.o" --omf_browse "..\Output\hmc5883.crf" --depend "..\Output\hmc5883.d")
+F (.\common\timer.c)(0x52147D50)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\timer.o" --omf_browse "..\Output\timer.crf" --depend "..\Output\timer.d")
+I (common\timer.h)(0x52147B75)
+I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
+I (..\CMSIS\core_cm3.h)(0x4D523B58)
+I (C:\Keil\ARM\ARMCC\bin\..\include\stdint.h)(0x50F96150)
+I (..\CMSIS\system_stm32f10x.h)(0x4D783CAA)
+I (..\USER\stm32f10x_conf.h)(0x4FC03992)
+I (..\FWlib\inc\stm32f10x_adc.h)(0x4D783BB4)
+I (..\FWlib\inc\stm32f10x_dma.h)(0x4D783BB4)
+I (..\FWlib\inc\stm32f10x_gpio.h)(0x4D783BB4)
+I (..\FWlib\inc\stm32f10x_rcc.h)(0x4D783BB4)
+I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
+I (..\FWlib\inc\stm32f10x_tim.h)(0x4D783BB4)
+I (..\FWlib\inc\misc.h)(0x5204995B)
+F (.\sensors\HMC5883.c)(0x5214707A)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\hmc5883.o" --omf_browse "..\Output\hmc5883.crf" --depend "..\Output\hmc5883.d")
 I (sensors\HMC5883.h)(0x5213267B)
-I (sensors\../common/I2C.h)(0x521329A8)
+I (sensors\../common/I2C.h)(0x52141F53)
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
 I (..\CMSIS\core_cm3.h)(0x4D523B58)
 I (C:\Keil\ARM\ARMCC\bin\..\include\stdint.h)(0x50F96150)
@@ -276,12 +291,12 @@ I (..\FWlib\inc\stm32f10x_gpio.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_rcc.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
 I (sensors\../common/common.h)(0x52132AA8)
-I (sensors\../common/timer.h)(0x52131A06)
+I (sensors\../common/timer.h)(0x52147B75)
 I (C:\Keil\ARM\ARMCC\bin\..\include\math.h)(0x50F96150)
-F (.\sensors\MPU6050.c)(0x5213320C)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\mpu6050.o" --omf_browse "..\Output\mpu6050.crf" --depend "..\Output\mpu6050.d")
+F (.\sensors\MPU6050.c)(0x52147089)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\mpu6050.o" --omf_browse "..\Output\mpu6050.crf" --depend "..\Output\mpu6050.d")
 I (sensors\MPU6050.h)(0x52132EE4)
 I (C:\Keil\ARM\ARMCC\bin\..\include\stdio.h)(0x50F96150)
-I (sensors\../common/I2C.h)(0x521329A8)
+I (sensors\../common/I2C.h)(0x52141F53)
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
 I (..\CMSIS\core_cm3.h)(0x4D523B58)
 I (C:\Keil\ARM\ARMCC\bin\..\include\stdint.h)(0x50F96150)
@@ -293,10 +308,10 @@ I (..\FWlib\inc\stm32f10x_gpio.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_rcc.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
 I (sensors\../common/common.h)(0x52132AA8)
-I (sensors\../common/timer.h)(0x52131A06)
-F (.\sensors\MS5611.c)(0x52133E46)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\ms5611.o" --omf_browse "..\Output\ms5611.crf" --depend "..\Output\ms5611.d")
+I (sensors\../common/timer.h)(0x52147B75)
+F (.\sensors\MS5611.c)(0x521470C5)(-c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork -I..\CMSIS -I..\USER -I..\FWlib\inc -I..\FWlib\src -I C:\Keil\ARM\RV31\INC -I C:\Keil\ARM\CMSIS\Include -I C:\Keil\ARM\Inc\ST\STM32F10x -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD -o "..\Output\ms5611.o" --omf_browse "..\Output\ms5611.crf" --depend "..\Output\ms5611.d")
 I (sensors\MS5611.h)(0x5213357A)
-I (sensors\../common/I2C.h)(0x521329A8)
+I (sensors\../common/I2C.h)(0x52141F53)
 I (..\CMSIS\stm32f10x.h)(0x4D783CB4)
 I (..\CMSIS\core_cm3.h)(0x4D523B58)
 I (C:\Keil\ARM\ARMCC\bin\..\include\stdint.h)(0x50F96150)
@@ -308,4 +323,4 @@ I (..\FWlib\inc\stm32f10x_gpio.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_rcc.h)(0x4D783BB4)
 I (..\FWlib\inc\stm32f10x_usart.h)(0x4D783BB4)
 I (sensors\../common/common.h)(0x52132AA8)
-I (sensors\../common/timer.h)(0x52131A06)
+I (sensors\../common/timer.h)(0x52147B75)

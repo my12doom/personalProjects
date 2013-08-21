@@ -35,7 +35,7 @@ int init_MPU6050(void)
 	u8 who_am_i = 0;
 
 	printf("start MPU6050\r\n");
-	msdelay(1000);
+	delayms(10);
 	I2C_WriteReg(MPU6050SlaveAddress, PWR_MGMT_1, 0x00);
 	I2C_WriteReg(MPU6050SlaveAddress, SMPLRT_DIV, 0x07);
 	I2C_WriteReg(MPU6050SlaveAddress, MPU6050_CONFIG, 0x06);
@@ -47,7 +47,7 @@ int init_MPU6050(void)
 	
 	// enable I2C bypass for AUX I2C and initialize HMC5883 into continues mode
 	I2C_WriteReg(MPU6050SlaveAddress, 0x37, 0x02);
-	msdelay(10000);
+	delayms(10);
 	
 	return 0;
 }
@@ -60,4 +60,6 @@ int read_MPU6050(short*data)
 	int o = I2C_ReadReg(MPU6050SlaveAddress, ACCEL_XOUT_H, (u8*)data, 14);
 	for(i=0; i<7; i++)
 		swap((u8*)&data[i], 2);
+	
+	return 0;
 }

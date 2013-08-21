@@ -8,20 +8,16 @@
 #include "stm32f10x.h"
 #include "common/printf.h"
 #include "common/adc.h"
-#include "stm32f10x_i2c.h"
-#include "stm32f10x_spi.h"
 #include "common/I2C.h"
-#include "stm32f10x_it.h"
 #include "common/NRF24L01.h"
 #include "math.h"
-#include "stm32f10x_usart.h"
 #include "common/PPM.h"
 #include "common/sdio_sdcard.h"
+#include "common/common.h"
 #include "sensors/HMC5883.h"
 #include "sensors/MPU6050.h"
 #include "sensors/MS5611.h"
-
-// I2C functions
+#include <stdio.h>
 
 
 // ADC1转换的电压值通过MDA方式传到SRAM
@@ -82,19 +78,6 @@ int min(int a, int b)
 	return b;
 }
 
-int max(int a, int b)
-{
-	if (a>b)
-		return a;
-	return b;
-}
-int min(int a, int b)
-{
-	if (a<b)
-		return a;
-	return b;
-}
-
 #define PI 3.14159265
 
 
@@ -117,14 +100,57 @@ int main(void)
 	SysTick_Config(720);
 
 	// Basic Initialization
-	USART1_Config();
+	printf_init();
 	SPI_NRF_Init();
 	i = NRF_Check();
 	printf("NRF_Check() = %d", i);
 	PPM_init(1);
 	I2C_init(0x30);
+	init_timer();
 	
-	// SD Card test
+	
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_4 | GPIO_Pin_5;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	
+	while(0)
+	{
+		int64_t t = getus();
+		int64_t t2 = getus();
+		
+		if (t2<t)
+			printf("!!!! %d=%d-%d\r\n", (int)(t-t2), (int)(t%60000), (int)(t2%60000));
+		if (t2-t>100)
+			printf("!! %d=%d-%d\r\n", (int)(t2-t), (int)(t2%60000), (int)(t%60000));
+	}
+	
+	{
+		int t = TIM2->CNT - t;
+		int t2;
+		int delta[10] = {0};
+		while(1)
+		{
+			GPIO_SetBits(GPIOA, GPIO_Pin_5);
+			
+			GPIO_SetBits(GPIOA, GPIO_Pin_4);
+			delayus(10);
+			GPIO_ResetBits(GPIOA, GPIO_Pin_4);
+			delayus(10);
+			GPIO_SetBits(GPIOA, GPIO_Pin_4);
+			delayus(10);
+			GPIO_ResetBits(GPIOA, GPIO_Pin_4);
+			delayus(10);
+			GPIO_SetBits(GPIOA, GPIO_Pin_4);
+			delayus(10);
+			GPIO_ResetBits(GPIOA, GPIO_Pin_4);
+			delayus(10);
+			
+			GPIO_ResetBits(GPIOA, GPIO_Pin_5);
+		}
+	
+	}
+// SD Card test
 	/*
 	NRF_TX_Mode();
 	while(1)
@@ -235,7 +261,7 @@ int main(void)
 			float pitch_mag;
 			static const float factor = 0.995;
 			static const float factor_1 = 1-factor;
-			int start_tick = GetSysTickCount();
+			int start_tick = getus();
 			
 			GPIO_ResetBits(GPIOA, GPIO_Pin_4);
 			
@@ -299,7 +325,7 @@ int main(void)
 			printf("yaw, yawI, yaw_mag, time = %f, %f, %f, %f\r\n", yaw*9/17500, yawI*9/17500, yaw_mag, (float)GetSysTickCount()/100000.0f);
 			//printf("%d\t%d\t%d\r", p->mag_x, p->mag_y, p->mag_z);
 			
-			while(GetSysTickCount()-start_tick < 800)
+			while(getus()-start_tick < 8000)
 				;
 		}
 		

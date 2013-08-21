@@ -21,7 +21,7 @@
 #define MS561101BA_PROM_REG_SIZE 2 // size in bytes of a prom registry.
 #define EXTRA_PRECISION 0 // trick to add more precision to the pressure and temp readings
 
-#define SAMPLEING_TIME 1000 // 10ms
+#define SAMPLEING_TIME 10000 // 10000us, 10ms
 
 u8 OSR = MS561101BA_OSR_4096;
 int temperature = 0;
@@ -43,7 +43,7 @@ int init_MS5611(void)
 	int i;
 	
 	I2C_WriteReg(MS5611Address, MS561101BA_RESET, 0x00);	
-	msdelay(1000);
+	delayms(10);
 	for(i=0; i<6; i++)
 	{
 		I2C_ReadReg(MS5611Address, MS561101BA_PROM_BASE_ADDR+i*2, tmp, 2);
@@ -52,7 +52,7 @@ int init_MS5611(void)
 	
 	// Temperature
 	I2C_WriteReg(MS5611Address, MS561101BA_D2 + OSR, 0x00);
-	msdelay(10000);
+	delayms(10);
 	I2C_ReadReg(MS5611Address, 0x00, tmp, 3);
 	
 	rawTemperature = ((int)tmp[0] << 16) + ((int)tmp[1] << 8) + (int)tmp[2];
@@ -61,7 +61,7 @@ int init_MS5611(void)
 		
 	// Pressure
 	I2C_WriteReg(MS5611Address, MS561101BA_D1 + OSR, 0x00);
-	msdelay(10000);
+	delayms(10);
 	I2C_ReadReg(MS5611Address, 0x00, tmp, 3);
 	
 	rawPressure = ((int)tmp[0] << 16) + ((int)tmp[1] << 8) + (int)tmp[2];
@@ -79,11 +79,11 @@ int read_MS5611(int *data)
 	u8 tmp[3];
 	if (new_temperature == 0 && last_temperature_time == 0 && last_pressure_time == 0)
 	{
-		last_temperature_time = GetSysTickCount();
+		last_temperature_time = getus();
 		I2C_WriteReg(MS5611Address, MS561101BA_D2 + OSR, 0x00);
 	}
 	
-	if (GetSysTickCount() - last_temperature_time >  SAMPLEING_TIME && new_temperature == 0)
+	if (getus() - last_temperature_time >  SAMPLEING_TIME && new_temperature == 0)
 	{
 		I2C_ReadReg(MS5611Address, 0x00, tmp, 3);
 	
@@ -91,11 +91,11 @@ int read_MS5611(int *data)
 		DeltaTemp = rawTemperature - (((int32_t)refdata[4]) << 8);
 		new_temperature = ((1<<EXTRA_PRECISION)*2000l + ((DeltaTemp * refdata[5]) >> (23-EXTRA_PRECISION))) / ((1<<EXTRA_PRECISION));
 		
-		last_pressure_time = GetSysTickCount();
+		last_pressure_time = getus();
 		I2C_WriteReg(MS5611Address, MS561101BA_D1 + OSR, 0x00);
 	}
 
-	if (GetSysTickCount() - last_pressure_time >  SAMPLEING_TIME && last_pressure_time > 0)
+	if (getus() - last_pressure_time >  SAMPLEING_TIME && last_pressure_time > 0)
 	{
 		I2C_ReadReg(MS5611Address, 0x00, tmp, 3);
 		rawPressure = ((int)tmp[0] << 16) + ((int)tmp[1] << 8) + (int)tmp[2];

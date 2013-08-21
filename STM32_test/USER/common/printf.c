@@ -1,27 +1,12 @@
-/******************** (C) COPYRIGHT 2012 ***************** ***************************
- * 文件名  ：usart1.c
- * 描述    ：将printf函数重定向到USART1。这样就可以用printf函数将单片机的数据
- *           打印到PC上的超级终端或串口调试助手。         
- * 实验平台：STM32开发板
- * 硬件连接：------------------------
- *          | PA9  - USART1(Tx)      |
- *          | PA10 - USART1(Rx)      |
- *           ------------------------
- * 库版本  ：ST3.5.0
-**********************************************************************************/
 #include "printf.h"
+#include "config.h"
 #include <stdarg.h>
 #include <misc.h>
+#include <stdio.h>
 
-/*
- * 函数名：USART1_Config
- * 描述  ：USART1 GPIO 配置,工作模式配置。115200 8-N-1
- * 输入  ：无
- * 输出  : 无
- * 调用  ：外部调用
- */
-void USART1_Config(void)
+void printf_init(void)
 {
+#ifndef ITM_DBG
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
@@ -42,7 +27,7 @@ void USART1_Config(void)
 	
 
 	// NVIC config
-  NVIC_PriorityGroupConfig(NVIC_PriorityGroup_0);
+  NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
   NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;   /*3.4??????USART1_IRQChannel,?stm32f10x.h?*/
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
@@ -58,9 +43,10 @@ void USART1_Config(void)
 	USART_Init(USART1, &USART_InitStructure); 
 	USART_Cmd(USART1, ENABLE);
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+#endif
 }
 
-#if 0
+#ifndef ITM_DBG
 int fputc(int ch, FILE *f)
 {
 	USART_SendData(USART1, (unsigned char) ch);

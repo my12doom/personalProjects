@@ -1,7 +1,7 @@
 #include "NRF24L01.h"
 #include "stm32f10x_spi.h"
 #include "stm32f10x_it.h"
-
+#include "..\common\timer.h"
 
 #define NRF_CSN_HIGH(x) GPIO_SetBits(GPIOA,GPIO_Pin_1)
 #define NRF_CSN_LOW(x) GPIO_ResetBits(GPIOA,GPIO_Pin_1)
@@ -227,7 +227,7 @@ void power_off()
 	NRF_CE_LOW();
 	SPI_NRF_WriteReg(NRF_WRITE_REG + CONFIG, 0x0D);
 	NRF_CE_HIGH();
-	msdelay(1);
+	delayus(10);
 }
 
 void NRF_RX_Mode(void)
@@ -252,7 +252,7 @@ void NRF_RX_Mode(void)
 
 	//CE 拉高，进入接收模式*/
 	NRF_CE_HIGH();
-	msdelay(1);
+	delayus(10);
 }
 
 void NRF_TX_Mode(void)
@@ -278,7 +278,7 @@ void NRF_TX_Mode(void)
 
 	//CE拉高，进入发送模式*/
 	NRF_CE_HIGH();
-	msdelay(1); //CE要拉高一段时间才进入发送模式
+	delayus(10); //CE要拉高一段时间才进入发送模式
 }
 
 /*

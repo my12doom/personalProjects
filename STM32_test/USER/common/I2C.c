@@ -1,5 +1,6 @@
 #include "I2C.h"
 #include "stm32f10x_i2c.h"
+#include "timer.h"
 
 int I2C_init(u8 OwnAddress1)
 {
@@ -28,13 +29,13 @@ int I2C_init(u8 OwnAddress1)
 	// bit banging reset
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, DISABLE);
 	GPIO_ResetBits(GPIOB, GPIO_Pin_10);
-	msdelay(10);
+	delayus(100);
 	GPIO_ResetBits(GPIOB, GPIO_Pin_11);
-	msdelay(10);
+	delayus(100);
 	GPIO_SetBits(GPIOB, GPIO_Pin_10);
-	msdelay(10);
+	delayus(100);
 	GPIO_SetBits(GPIOB, GPIO_Pin_10);
-	msdelay(10);
+	delayus(100);
 	
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);       
@@ -138,22 +139,22 @@ int I2C_WriteReg2(u8 SlaveAddress, u8 Register, u8 data)
 	// start
 	I2C_GenerateSTART(I2C2, ENABLE);
 	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT)); 
-	msdelay(100);
+	delayus(1000);
 
 	// send slave address
 	I2C_Send7bitAddress(I2C2, SlaveAddress, I2C_Direction_Transmitter);
-	msdelay(100);
+	delayus(1000);
 	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
 
 	// send Register address
 	I2C_SendData(I2C2, Register);
-	msdelay(100);
+	delayus(1000);
 	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
 
 	// send data
 	I2C_SendData(I2C2, data); 
-	msdelay(100);
+	delayus(1000);
 	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
 
