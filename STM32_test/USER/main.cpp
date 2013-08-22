@@ -1,10 +1,5 @@
-/******************** (C) COPYRIGHT 2012 ***************** **************************
- * 文件名  ：main.c
- * 描述    ：串口1(USART1)向电脑的超级终端以1s为间隔打印当前ADC1的转换电压值         
- * 实验平台：STM32开发板
- * 库版本  ：ST3.5.0
- *
-**********************************************************************************/
+extern "C"
+{
 #include "stm32f10x.h"
 #include "common/printf.h"
 #include "common/adc.h"
@@ -18,21 +13,7 @@
 #include "sensors/MPU6050.h"
 #include "sensors/MS5611.h"
 #include <stdio.h>
-
-
-// ADC1转换的电压值通过MDA方式传到SRAM
-extern __IO uint16_t ADC_ConvertedValue;
-
-// 局部变量，用于保存转换计算后的电压值			 
-
-float ADC_ConvertedValueLocal;        
-
-// 软件延时
-void Delay(__IO uint32_t nCount)
-{
-  for(; nCount != 0; nCount--);
-} 
-
+}
 
 typedef struct
 {
@@ -85,21 +66,12 @@ int min(int a, int b)
 int main(void)
 {
 	int i=0;
-	int j=0;
 	int result;
-	float avg;
-	int total_tx = 0;
 	u8 data[32] = {0};
-	u8 rawdata[3] = {0};
-	GPIO_InitTypeDef GPIO_InitStructure;
 
-	u32 Status;
-	SD_Error err;
-	int block_to_test;
-	extern SD_CardInfo SDCardInfo;
-	SysTick_Config(720);
 
 	// Basic Initialization
+	SysTick_Config(720);
 	printf_init();
 	SPI_NRF_Init();
 	i = NRF_Check();
@@ -107,79 +79,6 @@ int main(void)
 	PPM_init(1);
 	I2C_init(0x30);
 	init_timer();
-	
-	
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_4 | GPIO_Pin_5;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	
-	while(0)
-	{
-		int64_t t = getus();
-		int64_t t2 = getus();
-		
-		if (t2<t)
-			printf("!!!! %d=%d-%d\r\n", (int)(t-t2), (int)(t%60000), (int)(t2%60000));
-		if (t2-t>100)
-			printf("!! %d=%d-%d\r\n", (int)(t2-t), (int)(t2%60000), (int)(t%60000));
-	}
-	
-	{
-		int t = TIM2->CNT - t;
-		int t2;
-		int delta[10] = {0};
-		while(0)
-		{
-			GPIO_SetBits(GPIOA, GPIO_Pin_5);
-			
-			GPIO_SetBits(GPIOA, GPIO_Pin_4);
-			delayus(10);
-			GPIO_ResetBits(GPIOA, GPIO_Pin_4);
-			delayus(10);
-			GPIO_SetBits(GPIOA, GPIO_Pin_4);
-			delayus(10);
-			GPIO_ResetBits(GPIOA, GPIO_Pin_4);
-			delayus(10);
-			GPIO_SetBits(GPIOA, GPIO_Pin_4);
-			delayus(10);
-			GPIO_ResetBits(GPIOA, GPIO_Pin_4);
-			delayus(10);
-			
-			GPIO_ResetBits(GPIOA, GPIO_Pin_5);
-		}
-	
-	}
-// SD Card test
-	/*
-	NRF_TX_Mode();
-	while(1)
-	{
-		u8 result = NRF_Tx_Dat(data);
-		
-		if (result == TX_OK)
-		{
-			printf("\rTX_OK count : %d", total_tx ++);
-		}
-	}
-	*/
-	
-	
-	/*
-	while(1)
-	{
-		i++;
-		for(j=0; j<8; j++)
-			g_ppm_output[j] = 1000+ abs(1000 - ((i/100) % 2000));
-		PPM_update_output_channel(PPM_OUTPUT_CHANNEL2);
-		if (i % 2000 == 0)
-			printf("\r PPM input = %d, %d, %d, %d", g_ppm_input[0], g_ppm_input[1], g_ppm_input[2], g_ppm_input[3]);
-		;
-	}
-	*/
-
-
-
 	
 
 	do
@@ -201,7 +100,6 @@ int main(void)
 		float pitch_target = 0;
 		float yaw_target = 0;
 		sensor_data *p = (sensor_data*)data;
-		int z0=0, z1=0;
 		
 		init_MPU6050();
 		
@@ -222,7 +120,7 @@ int main(void)
 			accel_avg_x += p->accel_x;
 			accel_avg_y += p->accel_y;
 			accel_avg_z += p->accel_z;
-			msdelay(100);
+			delayms(1);
 		}
 		
 		bx /= 1000;
@@ -233,9 +131,9 @@ int main(void)
 		accel_avg_z /= 1000;
 		accel_max /= 1000;
 		accel_max = sqrt(accel_max);
-		pitch = -atan(-(float)p->accel_x / sqrt(p->accel_z*p->accel_z+p->accel_y*p->accel_y)) * 180 / PI *17500/9;
+		pitch = -atan(-(float)p->accel_x / sqrt((float)p->accel_z*p->accel_z+p->accel_y*p->accel_y)) * 180 / PI *17500/9;
 		roll = -atan(-(float)p->accel_y / p->accel_z) * 180 / PI *17500/9;
-		yaw = atan2(p->mag_x, p->mag_y) * 180.0 / PI*17500/9;
+		yaw = atan2((float)p->mag_x, (float)p->mag_y) * 180.0 / PI*17500/9;
 		roll_target = roll;
 		pitch_target = pitch;
 		yaw_target = yaw;
@@ -249,7 +147,6 @@ int main(void)
 			float roll_accel;
 			float pitch_accel;
 			float yaw_mag;
-			float pitch_mag;
 			static const float factor = 0.995;
 			static const float factor_1 = 1-factor;
 			int start_tick = getus();
@@ -264,13 +161,13 @@ int main(void)
 			roll += p->gyro_x - bx;
 			rollI += p->gyro_x - bx;
 			
-			pitch_accel = -atan(-(float)p->accel_x / sqrt(p->accel_z*p->accel_z+p->accel_y*p->accel_y)) * 180 / PI;			
+			pitch_accel = -atan(-(float)p->accel_x / sqrt((float)p->accel_z*p->accel_z+p->accel_y*p->accel_y)) * 180 / PI;			
 			roll_accel = -atan(-(float)p->accel_y / p->accel_z) * 180 / PI;
 			
 			pitch = factor*pitch + factor_1* pitch_accel*17500/9;
 			roll = factor*roll + factor_1* roll_accel*17500/9;
 			
-			yaw_mag = atan2(p->mag_x, p->mag_y) * 180.0 / PI;
+			yaw_mag = atan2((float)p->mag_x, (float)p->mag_y) * 180.0 / PI;
 			yaw += p->gyro_z - bz;
 			yawI += p->gyro_z - bz;
 			yaw = yaw*factor + factor_1* yaw_mag*17500/9;
@@ -339,29 +236,6 @@ int main(void)
 		
 		if (result== RX_OK)
 		{
-			sensor_data *p = (sensor_data*)data;			
 		}
-	}
-	
-	/* enable adc1 and config adc1 to dma mode */
-	ADC1_Init();
-	
-	printf("\r\n -------这是一个ADC实验------\r\n");
-	
-	while (1)
-	{
-		avg = 0;
-		for(i=0;i<200;i++)
-		{
-			ADC_ConvertedValueLocal =(float) ADC_ConvertedValue/4095*3.374*2.957; // 读取转换的AD值
-			avg += ADC_ConvertedValueLocal;
-			Delay(0xff);                              // 延时 
-		}
-		
-		avg /= 200.0f;
-	
-		printf("The current AD value = %f V, The current AD value = 0x%04X \r\n",avg, ADC_ConvertedValue);		
-		
 	}
 }
-/******************* (C) COPYRIGHT 2012 ***************** *****END OF FILE************/
