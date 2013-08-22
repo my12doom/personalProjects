@@ -7,7 +7,7 @@
 
   <Targets>
     <Target>
-      <TargetName>ADC1-DEMO</TargetName>
+      <TargetName>YetAnotherPilot</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
       <TargetOption>
@@ -44,7 +44,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>..\Output\</OutputDirectory>
-          <OutputName>STM32-DEMO</OutputName>
+          <OutputName>yetanotherpilot</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -166,7 +166,7 @@
             <DriverSelection>4099</DriverSelection>
           </Flash1>
           <Flash2>Segger\JL2CM3.dll</Flash2>
-          <Flash3></Flash3>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
         </Utilities>
         <TargetArmAds>
@@ -350,7 +350,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER, STM32F10X_HD</Define>
               <Undefine></Undefine>
-              <IncludePath>..\CMSIS;..\USER;..\FWlib\inc;..\FWlib\src</IncludePath>
+              <IncludePath>stm32\CMSIS;stm32\FWlib\inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -389,13 +389,8 @@
       </TargetOption>
       <Groups>
         <Group>
-          <GroupName>USER</GroupName>
+          <GroupName>pilot</GroupName>
           <Files>
-            <File>
-              <FileName>stm32f10x_it.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\stm32f10x_it.c</FilePath>
-            </File>
             <File>
               <FileName>main.cpp</FileName>
               <FileType>8</FileType>
@@ -404,77 +399,22 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>sys</GroupName>
+          <GroupName>sensors</GroupName>
           <Files>
             <File>
-              <FileName>startup_stm32f10x_hd.s</FileName>
-              <FileType>2</FileType>
-              <FilePath>..\CMSIS\startup\startup_stm32f10x_hd.s</FilePath>
+              <FileName>HMC5883.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\sensors\HMC5883.c</FilePath>
             </File>
             <File>
-              <FileName>stm32f10x_sdio.c</FileName>
+              <FileName>MPU6050.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\FWlib\src\stm32f10x_sdio.c</FilePath>
+              <FilePath>.\sensors\MPU6050.c</FilePath>
             </File>
             <File>
-              <FileName>stm32f10x_exti.c</FileName>
+              <FileName>MS5611.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\FWlib\src\stm32f10x_exti.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_tim.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\FWlib\src\stm32f10x_tim.c</FilePath>
-            </File>
-            <File>
-              <FileName>misc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\FWlib\src\misc.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_spi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\FWlib\src\stm32f10x_spi.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_i2c.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\FWlib\src\stm32f10x_i2c.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_usart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\FWlib\src\stm32f10x_usart.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_dma.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\FWlib\src\stm32f10x_dma.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_adc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\FWlib\src\stm32f10x_adc.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_rcc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\FWlib\src\stm32f10x_rcc.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_gpio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\FWlib\src\stm32f10x_gpio.c</FilePath>
-            </File>
-            <File>
-              <FileName>system_stm32f10x.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CMSIS\system_stm32f10x.c</FilePath>
-            </File>
-            <File>
-              <FileName>core_cm3.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CMSIS\core_cm3.c</FilePath>
+              <FilePath>.\sensors\MS5611.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -519,22 +459,12 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>sensors</GroupName>
+          <GroupName>stm32</GroupName>
           <Files>
             <File>
-              <FileName>HMC5883.c</FileName>
+              <FileName>stm32f10x_it.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\sensors\HMC5883.c</FilePath>
-            </File>
-            <File>
-              <FileName>MPU6050.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\sensors\MPU6050.c</FilePath>
-            </File>
-            <File>
-              <FileName>MS5611.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\sensors\MS5611.c</FilePath>
+              <FilePath>.\stm32f10x_it.c</FilePath>
             </File>
           </Files>
         </Group>

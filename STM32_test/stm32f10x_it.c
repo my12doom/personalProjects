@@ -128,7 +128,6 @@ void PendSV_Handler(void)
 {
 }
 
-u32 g_systick = 0;
 /**
   * @brief  This function handles SysTick Handler.
   * @param  None
@@ -136,26 +135,8 @@ u32 g_systick = 0;
   */
 void SysTick_Handler(void)
 {
-	g_systick++;
 }
 
-u32 GetSysTickCount(void)
-{
-	return g_systick;
-}
-void SysTick_Configuration(void) 
-
-{ 
-
-    //SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);//时钟除8 
-
-    //SysTick_SetReload(250000);                                                  //计数周期长度 
-
-    //SysTick_CounterCmd(SysTick_Counter_Enable);                 //启动计时器 
-
-    //SysTick_ITConfig(ENABLE);                                                      //打开中断 
-
-} 
 
 void USART1_IRQHandler(void)
 {
@@ -176,32 +157,6 @@ void USART1_IRQHandler(void)
         USART_SendData(USART1,i);
 }
 
-void msdelay(u32 us)
-{
-	tickdelay(GetSysTickCount(), us);
-}
-
-void tickdelay(u32 start, u32 delta)
-{
-	u32 target = start + delta;
-
-	if (start <= target)
-	{
-		while(GetSysTickCount() < target)
-			;
-	}
-	else
-	{
-		while (GetSysTickCount() > start || GetSysTickCount() < target)
-			;
-	}
-}
-u32 tickdelta(u32 start, u32 end)
-{
-	if (end>start)
-		return end-start;
-	return (((u32)0xffffffff) - start) + end;
-}
 
 /******************************************************************************/
 /*                 STM32F10x Peripherals Interrupt Handlers                   */

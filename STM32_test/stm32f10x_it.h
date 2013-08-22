@@ -45,11 +45,6 @@ void SVC_Handler(void);
 void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
-u32 GetSysTickCount(void);
-void tickdelay(u32 start, u32 delta);
-u32 tickdelta(u32 start, u32 end);
-void SysTick_Configuration(void);
-void udelay(u32 us);
 
 #ifdef __cplusplus
 }

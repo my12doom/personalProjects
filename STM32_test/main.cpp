@@ -66,9 +66,6 @@ int min(int a, int b)
 int main(void)
 {
 	int i=0;
-	int result;
-	u8 data[32] = {0};
-
 
 	// Basic Initialization
 	SysTick_Config(720);
@@ -99,7 +96,7 @@ int main(void)
 		float roll_target = 0;
 		float pitch_target = 0;
 		float yaw_target = 0;
-		sensor_data *p = (sensor_data*)data;
+		sensor_data *p = new sensor_data;
 		
 		init_MPU6050();
 		
@@ -222,20 +219,5 @@ int main(void)
 		
 		
 		
-	}while(0);
-	
-	NRF_RX_Mode();
-	while(1)
-	{
-		//i = NRF_Tx_Dat(data);
-		//NRF_TX_Mode();
-		//printf("NRF_Tx_Dat(%d) = %d\r\n", i++, NRF_Tx_Dat(data));
-
-		result = NRF_Rx_Dat(data);
-		//printf("NRF_Rx_Dat(%d) = %d\r\n", i++, result);
-		
-		if (result== RX_OK)
-		{
-		}
-	}
+	}while(0);	
 }

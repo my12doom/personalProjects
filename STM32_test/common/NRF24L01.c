@@ -1,6 +1,5 @@
 #include "NRF24L01.h"
 #include "stm32f10x_spi.h"
-#include "stm32f10x_it.h"
 #include "..\common\timer.h"
 
 #define NRF_CSN_HIGH(x) GPIO_SetBits(GPIOA,GPIO_Pin_1)
