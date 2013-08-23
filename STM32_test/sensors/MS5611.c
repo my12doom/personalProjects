@@ -77,38 +77,47 @@ int read_MS5611(int *data)
 {
 	int rtn = 1;
 	u8 tmp[3];
-	if (new_temperature == 0 && last_temperature_time == 0 && last_pressure_time == 0)
+
+	do
 	{
-		last_temperature_time = getus();
-		I2C_WriteReg(MS5611Address, MS561101BA_D2 + OSR, 0x00);
-	}
-	
-	if (getus() - last_temperature_time >  SAMPLEING_TIME && new_temperature == 0)
-	{
-		I2C_ReadReg(MS5611Address, 0x00, tmp, 3);
-	
-		rawTemperature = ((int)tmp[0] << 16) + ((int)tmp[1] << 8) + (int)tmp[2];
-		DeltaTemp = rawTemperature - (((int32_t)refdata[4]) << 8);
-		new_temperature = ((1<<EXTRA_PRECISION)*2000l + ((DeltaTemp * refdata[5]) >> (23-EXTRA_PRECISION))) / ((1<<EXTRA_PRECISION));
+		if (new_temperature == 0 && last_temperature_time == 0 && last_pressure_time == 0)
+		{
+			if (I2C_WriteReg(MS5611Address, MS561101BA_D2 + OSR, 0x00) < 0)
+				break;
+			last_temperature_time = getus();
+		}
 		
-		last_pressure_time = getus();
-		I2C_WriteReg(MS5611Address, MS561101BA_D1 + OSR, 0x00);
-	}
+		if (getus() - last_temperature_time >  SAMPLEING_TIME && new_temperature == 0)
+		{
+			if (I2C_ReadReg(MS5611Address, 0x00, tmp, 3) < 0)
+				break;
+		
+			rawTemperature = ((int)tmp[0] << 16) + ((int)tmp[1] << 8) + (int)tmp[2];
+			DeltaTemp = rawTemperature - (((int32_t)refdata[4]) << 8);
+			if (I2C_WriteReg(MS5611Address, MS561101BA_D1 + OSR, 0x00) < 0)
+				break;
 
-	if (getus() - last_pressure_time >  SAMPLEING_TIME && last_pressure_time > 0)
-	{
-		I2C_ReadReg(MS5611Address, 0x00, tmp, 3);
-		rawPressure = ((int)tmp[0] << 16) + ((int)tmp[1] << 8) + (int)tmp[2];
-		off  = (((int64_t)refdata[1]) << 16) + ((refdata[3] * DeltaTemp) >> 7);
-		sens = (((int64_t)refdata[0]) << 15) + ((refdata[2] * DeltaTemp) >> 8);
-		pressure = ((((rawPressure * sens) >> 21) - off) >> (15-EXTRA_PRECISION)) / ((1<<EXTRA_PRECISION));
-		temperature = new_temperature;
+			new_temperature = ((1<<EXTRA_PRECISION)*2000l + ((DeltaTemp * refdata[5]) >> (23-EXTRA_PRECISION))) / ((1<<EXTRA_PRECISION));			
+			last_pressure_time = getus();
+		}
 
-		new_temperature = 0;
-		last_temperature_time = 0;
-		last_pressure_time = 0;
-		rtn = 0;
-	}
+		if (getus() - last_pressure_time >  SAMPLEING_TIME && last_pressure_time > 0)
+		{
+			if (I2C_ReadReg(MS5611Address, 0x00, tmp, 3) <0)
+				break;
+			
+			rawPressure = ((int)tmp[0] << 16) + ((int)tmp[1] << 8) + (int)tmp[2];
+			off  = (((int64_t)refdata[1]) << 16) + ((refdata[3] * DeltaTemp) >> 7);
+			sens = (((int64_t)refdata[0]) << 15) + ((refdata[2] * DeltaTemp) >> 8);
+			pressure = ((((rawPressure * sens) >> 21) - off) >> (15-EXTRA_PRECISION)) / ((1<<EXTRA_PRECISION));
+			temperature = new_temperature;
+
+			new_temperature = 0;
+			last_temperature_time = 0;
+			last_pressure_time = 0;
+			rtn = 0;
+		}
+	} while (0);
 	
 	data[0] = pressure;
 	data[1] = temperature;

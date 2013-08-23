@@ -1,6 +1,81 @@
 #include "I2C.h"
-#include "stm32f10x_i2c.h"
+#include <stm32f10x_i2c.h>
+#include <stdio.h>
 #include "timer.h"
+
+int I2C_Reset()
+{
+	// change GPIO into Out Push-pull mode
+	GPIO_InitTypeDef GPIO_InitStructure;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11; 
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;  
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);       
+
+	// disable I2C2 and bit banging reset
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, DISABLE);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_10);
+	delayus(100);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_11);
+	delayus(100);
+	GPIO_SetBits(GPIOB, GPIO_Pin_10);
+	delayus(100);
+	GPIO_SetBits(GPIOB, GPIO_Pin_11);
+	delayus(100);
+
+	// Change GPIO back and re-enable I2C2
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);       
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2,ENABLE);	
+	/* Enable I2C1 reset state */
+   RCC->APB1RSTR |= RCC_APB1RSTR_I2C1RST;
+	 
+	 delayms(1);
+	 
+   /* Release I2C1 from reset state */
+   RCC->APB1RSTR &= ~RCC_APB1RSTR_I2C1RST;
+	return 0;
+}
+
+int waitFlag_and_reset(I2C_TypeDef* I2Cx, int flag)
+{
+	int timeout = 50000;
+	
+	while (I2C_GetFlagStatus(I2Cx, flag))
+	{
+
+		timeout--;
+		if (timeout == 0)
+		{
+			printf("I2C Flag Error, resetting\r\n");
+			I2C_Reset();
+
+			return -1;			
+		}
+	}
+
+	return 0;
+}
+int checkEvent_and_reset(I2C_TypeDef* I2Cx, int event)
+{
+	int timeout = 50000;
+	
+	while (!I2C_CheckEvent(I2Cx, event))
+	{
+
+		timeout--;
+		if (timeout == 0)
+		{
+			printf("I2C Error, resetting\r\n");
+			I2C_Reset();
+
+			return -1;			
+		}
+	}
+
+	return 0;
+}
 
 int I2C_init(u8 OwnAddress1)
 {
@@ -24,24 +99,9 @@ int I2C_init(u8 OwnAddress1)
 	I2C_InitStructure.I2C_ClockSpeed = 100000;
 	I2C_Cmd(I2C2, ENABLE);
 	I2C_Init(I2C2, &I2C_InitStructure);
-	I2C_AcknowledgeConfig(I2C2, ENABLE);
-	
-	// bit banging reset
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, DISABLE);
-	GPIO_ResetBits(GPIOB, GPIO_Pin_10);
-	delayus(100);
-	GPIO_ResetBits(GPIOB, GPIO_Pin_11);
-	delayus(100);
-	GPIO_SetBits(GPIOB, GPIO_Pin_10);
-	delayus(100);
-	GPIO_SetBits(GPIOB, GPIO_Pin_10);
-	delayus(100);
-	
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);       
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2,ENABLE);	
+	I2C_AcknowledgeConfig(I2C2, ENABLE);	
 
-	return 0;
+	return I2C_Reset();
 }
 
 int I2C_ReadReg(u8 SlaveAddress, u8 startRegister, u8*out, int count)
@@ -49,7 +109,8 @@ int I2C_ReadReg(u8 SlaveAddress, u8 startRegister, u8*out, int count)
 	int i;
 
 	//检测总线是否忙
-	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)); 
+	if(waitFlag_and_reset(I2C2, I2C_FLAG_BUSY) < 0)
+		return -1; 
 
 	/*允许1字节1 应答模式*/ 
 	I2C_AcknowledgeConfig(I2C2, ENABLE); 
@@ -57,24 +118,29 @@ int I2C_ReadReg(u8 SlaveAddress, u8 startRegister, u8*out, int count)
 	/* 发送起始位  */ 
 	I2C_GenerateSTART(I2C2, ENABLE); 
 
-	while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT)); /*EV5,主模式*/ 
+	if (checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_MODE_SELECT)<0)
+		return -1; /*EV5,主模式*/ 
 
 	/*发送器件地址(写)*/ 
 	I2C_Send7bitAddress(I2C2, SlaveAddress, I2C_Direction_Transmitter); 
 
-	while (!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
+	if (checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)<0)
+		return -1;
 
 	/*发送Pointer Register*/ 
 	I2C_SendData(I2C2, startRegister);
-	while (!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED)); /*数据已发送*/
+	if (checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED)<0)
+		return -1; /*数据已发送*/
 
 	/*起始位*/ 
 	I2C_GenerateSTART(I2C2, ENABLE);
-	while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT)); 
+	if (checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_MODE_SELECT)<0)
+		return -1; 
 
 	/*发送器件地址(读)*/ 
 	I2C_Send7bitAddress(I2C2, SlaveAddress, I2C_Direction_Receiver);
-	while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)); 
+	if (checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)<0)
+		return -1; 
 
 	for(i=0; i<count; i++)
 	{
@@ -87,7 +153,8 @@ int I2C_ReadReg(u8 SlaveAddress, u8 startRegister, u8*out, int count)
 			I2C_GenerateSTOP(I2C2, ENABLE);   //发送停止位
 		}
 
-		while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_RECEIVED)); /* EV7 */ 
+		if (checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_BYTE_RECEIVED))
+			return -1; /* EV7 */ 
 		out[i] = I2C_ReceiveData(I2C2);
 	}
 
@@ -101,24 +168,29 @@ int I2C_ReadReg(u8 SlaveAddress, u8 startRegister, u8*out, int count)
 int I2C_WriteReg(u8 SlaveAddress, u8 Register, u8 data)
 {
 	// wait for bus
-	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY));
+	if (waitFlag_and_reset(I2C2, I2C_FLAG_BUSY)<0)
+		return -1;
 	
 	// start
 	I2C_GenerateSTART(I2C2, ENABLE);
-	while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT)); 
+	if (!checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_MODE_SELECT)<0)
+		return -1; 
 
 	// send slave address
 	I2C_Send7bitAddress(I2C2, SlaveAddress, I2C_Direction_Transmitter);
-	while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
+	if (!checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)<0)
+		return -1;
 
 	// send Register address
 	I2C_SendData(I2C2, Register);
-	while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+	if (!checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED)<0)
+		return -1;
 
 
 	// send data
 	I2C_SendData(I2C2, data); 
-	while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+	if (!checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED)<0)
+		return -1;
 
 
 	// stop
@@ -138,24 +210,24 @@ int I2C_WriteReg2(u8 SlaveAddress, u8 Register, u8 data)
 
 	// start
 	I2C_GenerateSTART(I2C2, ENABLE);
-	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT)); 
+	//while(!checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_MODE_SELECT)); 
 	delayus(1000);
 
 	// send slave address
 	I2C_Send7bitAddress(I2C2, SlaveAddress, I2C_Direction_Transmitter);
 	delayus(1000);
-	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
+	//while(!checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
 
 	// send Register address
 	I2C_SendData(I2C2, Register);
 	delayus(1000);
-	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+	//while(!checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
 
 	// send data
 	I2C_SendData(I2C2, data); 
 	delayus(1000);
-	//while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+	//while(!checkEvent_and_reset(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
 
 	// stop

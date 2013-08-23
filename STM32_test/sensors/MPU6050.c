@@ -39,7 +39,7 @@ int init_MPU6050(void)
 	I2C_WriteReg(MPU6050SlaveAddress, PWR_MGMT_1, 0x00);
 	I2C_WriteReg(MPU6050SlaveAddress, SMPLRT_DIV, 0x07);
 	I2C_WriteReg(MPU6050SlaveAddress, MPU6050_CONFIG, 0x06);
-	I2C_WriteReg(MPU6050SlaveAddress, GYRO_CONFIG, 0x18);
+	I2C_WriteReg(MPU6050SlaveAddress, GYRO_CONFIG, 0x18);			// full scale : +/-8192; +/- 2000 degree/s
 	I2C_WriteReg(MPU6050SlaveAddress, ACCEL_CONFIG, 0x08);
 	
 	I2C_ReadReg(MPU6050SlaveAddress, WHO_AM_I, &who_am_i, 1);
@@ -57,9 +57,9 @@ int init_MPU6050(void)
 int read_MPU6050(short*data)
 {	
 	int i;
-	int o = I2C_ReadReg(MPU6050SlaveAddress, ACCEL_XOUT_H, (u8*)data, 14);
+	int result = I2C_ReadReg(MPU6050SlaveAddress, ACCEL_XOUT_H, (u8*)data, 14);
 	for(i=0; i<7; i++)
 		swap((u8*)&data[i], 2);
 	
-	return 0;
+	return result;
 }

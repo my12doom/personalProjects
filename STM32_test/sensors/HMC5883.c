@@ -4,7 +4,7 @@
 #include <math.h>
 
 static float gain[3] = {0};
-static int zero[3] = {-207, -209, -12};
+static int zero[3] = {-207, -12, -209};
 
 #define	HMC5883SlaveAddress 0x3C
 #define HMC58X3_R_CONFA 0
@@ -74,7 +74,7 @@ int read_HMC5883(short*data)
 {
 	int i;
 	short tmp[3];
-	I2C_ReadReg(HMC5883SlaveAddress, 0x03, (u8*)tmp, 6);
+	int result = I2C_ReadReg(HMC5883SlaveAddress, 0x03, (u8*)tmp, 6);
 	for(i=0; i<3; i++)
 	{
 		swap((u8*)&tmp[i], 2);
@@ -86,5 +86,5 @@ int read_HMC5883(short*data)
 	data[1] = tmp[2];
 	data[2] = tmp[1];
 	
-	return 0;
+	return result;
 }

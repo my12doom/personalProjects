@@ -1,4 +1,5 @@
 #include "PPM.h"
+#include "timer.h"
 #include <stm32f10x_exti.h>
 #include <stm32f10x_tim.h>
 #include <misc.h>
@@ -6,6 +7,7 @@
 u32 g_ppm_input_start[4];
 u16 g_ppm_input[4];
 u16 g_ppm_output[8] = {1500,1500,1500,1500,1500,1500,1500,1500};
+int64_t g_ppm_input_update[4] = {0};
 int g_enable_input;
 
 // PPM input handler
@@ -38,6 +40,7 @@ void EXTI9_5_IRQHandler(void)
 				g_ppm_input[channel] = now - g_ppm_input_start[channel];
 			else
 				g_ppm_input[channel] = now + 10000 - g_ppm_input_start[channel];
+			g_ppm_input_update[channel] = getus();
 		}
 		
 		EXTI_ClearITPendingBit(line_tbl[channel]);
