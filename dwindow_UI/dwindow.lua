@@ -129,7 +129,9 @@ function resource_base:decommit()
 end
 
 function resource_base:release()
-	return dx9.release_resource_core(self.handle)
+	local rtn = dx9.release_resource_core(self.handle)
+	self.handle = nil
+	return rtn
 end
 
 

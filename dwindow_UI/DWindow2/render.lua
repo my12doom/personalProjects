@@ -360,7 +360,7 @@ function total_time:RenderThis()
 	end
 	self.texture = create_time_texture(player.total(), 0x00333333)
 	if not self.texture then return end
-	paint(0,0,self.texture.width, self.texture.height, self.texture)
+	paint(0,0,self.texture.width, self.texture.height, self.texture, alpha)
 end
 
 function total_time:OnReleaseGPU()
