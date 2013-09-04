@@ -507,7 +507,7 @@ int srt_parser::handle_data_16(unsigned short *data, bool big, int size)
 	int p = 0;
 
 	if(big)
-		for (int i=0; i<size; i++)
+		for (int i=0; i<size/2; i++)
 		{
 			wchar_t c = swap_big_little(data[i]);
 			if (c != 0xA && p<1024)
