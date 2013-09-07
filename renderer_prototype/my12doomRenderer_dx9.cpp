@@ -2257,9 +2257,10 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	if (!surface)
 		return E_POINTER;
 
+	if (view == 0)
 	{
 		CAutoLock lck2(&m_uidrawer_cs);
-		hr = m_uidrawer == NULL ? S_FALSE : m_uidrawer->pre_render_movie(surface, view);
+		hr = m_uidrawer == NULL ? S_FALSE : m_uidrawer->pre_render_movie(surface);
 	}
 
 

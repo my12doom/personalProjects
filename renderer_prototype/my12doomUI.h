@@ -76,7 +76,7 @@ public:
 	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, int view) PURE;
 	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, int view) PURE;
 	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL) PURE;
-	virtual HRESULT pre_render_movie(IDirect3DSurface9 *surface, int view){return S_OK;}
+	virtual HRESULT pre_render_movie(IDirect3DSurface9 *surface){return S_OK;}
 
 	DWORD m_init_state;
 };

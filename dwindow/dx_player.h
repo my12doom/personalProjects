@@ -434,7 +434,7 @@ public:
 	virtual HRESULT invalidate_gpu();
 	virtual HRESULT invalidate_cpu();
 	virtual HRESULT draw_ui(IDirect3DSurface9 *surface, int view);
-	virtual HRESULT pre_render_movie(IDirect3DSurface9 *surface, int view);
+	virtual HRESULT pre_render_movie(IDirect3DSurface9 *surface);
 	virtual HRESULT draw_nonmovie_bg(IDirect3DSurface9 *surface, int view);
 	virtual HRESULT hittest(int x, int y, int *out, double *outv = NULL);
 

@@ -40,6 +40,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	int argc = 1;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	dwindow_log_line(L"DWindow rev%d running, commandline=%s", my12doom_rev, GetCommandLineW());
 
 
 	RECT screen1;

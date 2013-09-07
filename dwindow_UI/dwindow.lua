@@ -74,11 +74,11 @@ function OnSize() end
 
 -- pre render
 local last_pre_render_time = 0
-function PreRender(view)
+function PreRender()
 	local delta_time = 0;
 	if last_pre_render_time > 0 then delta_time = core.GetTickCount() - last_pre_render_time end
 	last_pre_render_time = core.GetTickCount();
-	if view ==0 then root:BroadCastEvent("PreRender", last_pre_render_time, delta_time) end
+	root:BroadCastEvent("PreRender", last_pre_render_time, delta_time)
 end
 
 -- the Main Render function

@@ -5249,7 +5249,7 @@ HRESULT lua_drawer::invalidate_cpu()
 
 	return S_OK;
 }
-HRESULT lua_drawer::pre_render_movie(IDirect3DSurface9 *surface, int view)
+HRESULT lua_drawer::pre_render_movie(IDirect3DSurface9 *surface)
 {
 	m_device->SetRenderTarget(0, surface);
 
@@ -5257,8 +5257,7 @@ HRESULT lua_drawer::pre_render_movie(IDirect3DSurface9 *surface, int view)
 	lua_getglobal(lua_state, "PreRender");
 	if (lua_isfunction(lua_state, -1))
 	{
-		lua_pushinteger(lua_state, view);
-		lua_mypcall(lua_state, 1, 0, 0);
+		lua_mypcall(lua_state, 0, 0, 0);
 		lua_settop(lua_state, 0);
 	}
 	else

@@ -6,6 +6,7 @@
 #include "report.h"
 #include "SHA1.h"
 #include "..\my12doom_revision.h"
+#include "..\httppost\httppost.h"
 
 
 int tcp_connect(char *hostname,int port)
@@ -40,6 +41,7 @@ int main()
 	if (argc<2)
 		return -1;
 
+	/*
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(1, 1), &wsaData) != 0) 
 	{
@@ -99,6 +101,21 @@ int main()
 	printf("\n%s\n", tmp);
 
 	closesocket(fd);
+	*/
+
+	FILE * f = _wfopen(argv[1], L"rb");
+	if (!f)
+		return -2;
+
+	fclose(f);
+
+
+	httppost h(L"http://bo3d.net/report.php");
+	h.addFile(L"report", argv[1]);
+	int result = h.send_request();
+	
+	char t[5000];
+	h.read_content(t, 5000);
 
 	return 0;
 }
