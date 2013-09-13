@@ -10,6 +10,7 @@ cd /d "%~dp0"
 %dev2008% my12doomSource\my12doomSource.sln /build "Release Filter"
 %dev2008% reset\reset.sln /build "Release"
 %dev2008% report_server\report_server.sln /build "Release"
+%dev2008% mySplitter\mySplitter.sln /build "Release_mt"
 
 #copy
 copy/y dwindow\dwindow.ini dwindow_NSIS
@@ -19,6 +20,7 @@ copy/y dwindow\release_mt\StereoPlayer.exe dwindow_NSIS
 copy/y reset\release\reset.exe dwindow_NSIS
 copy/y report_server\release\ErrorReport.exe dwindow_NSIS
 del/q dwindow_NSIS\codec\*.*
+copy/y mySplitter\release_mt\*.ax dwindow_NSIS\codec
 copy/y 3rdFilter\*.* dwindow_NSIS\codec
 copy/y my12doomSource\bin\Filters_x86\*.ax dwindow_NSIS\codec
 rd/s/q dwindow_NSIS\UI

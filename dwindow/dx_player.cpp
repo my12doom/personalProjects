@@ -3533,6 +3533,26 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		hr = m_gb->AddFilter(j2k, L"JPEG 2000 Decoder");
 	}
 
+	// HM91
+	if ( NULL == pin ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('19MH')) )
+	{
+		CComPtr<IBaseFilter> hm91;
+		hr = myCreateInstance(CLSID_LentoidHEVCDecoder, IID_IBaseFilter, (void**)&hm91);
+		hr = m_gb->AddFilter(hm91, L"Lentoid HEVC Decoder");
+	}
+
+	if ( NULL == pin ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('CVEH')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('01MH')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('11MH')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('21MH')))
+	{
+		CComPtr<IBaseFilter> openhevc;
+		hr = myCreateInstance(CLSID_OpenHEVCDecoder, IID_IBaseFilter, (void**)&openhevc);
+		hr = m_gb->AddFilter(openhevc, L"DWindow OpenHEVC Decoder");
+	}
+
 	// RM Video
 	{
 		CComPtr<IBaseFilter> rm_video;

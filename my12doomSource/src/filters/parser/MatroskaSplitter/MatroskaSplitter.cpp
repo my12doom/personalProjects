@@ -185,8 +185,10 @@ HRESULT CMatroskaSplitterFilter::CreateOutputs(IAsyncReader* pAsyncReader)
 							//					case BI_RLE4: mt.subtype = MEDIASUBTYPE_RGB4; break;
 					}
 					mts.Add(mt);
-				} else if(CodecID == "V_UNCOMPRESSED") {
-				} else if(CodecID.Find("V_MPEG4/ISO/AVC") == 0 && pTE->CodecPrivate.GetCount() >= 6) {
+				}
+				else if(CodecID == "V_UNCOMPRESSED") {
+				}
+				else if(CodecID.Find("V_MPEG4/ISO/AVC") == 0 && pTE->CodecPrivate.GetCount() >= 6) {
 					BYTE sps = pTE->CodecPrivate[5] & 0x1f;
 
 					std::vector<BYTE> avcC;
@@ -258,7 +260,101 @@ avcsuccess:
 					memcpy(pSequenceHeader, data.GetData(), data.GetCount());
 					pm2vi->cbSequenceHeader = data.GetCount();
 					mts.Add(mt);
-				} else if(CodecID.Find("V_MPEG4/") == 0) {
+				}
+				else if(CodecID.Find("V_MPEGH/ISO/HEVC") == 0 && pTE->CodecPrivate.GetCount() >= 6) {
+					std::vector<BYTE> avcC;
+					for(int i = 0, j = pTE->CodecPrivate.GetCount(); i < j; i++) {
+						avcC.push_back(pTE->CodecPrivate[i]);
+					}
+
+					std::vector<BYTE> sh;
+
+					BYTE vps = pTE->CodecPrivate[5] & 0x1f;
+
+					unsigned jj = 6;
+
+					while (vps--) {
+						if (jj + 2 > avcC.size()) {
+							goto hevcfail;
+						}
+						unsigned spslen = ((unsigned)avcC[jj] << 8) | avcC[jj+1];
+						if (jj + 2 + spslen > avcC.size()) {
+							goto hevcfail;
+						}
+						unsigned cur = sh.size();
+						sh.resize(cur + spslen + 2, 0);
+						std::copy(avcC.begin() + jj, avcC.begin() + jj + 2 + spslen,sh.begin() + cur);
+						jj += 2 + spslen;
+					}
+
+					if (jj + 1 > avcC.size()) {
+						continue;
+					}
+
+					unsigned sps = avcC[jj++] &0x1f;
+
+					while (sps--) {
+						if (jj + 2 > avcC.size()) {
+							goto hevcfail;
+						}
+						unsigned ppslen = ((unsigned)avcC[jj] << 8) | avcC[jj+1];
+						if (jj + 2 + ppslen > avcC.size()) {
+							goto hevcfail;
+						}
+						unsigned cur = sh.size();
+						sh.resize(cur + ppslen + 2, 0);
+						std::copy(avcC.begin() + jj, avcC.begin() + jj + 2 + ppslen, sh.begin() + cur);
+						jj += 2 + ppslen;
+					}
+
+					if (jj + 1 > avcC.size()) {
+						continue;
+					}
+
+					unsigned pps = avcC[jj++];
+
+					while (pps--) {
+						if (jj + 2 > avcC.size()) {
+							goto hevcfail;
+						}
+						unsigned ppslen = ((unsigned)avcC[jj] << 8) | avcC[jj+1];
+						if (jj + 2 + ppslen > avcC.size()) {
+							goto hevcfail;
+						}
+						unsigned cur = sh.size();
+						sh.resize(cur + ppslen + 2, 0);
+						std::copy(avcC.begin() + jj, avcC.begin() + jj + 2 + ppslen, sh.begin() + cur);
+						jj += 2 + ppslen;
+					}
+
+					goto hevcsuccess;
+hevcfail:
+					continue;
+hevcsuccess:
+
+					CAtlArray<BYTE> data;
+					data.SetCount(sh.size());
+					std::copy(sh.begin(), sh.end(), data.GetData());
+
+					mt.subtype = FOURCCMap('01MH');
+					mt.formattype = FORMAT_MPEG2Video;
+					MPEG2VIDEOINFO* pm2vi = (MPEG2VIDEOINFO*)mt.AllocFormatBuffer(FIELD_OFFSET(MPEG2VIDEOINFO, dwSequenceHeader) + data.GetCount());
+					memset(mt.Format(), 0, mt.FormatLength());
+					pm2vi->hdr.bmiHeader.biSize = sizeof(pm2vi->hdr.bmiHeader);
+					pm2vi->hdr.bmiHeader.biWidth = (LONG)pTE->v.PixelWidth;
+					pm2vi->hdr.bmiHeader.biHeight = (LONG)pTE->v.PixelHeight;
+					pm2vi->hdr.bmiHeader.biCompression = '01MH';
+					pm2vi->hdr.bmiHeader.biPlanes = 1;
+					pm2vi->hdr.bmiHeader.biBitCount = 24;
+					pm2vi->dwProfile = pTE->CodecPrivate[1];
+					pm2vi->dwLevel = pTE->CodecPrivate[3];
+					pm2vi->dwFlags = (pTE->CodecPrivate[4] & 3) + 1;
+					BYTE* pSequenceHeader = (BYTE*)pm2vi->dwSequenceHeader;
+					memcpy(pSequenceHeader, data.GetData(), data.GetCount());
+					pm2vi->cbSequenceHeader = data.GetCount();
+					mts.Add(mt);
+				}
+				else if(CodecID.Find("V_MPEG4/") == 0) {
 					mt.subtype = FOURCCMap('V4PM');
 					mt.formattype = FORMAT_MPEG2Video;
 					MPEG2VIDEOINFO* pm2vi = (MPEG2VIDEOINFO*)mt.AllocFormatBuffer(FIELD_OFFSET(MPEG2VIDEOINFO, dwSequenceHeader) + pTE->CodecPrivate.GetCount());
@@ -273,7 +369,8 @@ avcsuccess:
 					memcpy(pSequenceHeader, pTE->CodecPrivate.GetData(), pTE->CodecPrivate.GetCount());
 					pm2vi->cbSequenceHeader = pTE->CodecPrivate.GetCount();
 					mts.Add(mt);
-				} else if(CodecID.Find("V_REAL/RV") == 0) {
+				}
+				else if(CodecID.Find("V_REAL/RV") == 0) {
 					mt.subtype = FOURCCMap('00VR' + ((CodecID[9]-0x30)<<16));
 					mt.formattype = FORMAT_VideoInfo;
 					VIDEOINFOHEADER* pvih = (VIDEOINFOHEADER*)mt.AllocFormatBuffer(sizeof(VIDEOINFOHEADER) + pTE->CodecPrivate.GetCount());
@@ -284,7 +381,8 @@ avcsuccess:
 					pvih->bmiHeader.biHeight = (LONG)pTE->v.PixelHeight;
 					pvih->bmiHeader.biCompression = mt.subtype.Data1;
 					mts.Add(mt);
-				} else if(CodecID == "V_DIRAC") {
+				}
+				else if(CodecID == "V_DIRAC") {
 					mt.subtype = MEDIASUBTYPE_DiracVideo;
 					mt.formattype = FORMAT_DiracVideoInfo;
 					DIRACINFOHEADER* dvih = (DIRACINFOHEADER*)mt.AllocFormatBuffer(FIELD_OFFSET(DIRACINFOHEADER, dwSequenceHeader) + pTE->CodecPrivate.GetCount());
@@ -300,7 +398,8 @@ avcsuccess:
 					dvih->cbSequenceHeader = pTE->CodecPrivate.GetCount();
 
 					mts.Add(mt);
-				} else if(CodecID == "V_MPEG2") {
+				}
+				else if(CodecID == "V_MPEG2") {
 					BYTE* seqhdr = pTE->CodecPrivate.GetData();
 					DWORD len = pTE->CodecPrivate.GetCount();
 					int w = pTE->v.PixelWidth;
@@ -309,7 +408,8 @@ avcsuccess:
 					if(MakeMPEG2MediaType(mt, seqhdr, len, w, h)) {
 						mts.Add(mt);
 					}
-				} else if(CodecID == "V_THEORA") {
+				}
+				else if(CodecID == "V_THEORA") {
 					BYTE* thdr = pTE->CodecPrivate.GetData() + 3;
 
 					mt.majortype		= MEDIATYPE_Video;

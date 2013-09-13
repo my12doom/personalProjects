@@ -12,6 +12,7 @@ copy dwindow\ico\icoVSTAR.ico dwindow\ico\ico.ico
 %dev2008% my12doomSource\my12doomSource.sln /build "Release Filter"
 %dev2008% report_server\report_server.sln /rebuild "Release"
 %dev2008% reset\reset.sln /rebuild "Release"
+%dev2008% mySplitter\mySplitter.sln /build "Release_mt"
 del dwindow\ico\ico.ico
 copy dwindow\ico\ico_normal.ico dwindow\ico\ico.ico
 
@@ -26,6 +27,7 @@ del/q dwindow_NSIS\codec\*.*
 del/q dwindow_NSIS\skin\*.*
 copy/y dwindow_ui\3dvplayer\*.* dwindow_NSIS\skin
 copy/y 3rdFilter\*.* dwindow_NSIS\codec
+copy/y mySplitter\release_mt\*.ax dwindow_NSIS\codec
 copy/y my12doomSource\bin\Filters_x86\*.ax dwindow_NSIS\codec
 rd/s/q dwindow_NSIS\UI
 md dwindow_NSIS\UI

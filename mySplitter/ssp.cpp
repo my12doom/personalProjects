@@ -743,12 +743,12 @@ HRESULT CDWindowSSP::modules_check()
 		HKEY hkeyFilter=0;
 		DWORD dwSize=MAX_PATH;
 		BYTE pbFilename[MAX_PATH];
-		int rc = RegOpenKey(HKEY_LOCAL_MACHINE, L"Software\\Classes\\CLSID\\{D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}\\InprocServer32", &hkeyFilter);
-		rc = RegQueryValueEx(hkeyFilter, NULL,  // Read (Default) value
+		int rc = RegOpenKeyW(HKEY_LOCAL_MACHINE, L"Software\\Classes\\CLSID\\{D00E73D7-06F5-44F9-8BE4-B7DB191E9E7E}\\InprocServer32", &hkeyFilter);
+		rc = RegQueryValueExW(hkeyFilter, NULL,  // Read (Default) value
 								NULL, NULL, pbFilename, &dwSize);
 
-		TCHAR szFilename[MAX_PATH];
-		HRESULT hr = StringCchPrintf(szFilename, NUMELMS(szFilename), TEXT("%s\0"), pbFilename);
+		wchar_t szFilename[MAX_PATH];
+		HRESULT hr = StringCchPrintfW(szFilename, NUMELMS(szFilename), L"%s\0", pbFilename);
 
 		const int filesize = 615792;
 		FILE * f = _wfopen(szFilename, L"rb");
@@ -814,12 +814,12 @@ HRESULT CDWindowSSP::CompleteConnect(PIN_DIRECTION direction,IPin *pReceivePin)
 {
 	if (direction == PINDIR_INPUT && my12doom_found)
 	{
-		MessageBox(ssp_hwnd, _T("This is a free demo version of my12doom's bluray3D remux filter for SSP.\n"
+		MessageBoxW(ssp_hwnd, L"This is a free demo version of my12doom's bluray3D remux filter for SSP.\n"
 			L"This version is fully functional. It only add a watermark to the video.\n"
 			L"Please set layout to \"Side by Side, Left Image First\"\n\n"
 			L"这是一个免费测试版的my12doom's bluray3D remux filter for SSP。\n"
 			L"本版本功能完整，仅仅在画面上加入一个水印。\n"
-			L"请选择输入格式\"水平并排(左画面在左)\""), _T("Warning"), MB_OK);
+			L"请选择输入格式\"水平并排(左画面在左)\"", L"Warning", MB_OK);
 	}
 
 	// subtile

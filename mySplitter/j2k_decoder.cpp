@@ -1,3 +1,6 @@
+
+#ifndef NOJ2K
+
 #include <atlbase.h>
 #include <InitGuid.h>
 #include "j2k_decoder.h"
@@ -368,3 +371,5 @@ void J2KWorker::run()
 	sample_entry entry = {m_out, m_fn};
 	m_owner->m_completed_samples.push_back(entry);
 }
+
+#endif

@@ -17,6 +17,7 @@
 #include "ssp.h"
 #include "audio_downmix.h"
 #include "j2k_decoder.h"
+#include "hevcDecoder.h"
 
 //////////////////////////////////////////////////////////////////////////
 // This file contains the standard COM glue code required for registering the 
@@ -280,6 +281,15 @@ const AMOVIESETUP_FILTER sudJ2KDecoder =
 	sudDWindowExtenderMonoPins,					// Pin information
 };
 
+const AMOVIESETUP_FILTER sudHEVCDecoder =
+{
+	&CLSID_OpenHEVCDecoder,			// Filter CLSID
+	L"DWindow HEVC/H265 Decoder",			// String name
+	MERIT_NORMAL,					// Filter merit
+	2,									// Number of pins
+	sudDWindowExtenderMonoPins,					// Pin information
+};
+
 CFactoryTemplate g_Templates[] = 
 {
     //{ g_wszYV12StereoMixer, &CLSID_YV12StereoMixer, CYV12StereoMixer::CreateInstance, NULL, &sudYV12StereoMixer },
@@ -288,7 +298,10 @@ CFactoryTemplate g_Templates[] =
 	{ g_wszDWindowExtenderStereo,	&CLSID_DWindowStereo,	CDWindowExtenderStereo::CreateInstance,   NULL, &sudDWindowExtenderStereo	},
 	{ g_wszDWindowSSP,	&CLSID_DWindowSSP,	CDWindowSSP::CreateInstance,   NULL, &sudDWindowSSP	},
 	{ g_wszDWindowAudioDownmix,	&CLSID_DWindowAudioDownmix,	CDWindowAudioDownmix::CreateInstance,   NULL, &sudDWindowAudio	},
-	{ L"my12doom's JPEG2000 Decoder",	&CLSID_my12doomJ2KDecoder,	CJ2kDecoder::CreateInstance,   NULL, &sudJ2KDecoder	}
+#ifndef NOJ2K
+	{ L"my12doom's JPEG2000 Decoder",	&CLSID_my12doomJ2KDecoder,	CJ2kDecoder::CreateInstance,   NULL, &sudJ2KDecoder	},
+#endif
+	{ L"DWindow OpenHEVC Decoder",	&CLSID_OpenHEVCDecoder,	CHEVCDecoder::CreateInstance,   NULL, &sudHEVCDecoder	},
 
 };
 

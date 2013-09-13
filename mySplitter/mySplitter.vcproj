@@ -208,8 +208,8 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;J2K-Codec\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MYSPLITTER_EXPORTS;UNICODE;_UNICODE"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;&quot;J2K-Codec\include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MYSPLITTER_EXPORTS;UNICODE;_UNICODE;NOJ2K"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
@@ -303,6 +303,14 @@
 			</File>
 			<File
 				RelativePath=".\filter_stereo.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\hevcDecoder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\hevcDecoder.h"
 				>
 			</File>
 			<File
