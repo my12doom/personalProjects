@@ -147,7 +147,6 @@ Section "3D影音主程序(required)"
   File "MediaInfo.dll"
   File "DevIL.dll"
   File "detoured.dll"
-  File "zlib1.dll"
   File "IntelWiDiExtensions.dll"
   SetOutPath $INSTDIR\codec
   File /r "codec\*"
