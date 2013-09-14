@@ -64,6 +64,7 @@
 #include "Ap4IsfmAtom.h"
 #include "Ap4TrefTypeAtom.h"
 #include "Ap4AvcCAtom.h"
+#include "Ap4hvcCAtom.h"
 #include "Ap4FtabAtom.h"
 #include "Ap4ChplAtom.h"
 #include "Ap4DataAtom.h"
@@ -269,6 +270,10 @@ AP4_AtomFactory::CreateAtomFromStream(AP4_ByteStream& stream,
         atom = DNew AP4_Avc1SampleEntry(size, stream, *this);
         break;
 
+	  case AP4_ATOM_TYPE_HVC1:
+		  atom = DNew AP4_Hvc1SampleEntry(size, stream, *this);
+		  break;
+
       case AP4_ATOM_TYPE_ENCA:
         atom = DNew AP4_EncaSampleEntry(size, stream, *this);
         break;
@@ -378,6 +383,10 @@ AP4_AtomFactory::CreateAtomFromStream(AP4_ByteStream& stream,
 	  case AP4_ATOM_TYPE_MVCC:
         atom = DNew AP4_AvcCAtom(type, size, stream);
         break;
+
+	  case AP4_ATOM_TYPE_hvcC:
+		  atom = DNew AP4_hvcCAtom(type, size, stream);
+		  break;
 
       case AP4_ATOM_TYPE_TEXT:
         atom = DNew AP4_TextSampleEntry(size, stream, *this);

@@ -1012,6 +1012,14 @@
 						>
 					</File>
 					<File
+						RelativePath=".\AP4\Core\Ap4hvcCAtom.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\AP4\Core\Ap4hvcCAtom.h"
+						>
+					</File>
+					<File
 						RelativePath=".\AP4\Core\Ap4IkmsAtom.cpp"
 						>
 					</File>

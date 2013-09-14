@@ -26,6 +26,7 @@ public:
 	HRESULT CheckTransform(const CMediaType *mtIn, const CMediaType *mtOut);
 	HRESULT DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pProperties);
 	HRESULT GetMediaType(int iPosition, CMediaType *pMediaType);
+	HRESULT SetMediaType(PIN_DIRECTION direction,const CMediaType *pmt);
 
 	// you know what
 	CHEVCDecoder(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr);
@@ -36,6 +37,8 @@ public:
 
 protected:
 	GUID m_subtype;
+	char *m_di;				// decoder infomation
+	int m_di_size;
 
 	int m_width;
 	int m_height;

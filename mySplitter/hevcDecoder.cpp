@@ -37,6 +37,7 @@ static GUID MEDIASUBTYPE_HEVC = FOURCCMap('CVEH');
 CHEVCDecoder::CHEVCDecoder(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr)
 :CTransformFilter(tszName, punk, CLSID_OpenHEVCDecoder)
 ,h(NULL)
+,m_di(NULL)
 {
 	wchar_t module[MAX_PATH];
 
@@ -61,6 +62,10 @@ CHEVCDecoder::CHEVCDecoder(TCHAR *tszName, LPUNKNOWN punk, HRESULT *phr)
 
 CHEVCDecoder::~CHEVCDecoder() 
 {
+	if (m_di)
+		delete m_di;
+	if (h)
+		OpenHevcClose(h);
 }
 
 
@@ -100,6 +105,29 @@ HRESULT CHEVCDecoder::CheckInputType(const CMediaType *mtIn)
 
 	return VFW_E_INVALID_MEDIA_TYPE;
 }
+
+HRESULT CHEVCDecoder::SetMediaType(PIN_DIRECTION direction,const CMediaType *pmt)
+{
+	if (direction == PINDIR_INPUT)
+	{
+		MPEG2VIDEOINFO * info = (MPEG2VIDEOINFO*)pmt->Format();
+
+		if (m_di)
+		{
+			delete m_di;
+			m_di = NULL;
+		}
+
+		m_di_size = info->cbSequenceHeader;
+		if (m_di_size > 0)
+		{
+			m_di = new char[m_di_size];
+			memcpy(m_di, info->dwSequenceHeader, m_di_size);
+		}
+	}
+	return S_OK;
+}
+
 
 HRESULT CHEVCDecoder::CheckTransform(const CMediaType *mtIn, const CMediaType *mtOut)
 {
@@ -179,6 +207,25 @@ HRESULT CHEVCDecoder::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, do
 	h = OpenHevcInit(4);
 	m_pts = -1;
 	const char *v = OpenHevcVersion(h);
+
+	// push decoder infomation
+	if (m_di_size>0 && m_di)
+	{
+		int size = m_di_size;
+		unsigned char *p = (unsigned char*)m_di;
+		unsigned char tmp[2000] = {0,0,0,1};
+		while(size>2)
+		{
+			int seg_size = (p[0] << 8) + p[1];
+			if (seg_size+2 > size)
+				break;
+			memcpy(tmp+4, p+2, seg_size);
+
+			int result = OpenHevcDecode(h, tmp, seg_size+4, 0);
+			size -= seg_size+2;
+			p += seg_size+2;
+		}
+	}
 
 	return __super::NewSegment(tStart, tStop, dRate);
 }

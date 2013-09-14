@@ -3533,15 +3533,17 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 		hr = m_gb->AddFilter(j2k, L"JPEG 2000 Decoder");
 	}
 
-	// HM91
+	// Lentoid HEVC Decoder
 	if ( NULL == pin ||
-		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('19MH')) )
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('19MH')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('01MH')))
 	{
 		CComPtr<IBaseFilter> hm91;
 		hr = myCreateInstance(CLSID_LentoidHEVCDecoder, IID_IBaseFilter, (void**)&hm91);
 		hr = m_gb->AddFilter(hm91, L"Lentoid HEVC Decoder");
 	}
 
+	// openHEVC decoder
 	if ( NULL == pin ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('CVEH')) ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('01MH')) ||
@@ -3554,6 +3556,11 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 	}
 
 	// RM Video
+	if ( NULL == pin ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('14VR')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('04VR')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('03VR')) ||
+		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('02VR')))
 	{
 		CComPtr<IBaseFilter> rm_video;
 		myCreateInstance(CLSID_RMVideoDecoder, IID_IBaseFilter, (void**)&rm_video);

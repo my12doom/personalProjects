@@ -274,6 +274,20 @@ public:
                         AP4_EsDescriptor* descriptor);
 };
 
+class AP4_Hvc1SampleEntry : public AP4_VisualSampleEntry
+{
+public:
+    // constructors
+    AP4_Hvc1SampleEntry(AP4_Size         size,
+                        AP4_ByteStream&  stream,
+                        AP4_AtomFactory& atom_factory);
+    AP4_Hvc1SampleEntry(AP4_UI16          width,
+                        AP4_UI16          height,
+                        AP4_UI16          depth,
+                        const char*       compressor_name,
+                        AP4_EsDescriptor* descriptor);
+};
+
 /*----------------------------------------------------------------------
 |       AP4_RtpHintSampleEntry
 +---------------------------------------------------------------------*/
