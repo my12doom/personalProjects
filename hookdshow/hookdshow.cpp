@@ -1,8 +1,9 @@
 // hookdshow.cpp : 定义控制台应用程序的入口点。
 //
 
-#include "stdafx.h"
 #include <Windows.h>
+#include "..\dwindow\global_funcs.h"
+#include "..\dwindow\dwindow_log.h"
 #include "detours/detours.h"
 #include <DShow.h>
 #include <atlbase.h>
@@ -11,12 +12,19 @@
 #include <map>
 #include <assert.h>
 #include "full_cache.h"
+#include <streams.h>			// for CCritSec
+#include "archive_crc32.h"
 
 static const wchar_t *HOOKDSHOW_PREFIX = L"X:\\DWindow\\";
 #pragma comment(lib, "detours/detours.lib")
 #pragma comment(lib, "detours/detoured.lib")
 #pragma comment(lib, "strmiids.lib")
 void test_cache();
+
+
+
+disk_manager *open_http_file(const wchar_t *URL);
+void close_http_file(disk_manager *p);
 
 static HANDLE (WINAPI * TrueCreateFileA)(
 	LPCSTR lpFileName,
@@ -66,7 +74,7 @@ static DWORD (WINAPI *TrueSetFilePointer)(__in        HANDLE hFile,
 typedef struct
 {
 	DWORD dummy;
-	disk_manager ifile;
+	disk_manager *ifile;
 	myCCritSec cs;
 	__int64 pos;
 } dummy_handle;
@@ -101,7 +109,8 @@ static HANDLE WINAPI MineCreateFileA(
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->pos = 0;
-		if (p->ifile.setURL(A2W(lpFileName+strlen(W2A(HOOKDSHOW_PREFIX)))) < 0)
+		p->ifile = open_http_file(A2W(lpFileName+strlen(W2A(HOOKDSHOW_PREFIX))));
+		if (p->ifile == NULL)
 		{
 			CloseHandle(o);
 			return INVALID_HANDLE_VALUE;
@@ -140,7 +149,8 @@ static HANDLE WINAPI MineCreateFileW(
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->pos = 0;
-		if (p->ifile.setURL(lpFileName+wcslen(HOOKDSHOW_PREFIX)) < 0)
+		p->ifile = open_http_file(lpFileName+wcslen(HOOKDSHOW_PREFIX));
+		if (p->ifile == NULL)
 		{
 			CloseHandle(o);
 			return INVALID_HANDLE_VALUE;
@@ -148,7 +158,7 @@ static HANDLE WINAPI MineCreateFileW(
 		myCAutoLock lck(&cs);
 		handle_map[o] = p;
 
-		g_last_manager = &p->ifile;
+		g_last_manager = p->ifile;
 	}
 	else
 	{
@@ -179,14 +189,14 @@ static BOOL WINAPI MineReadFile(
 
 			__int64 pos =/* __int64(lpOverlapped->OffsetHigh) << 32 +*/ lpOverlapped->Offset;
 			fragment frag = {pos, pos+nNumberOfBytesToRead};
-			p->ifile.get(lpBuffer, frag);
+			p->ifile->get(lpBuffer, frag);
 			p->pos = frag.end;
 
 			// pre reader
 			for(int i=0; i<5; i++)
 			{
 				fragment pre_reader = {pos+nNumberOfBytesToRead+ 2048*1024*i, pos+nNumberOfBytesToRead+ 2048*1024*(i+1)};
-				p->ifile.pre_read(pre_reader);
+				p->ifile->pre_read(pre_reader);
 			}
 
 			lpOverlapped->Internal = 0;
@@ -201,7 +211,7 @@ static BOOL WINAPI MineReadFile(
 		else
 		{
 			fragment frag = {p->pos, p->pos+nNumberOfBytesToRead};
-			p->ifile.get(lpBuffer, frag) >= 0;
+			p->ifile->get(lpBuffer, frag) >= 0;
 			*lpNumberOfBytesRead = frag.end - frag.start;
 			p->pos += *lpNumberOfBytesRead;
 
@@ -209,7 +219,7 @@ static BOOL WINAPI MineReadFile(
 			for(int i=0; i<5; i++)
 			{
 				fragment pre_reader = {p->pos+nNumberOfBytesToRead+ 2048*1024*i, p->pos+nNumberOfBytesToRead+ 2048*1024*(i+1)};
-				p->ifile.pre_read(pre_reader);
+				p->ifile->pre_read(pre_reader);
 			}
 		}
 
@@ -223,7 +233,7 @@ static BOOL WINAPI MineGetFileSizeEx(HANDLE h, PLARGE_INTEGER lpFileSize)
 	dummy_handle *p = get_dummy(h);
 	if (p && p->dummy == dummy_value)
 	{
-		lpFileSize->QuadPart = p->ifile.getsize();
+		lpFileSize->QuadPart = p->ifile->getsize();
 		return TRUE;
 	}
 	else
@@ -235,7 +245,7 @@ static DWORD WINAPI MineGetFileSize(_In_ HANDLE hFile,_Out_opt_ LPDWORD lpFileSi
 	dummy_handle *p = get_dummy(hFile);
 	if (p && p->dummy == dummy_value)
 	{
-		__int64 size = p->ifile.getsize();		
+		__int64 size = p->ifile->getsize();		
 
 		if (lpFileSizeHigh)
 			*lpFileSizeHigh = (DWORD)(size>>32);
@@ -264,7 +274,7 @@ static BOOL WINAPI MineSetFilePointerEx(HANDLE h, __in LARGE_INTEGER liDistanceT
 			p->pos = p->pos + liDistanceToMove.QuadPart;
 			break;
 		case SEEK_END:
-			p->pos = p->ifile.getsize() + liDistanceToMove.QuadPart;
+			p->pos = p->ifile->getsize() + liDistanceToMove.QuadPart;
 			break;
 		}
 
@@ -300,7 +310,7 @@ static DWORD WINAPI MineSetFilePointer(__in        HANDLE hFile,
 			li2.QuadPart = p->pos + li.QuadPart;
 			break;
 		case SEEK_END:
-			li2.QuadPart = p->ifile.getsize() + li.QuadPart;
+			li2.QuadPart = p->ifile->getsize() + li.QuadPart;
 			break;
 		}
 
@@ -317,6 +327,8 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 	dummy_handle *p = get_dummy(hObject);
 	if (p && p->dummy == dummy_value)
 	{
+		if (p->ifile)
+			close_http_file(p->ifile);
  		delete p;
 		handle_map[hObject] = NULL;
 		return TRUE;
@@ -411,4 +423,77 @@ void test_cache()
 	printf("exiting cache");
 	delete d;
 	printf("done exiting cache, %dms\n", GetTickCount()-l);
+}
+
+
+
+#include <list>
+typedef struct
+{
+	int ref_count;
+	disk_manager *manager;
+	char config_file[4096];
+	char URL_utf[4096];
+} active_httpfile_list_entry;
+std::list<active_httpfile_list_entry> g_active_httpfile_list;
+CCritSec g_active_httpfile_list_lock;
+
+disk_manager *open_http_file(const wchar_t *URL)
+{
+	wchar_t dwindow_path[MAX_PATH];
+	wcscpy(dwindow_path, dwindow_log_get_filename());
+	*(wchar_t*)(wcsrchr(dwindow_path, L'\\')+1) = NULL;
+	wcscat(dwindow_path, L"cache\\");
+	_wmkdir(dwindow_path);
+
+	W2UTF8 URL_utf(URL);
+	char config_file[4096];
+	unsigned long name_crc = crc32(0, (unsigned char*)URL, wcslen(URL) * sizeof(wchar_t));
+	USES_CONVERSION;
+	sprintf(config_file, "%s%08x.tmp", W2A(dwindow_path), name_crc);
+
+	// search for instance
+	CAutoLock lck(&g_active_httpfile_list_lock);
+	for(std::list<active_httpfile_list_entry>::iterator i = g_active_httpfile_list.begin(); i!= g_active_httpfile_list.end(); ++i)
+	{
+		if (strcmp((*i).URL_utf, URL_utf) == 0)
+		{
+			(*i).ref_count ++;
+			disk_manager *p = (*i).manager;
+
+			return p;
+		}
+	}
+
+	// no match ? create one
+	active_httpfile_list_entry entry = {1};
+	strcpy(entry.config_file, config_file);
+	strcpy(entry.URL_utf, URL_utf);
+	entry.manager = new disk_manager(UTF82W(config_file));
+	if (entry.manager->setURL(URL) <0)
+	{
+		delete entry.manager;
+		return NULL;
+	}
+	g_active_httpfile_list.push_back(entry);
+
+	return entry.manager;
+}
+
+void close_http_file(disk_manager *p)
+{
+	CAutoLock lck(&g_active_httpfile_list_lock);
+	for(std::list<active_httpfile_list_entry>::iterator i = g_active_httpfile_list.begin(); i!= g_active_httpfile_list.end(); ++i)
+	{
+		if ((*i).manager == p )
+		{
+			(*i).ref_count --;
+			if ((*i).ref_count == 0)
+			{
+				delete p;
+				g_active_httpfile_list.erase(i);
+			}
+			break;
+		}
+	}
 }

@@ -288,7 +288,14 @@ HRESULT MediaInfoWindow::FillTree(HWND root, const wchar_t *filename)
 		MI.Option(_T("Language"));
 	}
 
-	HANDLE h_file = CreateFileW (filename, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+	static const wchar_t *HOOKDSHOW_PREFIX = L"X:\\DWindow\\";
+	wchar_t dummy_name[MAX_PATH*10];
+	if (wcsstr(filename, L"http://") == filename)
+	{
+		wcscpy(dummy_name, HOOKDSHOW_PREFIX);
+		wcscat(dummy_name, filename);
+	}
+	HANDLE h_file = CreateFileW (dummy_name, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	String str = L"";
 	if (h_file != INVALID_HANDLE_VALUE)
 	{

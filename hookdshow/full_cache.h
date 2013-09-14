@@ -141,7 +141,6 @@ class disk_manager
 {
 public:
 	disk_manager(const wchar_t *configfile);
-	disk_manager():m_worker_manager(NULL){disk_manager(NULL);}
 	~disk_manager();
 
 	int setURL(const wchar_t *URL);
@@ -166,6 +165,7 @@ protected:
 	inet_worker_manager *m_worker_manager;
 	std::wstring m_URL;
 	std::wstring m_config_file;
+	FILE *m_config_file_file;
 	myCCritSec m_fragments_cs;
 	myCCritSec m_access_lock;
 	__int64 m_filesize;

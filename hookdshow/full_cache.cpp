@@ -265,13 +265,37 @@ bool inet_worker::responsible(__int64 pos)		// return if this worker is CURRENTL
 
 
 // disk manager
-
+typedef struct
+{
+	__int64 startpos;
+	wchar_t file[MAX_PATH];
+} configfile_entry;
 
 disk_manager::disk_manager(const wchar_t *configfile)
 :m_worker_manager(NULL)
+,m_config_file_file(NULL)
 {
 	if (configfile)
 		m_config_file = configfile;
+	m_config_file_file = _wfopen(configfile, L"r+b");
+	if (!m_config_file_file)
+		m_config_file_file = _wfopen(configfile, L"wb");
+
+	assert(m_config_file_file);
+	if (!m_config_file_file)
+		return;
+
+	m_filesize = 0;
+	fread(&m_filesize, sizeof(m_filesize), 1, m_config_file_file);
+
+	configfile_entry entry;
+	int i = 0;
+	while (fread(&entry, sizeof(entry), 1, m_config_file_file))
+	{
+		//LOGE("%d disk_fragments(%s, %lld) loaded", ++i, W2UTF8(entry.file), entry.startpos);
+		disk_fragment *p = new disk_fragment(entry.file, entry.startpos);
+		m_fragments.push_back(p);
+	}
 }
 
 int disk_manager::setURL(const wchar_t *URL)
@@ -280,15 +304,20 @@ int disk_manager::setURL(const wchar_t *URL)
 		return -1;
 
 	m_URL = URL;
-	m_filesize = 0;
 
-	httppost http(URL);
-	int responsecode = http.send_request();
-	if (responsecode < 200 || responsecode > 299)
-		return -2;
-	m_filesize = http.get_content_length();
-	if (m_filesize <= 0)
-		return -3;
+	if (m_filesize == 0)
+	{
+		httppost http(URL);
+		int responsecode = http.send_request();
+		LOGE("disk_manager::setURL() : code = %d", responsecode);
+		if (responsecode < 200 || responsecode > 299)
+			return -2;
+		m_filesize = http.get_content_length();
+		if (m_filesize <= 0)
+			return -3;
+
+		fwrite(&m_filesize, sizeof(m_filesize), 1, m_config_file_file);
+	}
 
 	m_worker_manager = new inet_worker_manager(URL, this);
 
@@ -441,13 +470,18 @@ int disk_manager::feed(void *buf, fragment pos)
 	// new fragment
 	wchar_t new_name[MAX_PATH];
 	#ifndef LINUX
-	swprintf(new_name, MAX_PATH, L"Z:\\%08x_%d_%d.tmp", this, (int)pos.start, rand()*rand());
+	swprintf(new_name, MAX_PATH, L"%s.%lld", m_config_file.c_str(), pos.start);
 	#else
 	swprintf(new_name, MAX_PATH, L"/sdcard/%08x_%d_%d.tmp", this, (int)pos.start, rand()*rand());
 	#endif
 	disk_fragment *p = new disk_fragment(new_name, pos.start);
 	p->put(buf, (int)(pos.end - pos.start));
 	m_fragments.push_back(p);
+
+	configfile_entry entry = {pos.start};
+	wcscpy(entry.file, new_name);
+	fwrite(&entry, 1, sizeof(entry), m_config_file_file);
+	fflush(m_config_file_file);
 
 	return 0;
 }
@@ -549,7 +583,6 @@ int disk_fragment::put(void *buf, int size)
 disk_fragment::disk_fragment(const wchar_t*file, __int64 startpos)
 {
 	m_start = startpos;
-	_wremove(file);
 	m_file = CreateFileW (file, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, 0, NULL);
 
 	assert(m_file != INVALID_HANDLE_VALUE);
