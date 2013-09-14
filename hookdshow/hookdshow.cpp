@@ -104,7 +104,7 @@ static HANDLE WINAPI MineCreateFileA(
 	{
 
 		wchar_t exe_path[MAX_PATH] = L"Z:\\flv.flv";
-// 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
+ 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
@@ -144,7 +144,7 @@ static HANDLE WINAPI MineCreateFileW(
 	if (b)
 	{
 		wchar_t exe_path[MAX_PATH] = L"Z:\\flv.flv";
- 		//GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
+ 		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
 		o =  TrueCreateFileW( exe_path, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;

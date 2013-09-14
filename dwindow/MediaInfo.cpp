@@ -295,6 +295,10 @@ HRESULT MediaInfoWindow::FillTree(HWND root, const wchar_t *filename)
 		wcscpy(dummy_name, HOOKDSHOW_PREFIX);
 		wcscat(dummy_name, filename);
 	}
+	else
+	{
+		wcscpy(dummy_name, filename);
+	}
 	HANDLE h_file = CreateFileW (dummy_name, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	String str = L"";
 	if (h_file != INVALID_HANDLE_VALUE)
