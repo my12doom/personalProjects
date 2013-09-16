@@ -1522,6 +1522,16 @@ int dx_player::hittest(int x, int y, HWND hwnd, double *v)
 
 HRESULT dx_player::lua_OnMouseEvent(char *event, int x, int y, int button)
 {
+	RECT client1;
+	GetClientRect(id_to_hwnd(1), &client1);
+	int total_width = client1.right - client1.left;
+	int total_height = client1.bottom - client1.top;
+	if ((int)m_output_mode == out_hsbs)
+		x = (x*2) % total_width;
+	if ((int)m_output_mode == out_htb)
+		y = (y*2) % total_height;
+
+
 	luaState lua_state;
 	lua_getglobal(lua_state, "OnMouseEvent");
 	if (lua_isfunction(lua_state, -1))

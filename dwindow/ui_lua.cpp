@@ -171,6 +171,11 @@ static int luaPopupMenu(lua_State *L)
 	menu_holder_window * handle = (menu_holder_window *)lua_touserdata(L, -n+0);
 	int dx = lua_tointeger(L, -n+1);
 	int dy = lua_tointeger(L, -n+2);
+	if ((int)g_player->m_output_mode == out_hsbs)
+		dx /=2;
+	if ((int)g_player->m_output_mode == out_htb)
+		dy /=2;
+
 	POINT mouse_pos;
 	GetCursorPos(&mouse_pos);
 	g_player->m_dialog_open ++;
@@ -197,6 +202,15 @@ static int get_mouse_pos(lua_State *L)
 	GetCursorPos(&p);
 	HWND wnd = g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1);
 	ScreenToClient(wnd, &p);
+	RECT client1;
+	GetClientRect(wnd, &client1);
+	int total_width = client1.right - client1.left;
+	int total_height = client1.bottom - client1.top;
+
+	if ((int)g_player->m_output_mode == out_hsbs)
+		p.x = (p.x*2)%total_width;
+	if ((int)g_player->m_output_mode == out_htb)
+		p.y = (p.y*2)%total_height;
 
 	lua_pushinteger(L, p.x/UIScale);
 	lua_pushinteger(L, p.y/UIScale);
