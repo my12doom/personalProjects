@@ -7,8 +7,8 @@
 #include "CCritSec.h"
 
 class inet_worker_manager;
-class disk_manager;
-class disk_manager;
+class inet_file;
+class inet_file;
 
 #ifndef LINUX
 #else
@@ -62,7 +62,7 @@ public:
 	__int64 m_pos;
 	__int64 m_maxpos;					// modified by hint();
 protected:
-	friend class disk_manager;
+	friend class inet_file;
 	DWORD m_last_inet_time;
 	bool m_exit_signaled;
 	void *m_inet_file;
@@ -73,20 +73,20 @@ protected:
 class inet_worker_manager
 {
 public:
-	inet_worker_manager(const wchar_t *URL, disk_manager *manager);
+	inet_worker_manager(const wchar_t *URL, inet_file *manager);
 	~inet_worker_manager();
 
 	int hint(fragment pos, bool open_new_worker_if_necessary, bool debug = false);			// hint the workers to continue their work, and launch new worker if necessary
 
 protected:
 	friend class inet_worker;
-	friend class disk_manager;
+	friend class inet_file;
 
 	myCCritSec m_worker_cs;
 	std::list<inet_worker*> m_active_workers;
 	thread_pool m_worker_pool;
 	std::wstring m_URL;
-	disk_manager *m_manager;
+	inet_file *m_manager;
 };
 
 typedef struct
@@ -126,7 +126,7 @@ public:
 	__int64 tell(){return m_pos;}
 
 protected:
-	friend class disk_manager;
+	friend class inet_file;
 	myCCritSec m_cs;
 	__int64 m_pos;
 	__int64 m_start;
@@ -137,16 +137,18 @@ protected:
 #endif
 };
 
-class disk_manager
+class inet_file
 {
 public:
-	disk_manager(const wchar_t *configfile);
-	~disk_manager();
+	inet_file(const wchar_t *configfile);
+	~inet_file();
 
 	int setURL(const wchar_t *URL);
 	int get(void *buf, fragment &pos);
 	int pre_read(fragment &pos);
+	__int64 getdisksize();
 	__int64 getsize(){return m_filesize;}
+	__time64_t get_access_time(){return m_time;}
 	std::list<debug_info> debug();
 
 protected:
@@ -169,4 +171,5 @@ protected:
 	myCCritSec m_fragments_cs;
 	myCCritSec m_access_lock;
 	__int64 m_filesize;
+	__time64_t m_time;
 };

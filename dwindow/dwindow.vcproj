@@ -2545,6 +2545,34 @@
 				RelativePath="..\httppost\httppost.h"
 				>
 			</File>
+			<Filter
+				Name="fs"
+				>
+				<File
+					RelativePath=".\fs\diskio.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fs\diskio.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fs\ff.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fs\ff.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fs\ffconf.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fs\integer.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="ZHUZHU"

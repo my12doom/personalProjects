@@ -23,8 +23,8 @@ void test_cache();
 
 
 
-disk_manager *open_http_file(const wchar_t *URL);
-void close_http_file(disk_manager *p);
+inet_file *open_http_file(const wchar_t *URL);
+void close_http_file(inet_file *p);
 
 static HANDLE (WINAPI * TrueCreateFileA)(
 	LPCSTR lpFileName,
@@ -74,7 +74,7 @@ static DWORD (WINAPI *TrueSetFilePointer)(__in        HANDLE hFile,
 typedef struct
 {
 	DWORD dummy;
-	disk_manager *ifile;
+	inet_file *ifile;
 	myCCritSec cs;
 	__int64 pos;
 } dummy_handle;
@@ -127,7 +127,7 @@ static HANDLE WINAPI MineCreateFileA(
 	return o;
 }
 
-disk_manager *g_last_manager = NULL;
+inet_file *g_last_manager = NULL;
 
 static HANDLE WINAPI MineCreateFileW(
 						 LPCWSTR lpFileName,
@@ -372,7 +372,7 @@ int disable_hookdshow()
 void test_cache()
 {
 
-	disk_manager *d = new disk_manager(L"flv.flv.config");
+	inet_file *d = new inet_file(L"flv.flv.config");
 	d->setURL(L"http://bo3d.net/test/flv.flv");
 
 	FILE * f = fopen("Z:\\flv.flv", "rb");
@@ -431,14 +431,14 @@ void test_cache()
 typedef struct
 {
 	int ref_count;
-	disk_manager *manager;
+	inet_file *manager;
 	char config_file[4096];
 	char URL_utf[4096];
 } active_httpfile_list_entry;
 std::list<active_httpfile_list_entry> g_active_httpfile_list;
 CCritSec g_active_httpfile_list_lock;
 
-disk_manager *open_http_file(const wchar_t *URL)
+inet_file *open_http_file(const wchar_t *URL)
 {
 	wchar_t dwindow_path[MAX_PATH];
 	wcscpy(dwindow_path, dwindow_log_get_filename());
@@ -450,7 +450,7 @@ disk_manager *open_http_file(const wchar_t *URL)
 	char config_file[4096];
 	unsigned long name_crc = crc32(0, (unsigned char*)URL, wcslen(URL) * sizeof(wchar_t));
 	USES_CONVERSION;
-	sprintf(config_file, "%s%08x.tmp", W2A(dwindow_path), name_crc);
+	sprintf(config_file, "%s%08x", W2A(dwindow_path), name_crc);
 
 	// search for instance
 	CAutoLock lck(&g_active_httpfile_list_lock);
@@ -459,7 +459,7 @@ disk_manager *open_http_file(const wchar_t *URL)
 		if (strcmp((*i).URL_utf, URL_utf) == 0)
 		{
 			(*i).ref_count ++;
-			disk_manager *p = (*i).manager;
+			inet_file *p = (*i).manager;
 
 			return p;
 		}
@@ -469,7 +469,7 @@ disk_manager *open_http_file(const wchar_t *URL)
 	active_httpfile_list_entry entry = {1};
 	strcpy(entry.config_file, config_file);
 	strcpy(entry.URL_utf, URL_utf);
-	entry.manager = new disk_manager(UTF82W(config_file));
+	entry.manager = new inet_file(UTF82W(config_file));
 	if (entry.manager->setURL(URL) <0)
 	{
 		delete entry.manager;
@@ -480,7 +480,7 @@ disk_manager *open_http_file(const wchar_t *URL)
 	return entry.manager;
 }
 
-void close_http_file(disk_manager *p)
+void close_http_file(inet_file *p)
 {
 	CAutoLock lck(&g_active_httpfile_list_lock);
 	for(std::list<active_httpfile_list_entry>::iterator i = g_active_httpfile_list.begin(); i!= g_active_httpfile_list.end(); ++i)

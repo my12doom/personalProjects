@@ -6,7 +6,7 @@
 #include "full_cache.h"
 #include "..\dwindow\runnable.h"
 
-extern disk_manager *g_last_manager;
+extern inet_file *g_last_manager;
 
 // drawing
 RECT rect;

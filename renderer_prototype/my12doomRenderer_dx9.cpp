@@ -2150,12 +2150,10 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			{
 				RECT dst = {0, 0, m_active_pp.BackBufferWidth/2, m_active_pp.BackBufferHeight};
 
-				//m_Device->StretchRect(surf0, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 				resize_surface(surf0, NULL, back_buffer, NULL, &dst, (resampling_method)(int)m_movie_resizing);
 
 				dst.left += m_active_pp.BackBufferWidth/2;
 				dst.right += m_active_pp.BackBufferWidth/2;
-				//m_Device->StretchRect(surf1, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 				resize_surface(surf1, NULL, back_buffer, NULL, &dst, (resampling_method)(int)m_movie_resizing);
 			}
 
@@ -2163,12 +2161,10 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			{
 				RECT dst = {0, 0, m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight/2};
 
-				//m_Device->StretchRect(surf0, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 				resize_surface(surf0, NULL, back_buffer, NULL, &dst, (resampling_method)(int)m_movie_resizing);
 
 				dst.top += m_active_pp.BackBufferHeight/2;
 				dst.bottom += m_active_pp.BackBufferHeight/2;
-				//m_Device->StretchRect(surf1, NULL, back_buffer, &dst, D3DTEXF_LINEAR);
 				resize_surface(surf1, NULL, back_buffer, NULL, &dst, (resampling_method)(int)m_movie_resizing);
 			}
 		}

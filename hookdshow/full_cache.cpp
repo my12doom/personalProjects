@@ -1,5 +1,6 @@
 #include "full_cache.h"
 #include <assert.h>
+#include "time.h"
 
 static const __int64 PRELOADING_SIZE = 1024*1024;
 static const DWORD WORKER_TIMEOUT = 3000;
@@ -68,7 +69,7 @@ int subtract_fragment(fragment frag, fragment subtractor, fragment o[2])
 }
 
 // inet manager
-inet_worker_manager::inet_worker_manager(const wchar_t *URL, disk_manager *manager)
+inet_worker_manager::inet_worker_manager(const wchar_t *URL, inet_file *manager)
 :m_manager(manager)
 ,m_URL(URL)
 ,m_worker_pool(WORKER_COUNT)
@@ -193,7 +194,7 @@ public:
 
 void inet_worker::run()
 {
-	disk_manager *disk = (disk_manager*)m_manager->m_manager;
+	inet_file *disk = (inet_file*)m_manager->m_manager;
 	httppost *post = (httppost*)m_inet_file;
 	wchar_t range_str[200];
 	char range_str_utf[400];
@@ -271,7 +272,7 @@ typedef struct
 	wchar_t file[MAX_PATH];
 } configfile_entry;
 
-disk_manager::disk_manager(const wchar_t *configfile)
+inet_file::inet_file(const wchar_t *configfile)
 :m_worker_manager(NULL)
 ,m_config_file_file(NULL)
 {
@@ -287,6 +288,7 @@ disk_manager::disk_manager(const wchar_t *configfile)
 
 	m_filesize = 0;
 	fread(&m_filesize, sizeof(m_filesize), 1, m_config_file_file);
+	fread(&m_time, sizeof(m_time), 1, m_config_file_file);
 
 	configfile_entry entry;
 	int i = 0;
@@ -298,7 +300,7 @@ disk_manager::disk_manager(const wchar_t *configfile)
 	}
 }
 
-int disk_manager::setURL(const wchar_t *URL)
+int inet_file::setURL(const wchar_t *URL)
 {
 	if (m_worker_manager != NULL)
 		return -1;
@@ -316,7 +318,9 @@ int disk_manager::setURL(const wchar_t *URL)
 		if (m_filesize <= 0)
 			return -3;
 
+		fseek(m_config_file_file, 0, SEEK_SET);
 		fwrite(&m_filesize, sizeof(m_filesize), 1, m_config_file_file);
+		fwrite(&m_time, sizeof(m_time), 1, m_config_file_file);
 	}
 
 	m_worker_manager = new inet_worker_manager(URL, this);
@@ -324,7 +328,7 @@ int disk_manager::setURL(const wchar_t *URL)
 	return 0;
 }
 
-disk_manager::~disk_manager()
+inet_file::~inet_file()
 {
 	delete m_worker_manager;
 	for(std::list<disk_fragment*>::iterator i = m_fragments.begin(); i != m_fragments.end(); ++i)
@@ -332,7 +336,7 @@ disk_manager::~disk_manager()
 }
 
 
-int disk_manager::get(void *buf, fragment &pos)
+int inet_file::get(void *buf, fragment &pos)
 {
 	{
 		myCAutoLock lck2(&m_access_lock);
@@ -402,10 +406,23 @@ int disk_manager::get(void *buf, fragment &pos)
 		}
 	}
 
+	// update access timestamp
+	myCAutoLock lck3(&m_access_lock);
+	if (_time64(NULL) != m_time)
+	{
+		m_time = _time64(NULL);
+		int t = ftell(m_config_file_file);
+		fseek(m_config_file_file, sizeof(m_filesize), SEEK_SET);
+		fwrite(&m_time, 1, sizeof(m_time), m_config_file_file);
+		fseek(m_config_file_file, t, SEEK_SET);
+		fflush(m_config_file_file);
+	}
+
+
 	return rtn;
 }
 
-int disk_manager::pre_read(fragment &pos)
+int inet_file::pre_read(fragment &pos)
 {
 	{
 		myCAutoLock lck2(&m_access_lock);
@@ -441,8 +458,21 @@ int disk_manager::pre_read(fragment &pos)
 	return 0;
 }
 
+__int64 inet_file::getdisksize()
+{
+	myCAutoLock lck2(&m_fragments_cs);
 
-int disk_manager::feed(void *buf, fragment pos)
+	__int64 disksize = 0;
+	for(std::list<disk_fragment*>::iterator i = m_fragments.begin(); i != m_fragments.end(); ++i)
+	{
+		disksize += (*i)->m_pos - (*i)->m_start;
+	}
+
+	return disksize;
+}
+
+
+int inet_file::feed(void *buf, fragment pos)
 {
 	myCAutoLock lck2(&m_fragments_cs);
 
@@ -470,7 +500,7 @@ int disk_manager::feed(void *buf, fragment pos)
 	// new fragment
 	wchar_t new_name[MAX_PATH];
 	#ifndef LINUX
-	swprintf(new_name, MAX_PATH, L"%s.%lld", m_config_file.c_str(), pos.start);
+	swprintf(new_name, MAX_PATH, L"%s.%03d", m_config_file.c_str(), (int)m_fragments.size());
 	#else
 	swprintf(new_name, MAX_PATH, L"/sdcard/%08x_%d_%d.tmp", this, (int)pos.start, rand()*rand());
 	#endif
@@ -480,13 +510,15 @@ int disk_manager::feed(void *buf, fragment pos)
 
 	configfile_entry entry = {pos.start};
 	wcscpy(entry.file, new_name);
+	myCAutoLock lck3(&m_access_lock);
+	fseek(m_config_file_file, 0, SEEK_END);
 	fwrite(&entry, 1, sizeof(entry), m_config_file_file);
 	fflush(m_config_file_file);
 
 	return 0;
 }
 
-std::list<debug_info> disk_manager::debug()
+std::list<debug_info> inet_file::debug()
 {
 	std::list<debug_info> out;
 
