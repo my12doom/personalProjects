@@ -207,10 +207,13 @@ static int get_mouse_pos(lua_State *L)
 	int total_width = client1.right - client1.left;
 	int total_height = client1.bottom - client1.top;
 
-	if ((int)g_player->m_output_mode == out_hsbs)
-		p.x = (p.x*2)%total_width;
-	if ((int)g_player->m_output_mode == out_htb)
-		p.y = (p.y*2)%total_height;
+	if (total_width>0 && total_height>0)
+	{
+		if ((int)g_player->m_output_mode == out_hsbs)
+			p.x = (p.x*2)%total_width;
+		if ((int)g_player->m_output_mode == out_htb)
+			p.y = (p.y*2)%total_height;
+	}
 
 	lua_pushinteger(L, p.x/UIScale);
 	lua_pushinteger(L, p.y/UIScale);
