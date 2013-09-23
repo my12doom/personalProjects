@@ -62,7 +62,6 @@ BEGIN
     PUSHBUTTON      "Video",IDC_BTN_VIDEO,0,15,80,15,WS_GROUP
     PUSHBUTTON      "3   D",IDC_BTN_3D,0,45,80,15,WS_GROUP
     PUSHBUTTON      "Subtitle",IDC_BTN_SUBTITLE,0,75,80,15,WS_GROUP
-    PUSHBUTTON      "About",IDC_BTN_ABOUT,0,105,80,15,WS_GROUP
     PUSHBUTTON      "File Association",IDC_BTN_RELATIONSHIP,0,90,80,15,WS_GROUP
     PUSHBUTTON      "OK",IDC_BTN_OK,200,185,50,15
     PUSHBUTTON      "Cancel",IDC_BTN_CANCEL,255,185,50,15
@@ -77,9 +76,12 @@ BEGIN
     COMBOBOX        IDC_VIDEO_COM_IMAGERATE,270,10,55,64,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Low GPU Usage Mode",IDC_VIDEO_CHECK_LOW_CPU,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,101,33,200,10
     CONTROL         "Exclusive Mode",IDC_VIDEO_CHECK_FULLSCREEN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,101,46,200,10
-    CONTROL         "Resize Window to fit video resolution",IDC_VIDEO_CHECK_VIDEO_2_WIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,101,58,200,10
-    CONTROL         "Save Video Position",IDC_VIDEO_CHECK_LOAD_LAST_POS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,101,71,200,10
-    CONTROL         "Use CUDA Accelaration",IDC_VIDEO_CHECK_HARD_SPEED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,101,84,200,10
+    CONTROL         "Resize Window to fit video resolution",IDC_VIDEO_CHECK_VIDEO_2_WIN,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,101,58,200,10
+    CONTROL         "Save Video Position",IDC_VIDEO_CHECK_LOAD_LAST_POS,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,101,71,200,10
+    CONTROL         "Use CUDA Accelaration",IDC_VIDEO_CHECK_HARD_SPEED,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,101,84,200,10
     CONTROL         "Forced Deinterlace",IDC_VIDEO_CHECK_DEINTERLACE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,101,97,200,10
     GROUPBOX        "Color Controll",IDC_VIDEO_GROUP_COLOR_CTROL,90,8,267,29
     GROUPBOX        "",IDC_VIDEO_GROUP_COLOR_CTROL_LEFT,90,32,267,73
@@ -115,7 +117,8 @@ BEGIN
     COMBOBOX        IDC_3D_COM_FALL_MODE_ONE,134,72,88,76,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Channel Setting",IDC_VOICE_STATIC_CHANNEL,90,6,33,8
     COMBOBOX        IDC_VOICE_COM_CHANNEL,154,5,90,85,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Use ffdshow Audio Decoder",IDC_VOICE_CHECK_AUTO_VOICE_DECODE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,90,23,200,10
+    CONTROL         "Use ffdshow Audio Decoder",IDC_VOICE_CHECK_AUTO_VOICE_DECODE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,90,23,200,10
     CONTROL         "Normalize Audio",IDC_VOICE_COM_MAX_VOICE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,90,38,200,10
     CONTROL         "Display Subtitle",IDC_SUBTITLE_CHECK_SHOWSUB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,90,6,200,10
     LTEXT           "Font",IDC_SUBTITLE_STATIC_STYLE,90,20,33,8
@@ -163,13 +166,6 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDB_BMP_ABOUT           BITMAP                  "about.bmp"
 #endif    // 中文(中华人民共和国) resources
 /////////////////////////////////////////////////////////////////////////////
 

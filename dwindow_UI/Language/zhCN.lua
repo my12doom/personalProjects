@@ -4,6 +4,8 @@
 	
 
 	["Source Aspect"] = "来源宽高比",
+	["Donate"] = "捐赠",
+	["Free"] = "免费",
 	["Don't ask again"] = "不再提示",
 	["(Fonts Loading)"] = "（字体正在载入中）",
 	["Gerneral 120Hz Glasses"] = "普通120Hz眼镜",

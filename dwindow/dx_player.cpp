@@ -3415,9 +3415,21 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 {
 	HRESULT hr = E_FAIL;
 
-	CComPtr<IBaseFilter> rm_audio;
-	myCreateInstance(CLSID_RMAudioDecoder, IID_IBaseFilter, (void**)&rm_audio);
-	m_gb->AddFilter(rm_audio, L"RM Audio Decoder");
+	PIN_INFO pi;
+	CLSID filter_clsid = GUID_NULL;
+	pin->QueryPinInfo(&pi);
+	if (pi.pFilter)
+	{
+		pi.pFilter->GetClassID(&filter_clsid);
+		pi.pFilter->Release();
+	}
+
+	if (filter_clsid == CLSID_RMSplitter || pin == NULL)
+	{
+		CComPtr<IBaseFilter> rm_audio;
+		myCreateInstance(CLSID_RMAudioDecoder, IID_IBaseFilter, (void**)&rm_audio);
+		m_gb->AddFilter(rm_audio, L"RM Audio Decoder");
+	}
 
 	set_ff_audio_formats(m_lav);
 
@@ -3569,7 +3581,17 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 	}
 
 	// RM Video
+	PIN_INFO pi;
+	CLSID filter_clsid = GUID_NULL;
+	pin->QueryPinInfo(&pi);
+	if (pi.pFilter)
+	{
+		pi.pFilter->GetClassID(&filter_clsid);
+		pi.pFilter->Release();
+	}
+
 	if ( NULL == pin ||
+		filter_clsid == CLSID_RMSplitter ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('14VR')) ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('04VR')) ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('03VR')) ||

@@ -357,7 +357,8 @@ HRESULT CHEVCDecoder::Receive(IMediaSample *pIn)
 			}
 			frame_decoded++;
 			
-			hr = mp->Receive(pOut);;
+			if (m_pts>=0)
+				hr = mp->Receive(pOut);;
 			pOut->Release();
 		}
 	}
