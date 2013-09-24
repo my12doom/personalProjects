@@ -71,11 +71,22 @@ static int loaddll(lua_State *L)
 	if (!hdll)
 	{
 		lua_pushboolean(L, 0);
-		return 1;
+		lua_pushstring(L, "dll not loaded");
+		return 2;
+	}
+
+	FARPROC proc = GetProcAddress(hdll, "dwindow_dll_go");
+	if (!proc)
+	{
+		FreeLibrary(hdll);
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "entry dwindow_dll_go not found");
+		return 2;
 	}
 
 
-
+	int (*dwindow_dll_go)(lua_State* L) = (int (cdecl*)(lua_State*))proc;
+	dwindow_dll_go(L);
 
 	lua_pushboolean(L, 1);
 	return 1;
@@ -278,6 +289,7 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("FAILED") = &luaFAILED;
 	g_lua_core_manager->get_variable("GetTickCount") = &lua_GetTickCount;
 	g_lua_core_manager->get_variable("execute_luafile") = &execute_luafile;
+	g_lua_core_manager->get_variable("loaddll") = &loaddll;
 	g_lua_core_manager->get_variable("track_back") = &track_back;
 	g_lua_core_manager->get_variable("http_request") = &http_request;
 	g_lua_core_manager->get_variable("Sleep") = &lua_Sleep;
