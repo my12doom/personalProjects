@@ -60,6 +60,26 @@ static int execute_luafile(lua_State *L)
 	return 1;
 }
 
+static int loaddll(lua_State *L)
+{
+// 	int parameter_count = lua_gettop(L);
+	const char *filename = NULL;
+	filename = luaL_checkstring(L, 1);
+	UTF82W filenamew(filename);
+
+	HMODULE hdll = LoadLibraryW(filenamew);
+	if (!hdll)
+	{
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+
+
+
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
 static int http_request(lua_State *L)
 {
 	const char *url = NULL;

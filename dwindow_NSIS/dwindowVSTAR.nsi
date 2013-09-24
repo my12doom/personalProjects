@@ -148,6 +148,7 @@ Section $(MAINPROGRAM_LANG)
   File "logo.raw"
   File "Fonts.conf"
   File "MediaInfo.dll"
+  File "lua.dll"
   File "DevIL.dll"
   File "detoured.dll"
   File "IntelWiDiExtensions.dll"

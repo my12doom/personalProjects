@@ -52,7 +52,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include;x264"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE;DEBUG;LUA_COMPAT_MODULE;LUA_COMPAT_LOADSTRING;LUA_COMPAT_ALL"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;PERFHUD;USE_OTHER_PROJECTS_AX;UNICODE;_UNICODE;DEBUG;LUA_BUILD_AS_DLL;LUA_COMPAT_ALL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -74,7 +74,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib d3dx9.lib winmm.lib dxguid.lib ddraw.lib Mf.lib Mfplat.lib evr.lib"
+				AdditionalDependencies="nvapi.lib strmbasd.lib strmiids.lib Mfuuid.lib quartz.lib Comctl32.lib d3d9.lib d3dx9.lib winmm.lib dxguid.lib ddraw.lib Mf.lib Mfplat.lib evr.lib ..\lua\debug\lua.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\DS_SDK_LITE\BaseClasses\Debug_Unicode;C:\DS_SDK_LITE\BaseClasses\Debug_Unicode;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\MTDebug&quot;;..\libass\lib;&quot;D:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x86&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;x264"
@@ -390,7 +390,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include;x264"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector;nologin;LUA_COMPAT_ALL"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector;nologin;LUA_BUILD_AS_DLL;LUA_COMPAT_ALL"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
@@ -409,7 +409,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
+				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib ..\lua\Release\lua.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\libass\lib;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;x264"
@@ -585,7 +585,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
+				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib ..\lua\Release\lua.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\libass\lib;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;x264"
@@ -741,7 +741,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include;x264"
-				PreprocessorDefinitions="WIN32;_NDEBUG;_WINDOWS;UNICODE;_UNICODE;LUA_COMPAT_ALL;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;_NDEBUG;_WINDOWS;UNICODE;_UNICODE;LUA_BUILD_AS_DLL;LUA_COMPAT_ALL;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
@@ -761,7 +761,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
+				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib ..\lua\Release\lua.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\libass\lib;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;x264"
@@ -919,6 +919,7 @@
 				AdditionalIncludeDirectories="..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include;x264"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector;LUA_COMPAT_ALL"
 				RuntimeLibrary="0"
+				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="0"
 				Detect64BitPortabilityProblems="true"
@@ -935,7 +936,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
+				AdditionalDependencies="nvapi.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib ..\lua\Release\lua.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\libass\lib;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;x264"
@@ -1090,7 +1091,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="E:\DS_SDK_LITE\BaseClasses;..\libass\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;;&quot;D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;x264;..\renderer_prototype\libyuv\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;ZHUZHU;LUA_COMPAT_ALL"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;ZHUZHU;LUA_BUILD_AS_DLL;LUA_COMPAT_ALL"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
@@ -1110,7 +1111,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib"
+				AdditionalDependencies="nvapi.lib d3dx9.lib STRMBASE.lib strmiids.lib quartz.lib Comctl32.lib d3d9.lib winmm.lib dxguid.lib ddraw.lib Mfuuid.lib ..\lua\Release\lua.lib"
 				OutputFile="$(OutDir)/StereoPlayer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="E:\projects\srt_parser\Release_mt\;E:\DS_SDK_LITE\BaseClasses\Release_mt;D:\DS_SDK_LITE\BaseClasses\Release_Unicode;..\libass\lib;&quot;D:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses\Release&quot;;x264"
@@ -1345,11 +1346,35 @@
 				RelativePath=".\dx_player.cpp"
 				>
 				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="release_vstar|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
 						WarningLevel="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="release_personal|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="release_jz|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1937,238 +1962,6 @@
 				RelativePath=".\ui_lua.h"
 				>
 			</File>
-			<Filter
-				Name="lua_source"
-				>
-				<File
-					RelativePath="..\lua\lapi.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lapi.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lauxlib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lauxlib.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lbaselib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lbitlib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lcode.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lcode.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lcorolib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lctype.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lctype.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ldblib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ldebug.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ldebug.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ldo.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ldo.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ldump.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lfunc.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lfunc.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lgc.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lgc.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\linit.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\liolib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\llex.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\llex.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\llimits.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lmathlib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lmem.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lmem.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\loadlib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lobject.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lobject.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lopcodes.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lopcodes.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\loslib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lparser.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lparser.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lstate.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lstate.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lstring.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lstring.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lstrlib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ltable.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ltable.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ltablib.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ltm.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\ltm.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lua.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lua.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\luaconf.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lualib.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lundump.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lundump.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lvm.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lvm.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lzio.c"
-					>
-				</File>
-				<File
-					RelativePath="..\lua\lzio.h"
-					>
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="My Amplifier Results"

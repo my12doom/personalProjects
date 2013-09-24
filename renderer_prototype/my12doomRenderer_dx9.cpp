@@ -4681,7 +4681,7 @@ HRESULT my12doomRenderer::HD3DDrawStereo(IDirect3DSurface9 *left_surface, IDirec
 	viewPort.MaxZ = 1;
 	hr = m_Device->SetViewport(&viewPort);
 
-	mylog("lineoffset = %d, right_surface = %08x\r\n, hr = %08x", m_HD3Dlineoffset, right_surface, hr);
+	//mylog("lineoffset = %d, right_surface = %08x\r\n, hr = %08x", m_HD3Dlineoffset, right_surface, hr);
 
 
 	// set the right quad buffer as the destination for StretchRect

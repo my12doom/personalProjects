@@ -15,6 +15,7 @@ copy dwindow\ico\icoVSTAR.ico dwindow\ico\ico.ico
 %dev2008% mySplitter\mySplitter.sln /build "Release_mt"
 del dwindow\ico\ico.ico
 copy dwindow\ico\ico_normal.ico dwindow\ico\ico.ico
+%dev2008% lua\lua.sln /build "Release"
 
 #copy
 copy/y dwindow\dwindow.ini dwindow_NSIS
@@ -22,6 +23,7 @@ copy/y dwindow\alpha.raw dwindow_NSIS
 copy/y dwindow\logo.raw dwindow_NSIS
 copy/y dwindow\Release_vstar\StereoPlayer.exe dwindow_NSIS
 copy/y reset\release\reset.exe dwindow_NSIS
+copy/y lua\Release\lua.dll dwindow_NSIS
 copy/y report_server\release\ErrorReport.exe dwindow_NSIS
 del/q dwindow_NSIS\codec\*.*
 del/q dwindow_NSIS\skin\*.*

@@ -3415,9 +3415,10 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 {
 	HRESULT hr = E_FAIL;
 
-	PIN_INFO pi;
+	PIN_INFO pi = {0};
 	CLSID filter_clsid = GUID_NULL;
-	pin->QueryPinInfo(&pi);
+	if (pin)
+		pin->QueryPinInfo(&pi);
 	if (pi.pFilter)
 	{
 		pi.pFilter->GetClassID(&filter_clsid);
@@ -3581,9 +3582,10 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 	}
 
 	// RM Video
-	PIN_INFO pi;
+	PIN_INFO pi = {0};
 	CLSID filter_clsid = GUID_NULL;
-	pin->QueryPinInfo(&pi);
+	if (pin)
+		pin->QueryPinInfo(&pi);
 	if (pi.pFilter)
 	{
 		pi.pFilter->GetClassID(&filter_clsid);
@@ -3924,7 +3926,7 @@ HRESULT dx_player::end_loading()
 		GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer1_input);
 
 
-	if (renderer1_input && GET_CONST("FourceVideo"))
+	if (renderer1_input && GET_CONST("ForceVideo"))
 	{
 		dwindow_log_line(L"no video stream found.");
 		return E_FAIL;
