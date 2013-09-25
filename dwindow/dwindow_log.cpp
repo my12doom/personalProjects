@@ -55,7 +55,7 @@ int dwindow_log_line(const char *format, ...)
 	time_t tt = time(NULL);
 	struct tm t = *localtime(&tt);
 	wchar_t time_str[200];	
-	wsprintfW(time_str, L"%d-%02d-%02d %02d:%02d:%02d:%03d ", t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, GetTickCount()%1000);
+	wsprintfW(time_str, L"%d-%02d-%02d %02d:%02d:%02d:%03d ", t.tm_year+1900, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, GetTickCount()%1000);
 	fwrite(time_str, 2, wcslen(time_str), f);
 
 	USES_CONVERSION;
@@ -109,9 +109,13 @@ FILE * getfile()
 		}
 	}
 
-	dwindow_log_file = _wfopen(dwindow_log_get_filename(), L"ab");
+	dwindow_log_file = _wfopen(dwindow_log_get_filename(), L"r+b");
 	if (dwindow_log_file == NULL)
+	{
 		dwindow_log_file = _wfopen(dwindow_log_get_filename(), L"wb");
+		fwrite("\xff\xfe", 1, 2, dwindow_log_file);
+	}
+	fseek(dwindow_log_file, 0, SEEK_END);
 
 	dwindow_log_cs.Unlock();
 	return dwindow_log_file;
