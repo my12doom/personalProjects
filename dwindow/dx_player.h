@@ -68,8 +68,8 @@ class subtitle_file_handler
 {
 public:
 	bool actived/* = false*/;
-	wchar_t m_pathname[MAX_PATH];
-	wchar_t m_displayname[MAX_PATH];
+	wchar_t m_pathname[MAX_PATH*10];
+	wchar_t m_displayname[MAX_PATH*10];
 	CSubtitleRenderer *m_renderer;
 	subtitle_file_handler(const wchar_t *pathname);
 	~subtitle_file_handler();
@@ -153,7 +153,7 @@ public:
 
 	int init_done_flag;
 
-	wchar_t m_main_video_filename[MAX_PATH];
+	wchar_t m_main_video_filename[MAX_PATH*10];
 // #ifndef ZHUZHU
 // protected:
 // #endif

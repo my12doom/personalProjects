@@ -14,7 +14,7 @@ static INT_PTR CALLBACK url_dlg_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 			int id = LOWORD(wParam);
 			if (id == IDOK)
 			{
-				GetDlgItemTextW(hDlg, IDC_LEFT, url, MAX_PATH);
+				GetDlgItemTextW(hDlg, IDC_LEFT, url, 20480);
 
 				EndDialog(hDlg, 0);
 			}

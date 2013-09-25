@@ -83,7 +83,7 @@ static int luaOpenFolder(lua_State *L)
 
 static int luaOpenURL(lua_State *L)
 {
-	wchar_t url[1024] = L"";
+	wchar_t url[20480] = L"";
 	if (FAILED(open_URL(g_player->m_hexe, g_player->get_window((int)g_player_lua_manager->get_variable("active_view")+1), url)))
 		return 0;
 

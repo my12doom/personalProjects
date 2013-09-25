@@ -340,9 +340,7 @@ int httppost::send_request(int max_relocation/* = 5*/)
 	char *tmp = new char[MAXREQUESTSIZE];
 
 	char boundary[] = "----7b4a6d158c9";
-	LOGE("324");
 	LINE("%s %s HTTP/1.1", m_form_items.size()>0 ? "POST" : "GET", (char*)W2UTF8(m_object));
-	LOGE("326");
 	LINE("HOST: %s", W2UTF8(m_server));
 	LINE("Accept: */*");
 	LINE("Content-Type: multipart/form-data; charset=UTF-8; boundary=%s", boundary);
@@ -352,7 +350,6 @@ int httppost::send_request(int max_relocation/* = 5*/)
 	LINE("Cache-Control: no-cache");
 	for(std::map<wchar_t*, wchar_t*>::iterator i = m_request_headers.begin(); i!= m_request_headers.end(); ++i)
 		LINE("%s: %s", W2UTF8(i->first), W2UTF8(i->second));
-	LOGE("336");
 	m_request_content_size = 0;
 	for(std::list<form_item>::iterator i = m_form_items.begin(); i != m_form_items.end(); ++i)
 	{
@@ -488,7 +485,7 @@ int httppost::read_content(void *buf, int size)
 		got += o;
 		m_content_read += o;
 
-		if (o == 0)
+		if (o <= 0)
 			break;
 	}
 

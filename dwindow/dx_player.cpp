@@ -22,6 +22,7 @@
 #include "fullscreen_modes_select.h"
 #include "dwindow_log.h"
 #include "IPinHook.h"
+#include "..\hookdshow\hookdshow.h"
 
 #define JIF(x) if (FAILED(hr=(x))){goto CLEANUP;}
 #define DS_CHECKUPDATE (WM_USER + 14)
@@ -837,7 +838,7 @@ LRESULT dx_player::on_unhandled_msg(int id, UINT message, WPARAM wParam, LPARAM 
 
 			if (copy->dwData == WM_LOADFILE)
 			{
-				data[MAX_PATH-1] = NULL;
+				data[MAX_PATH*10-1] = NULL;
 				reset_and_loadfile(data);
 			}
 			else if (copy->dwData == WM_DWINDOW_COMMAND)
@@ -1292,15 +1293,15 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 	bool drive_found = false;
 	for(int i=L'Z'; i>L'B'; i--)
 	{
-		wchar_t tmp[MAX_PATH] = L"C:\\";
-		wchar_t tmp2[MAX_PATH];
+		wchar_t tmp[MAX_PATH*10] = L"C:\\";
+		wchar_t tmp2[MAX_PATH*10];
 		tmp[0] = i;
 		tmp[4] = NULL;
 		if (GetDriveTypeW(tmp) == DRIVE_CDROM)
 		{
 			drive_found = true;
 			UINT flag = MF_BYPOSITION | MF_STRING;
-			if (!GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0))
+			if (!GetVolumeInformationW(tmp, tmp2, MAX_PATH*10, NULL, NULL, NULL, NULL, 0))
 			{
 				wcscat(tmp, C(L" (No Disc)"));
 				flag |= MF_GRAYED;
@@ -1312,7 +1313,7 @@ HRESULT dx_player::popup_menu(HWND owner, int popsub /*=-1*/)
 			}
 			else
 			{
-				GetVolumeInformationW(tmp, tmp2, MAX_PATH, NULL, NULL, NULL, NULL, 0);
+				GetVolumeInformationW(tmp, tmp2, MAX_PATH*10, NULL, NULL, NULL, NULL, 0);
 				wsprintfW(tmp, L"%s (%s)", tmp, tmp2);
 			}
 			InsertMenuW(sub_open_BD, 0, flag, i, tmp);
@@ -2028,7 +2029,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	reset_timer(1, 99999999);
 	if (uid == ID_OPENFILE)
 	{
-		wchar_t file[MAX_PATH] = L"";
+		wchar_t file[MAX_PATH*10] = L"";
 		m_dialog_open++;
 		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), 
 			L"All Supported files\0"
@@ -2047,8 +2048,8 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uid == ID_OPEN_DOUBLEFILE)
 	{
-		wchar_t left[MAX_PATH];
-		wchar_t right[MAX_PATH];
+		wchar_t left[MAX_PATH*10];
+		wchar_t right[MAX_PATH*10];
 
 		m_dialog_open++;
 		if (SUCCEEDED(open_double_file(m_hexe, m_theater_owner ? m_theater_owner : id_to_hwnd(1), left, right)))
@@ -2472,7 +2473,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_LOADAUDIOTRACK)
 	{
 #ifndef no_dual_projector
-		wchar_t file[MAX_PATH] = L"";
+		wchar_t file[MAX_PATH*10] = L"";
 		m_dialog_open++;
 		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Audio Tracks\0*.mp3;*.mxf;*.dts;*.ac3;*.aac;*.m4a;*.mka\0All Files\0*.*\0\0"))
 		{
@@ -2487,7 +2488,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 	else if (uid == ID_SUBTITLE_LOADFILE)
 	{
-		wchar_t file[MAX_PATH] = L"";
+		wchar_t file[MAX_PATH*10] = L"";
 		m_dialog_open++;
 		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Subtitles\0*.srt;*.sup;*.ssa;*.ass\0All Files\0*.*\0\0"))
 		{
@@ -2554,7 +2555,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	else if (uid == ID_OPENBDFOLDER)
 	{
 		m_dialog_open ++;
-		wchar_t file[MAX_PATH] = L"";
+		wchar_t file[MAX_PATH*10] = L"";
 		if (browse_folder(file, m_theater_owner ? m_theater_owner : id_to_hwnd(id)))
 		{
 			reset_and_loadfile(file);
@@ -2600,7 +2601,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 	// open drive
 	else if (uid > 'B' && uid <= 'Z')
 	{
-		wchar_t tmp[MAX_PATH] = L"C:\\";
+		wchar_t tmp[MAX_PATH*10] = L"C:\\";
 		tmp[0] = uid;
 		reset_and_loadfile(tmp);
 	}
@@ -3292,8 +3293,8 @@ HRESULT dx_player::reset_and_loadfile_core(const wchar_t *pathname, const wchar_
 	play();
 
 	// search and load subtitles
-	wchar_t file_to_search[MAX_PATH];
-	wchar_t file_folder[MAX_PATH];
+	wchar_t file_to_search[MAX_PATH*10*10];
+	wchar_t file_folder[MAX_PATH*10*10];
 	wcscpy(file_to_search, pathname);
 	wcscpy(file_folder, pathname);
 	for(int i=wcslen(file_to_search)-1; i>0; i--)
@@ -3309,7 +3310,7 @@ HRESULT dx_player::reset_and_loadfile_core(const wchar_t *pathname, const wchar_
 			break;
 		}
 
-	wchar_t search_pattern[MAX_PATH];
+	wchar_t search_pattern[MAX_PATH*10];
 	wchar_t exts[5][512] = {L"*.srt", L"*.sup", L"*.ssa", L"*.ass", L"*.idx"};
 	for(int i=0; i<5; i++)
 	{
@@ -3321,7 +3322,7 @@ HRESULT dx_player::reset_and_loadfile_core(const wchar_t *pathname, const wchar_
 
 		if (find_handle != INVALID_HANDLE_VALUE)
 		{
-			wchar_t subtitle_to_load[MAX_PATH];
+			wchar_t subtitle_to_load[MAX_PATH*10];
 			wcscpy(subtitle_to_load, file_folder);
 			wcscat(subtitle_to_load, find_data.cFileName);
 			load_subtitle(subtitle_to_load, false);
@@ -3628,7 +3629,7 @@ connecting:
 
 const wchar_t *get_default_daemon_exe()
 {
-	static wchar_t the_buffer[MAX_PATH];
+	static wchar_t the_buffer[MAX_PATH*10];
 	SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES, NULL, NULL, the_buffer);
 	wcscat(the_buffer, L"\\DAEMON Tools Lite\\DTLite.exe");
 	return the_buffer;
@@ -3638,14 +3639,14 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 {
 	lua_const &daemon_drive = GET_CONST("DaemonDrive");
 	lua_const &daemon_exe = GET_CONST("DaemonExe");
-	wchar_t file_to_play[MAX_PATH];
+	wchar_t file_to_play[MAX_PATH*10];
 	wcscpy(file_to_play, pathname);
 
 	// detect ISO files
 	if (wcs_endwith_nocase(pathname, L".iso"))
 	{
 
-		wchar_t cmdline[MAX_PATH];
+		wchar_t cmdline[MAX_PATH*10];
 		swprintf(cmdline, L"-get_letter %s", (const wchar_t*)daemon_drive);
 		int letter = shellexecute_and_wait(daemon_exe, cmdline);
 		if (letter < 0)
@@ -3665,7 +3666,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	dwindow_log_line(L"start loading %s", file_to_play);
 	if(PathIsDirectoryW(file_to_play))
 	{
-		wchar_t playlist[MAX_PATH];
+		wchar_t playlist[MAX_PATH*10];
 		HRESULT hr;
 		if (FAILED(hr = find_main_movie(file_to_play, playlist)))
 		{
@@ -3682,9 +3683,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	// http?
 	if (wcsstr_nocase(file_to_play, L"http://") == file_to_play)
 	{
-		wchar_t tmp[MAX_PATH] = L"X:\\DWindow\\";;
-		wcscat(tmp, file_to_play);
-		wcscpy(file_to_play, tmp);
+		wcscpy(file_to_play, URL2Token(file_to_play));
 	}
 
 	// subtitle file
@@ -5027,14 +5026,14 @@ subtitle_file_handler::subtitle_file_handler(const wchar_t *pathname)
 		return;
 	}
 
-	wchar_t tmp_file[MAX_PATH] = L"X:\\DWindow\\";
+	wchar_t tmp_file[MAX_PATH*10] = L"X:\\DWindow\\";
 	const wchar_t *displayname = NULL;
 	if (wcsstr_nocase(pathname, L"http://") == pathname)
 	{
-		wchar_t tmp[MAX_PATH];
+		wchar_t tmp[MAX_PATH*10];
 		srand(time(NULL));
 		swprintf(tmp, L"dwindow_http_subtitle%d%s", rand(), wcsrchr(pathname, L'.'));
-		GetTempPathW(MAX_PATH, tmp_file);
+		GetTempPathW(MAX_PATH*10, tmp_file);
 		wcscat(tmp_file, tmp);
 
 		char *data = new char[1024*1024];

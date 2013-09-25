@@ -2327,6 +2327,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\hookdshow\hookdshow.h"
+				>
+			</File>
+			<File
 				RelativePath="..\httppost\httppost.cpp"
 				>
 			</File>

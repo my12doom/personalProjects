@@ -8,6 +8,7 @@
 #include "MediaInfoDLL.h"
 #include "global_funcs.h"
 #include "dwindow_log.h"
+#include "..\hookdshow\hookdshow.h"
 using namespace MediaInfoDLL;
 
 
@@ -288,12 +289,10 @@ HRESULT MediaInfoWindow::FillTree(HWND root, const wchar_t *filename)
 		MI.Option(_T("Language"));
 	}
 
-	static const wchar_t *HOOKDSHOW_PREFIX = L"X:\\DWindow\\";
 	wchar_t dummy_name[MAX_PATH*10];
 	if (wcsstr(filename, L"http://") == filename)
 	{
-		wcscpy(dummy_name, HOOKDSHOW_PREFIX);
-		wcscat(dummy_name, filename);
+		wcscpy(dummy_name, URL2Token(filename));
 	}
 	else
 	{

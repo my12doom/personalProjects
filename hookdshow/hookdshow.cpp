@@ -1,6 +1,4 @@
-// hookdshow.cpp : 定义控制台应用程序的入口点。
-//
-
+#include "hookdshow.h"
 #include <Windows.h>
 #include "..\dwindow\global_funcs.h"
 #include "..\dwindow\dwindow_log.h"
@@ -10,12 +8,12 @@
 #include <conio.h>
 #include "CCritSec.h"
 #include <map>
+#include <string>
 #include <assert.h>
 #include "full_cache.h"
 #include <streams.h>			// for CCritSec
 #include "archive_crc32.h"
 
-static const wchar_t *HOOKDSHOW_PREFIX = L"X:\\DWindow\\";
 #pragma comment(lib, "detours/detours.lib")
 #pragma comment(lib, "detours/detoured.lib")
 #pragma comment(lib, "strmiids.lib")
@@ -96,11 +94,10 @@ static HANDLE WINAPI MineCreateFileA(
 	HANDLE hTemplateFile)
 {
 	USES_CONVERSION;
-	bool b = strstr(lpFileName, W2A(HOOKDSHOW_PREFIX))==lpFileName;
 
 	HANDLE o;
 
-	if (b)
+	if (Token2URL(A2W(lpFileName)))
 	{
 
 		wchar_t exe_path[MAX_PATH] = L"Z:\\flv.flv";
@@ -109,7 +106,7 @@ static HANDLE WINAPI MineCreateFileA(
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->pos = 0;
-		p->ifile = open_http_file(A2W(lpFileName+strlen(W2A(HOOKDSHOW_PREFIX))));
+		p->ifile = open_http_file(Token2URL(A2W(lpFileName)));
 		if (p->ifile == NULL)
 		{
 			CloseHandle(o);
@@ -138,10 +135,9 @@ static HANDLE WINAPI MineCreateFileW(
 						 DWORD dwFlagsAndAttributes,
 						 HANDLE hTemplateFile)
 {
-	bool b = wcsstr(lpFileName, HOOKDSHOW_PREFIX)==lpFileName;
 	HANDLE o;
 
-	if (b)
+	if (Token2URL(lpFileName))
 	{
 		wchar_t exe_path[MAX_PATH] = L"Z:\\flv.flv";
  		GetModuleFileNameW(NULL, exe_path, MAX_PATH-1);
@@ -149,7 +145,7 @@ static HANDLE WINAPI MineCreateFileW(
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->pos = 0;
-		p->ifile = open_http_file(lpFileName+wcslen(HOOKDSHOW_PREFIX));
+		p->ifile = open_http_file(Token2URL(lpFileName));
 		if (p->ifile == NULL)
 		{
 			CloseHandle(o);
@@ -216,11 +212,11 @@ static BOOL WINAPI MineReadFile(
 			p->pos += *lpNumberOfBytesRead;
 
 			// pre reader
-			for(int i=0; i<5; i++)
-			{
-				fragment pre_reader = {p->pos+nNumberOfBytesToRead+ 2048*1024*i, p->pos+nNumberOfBytesToRead+ 2048*1024*(i+1)};
-				p->ifile->pre_read(pre_reader);
-			}
+ 			for(int i=0; i<5; i++)
+ 			{
+ 				fragment pre_reader = {p->pos+nNumberOfBytesToRead+ 2048*1024*i, p->pos+nNumberOfBytesToRead+ 2048*1024*(i+1)};
+ 				p->ifile->pre_read(pre_reader);
+ 			}
 		}
 
 		return TRUE;
@@ -373,9 +369,9 @@ void test_cache()
 {
 
 	inet_file *d = new inet_file(L"flv.flv.config");
-	d->setURL(L"http://bo3d.net/test/flv.flv");
+	d->setURL(L"http://cm.baidupcs.com/file/016e3d3c76417f363611f37cf0926694?xcode=07cd34ed4aa5d508def893a78f8f16a51da5bf4cb672b7dd&fid=3792016278-250528-992739353&time=1380090694&sign=FDTAXER-DCb740ccc5511e5e8fedcff06b081203-UYYhjqWlphz8VlfTMjeXeEoVovA%3D&to=cmb&fm=N,B,T,mn&expires=8h&rt=sh&r=928118386&logid=2684583592&sh=1&fn=%E4%B8%9C%E4%BA%AC%E5%A5%B3%E5%AD%90%E6%B5%81%20-%20Bad%20Flower%28mv%29%5Bwww.truemv.com%5D.rmvb");
 
-	FILE * f = fopen("Z:\\flv.flv", "rb");
+	FILE * f = fopen("Z:\\a.rmvb", "rb");
 
 	srand(123456);
 
@@ -436,6 +432,8 @@ typedef struct
 	char URL_utf[4096];
 } active_httpfile_list_entry;
 std::list<active_httpfile_list_entry> g_active_httpfile_list;
+std::map<std::wstring, std::wstring> g_URL2Token;
+std::map<std::wstring, std::wstring> g_Token2URL;
 CCritSec g_active_httpfile_list_lock;
 
 inet_file *open_http_file(const wchar_t *URL)
@@ -496,4 +494,32 @@ void close_http_file(inet_file *p)
 			break;
 		}
 	}
+}
+
+const wchar_t *URL2Token(const wchar_t *URL)
+{
+	CAutoLock lck(&g_active_httpfile_list_lock);
+
+	// return the token if found
+	if (g_URL2Token.find(URL) != g_URL2Token.end())
+		return g_URL2Token[URL].c_str();
+
+	// create the token and insert it
+	wchar_t token[MAX_PATH];
+	wsprintf(token, L"X:\\DWindow\\%d%s", g_URL2Token.size(), wcsrchr(URL, L'.'));
+
+	g_URL2Token[URL] = token;
+	g_Token2URL[token] = URL;
+
+	return g_URL2Token[URL].c_str();
+}
+
+const wchar_t *Token2URL(const wchar_t *Token)
+{
+	CAutoLock lck(&g_active_httpfile_list_lock);
+
+	if (g_Token2URL.find(Token) != g_Token2URL.end())
+		return g_Token2URL[Token].c_str();
+
+	return NULL;
 }

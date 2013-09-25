@@ -115,6 +115,7 @@ HRESULT generate_passkey_big(const unsigned char * passkey, __time64_t time_star
 	out->time_end = time_end;
 	memset(out->reserved, 0, sizeof(out->reserved));
 	out->zero = 0;
+	out->usertype = 0;
 
 	RSA_dwindow_private(out, out);
 
@@ -198,7 +199,7 @@ void Cactive_dwindowDlg::OnBnClickedButton2()
 	for(int i=0; i<128; i+=16)
 		aes.decrypt(((unsigned char*)dwindow_d)+i, ((unsigned char*)dwindow_d)+i);
 
-	unsigned char passkey_big[128];
+	unsigned char passkey_big[256];
 	generate_passkey_big(passkey_big, _time64(NULL), 0xffffffff, (dwindow_passkey_big*)passkey_big);
 
 	for(int i=0; i<128; i+=16)
