@@ -8,7 +8,7 @@
 	#include <wininet.h>
 	#include <atlbase.h>
 	#pragma  comment(lib, "ws2_32.lib")
-	#define LOGE(...)
+	#define LOGE printf
 #else
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -106,6 +106,7 @@ int httppost::close_connection()
 
 int httppost::setURL(const wchar_t *url)
 {
+	close_connection();
 	if (wcslen(url) < 7 || wcschr(url+7, L'/') == NULL)
 		return -1;
 
@@ -334,6 +335,7 @@ int httppost::send_request(int max_relocation/* = 5*/)
 	if(connect(m_sock,(struct sockaddr *)(&server_addr),sizeof(struct sockaddr))==-1)
 		return -4;
 
+	LOGE("Connected to %s\n", W2UTF8(m_server));
 
 	char *requestheader = new char[MAXREQUESTSIZE];
 	requestheader[0] = NULL;
@@ -434,12 +436,16 @@ int httppost::send_request(int max_relocation/* = 5*/)
 						{
 							location = new wchar_t[wcslen(value)+1];
 							wcscpy(location, value);
+							wcstrim(location, L'\r');
+							wcstrim(location, L'\n');
 						}
 						else
 						{
 							location = new wchar_t[wcslen(value)+wcslen(m_URL)+2];
 							wcscpy(location, m_URL);
 							wcscpy((wchar_t*)wcsrchr(location, L'/')+1, value);
+							wcstrim(location, L'\r');
+							wcstrim(location, L'\n');
 						}
 					}
 				}
@@ -454,8 +460,26 @@ int httppost::send_request(int max_relocation/* = 5*/)
 	if (location && max_relocation>0)
 	{
 		LOGE("relocating to %s", W2UTF8(location));
+		char tmp[4096];
+		while(read_content(tmp, 4096) >0)
+			;
+
+		wchar_t loc2[4096];
+		wchar_t loc3[4096] = L"http://218.75.140.146/cdn.baidupcs.com/file/016e3d3c76417f363611f37cf0926694?xcode=63707b68f54764bfbf7c75ec8e6b5f2a1da5bf4cb672b7dd&fid=3792016278-250528-992739353&time=1380185482&sign=FDTAXER-DCb740ccc5511e&wshc_tag=0&wsiphost=ipdbm";
+		wcscpy(loc2, location);
+		int n = wcscmp(loc2, loc3);
+
+		for(int i=0; i<wcslen(loc2); i++)
+			if (loc2[i] != loc3[i])
+			{
+				printf("");
+			}
+
+		httppost p2(location);
+		int c = p2.send_request(max_relocation-1);
 		setURL(location);
 		delete [] location;
+		Sleep(1024);
 		return send_request(max_relocation-1);
 	}
 

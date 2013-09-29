@@ -1006,7 +1006,7 @@ CRealMediaSourceFilter::CRealMediaSourceFilter(LPUNKNOWN pUnk, HRESULT* phr)
 //
 
 CRMFile::CRMFile(IAsyncReader* pAsyncReader, HRESULT& hr)
-	: CBaseSplitterFile(pAsyncReader, hr)
+	: CBaseSplitterFile(pAsyncReader, hr, 16*1024)
 {
 	if(FAILED(hr)) {
 		return;

@@ -712,6 +712,19 @@ function open2:OnClick()
 			string = "打开URL...",
 			on_command = function()
 				local url = ui.OpenURL()
+				if string.find(url, "pan.baidu.com") then
+					local str, code = core.http_request(url);
+					if code ~= 200 then
+						return
+					end
+					
+					for w in string.gmatch(str, "dlink%\\%\":%\\%\"([^,]+)%\\%\",") do
+						url = string.gsub(w, "\\\\", "" ) .. "&my12doom=.rmvb"
+					end
+
+				end
+				
+
 				if url then
 					playlist:play(url)
 				end
