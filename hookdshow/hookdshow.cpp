@@ -177,6 +177,7 @@ static BOOL WINAPI MineReadFile(
 	{
 
 		myCAutoLock lck(&p->cs);
+		int pre_reader_block_size = 2048*1024;
 
 		if (lpOverlapped)
 		{
@@ -191,8 +192,8 @@ static BOOL WINAPI MineReadFile(
 			// pre reader
 			for(int i=0; i<5; i++)
 			{
-// 				fragment pre_reader = {pos+nNumberOfBytesToRead+ 2048*1024*i, pos+nNumberOfBytesToRead+ 2048*1024*(i+1)};
-// 				p->ifile->pre_read(pre_reader);
+ 				fragment pre_reader = {pos+nNumberOfBytesToRead+ pre_reader_block_size*i, pos+nNumberOfBytesToRead+ pre_reader_block_size*(i+0.5)};
+ 				p->ifile->pre_read(pre_reader);
 			}
 
 			lpOverlapped->Internal = 0;
@@ -214,8 +215,8 @@ static BOOL WINAPI MineReadFile(
 			// pre reader
  			for(int i=0; i<5; i++)
  			{
-//  				fragment pre_reader = {p->pos+nNumberOfBytesToRead+ 2048*1024*i, p->pos+nNumberOfBytesToRead+ 2048*1024*(i+1)};
-//  				p->ifile->pre_read(pre_reader);
+  				fragment pre_reader = {p->pos+nNumberOfBytesToRead+ pre_reader_block_size*i, p->pos+nNumberOfBytesToRead+ pre_reader_block_size*(i+0.5)};
+  				p->ifile->pre_read(pre_reader);
  			}
 		}
 
