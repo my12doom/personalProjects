@@ -705,6 +705,49 @@ function open2:HitTest()
 	return not player.movie_loaded
 end
 
+
+function istable(t)
+	return type(t) == "table"
+end
+
+function json_url2table(url)
+	local bytes, response_code, headers = core.http_request(url)
+	
+	--print(bytes, response_code, headers)
+
+	bytes = string.gsub( bytes, "\r\n", "\\n")
+	
+	local json = core.cjson()
+
+	local suc,result = pcall(json.decode, bytes)
+
+	--print(suc, result)
+	if not istable(result) then return nil, result end
+
+	return result
+end
+
+function printtable(table, level)
+	level = level or 0
+	local prefix = ""
+	for i=1,level do
+		prefix = prefix .. "  "
+	end
+
+	for k,v in pairs(table) do
+		if type(v) == "table" then
+			print(prefix..k..":")
+			printtable(v, level+1)
+		else
+			print(prefix..k .. ":\t" .. tostring(v))
+		end
+	end
+end
+
+local json = json_url2table("https://openapi.youku.com/v2/videos/files.json?client_id=e57bc82b1a9dcd2f&client_secret=a361608273b857415ee91a8285a16b4a&video_id=XMzE2OTYwOTky")
+printtable(json)
+--player.reset_and_loadfile(tostring(json.files.mp4.segs[1].url))
+
 function open2:OnClick()
 	local m = 
 	{
@@ -712,6 +755,8 @@ function open2:OnClick()
 			string = "打开URL...",
 			on_command = function()
 				local url = ui.OpenURL()
+				
+				local youku_prefix = "http://v.youku.com/v_show/id_"
 				if string.find(url, "pan.baidu.com") then
 					local str, code = core.http_request(url);
 					if code ~= 200 then
@@ -721,7 +766,14 @@ function open2:OnClick()
 					for w in string.gmatch(str, "dlink%\\%\":%\\%\"([^,]+)%\\%\",") do
 						url = string.gsub(w, "\\\\", "" ) .. "&my12doom=.rmvb"
 					end
-
+					
+				elseif string.find(url, youku_prefix) then
+					local video_id = string.sub(url, youku_prefix:len()+1)
+					video_id = string.sub(video_id, 1, math.min(13, video_id:len()))
+					local json = json_url2table("https://openapi.youku.com/v2/videos/files.json?client_id=e57bc82b1a9dcd2f&client_secret=a361608273b857415ee91a8285a16b4a&video_id=" .. video_id)
+					url = (json.files["hd2"] or json.files["mp4"] or json.files["3gphd"]).segs[1].url
+					printtable(json)
+					print(url)
 				end
 				
 

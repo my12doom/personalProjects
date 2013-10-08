@@ -193,7 +193,7 @@ static BOOL WINAPI MineReadFile(
 			for(int i=0; i<5; i++)
 			{
  				fragment pre_reader = {pos+nNumberOfBytesToRead+ pre_reader_block_size*i, pos+nNumberOfBytesToRead+ pre_reader_block_size*(i+0.5)};
- 				p->ifile->pre_read(pre_reader);
+ 				//p->ifile->pre_read(pre_reader);
 			}
 
 			lpOverlapped->Internal = 0;
@@ -216,7 +216,7 @@ static BOOL WINAPI MineReadFile(
  			for(int i=0; i<5; i++)
  			{
   				fragment pre_reader = {p->pos+nNumberOfBytesToRead+ pre_reader_block_size*i, p->pos+nNumberOfBytesToRead+ pre_reader_block_size*(i+0.5)};
-  				p->ifile->pre_read(pre_reader);
+  				//p->ifile->pre_read(pre_reader);
  			}
 		}
 

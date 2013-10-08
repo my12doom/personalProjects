@@ -16,6 +16,8 @@ wchar_t dwindow_file_name[MAX_PATH] = {0};
 
 int dwindow_log_line(const wchar_t *format, ...)
 {
+	CAutoLock lck(&dwindow_log_cs);
+
 	FILE * f = getfile();
 	if (!f)
 		return -1;
@@ -42,6 +44,7 @@ int dwindow_log_line(const wchar_t *format, ...)
 
 int dwindow_log_line(const char *format, ...)
 {
+	CAutoLock lck(&dwindow_log_cs);
 	FILE * f = getfile();
 	if (!f)
 		return -1;

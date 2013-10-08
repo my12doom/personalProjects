@@ -4,7 +4,7 @@
 
 static const __int64 PRELOADING_SIZE = 1024*1024;
 static const DWORD WORKER_TIMEOUT = 3000;
-static const DWORD WORKER_COUNT = 50;
+static const DWORD WORKER_COUNT = 3;
 
 #ifndef LINUX
 	#include "..\httppost\httppost.h"

@@ -110,7 +110,7 @@ HRESULT GetFileSourceMediaInfo(const wchar_t *filename, wchar_t *format)
 
 	HANDLE thread = CreateThread(NULL, NULL, GetFileSourceMediaInfoCore, p, NULL, NULL);
 
-	if (WaitForSingleObject(thread, 5000) != WAIT_OBJECT_0)
+	if (WaitForSingleObject(thread, INFINITE) != WAIT_OBJECT_0)
 		return E_FAIL;
 
 	wcscpy(format, p[1]);
