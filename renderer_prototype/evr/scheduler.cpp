@@ -388,7 +388,7 @@ HRESULT Scheduler::ProcessSample(IMFSample *pSample, LONG *plNextSleep)
         }
     }
 
-    if (bPresentNow && m_state <= Restart)
+    if (bPresentNow && m_state != Pause)
     {
         hr = m_pCB->PresentSample(pSample, hnsPresentationTime, m_id);
     }
