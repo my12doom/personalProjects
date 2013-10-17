@@ -192,14 +192,19 @@ DWORD WINAPI luaCreateThreadEntry(LPVOID parameter)
 	return 0;
 }
 
+int tn=0;
 int luaCreateThread(lua_State *L)
 {
+	printf("%d threads created\n", tn++);
 	int n = lua_gettop(L);
 
 	int * p = new int[n+1];
 	p[0] = n;
 	for(int i=0; i<n; i++)
 		p[i+1] = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	for(int i=n-1; i>=0; i--)
+		lua_rawgeti(L, LUA_REGISTRYINDEX, p[i+1]);
 
 
 	lua_pushlightuserdata(L, CreateThread(NULL, NULL, luaCreateThreadEntry, p, NULL, NULL));
