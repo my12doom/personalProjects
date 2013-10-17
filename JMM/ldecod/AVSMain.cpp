@@ -279,16 +279,16 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	avs = new JMAvs();
 
 	// get paras
-	char tmp[1024];
-	char tmp1[1024];
-	char tmp2[1024];
+	char tmp[40960];
+	char tmp1[40960];
+	char tmp2[40960];
 	const char *file1 = args[0].AsString("");
 	const char *file2 = args[1].AsString("");
 	int frame_count = args[2].AsInt(-1);
 	int buffer_count = args[3].AsInt(10);
 	const char *ldecod_args = args[4].AsString("");
 	const bool swap_eyes = args[5].AsBool(false);
-	char playlist[1024] = {0};
+	char playlist[40960] = {0};
 
 	// check para and input files
 	if (file1[0] == NULL)
@@ -311,9 +311,9 @@ AVSValue __cdecl Create_JM3DSource(AVSValue args, void* user_data, IScriptEnviro
 	// check for mpls
 	int main_playlist_count = 0;
 	int sub_playlist_count = 0;
-	char main_playlist[4096];
-	char sub_playlist[4096];
-	int lengths[4096] = {0};
+	char main_playlist[40960];
+	char sub_playlist[40960];
+	int lengths[40960] = {0};
 	if (file2[0] == NULL && 0 == scan_mpls(file1, &main_playlist_count, main_playlist, lengths, sub_playlist, &sub_playlist_count))
 	{
 		if (main_playlist_count != sub_playlist_count)
@@ -490,7 +490,7 @@ int JMAvs::avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2
 	strcpy(m_m2ts_left, m2ts_left);
 	strcpy(m_m2ts_right, m2ts_right);
 
-	char offset_file[1024];
+	char offset_file[40960];
 	strcpy(offset_file, get_filename(offset_out));
 	for (int i=0; i<strlen(offset_file); i++)
 		if (offset_file[i] == ':')
@@ -674,7 +674,7 @@ DWORD WINAPI decoding_thread(LPVOID p)
 	printf ("Setting Default Parameters...\n");
 	InitParams(Map);
 
-	char dummpy_content[4096] = "";
+	char dummpy_content[40960] = "";
 	ParseContent (p_Inp, Map, dummpy_content, (int) strlen(dummpy_content));
 
 

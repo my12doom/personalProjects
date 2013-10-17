@@ -744,8 +744,8 @@ function printtable(table, level)
 	end
 end
 
-local json = json_url2table("https://openapi.youku.com/v2/videos/files.json?client_id=e57bc82b1a9dcd2f&client_secret=a361608273b857415ee91a8285a16b4a&video_id=XMzE2OTYwOTky")
-printtable(json)
+--local json = json_url2table("https://openapi.youku.com/v2/videos/files.json?client_id=e57bc82b1a9dcd2f&client_secret=a361608273b857415ee91a8285a16b4a&video_id=XMzE2OTYwOTky")
+--printtable(json)
 --player.reset_and_loadfile(tostring(json.files.mp4.segs[1].url))
 
 function open2:OnClick()
@@ -771,8 +771,9 @@ function open2:OnClick()
 					local video_id = string.sub(url, youku_prefix:len()+1)
 					video_id = string.sub(video_id, 1, math.min(13, video_id:len()))
 					local json = json_url2table("https://openapi.youku.com/v2/videos/files.json?client_id=e57bc82b1a9dcd2f&client_secret=a361608273b857415ee91a8285a16b4a&video_id=" .. video_id)
-					url = (json.files["hd2"] or json.files["mp4"] or json.files["3gphd"]).segs[1].url
+					print("JSON:", json)
 					printtable(json)
+					url = (json.files["hd2"] or json.files["mp4"] or json.files["3gphd"]).segs[1].url
 					print(url)
 				end
 				

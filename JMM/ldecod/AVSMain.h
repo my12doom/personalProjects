@@ -90,8 +90,8 @@ public:
 
 	bool m_decoding_done; // a temp buffer
 
-	char m_m2ts_left[MAX_PATH*10];
-	char m_m2ts_right[MAX_PATH*10];
+	char m_m2ts_left[40960];
+	char m_m2ts_right[40960];
 
 	JMAvs();
 	int avs_init(const char*m2ts_left, IScriptEnvironment* env, const char*m2ts_right = NULL, const char * offset_out = NULL,

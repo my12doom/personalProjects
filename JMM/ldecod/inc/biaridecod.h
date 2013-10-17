@@ -176,7 +176,7 @@ extern const byte ff_h264_norm_shift[512];
 void ff_init_cabac_global_tables();
 void ff_init_cabac_decoder(DecodingEnvironment *c, const byte *buf, int firstbyte, int *code_len);
 //int ff_get_cabac(DecodingEnvironment *c, byte * const state)
-inline int ff_get_cabac(DecodingEnvironment *c, byte * const state)
+__forceinline int ff_get_cabac(DecodingEnvironment *c, byte * const state)
 {
 
 	int s = *state;
@@ -214,7 +214,7 @@ inline int ff_get_cabac(DecodingEnvironment *c, byte * const state)
 	return bit;
 }
 
-inline int ff_get_cabac_bypass(DecodingEnvironment *c)
+__forceinline int ff_get_cabac_bypass(DecodingEnvironment *c)
 {
 	int range;
 	c->low += c->low;

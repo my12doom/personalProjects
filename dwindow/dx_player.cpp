@@ -3642,6 +3642,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	wchar_t file_to_play[MAX_PATH*10];
 	wcscpy(file_to_play, pathname);
 
+	prepare_file(pathname, NULL);
+
 	// detect ISO files
 	if (wcs_endwith_nocase(pathname, L".iso"))
 	{
@@ -3687,19 +3689,21 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	}
 
 	// subtitle file
-	HRESULT hr = load_subtitle(pathname, false);
-	if (SUCCEEDED(hr))
-	{
-		dwindow_log_line(L"loaded as subtitle");
-		return hr;
-	}
+	HRESULT hr;
+// 	hr = load_subtitle(pathname, false);
+// 	if (SUCCEEDED(hr))
+// 	{
+// 		dwindow_log_line(L"loaded as subtitle");
+// 		return hr;
+// 	}
 
 	// subtitle renderer
 	m_gb->AddFilter(m_grenderer.m_filter, L"Subtitle Renderer");
 
 	// Legacy Remux file
-	m_renderer1->m_remux_mode = m_is_remux_file = verify_file(file_to_play) == 2;
+	//m_renderer1->m_remux_mode = m_is_remux_file = verify_file(file_to_play) == 2;
 	//m_renderer1->m_remux_mode = true;
+	m_renderer1->m_remux_mode = false;
 
 	// check private source and whether is MVC content
 	CLSID source_clsid;
@@ -3783,6 +3787,8 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 			m_gb->ConnectDirect(reader_o, source_i, NULL);
 		}
+
+		dwindow_log_line("source filter loaded file");
 
 
 		// then render pins
@@ -3907,7 +3913,113 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	return hr;
 }
 
+HRESULT dx_player::prepare_file(const wchar_t *pathname, IBaseFilter **out)
+{
+	dwindow_log_line(L"start preloading %s", pathname);
 
+	if (wcsstr_nocase(pathname, L"http://") == pathname)
+		pathname = URL2Token(pathname);
+	else
+		return S_FALSE;
+
+	// check private source and whether is MVC content
+	HRESULT hr;
+	CLSID source_clsid;
+	hr = GetFileSource(pathname, &source_clsid, !isSlowExtention(pathname));
+	bool matched_private_filter = SUCCEEDED(hr);
+	CComPtr<IGraphBuilder> gb;
+	gb.CoCreateInstance(CLSID_FilterGraph);
+
+	// E3D keys
+	if (source_clsid == CLSID_E3DSource)
+	{
+		dwindow_log_line(L"preloading local E3D key for %s", pathname);
+		HANDLE h_file = CreateFileW (pathname, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+		file_reader reader;
+		reader.SetFile(h_file);
+		CloseHandle(h_file);
+
+		if (!reader.m_is_encrypted)
+		{
+			// normal file, do nothing
+		}
+		else
+		{
+			unsigned char key[32];
+			load_e3d_key(reader.m_hash, key);
+			reader.set_key((unsigned char*)key);
+
+			if (!reader.m_key_ok)
+			{
+				dwindow_log_line(L"local E3D key failed.");
+				dwindow_log_line(L"downloading E3D key for %s", pathname);
+				if (SUCCEEDED(download_e3d_key(pathname)))
+				{
+					dwindow_log_line(L"download E3D key OK, saving to local store.");
+					e3d_get_process_key(key);
+					save_e3d_key(reader.m_hash, key);
+				}
+			}
+			else
+			{
+				dwindow_log_line(L"local E3D key OK.");
+			}
+			e3d_set_process_key(key);
+		}
+	}
+
+	int video_rendered = 0;
+	int audio_rendered = 0;
+	if (matched_private_filter)
+	{
+		dwindow_log_line(L"preloading with private filter");
+		// private file types
+		// create source, load file and join it into graph
+		CComPtr<IBaseFilter> source_base;
+		hr = myCreateInstance(source_clsid, IID_IBaseFilter, (void**)&source_base);
+		CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> source_source(source_base);
+		if (source_source)
+		{
+			source_source->Load(pathname, NULL);
+			gb->AddFilter(source_base, L"Source");
+
+			CComQIPtr<IOffsetMetadata, &IID_IOffsetMetadata> offset(source_base);
+			if (offset)
+				m_offset_metadata = offset;
+
+			CComQIPtr<IStereoLayout, &IID_IStereoLayout> stereo_layout(source_base);
+			if (stereo_layout)
+				m_stereo_layout = stereo_layout;
+		}
+		else
+		{
+			CComPtr<IBaseFilter> async_reader;
+			async_reader.CoCreateInstance(CLSID_AsyncReader);
+			CComQIPtr<IFileSourceFilter, &IID_IFileSourceFilter> reader_source(async_reader);
+			reader_source->Load(pathname, NULL);
+			gb->AddFilter(source_base, L"Splitter");
+			gb->AddFilter(async_reader, L"Reader");
+
+			CComPtr<IPin> reader_o;
+			CComPtr<IPin> source_i;
+			GetUnconnectedPin(async_reader, PINDIR_OUTPUT, &reader_o);
+			GetUnconnectedPin(source_base, PINDIR_INPUT, &source_i);
+
+			gb->ConnectDirect(reader_o, source_i, NULL);
+		}
+
+		dwindow_log_line("source filter preloaded file");
+
+		return S_OK;
+	}
+	else
+	{
+		return gb->RenderFile(pathname, NULL);
+	}
+		
+
+	return E_NOTIMPL;
+}
 
 HRESULT dx_player::end_loading()
 {

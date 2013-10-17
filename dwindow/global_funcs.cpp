@@ -432,7 +432,7 @@ HRESULT ReadPlaylist(const wchar_t *strPlaylistFile, REFERENCE_TIME *rtDuration)
 		SetFilePointer(m_hFile, 2, NULL, SEEK_CUR);
 
 		dwPos	  += 10;
-		int playlistitems[100];
+		int playlistitems[1000];
 		int n_playlistitems = 0;
 		for (DWORD i=0; i<nPlaylistItems; i++)
 		{

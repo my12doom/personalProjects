@@ -90,6 +90,7 @@ public:
 	HRESULT load_audiotrack(const wchar_t *pathname);
 	HRESULT load_subtitle(const wchar_t *pathname, bool reset = true);
 	HRESULT load_file(const wchar_t *pathname, bool non_mainfile = false, int audio_track = LOADFILE_FIRST_TRACK, int video_track = LOADFILE_ALL_TRACK);			// for multi stream mkv
+	HRESULT prepare_file(const wchar_t *pathname, IBaseFilter **out);		// prepare a online file for rendering, reading headers (currently only for online files) and output private filters
 	HRESULT end_loading();
 
 	// subtitle control functions

@@ -2,7 +2,7 @@
 #include "ts_stream.h"
 #include "..\tsdemux\ts.h"
 
-#define FILE_NAME_SIZE  1024
+#define FILE_NAME_SIZE  40960
 
 DWORD WINAPI demuxer_thread(LPVOID p);
 

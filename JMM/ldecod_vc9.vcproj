@@ -136,13 +136,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/MP"
 				Optimization="0"
 				AdditionalIncludeDirectories="ldecod/inc,lcommon/inc"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				OpenMP="true"
+				OpenMP="false"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pch"
 				AssemblerListingLocation=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/"
@@ -184,6 +183,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				EmbedManifest="false"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -494,7 +494,7 @@
 			Name="Debug_DLL|x64"
 			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="2"
 			>
 			<Tool
@@ -523,7 +523,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				OpenMP="true"
+				OpenMP="false"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/ldecod.pch"
 				AssemblerListingLocation=".\ldecod/$(ConfigurationName)_$(PlatformName)_vc9/"
@@ -549,7 +549,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="Ws2_32.lib"
-				OutputFile="./bin/ldecod.exe"
+				OutputFile="./bin/ldecod64.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
@@ -565,6 +565,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				EmbedManifest="false"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -837,6 +838,14 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug_DLL|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release_DLL|Win32"
 					>
 					<Tool
@@ -856,6 +865,14 @@
 			<File
 				RelativePath=".\lcommon\src\blk_prediction.c"
 				>
+				<FileConfiguration
+					Name="Debug_DLL|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\ldecod\src\block.c"

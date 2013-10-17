@@ -2804,7 +2804,7 @@ void decode_slice_step(Slice *currSlice, int current_header)
 			currSlice->read_one_macroblock(currMB);
 			currSlice->decoding_done = exit_macroblock(currSlice, 1);
 
-			//decode_one_macroblock(currMB, currSlice->dec_picture);
+			decode_one_macroblock(currMB, currSlice->dec_picture);
 
 		}
 	}

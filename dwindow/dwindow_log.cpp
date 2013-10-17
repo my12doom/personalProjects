@@ -28,10 +28,10 @@ int dwindow_log_line(const wchar_t *format, ...)
 	vswprintf(tmp, format, valist);
 	va_end(valist);
 
-	time_t tt = time(NULL);
-	struct tm t = *localtime(&tt);
-	wchar_t time_str[200];	
-	wsprintfW(time_str, L"%d-%02d-%02d %02d:%02d:%02d:%03d ", t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, GetTickCount()%1000);
+	SYSTEMTIME st;
+	GetLocalTime(&st);
+	wchar_t time_str[200];
+	wsprintfW(time_str, L"%d-%02d-%02d %02d:%02d:%02d:%03d ", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 	fwrite(time_str, 2, wcslen(time_str), f);
 	fwrite(tmp, 2, wcslen(tmp), f);
 	fwrite(L"\r\n", 2, 2, f);
@@ -55,10 +55,10 @@ int dwindow_log_line(const char *format, ...)
 	vsprintf(tmp, format, valist);
 	va_end(valist);
 
-	time_t tt = time(NULL);
-	struct tm t = *localtime(&tt);
+	SYSTEMTIME st;
+	GetLocalTime(&st);
 	wchar_t time_str[200];	
-	wsprintfW(time_str, L"%d-%02d-%02d %02d:%02d:%02d:%03d ", t.tm_year+1900, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, GetTickCount()%1000);
+	wsprintfW(time_str, L"%d-%02d-%02d %02d:%02d:%02d:%03d ", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 	fwrite(time_str, 2, wcslen(time_str), f);
 
 	USES_CONVERSION;
