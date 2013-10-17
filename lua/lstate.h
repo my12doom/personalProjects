@@ -1,12 +1,12 @@
 /*
-** $Id: lstate.h,v 2.81 2012/06/08 15:14:04 roberto Exp $
+** $Id: lstate.h,v 2.82 2012/07/02 13:37:04 roberto Exp $
 ** Global State
 ** See Copyright Notice in lua.h
 */
 
 #ifndef lstate_h
 #define lstate_h
-#include <Windows.h>
+
 #include "lua.h"
 
 #include "lobject.h"
@@ -137,7 +137,7 @@ typedef struct global_State {
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
   Mbuffer buff;  /* temporary buffer for string concatenation */
   int gcpause;  /* size of pause between successive GCs */
-  int gcmajorinc;  /* how much to wait for a major GC (only in gen. mode) */
+  int gcmajorinc;  /* pause between major collections (only in gen. mode) */
   int gcstepmul;  /* GC `granularity' */
   lua_CFunction panic;  /* to be called in unprotected errors */
   struct lua_State *mainthread;
@@ -145,7 +145,6 @@ typedef struct global_State {
   TString *memerrmsg;  /* memory-error message */
   TString *tmname[TM_N];  /* array with tag-method names */
   struct Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
-  CRITICAL_SECTION lock;
 } global_State;
 
 

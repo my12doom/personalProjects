@@ -69,7 +69,7 @@ static lua_Number LoadNumber(LoadState* S)
  return x;
 }
 
-static TString* load_string(LoadState* S)
+static TString* LoadString(LoadState* S)
 {
  size_t size;
  LoadVar(S,size);
@@ -116,7 +116,7 @@ static void LoadConstants(LoadState* S, Proto* f)
 	setnvalue(o,LoadNumber(S));
 	break;
    case LUA_TSTRING:
-	setsvalue2n(S->L,o,load_string(S));
+	setsvalue2n(S->L,o,LoadString(S));
 	break;
     default: lua_assert(0);
   }
@@ -149,7 +149,7 @@ static void LoadUpvalues(LoadState* S, Proto* f)
 static void LoadDebug(LoadState* S, Proto* f)
 {
  int i,n;
- f->source=load_string(S);
+ f->source=LoadString(S);
  n=LoadInt(S);
  f->lineinfo=luaM_newvector(S->L,n,int);
  f->sizelineinfo=n;
@@ -160,12 +160,12 @@ static void LoadDebug(LoadState* S, Proto* f)
  for (i=0; i<n; i++) f->locvars[i].varname=NULL;
  for (i=0; i<n; i++)
  {
-  f->locvars[i].varname=load_string(S);
+  f->locvars[i].varname=LoadString(S);
   f->locvars[i].startpc=LoadInt(S);
   f->locvars[i].endpc=LoadInt(S);
  }
  n=LoadInt(S);
- for (i=0; i<n; i++) f->upvalues[i].name=load_string(S);
+ for (i=0; i<n; i++) f->upvalues[i].name=LoadString(S);
 }
 
 static void LoadFunction(LoadState* S, Proto* f)

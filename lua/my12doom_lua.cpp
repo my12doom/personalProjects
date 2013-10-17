@@ -164,15 +164,16 @@ int luaTerminateThread(lua_State *L)
 	return 1;
 }
 
+HANDLE create_thread_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 DWORD WINAPI luaCreateThreadEntry(LPVOID parameter)
 {
 	luaState L;
 
 	int *p = (int*)parameter;
-	for(int i=p[0]; i>=0; i--)
+	for(int i=p[0]; i>0; i--)
 	{
-		lua_rawgeti(L, LUA_REGISTRYINDEX, p[i+1]);
-		luaL_unref(L, LUA_REGISTRYINDEX, p[i+1]);
+		lua_rawgeti(L, LUA_REGISTRYINDEX, p[i]);
+		luaL_unref(L, LUA_REGISTRYINDEX, p[i]);
 	}
 
 	if (!lua_isfunction(L, -p[0]))
@@ -181,6 +182,8 @@ DWORD WINAPI luaCreateThreadEntry(LPVOID parameter)
 		delete p;
 		return -2;					// no entry function found, clear the stack and return;
 	}
+
+	SetEvent(create_thread_event);
 
 	lua_mypcall(L, p[0]-1, 0, 0);
 
@@ -198,10 +201,51 @@ int luaCreateThread(lua_State *L)
 	for(int i=0; i<n; i++)
 		p[i+1] = luaL_ref(L, LUA_REGISTRYINDEX);
 
+
 	lua_pushlightuserdata(L, CreateThread(NULL, NULL, luaCreateThreadEntry, p, NULL, NULL));
+	WaitForSingleObject(create_thread_event, INFINITE);
 	return 1;
 }
 
+int luaCreateCritSec(lua_State *L)
+{
+	CRITICAL_SECTION *cs = new CRITICAL_SECTION;
+	InitializeCriticalSection(cs);
+	lua_pushlightuserdata(L, cs);
+
+	return 1;
+}
+
+int luaLockCritSec(lua_State *L)
+{
+	CRITICAL_SECTION *cs = (CRITICAL_SECTION*)lua_touserdata(L, -1);
+	if (!cs)
+		return 0;
+
+	EnterCriticalSection(cs);
+	lua_pushboolean(L, 1);
+	return 1;
+}
+int luaUnlockCritSec(lua_State *L)
+{
+	CRITICAL_SECTION *cs = (CRITICAL_SECTION*)lua_touserdata(L, -1);
+	if (!cs)
+		return 0;
+
+	LeaveCriticalSection(cs);
+	lua_pushboolean(L, 1);
+	return 1;
+}
+int luaDestroyCritSec(lua_State *L)
+{
+	CRITICAL_SECTION *cs = (CRITICAL_SECTION*)lua_touserdata(L, -1);
+	if (!cs)
+		return 0;
+
+	DeleteCriticalSection(cs);
+	delete cs;
+	return 1;
+}
 
 int luaFAILED(lua_State *L)
 {
@@ -300,6 +344,11 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("WaitForSingleObject") = &luaWaitForSingleObject;
 	g_lua_core_manager->get_variable("CreateThread") = &luaCreateThread;
 	g_lua_core_manager->get_variable("TerminateThread") = &luaTerminateThread;
+	g_lua_core_manager->get_variable("CreateCritSec") = &luaCreateCritSec;
+	g_lua_core_manager->get_variable("LockCritSec") = &luaLockCritSec;
+	g_lua_core_manager->get_variable("UnlockCritSec") = &luaUnlockCritSec;
+	g_lua_core_manager->get_variable("DestroyCritSec") = &luaDestroyCritSec;
+
 
 	g_lua_core_manager->get_variable("cjson") = &luaopen_cjson_safe;
 	

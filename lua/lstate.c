@@ -1,5 +1,5 @@
 /*
-** $Id: lstate.c,v 2.98 2012/05/30 12:33:44 roberto Exp $
+** $Id: lstate.c,v 2.99 2012/10/02 17:40:53 roberto Exp $
 ** Global State
 ** See Copyright Notice in lua.h
 */
@@ -48,7 +48,7 @@
 */
 #if !defined(luai_makeseed)
 #include <time.h>
-#define luai_makeseed()		cast(size_t, time(NULL))
+#define luai_makeseed()		cast(unsigned int, time(NULL))
 #endif
 
 
@@ -220,7 +220,6 @@ static void preinit_state (lua_State *L, global_State *g) {
 
 static void close_state (lua_State *L) {
   global_State *g = G(L);
-  DeleteCriticalSection(&g->lock);
   luaF_close(L, L->stack);  /* close all upvalues for this thread */
   luaC_freeallobjects(L);  /* collect all objects */
   luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size);
@@ -301,7 +300,6 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   g->gcpause = LUAI_GCPAUSE;
   g->gcmajorinc = LUAI_GCMAJOR;
   g->gcstepmul = LUAI_GCMUL;
-  InitializeCriticalSection(&g->lock);
   for (i=0; i < LUA_NUMTAGS; i++) g->mt[i] = NULL;
   if (luaD_rawrunprotected(L, f_luaopen, NULL) != LUA_OK) {
     /* memory allocation error: free partial state */
