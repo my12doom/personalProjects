@@ -20,7 +20,7 @@
 #define LUA_LIB
 
 #include "lua.h"
-
+#include "lstate.h"
 #include "lauxlib.h"
 
 
@@ -521,8 +521,10 @@ LUALIB_API char *luaL_buffinitsize (lua_State *L, luaL_Buffer *B, size_t sz) {
 
 LUALIB_API int luaL_ref (lua_State *L, int t) {
   int ref;
+  lua_lock(L);
   if (lua_isnil(L, -1)) {
     lua_pop(L, 1);  /* remove from stack */
+	lua_unlock(L);
     return LUA_REFNIL;  /* `nil' has a unique fixed reference */
   }
   t = lua_absindex(L, t);
@@ -536,17 +538,20 @@ LUALIB_API int luaL_ref (lua_State *L, int t) {
   else  /* no free elements */
     ref = (int)lua_rawlen(L, t) + 1;  /* get a new reference */
   lua_rawseti(L, t, ref);
+  lua_unlock(L);
   return ref;
 }
 
 
 LUALIB_API void luaL_unref (lua_State *L, int t, int ref) {
   if (ref >= 0) {
+	lua_lock(L);
     t = lua_absindex(L, t);
     lua_rawgeti(L, t, freelist);
     lua_rawseti(L, t, ref);  /* t[ref] = t[freelist] */
     lua_pushinteger(L, ref);
     lua_rawseti(L, t, freelist);  /* t[freelist] = ref */
+	lua_unlock(L);
   }
 }
 

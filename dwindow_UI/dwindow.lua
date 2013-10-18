@@ -282,6 +282,28 @@ function Thread:Sleep(timeout)		-- direct use of core.Sleep() is recommended
 	return core.Sleep(timeout)
 end
 
+CritSec = {}
+function CritSec:create()
+	local o = {}
+	setmetatable(o, self)
+	self.__index = self
+	self.handle = core.CreateCritSec()
+	
+	return o
+end
+
+function CritSec:lock()
+	core.LockCritSec(self.handle)
+end
+
+function CritSec:unlock()
+	core.UnlockCritSec(self.handle)
+end
+
+function CritSec:destroy()
+	core.DestroyCritSec(self.handle)
+end
+
 -- helper functions and settings
 function merge_table(op, tomerge)
 	for k,v in pairs(tomerge) do
@@ -394,3 +416,14 @@ if core and core.execute_luafile then
 	core.load_settings();
 	print(core.execute_luafile(lua_path .. "language.lua"))
 end
+
+local print_lock = CritSec:create()
+
+local print_org = print
+
+function print(...)
+	print_lock:lock()
+	print_org(...)
+	print_lock:unlock()
+end
+

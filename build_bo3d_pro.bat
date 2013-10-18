@@ -19,7 +19,7 @@ copy/y dwindow\alpha.raw dwindow_NSIS
 copy/y dwindow\logo.raw dwindow_NSIS
 copy/y dwindow\release_personal\StereoPlayer.exe dwindow_NSIS
 copy/y reset\release\reset.exe dwindow_NSIS
-copy/y lua\Release\lua.dll dwindow_NSIS
+copy/y dwindow\release_personal\lua.dll dwindow_NSIS
 copy/y report_server\release\ErrorReport.exe dwindow_NSIS
 del/q dwindow_NSIS\codec\*.*
 copy/y mySplitter\release_mt\*.ax dwindow_NSIS\codec

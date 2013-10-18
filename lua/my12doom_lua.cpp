@@ -165,8 +165,15 @@ int luaTerminateThread(lua_State *L)
 }
 
 HANDLE create_thread_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+int thread_count = 0;
 DWORD WINAPI luaCreateThreadEntry(LPVOID parameter)
 {
+	while(thread_count > 30)
+		Sleep(1);
+
+
+	printf("thread_count:%d\n", thread_count++);
+
 	luaState L;
 
 	int *p = (int*)parameter;
@@ -189,13 +196,13 @@ DWORD WINAPI luaCreateThreadEntry(LPVOID parameter)
 
 	delete p;
 
+	thread_count--;
+
 	return 0;
 }
 
-int tn=0;
 int luaCreateThread(lua_State *L)
 {
-	printf("%d threads created\n", tn++);
 	int n = lua_gettop(L);
 
 	int * p = new int[n+1];
@@ -208,7 +215,6 @@ int luaCreateThread(lua_State *L)
 
 
 	lua_pushlightuserdata(L, CreateThread(NULL, NULL, luaCreateThreadEntry, p, NULL, NULL));
-	WaitForSingleObject(create_thread_event, INFINITE);
 	return 1;
 }
 
