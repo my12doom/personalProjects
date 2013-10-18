@@ -151,9 +151,15 @@ static int set_volume(lua_State *L)
 static int reset_and_loadfile(lua_State *L)
 {
 	int n = lua_gettop(L);
-	const char *filename1 = lua_tostring(L, -n+0);
-	const char *filename2 = lua_tostring(L, -n+1);
-	const bool stop = lua_isboolean(L, -n+2) ? lua_toboolean(L, -n+2) : false;
+	const char *filename1 = NULL; 
+	if (n>=1)
+		filename1 = lua_tostring(L, -n+0);
+	const char *filename2 = NULL;
+	if (n>=2)
+		filename2 = lua_tostring(L, -n+1);
+	bool stop = false;
+	if (n>=3)
+		stop = lua_toboolean(L, -n+2);
 
 	HRESULT hr = g_player->reset_and_loadfile_core(filename1 ? UTF82W(filename1) : NULL, filename2 ? UTF82W(filename2) : NULL, stop);
 

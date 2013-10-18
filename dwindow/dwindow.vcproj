@@ -2035,6 +2035,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dwindow_UI\dshow_async.lua"
+				>
+			</File>
+			<File
 				RelativePath="..\dwindow_UI\dwindow.lua"
 				>
 			</File>
@@ -2044,6 +2048,10 @@
 			</File>
 			<File
 				RelativePath="..\dwindow_UI\menu.lua"
+				>
+			</File>
+			<File
+				RelativePath="..\dwindow_UI\parser.lua"
 				>
 			</File>
 			<File

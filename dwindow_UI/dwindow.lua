@@ -405,18 +405,6 @@ function core.get_setting(key)
 	return setting[key]
 end
 
--- load base_frame
-if core and core.execute_luafile then
-	print(core.execute_luafile(lua_path .. "base_frame.lua"))
-	print(core.execute_luafile(lua_path .. "3dvplayer.lua"))
-	print(core.execute_luafile(lua_path .. "Container.lua"))
-	print(core.execute_luafile(lua_path .. "playlist.lua"))
-	print(core.execute_luafile(lua_path .. "menu.lua"))
-	print(core.execute_luafile(lua_path .. "default_setting.lua"))
-	core.load_settings();
-	print(core.execute_luafile(lua_path .. "language.lua"))
-end
-
 local print_lock = CritSec:create()
 
 local print_org = print
@@ -427,3 +415,16 @@ function print(...)
 	print_lock:unlock()
 end
 
+
+-- load base_frame
+if core and core.execute_luafile then
+	print(core.execute_luafile(lua_path .. "base_frame.lua"))
+	print(core.execute_luafile(lua_path .. "3dvplayer.lua"))
+	print(core.execute_luafile(lua_path .. "playlist.lua"))
+	print(core.execute_luafile(lua_path .. "menu.lua"))
+	print(core.execute_luafile(lua_path .. "default_setting.lua"))
+	core.load_settings();
+	print(core.execute_luafile(lua_path .. "language.lua"))
+	print(core.execute_luafile(lua_path .. "parser.lua"))
+	print(core.execute_luafile(lua_path .. "dshow_async.lua"))
+end
