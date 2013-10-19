@@ -424,58 +424,159 @@ void write_picture(VideoParameters *p_Vid, StorablePicture *p, int p_out, int re
  ************************************************************************
  */
 
-#define MAX_OUTPUT_QUEUE 4
-StorablePicture * output_queue[MAX_OUTPUT_QUEUE] = {0};
-StorablePicture * output_done_queue[MAX_OUTPUT_QUEUE] = {0};
+#define MAX_OUTPUT_QUEUE 16
+StorablePicture * output_queue[2][MAX_OUTPUT_QUEUE*2] = {0};
+StorablePicture * output_done_queue[MAX_OUTPUT_QUEUE*2] = {0};
 CRITICAL_SECTION output_queue_cs, output_done_queue_cs;
 HANDLE g_output_thread = INVALID_HANDLE_VALUE;
 VideoParameters *Vid = NULL;
 int output_queue_flush = 0;
 
-DWORD WINAPI output_thread(LPVOID para)
+DWORD write_storable_picture_to_avs(StorablePicture *p)
 {
-	StorablePicture *p = NULL;
+	int crop_left   = p->frame_crop_left_offset;
+	int crop_right  = p->frame_crop_right_offset;
+	int crop_top    = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_top_offset;
+	int crop_bottom = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_bottom_offset;
+
+	return insert_frame(Vid->p_avs, p->imgY, p->imgUV[1], p->imgUV[0], p->view_id, p->frame_poc);
+}
+
+DWORD put_storable_picture_to_done_queue(StorablePicture *p)
+{
 	int i;
 
-retry:
-	if (output_queue_flush)
-		return 1;	// exit
-	EnterCriticalSection(&output_queue_cs);
-	if (!(p = output_queue[0]))
+	while (TRUE)
 	{
-		LeaveCriticalSection(&output_queue_cs);
+		EnterCriticalSection(&output_done_queue_cs);
+		for(i=0; i<MAX_OUTPUT_QUEUE; i++)
+			if (output_done_queue[i] == NULL)
+			{
+				output_done_queue[i] = p;
+				LeaveCriticalSection(&output_done_queue_cs);
+
+				return 0;
+			}
+
+
+		LeaveCriticalSection(&output_done_queue_cs);
 		Sleep(1);
-		goto retry;
 	}
+}
 
-	for(i=1; i<MAX_OUTPUT_QUEUE; i++)
-		output_queue[i-1] = output_queue[i];
-	output_queue[MAX_OUTPUT_QUEUE-1] = NULL;
-	LeaveCriticalSection(&output_queue_cs);
+DWORD WINAPI output_thread(LPVOID para)
+{
+	StorablePicture *p = NULL, *p2 = NULL;
+	int i, j, k;
+	int frame_number = 0;
 
+retry:
+	if (output_queue_flush == 2)
+		return 1;	// force exit
+	EnterCriticalSection(&output_queue_cs);
+
+	if (FALSE)
 	{
-		int crop_left   = p->frame_crop_left_offset;
-		int crop_right  = p->frame_crop_right_offset;
-		int crop_top    = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_top_offset;
-		int crop_bottom = ( 2 - p->frame_mbs_only_flag ) * p->frame_crop_bottom_offset;
-
-		insert_frame(Vid->p_avs, p->imgY, p->imgUV[1], p->imgUV[0], p->view_id);
-	}
-
-retry2:
-	EnterCriticalSection(&output_done_queue_cs);
-	for(i=0; i<MAX_OUTPUT_QUEUE; i++)
-		if (output_done_queue[i] == NULL)
+		// AVC: get a picture
+		if (!(p = output_queue[0][0]))
 		{
-			output_done_queue[i] = p;
-			LeaveCriticalSection(&output_done_queue_cs);
-			goto retry;		// wait for next
+			LeaveCriticalSection(&output_queue_cs);
+			Sleep(1);
+			goto retry;
+		}
+
+		// move this picture out of queue
+		for(i=1; i<MAX_OUTPUT_QUEUE; i++)
+			output_queue[0][i-1] = output_queue[0][i];
+		output_queue[0][MAX_OUTPUT_QUEUE-1] = NULL;
+		LeaveCriticalSection(&output_queue_cs);
+	}
+	else
+	{
+		// MVC: find a pair of pictures
+		int pairs_found = 0;
+		for(i=0; i<MAX_OUTPUT_QUEUE && output_queue[0][i]; i++)
+		{
+			for(j=0; j<MAX_OUTPUT_QUEUE && output_queue[1][j]; j++)
+			{
+				if (output_queue[0][i]->frame_poc == output_queue[1][j]->frame_poc)
+				{
+					p = output_queue[0][i];
+					p2 = output_queue[1][j];
+					pairs_found++;
+
+					// conceal all unmatched pictures
+					for(k=0; k<i; k++)
+					{
+						frame_number++;
+						write_storable_picture_to_avs(output_queue[0][k]);
+						output_queue[0][k]->view_id = 1;
+						write_storable_picture_to_avs(output_queue[0][k]);
+						output_queue[0][k]->view_id = 0;
+						put_storable_picture_to_done_queue(output_queue[0][k]);
+						printf("warning: unmatched frame %d (poc %d of view %d)\n", frame_number, output_queue[0][k]->frame_poc, output_queue[0][k]->view_id);
+					}
+					for(k=0; k<j; k++)
+					{
+						frame_number++;
+						write_storable_picture_to_avs(output_queue[1][k]);
+						output_queue[1][k]->view_id = 0;
+						write_storable_picture_to_avs(output_queue[1][k]);
+						output_queue[1][k]->view_id = 1;
+						put_storable_picture_to_done_queue(output_queue[1][k]);
+						printf("warning: unmatched frame %d (poc %d of view %d)\n", frame_number, output_queue[1][k]->frame_poc, output_queue[1][k]->view_id);
+					}
+
+					// send matched pairs.
+					write_storable_picture_to_avs(p);
+					put_storable_picture_to_done_queue(p);
+					write_storable_picture_to_avs(p2);
+					put_storable_picture_to_done_queue(p2);
+					frame_number++;
+
+					for(k=0; k<MAX_OUTPUT_QUEUE; k++)
+					{
+						//output_queue[0][k] = k<=i ? output_queue[0][k+1+i] : NULL;
+						//output_queue[1][k] = k<=j ? output_queue[1][k+1+j] : NULL;
+					}
+					memmove(&output_queue[0][0], &output_queue[0][i+1], sizeof(StorablePicture*)*MAX_OUTPUT_QUEUE);
+					memmove(&output_queue[1][0], &output_queue[1][j+1], sizeof(StorablePicture*)*MAX_OUTPUT_QUEUE);
+
+					LeaveCriticalSection(&output_queue_cs);
+					goto retry;
+				}
+			}
 		}
 
 
-	LeaveCriticalSection(&output_done_queue_cs);
+		// conceal all unmatched frames
+		if (output_queue_flush == 1 && pairs_found == 0)
+		{
+			for(k=0; k<MAX_OUTPUT_QUEUE; k++)
+			{
+				int view_id;
+				for(view_id = 0; view_id<2; view_id++)
+				if (output_queue[view_id][k])
+				{
+					frame_number++;
+					output_queue[view_id][k]->view_id = 1-view_id;
+					write_storable_picture_to_avs(output_queue[view_id][k]);
+					output_queue[view_id][k]->view_id = view_id;
+					write_storable_picture_to_avs(output_queue[view_id][k]);
+					put_storable_picture_to_done_queue(output_queue[view_id][k]);
+					printf("warning: unmatched frame %d (poc %d of view %d)\n", frame_number, output_queue[1][k]->frame_poc, output_queue[1][k]->view_id);
+
+					output_queue[view_id][k] = NULL;
+				}
+			}
+		}
+	}
+
+	LeaveCriticalSection(&output_queue_cs);
+
 	Sleep(1);
-	goto retry2;
+
+	goto retry;
 
 	return 0;
 }
@@ -495,17 +596,18 @@ retry:
 	LeaveCriticalSection(&output_done_queue_cs);
 
 	// wait all output work done
+	output_queue_flush = 1;
 	EnterCriticalSection(&output_queue_cs);
-	if (output_queue[0])
+	if (output_queue[0][0] || output_queue[1][0])
 	{
 		LeaveCriticalSection(&output_queue_cs);
 		Sleep(10);
 		goto retry;
 	}
 	LeaveCriticalSection(&output_queue_cs);
+	output_queue_flush = 2;
 
 	// wait for output thread to exit
-	output_queue_flush = 1;
 	WaitForSingleObject(g_output_thread, INFINITE);
 
 	// final release
@@ -521,8 +623,6 @@ void write_picture(VideoParameters *p_Vid, StorablePicture *p, int p_out, int re
 {
 	if (p_Vid->p_avs)
 	{
-
-
 		int i;
 		if (g_output_thread == INVALID_HANDLE_VALUE)
 		{
@@ -532,14 +632,9 @@ void write_picture(VideoParameters *p_Vid, StorablePicture *p, int p_out, int re
 			g_output_thread = CreateThread(NULL, 0, output_thread, NULL, 0, NULL);
 		}
 
+		// add ref
 		p->ref_count++;
 retry:
-		{
-			//insert_frame(Vid->p_avs, p->imgY, p->imgUV[1], p->imgUV[0], p->view_id);
-			//free_storable_picture(p);
-			//return;
-		}
-		// add ref
 
 		// free all output_done picture
 		EnterCriticalSection(&output_done_queue_cs);
@@ -555,7 +650,7 @@ retry:
 		// try add to output queue
 		EnterCriticalSection(&output_queue_cs);
 		for(i=0; i<MAX_OUTPUT_QUEUE; i++)
-			if (output_queue[i] == NULL)
+			if (output_queue[p->view_id][i] == NULL)
 			{
 				//printf("\nadd work %08x(%d).\n", p, p->ref_count);
 				output_queue[i] = p;

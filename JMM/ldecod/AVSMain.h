@@ -12,9 +12,10 @@ extern float buffer_load;
 // declaration
 void* create_avs();
 int set_avs_resolution(void *avs, int width, int height, int fps, int fpsdenumorator);
-int insert_frame(void *avs, void **pY, void **pV, void **pU, int view_id);
+int insert_frame(void *avs, void **pY, void **pV, void **pU, int view_id, int frame_num);
 int insert_offset_metadata(void *avs, BYTE *data, int count);
 int close_avs(void *avs);		// just set no_more_data = 1
+int view_count(void *avs);
 
 // C++ classes
 #ifdef __cplusplus
@@ -64,6 +65,7 @@ public:
 	~CFrameBuffer();
 	int init(int width, int height, int buffer_unit_count, int frame_count);
 	int insert(int n, const BYTE*buf);
+	int insert(int n, const BYTE **pY, const BYTE **pV, const BYTE **pU);
 	int insert_no_number(const BYTE **pY, const BYTE **pV, const BYTE **pU);		// ldecod use some stupid 2D memory layout
 	int remove(int n, BYTE *buf, int stride, int offset);
 	// return value:// 0-n : success 

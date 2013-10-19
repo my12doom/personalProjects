@@ -36,6 +36,12 @@ int close_avs(void *pavs)		// just set no_more_data = 1
 	return 0;
 }
 
+int view_count(void *pavs)
+{
+	JMAvs * avs = (JMAvs *) pavs;
+	return avs->right_buffer == NULL ? 1 : 2;
+}
+
 int insert_offset_metadata(void *avs, BYTE *data, int count)
 {
 	if (!avs)
@@ -54,7 +60,8 @@ int set_avs_resolution(void *pavs, int width, int height, int fps, int fpsdenumo
 
 	return 0;
 }
-int insert_frame(void *pavs, void **pY, void **pV, void **pU, int view_id)
+
+int insert_frame(void *pavs, void **pY, void **pV, void **pU, int view_id, int poc)
 {
 	JMAvs * avs = (JMAvs *) pavs;
 
@@ -153,6 +160,56 @@ wait_ok:
 	if(n>m_max_fn_recieved) m_max_fn_recieved = n;
 	m_item_count ++;
 	cs.Unlock();
+	return id;
+}
+int CFrameBuffer::insert(int n, const BYTE **pY, const BYTE **pV, const BYTE **pU)
+{
+	int id = -1;
+	while(true)
+	{
+		if (m_discard_all)
+			return -1;
+
+		cs.Lock();
+		for(int i=0; i<m_unit_count; i++)
+		{
+			if (the_buffer[i].frame_number == -1)
+			{
+				id = i;
+				goto wait_ok;		// break outside, cs still locked
+			}
+		}
+		cs.Unlock();
+		Sleep(10);
+	}
+
+wait_ok:
+	buffer_unit &b = the_buffer[id];
+	b.frame_number = n;
+	m_max_fn_recieved = max(m_max_fn_recieved, n);
+	m_item_count ++;
+
+	BYTE *dstY = b.data;
+	BYTE *dstV = b.data + m_width * m_height;
+	BYTE *dstU = b.data + m_width * m_height * 5 / 4;
+
+	for(int y=0; y<m_height; y++)
+	{
+		memcpy(dstY, pY[y], m_width);
+		dstY += m_width;
+	}
+	for(int y=0; y<m_height/2; y++)
+	{
+		memcpy(dstV, pV[y], m_width/2);
+		dstV += m_width/2;
+	}
+	for(int y=0; y<m_height/2; y++)
+	{
+		memcpy(dstU, pU[y], m_width/2);
+		dstU += m_width/2;
+	}
+	cs.Unlock();
+
 	return id;
 }
 
