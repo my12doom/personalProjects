@@ -653,7 +653,7 @@ retry:
 			if (output_queue[p->view_id][i] == NULL)
 			{
 				//printf("\nadd work %08x(%d).\n", p, p->ref_count);
-				output_queue[i] = p;
+				output_queue[p->view_id][i] = p;
 				LeaveCriticalSection(&output_queue_cs);
 				return;
 			}
