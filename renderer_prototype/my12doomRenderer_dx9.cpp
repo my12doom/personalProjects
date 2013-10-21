@@ -2433,7 +2433,7 @@ HRESULT my12doomRenderer::draw_ui(IDirect3DSurface9 *surface, int view)
 	return m_uidrawer == NULL ? S_FALSE : m_uidrawer->draw_ui(surface, view);
 }
 
-HRESULT my12doomRenderer::loadBitmap(gpu_sample **out, wchar_t *file)
+HRESULT my12doomRenderer::loadBitmap(gpu_sample **out, const wchar_t *file)
 {
 	if (!out)
 		return E_POINTER;

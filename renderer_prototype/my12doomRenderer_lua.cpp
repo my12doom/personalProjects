@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <atlbase.h>
 #include "..\dwindow\dx_player.h"
+#include "..\hookdshow\hookdshow.h"
 
 extern my12doomRenderer *g_renderer;
 lua_manager *g_lua_dx9_manager = NULL;
@@ -75,9 +76,10 @@ static int load_bitmap_core(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
 	const char *filename = lua_tostring(L, parameter_count+0);
+	UTF82W filenamew(filename);
 
 	gpu_sample *sample = NULL;
-	if (FAILED(g_renderer->loadBitmap(&sample, UTF82W(filename))) || sample == NULL)
+	if (FAILED(g_renderer->loadBitmap(&sample, wcsstr(filenamew, L"http://") == filenamew ? URL2Token(filenamew) :filenamew)) || sample == NULL)
 	{
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "failed loading bitmap file");

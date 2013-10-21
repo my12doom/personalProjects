@@ -34,17 +34,9 @@ function oroot:OnMouseDown(x, y, button)
 	return true
 end
 
-tttt = 0
 function oroot:OnClick(x,y,button)
 	if button == VK_RBUTTON then
-		if tttt % 2 == 1 then
-			--player.popup_menu()
-		else
-			--player.popup_menu()
-			--popup3dvstar();
-		end
 		popup_dwindow2()
-		tttt = tttt + 1
 	end
 	return true
 end
@@ -119,7 +111,6 @@ function playlist_button:RenderThis()
 end
 
 function playlist_button:OnClick()
-	-- TODO: show playlist
 	if playlist_list.showing then
 		playlist_list:hide()
 	else

@@ -285,9 +285,9 @@ end
 CritSec = {}
 function CritSec:create()
 	local o = {}
+	o.handle = core.CreateCritSec()
 	setmetatable(o, self)
 	self.__index = self
-	self.handle = core.CreateCritSec()
 	
 	return o
 end

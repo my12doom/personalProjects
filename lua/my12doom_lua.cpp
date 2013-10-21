@@ -10,6 +10,7 @@ CCritSec g_csL;
 lua_manager *g_lua_core_manager = NULL;
 lua_manager *g_lua_setting_manager = NULL;
 std::list<lua_State*> free_threads;
+std::list<lua_State*> running_threads;
 
 static int lua_GetTickCount (lua_State *L) 
 {
@@ -50,8 +51,6 @@ static int execute_luafile(lua_State *L)
 		result = lua_tostring(L, -1);
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, W2UTF8(A2W(result)));
-
-		printf("execute_luafile(%s)failed: %s\n", filename, result);
 
 		return 2;
 	}
@@ -311,6 +310,31 @@ static int lua_restart_this_program(lua_State *L)
 	return 1;
 }
 
+DWORD WINAPI luadebug_thread(LPVOID p)
+{
+	while(true)
+	{
+		Sleep(1000);
+		int i1 = GetKeyState(VK_CONTROL);
+		Sleep(1000);
+		int i2 = GetKeyState(VK_CONTROL);
+
+		if (i1 == i2 && i1 < 0)
+		{
+			CAutoLock lck(&g_csL);
+
+			for(std::list<lua_State*>::iterator i = running_threads.begin(); i!= running_threads.end(); ++i)
+			{
+				char tmp[1024];
+				sprintf(tmp, "thread %08x:\r\n", *i);
+				OutputDebugStringA(tmp);
+				track_back(*i);
+			}
+		}
+	}
+	return 0;
+}
+
 extern "C" int luaopen_cjson_safe(lua_State *l);
 bool lua_inited = false;
 int dwindow_lua_init () 
@@ -372,6 +396,10 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("v") = true;
 #endif
 
+#ifdef DEBUG
+	CreateThread(NULL, NULL, luadebug_thread, NULL, NULL, NULL);
+#endif
+
 	lua_inited = true;
 	return 0;
 }
@@ -389,6 +417,7 @@ lua_State * dwindow_lua_get_thread()
 	{
 		rtn = lua_newthread(g_L);
 	}
+	running_threads.push_back(rtn);
 	return rtn;
 }
 
@@ -396,6 +425,7 @@ void dwindow_lua_release_thread(lua_State * p)
 {
 	CAutoLock lck(&g_csL);
 	free_threads.push_back(p);
+	running_threads.remove(p);
 }
 
 luaState::luaState()

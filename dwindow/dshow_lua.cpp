@@ -796,7 +796,7 @@ static int show_setting(lua_State *L)
 static int set_window_text(lua_State *L)
 {
 	int n = lua_gettop(L);
-	if (n>0)
+	if (n>0 && g_player)
 	{
 		if (lua_tostring(L, 1))
 			SetWindowTextW(g_player->get_window(1), UTF82W(lua_tostring(L, 1)));
