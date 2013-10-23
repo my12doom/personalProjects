@@ -251,6 +251,19 @@ bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *r
 
 HRESULT MediaInfoWindow::FillTree(HWND root, const wchar_t *filename)
 {
+	// use lua's parser
+	std::wstring filename_parsed;
+	{
+		luaState L;
+		lua_getglobal(L, "parseURL");
+		lua_pushstring(L, W2UTF8(filename));
+		lua_pcall(L, 1, 1, 0);
+
+		const char *url_out = lua_tostring(L, -1);
+		filename_parsed = UTF82W(url_out);
+		filename = filename_parsed.c_str();
+	}
+
 	HTREEITEM file = InsertTreeviewItem(root, filename, TVI_ROOT);
 	InsertTreeviewItem(root, C(L"Reading Infomation ...."), file);
 	SendMessage(root, TVM_EXPAND, TVE_EXPAND, (LPARAM)file);
@@ -450,6 +463,19 @@ HRESULT get_mediainfo(const wchar_t *filename, media_info_entry **out, bool use_
 	MediaInfo MI;
 
 	dwindow_log_line(L"Gettting MediaInfo for %s", filename);
+	// use lua's parser
+	std::wstring filename_parsed;
+	{
+		luaState L;
+		lua_getglobal(L, "parseURL");
+		lua_pushstring(L, W2UTF8(filename));
+		lua_pcall(L, 1, 1, 0);
+
+		const char *url_out = lua_tostring(L, -1);
+		filename_parsed = UTF82W(url_out);
+		filename = filename_parsed.c_str();
+	}
+	dwindow_log_line(L"parsed URL: %s", filename);
 
 	// localization
 	if (use_localization)

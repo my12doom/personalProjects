@@ -104,9 +104,10 @@ end
 local last_update_time = 0
 function UpdateUI()
 	local delta_time = 0;
-	if last_render_time > 0 then delta_time = core.GetTickCount() - last_render_time end
+	local this_time = core.GetTickCount()
+	if last_update_time > 0 then delta_time = this_time - last_update_time end
 	root:BroadCastEvent("OnUpdate", last_update_time, delta_time)
-	last_update_time = core.GetTickCount()
+	last_update_time = this_time	
 end
 
 -- resource base class
