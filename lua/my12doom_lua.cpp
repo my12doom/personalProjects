@@ -59,6 +59,84 @@ static int execute_luafile(lua_State *L)
 	return 1;
 }
 
+#pragma pack(push, 1)
+typedef struct
+{
+	char leading[17];// = "local signature=\"";
+	char signature[256];
+	char ending[3];// = "\"";
+} lua_signature;
+#pragma pack(pop)
+
+
+static int execute_signed_luafile(lua_State *L)
+{
+	const char *filename = lua_tostring(L, 1);
+
+	// check signatures
+	FILE * f = _wfopen(UTF82W(filename), L"rb");
+	if (!f)
+	{
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "open file failed");
+		return 2;
+	}
+
+
+	lua_signature sig_txt;
+	if (fread(&sig_txt, 1, sizeof(sig_txt), f) != sizeof(sig_txt) 
+		|| memcmp(sig_txt.leading, "local signature=\"", sizeof(sig_txt.leading))
+		|| memcmp(sig_txt.ending, "\"\r\n", sizeof(sig_txt.ending)))
+	{
+		fclose(f);
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "no signature found");
+		return 2;
+	}
+
+	fseek(f, 0, SEEK_END);
+	int file_size = ftell(f);
+	fseek(f, sizeof(sig_txt), SEEK_SET);
+	unsigned char *data = new unsigned char[file_size];
+	fread(data, 1, file_size-sizeof(sig_txt), f);
+	fclose(f);
+
+	unsigned char sha1[20] = {0};
+	SHA1Hash(sha1, data, file_size-sizeof(sig_txt));
+	char signature[128+8];
+	
+	for(int i=0; i<128; i++)
+		sscanf(sig_txt.signature+i*2, "%02X", signature+i);
+
+	RSA_dwindow_network_public(signature, signature);
+
+	if (memcmp(sha1, signature, sizeof(sha1)) != 0)
+	{
+		delete data;
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "invalid signature found");
+
+		return 2;
+	}
+
+	USES_CONVERSION;
+	g_lua_core_manager->get_variable("loading_file") = UTF82W(filename);
+	if(luaL_loadfile(L, W2A(UTF82W(filename))) || lua_pcall(L, 0, 0, 0))
+	{
+		delete data;
+		const char * result;
+		result = lua_tostring(L, -1);
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, result);
+
+		return 2;
+	}
+
+	delete data;
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
 static int loaddll(lua_State *L)
 {
 // 	int parameter_count = lua_gettop(L);
@@ -368,6 +446,7 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("FAILED") = &luaFAILED;
 	g_lua_core_manager->get_variable("GetTickCount") = &lua_GetTickCount;
 	g_lua_core_manager->get_variable("execute_luafile") = &execute_luafile;
+	g_lua_core_manager->get_variable("execute_signed_luafile") = &execute_signed_luafile;
 	g_lua_core_manager->get_variable("loaddll") = &loaddll;
 	g_lua_core_manager->get_variable("track_back") = &track_back;
 	g_lua_core_manager->get_variable("http_request") = &http_request;
