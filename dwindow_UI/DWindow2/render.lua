@@ -42,7 +42,7 @@ function oroot:OnClick(x,y,button)
 end
 
 
--- background
+-- background / loading progress
 local logo = BaseFrame:Create()
 oroot:AddChild(logo)
 logo:SetPoint(CENTER)
@@ -52,6 +52,12 @@ function logo:RenderThis()
 	if not player.movie_loaded then
 		local res = get_bitmap(lua_path .. "bg.png")
 		paint(0,0,1024,600, res)
+	end
+	if player.movie_loading then
+		local p = math.floor((core.GetTickCount() % 1000)/100)
+		local res = get_bitmap(lua_path .. "loading.png")
+		set_bitmap_rect(res, p*64,0,(p+1)*64,64)
+		paint(480,268,544,332, res)
 	end
 end
 
@@ -446,7 +452,7 @@ open:SetPoint(CENTER)
 open:SetSize(165,36)
 
 function open:RenderThis()
-	if not player.movie_loaded then
+	if not player.movie_loaded and not player.movie_loading then
 		paint(0,0,165,36, get_bitmap(lua_path .. "open.png"))
 		local x = math.floor((165-self.caption.width)/2)
 		local y = math.floor((36-self.caption.height)/2)
@@ -475,7 +481,7 @@ function open:OnLanguageChange()
 end
 
 function open:HitTest()
-	return not player.movie_loaded
+	return not player.movie_loaded and not player.movie_loading
 end
 
 function open:OnClick()
@@ -687,13 +693,13 @@ open2:SetPoint(LEFT, open, RIGHT)
 open2:SetSize(31,36)
 
 function open2:RenderThis()
-	if not player.movie_loaded then
+	if not player.movie_loaded and not player.movie_loading then
 		paint(0,0,31,36, get_bitmap(lua_path .. "open_more.png"))
 	end
 end
 
 function open2:HitTest()
-	return not player.movie_loaded
+	return not player.movie_loaded and not player.movie_loading
 end
 
 
@@ -746,28 +752,6 @@ function open2:OnClick()
 			string = "打开URL...",
 			on_command = function()
 				local url = ui.OpenURL()
-				
-				local youku_prefix = "http://v.youku.com/v_show/id_"
-				if string.find(url, "pan.baidu.com") then
-					local str, code = core.http_request(url);
-					if code ~= 200 then
-						return
-					end
-					
-					for w in string.gmatch(str, "dlink%\\%\":%\\%\"([^,]+)%\\%\",") do
-						url = string.gsub(w, "\\\\", "" ) .. "&my12doom=.rmvb"
-					end
-					
-				elseif string.find(url, youku_prefix) then
-					local video_id = string.sub(url, youku_prefix:len()+1)
-					video_id = string.sub(video_id, 1, math.min(13, video_id:len()))
-					local json = json_url2table("https://openapi.youku.com/v2/videos/files.json?client_id=e57bc82b1a9dcd2f&client_secret=a361608273b857415ee91a8285a16b4a&video_id=" .. video_id)
-					print("JSON:", json)
-					printtable(json)
-					url = (json.files["hd2"] or json.files["mp4"] or json.files["3gphd"]).segs[1].url
-					print(url)
-				end
-				
 
 				if url then
 					playlist:play(url)

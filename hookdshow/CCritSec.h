@@ -49,6 +49,13 @@ public:
 	};
 
 	~myCAutoLock() {
-		m_pLock->Unlock();
+		if (m_pLock)
+			m_pLock->Unlock();
 	};
+
+	void release(){
+		m_pLock->Unlock();
+		m_pLock = NULL;
+	}
+
 };

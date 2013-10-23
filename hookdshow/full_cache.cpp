@@ -3,7 +3,7 @@
 #include "time.h"
 
 static const __int64 PRELOADING_SIZE = 1024*1024;
-static const DWORD WORKER_TIMEOUT = 3000;
+static const DWORD WORKER_TIMEOUT = 5000;
 static const DWORD WORKER_COUNT = 3;
 
 #ifndef LINUX
@@ -100,7 +100,7 @@ int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary, b
 	{
 		(*i)->hint(pos.start);
 		(*i)->hint(pos.end);
-		(*i)->hint((pos.start + pos.end)/2);
+// 		(*i)->hint((pos.start + pos.end)/2);
 	}
 
 	bool someone_responsible = false;
@@ -222,6 +222,8 @@ void inet_worker::run()
 		
 		int o = post->read_content(block, 4096);
 
+		m_last_inet_time = GetTickCount();
+
 		// network error
 		if (o<=0 || m_exit_signaled)
 		{
@@ -249,8 +251,8 @@ void inet_worker::run()
 // 0: OK
 int inet_worker::hint(__int64 pos)
 {
-	if (!responsible(pos))
-		return -1;
+// 	if (!responsible(pos))
+// 		return -1;
 
 	m_maxpos = min(max(m_maxpos, pos + PRELOADING_SIZE), m_pos + PRELOADING_SIZE*2);
 
@@ -291,7 +293,6 @@ inet_file::inet_file(const wchar_t *configfile)
 	fread(&m_time, sizeof(m_time), 1, m_config_file_file);
 
 	configfile_entry entry;
-	int i = 0;
 	while (fread(&entry, sizeof(entry), 1, m_config_file_file))
 	{
 		//LOGE("%d disk_fragments(%s, %lld) loaded", ++i, W2UTF8(entry.file), entry.startpos);
@@ -477,9 +478,10 @@ int inet_file::feed(void *buf, fragment pos)
 	myCAutoLock lck2(&m_fragments_cs);
 
 	bool conflit = false;
+	fragment left = pos;
 	for(std::list<disk_fragment*>::iterator i = m_fragments.begin(); i != m_fragments.end(); ++i)
 	{
-		fragment left = (*i)->remaining2(pos, NULL);
+		left = (*i)->remaining2(pos, &buf);
 		if (memcmp(&left, &pos, sizeof(pos)) != 0)
 		{
 			conflit = true;
@@ -487,12 +489,16 @@ int inet_file::feed(void *buf, fragment pos)
 		}
 	}
 
+	// if nothing remains
+	if (left.end <= left.start)
+		return conflit ? 1 : 0;
+
 
 	for(std::list<disk_fragment*>::iterator i = m_fragments.begin(); i != m_fragments.end(); ++i)
 	{
-		if ((*i)->tell() == pos.start)
+		if ((*i)->tell() == left.start)
 		{
-			(*i)->put(buf, (int)(pos.end - pos.start));
+			(*i)->put(buf, (int)(left.end - left.start));
 			return conflit ? 1 : 0;
 		}
 	}
@@ -502,13 +508,13 @@ int inet_file::feed(void *buf, fragment pos)
 	#ifndef LINUX
 	swprintf(new_name, MAX_PATH, L"%s.%03d", m_config_file.c_str(), (int)m_fragments.size());
 	#else
-	swprintf(new_name, MAX_PATH, L"/sdcard/%08x_%d_%d.tmp", this, (int)pos.start, rand()*rand());
+	swprintf(new_name, MAX_PATH, L"/sdcard/%08x_%d_%d.tmp", this, (int)left.start, rand()*rand());
 	#endif
-	disk_fragment *p = new disk_fragment(new_name, pos.start);
-	p->put(buf, (int)(pos.end - pos.start));
+	disk_fragment *p = new disk_fragment(new_name, left.start);
+	p->put(buf, (int)(left.end - left.start));
 	m_fragments.push_back(p);
 
-	configfile_entry entry = {pos.start};
+	configfile_entry entry = {left.start};
 	wcscpy(entry.file, new_name);
 	myCAutoLock lck3(&m_access_lock);
 	fseek(m_config_file_file, 0, SEEK_END);

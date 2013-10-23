@@ -174,9 +174,19 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
  	WaitForSingleObject(killer, 3000);
 	return 0;
 }
+int debug_window();
+
+DWORD WINAPI debug_thread(LPVOID p)
+{
+	debug_window();
+
+	return 0;
+}
 
 int main()
 {
+// 	CreateThread(NULL, NULL, debug_thread, NULL, NULL, NULL);
+
 	WinMain(GetModuleHandle(NULL), 0, "", SW_SHOW);
 }
 

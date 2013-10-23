@@ -44,21 +44,31 @@ int _tmain(int argc, _TCHAR *argv[])
 // 	p.addFormItem(L"lang", L"");
 // 	p.addFormItem(L"shortname", L"W:\\Bapq00000282_最后的风之子（英）3D_The Last Airbender 3D.TS");
 
-	httppost p(L"http://bo3d.net/test/a-001.mkv");
-// 	p.addHeader(L"Range", L"bytes=234111353-");
-	int reponse_code = p.send_request();
+// 	httppost p(L"http://bo3d.net/test/a-001.mkv");
+// // 	p.addHeader(L"Range", L"bytes=234111353-");
+// 	int reponse_code = p.send_request();
+// 
+// 	std::map<wchar_t*, wchar_t*> headers = p.get_response_headers();
+// 	for(std::map<wchar_t*, wchar_t*>::iterator i = headers.begin(); i!= headers.end(); ++i)
+// 		wprintf(L"%s - %s\n", i->first, i->second);
+// 
+// 	char data[1024];
+// 	int o = 0;
+// 	FILE *f = fopen("Z:\\response.txt", "wb");
+// 	while (o = p.read_content(data, sizeof(data)))
+// 		fwrite(data, 1, o, f);
+// 
+// 	fclose(f);
 
-	std::map<wchar_t*, wchar_t*> headers = p.get_response_headers();
-	for(std::map<wchar_t*, wchar_t*>::iterator i = headers.begin(); i!= headers.end(); ++i)
-		wprintf(L"%s - %s\n", i->first, i->second);
+	httppost p(L"http://api.tudou.com/v6/video/info?app_key=8a09ac1cb1458af3");
+	p.addFormItem(L"app_key", L"8a09ac1cb1458af3");
+	p.addFormItem(L"itemCodes", L"kbPzDzCIeBE");
+	int code = p.send_request();
 
-	char data[1024];
-	int o = 0;
-	FILE *f = fopen("Z:\\response.txt", "wb");
-	while (o = p.read_content(data, sizeof(data)))
-		fwrite(data, 1, o, f);
+	int size = p.get_content_length();
+	char tmp[2048];
+	p.read_content(tmp, 2048);
 
-	fclose(f);
 
 	return 0;
 }

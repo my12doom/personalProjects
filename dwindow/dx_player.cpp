@@ -3703,7 +3703,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	// Legacy Remux file
 	//m_renderer1->m_remux_mode = m_is_remux_file = verify_file(file_to_play) == 2;
 	//m_renderer1->m_remux_mode = true;
-	m_renderer1->m_remux_mode = false;
+	m_renderer1->m_remux_mode = m_is_remux_file = false;
 
 	// check private source and whether is MVC content
 	CLSID source_clsid;

@@ -2307,6 +2307,10 @@
 			Name="hookdshow"
 			>
 			<File
+				RelativePath="..\hookdshow\debug_window.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\hookdshow\full_cache.cpp"
 				>
 				<FileConfiguration

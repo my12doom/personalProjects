@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "resource.h"
+// #include "resource.h"
 #include <windows.h>
 #include <DShow.h>
 #include <atlbase.h>
@@ -7,6 +7,8 @@
 #include "..\dwindow\runnable.h"
 
 extern inet_file *g_last_manager;
+extern myCCritSec cs;
+
 
 // drawing
 RECT rect;
@@ -113,8 +115,12 @@ static INT_PTR CALLBACK dialog_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 		break;
 	
 	case WM_TIMER:
+		{
+			myCAutoLock lck(&cs);
+
 		if (g_last_manager)
 		{
+			lck.release();
 			int size = g_last_manager->getsize();
 			std::list<debug_info> debug = g_last_manager->debug();
 
@@ -134,6 +140,7 @@ static INT_PTR CALLBACK dialog_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 
 			end_paint();
 		}
+		}
 		break;
 
 	case WM_CLOSE:
@@ -149,7 +156,7 @@ static INT_PTR CALLBACK dialog_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 
 int debug_window()
 {
-	int o = DialogBoxA(NULL, MAKEINTRESOURCEA(IDD_DIALOG1), NULL, dialog_proc);
+	int o = DialogBoxA(NULL, MAKEINTRESOURCEA(140), NULL, dialog_proc);
 	gb = NULL;
 	return o;
 }
@@ -220,15 +227,15 @@ HRESULT debug_list_filters(IGraphBuilder *gb)
 
 int disable_hookdshow();
 int enable_hookdshow();
-
-int _tmain(int argc, _TCHAR* argv[])
-{
-	enable_hookdshow();
-
-	debug_window();
-
-	disable_hookdshow();
-
-
-	return 0;
-}
+// 
+// int _tmain(int argc, _TCHAR* argv[])
+// {
+// 	enable_hookdshow();
+// 
+// 	debug_window();
+// 
+// 	disable_hookdshow();
+// 
+// 
+// 	return 0;
+// }

@@ -249,6 +249,12 @@ function BaseFrame:SetPoint(point, frame, anchor, dx, dy)
 	end
 	
 	if self.anchors[point] then
+		-- check for existing point
+		local t = self.anchors[point]
+		if t.frame == frame and t.anchor == anchor and t.dx == (dx or 0) and t.dy == (dy or 0) then
+			return true
+		end		
+	
 		self.anchors[point].frame:RemoveLayoutChild(self)
 	end
 	
@@ -260,7 +266,7 @@ function BaseFrame:SetPoint(point, frame, anchor, dx, dy)
 		self.relative_point = point;
 		self.anchor = anchor;
 		
-		self:BroadcastLayoutEvent("OnLayoutChange")		
+		self:BroadcastLayoutEvent("OnLayoutChange")
 	else
 		frame:RemoveLayoutChild(self)
 		
