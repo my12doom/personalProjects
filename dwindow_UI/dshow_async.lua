@@ -9,7 +9,6 @@ local core_funcs =
 	seek = player.seek,
 	reset = player.reset,
 	reset_and_loadfile = player.reset_and_loadfile,
-	load_subtitle = player.load_subtitle,
 }
 
 local async_funcs = {}
@@ -65,12 +64,6 @@ function async_funcs.reset_and_loadfile(...)
 	queue_lock:lock()
 	async_funcs_remove(removeall)
 	table.insert(dshow_queue, {core_funcs.reset_and_loadfile,...})
-	queue_lock:unlock()
-end
-
-function async_funcs.load_subtitle(...)
-	queue_lock:lock()
-	table.insert(dshow_queue, {core_funcs.load_subtitle,...})
 	queue_lock:unlock()
 end
 
