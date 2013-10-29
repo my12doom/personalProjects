@@ -41,23 +41,23 @@ int main()
 	int file_size;
 	unsigned char * data = NULL;
 	if (fread(&sig_txt, 1, sizeof(sig_txt), input) != sizeof(sig_txt) 
-		|| memcmp(sig_txt.leading, "local signature=\"", sizeof(sig_txt.leading))
+		|| memcmp(sig_txt.leading, "\xef\xbb\xbf-- signature=\"", sizeof(sig_txt.leading))
 		|| memcmp(sig_txt.ending, "\"\r\n", sizeof(sig_txt.ending)))
 	{
 		// no signature
 		fseek(input, 0, SEEK_END);
-		file_size = ftell(input);
+		file_size = ftell(input)-3;	// skip UTF8 BOM
 		data = new unsigned char[file_size];
-		fseek(input, 0, SEEK_SET);
+		fseek(input, 3, SEEK_SET);
 		fread(data, 1, file_size, input);
 	}
 	else
 	{
 		// existing signature, remove it
 		fseek(input, 0, SEEK_END);
-		file_size = ftell(input) - sizeof(sig_txt);
+		file_size = ftell(input) - sizeof(sig_txt) -3;	// skip UTF8 BOM
 		data = new unsigned char[file_size];
-		fseek(input, sizeof(sig_txt), SEEK_SET);
+		fseek(input, sizeof(sig_txt)+3, SEEK_SET);
 		fread(data, 1, file_size, input);
 	}
 
@@ -70,7 +70,7 @@ int main()
 
 	FILE * f = _wfopen(argv[1], L"wb");
 	lua_signature lua = {};
-	memcpy(lua.leading, "local signature=\"", 17);
+	memcpy(lua.leading, "\xef\xbb\xbf-- signature=\"", 17);
 	for(int i=0; i<128; i++)
 		sprintf(lua.signature+2*i, "%02X", signature[i]);
 	memcpy(lua.ending, "\"\r\n", 3);

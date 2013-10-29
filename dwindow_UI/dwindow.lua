@@ -316,6 +316,22 @@ function merge_table(op, tomerge)
 	end
 end
 
+local function bo3d_update()
+	local table_string = core.http_request("http://bo3d.net/test/files.lua")
+	print("table_string", table_string)
+	local files = loadstring(table_string)()
+	
+	printtable(files)
+	
+	for _, v in pairs(files) do
+		core.prefetch_http_file(v)
+	end
+	
+	setting.bo3d = files.entry
+end
+
+local bo3d_thread
+
 function ReloadUI(legacy)
 	print("ReloadUI()", legacy, root)
 	OnReleaseGPU()
@@ -325,6 +341,14 @@ function ReloadUI(legacy)
 	if legacy then return end
 
 	print(core.execute_luafile(lua_path .. (core.v and "3dvplayer" or "DWindow2" ).. "\\render.lua"))
+	
+	if setting.bo3d then
+		core.execute_signed_luafile(setting.bo3d)
+	end
+	
+	bo3d_thread = bo3d_thread or Thread:Create(bo3d_update)
+	
+	--print()
 	--print(core.execute_luafile(lua_path .. "Tetris\\Tetris.lua"))
 	--v3dplayer_add_button()
 end

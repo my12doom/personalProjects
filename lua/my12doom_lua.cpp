@@ -38,14 +38,24 @@ static int lua_Sleep(lua_State *L)
 	return 0;
 }
 
+wchar_t * wcsstr_nocase(const wchar_t *search_in, const wchar_t *search_for);
+const wchar_t *URL2Token(const wchar_t *URL);
+
+
 static int execute_luafile(lua_State *L)
 {
 // 	int parameter_count = lua_gettop(L);
 	const char *filename = NULL;
 	filename = luaL_checkstring(L, 1);
 	USES_CONVERSION;
-	g_lua_core_manager->get_variable("loading_file") = UTF82W(filename);
-	if(luaL_loadfile(L, W2A(UTF82W(filename))) || lua_pcall(L, 0, 0, 0))
+	UTF82W w(filename);
+	const wchar_t *filenamew = w;
+	g_lua_core_manager->get_variable("loading_file") = filenamew;
+
+	if (wcsstr_nocase(filenamew, L"http://") == filenamew)
+		filenamew = URL2Token(filenamew);
+
+	if(luaL_loadfile(L, W2A(filenamew)) || lua_pcall(L, 0, 0, 0))
 	{
 		const char * result;
 		result = lua_tostring(L, -1);
@@ -54,6 +64,58 @@ static int execute_luafile(lua_State *L)
 
 		return 2;
 	}
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
+static int lua_prefetch_http_file(lua_State *L)
+{
+	int start = 0;
+	int end = -1;
+	const char *filename = NULL;
+	filename = lua_tostring(L, 1);
+	if (lua_gettop(L)>1)
+		start = lua_tointeger(L, -lua_gettop(L)+1);
+	if (lua_gettop(L)>2)
+		end = lua_tointeger(L, -lua_gettop(L)+2);
+
+	USES_CONVERSION;
+	UTF82W w(filename);
+	const wchar_t *filenamew = w;
+	if (wcsstr_nocase(filenamew, L"http://") == filenamew)
+		filenamew = URL2Token(filenamew);
+	else
+		return 0;
+
+	char buf[1024];
+	FILE * f = _wfopen(filenamew, L"rb");
+	if (!f)
+	{
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+
+	fseek(f, start, SEEK_SET);
+
+	if (end > 0)
+	{
+		int size = end - start;
+		while (size>0)
+		{
+			int got = fread(buf,1 , min(sizeof(buf), size), f);
+			if (got != min(sizeof(buf), size))
+				break;
+			size -= got;
+		}
+	}
+	else
+	{
+		while (!feof(f))
+			fread(buf, 1, sizeof(buf), f);
+	}
+
+	fclose(f);
 
 	lua_pushboolean(L, 1);
 	return 1;
@@ -72,9 +134,16 @@ typedef struct
 static int execute_signed_luafile(lua_State *L)
 {
 	const char *filename = lua_tostring(L, 1);
+	UTF82W w(filename);
+	const wchar_t *filenamew = w;
+	g_lua_core_manager->get_variable("loading_file") = filenamew;
+
+	if (wcsstr_nocase(filenamew, L"http://") == filenamew)
+		filenamew = URL2Token(filenamew);
+
 
 	// check signatures
-	FILE * f = _wfopen(UTF82W(filename), L"rb");
+	FILE * f = _wfopen(filenamew, L"rb");
 	if (!f)
 	{
 		lua_pushboolean(L, 0);
@@ -85,7 +154,7 @@ static int execute_signed_luafile(lua_State *L)
 
 	lua_signature sig_txt;
 	if (fread(&sig_txt, 1, sizeof(sig_txt), f) != sizeof(sig_txt) 
-		|| memcmp(sig_txt.leading, "local signature=\"", sizeof(sig_txt.leading))
+		|| memcmp(sig_txt.leading, "\xef\xbb\xbf-- signature=\"", sizeof(sig_txt.leading))
 		|| memcmp(sig_txt.ending, "\"\r\n", sizeof(sig_txt.ending)))
 	{
 		fclose(f);
@@ -121,7 +190,7 @@ static int execute_signed_luafile(lua_State *L)
 
 	USES_CONVERSION;
 	g_lua_core_manager->get_variable("loading_file") = UTF82W(filename);
-	if(luaL_loadfile(L, W2A(UTF82W(filename))) || lua_pcall(L, 0, 0, 0))
+	if(luaL_loadfile(L, W2A(filenamew)) || lua_pcall(L, 0, 0, 0))
 	{
 		delete data;
 		const char * result;
@@ -450,6 +519,7 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("loaddll") = &loaddll;
 	g_lua_core_manager->get_variable("track_back") = &track_back;
 	g_lua_core_manager->get_variable("http_request") = &http_request;
+	g_lua_core_manager->get_variable("prefetch_http_file") = &lua_prefetch_http_file;
 	g_lua_core_manager->get_variable("Sleep") = &lua_Sleep;
 
 	// threads

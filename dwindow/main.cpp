@@ -52,6 +52,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 
+	enable_hookdshow();
 	dwindow_lua_init();
 	ui_lua_init();
 	player_lua_init();
@@ -141,7 +142,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return 0;
 	}	
 
-	enable_hookdshow();
 	dx_player *test = new dx_player(hinstance);
 	BringWindowToTop(test->m_hwnd1);
 
