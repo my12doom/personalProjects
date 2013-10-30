@@ -580,7 +580,7 @@ HRESULT dx_player::total(int *time)
 	if (time == NULL)
 		return E_POINTER;
 
-	*time = m_total_time;
+	*time = max(1,m_total_time);
 	return S_OK;
 }
 HRESULT dx_player::set_volume(double volume)
@@ -2924,8 +2924,7 @@ HRESULT dx_player::exit_direct_show()
 	m_file_loaded = false;
 	m_active_audio_track = 0;
 	m_active_subtitle_track = 0;
-	m_current_time = 0;
-	m_total_time = 1;
+	m_total_time = m_current_time = 0;
 	m_filter_state = -1;
 	
 	m_offset_metadata = NULL;
