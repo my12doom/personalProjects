@@ -11,6 +11,8 @@ lua_manager *g_lua_core_manager = NULL;
 lua_manager *g_lua_setting_manager = NULL;
 std::list<lua_State*> free_threads;
 std::list<lua_State*> running_threads;
+lua_State * dwindow_lua_get_thread();
+void dwindow_lua_release_thread(lua_State * p);
 
 static int lua_GetTickCount (lua_State *L) 
 {
@@ -310,39 +312,14 @@ int luaTerminateThread(lua_State *L)
 	return 1;
 }
 
-HANDLE create_thread_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-int thread_count = 0;
 DWORD WINAPI luaCreateThreadEntry(LPVOID parameter)
 {
-	while(thread_count > 30)
-		Sleep(1);
+	lua_State *L2 = (lua_State *)parameter;
 
+	if (lua_isfunction(L2, 1))
+		lua_mypcall(L2, lua_gettop(L2)-1, 0, 0);
 
-	printf("thread_count:%d\n", thread_count++);
-
-	luaState L;
-
-	int *p = (int*)parameter;
-	for(int i=p[0]; i>0; i--)
-	{
-		lua_rawgeti(L, LUA_REGISTRYINDEX, p[i]);
-		luaL_unref(L, LUA_REGISTRYINDEX, p[i]);
-	}
-
-	if (!lua_isfunction(L, -p[0]))
-	{
-		lua_pop(L, p[0]);
-		delete p;
-		return -2;					// no entry function found, clear the stack and return;
-	}
-
-	SetEvent(create_thread_event);
-
-	lua_mypcall(L, p[0]-1, 0, 0);
-
-	delete p;
-
-	thread_count--;
+	dwindow_lua_release_thread(L2);
 
 	return 0;
 }
@@ -351,16 +328,17 @@ int luaCreateThread(lua_State *L)
 {
 	int n = lua_gettop(L);
 
-	int * p = new int[n+1];
-	p[0] = n;
+	lua_State *L2 =dwindow_lua_get_thread();
+	lua_settop(L2, 0);
 	for(int i=0; i<n; i++)
-		p[i+1] = luaL_ref(L, LUA_REGISTRYINDEX);
+	{
+		int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+		lua_rawgeti(L2, LUA_REGISTRYINDEX, ref);
+		lua_insert(L2, 1);
+		luaL_unref(L, LUA_REGISTRYINDEX, ref);
+	}
 
-	for(int i=n-1; i>=0; i--)
-		lua_rawgeti(L, LUA_REGISTRYINDEX, p[i+1]);
-
-
-	lua_pushlightuserdata(L, CreateThread(NULL, NULL, luaCreateThreadEntry, p, NULL, NULL));
+	lua_pushlightuserdata(L, CreateThread(NULL, NULL, luaCreateThreadEntry, L2, NULL, NULL));
 	return 1;
 }
 
@@ -565,6 +543,7 @@ lua_State * dwindow_lua_get_thread()
 	else
 	{
 		rtn = lua_newthread(g_L);
+		int ref = luaL_ref(g_L, LUA_REGISTRYINDEX);		// won't free it
 	}
 	running_threads.push_back(rtn);
 	return rtn;
