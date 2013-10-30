@@ -72,6 +72,7 @@ protected:
 	int m_request_content_sent;
 	int m_request_content_size;
 	IHttpSendingCallback *m_cb;
+	int m_last_response_code;
 
 
 protected:

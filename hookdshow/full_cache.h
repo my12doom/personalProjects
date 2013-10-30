@@ -43,6 +43,7 @@ class inet_worker : public Irunnable
 {
 public:
 	inet_worker(const wchar_t *URL, __int64 start, inet_worker_manager *manager);
+	inet_worker(void *httppost, inet_worker_manager *manager);
 	~inet_worker();
 
 	void run();
@@ -77,6 +78,7 @@ public:
 	~inet_worker_manager();
 
 	int hint(fragment pos, bool open_new_worker_if_necessary, bool debug = false);			// hint the workers to continue their work, and launch new worker if necessary
+	int hint(void *httppost);		// add a worker directly, usually for inet_file initialization
 
 protected:
 	friend class inet_worker;

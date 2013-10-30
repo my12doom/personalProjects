@@ -106,6 +106,7 @@ int httppost::close_connection()
 
 int httppost::setURL(const wchar_t *url)
 {
+	m_last_response_code = -1;
 	close_connection();
 	if (wcslen(url) < 7 || wcschr(url+7, L'/') == NULL)
 		return -1;
@@ -315,6 +316,9 @@ int httppost::send_item(int sock, form_item &item)
 
 int httppost::send_request(int max_relocation/* = 5*/)
 {
+	if (m_last_response_code >= 0)
+		return m_last_response_code;
+
 #ifndef LINUX
 	WSADATA WSAData;
 	if (0 != WSAStartup(MAKEWORD(1, 1), &WSAData))
@@ -465,6 +469,8 @@ int httppost::send_request(int max_relocation/* = 5*/)
 		delete [] location;
 		return send_request(max_relocation-1);
 	}
+
+	m_last_response_code = response_code;
 
 	return response_code;
 }

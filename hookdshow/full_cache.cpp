@@ -93,6 +93,17 @@ int compare_inet_worker(const void *a, const void *b)
 	return 0;
 }
 
+int inet_worker_manager::hint(void *httppost)
+{
+	inet_worker *worker = new inet_worker(httppost, this);
+
+	myCAutoLock lck(&m_worker_cs);
+	m_active_workers.push_back(worker);
+	m_worker_pool.submmit(worker);
+
+	return 0;
+}
+
 int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary, bool debug/*=false*/)
 {
 	myCAutoLock lck(&m_worker_cs);
@@ -163,6 +174,18 @@ inet_worker::inet_worker(const wchar_t *URL, __int64 start, inet_worker_manager 
 
 	m_last_inet_time = GetTickCount();
 }
+
+inet_worker::inet_worker(void *post, inet_worker_manager *manager)
+:m_inet_file(NULL)
+,m_exit_signaled(false)
+{
+	m_inet_file = (httppost*)post;
+	m_pos = 0;
+	m_maxpos = PRELOADING_SIZE;
+	m_manager = manager;
+	m_last_inet_time = GetTickCount();
+}
+
 inet_worker::~inet_worker()
 {
 	myCAutoLock lck(&m_manager->m_worker_cs);
@@ -306,26 +329,27 @@ int inet_file::setURL(const wchar_t *URL)
 	if (m_worker_manager != NULL)
 		return -1;
 
+	m_worker_manager = new inet_worker_manager(URL, this);
+
 	m_URL = URL;
 
 	if (m_filesize == 0)
 	{
-		httppost http(URL);
-		int responsecode = http.send_request();
+		httppost *http = new httppost(URL);
+		int responsecode = http->send_request();
 		LOGE("disk_manager::setURL() : code = %d", responsecode);
 		if (responsecode < 200 || responsecode > 299)
 			return -2;
-		m_filesize = http.get_content_length();
+		m_filesize = http->get_content_length();
 		if (m_filesize <= 0)
 			return -3;
+
+		m_worker_manager->hint(http);
 
 		fseek(m_config_file_file, 0, SEEK_SET);
 		fwrite(&m_filesize, sizeof(m_filesize), 1, m_config_file_file);
 		fwrite(&m_time, sizeof(m_time), 1, m_config_file_file);
 	}
-
-	m_worker_manager = new inet_worker_manager(URL, this);
-
 	return 0;
 }
 
