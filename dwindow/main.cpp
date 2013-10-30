@@ -139,7 +139,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				SendMessageW(pre_instance, WM_COPYDATA, (WPARAM)NULL, (LPARAM)&copy);
 			}
 		}
-		return 0;
+		ExitProcess(0);
 	}	
 
 	dx_player *test = new dx_player(hinstance);
