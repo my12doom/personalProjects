@@ -2,6 +2,7 @@
 
 default_setting = 
 {
+	bo3d_entry = "http://bo3d.net/test/files.lua",
 	MoviePosX = 0,
 	Luminance = 0.5,
 	Aspect = -1,

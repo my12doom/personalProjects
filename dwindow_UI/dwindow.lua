@@ -317,7 +317,7 @@ function merge_table(op, tomerge)
 end
 
 local function bo3d_update()
-	local table_string = core.http_request("http://bo3d.net/test/files.lua")
+	local table_string = core.http_request(setting.bo3d_entry)
 	print("table_string", table_string)
 	local files = loadstring(table_string)()
 	

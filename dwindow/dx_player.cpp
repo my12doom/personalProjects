@@ -4594,6 +4594,9 @@ HRESULT dx_player::enable_audio_track(int track)
 		m_mc->Pause();
 
 	m_active_audio_track = track;
+
+	set_volume(m_volume);
+
 	return hr;
 }
 HRESULT dx_player::enable_subtitle_track(int track)
