@@ -107,14 +107,12 @@ local worker_thread = Thread:Create(function()
 		if #dshow_queue > 0 then
 			player.movie_loading = true
 
-			work = table.remove(dshow_queue)
+			work = table.remove(dshow_queue, 1)
 		else
 			player.movie_loading = false
 		end
 		queue_lock:unlock()
 		
-		local text = player.movie_loading and L("DWindow Loading...") or L("DWindow")
-		player.set_window_text(text, text)
 		if work then
 			work[1](select(2, unpack(work)))
 		end

@@ -55,20 +55,7 @@ function IsCurrentDrawingVisible()
 end
 
 
--- global window or dshow or etc callback
-function OnDirectshowEvents(event_code, param1, param2)
-	print("OnDirectshowEvents", event_code, param1, param2)
 
-	local EC_COMPLETE = 1
-	if event_code == EC_COMPLETE then
-		if playlist:current_pos() >= playlist:count() then
-			player.stop()
-			player.seek(0)
-		else
-			playlist:next()
-		end
-	end
-end
 function OnMove() end
 function OnSize() end
 
@@ -445,11 +432,11 @@ end
 if core and core.execute_luafile then
 	print(core.execute_luafile(lua_path .. "base_frame.lua"))
 	print(core.execute_luafile(lua_path .. "3dvplayer.lua"))
+	print(core.execute_luafile(lua_path .. "dshow_async.lua"))
 	print(core.execute_luafile(lua_path .. "playlist.lua"))
 	print(core.execute_luafile(lua_path .. "menu.lua"))
 	print(core.execute_luafile(lua_path .. "default_setting.lua"))
 	core.load_settings();
 	print(core.execute_luafile(lua_path .. "language.lua"))
 	print(core.execute_luafile(lua_path .. "parser.lua"))
-	print(core.execute_luafile(lua_path .. "dshow_async.lua"))
 end
