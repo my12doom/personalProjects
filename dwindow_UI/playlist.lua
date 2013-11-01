@@ -155,10 +155,10 @@ function player.seek(target)
 	
 	if segment ~= playlist.current then
 		player.reset_and_loadfile(playlist.L[segment].url, playlist.R and R[segment].url)
-		oseek(target)
 		playlist.current = segment
 	end
 	
+	oseek(target)
 	return true	
 end
 
