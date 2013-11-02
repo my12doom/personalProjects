@@ -174,7 +174,7 @@ function player.seek(target)
 	end
 	
 	if segment ~= playlist.current then
-		player.reset_and_loadfile(playlist.L[segment].url, playlist.R and R[segment].url)
+		player.reset_and_loadfile(playlist.L[segment].url, playlist.R and playlist.R[segment].url)
 		if not playing then player.pause() end
 		playlist.current = segment
 	end
@@ -201,7 +201,7 @@ function OnDirectshowEvents(event_code, param1, param2)
 		-- for segmented files
 		if playlist.L and playlist.current < #playlist.L then
 			playlist.current = playlist.current + 1
-			player.reset_and_loadfile(playlist.L[playlist.current].url, playlist.R and R[playlist.current].url)
+			player.reset_and_loadfile(playlist.L[playlist.current].url, playlist.R and playlist.R[playlist.current].url)
 			
 			return
 		end
