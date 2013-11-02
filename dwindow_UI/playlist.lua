@@ -127,6 +127,7 @@ end
 local ototal = player.total
 local otell = player.tell
 local oseek = player.seek
+local oreset = player.reset
 
 function player.total()
 	if not playlist.L then
@@ -179,7 +180,15 @@ function player.seek(target)
 	end
 	
 	oseek(target)
-	return true	
+	return true
+end
+
+function player.reset()
+	playlist.L = nil
+	playlist.R = nil
+	playlist.current = nil
+	
+	return oreset()
 end
 
 -- global window or dshow or etc callback
