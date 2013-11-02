@@ -9,6 +9,8 @@ local core_funcs =
 	seek = player.seek,
 	reset = player.reset,
 	reset_and_loadfile = player.reset_and_loadfile,
+	list_audio_track = player.list_audio_track,
+	list_subtitle_track = player.list_subtitle_track,
 }
 
 local async_funcs = {}
@@ -79,13 +81,31 @@ function async_funcs.tell()
 	return last_seek or async_funcs.seeking_to or core_funcs.tell()
 end
 
---function async_funcs.list_audio_track()
+local last_list_track = 0
+local audio_tracks = {}
+local subtitle_tracks = {}
+local tracks_lock = CritSec:create()
+function async_funcs.list_audio_track()
+	tracks_lock:lock()
+	local rtn = {}
+	for k,v in ipairs(audio_tracks) do
+		rtn[k] = v
+	end
+	tracks_lock:unlock()
+	
+	return rtn
+end
 
---end
-
---function async_funcs.list_subtitle_track()
-
---end
+function async_funcs.list_subtitle_track()
+	tracks_lock:lock()
+	local rtn = {}
+	for k,v in ipairs(subtitle_tracks) do
+		rtn[k] = v
+	end
+	tracks_lock:unlock()
+	
+	return rtn
+end
 
 function async_funcs_remove(...)
 	for _, v in ipairs(table.pack(...)) do
@@ -112,6 +132,20 @@ local worker_thread = Thread:Create(function()
 			player.movie_loading = false
 		end
 		queue_lock:unlock()
+					
+		if core.GetTickCount() - last_list_track > 100 and not player.movie_loading then
+			last_list_track = core.GetTickCount()
+			
+			tracks_lock:lock()
+			if player.movie_loaded then
+				audio_tracks = table.pack(core_funcs.list_audio_track())
+				subtitle_tracks = table.pack(core_funcs.list_subtitle_track())
+			else
+				audio_tracks = {}
+				subtitle_tracks = {}
+			end
+			tracks_lock:unlock()
+		end
 		
 		if work then
 			work[1](select(2, unpack(work)))

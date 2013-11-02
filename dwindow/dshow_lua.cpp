@@ -349,6 +349,8 @@ static int enable_subtitle_track(lua_State *L)
 }
 static int list_audio_track(lua_State *L)
 {
+	if (!g_player)
+		return 0;
 	wchar_t tmp[32][1024];
 	wchar_t *tmp2[32];
 	bool connected[32];
@@ -367,6 +369,9 @@ static int list_audio_track(lua_State *L)
 }
 static int list_subtitle_track(lua_State *L)
 {
+	if (!g_player)
+		return 0;
+
 	wchar_t tmp[32][1024];
 	wchar_t *tmp2[32];
 	bool connected[32];
