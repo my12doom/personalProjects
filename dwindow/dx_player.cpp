@@ -3642,7 +3642,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	wchar_t file_to_play[MAX_PATH*10];
 	wcscpy(file_to_play, pathname);
 
-	prepare_file(pathname, NULL);
+	//prepare_file(pathname, NULL);
 
 	// detect ISO files
 	if (wcs_endwith_nocase(pathname, L".iso"))
@@ -3983,13 +3983,13 @@ HRESULT dx_player::prepare_file(const wchar_t *pathname, IBaseFilter **out)
 			source_source->Load(pathname, NULL);
 			gb->AddFilter(source_base, L"Source");
 
-			CComQIPtr<IOffsetMetadata, &IID_IOffsetMetadata> offset(source_base);
-			if (offset)
-				m_offset_metadata = offset;
-
-			CComQIPtr<IStereoLayout, &IID_IStereoLayout> stereo_layout(source_base);
-			if (stereo_layout)
-				m_stereo_layout = stereo_layout;
+// 			CComQIPtr<IOffsetMetadata, &IID_IOffsetMetadata> offset(source_base);
+// 			if (offset)
+// 				m_offset_metadata = offset;
+// 
+// 			CComQIPtr<IStereoLayout, &IID_IStereoLayout> stereo_layout(source_base);
+// 			if (stereo_layout)
+// 				m_stereo_layout = stereo_layout;
 		}
 		else
 		{

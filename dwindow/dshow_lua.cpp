@@ -168,6 +168,20 @@ static int reset_and_loadfile(lua_State *L)
 	return 2;
 }
 
+static int prepare_file(lua_State *L)
+{
+	int n = lua_gettop(L);
+	const char *filename1 = NULL; 
+	if (n>=1)
+		filename1 = lua_tostring(L, -n+0);
+
+	HRESULT hr = g_player->prepare_file(UTF82W(filename1), NULL);
+
+	lua_pushboolean(L, SUCCEEDED(hr));
+	lua_pushinteger(L, hr);
+	return 2;
+}
+
 static int load_subtitle(lua_State *L)
 {
 	const char *filename = lua_tostring(L, -1);
@@ -818,6 +832,7 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("is_playing") = &is_playing;
 	g_player_lua_manager->get_variable("reset") = &reset;
 	g_player_lua_manager->get_variable("reset_and_loadfile") = &reset_and_loadfile;
+	g_player_lua_manager->get_variable("prepare_file") = &prepare_file;
 	g_player_lua_manager->get_variable("load_subtitle") = &load_subtitle;
 	g_player_lua_manager->get_variable("load_audio_track") = &load_audio_track;
 	g_player_lua_manager->get_variable("is_fullscreen") = &is_fullscreen;

@@ -54,6 +54,12 @@ function playlist:previous()
 	end
 end
 
+function preload_segments(tbl)
+	for _, url in ipairs(tbl) do
+		player.prepare_file(url)
+	end	
+end
+
 function playlist:play_item(n)
 	if not n or n < 1 or n > #setting.playlist.list then
 		return false
@@ -72,6 +78,17 @@ function playlist:play_item(n)
 		playlist.L = L
 		playlist.R = R
 		playlist.current = 1
+		
+		-- also create a thread to pre load headers for each segment
+		local segments = {}
+		for _,segment in ipairs(L) do
+			table.insert(segments, segment.url)
+		end
+		for _,segment in ipairs(R or {}) do
+			table.insert(segments, segment.url)
+		end
+		
+		Thread:Create(preload_segments, segments)		
 		
 		return player.reset_and_loadfile(L[1].url, R and R[1].url)
 	else
@@ -142,6 +159,8 @@ function player.seek(target)
 		return oseek(target)
 	end
 	
+	local playing = player.is_playing()
+	
 	if target < 0 or target >= player.total() then
 		return false
 	end
@@ -155,6 +174,7 @@ function player.seek(target)
 	
 	if segment ~= playlist.current then
 		player.reset_and_loadfile(playlist.L[segment].url, playlist.R and R[segment].url)
+		if not playing then player.pause() end
 		playlist.current = segment
 	end
 	
@@ -174,14 +194,14 @@ function OnDirectshowEvents(event_code, param1, param2)
 			playlist.current = playlist.current + 1
 			player.reset_and_loadfile(playlist.L[playlist.current].url, playlist.R and R[playlist.current].url)
 			
-			return		
+			return
 		end
 		
 	
 		-- normal files or last segment
 		if playlist:current_pos() >= playlist:count() then
-			player.stop()
 			player.seek(0)
+			player.stop()
 		else
 			playlist:next()
 		end
