@@ -8,7 +8,7 @@
 	#include <wininet.h>
 	#include <atlbase.h>
 	#pragma  comment(lib, "ws2_32.lib")
-	#define LOGE printf
+	#define LOGE(...) 
 #else
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -36,7 +36,7 @@
 #define MAXREQUESTSIZE 1024000
 static int wcstrim(wchar_t *str, wchar_t char_  = L' ');
 
-#define log printf
+#define log LOGE
 #define LINE(...) {sprintf(tmp, __VA_ARGS__); strcat(requestheader, tmp); strcat(requestheader, "\r\n");}
 #define SEND_FMT(...) {sprintf(tmp, __VA_ARGS__); send(m_sock, tmp, strlen(tmp), 0); log(tmp); m_request_content_sent += strlen(tmp);}
 

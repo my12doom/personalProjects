@@ -2877,8 +2877,14 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		// render state and render
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+		hr = m_Device->SetSamplerState( 1, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
+		hr = m_Device->SetSamplerState( 2, D3DSAMP_MIPFILTER, D3DTEXF_NONE );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex));
 
@@ -2912,6 +2918,10 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, alpha_blend );
 		ps[1] = (float)height_d/height_s;
 		ps[1] = ps[1] > 0 ? ps[1] : -ps[1];
@@ -2965,7 +2975,13 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		// render state and go
 		m_Device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		m_Device->SetSamplerState(2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		m_Device->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+		m_Device->SetSamplerState(1, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+		m_Device->SetSamplerState(2, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
 		m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, alpha_blend );
 		hr = m_Device->SetFVF( FVF_Flags );
 		hr = m_Device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, direct_vertex, sizeof(MyVertex));
@@ -2989,6 +3005,14 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 		hr = m_Device->SetSamplerState( 0, D3DSAMP_MIPFILTER, (method == bilinear_no_mipmap) ? D3DTEXF_NONE : D3DTEXF_LINEAR );
+		hr = m_Device->SetSamplerState( 1, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
+		hr = m_Device->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+		hr = m_Device->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+		hr = m_Device->SetSamplerState( 1, D3DSAMP_MIPFILTER, (method == bilinear_no_mipmap) ? D3DTEXF_NONE : D3DTEXF_LINEAR );
+		hr = m_Device->SetSamplerState( 2, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&mip_lod );
+		hr = m_Device->SetSamplerState( 2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+		hr = m_Device->SetSamplerState( 2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
+		hr = m_Device->SetSamplerState( 2, D3DSAMP_MIPFILTER, (method == bilinear_no_mipmap) ? D3DTEXF_NONE : D3DTEXF_LINEAR );
 
 		m_Device->SetRenderTarget(0, dst);
 		m_Device->SetScissorRect(&clip);
