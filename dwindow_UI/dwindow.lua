@@ -354,6 +354,15 @@ function apply_adv_settings()
 	player.set_topmost(setting.Topmost)
 end
 
+function execute_string(url)
+	local func, error = loadstring(url)
+	if not func then
+		return nil, {error}
+	else
+		return table.pack(func())
+	end
+end
+
 function format_table(t, level)
 	level = level or 1
 	leveld1 = level > 1 and level -1 or 0
