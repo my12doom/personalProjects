@@ -98,9 +98,6 @@ static int lua_prefetch_http_file(lua_State *L)
 		lua_pushboolean(L, 0);
 		return 1;
 	}
-
-	Sleep(3000);
-	stop_all_handles();
 	fseek(f, 0, SEEK_END);
 	if (end <= 0)
 		end = ftell(f);
