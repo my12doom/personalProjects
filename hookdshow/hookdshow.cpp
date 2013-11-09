@@ -219,7 +219,7 @@ static BOOL WINAPI MineReadFile(
  			}
 		}
 
-		return TRUE;
+		return *lpNumberOfBytesRead == nNumberOfBytesToRead ? TRUE : FALSE;
 	}
 
 	return TrueReadFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
@@ -331,6 +331,28 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 	}
 
 	return TrueCloseHandle(hObject);
+}
+
+int stop_all_handles()
+{
+	myCAutoLock lck(&cs);
+	for(std::map<HANDLE, dummy_handle*>::iterator i = handle_map.begin(); i!= handle_map.end(); ++i)
+	{
+		if (i->second && i->second->ifile)
+			i->second->ifile->close();
+	}
+	return 0;
+}
+
+int clear_all_handles()
+{
+	myCAutoLock lck(&cs);
+	for(std::map<HANDLE, dummy_handle*>::iterator i = handle_map.begin(); i!= handle_map.end(); ++i)
+	{
+		CloseHandle(i->first);
+	}
+	return 0;
+
 }
 
 int enable_hookdshow()
@@ -541,15 +563,16 @@ __int64 HTTPHook::size()
 __int64 HTTPHook::get(void *buf, __int64 offset, int size)
 {
 	fragment frag = {offset, offset+size};
-	((inet_file*) m_core)->get(buf, frag);
+	((inet_file*) m_core)->get(buf, frag, &m_closed);
 	return frag.end - frag.start;
 }
 void HTTPHook::close()				// cancel all pending get() operation and reject all further get()
-									// not yet implemented
 {
+	m_closed = true;
 }
 HTTPHook::HTTPHook(void *core)
 :m_core(core)
+,m_closed(false)
 {
 
 }

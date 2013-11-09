@@ -10,6 +10,7 @@
 #include <atlbase.h>
 #include "ui_lua.h"
 #include "dshow_lua.h"
+#include "..\hookdshow\hookdshow.h"
 
 #pragma comment(lib, "DbgHelp")
 
@@ -159,6 +160,29 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SetForegroundWindow(test->m_hwnd1);
 
 	DWORD rights = get_passkey_rights();
+
+	// test
+// 	FILE * f = fopen("E:\\doc\\avatar.mkv", "rb");
+// 	FILE * f2 = _wfopen(URL2Token(L"http://bo3d.net/avatar.mkv"), L"rb");
+// 
+// 	for(int i=0; i<400; i++)
+// 	{
+// 		fseek(f, i*4718592, SEEK_SET);
+// 		fseek(f2, i*4718592, SEEK_SET);
+// 
+// 		char tmp[2048];
+// 		char tmp2[2048];
+// 
+// 		fread(tmp, 1, 2048, f);
+// 		fread(tmp2, 1, 2048, f2);
+// 
+// 		if (memcmp(tmp, tmp2, 2048))
+// 		{
+// 			printf("error @ %d\n", i);
+// 		}
+// 	}
+
+	// end test
 
 	if (rights & USER_RIGHTS_THEATER_BOX)
 		zhuzhu::dwindow_dll_go_zhuzhu(hinstance, NULL, test);

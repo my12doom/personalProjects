@@ -4,6 +4,7 @@
 #include <math.h>
 #include "..\dwindow\global_funcs.h"
 #include "..\dwindow\dwindow_log.h"
+#include "..\hookdshow\hookdshow.h"
 
 lua_State *g_L = NULL;
 CCritSec g_csL;
@@ -114,7 +115,10 @@ static int lua_prefetch_http_file(lua_State *L)
 	else
 	{
 		while (!feof(f))
-			fread(buf, 1, sizeof(buf), f);
+		{
+			if (fread(buf, 1, sizeof(buf), f) != sizeof(buf))
+				break;
+		}
 	}
 
 	fclose(f);
@@ -460,6 +464,20 @@ DWORD WINAPI luadebug_thread(LPVOID p)
 	return 0;
 }
 
+int lua_stop_all_handles(lua_State*L)
+{
+	stop_all_handles();
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
+int lua_clear_all_handles(lua_State*L)
+{
+	clear_all_handles();
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
 extern "C" int luaopen_cjson_safe(lua_State *l);
 bool lua_inited = false;
 int dwindow_lua_init () 
@@ -510,6 +528,10 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("LockCritSec") = &luaLockCritSec;
 	g_lua_core_manager->get_variable("UnlockCritSec") = &luaUnlockCritSec;
 	g_lua_core_manager->get_variable("DestroyCritSec") = &luaDestroyCritSec;
+
+	// file hooker
+	g_lua_core_manager->get_variable("clear_all_handles") = &lua_clear_all_handles;
+	g_lua_core_manager->get_variable("stop_all_handles") = &lua_stop_all_handles;
 
 
 	g_lua_core_manager->get_variable("cjson") = &luaopen_cjson_safe;

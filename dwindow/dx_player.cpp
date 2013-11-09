@@ -3915,6 +3915,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 HRESULT dx_player::prepare_file(const wchar_t *pathname, IBaseFilter **out)
 {
+	CoInitialize(NULL);
 	dwindow_log_line(L"start preloading %s", pathname);
 
 	if (wcsstr_nocase(pathname, L"http://") == pathname)

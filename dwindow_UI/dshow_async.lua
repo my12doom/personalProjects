@@ -56,6 +56,7 @@ function async_funcs.seek(...)
 end
 
 function async_funcs.reset(...)
+	core.stop_all_handles()
 	queue_lock:lock()
 	async_funcs_remove(removeall)
 	table.insert(dshow_queue, {core_funcs.reset,...})
@@ -63,6 +64,7 @@ function async_funcs.reset(...)
 end
 
 function async_funcs.reset_and_loadfile(...)
+	core.stop_all_handles()
 	queue_lock:lock()
 	async_funcs_remove(removeall)
 	table.insert(dshow_queue, {core_funcs.reset_and_loadfile,...})

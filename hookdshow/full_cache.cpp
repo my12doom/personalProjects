@@ -3,7 +3,7 @@
 #include "time.h"
 
 static const __int64 PRELOADING_SIZE = 1024*1024;
-static const __int64 BLOCK_SIZE = 32*1024;
+static const __int64 BLOCK_SIZE = 64*1024;
 static const DWORD WORKER_TIMEOUT = 5000;
 static const DWORD WORKER_COUNT = 3;
 
@@ -148,10 +148,10 @@ int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary, b
 
 		// start at block boundrys
 //  		pos.start = (pos.start / BLOCK_SIZE) * BLOCK_SIZE;
-		pos.start = pos.start / BLOCK_SIZE * BLOCK_SIZE;
-//		pos.start &= 0xffffffffffff0000;
+//		pos.start = pos.start / BLOCK_SIZE * BLOCK_SIZE;
+// 		pos.start &= 0xffffffffffff0000;
 
-		printf("new thread start @ %d\n", (int)pos.start);
+		LOGE("new thread start @ %d\n", (int)pos.start);
 		inet_worker *worker = new inet_worker(m_URL.c_str(), pos.start, this);
 		m_active_workers.push_back(worker);
 		m_worker_pool.submmit(worker);
@@ -244,7 +244,7 @@ void inet_worker::run()
 		{
 			if (get_timeout_left() <= 0)
 			{
-				printf("worker %08x timeout, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size(), (int)m_pos, (int)m_maxpos);
+				LOGE("worker %08x timeout, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size(), (int)m_pos, (int)m_maxpos);
 				return;
 			}
 			else if (m_manager->m_active_workers.size() > 1)
@@ -260,14 +260,14 @@ void inet_worker::run()
 		// network error
 		if (o<=0 || m_exit_signaled)
 		{
-			printf("worker %08x shutdown or network error, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size()-1, (int)m_pos, (int)m_maxpos);
+			LOGE("worker %08x shutdown or network error, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size()-1, (int)m_pos, (int)m_maxpos);
 			return;
 		}
 
 		fragment frag = {m_pos, m_pos + o};
 		if (disk->feed(block, frag) != 0)
 		{
-			printf("worker %08x hit a disk wall, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size()-1, (int)m_pos, (int)m_maxpos);
+			LOGE("worker %08x hit a disk wall, %d worker left, pos: %d - %d\n", this, m_manager->m_active_workers.size()-1, (int)m_pos, (int)m_maxpos);
 			return;		// hit a disk wall or disk error
 		}
 
@@ -371,7 +371,7 @@ inet_file::~inet_file()
 }
 
 
-int inet_file::get(void *buf, fragment &pos)
+int inet_file::get(void *buf, fragment &pos, bool *cancel)
 {
 	{
 		myCAutoLock lck2(&m_access_lock);
@@ -433,6 +433,14 @@ int inet_file::get(void *buf, fragment &pos)
 
 		if (!this_round_got)
 		{
+			// return error if cancel becomes true
+			// pos value undefined
+			if (cancel && * cancel)
+			{
+				pos.end = pos.start;
+				return -1;
+			}
+
 			// this fragment is not handled by any of disk fragments.
 			// start inet thread here
 			m_worker_manager->hint(frag, true, debug);

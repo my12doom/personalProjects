@@ -29,7 +29,7 @@ function popup_dwindow2()
 		},
 		{
 			string = L("Close"),
-			grayed = not player.movie_loaded,
+			grayed = not (player.movie_loaded or player.movie_loading),
 			on_command = function() player.reset() end
 		},
 		{

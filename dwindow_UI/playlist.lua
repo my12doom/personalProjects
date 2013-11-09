@@ -177,6 +177,7 @@ function player.seek(target)
 		player.reset_and_loadfile(playlist.L[segment].url, playlist.R and playlist.R[segment].url)
 		if not playing then player.pause() end
 		playlist.current = segment
+		target = 0
 	end
 	
 	oseek(target)

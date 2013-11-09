@@ -146,7 +146,7 @@ public:
 	~inet_file();
 
 	int setURL(const wchar_t *URL);
-	int get(void *buf, fragment &pos);
+	int get(void *buf, fragment &pos, bool *cancel = NULL);
 	int pre_read(fragment &pos);
 	__int64 getdisksize();
 	__int64 getsize(){return m_filesize;}
