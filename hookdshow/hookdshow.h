@@ -2,6 +2,7 @@
 
 #include <wchar.h>
 #include <list>
+#include <map>
 
 
 int enable_hookdshow();
@@ -18,6 +19,7 @@ public:
 	virtual __int64 size() = 0;
 	virtual __int64 get(void *buf, __int64 offset, int size) = 0;
 	virtual void close() = 0;				// cancel all pending get() operation and reject all further get()
+	virtual std::map<__int64, __int64> buffer() = 0;
 };
 
 class HTTPHook : public IHookProvider
@@ -28,6 +30,7 @@ public:
 	__int64 size();
 	__int64 get(void *buf, __int64 offset, int size);
 	void close();				// cancel all pending get() operation and reject all further get()
+	std::map<__int64, __int64> buffer();
 private:
 	void *m_core;
 	bool m_closed;
@@ -43,6 +46,7 @@ public:
 	__int64 get(void *buf, __int64 offset, int size);
 	void close();				// cancel all pending get() operation and reject all further get()
 								// not yet implemented
+	std::map<__int64, __int64> buffer();
 private:
 	TorrentHook();
 	bool m_closed;

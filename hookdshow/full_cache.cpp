@@ -148,7 +148,7 @@ int inet_worker_manager::hint(fragment pos, bool open_new_worker_if_necessary, b
 
 		// start at block boundrys
 //  		pos.start = (pos.start / BLOCK_SIZE) * BLOCK_SIZE;
-//		pos.start = pos.start / BLOCK_SIZE * BLOCK_SIZE;
+		pos.start = pos.start / BLOCK_SIZE * BLOCK_SIZE;
 // 		pos.start &= 0xffffffffffff0000;
 
 		LOGE("new thread start @ %d\n", (int)pos.start);

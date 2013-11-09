@@ -99,31 +99,30 @@ static int lua_prefetch_http_file(lua_State *L)
 		return 1;
 	}
 
+	Sleep(3000);
+	stop_all_handles();
+	fseek(f, 0, SEEK_END);
+	if (end <= 0)
+		end = ftell(f);
 	fseek(f, start, SEEK_SET);
 
-	if (end > 0)
+	int noerror = 1;
+
+	int size = end - start;
+	while (size>0)
 	{
-		int size = end - start;
-		while (size>0)
+		int got = fread(buf,1 , min(sizeof(buf), size), f);
+		if (got != min(sizeof(buf), size))
 		{
-			int got = fread(buf,1 , min(sizeof(buf), size), f);
-			if (got != min(sizeof(buf), size))
-				break;
-			size -= got;
+			noerror = 0;
+			break;
 		}
-	}
-	else
-	{
-		while (!feof(f))
-		{
-			if (fread(buf, 1, sizeof(buf), f) != sizeof(buf))
-				break;
-		}
+		size -= got;
 	}
 
 	fclose(f);
 
-	lua_pushboolean(L, 1);
+	lua_pushboolean(L, noerror);
 	return 1;
 }
 

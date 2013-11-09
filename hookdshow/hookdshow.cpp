@@ -178,6 +178,7 @@ static BOOL WINAPI MineReadFile(
 
 		myCAutoLock lck(&p->cs);
 		int pre_reader_block_size = 2048*1024;
+		nNumberOfBytesToRead = min(nNumberOfBytesToRead, p->ifile->size() - p->pos);
 
 		if (lpOverlapped)
 		{
@@ -575,4 +576,10 @@ HTTPHook::HTTPHook(void *core)
 ,m_closed(false)
 {
 
+}
+std::map<__int64, __int64> HTTPHook::buffer()
+{
+	std::map<__int64, __int64> o;
+
+	return o;
 }

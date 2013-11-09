@@ -310,11 +310,27 @@ local function bo3d_update()
 	
 	printtable(files)
 	
+	local prefetch_success = true
+	
 	for _, v in pairs(files) do
-		core.prefetch_http_file(v)
+		local retry_left = 3
+		local this_file_ok
+		
+		while retry_left > 0 do
+			if (not this_file_ok) and (not core.prefetch_http_file(v)) then
+				retry_left = retry_left - 1
+			else
+				retry_left = 0
+				this_file_ok = true
+			end
+		end
+		
+		prefetch_success = prefetch_success and this_file_ok
 	end
 	
-	setting.bo3d = files.entry
+	if prefetch_success then
+		setting.bo3d = files.entry
+	end
 end
 
 local bo3d_thread
