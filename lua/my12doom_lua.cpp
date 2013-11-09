@@ -135,6 +135,56 @@ typedef struct
 } lua_signature;
 #pragma pack(pop)
 
+static int load_signed_string(lua_State *L)
+{
+	if (lua_type(L, -1) != LUA_TSTRING)
+		return 0;
+
+	const char *string = lua_tostring(L, 1);
+	int len = lua_objlen(L, -1);
+
+
+	// check signatures
+
+	lua_signature *sig_txt = (lua_signature *)string;
+	if (len < sizeof(lua_signature) 
+		|| memcmp(sig_txt->leading, "\xef\xbb\xbf-- signature=\"", sizeof(sig_txt->leading))
+		|| memcmp(sig_txt->ending, "\"\r\n", sizeof(sig_txt->ending)))
+	{
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "no signature found");
+		return 2;
+	}
+
+	unsigned char sha1[20] = {0};
+	SHA1Hash(sha1, (const unsigned char*)string+sizeof(lua_signature), len-sizeof(lua_signature));
+	char signature[128+8];
+	
+	for(int i=0; i<128; i++)
+		sscanf(sig_txt->signature+i*2, "%02X", signature+i);
+
+	RSA_dwindow_network_public(signature, signature);
+
+	if (memcmp(sha1, signature, sizeof(sha1)) != 0)
+	{
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "invalid signature found");
+
+		return 2;
+	}
+	if(luaL_loadstring(L, string+3))
+	{
+		const char * result;
+		result = lua_tostring(L, -1);
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, result);
+
+		return 2;
+	}
+
+	return 1;
+}
+
 
 static int execute_signed_luafile(lua_State *L)
 {
@@ -511,6 +561,7 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("GetTickCount") = &lua_GetTickCount;
 	g_lua_core_manager->get_variable("execute_luafile") = &execute_luafile;
 	g_lua_core_manager->get_variable("execute_signed_luafile") = &execute_signed_luafile;
+	g_lua_core_manager->get_variable("load_signed_string") = &load_signed_string;
 	g_lua_core_manager->get_variable("loaddll") = &loaddll;
 	g_lua_core_manager->get_variable("track_back") = &track_back;
 	g_lua_core_manager->get_variable("http_request") = &http_request;
