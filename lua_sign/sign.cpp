@@ -55,9 +55,9 @@ int main()
 	{
 		// existing signature, remove it
 		fseek(input, 0, SEEK_END);
-		file_size = ftell(input) - sizeof(sig_txt) -3;	// skip UTF8 BOM
+		file_size = ftell(input) - sizeof(sig_txt);
 		data = new unsigned char[file_size];
-		fseek(input, sizeof(sig_txt)+3, SEEK_SET);
+		fseek(input, sizeof(sig_txt), SEEK_SET);
 		fread(data, 1, file_size, input);
 	}
 
