@@ -2027,6 +2027,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dwindow_UI\bittorrent.lua"
+				>
+			</File>
+			<File
 				RelativePath="..\dwindow_UI\Container.lua"
 				>
 			</File>

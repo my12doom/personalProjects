@@ -553,6 +553,7 @@ int dwindow_lua_init ()
 
 	// utils
 	g_lua_core_manager = new lua_manager("core");
+	g_lua_core_manager->get_variable("app_path") = g_apppath;
 	g_lua_core_manager->get_variable("ApplySetting") = &lua_ApplySetting;
 	g_lua_core_manager->get_variable("FAILED") = &luaFAILED;
 	g_lua_core_manager->get_variable("GetTickCount") = &lua_GetTickCount;

@@ -471,4 +471,7 @@ if core and core.execute_luafile then
 	core.load_settings();
 	print(core.execute_luafile(lua_path .. "language.lua"))
 	print(core.execute_luafile(lua_path .. "parser.lua"))
+	print(core.execute_luafile(lua_path .. "bittorrent.lua"))
+	print(core.loaddll(core.app_path .. "lua_sample.dll"))
+	create_torrent_hooker()
 end

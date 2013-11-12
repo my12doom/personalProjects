@@ -3688,6 +3688,12 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		wcscpy(file_to_play, URL2Token(file_to_play));
 	}
 
+	// torrent?
+	if (wcsstr_nocase(file_to_play, L".torrent"))
+	{
+		wcscpy(file_to_play, URL2Token(file_to_play));
+	}
+
 	// subtitle file
 	HRESULT hr;
 // 	hr = load_subtitle(pathname, false);
@@ -3919,6 +3925,8 @@ HRESULT dx_player::prepare_file(const wchar_t *pathname, IBaseFilter **out)
 	dwindow_log_line(L"start preloading %s", pathname);
 
 	if (wcsstr_nocase(pathname, L"http://") == pathname)
+		pathname = URL2Token(pathname);
+	else if (wcsstr_nocase(pathname, L".torrent"))
 		pathname = URL2Token(pathname);
 	else
 		return S_FALSE;

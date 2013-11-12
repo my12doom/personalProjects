@@ -460,7 +460,21 @@ CCritSec g_active_httpfile_list_lock;
 
 IHookProvider *open_http_file(const wchar_t *URL)
 {
-	return HTTPHook::create(URL);
+	IHookProvider* p = HTTPHook::create(URL);
+	if (p)
+		return p;
+
+	luaState L;
+	lua_getglobal(L, "create_torrent_hooker");
+	if (lua_isfunction(L, -1))
+	{
+		lua_pushstring(L, W2UTF8(URL));
+		lua_mypcall(L, 1, 1, 0);
+
+		p = (IHookProvider*)lua_touserdata(L, -1);
+	}
+
+	return p;
 }
 
 void close_http_file(IHookProvider *p)
