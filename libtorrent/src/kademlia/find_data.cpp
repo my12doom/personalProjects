@@ -57,15 +57,15 @@ using detail::read_v6_endpoint;
 void find_data_observer::reply(msg const& m)
 {
 #ifdef TORRENT_DHT_VERBOSE_LOGGING
-	std::stringstream log_line;
-	log_line << "[" << m_algorithm.get() << "] incoming get_peer response [ ";
+// 	std::stringstream log_line;
+// 	log_line << "[" << m_algorithm.get() << "] incoming get_peer response [ ";
 #endif
 
 	lazy_entry const* r = m.message.dict_find_dict("r");
 	if (!r)
 	{
 #ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(traversal) << "[" << m_algorithm.get() << "] missing response dict";
+// 		TORRENT_LOG(traversal) << "[" << m_algorithm.get() << "] missing response dict";
 #endif
 		return;
 	}
@@ -74,7 +74,7 @@ void find_data_observer::reply(msg const& m)
 	if (!id || id->string_length() != 20)
 	{
 #ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(traversal) << "[" << m_algorithm.get() << "] invalid id in response";
+// 		TORRENT_LOG(traversal) << "[" << m_algorithm.get() << "] invalid id in response";
 #endif
 		return;
 	}
@@ -86,7 +86,7 @@ void find_data_observer::reply(msg const& m)
 			node_id(id->string_ptr()), token->string_value());
 
 #ifdef TORRENT_DHT_VERBOSE_LOGGING
-		log_line << " token: " << to_hex(token->string_value());
+// 		log_line << " token: " << to_hex(token->string_value());
 #endif
 	}
 
@@ -102,7 +102,7 @@ void find_data_observer::reply(msg const& m)
 			char const* end = peers + n->list_at(0)->string_length();
 
 #ifdef TORRENT_DHT_VERBOSE_LOGGING
-			log_line << " p: " << ((end - peers) / 6);
+// 			log_line << " p: " << ((end - peers) / 6);
 #endif
 			while (end - peers >= 6)
 				peer_list.push_back(read_v4_endpoint<tcp::endpoint>(peers));
@@ -112,7 +112,7 @@ void find_data_observer::reply(msg const& m)
 			// assume it's uTorrent/libtorrent format
 			read_endpoint_list<tcp::endpoint>(n, peer_list);
 #ifdef TORRENT_DHT_VERBOSE_LOGGING
-			log_line << " p: " << n->list_size();
+// 			log_line << " p: " << n->list_size();
 #endif
 		}
 		static_cast<find_data*>(m_algorithm.get())->got_peers(peer_list);
@@ -127,7 +127,7 @@ void find_data_observer::reply(msg const& m)
 		char const* end = nodes + n->string_length();
 
 #ifdef TORRENT_DHT_VERBOSE_LOGGING
-		log_line << " nodes: " << ((end - nodes) / 26);
+// 		log_line << " nodes: " << ((end - nodes) / 26);
 #endif
 		while (end - nodes >= 26)
 		{
@@ -142,7 +142,7 @@ void find_data_observer::reply(msg const& m)
 	if (n)
 	{
 #ifdef TORRENT_DHT_VERBOSE_LOGGING
-		log_line << " nodes2: " << n->list_size();
+// 		log_line << " nodes2: " << n->list_size();
 #endif
 		for (int i = 0; i < n->list_size(); ++i)
 		{
@@ -163,8 +163,8 @@ void find_data_observer::reply(msg const& m)
 		}
 	}
 #ifdef TORRENT_DHT_VERBOSE_LOGGING
-	log_line << " ]";
-	TORRENT_LOG(traversal) << log_line.str();
+// 	log_line << " ]";
+// 	TORRENT_LOG(traversal) << log_line.str();
 #endif
 	done();
 }

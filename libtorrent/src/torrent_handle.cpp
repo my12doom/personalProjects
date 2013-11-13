@@ -81,6 +81,7 @@ namespace libtorrent
 		, paused(false)
 		, auto_managed(false)
 		, sequential_download(false)
+		, user_defined_download(false)	// jackarain: �û��Զ������ط�ʽ.
 		, is_seeding(false)
 		, is_finished(false)
 		, has_metadata(false)
@@ -547,6 +548,13 @@ namespace libtorrent
 		TORRENT_ASYNC_CALL1(set_sequential_download, sd);
 	}
 
+	//jackarain
+	void torrent_handle::set_user_defined_download(bool sd) const
+	{
+		INVARIANT_CHECK;
+		TORRENT_ASYNC_CALL1(set_user_defined_download, sd);
+	}
+
 	std::string torrent_handle::name() const
 	{
 		INVARIANT_CHECK;
@@ -811,6 +819,13 @@ namespace libtorrent
 	{
 		INVARIANT_CHECK;
 		TORRENT_ASYNC_CALL1(read_piece, piece);
+	}
+
+	// jackarain
+	void torrent_handle::read_piece(int piece, read_data_fun rdf) const
+	{
+		INVARIANT_CHECK;
+		TORRENT_ASYNC_CALL2(read_piece, piece, rdf);
 	}
 
 	bool torrent_handle::have_piece(int piece) const

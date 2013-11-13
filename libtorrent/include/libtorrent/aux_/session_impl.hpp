@@ -43,7 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifdef WITH_SHIPPED_GEOIP_H
 #include "libtorrent/GeoIP.h"
 #else
-#include <GeoIP.h>
+#include <libtorrent/GeoIP.h>
 #endif
 #endif
 

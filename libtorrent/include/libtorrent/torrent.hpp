@@ -195,7 +195,9 @@ namespace libtorrent
 			bool fail;
 		};
 		void read_piece(int piece);
+		void read_piece(int piece, read_data_fun rdf);		//jack
 		void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, read_piece_struct* rp);
+		void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, boost::shared_ptr<read_piece_struct> rp, read_data_fun rdf); // jack
 
 		storage_mode_t storage_mode() const { return (storage_mode_t)m_storage_mode; }
 		storage_interface* get_storage()
@@ -221,6 +223,11 @@ namespace libtorrent
 		void set_sequential_download(bool sd);
 		bool is_sequential_download() const
 		{ return m_sequential_download; }
+
+		// jackarain
+		void set_user_defined_download(bool ud);
+		bool is_user_defined_download() const
+		{ return m_user_defined_download; }
 	
 		void queue_up();
 		void queue_down();
@@ -1142,6 +1149,9 @@ namespace libtorrent
 		// when this settings is set, this variable will keep
 		// its value until the piece picker is created
 		bool m_sequential_download:1;
+
+		// jackarain:
+		bool m_user_defined_download:1;
 
 		// is false by default and set to
 		// true when the first tracker reponse

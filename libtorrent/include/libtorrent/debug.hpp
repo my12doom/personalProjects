@@ -143,12 +143,19 @@ namespace libtorrent
 		logger(std::string const& logpath, std::string const& filename
 			, int instance, bool append)
 		{
+			std::string t = filename;
+			char tmp[2048];
+			strcpy(tmp, t.c_str());
+			for(int i=0; i<strlen(tmp); i++)
+				tmp[i] = tmp[i] == ':' ? '.' : tmp[i];
+			t = tmp;
+
 			char log_name[512];
 			snprintf(log_name, sizeof(log_name), "libtorrent_logs%d", instance);
 			std::string dir(complete(combine_path(logpath, log_name)));
 			error_code ec;
 			if (!exists(dir)) create_directories(dir, ec);
-			m_filename = combine_path(dir, filename);
+			m_filename = combine_path(dir, t);
 
 			mutex::scoped_lock l(file_mutex);
 			open(!append);

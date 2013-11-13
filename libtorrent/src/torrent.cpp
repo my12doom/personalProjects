@@ -385,6 +385,7 @@ namespace libtorrent
 		, m_last_working_tracker(-1)
 		, m_finished_time(0)
 		, m_sequential_download(false)
+		, m_user_defined_download(false)		// jack
 		, m_got_tracker_response(false)
 		, m_connections_initialized(false)
 		, m_super_seeding(false)
@@ -1027,6 +1028,30 @@ namespace libtorrent
 		}
 	}
 
+	// jackarain:
+	void torrent::read_piece(int piece, read_data_fun rdf)
+	{
+		TORRENT_ASSERT(piece >= 0 && piece < m_torrent_file->num_pieces());
+		int piece_size = m_torrent_file->piece_size(piece);
+		int blocks_in_piece = (piece_size + block_size() - 1) / block_size();
+
+		boost::shared_ptr<read_piece_struct> rp(new read_piece_struct);
+		rp->piece_data.reset(new (std::nothrow) char[piece_size]);
+		rp->blocks_left = 0;
+		rp->fail = false;
+
+		peer_request r;
+		r.piece = piece;
+		r.start = 0;
+		for (int i = 0; i < blocks_in_piece; ++i, r.start += block_size())
+		{
+			r.length = (std::min)(piece_size - r.start, block_size());
+			filesystem().async_read(r, boost::bind(&torrent::on_disk_read_complete
+				, shared_from_this(), _1, _2, r, rp, rdf));
+			++rp->blocks_left;
+		}
+	}
+
 	void torrent::send_share_mode()
 	{
 #ifndef TORRENT_DISABLE_EXTENSIONS
@@ -1210,6 +1235,43 @@ namespace libtorrent
 				get_handle(), r.piece, rp->piece_data, size));
 			delete rp;
 		}
+	}
+
+	// jackarain
+	void torrent::on_disk_read_complete(int ret, disk_io_job const& j,
+		peer_request r, boost::shared_ptr<read_piece_struct> rp, read_data_fun rdf)
+	{
+		TORRENT_ASSERT(m_ses.is_network_thread());
+
+		--rp->blocks_left;
+		if (ret != r.length)
+		{
+			rp->fail = true;
+			handle_disk_error(j);
+		}
+		else
+		{
+			std::memcpy(rp->piece_data.get() + r.start, j.buffer, r.length);
+		}
+
+		if (rp->blocks_left == 0)
+		{
+			int size = m_torrent_file->piece_size(r.piece);
+			if (rp->fail)
+			{
+				rp->piece_data.reset();
+				size = 0;
+			}
+
+			if (rdf)
+			{
+				rdf(rp->piece_data.get(), r.piece * boost::int64_t(m_torrent_file->piece_length()), size);
+			}
+
+			// delete rp;
+		}
+
+		m_storage->get_storage_impl()->disk_pool()->free_buffer(j.buffer);
 	}
 
 	void torrent::add_piece(int piece, char const* data, int flags)
@@ -5138,6 +5200,9 @@ namespace libtorrent
 		int sequential_ = rd.dict_find_int_value("sequential_download", -1);
 		if (sequential_ != -1) set_sequential_download(sequential_);
 
+		int ud = rd.dict_find_int_value("user_defined_download", -1);
+		if (ud != -1) set_sequential_download(ud);
+
 		if (!m_override_resume_data)
 		{
 			int paused_ = rd.dict_find_int_value("paused", -1);
@@ -5254,6 +5319,8 @@ namespace libtorrent
 		ret["num_downloaders"] = m_downloaders;
 
 		ret["sequential_download"] = m_sequential_download;
+		ret["user_defined_download"] = m_user_defined_download;		// jackarain
+
 
 		ret["seed_mode"] = m_seed_mode;
 		ret["super_seeding"] = m_super_seeding;
@@ -6680,6 +6747,16 @@ namespace libtorrent
 		m_sequential_download = sd;
 
 		m_need_save_resume_data = true;
+
+		state_updated();
+	}
+
+	// jackarain
+	void torrent::set_user_defined_download(bool ud)
+	{
+		TORRENT_ASSERT(m_ses.is_network_thread());
+		if (m_user_defined_download == ud) return;
+		m_user_defined_download = ud;
 
 		state_updated();
 	}
@@ -8619,6 +8696,7 @@ namespace libtorrent
 		st->paused = is_torrent_paused();
 		st->auto_managed = m_auto_managed;
 		st->sequential_download = m_sequential_download;
+		st->user_defined_download = m_user_defined_download;		// jack
 		st->is_seeding = is_seed();
 		st->is_finished = is_finished();
 		st->super_seeding = m_super_seeding;

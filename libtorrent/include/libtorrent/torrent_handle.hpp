@@ -66,6 +66,9 @@ namespace libtorrent
 		struct session_impl;
 	}
 
+	// jackarain: ¶ÁÈ¡Êý¾Ý.
+	typedef boost::function<void (char*, size_type, size_type)> read_data_fun;
+
 	struct torrent_plugin;
 	struct peer_info;
 	struct peer_list_entry;
@@ -165,6 +168,8 @@ namespace libtorrent
 		enum flags_t { overwrite_existing = 1 };
 		void add_piece(int piece, char const* data, int flags = 0) const;
 		void read_piece(int piece) const;
+		// jackarain
+		void read_piece(int piece, read_data_fun rdf) const;
 		bool have_piece(int piece) const;
 
 		void get_full_peer_list(std::vector<peer_list_entry>& v) const;
@@ -380,6 +385,9 @@ namespace libtorrent
 
 		void set_sequential_download(bool sd) const;
 
+		// jack
+		void set_user_defined_download(bool sd) const;
+
 		// manually connect a peer
 		void connect_peer(tcp::endpoint const& adr, int source = 0) const;
 
@@ -468,6 +476,7 @@ namespace libtorrent
 		bool paused;
 		bool auto_managed;
 		bool sequential_download;
+		bool user_defined_download;			// jack
 		bool is_seeding;
 		bool is_finished;
 		bool has_metadata;
