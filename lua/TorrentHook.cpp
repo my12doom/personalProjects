@@ -3,7 +3,6 @@
 #include "libtorrent/entry.hpp"
 #include "libtorrent/bencode.hpp"
 #include "libtorrent/session.hpp"
-#include <libtorrent/extern_read_op.hpp>
 #include <libtorrent/alert_types.hpp>
 #include <boost/unordered_set.hpp>
 #include <conio.h>

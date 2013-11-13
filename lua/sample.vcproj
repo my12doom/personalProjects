@@ -269,7 +269,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="E:\libtorrent\zlib;E:\libtorrent\include;E:\boost;E:\openssl\include"
+				AdditionalIncludeDirectories="..\libtorrent\zlib;..\libtorrent\include;E:\boost;E:\openssl\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOOST_ASIO_ENABLE_CANCELIO;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0501;__USE_W32_SOCKETS;TORRENT_STATS;TORRENT_USE_OPENSSL;UNICODE;_UNICODE;BOOST_ASIO_SEPARATE_COMPILATION"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -557,480 +557,470 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Í·ÎÄ¼þ"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+			Name="libtorrent"
 			>
 			<File
-				RelativePath="..\..\libtorrent\zlib\adler32.c"
+				RelativePath="..\libtorrent\zlib\adler32.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\alert.cpp"
+				RelativePath="..\libtorrent\src\alert.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\allocator.cpp"
+				RelativePath="..\libtorrent\src\allocator.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\asio.cpp"
+				RelativePath="..\libtorrent\src\asio.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\asio_ssl.cpp"
+				RelativePath="..\libtorrent\src\asio_ssl.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\assert.cpp"
+				RelativePath="..\libtorrent\src\assert.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\bandwidth_limit.cpp"
+				RelativePath="..\libtorrent\src\bandwidth_limit.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\bandwidth_manager.cpp"
+				RelativePath="..\libtorrent\src\bandwidth_manager.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\bandwidth_queue_entry.cpp"
+				RelativePath="..\libtorrent\src\bandwidth_queue_entry.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\bloom_filter.cpp"
+				RelativePath="..\libtorrent\src\bloom_filter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\broadcast_socket.cpp"
+				RelativePath="..\libtorrent\src\broadcast_socket.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\bt_peer_connection.cpp"
+				RelativePath="..\libtorrent\src\bt_peer_connection.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\chained_buffer.cpp"
+				RelativePath="..\libtorrent\src\chained_buffer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\compress.c"
+				RelativePath="..\libtorrent\zlib\compress.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\connection_queue.cpp"
+				RelativePath="..\libtorrent\src\connection_queue.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\ConvertUTF.cpp"
+				RelativePath="..\libtorrent\src\ConvertUTF.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\crc32.c"
+				RelativePath="..\libtorrent\zlib\crc32.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\crc32.h"
+				RelativePath="..\libtorrent\zlib\crc32.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\create_torrent.cpp"
+				RelativePath="..\libtorrent\src\create_torrent.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\deflate.c"
+				RelativePath="..\libtorrent\zlib\deflate.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\deflate.h"
+				RelativePath="..\libtorrent\zlib\deflate.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\kademlia\dht_tracker.cpp"
+				RelativePath="..\libtorrent\src\kademlia\dht_tracker.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\disk_buffer_holder.cpp"
+				RelativePath="..\libtorrent\src\disk_buffer_holder.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\disk_buffer_pool.cpp"
+				RelativePath="..\libtorrent\src\disk_buffer_pool.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\disk_io_thread.cpp"
+				RelativePath="..\libtorrent\src\disk_io_thread.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\entry.cpp"
+				RelativePath="..\libtorrent\src\entry.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\enum_net.cpp"
+				RelativePath="..\libtorrent\src\enum_net.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\error_code.cpp"
+				RelativePath="..\libtorrent\src\error_code.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\escape_string.cpp"
+				RelativePath="..\libtorrent\src\escape_string.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\file.cpp"
+				RelativePath="..\libtorrent\src\file.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\file_pool.cpp"
+				RelativePath="..\libtorrent\src\file_pool.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\file_storage.cpp"
+				RelativePath="..\libtorrent\src\file_storage.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\kademlia\find_data.cpp"
+				RelativePath="..\libtorrent\src\kademlia\find_data.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\GeoIP.c"
+				RelativePath="..\libtorrent\src\GeoIP.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\gzclose.c"
+				RelativePath="..\libtorrent\zlib\gzclose.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\gzguts.h"
+				RelativePath="..\libtorrent\zlib\gzguts.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\gzip.cpp"
+				RelativePath="..\libtorrent\src\gzip.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\gzlib.c"
+				RelativePath="..\libtorrent\zlib\gzlib.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\gzread.c"
+				RelativePath="..\libtorrent\zlib\gzread.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\gzwrite.c"
+				RelativePath="..\libtorrent\zlib\gzwrite.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\http_connection.cpp"
+				RelativePath="..\libtorrent\src\http_connection.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\http_parser.cpp"
+				RelativePath="..\libtorrent\src\http_parser.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\http_seed_connection.cpp"
+				RelativePath="..\libtorrent\src\http_seed_connection.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\http_stream.cpp"
+				RelativePath="..\libtorrent\src\http_stream.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\http_tracker_connection.cpp"
+				RelativePath="..\libtorrent\src\http_tracker_connection.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\i2p_stream.cpp"
+				RelativePath="..\libtorrent\src\i2p_stream.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\identify_client.cpp"
+				RelativePath="..\libtorrent\src\identify_client.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\infback.c"
+				RelativePath="..\libtorrent\zlib\infback.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\inffast.c"
+				RelativePath="..\libtorrent\zlib\inffast.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\inffast.h"
+				RelativePath="..\libtorrent\zlib\inffast.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\inffixed.h"
+				RelativePath="..\libtorrent\zlib\inffixed.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\inflate.c"
+				RelativePath="..\libtorrent\zlib\inflate.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\inflate.h"
+				RelativePath="..\libtorrent\zlib\inflate.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\inftrees.c"
+				RelativePath="..\libtorrent\zlib\inftrees.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\inftrees.h"
+				RelativePath="..\libtorrent\zlib\inftrees.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\instantiate_connection.cpp"
+				RelativePath="..\libtorrent\src\instantiate_connection.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\ip_filter.cpp"
+				RelativePath="..\libtorrent\src\ip_filter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\lazy_bdecode.cpp"
+				RelativePath="..\libtorrent\src\lazy_bdecode.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\logger.cpp"
+				RelativePath="..\libtorrent\src\logger.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\lsd.cpp"
+				RelativePath="..\libtorrent\src\lsd.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\lt_trackers.cpp"
+				RelativePath="..\libtorrent\src\lt_trackers.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\magnet_uri.cpp"
+				RelativePath="..\libtorrent\src\magnet_uri.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\Makefile.am"
+				RelativePath="..\libtorrent\src\metadata_transfer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\Makefile.in"
+				RelativePath="..\libtorrent\src\mpi.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\metadata_transfer.cpp"
+				RelativePath="..\libtorrent\src\natpmp.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\mpi.c"
+				RelativePath="..\libtorrent\src\kademlia\node.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\natpmp.cpp"
+				RelativePath="..\libtorrent\src\kademlia\node_id.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\kademlia\node.cpp"
+				RelativePath="..\libtorrent\src\packet_buffer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\kademlia\node_id.cpp"
+				RelativePath="..\libtorrent\src\parse_url.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\packet_buffer.cpp"
+				RelativePath="..\libtorrent\src\pe_crypto.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\parse_url.cpp"
+				RelativePath="..\libtorrent\src\peer_connection.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\pe_crypto.cpp"
+				RelativePath="..\libtorrent\src\piece_picker.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\peer_connection.cpp"
+				RelativePath="..\libtorrent\src\policy.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\piece_picker.cpp"
+				RelativePath="..\libtorrent\src\puff.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\policy.cpp"
+				RelativePath="..\libtorrent\src\random.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\puff.cpp"
+				RelativePath="..\libtorrent\src\kademlia\refresh.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\random.cpp"
+				RelativePath="..\libtorrent\src\kademlia\routing_table.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\kademlia\refresh.cpp"
+				RelativePath="..\libtorrent\src\kademlia\rpc_manager.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\kademlia\routing_table.cpp"
+				RelativePath="..\libtorrent\src\rsa.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\kademlia\rpc_manager.cpp"
+				RelativePath="..\libtorrent\src\rss.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\rsa.cpp"
+				RelativePath="..\libtorrent\src\session.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\rss.cpp"
+				RelativePath="..\libtorrent\src\session_impl.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\session.cpp"
+				RelativePath="..\libtorrent\src\settings.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\session_impl.cpp"
+				RelativePath="..\libtorrent\src\sha1.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\settings.cpp"
+				RelativePath="..\libtorrent\src\smart_ban.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\sha1.cpp"
+				RelativePath="..\libtorrent\src\socket_io.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\smart_ban.cpp"
+				RelativePath="..\libtorrent\src\socket_type.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\socket_io.cpp"
+				RelativePath="..\libtorrent\src\socks5_stream.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\socket_type.cpp"
+				RelativePath="..\libtorrent\src\stat.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\socks5_stream.cpp"
+				RelativePath="..\libtorrent\src\storage.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\stat.cpp"
+				RelativePath="..\libtorrent\src\string_util.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\storage.cpp"
+				RelativePath="..\libtorrent\src\thread.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\string_util.cpp"
+				RelativePath="..\libtorrent\src\time.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\thread.cpp"
+				RelativePath="..\libtorrent\src\timestamp_history.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\time.cpp"
+				RelativePath="..\libtorrent\src\torrent.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\timestamp_history.cpp"
+				RelativePath="..\libtorrent\src\torrent_handle.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\torrent.cpp"
+				RelativePath="..\libtorrent\src\torrent_info.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\torrent_handle.cpp"
+				RelativePath="..\libtorrent\src\tracker_manager.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\torrent_info.cpp"
+				RelativePath="..\libtorrent\src\kademlia\traversal_algorithm.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\tracker_manager.cpp"
+				RelativePath="..\libtorrent\zlib\trees.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\kademlia\traversal_algorithm.cpp"
+				RelativePath="..\libtorrent\zlib\trees.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\trees.c"
+				RelativePath="..\libtorrent\src\udp_socket.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\trees.h"
+				RelativePath="..\libtorrent\src\udp_tracker_connection.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\udp_socket.cpp"
+				RelativePath="..\libtorrent\zlib\uncompr.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\udp_tracker_connection.cpp"
+				RelativePath="..\libtorrent\src\upnp.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\uncompr.c"
+				RelativePath="..\libtorrent\src\ut_metadata.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\upnp.cpp"
+				RelativePath="..\libtorrent\src\ut_pex.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\ut_metadata.cpp"
+				RelativePath="..\libtorrent\src\utf8.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\ut_pex.cpp"
+				RelativePath="..\libtorrent\src\utp_socket_manager.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\utf8.cpp"
+				RelativePath="..\libtorrent\src\utp_stream.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\utp_socket_manager.cpp"
+				RelativePath="..\libtorrent\src\web_connection_base.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\utp_stream.cpp"
+				RelativePath="..\libtorrent\src\web_peer_connection.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\web_connection_base.cpp"
+				RelativePath="..\libtorrent\zlib\zconf.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\src\web_peer_connection.cpp"
+				RelativePath="..\libtorrent\zlib\zlib.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\zconf.h"
+				RelativePath="..\libtorrent\zlib\zutil.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libtorrent\zlib\zlib.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libtorrent\zlib\zutil.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libtorrent\zlib\zutil.h"
+				RelativePath="..\libtorrent\zlib\zutil.h"
 				>
 			</File>
 		</Filter>
