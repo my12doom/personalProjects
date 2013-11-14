@@ -3682,17 +3682,15 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 		}
 	}
 
-	// http?
-	if (wcsstr_nocase(file_to_play, L"http://") == file_to_play)
-	{
-		wcscpy(file_to_play, URL2Token(file_to_play));
-	}
-
-	// torrent?
-	if (wcsstr_nocase(file_to_play, L".torrent"))
-	{
-		wcscpy(file_to_play, URL2Token(file_to_play));
-	}
+	// reader probe?
+	luaState L;
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "probe_reader");
+	lua_pushstring(L, W2UTF8(pathname));
+	lua_mypcall(L, 1, 1, 0);
+	if(lua_toboolean(L, -1))
+		wcscpy(file_to_play, URL2Token(pathname));
+	lua_settop(L, 0);
 
 	// subtitle file
 	HRESULT hr;

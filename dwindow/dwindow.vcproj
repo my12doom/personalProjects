@@ -1939,6 +1939,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\lua\DWindowReader.h"
+				>
+			</File>
+			<File
 				RelativePath="..\lua\my12doom_lua.cpp"
 				>
 			</File>
@@ -2060,6 +2064,10 @@
 			</File>
 			<File
 				RelativePath="..\dwindow_UI\playlist.lua"
+				>
+			</File>
+			<File
+				RelativePath="..\dwindow_UI\readers.lua"
 				>
 			</File>
 			<Filter

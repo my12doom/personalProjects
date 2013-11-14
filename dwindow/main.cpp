@@ -53,8 +53,8 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 
-	enable_hookdshow();
 	dwindow_lua_init();
+	enable_hookdshow();
 	ui_lua_init();
 	player_lua_init();
 	my12doomRenderer_lua_init();

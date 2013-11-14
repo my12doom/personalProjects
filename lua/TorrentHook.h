@@ -1,8 +1,8 @@
 #pragma once
 
-#include "..\hookdshow\hookdshow.h"
+#include "DWindowReader.h"
 
-class TorrentHook : public IHookProvider
+class TorrentHook : public IDWindowReader
 {
 public:
 	static TorrentHook * create(const wchar_t *URL, void *extraInfo = NULL);			// create a instance, return NULL if not supported

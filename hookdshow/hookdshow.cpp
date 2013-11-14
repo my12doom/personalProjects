@@ -1,4 +1,7 @@
 #include "hookdshow.h"
+
+#include "..\lua\DWindowReader.h"
+#include <list>
 #include <Windows.h>
 #include "..\dwindow\global_funcs.h"
 #include "..\dwindow\dwindow_log.h"
@@ -19,10 +22,23 @@
 #pragma comment(lib, "strmiids.lib")
 void test_cache();
 
+class HTTPHook : public IDWindowReader
+{
+public:
+	static HTTPHook * create(const wchar_t *URL, void *extraInfo = NULL);			// create a instance, return NULL if not supported
+	~HTTPHook();			// automatically close()
+	__int64 size();
+	__int64 get(void *buf, __int64 offset, int size);
+	void close();				// cancel all pending get() operation and reject all further get()
+	std::map<__int64, __int64> buffer();
+private:
+	void *m_core;
+	bool m_closed;
+	HTTPHook(void *core);
+};
 
-
-IHookProvider *open_http_file(const wchar_t *URL);
-void close_http_file(IHookProvider *p);
+IDWindowReader *OpenReader(const wchar_t *URL);
+void CloseReader(IDWindowReader *p);
 
 static HANDLE (WINAPI * TrueCreateFileA)(
 	LPCSTR lpFileName,
@@ -72,7 +88,7 @@ static DWORD (WINAPI *TrueSetFilePointer)(__in        HANDLE hFile,
 typedef struct
 {
 	DWORD dummy;
-	IHookProvider *ifile;
+	IDWindowReader *ifile;
 	myCCritSec cs;
 	__int64 pos;
 } dummy_handle;
@@ -106,7 +122,7 @@ static HANDLE WINAPI MineCreateFileA(
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->pos = 0;
-		p->ifile = open_http_file(Token2URL(A2W(lpFileName)));
+		p->ifile = OpenReader(Token2URL(A2W(lpFileName)));
 		if (p->ifile == NULL)
 		{
 			CloseHandle(o);
@@ -145,7 +161,7 @@ static HANDLE WINAPI MineCreateFileW(
 		dummy_handle *p = new dummy_handle;
 		p->dummy = dummy_value;
 		p->pos = 0;
-		p->ifile = open_http_file(Token2URL(lpFileName));
+		p->ifile = OpenReader(Token2URL(lpFileName));
 		if (p->ifile == NULL)
 		{
 			CloseHandle(o);
@@ -325,7 +341,7 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 	if (p && p->dummy == dummy_value)
 	{
 		if (p->ifile)
-			close_http_file(p->ifile);
+			CloseReader(p->ifile);
  		delete p;
 		handle_map[hObject] = NULL;
 		return TRUE;
@@ -356,8 +372,21 @@ int clear_all_handles()
 
 }
 
+int lua_create_http_reader(lua_State *L)
+{
+	if (!lua_isstring(L, -1))
+		return 0;
+
+	lua_pushlightuserdata(L, HTTPHook::create(UTF82W(lua_tostring(L, -1))));
+	return 1;
+}
+
 int enable_hookdshow()
 {
+	luaState L;
+	lua_pushcfunction(L, &lua_create_http_reader);
+	lua_setglobal(L, "create_http_reader");
+
 	DetourRestoreAfterWith();
 
 	DetourTransactionBegin();
@@ -458,28 +487,28 @@ std::map<std::wstring, std::wstring> g_URL2Token;
 std::map<std::wstring, std::wstring> g_Token2URL;
 CCritSec g_active_httpfile_list_lock;
 
-IHookProvider *open_http_file(const wchar_t *URL)
+IDWindowReader *OpenReader(const wchar_t *URL)
 {
-	IHookProvider* p = HTTPHook::create(URL);
-	if (p)
-		return p;
-
-	luaState L;
-	lua_getglobal(L, "create_torrent_hooker");
+	IDWindowReader *p = NULL;
+	luaState L;	
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1,"create_reader");
 	if (lua_isfunction(L, -1))
 	{
 		lua_pushstring(L, W2UTF8(URL));
 		lua_mypcall(L, 1, 1, 0);
 
-		p = (IHookProvider*)lua_touserdata(L, -1);
+		p = (IDWindowReader*)lua_touserdata(L, -1);
 	}
+
+	lua_settop(L, 0);
 
 	return p;
 }
 
-void close_http_file(IHookProvider *p)
+void CloseReader(IDWindowReader *p)
 {
-	delete p;
+	p->release();
 }
 
 const wchar_t *URL2Token(const wchar_t *URL)

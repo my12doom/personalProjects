@@ -467,11 +467,16 @@ if core and core.execute_luafile then
 	print(core.execute_luafile(lua_path .. "dshow_async.lua"))
 	print(core.execute_luafile(lua_path .. "playlist.lua"))
 	print(core.execute_luafile(lua_path .. "menu.lua"))
+	print(core.execute_luafile(lua_path .. "bittorrent.lua"))
+	print(core.execute_luafile(lua_path .. "readers.lua"))
 	print(core.execute_luafile(lua_path .. "default_setting.lua"))
 	core.load_settings();
 	print(core.execute_luafile(lua_path .. "language.lua"))
 	print(core.execute_luafile(lua_path .. "parser.lua"))
-	print(core.execute_luafile(lua_path .. "bittorrent.lua"))
-	print(core.loaddll(core.app_path .. "lua_sample.dll"))
-	create_torrent_hooker()
+	
+	for _, dll in pairs(player.enum_folder(app.plugin_path)) do
+		if dll:lower():find(".dll") then
+			print("loading plugin", dll, core.loaddll(dll))
+		end
+	end
 end

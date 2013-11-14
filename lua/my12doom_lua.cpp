@@ -548,12 +548,25 @@ int dwindow_lua_init ()
 
 	result = lua_toboolean(g_L, -1);  /* get result */
 
+	// environment variables
+	lua_manager app_manager("app");
+	wchar_t config_path[MAX_PATH];
+	wcscpy(config_path, dwindow_log_get_filename());
+	((wchar_t*)wcsrchr(config_path, L'\\')) [1] = NULL;
+	app_manager.get_variable("path") = g_apppath;
+	app_manager.get_variable("config_path") = config_path;
+
+	luaState L;
+	luaL_dostring(L, "app.config = app.config_path .. \"config.lua\"");
+	luaL_dostring(L, "app.cache_path = app.config_path .. \"cache\\\\\"");
+	luaL_dostring(L, "app.plugin_path = app.path .. \"plugins\\\\\"");
+	lua_settop(L, 0);
+
 	// setting
 	g_lua_setting_manager = new lua_manager("setting");
 
 	// utils
 	g_lua_core_manager = new lua_manager("core");
-	g_lua_core_manager->get_variable("app_path") = g_apppath;
 	g_lua_core_manager->get_variable("ApplySetting") = &lua_ApplySetting;
 	g_lua_core_manager->get_variable("FAILED") = &luaFAILED;
 	g_lua_core_manager->get_variable("GetTickCount") = &lua_GetTickCount;

@@ -77,15 +77,6 @@ UTF82W::operator wchar_t*()
 	return p;
 }
 
-
-
-static int helloworld(lua_State *L)
-{
-	MessageBoxA(NULL, lua_tostring(L, -1), "HelloWorld!", MB_OK);
-
-	return 0;
-}
-
 static int create_torrent_hooker(lua_State *L)
 {
 	const char *filename = lua_tostring(L, -1);
@@ -105,10 +96,13 @@ static int create_torrent_hooker(lua_State *L)
 extern "C" __declspec(dllexport)  int dwindow_dll_go(lua_State *L)
 {
 	init_torrent_hook();
-	lua_pushcfunction(L, &helloworld);
-	lua_setglobal(L, "helloworld");
 
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1,"register_reader");
+	luaL_loadstring(L, "return function (URL) return URL:lower():find(\".torrent\") end");
+	lua_pcall(L, 0, 1, 0);
 	lua_pushcfunction(L, &create_torrent_hooker);
-	lua_setglobal(L, "create_torrent_hooker");
+	lua_pcall(L, 2, 1, 0);
+
 	return 0;
 }

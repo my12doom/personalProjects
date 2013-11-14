@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="lua_sample"
+	Name="plugin_bittorrent"
 	ProjectGUID="{4C42F70A-3497-4B9F-8850-ED1DEF413E89}"
 	RootNamespace="empty"
 	Keyword="Win32Proj"
@@ -62,8 +62,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="lua.lib libeay32.lib ssleay32.lib"
+				OutputFile="$(OutDir)\plugins\$(ProjectName).dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;E:\boost\stage\lib;E:\openssl\out32"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;..\libtorrent\openssl_lib;..\libtorrent\boost_lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -290,7 +291,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="lua.lib libeay32.lib ssleay32.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;E:\boost\stage\lib;..\libtorrent\openssl_lib;..\libtorrent\boost_lib"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;..\libtorrent\openssl_lib;..\libtorrent\boost_lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
