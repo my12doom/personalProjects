@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DWindowReader.h"
+#include "lua.hpp"
 
 class TorrentHook : public IDWindowReader
 {
@@ -18,5 +19,5 @@ private:
 	void *m_handle;
 };
 
-int init_torrent_hook();
+int init_torrent_hook(lua_State *g_L);
 int save_all_torrent_state();

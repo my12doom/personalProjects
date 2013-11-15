@@ -271,7 +271,7 @@
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\libtorrent\zlib;..\libtorrent\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOOST_ASIO_ENABLE_CANCELIO;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0501;__USE_W32_SOCKETS;TORRENT_STATS;TORRENT_USE_OPENSSL;UNICODE;_UNICODE;BOOST_ASIO_SEPARATE_COMPILATION"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOOST_ASIO_ENABLE_CANCELIO;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0501;__USE_W32_SOCKETS;TORRENT_USE_OPENSSL;UNICODE;_UNICODE;BOOST_ASIO_SEPARATE_COMPILATION"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"

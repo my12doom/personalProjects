@@ -35,3 +35,32 @@ function bittorrent.string2hex(data)
         return string.char(c)
     end))
 end
+
+-- info_hash: string like "0B1F437BBB3B36F51624E8DB404CB770AEC9D1A7"
+-- resume data : byte buff of bencoded resume data
+-- return: nil
+function bittorrent.save_torrent(info_hash, resume_data)
+	setting.torrents = setting.torrents or {}
+	setting.torrents[info_hash] = bittorrent.hex2string(resume_data)
+end
+
+-- info_hash: string like "0B1F437BBB3B36F51624E8DB404CB770AEC9D1A7"
+-- return: byte buff of bencoded resume data if exists, nil if not exists or invalid
+function bittorrent.load_torrent(info_hash)
+	if type(setting.torrents) == "table" and setting.torrents[info_hash] then
+		return bittorrent.string2hex(setting.torrents[info_hash])
+	end
+end
+
+-- session_state: byte buff of bencoded session state
+-- return: nil
+function bittorrent.save_session(session_state)
+	setting.bittorrent_session_state = bittorrent.hex2string(session_state)
+end
+
+-- return: byte buff of bencoded session state if exists, nil if not exists or invalid
+function bittorrent.load_session()
+	if type(setting.bittorrent_session_state) == "string" then
+		return bittorrent.string2hex(setting.bittorrent_session_state)
+	end	
+end

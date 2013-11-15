@@ -10,42 +10,16 @@
 #include <atlbase.h>
 
 
-int saving = 0;
 using namespace libtorrent;
 session *s;
+lua_State *L;
 
-typedef std::multimap<std::string, libtorrent::torrent_handle> handles_t;
-bool handle_alert(libtorrent::session& ses, libtorrent::alert* a)
+int init_torrent_hook(lua_State *g_L)
 {
-	if (save_resume_data_alert* p = alert_cast<save_resume_data_alert>(a))
-	{
-		--saving;
-		torrent_handle h = p->handle;
-		TORRENT_ASSERT(p->resume_data);
-		if (p->resume_data)
-		{
-			std::vector<char> out;
-			bencode(std::back_inserter(out), *p->resume_data);
-			//save_file(combine_path(h.save_path(), combine_path(".resume", to_hex(h.info_hash().to_string()) + ".resume")), out);
-			FILE * f = fopen("Z:\\resume.txt", "wb");
-			fwrite(&out[0], 1, out.size(), f);
-			fclose(f);
+	L = lua_newthread(g_L);
+	int ref = luaL_ref(g_L, LUA_REGISTRYINDEX);		// won't free it
 
-			ses.remove_torrent(h);
-		}
-	}
-	else if (save_resume_data_failed_alert* p = alert_cast<save_resume_data_failed_alert>(a))
-	{
-		--saving;
-		torrent_handle h = p->handle;
-		if (h.is_valid())
-			ses.remove_torrent(h);
-	}
-	return false;
-}
 
-int init_torrent_hook()
-{
 	s = new session();
 
 	error_code ec;
@@ -72,60 +46,92 @@ int init_torrent_hook()
  	settings.user_agent = "DWindow";
  	s->set_settings(settings);
 
-	char large[40960];
-	FILE *f=fopen("Z:\\state.txt", "rb");
-	if (f)
+	lua_getglobal(L, "bittorrent");
+	lua_getfield(L, -1, "load_session");
+	lua_pcall(L, 0, 1, 0);
+
+	if (lua_type(L, -1) == LUA_TSTRING)
 	{
-		int size = fread(large, 1, sizeof(large), f);
-		fclose(f);
+		int size = lua_rawlen(L, -1);
+		const char* buf = lua_tostring(L, -1);
+
 		lazy_entry load_state;
-		lazy_bdecode(large, large+size, load_state);
+		lazy_bdecode(buf, buf+size, load_state);
 		s->load_state(load_state);
 	}
 
+	lua_settop(L,0);
+
 	return 0;
 }
-// 
-// int save_all_torrent_state()
-// {
-// 	saving++;
-// 	handle.pause();
-// 	handle.save_resume_data();
-// 
-// 	while (saving)
-// 	{
-// 		// loop through the alert queue to see if anything has happened.
-// 		std::deque<alert*> alerts;
-// 		s->pop_alerts(&alerts);
-// 		std::string now = time_now_string();
-// 		for (std::deque<alert*>::iterator i = alerts.begin()
-// 			, end(alerts.end()); i != end; ++i)
-// 		{
-// 			bool need_resort = false;
-// 			TORRENT_TRY
-// 			{
-// 				if (!::handle_alert(*s, *i))
-// 				{
-// 					// unhandled alerts
-// 				}
-// 			} TORRENT_CATCH(std::exception& e) {}
-// 
-// 			delete *i;
-// 		}
-// 		alerts.clear();
-// 	}
-// 
-// 	entry session_state;
-// 	s->save_state(session_state);
-// 	std::vector<char> out;
-// 	bencode(std::back_inserter(out), session_state);
-// 
-// 	FILE *f=fopen("Z:\\state.txt", "wb");
-// 	fwrite(&out[0], 1, out.size(), f);
-// 	fclose(f);
-// 
-// 	return 0;
-// }
+
+int save_all_torrent_state()
+{
+	int saving = 0;
+	std::vector<torrent_handle> torrents = s->get_torrents();
+	for(int i=0; i<torrents.size(); i++)
+	{
+		saving++;
+		torrent_handle handle = torrents[i];
+		handle.save_resume_data();
+	}
+
+	while (saving)
+	{
+		// loop through the alert queue to see if anything has happened.
+		std::deque<alert*> alerts;
+		s->pop_alerts(&alerts);
+		for (std::deque<alert*>::iterator i = alerts.begin(), end(alerts.end()); i != end; ++i)
+		{
+			TORRENT_TRY
+			{
+				if (save_resume_data_alert* p = alert_cast<save_resume_data_alert>(*i))
+				{
+					--saving;
+					torrent_handle h = p->handle;
+					if (p->resume_data)
+					{
+						std::vector<char> out;
+						bencode(std::back_inserter(out), *p->resume_data);						
+
+						char info_hash_str[41] = {0};
+						std::string info_hash = h.get_torrent_info().info_hash().to_string();
+						for(int i=0; i<20; i++)
+							sprintf(info_hash_str+i*2, "%02X", (unsigned char)info_hash[i]);
+						
+						lua_getglobal(L, "bittorrent");
+						lua_getfield(L, -1, "save_torrent");
+						lua_pushstring(L, info_hash_str);
+						lua_pushlstring(L, &out[0], out.size());						
+						lua_pcall(L, 2, 0, 0);
+						lua_settop(L,0);
+					}
+				}
+				else if (save_resume_data_failed_alert* p = alert_cast<save_resume_data_failed_alert>(*i))
+				{
+					--saving;
+				}
+			} TORRENT_CATCH(std::exception& e) {}
+
+			delete *i;
+		}
+		alerts.clear();
+	}
+
+	// save session state
+	entry session_state;
+	s->save_state(session_state);
+	std::vector<char> out;
+	bencode(std::back_inserter(out), session_state);
+
+	lua_getglobal(L, "bittorrent");
+	lua_getfield(L, -1, "save_session");
+	lua_pushlstring(L, &out[0], out.size());
+	lua_pcall(L, 1, 0, 0);
+	lua_settop(L,0);
+
+	return 0;
+}
 
 // the TorrentHook Class
 typedef struct
@@ -151,10 +157,29 @@ TorrentHook * TorrentHook::create(const wchar_t *URL, void *extraInfo/* = NULL*/
 	add_torrent_params p;
 	p.save_path = "Z:\\out\\";
 	p.ti = new torrent_info(URL, ec);
-	std::vector<char> resume_data;
 
-	if (load_file("Z:\\resume.txt", resume_data, ec) == 0)
+
+	std::vector<char> resume_data;
+	char info_hash_str[41] = {0};
+	std::string info_hash = p.ti->info_hash().to_string();
+	for(int i=0; i<20; i++)
+		sprintf(info_hash_str+i*2, "%02X", (unsigned char)info_hash[i]);
+	lua_getglobal(L, "bittorrent");
+	lua_getfield(L, -1, "load_torrent");
+	lua_pushstring(L, info_hash_str);
+	lua_pcall(L, 1, 1, 0);
+
+	if (lua_type(L, -1) == LUA_TSTRING)
+	{
+		int size = lua_rawlen(L, -1);
+		const char* buf = lua_tostring(L, -1);
+		resume_data.insert(resume_data.end(), buf, buf+size);
+
 		p.resume_data = &resume_data;
+	}
+
+	lua_settop(L, 0);
+
 
 	int index = -1;
 	const file_storage &fs = p.ti->files();
@@ -192,12 +217,12 @@ TorrentHook * TorrentHook::create(const wchar_t *URL, void *extraInfo/* = NULL*/
 	hh->handle = s->add_torrent(p, ec);
 	if (ec || !hh->handle.is_valid())
 		return NULL;
-	torrent_info info = hh->handle.get_torrent_info();
 	hh->r = new reader(hh->handle, *s);
 	return new TorrentHook(hh);
 }
 TorrentHook::~TorrentHook()			// automatically close()
 {
+	close();
 	TorrentHookStruct *hh = (TorrentHookStruct*)m_handle;
 	delete hh->r;
 	delete hh;
@@ -217,6 +242,7 @@ __int64 TorrentHook::get(void *buf, __int64 offset, int size)
 void TorrentHook::close()				// cancel all pending get() operation and reject all further get()
 {
 	m_closed = true;
+	save_all_torrent_state();
 }
 
 // not yet implemented

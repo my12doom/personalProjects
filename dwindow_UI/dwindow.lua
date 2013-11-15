@@ -344,16 +344,20 @@ local bo3d_thread
 
 function ReloadUI(legacy)
 	print("ReloadUI()", legacy, root)
+	dx9.lock_frame()
 	OnReleaseGPU()
 	OnReleaseCPU()
+	dx9.unlock_frame()
 	root = BaseFrame:Create()
 
 	if legacy then return end
 
 	print(core.execute_luafile(lua_path .. (core.v and "3dvplayer" or "DWindow2" ).. "\\render.lua"))
 	
+	dx9.lock_frame()
 	OnInitCPU()
 	OnInitGPU()
+	dx9.unlock_frame()
 	
 	if setting.bo3d then
 		core.execute_signed_luafile(setting.bo3d)

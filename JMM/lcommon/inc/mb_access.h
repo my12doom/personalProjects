@@ -20,7 +20,7 @@ extern void CheckAvailabilityOfNeighbors(Macroblock *currMB);
 extern void CheckAvailabilityOfNeighborsMBAFF(Macroblock *currMB);
 extern void CheckAvailabilityOfNeighborsNormal(Macroblock *currMB);
 
-#define max_mb_nr 8192			// level 4.1
+#define max_mb_nr 32768			// level 4.1
 extern PixelPos cache_xy[3][3][max_mb_nr];
 extern int *tbl8;
 extern int *tbl16;

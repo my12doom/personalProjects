@@ -54,7 +54,7 @@ static int myprint(lua_State *L)
 	for(int i=0; i<n; i++)
 	{
 		if (i>0)
-			strcat(buf, "\t");
+			strcat(buf, "    ");
 		lua_getglobal(L, "tostring");
 		lua_pushvalue(L, i+1);
 		lua_call(L, 1, 1);
