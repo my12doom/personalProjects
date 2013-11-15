@@ -174,5 +174,7 @@ int reader::read_piece(int index)
 			ret = 1;
 	}
 
+	if (ret == 1)
+		m_data_index = index;
 	return ret;
 }

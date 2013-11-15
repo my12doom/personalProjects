@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <Windows.h>
 #include "TorrentHook.h"
 #include "libtorrent/entry.hpp"
 #include "libtorrent/bencode.hpp"
@@ -13,9 +14,11 @@
 using namespace libtorrent;
 session *s;
 lua_State *L;
+CRITICAL_SECTION cs;
 
 int init_torrent_hook(lua_State *g_L)
 {
+	InitializeCriticalSection(&cs);
 	L = lua_newthread(g_L);
 	int ref = luaL_ref(g_L, LUA_REGISTRYINDEX);		// won't free it
 
@@ -99,12 +102,14 @@ int save_all_torrent_state()
 						for(int i=0; i<20; i++)
 							sprintf(info_hash_str+i*2, "%02X", (unsigned char)info_hash[i]);
 						
+						EnterCriticalSection(&cs);
 						lua_getglobal(L, "bittorrent");
 						lua_getfield(L, -1, "save_torrent");
 						lua_pushstring(L, info_hash_str);
 						lua_pushlstring(L, &out[0], out.size());						
 						lua_pcall(L, 2, 0, 0);
 						lua_settop(L,0);
+						LeaveCriticalSection(&cs);
 					}
 				}
 				else if (save_resume_data_failed_alert* p = alert_cast<save_resume_data_failed_alert>(*i))
@@ -124,11 +129,13 @@ int save_all_torrent_state()
 	std::vector<char> out;
 	bencode(std::back_inserter(out), session_state);
 
+	EnterCriticalSection(&cs);
 	lua_getglobal(L, "bittorrent");
 	lua_getfield(L, -1, "save_session");
 	lua_pushlstring(L, &out[0], out.size());
 	lua_pcall(L, 1, 0, 0);
 	lua_settop(L,0);
+	LeaveCriticalSection(&cs);
 
 	return 0;
 }
@@ -164,6 +171,8 @@ TorrentHook * TorrentHook::create(const wchar_t *URL, void *extraInfo/* = NULL*/
 	std::string info_hash = p.ti->info_hash().to_string();
 	for(int i=0; i<20; i++)
 		sprintf(info_hash_str+i*2, "%02X", (unsigned char)info_hash[i]);
+	
+	EnterCriticalSection(&cs);
 	lua_getglobal(L, "bittorrent");
 	lua_getfield(L, -1, "load_torrent");
 	lua_pushstring(L, info_hash_str);
@@ -179,6 +188,8 @@ TorrentHook * TorrentHook::create(const wchar_t *URL, void *extraInfo/* = NULL*/
 	}
 
 	lua_settop(L, 0);
+	LeaveCriticalSection(&cs);
+
 
 
 	int index = -1;
@@ -223,6 +234,7 @@ TorrentHook * TorrentHook::create(const wchar_t *URL, void *extraInfo/* = NULL*/
 TorrentHook::~TorrentHook()			// automatically close()
 {
 	close();
+	save_all_torrent_state();
 	TorrentHookStruct *hh = (TorrentHookStruct*)m_handle;
 	delete hh->r;
 	delete hh;
@@ -242,7 +254,6 @@ __int64 TorrentHook::get(void *buf, __int64 offset, int size)
 void TorrentHook::close()				// cancel all pending get() operation and reject all further get()
 {
 	m_closed = true;
-	save_all_torrent_state();
 }
 
 // not yet implemented
