@@ -35,6 +35,9 @@ int reader::read(char* data, size_type offset, size_type size, bool *cancel/* = 
 	end = std::min(end, block_size*(m_info.num_pieces()-1)+m_last_piece_size);
 	size = end - offset;
 
+	if (size<=0)
+		return 0;
+
 	// head
 	if (offset % block_size)
 	{

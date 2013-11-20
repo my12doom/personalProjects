@@ -19,8 +19,12 @@ CRITICAL_SECTION cs;
 int init_torrent_hook(lua_State *g_L)
 {
 	InitializeCriticalSection(&cs);
+	EnterCriticalSection(&cs);
 	L = lua_newthread(g_L);
+	int n = lua_gettop(g_L);
 	int ref = luaL_ref(g_L, LUA_REGISTRYINDEX);		// won't free it
+	n = lua_gettop(g_L);
+
 
 
 	s = new session();
@@ -49,21 +53,22 @@ int init_torrent_hook(lua_State *g_L)
  	settings.user_agent = "DWindow";
  	s->set_settings(settings);
 
-	lua_getglobal(L, "bittorrent");
-	lua_getfield(L, -1, "load_session");
-	lua_pcall(L, 0, 1, 0);
-
-	if (lua_type(L, -1) == LUA_TSTRING)
-	{
-		int size = lua_rawlen(L, -1);
-		const char* buf = lua_tostring(L, -1);
-
-		lazy_entry load_state;
-		lazy_bdecode(buf, buf+size, load_state);
-		s->load_state(load_state);
-	}
+// 	lua_getglobal(L, "bittorrent");
+// 	lua_getfield(L, -1, "load_session");
+// 	lua_pcall(L, 0, 1, 0);
+// 
+// 	if (lua_type(L, -1) == LUA_TSTRING)
+// 	{
+// 		int size = lua_rawlen(L, -1);
+// 		const char* buf = lua_tostring(L, -1);
+// 
+// 		lazy_entry load_state;
+// 		lazy_bdecode(buf, buf+size, load_state);
+// 		s->load_state(load_state);
+// 	}
 
 	lua_settop(L,0);
+	LeaveCriticalSection(&cs);
 
 	return 0;
 }

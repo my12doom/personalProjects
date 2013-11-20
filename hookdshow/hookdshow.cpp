@@ -188,7 +188,7 @@ static BOOL WINAPI MineReadFile(
 					   LPDWORD lpNumberOfBytesRead,
 					   LPOVERLAPPED lpOverlapped)
 {
-	dummy_handle *p = handle_map[hFile];
+	dummy_handle *p = get_dummy(hFile);
 	if (p && p->dummy == dummy_value)
 	{
 
@@ -343,6 +343,7 @@ BOOL WINAPI MineCloseHandle(_In_  HANDLE hObject)
 		if (p->ifile)
 			CloseReader(p->ifile);
  		delete p;
+		myCAutoLock lck(&cs);
 		handle_map[hObject] = NULL;
 		return TRUE;
 	}
@@ -386,6 +387,7 @@ int enable_hookdshow()
 	luaState L;
 	lua_pushcfunction(L, &lua_create_http_reader);
 	lua_setglobal(L, "create_http_reader");
+	lua_settop(L, 0);
 
 	DetourRestoreAfterWith();
 

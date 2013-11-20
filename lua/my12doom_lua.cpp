@@ -284,7 +284,11 @@ static int loaddll(lua_State *L)
 
 
 	int (*dwindow_dll_go)(lua_State* L) = (int (cdecl*)(lua_State*))proc;
-	dwindow_dll_go(L);
+	lua_State *L2 = dwindow_lua_get_thread();
+// 	dwindow_dll_go(L2);
+	lua_pushcfunction(L2, dwindow_dll_go);
+	lua_mypcall(L2, 0, 0, 0);
+	dwindow_lua_release_thread(L2);
 
 	lua_pushboolean(L, 1);
 	return 1;
@@ -549,12 +553,12 @@ int dwindow_lua_init ()
 	result = lua_toboolean(g_L, -1);  /* get result */
 
 	// environment variables
-	lua_manager app_manager("app");
+	lua_manager *app_manager = new lua_manager("app");
 	wchar_t config_path[MAX_PATH];
 	wcscpy(config_path, dwindow_log_get_filename());
 	((wchar_t*)wcsrchr(config_path, L'\\')) [1] = NULL;
-	app_manager.get_variable("path") = g_apppath;
-	app_manager.get_variable("config_path") = config_path;
+	app_manager->get_variable("path") = g_apppath;
+	app_manager->get_variable("config_path") = config_path;
 
 	luaState L;
 	luaL_dostring(L, "app.config = app.config_path .. \"config.lua\"");
@@ -628,6 +632,7 @@ lua_State * dwindow_lua_get_thread()
 		rtn = lua_newthread(g_L);
 		int ref = luaL_ref(g_L, LUA_REGISTRYINDEX);		// won't free it
 	}
+	lua_settop(rtn, 0);
 	running_threads.push_back(rtn);
 	return rtn;
 }
@@ -635,6 +640,7 @@ lua_State * dwindow_lua_get_thread()
 void dwindow_lua_release_thread(lua_State * p)
 {
 	CAutoLock lck(&g_csL);
+	lua_settop(p, 0);
 	free_threads.push_back(p);
 	running_threads.remove(p);
 }
@@ -1125,6 +1131,8 @@ int lua_track_back(lua_State *L)
 		lua_mypcall(L, 0, 0, NULL);
 		lua_pop(L, 1);
 	}
+#else
+	dwindow_log_line("lua error:%s", err);
 #endif
 
 	lua_pushstring(L, err);

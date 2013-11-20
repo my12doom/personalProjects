@@ -4490,8 +4490,6 @@ amd_hd3d_fail:
 
 HRESULT my12doomRenderer::HD3D_restore_objects()
 {
-	mylog("1");
-
 	m_HD3Dlineoffset = 0;
 	HRESULT hr = m_Device->CreateOffscreenPlainSurface(10, 10, (D3DFORMAT)FOURCC_AQBS, D3DPOOL_DEFAULT, &m_HD3DCommSurface, NULL);
 	if( FAILED( hr ) )
@@ -4500,7 +4498,6 @@ HRESULT my12doomRenderer::HD3D_restore_objects()
 		return S_FALSE;
 	}
 
-	mylog("2");
 	//Retrieve the line offset
 	hr = HD3DSendStereoCommand(ATI_STEREO_GETLINEOFFSET, (BYTE *)(&m_HD3Dlineoffset), sizeof(DWORD), 0, 0);
 	if( FAILED( hr ) )
@@ -4508,7 +4505,6 @@ HRESULT my12doomRenderer::HD3D_restore_objects()
 		mylog("ATI_STEREO_GETLINEOFFSET FAIL=%d\r\n", m_HD3Dlineoffset);
 		return S_FALSE;
 	}
-	mylog("3");
 
 	// see if lineOffset is valid
 	mylog("lineoffset=%d\r\n", m_HD3Dlineoffset);
