@@ -162,7 +162,11 @@ TorrentHook * TorrentHook::create(const wchar_t *URL, void *extraInfo/* = NULL*/
 	TorrentHookStruct *hh = new TorrentHookStruct;
 	hh->size = 0;
 	add_torrent_params p;
-	p.save_path = "Z:\\out\\";
+	EnterCriticalSection(&cs);
+	luaL_loadstring(g_myL, "return app.cache_path");
+	lua_pcall(g_myL, 0, 1, 0);
+	p.save_path = lua_tostring(g_myL, -1);
+	lua_pop(g_myL, 1);
 	p.ti = new torrent_info(URL, ec);
 
 
@@ -172,7 +176,6 @@ TorrentHook * TorrentHook::create(const wchar_t *URL, void *extraInfo/* = NULL*/
 	for(int i=0; i<20; i++)
 		sprintf(info_hash_str+i*2, "%02X", (unsigned char)info_hash[i]);
 	
-	EnterCriticalSection(&cs);
 	lua_getglobal(g_myL, "bittorrent");
 	lua_getfield(g_myL, -1, "load_torrent");
 	lua_pushstring(g_myL, info_hash_str);
