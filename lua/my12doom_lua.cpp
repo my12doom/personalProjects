@@ -285,10 +285,7 @@ static int loaddll(lua_State *L)
 
 	int (*dwindow_dll_go)(lua_State* L) = (int (cdecl*)(lua_State*))proc;
 	lua_State *L2 = dwindow_lua_get_thread();
-// 	dwindow_dll_go(L2);
-	lua_pushcfunction(L2, dwindow_dll_go);
-	lua_mypcall(L2, 0, 0, 0);
-	dwindow_lua_release_thread(L2);
+ 	dwindow_dll_go(L2);
 
 	lua_pushboolean(L, 1);
 	return 1;
@@ -383,7 +380,6 @@ int luaCreateThread(lua_State *L)
 	int n = lua_gettop(L);
 
 	lua_State *L2 =dwindow_lua_get_thread();
-	lua_settop(L2, 0);
 	for(int i=0; i<n; i++)
 	{
 		int ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -545,9 +541,9 @@ int dwindow_lua_init ()
 
 	/* open standard libraries */
 	luaL_checkversion(g_L);
-	lua_gc(g_L, LUA_GCSTOP, 0);  /* stop collector during initialization */
+ 	lua_gc(g_L, LUA_GCSTOP, 0);  /* stop collector during initialization */
 	luaL_openlibs(g_L);  /* open libraries */
-	lua_gc(g_L, LUA_GCRESTART, 0);
+ 	lua_gc(g_L, LUA_GCRESTART, 0);
 
 
 	result = lua_toboolean(g_L, -1);  /* get result */
@@ -564,7 +560,6 @@ int dwindow_lua_init ()
 	luaL_dostring(L, "app.config = app.config_path .. \"config.lua\"");
 	luaL_dostring(L, "app.cache_path = app.config_path .. \"cache\\\\\"");
 	luaL_dostring(L, "app.plugin_path = app.path .. \"plugins\\\\\"");
-	lua_settop(L, 0);
 
 	// setting
 	g_lua_setting_manager = new lua_manager("setting");
@@ -621,28 +616,24 @@ int dwindow_lua_init ()
 lua_State * dwindow_lua_get_thread()
 {
 	CAutoLock lck(&g_csL);
-	lua_State *rtn = NULL;
-	if (!free_threads.empty())
-	{
-		rtn = free_threads.front();
-		free_threads.pop_front();
-	}
-	else
-	{
-		rtn = lua_newthread(g_L);
-		int ref = luaL_ref(g_L, LUA_REGISTRYINDEX);		// won't free it
-	}
-	lua_settop(rtn, 0);
-	running_threads.push_back(rtn);
+	lua_State *rtn = lua_newthread(g_L);
 	return rtn;
 }
 
 void dwindow_lua_release_thread(lua_State * p)
 {
-	CAutoLock lck(&g_csL);
 	lua_settop(p, 0);
-	free_threads.push_back(p);
-	running_threads.remove(p);
+	CAutoLock lck(&g_csL);
+	int count = lua_gettop(g_L);
+	for(int i=1; i<=count; i++)
+	{
+		lua_State *pp = lua_tothread(g_L, i);
+		if (pp == p)
+		{
+			lua_remove(g_L, i);
+			break;
+		}
+	}
 }
 
 luaState::luaState()
@@ -880,6 +871,8 @@ lua_const::lua_const(const char*name, lua_manager *manager)
 	m_manager = manager;
 	m_name = new char [strlen(name)+1];
 	strcpy(m_name, name);
+	m_type = _int;
+	m_value.i = 0;
 
 	read_from_lua();
 }
@@ -942,6 +935,9 @@ int lua_const::read_from_lua()
 lua_const::~lua_const()
 {
 	delete m_name;
+	if (m_type == _string && m_value.s)
+		delete m_value.s;
+
 };
 
 lua_const::operator int()
@@ -987,13 +983,13 @@ DWORD& lua_const::operator=(const DWORD in)
 	luaState L;
 
 	lua_getglobal(L, m_manager->m_table_name);
-	m_value.i = in;
-	lua_pushinteger(L, m_value.i);
+	lua_pushinteger(L, in);
 	lua_setfield(L, -2, m_name);
 	lua_pop(L, 1);
 
 	if (m_type == _string && m_value.s) delete m_value.s;
 	m_type = _int;
+	m_value.i = in;
 
 	return *(DWORD*)&m_value.i;
 }

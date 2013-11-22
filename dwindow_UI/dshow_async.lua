@@ -95,7 +95,7 @@ function async_funcs.list_audio_track()
 	end
 	tracks_lock:unlock()
 	
-	return rtn
+	return table.unpack(rtn)
 end
 
 function async_funcs.list_subtitle_track()
@@ -106,7 +106,7 @@ function async_funcs.list_subtitle_track()
 	end
 	tracks_lock:unlock()
 	
-	return rtn
+	return table.unpack(rtn)
 end
 
 function async_funcs_remove(...)

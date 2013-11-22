@@ -93,19 +93,19 @@ static int create_torrent_hooker(lua_State *L)
 }
 
 
-extern "C" __declspec(dllexport)  int dwindow_dll_go(lua_State *g_L)
+extern "C" __declspec(dllexport)  int dwindow_dll_go(lua_State *L)
 {
- 	int n = lua_gettop(g_L);
-	init_torrent_hook(g_L);
+ 	int n = lua_gettop(L);
+	init_torrent_hook(L);
 
-	lua_getglobal(g_L, "core");
-	lua_getfield(g_L, -1,"register_reader");
-	luaL_loadstring(g_L, "return function (URL) return URL:lower():find(\".torrent\") end");
-	lua_pcall(g_L, 0, 1, 0);
-	lua_pushcfunction(g_L, &create_torrent_hooker);
-	lua_pcall(g_L, 2, 1, 0);
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1,"register_reader");
+	luaL_loadstring(L, "return function (URL) return URL:lower():find(\".torrent\") end");
+	lua_pcall(L, 0, 1, 0);
+	lua_pushcfunction(L, &create_torrent_hooker);
+	lua_pcall(L, 2, 1, 0);
 
-	lua_settop(g_L, n);
+	lua_settop(L, n);
 
 	return 0;
 }

@@ -481,13 +481,9 @@ if core and core.execute_luafile then
 	print(core.execute_luafile(lua_path .. "language.lua"))
 	print(core.execute_luafile(lua_path .. "parser.lua"))
 	
-	collectgarbage("stop")
-
 	for _, dll in pairs(player.enum_folder(app.plugin_path)) do
 		if dll:lower():find(".dll") then
 			print("loading plugin", dll, core.loaddll(app.plugin_path .. dll))
 		end
-	end
-	
-	collectgarbage("restart")
+	end	
 end

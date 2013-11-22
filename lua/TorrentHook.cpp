@@ -13,19 +13,14 @@
 
 using namespace libtorrent;
 session *s;
-lua_State *L;
+lua_State *g_myL;
 CRITICAL_SECTION cs;
 
-int init_torrent_hook(lua_State *g_L)
+int init_torrent_hook(lua_State *L)
 {
 	InitializeCriticalSection(&cs);
 	EnterCriticalSection(&cs);
-	L = lua_newthread(g_L);
-	int n = lua_gettop(g_L);
-	int ref = luaL_ref(g_L, LUA_REGISTRYINDEX);		// won't free it
-	n = lua_gettop(g_L);
-
-
+	g_myL = L;
 
 	s = new session();
 
@@ -53,21 +48,21 @@ int init_torrent_hook(lua_State *g_L)
  	settings.user_agent = "DWindow";
  	s->set_settings(settings);
 
-// 	lua_getglobal(L, "bittorrent");
-// 	lua_getfield(L, -1, "load_session");
-// 	lua_pcall(L, 0, 1, 0);
+// 	lua_getglobal(g_myL, "bittorrent");
+// 	lua_getfield(g_myL, -1, "load_session");
+// 	lua_pcall(g_myL, 0, 1, 0);
 // 
-// 	if (lua_type(L, -1) == LUA_TSTRING)
+// 	if (lua_type(g_myL, -1) == LUA_TSTRING)
 // 	{
-// 		int size = lua_rawlen(L, -1);
-// 		const char* buf = lua_tostring(L, -1);
+// 		int size = lua_rawlen(g_myL, -1);
+// 		const char* buf = lua_tostring(g_myL, -1);
 // 
 // 		lazy_entry load_state;
 // 		lazy_bdecode(buf, buf+size, load_state);
 // 		s->load_state(load_state);
 // 	}
 
-	lua_settop(L,0);
+	lua_settop(g_myL,0);
 	LeaveCriticalSection(&cs);
 
 	return 0;
@@ -108,12 +103,12 @@ int save_all_torrent_state()
 							sprintf(info_hash_str+i*2, "%02X", (unsigned char)info_hash[i]);
 						
 						EnterCriticalSection(&cs);
-						lua_getglobal(L, "bittorrent");
-						lua_getfield(L, -1, "save_torrent");
-						lua_pushstring(L, info_hash_str);
-						lua_pushlstring(L, &out[0], out.size());						
-						lua_pcall(L, 2, 0, 0);
-						lua_settop(L,0);
+						lua_getglobal(g_myL, "bittorrent");
+						lua_getfield(g_myL, -1, "save_torrent");
+						lua_pushstring(g_myL, info_hash_str);
+						lua_pushlstring(g_myL, &out[0], out.size());						
+						lua_pcall(g_myL, 2, 0, 0);
+						lua_settop(g_myL,0);
 						LeaveCriticalSection(&cs);
 					}
 				}
@@ -135,11 +130,11 @@ int save_all_torrent_state()
 	bencode(std::back_inserter(out), session_state);
 
 	EnterCriticalSection(&cs);
-	lua_getglobal(L, "bittorrent");
-	lua_getfield(L, -1, "save_session");
-	lua_pushlstring(L, &out[0], out.size());
-	lua_pcall(L, 1, 0, 0);
-	lua_settop(L,0);
+	lua_getglobal(g_myL, "bittorrent");
+	lua_getfield(g_myL, -1, "save_session");
+	lua_pushlstring(g_myL, &out[0], out.size());
+	lua_pcall(g_myL, 1, 0, 0);
+	lua_settop(g_myL,0);
 	LeaveCriticalSection(&cs);
 
 	return 0;
@@ -178,21 +173,21 @@ TorrentHook * TorrentHook::create(const wchar_t *URL, void *extraInfo/* = NULL*/
 		sprintf(info_hash_str+i*2, "%02X", (unsigned char)info_hash[i]);
 	
 	EnterCriticalSection(&cs);
-	lua_getglobal(L, "bittorrent");
-	lua_getfield(L, -1, "load_torrent");
-	lua_pushstring(L, info_hash_str);
-	lua_pcall(L, 1, 1, 0);
+	lua_getglobal(g_myL, "bittorrent");
+	lua_getfield(g_myL, -1, "load_torrent");
+	lua_pushstring(g_myL, info_hash_str);
+	lua_pcall(g_myL, 1, 1, 0);
 
-	if (lua_type(L, -1) == LUA_TSTRING)
+	if (lua_type(g_myL, -1) == LUA_TSTRING)
 	{
-		int size = lua_rawlen(L, -1);
-		const char* buf = lua_tostring(L, -1);
+		int size = lua_rawlen(g_myL, -1);
+		const char* buf = lua_tostring(g_myL, -1);
 		resume_data.insert(resume_data.end(), buf, buf+size);
 
 		p.resume_data = &resume_data;
 	}
 
-	lua_settop(L, 0);
+	lua_settop(g_myL, 0);
 	LeaveCriticalSection(&cs);
 
 
