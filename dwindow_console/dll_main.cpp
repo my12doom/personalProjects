@@ -26,7 +26,14 @@ static INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 					break;
 
 				WideCharToMultiByte(CP_UTF8, NULL, bufw2, -1, buf2, len, NULL, NULL);
-				luaL_dostring(L, buf2);
+				if (luaL_dostring(L, buf2))
+				{
+					const char * error = lua_tostring(L, -1);
+					MultiByteToWideChar(CP_UTF8, NULL, error, -1, bufw, 65536);
+					SendMessageW(g_lb, LB_ADDSTRING, NULL, (LPARAM)bufw);
+				}
+
+				lua_settop(L, 0);
 			}
 		}
 		break;
@@ -86,8 +93,7 @@ DWORD WINAPI thread(LPVOID p)
 
 extern "C" __declspec(dllexport)  int dwindow_dll_go(lua_State *g_L)
 {
-	L = lua_newthread(g_L);
-	int ref = luaL_ref(g_L, LUA_REGISTRYINDEX);		// won't free it
+	L = g_L;
 	lua_getglobal(L, "print");
 	int type = lua_type(L, -1);
 	old_print = luaL_ref(L, LUA_REGISTRYINDEX);
