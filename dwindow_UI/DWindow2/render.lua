@@ -68,17 +68,17 @@ function logo:OnClick()
 	local w = r-l
 	local h = b-t
 	dx9.lock_frame()
-	self.res = resource_base:create(dx9.create_rt(w, h), w, h)
+	self.res = self.res or resource_base:create(dx9.create_rt(w, h), w, h)
 	dx9.paint_core(0, 0, w, h, dx9.get_resource(), 0, 0, 0, 0, 1.0, bilinear_no_mipmap, self.res.handle)
-	self.res:decommit()
 	dx9.unlock_frame()
 end
 
 function logo:OnReleaseGPU()
+	dx9.lock_frame()
 	if (self.res) then
-		self.res:release()
-		self.res = nil
+		self.res:decommit()
 	end
+	dx9.unlock_frame()
 end
 
 -- bottom bar
