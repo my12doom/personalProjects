@@ -2485,7 +2485,10 @@ HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RE
 {
 	CComPtr<IDirect3DSurface9> rt;
 	if (gpu_rt)
+	{
+		gpu_rt->commit();
 		gpu_rt->m_tex_gpu_RGB32->get_first_level(&rt);
+	}
 	else
 		m_Device->GetRenderTarget(0, &rt);
 	for(int i=0; i<4; i++)
