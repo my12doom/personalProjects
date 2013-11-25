@@ -6,6 +6,7 @@ public:
 	gpu_sample(const wchar_t *filename, CTextureAllocator *allocator);
 	gpu_sample(CTextureAllocator *allocator, HFONT font, const wchar_t *text, RGBQUAD color, RECT *dst_rect = NULL, DWORD flag = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL);
 	gpu_sample(IDirect3DDevice9 *device, IDirect3DSurface9 *surface, CTextureAllocator *allocator);
+	gpu_sample(IDirect3DDevice9 *device, int width, int height, CTextureAllocator *allocator);		// for render target
 	~gpu_sample();
 	HRESULT commit();
 	HRESULT decommit();
@@ -28,6 +29,7 @@ public:
 	bool m_topdown;
 	bool m_interlaced;
 	bool m_GDI_prepared;
+	bool m_need_backup_when_decommitting;
 
 	CPooledTexture *m_tex_gpu_RGB32;				// GPU RGB32 planes, in A8R8G8B8, full width
 	CPooledTexture *m_tex_gpu_Y;					// GPU Y plane of YV12/NV12, in L8
@@ -36,6 +38,7 @@ public:
 	CPooledTexture *m_tex_gpu_YUY2_UV;				// GPU YUY2 planes, in A8R8G8B8, half width
 	DWORD m_interlace_flags;
 protected:
+	void zero(IDirect3DDevice9 *device, CTextureAllocator *allocator);
 	bool is_ignored_line(int line);
 	CTextureAllocator *m_allocator;
 	bool m_prepared_for_rendering;
@@ -62,8 +65,8 @@ protected:
 
 	CPooledTexture *m_tex_stereo_test;
 	CPooledTexture *m_tex_stereo_test_cpu;
+	IDirect3DDevice9 *m_device;
 
 	D3DPOOL m_pool;
 	CCritSec m_sample_lock;
-
 };

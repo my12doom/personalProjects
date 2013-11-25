@@ -131,6 +131,21 @@ HRESULT gpu_sample::decommit()
 	if (!m_prepared_for_rendering)
 		return S_FALSE;
 
+	HRESULT hr = E_FAIL;
+
+	// back it up!
+	if (m_need_backup_when_decommitting)
+	{
+		IDirect3DSurface9 *mem;
+		IDirect3DSurface9 *gpu;
+		m_tex_RGB32->get_first_level(&mem);
+		m_tex_gpu_RGB32->get_first_level(&gpu);
+
+		m_tex_RGB32->Unlock();
+		
+		hr = m_device->GetRenderTargetData(gpu, mem);
+	}
+
 	safe_delete(m_tex_gpu_RGB32);
 	safe_delete(m_tex_gpu_Y);
 	safe_delete(m_tex_gpu_YV12_UV);
@@ -460,23 +475,8 @@ bool gpu_sample::is_ignored_line(int line)
 gpu_sample::gpu_sample(IDirect3DDevice9 *device, IDirect3DSurface9 *surface, CTextureAllocator *allocator)
 {
 	//CAutoLock lck(&g_gpu_lock);
-	m_allocator = allocator;
-	m_interlace_flags = 0;
-	m_tex_RGB32 = m_tex_YUY2_UV = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
-	m_tex_gpu_RGB32 = m_tex_gpu_YUY2_UV = m_tex_gpu_Y = m_tex_gpu_YV12_UV = m_tex_gpu_NV12_UV = NULL;
-	m_surf_YV12 = m_surf_NV12 = m_surf_YUY2 = NULL;
-	m_surf_gpu_YV12 = m_surf_gpu_NV12 = m_surf_gpu_YUY2 = NULL;
-	m_tex_stereo_test = m_tex_stereo_test_cpu = NULL;
+	zero(device, allocator);
 
-	m_width = 0;
-	m_height = 0;
-	m_ready = false;
-	m_format = MEDIASUBTYPE_RGB32;
-	m_topdown = false;
-	m_prepared_for_rendering = false;
-	m_converted = false;
-	m_cpu_stereo_tested = false;
-	m_cpu_tested_result = input_layout_auto;		// means unknown
 	CComPtr<IDirect3DSurface9> tmp;
 	CComPtr<IDirect3DSurface9> dst;
 	HRESULT hr;
@@ -520,6 +520,34 @@ clearup:
 	return;
 }
 
+gpu_sample::gpu_sample(IDirect3DDevice9 *device, int width, int height, CTextureAllocator *allocator)
+{
+	zero(device, allocator);
+	//CAutoLock lck(&g_gpu_lock);
+
+	CComPtr<IDirect3DSurface9> tmp;
+	CComPtr<IDirect3DSurface9> dst;
+	HRESULT hr;
+
+	m_StretchRect = false;
+
+	m_width = width;
+	m_height = height;
+
+	JIF(allocator->CreateTexture(width, height, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_gpu_RGB32));
+	JIF(allocator->CreateTexture(width, height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_tex_RGB32));
+
+	m_prepared_for_rendering = true;
+	m_need_backup_when_decommitting = true;
+	m_format = MEDIASUBTYPE_RGB32;
+
+	m_pool = D3DPOOL_SYSTEMMEM;
+	m_ready = true;
+
+clearup:
+	return;
+}
+
 int gpusample_interlace(int height, int n)
 {
 	return n<height/2 ? n*2 : ((n-height/2)*2+1);
@@ -530,11 +558,10 @@ int gpusample_deinterlace(int height, int n)
 	return n%2 ? n/2+height/2 : n/2;
 }
 
-gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format,
-					   bool topdown_RGB32, bool interlaced, bool do_cpu_test, bool remux_mode, D3DPOOL pool, DWORD PC_LEVEL)
+void gpu_sample::zero(IDirect3DDevice9 *device, CTextureAllocator *allocator)
 {
-	//CAutoLock lck(&g_gpu_lock);
-	m_interlaced = interlaced;
+	m_need_backup_when_decommitting = false;
+	m_device = device;
 	m_allocator = allocator;
 	m_interlace_flags = 0;
 	m_tex_RGB32 = m_tex_YUY2_UV = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
@@ -542,15 +569,26 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	m_surf_YV12 = m_surf_NV12 = m_surf_YUY2 = NULL;
 	m_surf_gpu_YV12 = m_surf_gpu_NV12 = m_surf_gpu_YUY2 = NULL;
 	m_tex_stereo_test = m_tex_stereo_test_cpu = NULL;
-	m_width = width;
-	m_height = height;
+	m_width = 0;
+	m_height = 0;
 	m_ready = false;
-	m_format = format;
-	m_topdown = topdown_RGB32;
+	m_format = MEDIASUBTYPE_RGB32;
+	m_topdown = false;
 	m_prepared_for_rendering = false;
 	m_converted = false;
 	m_cpu_stereo_tested = false;
 	m_cpu_tested_result = input_layout_auto;		// means unknown
+}
+
+gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator, int width, int height, CLSID format,
+					   bool topdown_RGB32, bool interlaced, bool do_cpu_test, bool remux_mode, D3DPOOL pool, DWORD PC_LEVEL)
+{
+	zero((IDirect3DDevice9*)NULL, allocator);
+	//CAutoLock lck(&g_gpu_lock);
+
+	m_format = format;
+	m_topdown = topdown_RGB32;
+	m_interlaced = interlaced;
 	HRESULT hr;
 	CComQIPtr<IMediaSample2, &IID_IMediaSample2> I2(memory_sample);
 	if (!allocator || !memory_sample)
@@ -758,23 +796,8 @@ HRESULT gpu_sample::set_interlace(bool interlace)
 extern CCritSec g_ILLock;
 gpu_sample::gpu_sample(const wchar_t *filename, CTextureAllocator *allocator)
 {
-	//CAutoLock lck(&g_gpu_lock);
-	m_allocator = allocator;
-	m_interlace_flags = 0;
-	m_tex_RGB32 = m_tex_YUY2_UV = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
-	m_tex_gpu_RGB32 = m_tex_gpu_YUY2_UV = m_tex_gpu_Y = m_tex_gpu_YV12_UV = m_tex_gpu_NV12_UV = NULL;
-	m_surf_YV12 = m_surf_NV12 = m_surf_YUY2 = NULL;
-	m_surf_gpu_YV12 = m_surf_gpu_NV12 = m_surf_gpu_YUY2 = NULL;
-	m_tex_stereo_test = m_tex_stereo_test_cpu = NULL;
-	m_width = 0;
-	m_height = 0;
-	m_ready = false;
-	m_format = MEDIASUBTYPE_RGB32;
-	m_topdown = false;
-	m_prepared_for_rendering = false;
-	m_converted = false;
-	m_cpu_stereo_tested = false;
-	m_cpu_tested_result = input_layout_auto;		// means unknown
+	zero((IDirect3DDevice9*)NULL, allocator);
+
 	CAutoLock lck(&g_ILLock);
 	HRESULT hr;
 	if (!allocator)
@@ -874,22 +897,8 @@ clearup:
 gpu_sample::gpu_sample(CTextureAllocator *allocator, HFONT font, const wchar_t *text, RGBQUAD color, RECT *dst_rect /* = NULL */, DWORD flag /* = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL */)
 {
 	//CAutoLock lck(&g_gpu_lock);
-	m_allocator = allocator;
-	m_interlace_flags = 0;
-	m_tex_RGB32 = m_tex_YUY2_UV = m_tex_Y = m_tex_YV12_UV = m_tex_NV12_UV = NULL;
-	m_tex_gpu_RGB32 = m_tex_gpu_YUY2_UV = m_tex_gpu_Y = m_tex_gpu_YV12_UV = m_tex_gpu_NV12_UV = NULL;
-	m_surf_YV12 = m_surf_NV12 = m_surf_YUY2 = NULL;
-	m_surf_gpu_YV12 = m_surf_gpu_NV12 = m_surf_gpu_YUY2 = NULL;
-	m_tex_stereo_test = m_tex_stereo_test_cpu = NULL;
-	m_width = 0;
-	m_height = 0;
-	m_ready = false;
-	m_format = MEDIASUBTYPE_RGB32;
-	m_topdown = false;
-	m_prepared_for_rendering = false;
-	m_converted = false;
-	m_cpu_stereo_tested = false;
-	m_cpu_tested_result = input_layout_auto;		// means unknown
+	zero((IDirect3DDevice9*)NULL, allocator);
+
 	CAutoLock lck(&g_ILLock);
 	HRESULT hr;
 	if (!allocator)

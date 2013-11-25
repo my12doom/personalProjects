@@ -98,7 +98,7 @@ function UpdateUI()
 end
 
 -- resource base class
-local resource_base ={}
+resource_base ={}
 
 function resource_base:create(handle, width, height)
 	local o = {handle = handle, width = width, height = height}

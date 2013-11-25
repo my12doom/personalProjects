@@ -590,6 +590,7 @@ public:
 	
 	// for lua useage
 	HRESULT get_resource(int arg, resource_userdata *resource);
-	HRESULT paint(RECTF *dst, resource_userdata *resource, RECTF*src = NULL, float alpha = 1.0f, resampling_method method = bilinear_no_mipmap);
+	HRESULT paint(RECTF *dst, resource_userdata *resource, RECTF*src = NULL, float alpha = 1.0f, resampling_method method = bilinear_no_mipmap, gpu_sample *rt = NULL);
 	HRESULT set_clip_rect(int left, int top, int right, int bottom);
+	HRESULT create_rt(int width, int height, resource_userdata *resource);
 };

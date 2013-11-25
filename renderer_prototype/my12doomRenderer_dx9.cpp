@@ -2481,10 +2481,13 @@ HRESULT my12doomRenderer::Draw(IDirect3DSurface9 *rt, gpu_sample *resource, RECT
 }
 
 extern double UIScale;
-HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RECTF*src_rect/* = NULL*/, float alpha/* = 1.0f*/, resampling_method method /* =bilinear_no_mipmap */)
+HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RECTF*src_rect/* = NULL*/, float alpha/* = 1.0f*/, resampling_method method /* =bilinear_no_mipmap */, gpu_sample *gpu_rt/* = NULL*/)
 {
 	CComPtr<IDirect3DSurface9> rt;
-	m_Device->GetRenderTarget(0, &rt);
+	if (gpu_rt)
+		gpu_rt->m_tex_gpu_RGB32->get_first_level(&rt);
+	else
+		m_Device->GetRenderTarget(0, &rt);
 	for(int i=0; i<4; i++)
 		((float*)dst_rect)[i] = ((float*)dst_rect)[i] * UIScale;
 
@@ -2522,7 +2525,15 @@ HRESULT my12doomRenderer::get_resource(int arg, resource_userdata *resource)
 	return S_OK;
 }
 
+HRESULT my12doomRenderer::create_rt(int width, int height, resource_userdata *resource)
+{
+	CAutoLock lck(&m_pool_lock);
+	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
+	resource->pointer = new gpu_sample(m_Device, width, height, m_pool);
+	resource->managed = false;
 
+	return S_OK;
+}
 HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust, int view)
 {
 	if (!surface_to_adjust)

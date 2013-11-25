@@ -26,12 +26,18 @@ static int paint_core(lua_State *L)
 	int s_bottom = lua_tointeger(L, parameter_count+8);
 	double alpha = lua_tonumber(L, parameter_count+9);
 	resampling_method method = (resampling_method)(int)lua_tointeger(L, parameter_count+10);
+	resource_userdata *rrt = (resource_userdata*)lua_touserdata(L, parameter_count+11);
+	gpu_sample *rt = NULL;
+	if (rrt && rrt->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
+		rt = (gpu_sample*)rrt->pointer;
+
+
 
 	RECTF dst_rect = {left, top, right, bottom};
 	RECTF src_rect = {s_left, s_top, s_right, s_bottom};
 	bool hasROI = s_left > 0 || s_top > 0 || s_right > 0 || s_bottom > 0;
 
-	g_renderer->paint(&dst_rect, resource, hasROI ? &src_rect : NULL, alpha, method);
+	g_renderer->paint(&dst_rect, resource, hasROI ? &src_rect : NULL, alpha, method, rt);
 
 	lua_pushboolean(L, 1);
 	return 1;
@@ -72,6 +78,17 @@ static int get_resource(lua_State *L)
 	return 1;
 }
 
+static int create_rt(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	int width = lua_tointeger(L, parameter_count+0);
+	int height = lua_tointeger(L, parameter_count+1);
+
+	resource_userdata *resource = new resource_userdata;
+	HRESULT hr = g_renderer->create_rt(width, height, resource);
+	lua_pushlightuserdata(L, resource);
+	return 1;
+}
 static int load_bitmap_core(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
@@ -274,7 +291,7 @@ static int decommit_resource_core(lua_State *L)
 		return 0;
 
 	if (resource->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
-		((gpu_sample*)resource->pointer)->commit();
+		((gpu_sample*)resource->pointer)->decommit();
 
 	return 0;
 }
@@ -333,6 +350,7 @@ int my12doomRenderer_lua_init()
 	g_lua_dx9_manager->get_variable("paint_core") = &paint_core;
 	g_lua_dx9_manager->get_variable("set_clip_rect_core") = &set_clip_rect_core;
 	g_lua_dx9_manager->get_variable("get_resource") = &get_resource;
+	g_lua_dx9_manager->get_variable("create_rt") = &create_rt;
 	g_lua_dx9_manager->get_variable("load_bitmap_core") = &load_bitmap_core;
 	g_lua_dx9_manager->get_variable("draw_font_core") = &draw_font_core;
 	g_lua_dx9_manager->get_variable("release_resource_core") = &release_resource_core;

@@ -49,8 +49,9 @@ logo:SetPoint(CENTER)
 logo:SetSize(1024,600)
 
 function logo:RenderThis()
-	if not player.movie_loaded then
-		local res = get_bitmap(lua_path .. "bg.png")
+	local res = self.res
+	if not player.movie_loaded or true then
+		res = self.res or get_bitmap(lua_path .. "bg.png")
 		paint(0,0,1024,600, res)
 	end
 	if player.movie_loading then
@@ -58,6 +59,25 @@ function logo:RenderThis()
 		local res = get_bitmap(lua_path .. "loading.png")
 		set_bitmap_rect(res, p*64,0,(p+1)*64,64)
 		paint(480,268,544,332, res)
+	end
+end
+
+function logo:OnClick()
+	self:OnReleaseGPU()
+	local l,t,r,b = self:GetRect()
+	local w = r-l
+	local h = b-t
+	dx9.lock_frame()
+	self.res = resource_base:create(dx9.create_rt(w, h), w, h)
+	dx9.paint_core(0, 0, w, h, dx9.get_resource(), 0, 0, 0, 0, 1.0, bilinear_no_mipmap, self.res.handle)
+	self.res:decommit()
+	dx9.unlock_frame()
+end
+
+function logo:OnReleaseGPU()
+	if (self.res) then
+		self.res:release()
+		self.res = nil
 	end
 end
 
