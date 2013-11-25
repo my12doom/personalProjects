@@ -586,6 +586,8 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	zero((IDirect3DDevice9*)NULL, allocator);
 	//CAutoLock lck(&g_gpu_lock);
 
+	m_width = width;
+	m_height = height;
 	m_format = format;
 	m_topdown = topdown_RGB32;
 	m_interlaced = interlaced;
