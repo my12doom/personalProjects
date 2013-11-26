@@ -30,6 +30,7 @@ public:
 	bool m_interlaced;
 	bool m_GDI_prepared;
 	bool m_need_backup_when_decommitting;
+	bool m_no_pool;
 
 	CPooledTexture *m_tex_gpu_RGB32;				// GPU RGB32 planes, in A8R8G8B8, full width
 	CPooledTexture *m_tex_gpu_Y;					// GPU Y plane of YV12/NV12, in L8

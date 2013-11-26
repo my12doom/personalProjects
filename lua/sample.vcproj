@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="E:\libtorrent\zlib;E:\libtorrent\include;E:\boost;E:\openssl\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;"
+				AdditionalIncludeDirectories="..\libtorrent\zlib;..\libtorrent\include;..\boost;E:\openssl\include;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Samples\multimedia\directshow\baseclasses&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;BOOST_ASIO_ENABLE_CANCELIO;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0501;__USE_W32_SOCKETS;TORRENT_STATS;TORRENT_USE_OPENSSL;UNICODE;_UNICODE;BOOST_ASIO_SEPARATE_COMPILATION"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

@@ -213,6 +213,7 @@ public:
 	lua_const &m_hue2;
 	lua_const &m_contrast2;
 	CCritSec m_frame_lock;
+	CCritSec m_rendered_packet_lock;
 
 	// public functions
 	HRESULT pump();
@@ -342,7 +343,6 @@ protected:
 	gpu_sample * m_last_rendered_sample1;
 	gpu_sample * m_last_rendered_sample2;
 	CCritSec m_packet_lock;
-	CCritSec m_rendered_packet_lock;
 	CCritSec m_pool_lock;
 
 	// dx9 functions and variables

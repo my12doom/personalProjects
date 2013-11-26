@@ -80,7 +80,7 @@ HRESULT gpu_sample::commit()
 
 	HRESULT hr = S_OK;
 
-	JIF( m_allocator->CreateTexture(m_width, m_height, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_gpu_RGB32));
+	JIF( m_allocator->CreateTexture(m_width, m_height, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_gpu_RGB32, m_no_pool));
 
 	if (m_format == MEDIASUBTYPE_YUY2)
 	{
@@ -136,8 +136,8 @@ HRESULT gpu_sample::decommit()
 	// back it up!
 	if (m_need_backup_when_decommitting)
 	{
-		IDirect3DSurface9 *mem;
-		IDirect3DSurface9 *gpu;
+		CComPtr<IDirect3DSurface9> mem;
+		CComPtr<IDirect3DSurface9> gpu;
 		m_tex_RGB32->get_first_level(&mem);
 		m_tex_gpu_RGB32->get_first_level(&gpu);
 
@@ -530,12 +530,13 @@ gpu_sample::gpu_sample(IDirect3DDevice9 *device, int width, int height, CTexture
 	HRESULT hr;
 
 	m_StretchRect = false;
+	m_no_pool = true;
 
 	m_width = width;
 	m_height = height;
 
-	JIF(allocator->CreateTexture(width, height, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_gpu_RGB32));
-	JIF(allocator->CreateTexture(width, height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_tex_RGB32));
+	JIF(allocator->CreateTexture(width, height, D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_tex_gpu_RGB32, m_no_pool));
+	JIF(allocator->CreateTexture(width, height, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &m_tex_RGB32, m_no_pool));
 
 	m_prepared_for_rendering = true;
 	m_need_backup_when_decommitting = true;
@@ -560,6 +561,7 @@ int gpusample_deinterlace(int height, int n)
 
 void gpu_sample::zero(IDirect3DDevice9 *device, CTextureAllocator *allocator)
 {
+	m_no_pool = false;
 	m_need_backup_when_decommitting = false;
 	m_device = device;
 	m_allocator = allocator;

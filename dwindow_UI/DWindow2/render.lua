@@ -68,8 +68,11 @@ function logo:OnClick()
 	local w = r-l
 	local h = b-t
 	dx9.lock_frame()
+	if not (self.res and self.res.handle) then
+		self.res = nil
+	end
 	self.res = self.res or resource_base:create(dx9.create_rt(w, h), w, h)
-	dx9.paint_core(0, 0, w, h, dx9.get_resource(), 0, 0, 0, 0, 1.0, bilinear_no_mipmap, self.res.handle)
+	dx9.paint_core(0, 0, w, h, dx9.get_resource(), 0, 0, 0, 0, 0.6, bilinear_no_mipmap, self.res.handle)
 	dx9.unlock_frame()
 end
 

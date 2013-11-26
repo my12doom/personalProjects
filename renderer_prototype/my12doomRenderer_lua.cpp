@@ -46,11 +46,13 @@ static int paint_core(lua_State *L)
 static int lock_frame(lua_State *L)
 {
 	g_renderer->m_frame_lock.Lock();
+	g_renderer->m_rendered_packet_lock.Lock();
 	return 0;
 }
 static int unlock_frame(lua_State *L)
 {
 	g_renderer->m_frame_lock.Unlock();
+	g_renderer->m_rendered_packet_lock.Unlock();
 	return 0;
 }
 

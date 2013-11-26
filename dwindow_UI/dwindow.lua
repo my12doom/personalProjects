@@ -103,7 +103,9 @@ resource_base ={}
 function resource_base:create(handle, width, height)
 	local o = {handle = handle, width = width, height = height}
 	setmetatable(o, self)
-	self.__index = self	
+	self.__index = self
+	
+	table.insert(bitmapcache, o)
 	
 	return o
 end
@@ -161,6 +163,7 @@ function releaseCache(is_decommit)
 	else
 		for _,v in pairs(bitmapcache) do
 			dx9.release_resource_core(v.handle)
+			v.handle = nil
 		end
 		bitmapcache = {}
 	end

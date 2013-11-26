@@ -1117,7 +1117,7 @@ int lua_track_back(lua_State *L)
 	for(int level = 1; lua_getstack(L, level, &debug); level++)
 	{
 		int suc = lua_getinfo(L, "Sl", &debug);
-		sprintf(tmp, "%s(%d,1) : %s \n", debug.source+1, debug.currentline, level == 1 ? strrchr(err, ':')+1 : "");
+		sprintf(tmp, "%s(%d,1) : %s \n", debug.source+1, debug.currentline, level == 1 ? (strrchr(err, ':') ? (strrchr(err, ':')+1) : err)  : "");
 		OutputDebugStringA(tmp);
 	}
 	if (MessageBoxA(NULL, "Debug ? ", "Debug ? " , MB_YESNO) == IDYES)

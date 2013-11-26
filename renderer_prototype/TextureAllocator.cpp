@@ -7,12 +7,13 @@ int lock_delay = 3;
 // texture class
 CPooledTexture::~CPooledTexture()
 {
-	m_allocator->DeleteTexture(this);
+	m_allocator->DeleteTexture(this, m_dont_pool);
 }
 
 CPooledTexture::CPooledTexture(CTextureAllocator *pool)
 {
 	m_allocator = pool;
+	m_dont_pool = false;
 }
 
 HRESULT CPooledTexture::Unlock()
@@ -33,12 +34,13 @@ HRESULT CPooledTexture::get_first_level(IDirect3DSurface9 **out)
 // surface class
 CPooledSurface::~CPooledSurface()
 {
-	m_allocator->DeleteSurface(this);
+	m_allocator->DeleteSurface(this, m_dont_pool);
 }
 
 CPooledSurface::CPooledSurface(CTextureAllocator *pool)
 {
 	m_allocator = pool;
+	m_dont_pool = false;
 }
 
 HRESULT CPooledSurface::Unlock()
@@ -65,7 +67,7 @@ CTextureAllocator::~CTextureAllocator()
 	DestroyPool(D3DPOOL_MANAGED);
 	DestroyPool(D3DPOOL_SYSTEMMEM);
 }
-HRESULT CTextureAllocator::CreateTexture(int width, int height, DWORD usage, D3DFORMAT format, D3DPOOL pool, CPooledTexture **out)
+HRESULT CTextureAllocator::CreateTexture(int width, int height, DWORD usage, D3DFORMAT format, D3DPOOL pool, CPooledTexture **out, bool dont_pool/* = false*/)
 {
 	if (out == NULL)
 		return E_POINTER;
@@ -105,6 +107,8 @@ HRESULT CTextureAllocator::CreateTexture(int width, int height, DWORD usage, D3D
 	o->usage = usage;
 	o->format = format;
 	o->creator = m_device;
+	o->m_dont_pool = dont_pool;
+
 	o->hr = m_device->CreateTexture(width, height, (usage & D3DUSAGE_AUTOGENMIPMAP) ? 0 : 1, usage, format, pool, &o->texture, NULL);
 	if (FAILED(o->hr))
 		return o->hr;
