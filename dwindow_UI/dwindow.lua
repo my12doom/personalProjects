@@ -1,6 +1,7 @@
 ﻿local rect = {0,0,99999,99999,0,0}
 local rects = {}
 local bitmapcache = {}
+local cache_lock
 
 
 -- helper functions
@@ -105,7 +106,9 @@ function resource_base:create(handle, width, height)
 	setmetatable(o, self)
 	self.__index = self
 	
+	cache_lock:lock()
 	table.insert(bitmapcache, o)
+	cache_lock:unlock()	
 	
 	return o
 end
@@ -156,17 +159,24 @@ function OnReleaseCPU()
 end
 
 function releaseCache(is_decommit)
+	cache_lock:lock()
+
 	if is_decommit then
+		pcall(function()
 		for _,v in pairs(bitmapcache) do
 			dx9.decommit_resource_core(v.handle)
 		end
+		end)
 	else
+		pcall(function()
 		for _,v in pairs(bitmapcache) do
 			dx9.release_resource_core(v.handle)
 			v.handle = nil
 		end
 		bitmapcache = {}
+		end)
 	end
+	cache_lock:unlock()
 end
 
 function test_get_text_bitmap(...)
@@ -182,6 +192,7 @@ DrawText = test_get_text_bitmap
 
 function get_bitmap(filename, reload)
 	if reload then unload_bitmap(filename) end
+	cache_lock:lock()
 	if bitmapcache[filename] == nil then
 		local res, width, height = dx9.load_bitmap_core(filename)		-- width is also used as error msg output.
 
@@ -201,12 +212,17 @@ function get_bitmap(filename, reload)
 	rtn.right = 0
 	rtn.top = 0
 	rtn.bottom = 0
+	cache_lock:unlock()
 	return rtn
 end
 
 function unload_bitmap(filename, is_decommit)
+	cache_lock:lock()
 	local tbl = bitmapcache[filename]
-	if not tbl or type(tbl)~="table" then return end
+	if not tbl or type(tbl)~="table" then
+		cache_lock:unlock()
+		return
+	end
 
 	if is_decommit then
 		dx9.decommit_resource_core(bitmapcache[filename].handle)
@@ -214,6 +230,7 @@ function unload_bitmap(filename, is_decommit)
 		dx9.release_resource_core(bitmapcache[filename].handle)
 		bitmapcache[filename] = nil
 	end
+	cache_lock:unlock()
 end
 
 -- set region of interest
@@ -294,6 +311,8 @@ end
 function CritSec:destroy()
 	core.DestroyCritSec(self.handle)
 end
+
+cache_lock = CritSec:create()
 
 -- helper functions and settings
 function merge_table(op, tomerge)
