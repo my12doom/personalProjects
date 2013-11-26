@@ -6,6 +6,7 @@
     <string name="text_username">用户名</string>
     <string name="connect">连接</string>
     <string name="play">播放</string>
+    <string name="pause">暂停</string>
     <string name="AudioTrack">选择音轨</string>
     <string name="SubtitleTrack">选择字幕</string>
     <string name="SwapEyes">切换左右眼</string>

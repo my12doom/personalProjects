@@ -380,7 +380,7 @@ public class DWindowActivity extends Activity {
 				connect();
 			
     		ImageView imageView = (ImageView)findViewById(R.id.iv_b512);
-    		btn_playpause.setText(playing?"Pause":"Play");
+    		btn_playpause.setText(getResources().getString(playing?R.string.play:R.string.pause));
 			if (conn.getState()<0)
     		{
 				findViewById(R.id.login_layout).setVisibility(View.VISIBLE);

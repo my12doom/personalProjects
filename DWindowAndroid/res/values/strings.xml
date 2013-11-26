@@ -6,6 +6,7 @@
     <string name="text_username">UserName</string>
     <string name="connect">Connect</string>
     <string name="play">Play</string>
+    <string name="pause">Pause</string>
     <string name="AudioTrack">AudioTrack</string>
     <string name="SubtitleTrack">SubtitleTrack</string>
     <string name="SwapEyes">SwapEyes</string>
