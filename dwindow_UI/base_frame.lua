@@ -30,19 +30,31 @@ end
 
 function BaseFrame:render(...)
 
+	local ml,mt,mr,mb = self:GetRect()
+	dx9.clear_core(0,0,mr-ml,mb-mt,self.rt.handle)
 	self:RenderThis(...)
 
 	for i=1,#self.childs do
 		local v = self.childs[i]
 		if v and v.render then
 			local l,t,r,b = v:GetRect();
-			BeginChild(l,t,r,b)
+			BeginChild(l,t,r,b,1,v)
 			if IsCurrentDrawingVisible() then v:render(...) end
-			EndChild(l,t,r,b)
+			EndChild(l,t,r,b,1,v)
+			
+			if self.rt and v.rt then
+				dx9.paint_core(l-ml, t-mt, r-ml, b-mt, v.rt.handle, 0, 0, r-l, b-t, 1, bilinear_no_mipmap, self.rt.handle)
+			end
 		end
 	end
 
 end
+
+function BaseFrame:paint(left, top, right, bottom, bitmap, alpha, resampling_method)
+	if not bitmap or not bitmap.handle then return end
+	dx9.paint_core(left, top, right, bottom, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, 1, bilinear_no_mipmap, self.rt.handle)
+end
+
 
 -- these size / width / height is the desired values
 -- and anchor points may overwite them
@@ -463,7 +475,20 @@ function BaseFrame:CalculateAbsRect()
 		bottom = math.floor(ycenter + height/2)
 	end
 	
-	self.l, self.t, self.r, self.b = left or 0, top or 0, right or 0, bottom or 0
+	left, top, right, bottom = left or 0, top or 0, right or 0, bottom or 0	
+	self.l, self.t, self.r, self.b = left, top, right, bottom
+	
+	width, height = right - left, bottom - top
+	
+	if width > 0 and height > 0 then
+		if self.rt and self.rt.width == width and self.rt.height == height then
+		else
+			if self.rt then
+				self.rt:release()
+			end
+			self.rt = resource_base:create(dx9.create_rt(width, height), width, height)
+		end
+	end
 	
 	if self.debug then
 		print("left, right, xcenter, top, bottom, ycenter, width, height=", left, right, xcenter, top, bottom, ycenter, width, height)

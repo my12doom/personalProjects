@@ -2414,8 +2414,6 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 	m_subtitle->get_first_level(&src);
 
 	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 	RECT scissor = get_movie_scissor_rect();
 	m_Device->SetScissorRect(&scissor);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
@@ -2483,6 +2481,8 @@ HRESULT my12doomRenderer::Draw(IDirect3DSurface9 *rt, gpu_sample *resource, RECT
 extern double UIScale;
 HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RECTF*src_rect/* = NULL*/, float alpha/* = 1.0f*/, resampling_method method /* =bilinear_no_mipmap */, gpu_sample *gpu_rt/* = NULL*/)
 {
+	CComPtr<IDirect3DSurface9> last_rt;
+	m_Device->GetRenderTarget(0, &last_rt);
 	CComPtr<IDirect3DSurface9> rt;
 	if (gpu_rt)
 	{
@@ -2490,7 +2490,10 @@ HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RE
 		gpu_rt->m_tex_gpu_RGB32->get_first_level(&rt);
 	}
 	else
-		m_Device->GetRenderTarget(0, &rt);
+	{
+		rt = last_rt;
+	}
+
 	for(int i=0; i<4; i++)
 		((float*)dst_rect)[i] = ((float*)dst_rect)[i] * UIScale;
 
@@ -2502,13 +2505,24 @@ HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RE
 		{
 			sample->commit();
 			m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
+			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 			resize_surface(NULL, sample, rt, src_rect, dst_rect, method, alpha );
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 		}
 	}
 
+	m_Device->SetRenderTarget(0, last_rt);
+
 	return S_OK;
+}
+
+HRESULT my12doomRenderer::clear(gpu_sample *gpu_rt, RECT rect)
+{
+	CComPtr<IDirect3DSurface9> rt;
+	gpu_rt->commit();
+	gpu_rt->m_tex_gpu_RGB32->get_first_level(&rt);
+
+	return m_Device->ColorFill(rt, &rect, D3DCOLOR_ARGB(0,0,0,0));
 }
 
 HRESULT my12doomRenderer::set_clip_rect(int left, int top, int right, int bottom)

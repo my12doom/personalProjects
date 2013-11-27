@@ -20,7 +20,7 @@ end
 
 function bg:RenderThis()
 	local res = get_bitmap(lua_path .. "bg.png")
-	paint(0,0,ui.width,64,res,alpha)
+	self:paint(0,0,ui.width,64,res,alpha)
 end
 
 function bg:HitTest()
@@ -59,7 +59,7 @@ function logo:RenderThis(view)
 	local d = self.d
 	if not player.movie_loaded then
 		local delta = (1-view) * 0.025*self.w
-		paint(0+delta,0,self.w+delta,self.w,get_bitmap(lua_path .. "logo.png"))
+		self:paint(0+delta,0,self.w+delta,self.w,get_bitmap(lua_path .. "logo.png"))
 	end
 end
 
@@ -122,7 +122,7 @@ function play:RenderThis()
 	else
 		set_bitmap_rect(res, 96,0,96+14,14)
 	end
-	paint(0,0,14,14,res,alpha)	
+	self:paint(0,0,14,14,res,alpha)	
 end
 
 function play:OnClick()
@@ -138,7 +138,7 @@ full:SetSize(14, 14)
 function full:RenderThis()
 	local res = get_bitmap(lua_path .. "ui.png")
 	set_bitmap_rect(res, 192,0,192+14,14)
-	paint(0,0,14,14,res,alpha)
+	self:paint(0,0,14,14,res,alpha)
 end
 
 function full:OnClick()
@@ -158,9 +158,9 @@ function volume:RenderThis()
 	volume = math.max(volume, 0)
 	local res = get_bitmap(lua_path .. "ui.png")
 	set_bitmap_rect(res, 124+34,0,124+34+34,14)
-	paint(0+3,0,34+3,14,res,alpha)
+	self:paint(0+3,0,34+3,14,res,alpha)
 	set_bitmap_rect(res, 124,0,124+34*volume,14)
-	paint(0+3,0,3+34*volume,14,res,alpha)
+	self:paint(0+3,0,3+34*volume,14,res,alpha)
 end
 
 function volume:OnClick(x, y)
@@ -177,7 +177,7 @@ previous:SetSize(14, 14)
 function previous:RenderThis()
 	local res = get_bitmap(lua_path .. "ui2.png")
 	set_bitmap_rect(res, 0,0,14,14)
-	paint(0,0,14,14,res,alpha)	
+	self:paint(0,0,14,14,res,alpha)	
 end
 
 function previous:OnClick()
@@ -193,7 +193,7 @@ next:SetSize(14, 14)
 function next:RenderThis()
 	local res = get_bitmap(lua_path .. "ui2.png")
 	set_bitmap_rect(res, 14,0,28,14)
-	paint(0,0,14,14,res,alpha)	
+	self:paint(0,0,14,14,res,alpha)	
 end
 
 function next:OnClick()
@@ -236,7 +236,7 @@ function number_current:RenderThis()
 		end
 		
 		set_bitmap_rect(res, tex,0,tex+ctex,14)
-		paint(x, 0, x+ctex, 14, res,alpha)
+		self:paint(x, 0, x+ctex, 14, res,alpha)
 		x = x + ctex
 	end
 end
@@ -266,9 +266,9 @@ function progress:RenderThis()
 	
 	local res = get_bitmap(lua_path .. "ui.png")
 	set_bitmap_rect(res, 216,0,220,14)
-	paint(3,0,w+3,14,res,alpha)
+	self:paint(3,0,w+3,14,res,alpha)
 	set_bitmap_rect(res, 208,0,212,14)
-	paint(3,0,fv*w+3,14,res,alpha)
+	self:paint(3,0,fv*w+3,14,res,alpha)
 end
 
 function progress:OnClick(x,y,button)

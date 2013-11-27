@@ -26,7 +26,9 @@ static int paint_core(lua_State *L)
 	int s_bottom = lua_tointeger(L, parameter_count+8);
 	double alpha = lua_tonumber(L, parameter_count+9);
 	resampling_method method = (resampling_method)(int)lua_tointeger(L, parameter_count+10);
-	resource_userdata *rrt = (resource_userdata*)lua_touserdata(L, parameter_count+11);
+	resource_userdata *rrt = NULL; 
+	if (-parameter_count>=12)
+		rrt = (resource_userdata*)lua_touserdata(L, parameter_count+11);
 	gpu_sample *rt = NULL;
 	if (rrt && rrt->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
 		rt = (gpu_sample*)rrt->pointer;
@@ -38,6 +40,25 @@ static int paint_core(lua_State *L)
 	bool hasROI = s_left > 0 || s_top > 0 || s_right > 0 || s_bottom > 0;
 
 	g_renderer->paint(&dst_rect, resource, hasROI ? &src_rect : NULL, alpha, method, rt);
+
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
+static int clear_core(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	int left = lua_tointeger(L, parameter_count+0);
+	int top = lua_tointeger(L, parameter_count+1);
+	int right = lua_tointeger(L, parameter_count+2);
+	int bottom = lua_tointeger(L, parameter_count+3);
+	resource_userdata *resource = (resource_userdata*)lua_touserdata(L, parameter_count+4);
+
+	if (!resource || resource->resource_type != resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
+		return 0;
+
+	RECT rect = {left, top, right, bottom};
+	HRESULT hr = g_renderer->clear((gpu_sample*)resource->pointer, rect);
 
 	lua_pushboolean(L, 1);
 	return 1;
@@ -350,6 +371,7 @@ int my12doomRenderer_lua_init()
 	// dx9
 	g_lua_dx9_manager = new lua_manager("dx9");
 	g_lua_dx9_manager->get_variable("paint_core") = &paint_core;
+	g_lua_dx9_manager->get_variable("clear_core") = &clear_core;
 	g_lua_dx9_manager->get_variable("set_clip_rect_core") = &set_clip_rect_core;
 	g_lua_dx9_manager->get_variable("get_resource") = &get_resource;
 	g_lua_dx9_manager->get_variable("create_rt") = &create_rt;

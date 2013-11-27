@@ -50,7 +50,7 @@ logo:SetSize(1920,1080)
 function logo:RenderThis()
 	if not player.movie_loaded then
 		local res = get_bitmap(lua_path .. "logo_bg.png")
-		paint(0,0,1920,1080, res)
+		self:paint(0,0,1920,1080, res)
 	end
 end
 
@@ -98,7 +98,7 @@ open:SetSize(230,70)
 
 function open:RenderThis()
 	if not player.movie_loaded then
-		paint(0,0,230,70, get_bitmap(lua_path .. (setting.LCID == "简体中文" and "open.png" or "open_en.png")))
+		self:paint(0,0,230,70, get_bitmap(lua_path .. (setting.LCID == "简体中文" and "open.png" or "open_en.png")))
 	end
 end
 
@@ -126,7 +126,7 @@ logo_hot:SetSize(400,171)
 function logo_hot:RenderThis()
 	if not player.movie_loaded then
 		local res = get_bitmap(lua_path .. "logo_hot.png")
-		paint(0,0,400,171, res)
+		self:paint(0,0,400,171, res)
 	end
 end
 
@@ -141,7 +141,7 @@ print("toolbar_height=", toolbar_height)
 function toolbar_bg:RenderThis()
 	local l,t,r,b = self:GetRect()
 	local res = get_bitmap(lua_path .. "toolbar_background.png");
-	paint(0,0,r-l,b-t, res, alpha)
+	self:paint(0,0,r-l,b-t, res, alpha)
 end
 
 -- buttons
@@ -194,7 +194,7 @@ local function button_GetRect(self)
 end
 
 local function button_RenderThis(self)
-	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[1]), alpha)
+	self:paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[1]), alpha)
 end
 
 local function button_OnClick(self)
@@ -222,12 +222,12 @@ for i=1,#button_pictures/2 do
 end
 
 buttons[4].RenderThis = function(self)
-	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[player.is_playing() and 2 or 1]), alpha)
+	self:paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[player.is_playing() and 2 or 1]), alpha)
 end
 
 
 buttons[7].RenderThis = function(self)
-	paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[dx9.is2DRendering() and 2 or 1]), alpha)
+	self:paint(11,0,button_size+11,button_size, get_bitmap(lua_path .. self.pic[dx9.is2DRendering() and 2 or 1]), alpha)
 end
 
 
@@ -267,25 +267,25 @@ function progressbar:RenderThis()
 	local v = fv * r
 	
 	-- draw bottom
-	paint(0,0, width_progress_left, b, get_bitmap(lua_path .. file(1)), alpha)
-	paint(width_progress_left,0, r-width_progress_right, b, get_bitmap(lua_path .. file(2)), alpha)
-	paint(r-width_progress_right,0, r, b, get_bitmap(lua_path .. file(3)), alpha)
+	self:paint(0,0, width_progress_left, b, get_bitmap(lua_path .. file(1)), alpha)
+	self:paint(width_progress_left,0, r-width_progress_right, b, get_bitmap(lua_path .. file(2)), alpha)
+	self:paint(r-width_progress_right,0, r, b, get_bitmap(lua_path .. file(3)), alpha)
 
 	-- draw top
 	if (v > 1.5) then
 		local bmp = get_bitmap(lua_path .. file(4))
-		paint(0,0,math.min(width_progress_left, v),b, bmp, alpha)
+		self:paint(0,0,math.min(width_progress_left, v),b, bmp, alpha)
 	end
 
 	if (v > width_progress_left) then
 		local r = math.min(r-width_progress_right, v)
 		local bmp = get_bitmap(lua_path .. file(5))
-		paint(width_progress_left, 0, r, b, bmp, alpha)
+		self:paint(width_progress_left, 0, r, b, bmp, alpha)
 	end
 
 	if (v > r - width_progress_right) then
 		local bmp = get_bitmap(lua_path .. file(6))
-		paint(r-width_progress_right, 0, v, b, bmp, alpha)
+		self:paint(r-width_progress_right, 0, v, b, bmp, alpha)
 	end
 end
 
@@ -317,7 +317,7 @@ function number_current:RenderThis()
 
 	local x = 0
 	for i=1,#numbers do
-		paint(x, 0, x+numbers_width, numbers_height, get_bitmap(lua_path .. math.floor(numbers[i]) .. ".png"), alpha)
+		self:paint(x, 0, x+numbers_width, numbers_height, get_bitmap(lua_path .. math.floor(numbers[i]) .. ".png"), alpha)
 		x = x + numbers_width
 	end
 
@@ -339,7 +339,7 @@ volume_bar.alpha = 0
 volume_bar.volume = player.get_volume()
 function volume_bar:RenderThis()
 	if self.alpha < 0.05 then return end
-	paint(0,0,84,317, get_bitmap(lua_path .. "volume_base.png"), self.alpha)
+	self:paint(0,0,84,317, get_bitmap(lua_path .. "volume_base.png"), self.alpha)
 	
 	-- the button
 	local ypos = volume_button_zero_point + (317-volume_button_zero_point*2) * (1-player.get_volume());
@@ -477,7 +477,7 @@ end
 function grow:RenderThis()
 	local res = get_bitmap(lua_path .. "grow.png")
 	local alpha = alpha_tick / 200
-	paint(0, 0, 250, 250, res, alpha)
+	self:paint(0, 0, 250, 250, res, alpha)
 end
 
 function grow:HitTest()

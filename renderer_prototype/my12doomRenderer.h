@@ -588,9 +588,10 @@ public:
 	HRESULT drawFont(gpu_sample **out, HFONT font, wchar_t *text, RGBQUAD color, RECT *dst_rect = NULL, DWORD flag = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL);
 
 	
-	// for lua useage
+	// for lua usage
 	HRESULT get_resource(int arg, resource_userdata *resource);
 	HRESULT paint(RECTF *dst, resource_userdata *resource, RECTF*src = NULL, float alpha = 1.0f, resampling_method method = bilinear_no_mipmap, gpu_sample *rt = NULL);
+	HRESULT clear(gpu_sample *rt, RECT rect);
 	HRESULT set_clip_rect(int left, int top, int right, int bottom);
 	HRESULT create_rt(int width, int height, resource_userdata *resource);
 };

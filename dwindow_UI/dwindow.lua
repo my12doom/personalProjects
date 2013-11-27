@@ -32,8 +32,9 @@ function error(...)
 	print("--ERROR:", ...)
 end
 
-
-function BeginChild(left, top, right, bottom, alpha)
+local current_child
+function BeginChild(left, top, right, bottom, alpha, child)
+	current_child = child
 	local left_unclip, top_unclip = left, top
 	left = math.max(rect[1], left)
 	top = math.max(rect[2], top)
@@ -44,6 +45,7 @@ function BeginChild(left, top, right, bottom, alpha)
 	rect = new_rect
 
 	dx9.set_clip_rect_core(left, top, right, bottom)
+	dx9.set_clip_rect_core(0, 0, 9999, 9999)
 end
 
 function EndChild(left, top, right, bottom)
@@ -81,6 +83,9 @@ function RenderUI(view)
 	t = core.GetTickCount()
 
 	root:render(view)
+	
+	local l,t,r,b = root:GetRect()
+	dx9.paint_core(l, t, r, b, root.rt.handle, 0, 0, r-l, b-t, 1, bilinear_no_mipmap)
 
 	local dt2 = core.GetTickCount() -t
 
@@ -253,7 +258,16 @@ function paint(left, top, right, bottom, bitmap, alpha, resampling_method)
 	if not bitmap or not bitmap.handle then return end
 	local x,y  = rect[5], rect[6]
 	local a = alpha or 1.0
-	return dx9.paint_core(left+x, top+y, right+x, bottom+y, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap)
+	
+	if current_child and current_child.rt and current_child.rt.handle then
+		--print(current_child.rt.handle)
+		--dx9.paint_core(left, top, right, bottom, dx9.get_resource(), 0, 0, 0, 0, 1, resampling_method or bilinear_no_mipmap, current_child.rt.handle)
+		dx9.set_clip_rect_core(0, 0, right+x, bottom+y)
+		dx9.paint_core(left, top, right, bottom, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, 1, bilinear_no_mipmap, current_child.rt.handle)
+		return dx9.paint_core(left+x, top+y, right+x, bottom+y, current_child.rt.handle, left, top, right, bottom, a, resampling_method or bilinear_no_mipmap)
+	end
+	
+	--return dx9.paint_core(left+x, top+y, right+x, bottom+y, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap)
 end
 
 -- native threading support
@@ -375,7 +389,8 @@ function ReloadUI(legacy)
 	if legacy then return end
 
 	print(core.execute_luafile(lua_path .. (core.v and "3dvplayer" or "DWindow2" ).. "\\render.lua"))
-	
+	print(core.execute_luafile(lua_path .. "tetris\\tetris.lua"))
+
 	dx9.lock_frame()
 	OnInitCPU()
 	OnInitGPU()

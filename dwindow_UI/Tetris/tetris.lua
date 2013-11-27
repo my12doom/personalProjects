@@ -219,7 +219,7 @@ init()
 
 local tetris = BaseFrame:Create()
 tetris.name = "TETRIS"
-tetris:SetPoint(TOPLEFT)
+tetris:SetPoint(TOPRIGHT, root)
 root:AddChild(tetris)
 tetris:SetSize(40*ww+40,40*hh+40)
 
@@ -230,11 +230,11 @@ function tetris:RenderThis()
 
 	-- paint border
 	for i=1,hh+1 do
-		paint(ww*40, (i-1)*40, (ww+1)*40, i*40, res2)
+		self:paint(ww*40, (i-1)*40, (ww+1)*40, i*40, res2)
 	end
 
 	for i=1,ww do
-		paint((i-1)*40, hh*40, i*40, (hh+1)*40, res2)
+		self:paint((i-1)*40, hh*40, i*40, (hh+1)*40, res2)
 	end
 
 	-- paint static blocks
@@ -243,7 +243,7 @@ function tetris:RenderThis()
 			if blocks[x][y] > 0 then
 				local xx = (x-1)*40
 				local yy = (y-1)*40
-				paint(xx,yy,xx+40,yy+40,res)
+				self:paint(xx,yy,xx+40,yy+40,res)
 			end
 		end
 	end
@@ -254,7 +254,7 @@ function tetris:RenderThis()
 			local i=posx + shape[k].x;
 			local j=posy + shape[k].y;
 
-			paint((i-1)*40,(j-1)*40,(i)*40,(j)*40,res)
+			self:paint((i-1)*40,(j-1)*40,(i)*40,(j)*40,res)
 		end
 	end
 end

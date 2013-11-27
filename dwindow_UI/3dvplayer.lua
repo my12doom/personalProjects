@@ -209,7 +209,7 @@ function v3dplayer_add_button()
 	test:SetPoint(TOPLEFT)
 
 	function test:RenderThis()
-		paint(0,0,self.width,self.height, self.res, 1, bilinear_mipmap_minus_one)
+		self:paint(0,0,self.width,self.height, self.res, 1, bilinear_mipmap_minus_one)
 	end
 
 	function test:OnInitCPU()
