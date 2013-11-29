@@ -617,6 +617,7 @@ lua_State * dwindow_lua_get_thread()
 {
 	CAutoLock lck(&g_csL);
 	lua_State *rtn = lua_newthread(g_L);
+	running_threads.push_back(rtn);
 	return rtn;
 }
 
@@ -631,6 +632,15 @@ void dwindow_lua_release_thread(lua_State * p)
 		if (pp == p)
 		{
 			lua_remove(g_L, i);
+			break;
+		}
+	}
+
+	for(std::list<lua_State*>::iterator i = running_threads.begin(); i!= running_threads.end(); ++i)
+	{
+		if (*i == p)
+		{
+			running_threads.erase(i);
 			break;
 		}
 	}

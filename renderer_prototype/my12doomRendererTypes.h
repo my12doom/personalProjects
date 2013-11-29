@@ -168,8 +168,9 @@ typedef struct resource_userdata_tag
 {
 	enum
 	{
-		RESOURCE_TYPE_GPU_SAMPLE,
+		RESOURCE_TYPE_GPU_SAMPLE = 0x10101010,
 
+		RESOURCE_TYPE_RELEASED = 0xFFFFEEEE,
 		TYPE_FORCE_DWORD = 0xffffffff,
 	} resource_type;
 

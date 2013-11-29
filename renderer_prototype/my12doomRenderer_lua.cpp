@@ -11,6 +11,63 @@ lua_manager *g_lua_dx9_manager = NULL;
 
 int my12doomRenderer_lua_loadscript();
 
+
+static int release_resource_core(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	resource_userdata *resource = (resource_userdata*)lua_touserdata(L, parameter_count+0);
+
+	if (resource == NULL) 
+		return 0;
+
+	if (resource->pointer == NULL || resource->managed)
+		return 0;
+
+	int type = resource->resource_type;
+	resource->resource_type = resource_userdata::RESOURCE_TYPE_RELEASED;
+
+	if (type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
+		delete ((gpu_sample*)resource->pointer);
+
+	return 0;
+}
+
+static int commit_resource_core(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	resource_userdata *resource = (resource_userdata*)lua_touserdata(L, parameter_count+0);
+
+	if (resource == NULL) 
+		return 0;
+
+	if (resource->pointer == NULL || resource->managed)
+		return 0;
+
+	if (resource->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
+		((gpu_sample*)resource->pointer)->commit();
+
+	return 0;
+}
+
+
+static int decommit_resource_core(lua_State *L)
+{
+	int parameter_count = -lua_gettop(L);
+	resource_userdata *resource = (resource_userdata*)lua_touserdata(L, parameter_count+0);
+
+	if (resource == NULL) 
+		return 0;
+
+	if (resource->pointer == NULL || resource->managed)
+		return 0;
+
+	if (resource->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
+		((gpu_sample*)resource->pointer)->decommit();
+
+	return 0;
+}
+
+
 static int paint_core(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
@@ -95,9 +152,8 @@ static int get_resource(lua_State *L)
 	int parameter_count = -lua_gettop(L);
 	int arg = lua_tointeger(L, parameter_count+0);
 
-	resource_userdata *resource = new resource_userdata;
+	resource_userdata *resource = (resource_userdata*)lua_newuserdata(L, sizeof(resource_userdata));
 	g_renderer->get_resource(0, resource);
-	lua_pushlightuserdata(L, resource);
 	return 1;
 }
 
@@ -107,9 +163,9 @@ static int create_rt(lua_State *L)
 	int width = lua_tointeger(L, parameter_count+0);
 	int height = lua_tointeger(L, parameter_count+1);
 
-	resource_userdata *resource = new resource_userdata;
+	resource_userdata *resource = (resource_userdata*)lua_newuserdata(L, sizeof(resource_userdata));
 	HRESULT hr = g_renderer->create_rt(width, height, resource);
-	lua_pushlightuserdata(L, resource);
+
 	return 1;
 }
 static int load_bitmap_core(lua_State *L)
@@ -126,11 +182,10 @@ static int load_bitmap_core(lua_State *L)
 		return 2;
 	}
 
-	resource_userdata *resource = new resource_userdata;
+	resource_userdata *resource = (resource_userdata*)lua_newuserdata(L, sizeof(resource_userdata));
 	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
 	resource->pointer = sample;
 	resource->managed = false;
-	lua_pushlightuserdata(L, resource);
 	lua_pushinteger(L, sample->m_width);
 	lua_pushinteger(L, sample->m_height);
 	return 3;
@@ -253,72 +308,14 @@ static int draw_font_core(lua_State *L)
 		return 2;
 	}
 
-	resource_userdata *resource = new resource_userdata;
+	resource_userdata *resource = (resource_userdata*)lua_newuserdata(L, sizeof(resource_userdata));
 	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
 	resource->pointer = sample;
 	resource->managed = false;
-	lua_pushlightuserdata(L, resource);
 	lua_pushinteger(L, sample->m_width);
 	lua_pushinteger(L, sample->m_height);
 	return 3;
 }
-
-static int release_resource_core(lua_State *L)
-{
-	int parameter_count = -lua_gettop(L);
-	resource_userdata *resource = (resource_userdata*)lua_touserdata(L, parameter_count+0);
-	bool is_decommit = lua_toboolean(L, parameter_count+1);
-
-	if (resource == NULL) 
-		return 0;
-
-	if (resource->pointer == NULL || resource->managed)
-		return 0;
-
-	if (resource->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
-		delete ((gpu_sample*)resource->pointer);
-
-	delete resource;
-
-	return 0;
-}
-
-
-static int commit_resource_core(lua_State *L)
-{
-	int parameter_count = -lua_gettop(L);
-	resource_userdata *resource = (resource_userdata*)lua_touserdata(L, parameter_count+0);
-
-	if (resource == NULL) 
-		return 0;
-
-	if (resource->pointer == NULL || resource->managed)
-		return 0;
-
-	if (resource->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
-		((gpu_sample*)resource->pointer)->commit();
-
-	return 0;
-}
-
-
-static int decommit_resource_core(lua_State *L)
-{
-	int parameter_count = -lua_gettop(L);
-	resource_userdata *resource = (resource_userdata*)lua_touserdata(L, parameter_count+0);
-
-	if (resource == NULL) 
-		return 0;
-
-	if (resource->pointer == NULL || resource->managed)
-		return 0;
-
-	if (resource->resource_type == resource_userdata::RESOURCE_TYPE_GPU_SAMPLE)
-		((gpu_sample*)resource->pointer)->decommit();
-
-	return 0;
-}
-
 
 static int myprint(lua_State *L)
 {

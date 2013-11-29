@@ -481,9 +481,11 @@ function BaseFrame:CalculateAbsRect()
 	width, height = right - left, bottom - top
 	
 	if width > 0 and height > 0 then
-		if self.rt and self.rt.width == width and self.rt.height == height then
+		if self.rt and self.rt.width >= width and self.rt.height >= height then
 		else
 			if self.rt then
+				width = math.max(self.rt.width, width)
+				height = math.max(self.rt.height, height)
 				self.rt:release()
 			end
 			self.rt = resource_base:create(dx9.create_rt(width, height), width, height)

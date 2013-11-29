@@ -1,6 +1,7 @@
 ﻿local rect = {0,0,99999,99999,0,0}
 local rects = {}
 local bitmapcache = {}
+local all_gpu_objects = {}
 local cache_lock
 
 
@@ -112,7 +113,7 @@ function resource_base:create(handle, width, height)
 	self.__index = self
 	
 	cache_lock:lock()
-	table.insert(bitmapcache, o)
+	table.insert(all_gpu_objects, o)
 	cache_lock:unlock()	
 	
 	return o
@@ -167,19 +168,18 @@ function releaseCache(is_decommit)
 	cache_lock:lock()
 
 	if is_decommit then
-		pcall(function()
-		for _,v in pairs(bitmapcache) do
+		for _,v in pairs(all_gpu_objects) do
 			dx9.decommit_resource_core(v.handle)
 		end
-		end)
 	else
-		pcall(function()
-		for _,v in pairs(bitmapcache) do
+		for _,v in pairs(all_gpu_objects) do
 			dx9.release_resource_core(v.handle)
 			v.handle = nil
+			v.width = 0
+			v.height = 0
 		end
+		all_gpu_objects = {}
 		bitmapcache = {}
-		end)
 	end
 	cache_lock:unlock()
 end
