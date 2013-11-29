@@ -322,6 +322,11 @@ static int myprint(lua_State *L)
 	return 0;
 }
 
+static int render(lua_State *L)
+{
+	g_renderer->repaint_video();
+	return 0;
+}
 static int is2DRendering(lua_State *L)
 {
 	bool b = g_renderer->is2DRendering();
@@ -384,6 +389,7 @@ int my12doomRenderer_lua_init()
 	g_lua_dx9_manager->get_variable("is2DMovie") = &is2DMovie;
 	g_lua_dx9_manager->get_variable("lock_frame") = &lock_frame;
 	g_lua_dx9_manager->get_variable("unlock_frame") = &unlock_frame;
+	g_lua_dx9_manager->get_variable("render") = &render;
 
 	return 0;
 }

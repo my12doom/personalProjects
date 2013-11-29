@@ -53,6 +53,7 @@ end
 function BaseFrame:paint(left, top, right, bottom, bitmap, alpha, resampling_method)
 	if not bitmap or not bitmap.handle then return end
 	dx9.paint_core(left, top, right, bottom, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, alpha or 1, resampling_method or bilinear_no_mipmap, self.rt.handle)
+	--dx9.render()
 end
 
 
@@ -495,6 +496,8 @@ function BaseFrame:CalculateAbsRect()
 	if self.debug then
 		print("left, right, xcenter, top, bottom, ycenter, width, height=", left, right, xcenter, top, bottom, ycenter, width, height)
 	end
+	
+	dx9.render()
 end
 
 -- CONSTANTS

@@ -313,7 +313,7 @@ function progress_slider:PreRender()
 	local v = (player.tell() or 0) / (player.total() or 1)
 	v = math.max(math.min(v, 1), 0)
 	local l,_,r = progress:GetRect()
-	self:SetPoint(CENTER, progress, LEFT, (r-l)*v, 0.5)
+	self:SetPoint(CENTER, progress, LEFT, math.floor((r-l)*v), 0.5)
 end
 
 function progress_slider:HitTest()

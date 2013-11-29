@@ -3139,8 +3139,7 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 			{
 				l = timeGetTime();
 				_this->render_nolock(true);
-				while (timeGetTime() - l < 33 && !_this->m_render_thread_exit)
-					Sleep(1);
+				WaitForSingleObject(_this->m_render_event, max(0, 33-(timeGetTime()-l)));
 			}
 		}
 		else
@@ -4120,8 +4119,7 @@ RECTF my12doomRenderer::get_movie_scissor_rect()
 
 HRESULT my12doomRenderer::repaint_video()
 {
-	if (m_dsr0->m_State != State_Running && timeGetTime() - m_last_frame_time < 333 && m_output_mode != pageflipping)
-		render(true);
+	render(true);
 	return S_OK;
 }
 
