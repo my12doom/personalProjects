@@ -35,6 +35,11 @@ static INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 
 				lua_settop(L, 0);
 			}
+			else if (id == IDC_BUTTON2)
+			{
+				while (SendMessageW(g_lb, LB_GETCOUNT, NULL, (LPARAM)bufw))
+					SendMessageW(g_lb, LB_DELETESTRING, 0, 0);
+			}
 		}
 		break;
 
