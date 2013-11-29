@@ -232,6 +232,7 @@
 	["Play	(Space)"] = "播放	(Space)",
 	["Pause	(Space)"] = "暂停	(Space)",
 	["Open Folder..."] = "打开文件夹...",
+	["Open URL..."] = "打开网址...",
 	["Close File"] = "关闭文件",
 	["Playlist"] = "播放列表",
 	["Previous\t(PageUp)"] = "上一曲\t(PageUp)",

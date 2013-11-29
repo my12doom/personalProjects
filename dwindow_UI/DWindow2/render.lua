@@ -753,7 +753,7 @@ function open2:OnClick()
 	local m = 
 	{
 		{
-			string = "打开URL...",
+			string = L("Open URL..."),
 			on_command = function()
 				local url = ui.OpenURL()
 
@@ -763,7 +763,7 @@ function open2:OnClick()
 			end
 		},
 		{
-			string = "打开左右分离文件...",
+			string = L("Open Left And Right File..."),
 			on_command = function()
 				local left, right = ui.OpenDoubleFile()
 				if left and right then
@@ -772,7 +772,7 @@ function open2:OnClick()
 			end
 		},
 		{
-			string = "打开文件夹...",
+			string = L("Open Folder..."),
 			on_command = function()
 				local folder = ui.OpenFolder()
 				if folder then
