@@ -881,6 +881,13 @@ gpu_sample::gpu_sample(const wchar_t *filename, CTextureAllocator *allocator)
 		for(int i=0; i<m_height; i++)
 		{
 			memcpy(dst, src, m_width*4);
+			for(int x=0; x<m_width; x++)
+			{
+				dst[x*4+0] = dst[x*4+0] * dst[x*4+3] / 255;
+				dst[x*4+1] = dst[x*4+1] * dst[x*4+3] / 255;
+				dst[x*4+2] = dst[x*4+2] * dst[x*4+3] / 255;
+// 				dst[x*4+3] = 255 - dst[x*4+3];
+			}
 
 			src += m_width*4;
 			dst += d3dlr.Pitch;
@@ -955,9 +962,9 @@ gpu_sample::gpu_sample(CTextureAllocator *allocator, HFONT font, const wchar_t *
 		for(int x = 0; x<m_width; x++)
 		{
 			BYTE a = data[(y)*m_width+x].rgbRed;
+			RGBQUAD color2 = {color.rgbBlue*a/255, color.rgbGreen*a/255, color.rgbRed*a/255, a};
 
-			data[y*m_width+x] = color;
-			data[y*m_width+x].rgbReserved = a;
+			data[y*m_width+x] = color2;
 		}
 	}
 

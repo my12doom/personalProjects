@@ -460,8 +460,6 @@ HRESULT dx_player::draw_ui(IDirect3DSurface9 * surface, int view)
 	hr = m_Device->SetPixelShader(NULL);
 	m_Device->SetRenderTarget(0, surface);
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 	m_Device->SetRenderState( D3DRS_TEXTUREFACTOR, 0xffffff | (BYTE)(alpha * 255) << 24 );
 	m_Device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 	m_Device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
@@ -545,8 +543,6 @@ HRESULT dx_player::draw_nonmovie_bg(IDirect3DSurface9 *surface, int view)
 	m_Device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
 	m_Device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 	m_Device->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 	hr = m_Device->SetTexture(0, m_ui_logo_gpu);
 	hr = m_Device->SetStreamSource( 0, m_vertex, 0, sizeof(MyVertex) );
 	hr = m_Device->SetFVF( FVF_Flags );

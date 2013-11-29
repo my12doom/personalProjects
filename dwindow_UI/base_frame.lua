@@ -43,7 +43,7 @@ function BaseFrame:render(...)
 			EndChild(l,t,r,b,1,v)
 			
 			if self.rt and v.rt then
-				dx9.paint_core(l-ml, t-mt, r-ml, b-mt, v.rt.handle, 0, 0, r-l, b-t, 1, bilinear_no_mipmap, self.rt.handle)
+				dx9.paint_core(l-ml, t-mt, r-ml, b-mt, v.rt.handle, 0, 0, r-l, b-t, v.alpha or 1, bilinear_no_mipmap, self.rt.handle)
 			end
 		end
 	end
@@ -52,7 +52,7 @@ end
 
 function BaseFrame:paint(left, top, right, bottom, bitmap, alpha, resampling_method)
 	if not bitmap or not bitmap.handle then return end
-	dx9.paint_core(left, top, right, bottom, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, 1, bilinear_no_mipmap, self.rt.handle)
+	dx9.paint_core(left, top, right, bottom, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, alpha or 1, resampling_method or bilinear_no_mipmap, self.rt.handle)
 end
 
 

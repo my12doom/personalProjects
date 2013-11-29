@@ -389,7 +389,6 @@ function ReloadUI(legacy)
 	if legacy then return end
 
 	print(core.execute_luafile(lua_path .. (core.v and "3dvplayer" or "DWindow2" ).. "\\render.lua"))
-	print(core.execute_luafile(lua_path .. "tetris\\tetris.lua"))
 
 	dx9.lock_frame()
 	OnInitCPU()

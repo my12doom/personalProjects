@@ -55,7 +55,7 @@ DWORD PGSParser::YUV2RGB(BYTE Y, BYTE Cr, BYTE Cb, BYTE A)
     double bp = Y + 2*(Cb-128)*(1.0-Rec709_Kb);
 
 	
-	const double const2 = 255.0/219.0;
+	const double const2 = 255.0/219.0*A/255.0;
 
 	rp = (rp-16)*const2 + 0.5;
 	gp = (gp-16)*const2 + 0.5;

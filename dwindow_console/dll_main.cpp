@@ -65,7 +65,11 @@ static int myprint(lua_State *L)
 		lua_getglobal(L, "tostring");
 		lua_pushvalue(L, i+1);
 		lua_call(L, 1, 1);
-		strcat(buf, lua_tostring(L, -1));
+		const char * str = lua_tostring(L, -1);
+		int len = lua_rawlen(L, -1);
+		len = len > 1024? 1024:len;
+		*(buf+strlen(buf)+len) = NULL;
+		strncpy(buf+strlen(buf), str, len);
 	}
 	lua_pcall(L, n, 0, 0);
 

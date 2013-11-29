@@ -1518,7 +1518,7 @@ HRESULT my12doomRenderer::restore_cpu_objects()
 HRESULT my12doomRenderer::restore_gpu_objects()
 {
 	HRESULT hr;
-	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	m_Device->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_ONE);
 	m_Device->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 	m_red_blue.set_source(m_Device, g_code_anaglyph, sizeof(g_code_anaglyph), true, (DWORD*)m_key);

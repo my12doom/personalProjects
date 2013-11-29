@@ -188,6 +188,10 @@ HRESULT CsrtRendererCore::render(const wchar_t *text, rendered_subtitle *out, bo
 	for(int i=0; i<out->width_pixel * out->height_pixel; i++)
 	{
 		unsigned char alpha = data[i*4+2];
+		BYTE ra = color_r * alpha /255;
+		BYTE ga = color_g * alpha /255;
+		BYTE ba = color_b * alpha /255;
+		DWORD color = (ra<<16) | (ga <<8) | (ba);// reverse big endian
 		data_dw[i] = color;
 		data[i*4+3] = alpha;
 	}
