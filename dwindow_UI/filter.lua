@@ -22,19 +22,19 @@ end
 local function get_ext(pathname)
 	if pathname == nil then return end
 	local t = string.reverse(pathname)
-	t = string.sub(t, 1, ((string.find(t, ".")  or t:len())-1))
+	t = string.sub(t, 1, ((string.find(t, "%.")  or t:len())-1))
 	return string.reverse(t)
 end
 
 
 -- return the guid of desired splitter, nil if not found, which leads to system-registered filters
-function dshow:decide_splitter(filename)
+function dshow.decide_splitter(filename)
 	local ext = get_ext(filename)
 	local media_info
 	local media_info_result
 	local ext_result
 	
-	-- get media info if not slow extentions like m2ts	
+	-- get media info if not slow extentions like m2ts
 	if setting.dshow.slow_extentions[ext] == nil then
 		media_info = player.get_media_info(filename)
 	end
@@ -56,7 +56,7 @@ end
 -- return guid, catagory
 -- guiid : the guid of desired decoder, nil if not determined, which will add all available decoder of that catagory
 -- catagory: media catagory, 0: video, 1: audio, 2: subtitle
-function dshow:render_pin(media_types, pin_name, filter_guid)
+function dshow.render_pin(media_types, pin_name, filter_guid)
 	local guid, catagory
 	local guid
 	for _,v in ipairs(media_types) do
