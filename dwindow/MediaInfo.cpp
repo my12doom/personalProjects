@@ -303,54 +303,67 @@ HRESULT MediaInfoWindow::FillTree(HWND root, const wchar_t *filename)
 	}
 
 	wchar_t dummy_name[MAX_PATH*10];
-	if (wcsstr(filename, L"http://") == filename)
-	{
+	// reader probe?
+	luaState L;
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "probe_reader");
+	lua_pushstring(L, W2UTF8(filename));
+	lua_mypcall(L, 1, 1, 0);
+	if(lua_toboolean(L, -1))
 		wcscpy(dummy_name, URL2Token(filename));
+	else
+		wcscpy(dummy_name, filename);
+	lua_settop(L, 0);
+
+	if (wcscmp(filename,dummy_name)==0)
+	{
+		// real disk file, use stable interface
+		MI.Open(filename);
 	}
 	else
 	{
-		wcscpy(dummy_name, filename);
-	}
-	HANDLE h_file = CreateFileW (dummy_name, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-	String str = L"";
-	if (h_file != INVALID_HANDLE_VALUE)
-	{
-		__int64 filesize = 0;
-		GetFileSizeEx(h_file, (LARGE_INTEGER*)&filesize);
+		// readers, use buffer parser
 
-		DWORD From_Buffer_Size = 0;
-		unsigned char From_Buffer[1316];
-		MI.Open_Buffer_Init(filesize);
-
-		__int64 last_seek_target, seek_target = -5;
-
-		do
+		HANDLE h_file = CreateFileW (dummy_name, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+		if (h_file != INVALID_HANDLE_VALUE)
 		{
-			if (seek_target >= 0)
-				last_seek_target = seek_target;
+			__int64 filesize = 0;
+			GetFileSizeEx(h_file, (LARGE_INTEGER*)&filesize);
 
-			if (!ReadFile(h_file, From_Buffer, 1316, &From_Buffer_Size, NULL) || From_Buffer_Size <= 0)
-				break;
+			DWORD From_Buffer_Size = 0;
+			unsigned char From_Buffer[1316];
+			MI.Open_Buffer_Init(filesize);
 
-			size_t result = MI.Open_Buffer_Continue(From_Buffer, From_Buffer_Size);
-			if ((result&0x08)==0x08) // 8 = all done
-				break;
+			__int64 last_seek_target, seek_target = -5;
 
-			seek_target = MI.Open_Buffer_Continue_GoTo_Get();
-			if (seek_target>=0)
-				SetFilePointerEx(h_file, *(LARGE_INTEGER*)&seek_target, NULL, SEEK_SET);
-			else if (seek_target >= filesize)
-				break;
+			do
+			{
+				if (seek_target >= 0)
+					last_seek_target = seek_target;
+
+				if (!ReadFile(h_file, From_Buffer, 1316, &From_Buffer_Size, NULL) || From_Buffer_Size <= 0)
+					break;
+
+				size_t result = MI.Open_Buffer_Continue(From_Buffer, From_Buffer_Size);
+				if ((result&0x08)==0x08) // 8 = all done
+					break;
+
+				seek_target = MI.Open_Buffer_Continue_GoTo_Get();
+				if (seek_target>=0)
+					SetFilePointerEx(h_file, *(LARGE_INTEGER*)&seek_target, NULL, SEEK_SET);
+				else if (seek_target >= filesize)
+					break;
+			}
+			while (From_Buffer_Size>0 && last_seek_target != seek_target);
+			MI.Open_Buffer_Finalize();
+
+
+			CloseHandle(h_file);
 		}
-		while (From_Buffer_Size>0 && last_seek_target != seek_target);
-		MI.Open_Buffer_Finalize();
-
-
-		CloseHandle(h_file);
 	}
 	MI.Option(_T("Complete"));
 	MI.Option(_T("Inform"));
-	str = MI.Inform().c_str();
+	String str = MI.Inform().c_str();
 	MI.Close();
 	wchar_t *p = (wchar_t*)str.c_str();
 	wchar_t *p2 = wcsstr(p, L"\n");
@@ -514,45 +527,58 @@ HRESULT get_mediainfo(const wchar_t *filename, media_info_entry **out, bool use_
 		MI.Option(_T("Language"));
 	}
 
-	HANDLE h_file = CreateFileW (filename, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-	String str = L"";
-	if (h_file != INVALID_HANDLE_VALUE)
+
+	if (!Token2URL(filename))
 	{
-		__int64 filesize = 0;
-		GetFileSizeEx(h_file, (LARGE_INTEGER*)&filesize);
-
-		DWORD From_Buffer_Size = 0;
-		unsigned char From_Buffer[1316];
-		MI.Open_Buffer_Init(filesize);
-
-		__int64 last_seek_target, seek_target = -5;
-
-		do
-		{
-			if (seek_target >= 0)
-				last_seek_target = seek_target;
-
-			if (!ReadFile(h_file, From_Buffer, 1316, &From_Buffer_Size, NULL) || From_Buffer_Size <= 0)
-				break;
-
-			size_t result = MI.Open_Buffer_Continue(From_Buffer, From_Buffer_Size);
-			if ((result&0x08)==0x08) // 8 = all done
-				break;
-
-			seek_target = MI.Open_Buffer_Continue_GoTo_Get();
-			if (seek_target>=0)
-				SetFilePointerEx(h_file, *(LARGE_INTEGER*)&seek_target, NULL, SEEK_SET);
-			else if (seek_target >= filesize)
-				break;
-		}
-		while (From_Buffer_Size>0 && last_seek_target != seek_target);
-		MI.Open_Buffer_Finalize();
-
-		CloseHandle(h_file);
+		// real disk file, use stable interface
+		MI.Open(filename);
 	}
+	else
+	{
+		// readers, use buffer parser
+		HANDLE h_file = CreateFileW (filename, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+		if (h_file != INVALID_HANDLE_VALUE)
+		{
+			__int64 filesize = 0;
+			GetFileSizeEx(h_file, (LARGE_INTEGER*)&filesize);
+
+			DWORD From_Buffer_Size = 0;
+			unsigned char *From_Buffer = new unsigned char[1024*1024];
+			MI.Open_Buffer_Init(filesize);
+
+			__int64 last_seek_target = -6, seek_target = -5;
+
+			do
+			{
+				if (seek_target >= 0)
+					last_seek_target = seek_target;
+
+				if (!ReadFile(h_file, From_Buffer, 1316, &From_Buffer_Size, NULL) || From_Buffer_Size < 0)
+					break;
+
+				size_t result = MI.Open_Buffer_Continue(From_Buffer, From_Buffer_Size);
+				if ((result&0x08)==0x08) // 8 = all done
+					break;
+
+				seek_target = MI.Open_Buffer_Continue_GoTo_Get();
+				if (seek_target>=0)
+					SetFilePointerEx(h_file, *(LARGE_INTEGER*)&seek_target, NULL, SEEK_SET);
+				if (seek_target >= filesize)
+					break;
+				if (last_seek_target == seek_target)
+					break;
+			}
+			while (From_Buffer_Size>0 );
+			MI.Open_Buffer_Finalize();
+
+			CloseHandle(h_file);
+			delete From_Buffer;
+		}
+	}
+
 	MI.Option(_T("Complete"));
 	MI.Option(_T("Inform"));
-	str = MI.Inform().c_str();
+	String str = MI.Inform().c_str();
 	MI.Close();
 	wchar_t *p = (wchar_t*)str.c_str();
 	wchar_t *p2 = wcsstr(p, L"\n");

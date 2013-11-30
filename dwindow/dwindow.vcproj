@@ -1931,6 +1931,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dwindow_UI\filter.lua"
+				>
+			</File>
+			<File
 				RelativePath="..\dwindow_UI\language.lua"
 				>
 			</File>
