@@ -60,7 +60,6 @@ end
 -- guiid : the guid of desired decoder, table if multiple, nil if not determined which will add all available decoder of that catagory
 -- catagory: media catagory, 0: video, 1: audio, 2: subtitle
 function dshow.render_pin(media_types, pin_name, filter_guid)
-	print(media_types, pin_name, filter_guid, #media_types, media_types[1].major)
 	if #media_types < 1 then return end
 	local guid, catagory
 	local guid
@@ -93,7 +92,7 @@ function dshow.render_pin(media_types, pin_name, filter_guid)
 	
 	for _, mediatype in ipairs(media_types) do
 		for k, v in pairs(tbl) do
-			if k == filter_guid or fourCC(k) == mediatype.sub k == mediatype.sub then
+			if k == filter_guid or fourCC(k) == mediatype.sub or k == mediatype.sub then
 				guid = guid or v
 			end
 		end

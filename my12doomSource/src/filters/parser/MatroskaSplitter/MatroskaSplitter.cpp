@@ -336,14 +336,14 @@ hevcsuccess:
 					data.SetCount(sh.size());
 					std::copy(sh.begin(), sh.end(), data.GetData());
 
-					mt.subtype = FOURCCMap('01MH');
+					mt.subtype = FOURCCMap('CVEH');
 					mt.formattype = FORMAT_MPEG2Video;
 					MPEG2VIDEOINFO* pm2vi = (MPEG2VIDEOINFO*)mt.AllocFormatBuffer(FIELD_OFFSET(MPEG2VIDEOINFO, dwSequenceHeader) + data.GetCount());
 					memset(mt.Format(), 0, mt.FormatLength());
 					pm2vi->hdr.bmiHeader.biSize = sizeof(pm2vi->hdr.bmiHeader);
 					pm2vi->hdr.bmiHeader.biWidth = (LONG)pTE->v.PixelWidth;
 					pm2vi->hdr.bmiHeader.biHeight = (LONG)pTE->v.PixelHeight;
-					pm2vi->hdr.bmiHeader.biCompression = '01MH';
+					pm2vi->hdr.bmiHeader.biCompression = 'CVEH';
 					pm2vi->hdr.bmiHeader.biPlanes = 1;
 					pm2vi->hdr.bmiHeader.biBitCount = 24;
 					pm2vi->dwProfile = pTE->CodecPrivate[1];

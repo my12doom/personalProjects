@@ -3464,40 +3464,6 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 	set_ff_audio_normalizing(m_lav, m_normalize_audio);
 	handle_downmixer();
 
-	luaState L;
-	lua_getglobal(L, "dshow");
-	lua_getfield(L, -1, "render_pin");
-	lua_newtable(L);		// media_types
-
-	int n = lua_gettop(L);
-
-	CComPtr<IEnumMediaTypes> em;
-	pin->EnumMediaTypes(&em);
-	AM_MEDIA_TYPE *mt = NULL;
-	int i=1;
-	while (em->Next(1, &mt, NULL) == S_OK)
-	{
-		lua_newtable(L);
-		lua_pushstring(L, W2UTF8(GUID2W(mt->majortype)));
-		lua_setfield(L, -2, "major");
-		lua_pushstring(L, W2UTF8(GUID2W(mt->subtype)));
-		lua_setfield(L, -2, "sub");
-		lua_pushstring(L, W2UTF8(GUID2W(mt->formattype)));
-		lua_setfield(L, -2, "format");
-		lua_pushlstring(L, (char*)mt->pbFormat, mt->cbFormat);
-		lua_setfield(L, -2, "format_data");
-
-		lua_rawseti(L, -2, i++);
-		DeleteMediaType(mt);
-	}
-
-	n = lua_gettop(L);
-
-	lua_pushstring(L, "pin_name");
-	lua_pushstring(L, W2UTF8(GUID2W(filter_clsid)));
-	lua_pushstring(L, W2UTF8(GUID2W(FOURCCMap('1cva'))));
-	lua_mypcall(L, 4, 2, 0);
-
 	return hr;
 }
 
@@ -3899,6 +3865,43 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 					}
 
 					else;	// other tracks, ignore them
+
+
+					// lua test
+					luaState L;
+					lua_getglobal(L, "dshow");
+					lua_getfield(L, -1, "render_pin");
+					lua_newtable(L);		// media_types
+
+					int n = lua_gettop(L);
+					CComPtr<IEnumMediaTypes> em;
+					pin->EnumMediaTypes(&em);
+					AM_MEDIA_TYPE *mt = NULL;
+					int i=1;
+					while (em->Next(1, &mt, NULL) == S_OK)
+					{
+						lua_newtable(L);
+						lua_pushstring(L, W2UTF8(GUID2W(mt->majortype)));
+						lua_setfield(L, -2, "major");
+						lua_pushstring(L, W2UTF8(GUID2W(mt->subtype)));
+						lua_setfield(L, -2, "sub");
+						lua_pushstring(L, W2UTF8(GUID2W(mt->formattype)));
+						lua_setfield(L, -2, "format");
+						lua_pushlstring(L, (char*)mt->pbFormat, mt->cbFormat);
+						lua_setfield(L, -2, "format_data");
+
+						lua_rawseti(L, -2, i++);
+						DeleteMediaType(mt);
+					}
+
+					n = lua_gettop(L);
+
+					lua_pushstring(L, "pin_name");
+					CLSID filter_clsid = GUID_NULL;
+					source_base->GetClassID(&filter_clsid);
+					lua_pushstring(L, W2UTF8(GUID2W(filter_clsid)));
+					lua_pushstring(L, W2UTF8(GUID2W(FOURCCMap('1cva'))));
+					lua_mypcall(L, 4, 2, 0);
 				}
 			}
 			pin = NULL;
