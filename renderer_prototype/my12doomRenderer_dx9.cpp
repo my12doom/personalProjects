@@ -830,8 +830,8 @@ HRESULT my12doomRenderer::delete_render_targets()
 	m_swap2 = NULL;
 	m_nv3d_surface = NULL;
 	m_tex_mask = NULL;
-	if(m_Device && m_uidrawer)
-		m_uidrawer->invalidate_gpu();
+// 	if(m_Device && m_uidrawer)
+// 		m_uidrawer->invalidate_gpu();
 	return S_OK;
 }
 
@@ -3139,7 +3139,9 @@ DWORD WINAPI my12doomRenderer::render_thread(LPVOID param)
 			{
 				l = timeGetTime();
 				_this->render_nolock(true);
-				WaitForSingleObject(_this->m_render_event, max(0, 33-(timeGetTime()-l)));
+				int wait = 33-(timeGetTime()-l);
+				wait = max(0, wait);
+				WaitForSingleObject(_this->m_render_event, wait);
 			}
 		}
 		else

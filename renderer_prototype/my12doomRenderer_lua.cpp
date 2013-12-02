@@ -11,7 +11,6 @@ lua_manager *g_lua_dx9_manager = NULL;
 
 int my12doomRenderer_lua_loadscript();
 
-
 static int release_resource_core(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
@@ -30,6 +29,17 @@ static int release_resource_core(lua_State *L)
 		delete ((gpu_sample*)resource->pointer);
 
 	return 0;
+}
+bool setup_gc(lua_State *L)
+{
+	int n = lua_gettop(L);
+
+	lua_newtable(L);
+	lua_pushcfunction(L, &release_resource_core);
+	lua_setfield(L, -2, "__gc");
+	lua_setmetatable(L, -2);
+
+	return n == lua_gettop(L);	
 }
 
 static int commit_resource_core(lua_State *L)
@@ -166,6 +176,8 @@ static int create_rt(lua_State *L)
 	resource_userdata *resource = (resource_userdata*)lua_newuserdata(L, sizeof(resource_userdata));
 	HRESULT hr = g_renderer->create_rt(width, height, resource);
 
+	setup_gc(L);
+
 	return 1;
 }
 static int load_bitmap_core(lua_State *L)
@@ -186,6 +198,7 @@ static int load_bitmap_core(lua_State *L)
 	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
 	resource->pointer = sample;
 	resource->managed = false;
+	setup_gc(L);
 	lua_pushinteger(L, sample->m_width);
 	lua_pushinteger(L, sample->m_height);
 	return 3;
@@ -312,6 +325,7 @@ static int draw_font_core(lua_State *L)
 	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
 	resource->pointer = sample;
 	resource->managed = false;
+	setup_gc(L);
 	lua_pushinteger(L, sample->m_width);
 	lua_pushinteger(L, sample->m_height);
 	return 3;
