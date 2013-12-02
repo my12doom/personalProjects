@@ -3412,6 +3412,15 @@ LRESULT dx_player::on_idle_time()
 	return S_FALSE;
 }
 
+class GUID2W
+{
+public:
+	GUID2W(GUID guid){StringFromCLSID(guid, &p);}
+	~GUID2W(){CoTaskMemFree(p);}
+	operator wchar_t*(){return (wchar_t*)p;}
+	LPOLESTR p;
+};
+
 HRESULT dx_player::render_audio_pin(IPin *pin)
 {
 	HRESULT hr = E_FAIL;
@@ -3455,13 +3464,58 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 	set_ff_audio_normalizing(m_lav, m_normalize_audio);
 	handle_downmixer();
 
+	luaState L;
+	lua_getglobal(L, "dshow");
+	lua_getfield(L, -1, "render_pin");
+	lua_newtable(L);		// media_types
+
+	int n = lua_gettop(L);
+
+	CComPtr<IEnumMediaTypes> em;
+	pin->EnumMediaTypes(&em);
+	AM_MEDIA_TYPE *mt = NULL;
+	int i=1;
+	while (em->Next(1, &mt, NULL) == S_OK)
+	{
+		lua_newtable(L);
+		lua_pushstring(L, W2UTF8(GUID2W(mt->majortype)));
+		lua_setfield(L, -2, "major");
+		lua_pushstring(L, W2UTF8(GUID2W(mt->subtype)));
+		lua_setfield(L, -2, "sub");
+		lua_pushstring(L, W2UTF8(GUID2W(mt->formattype)));
+		lua_setfield(L, -2, "format");
+		lua_pushlstring(L, (char*)mt->pbFormat, mt->cbFormat);
+		lua_setfield(L, -2, "format_data");
+
+		lua_rawseti(L, -2, i++);
+		DeleteMediaType(mt);
+	}
+
+	n = lua_gettop(L);
+
+	lua_pushstring(L, "pin_name");
+	lua_pushstring(L, W2UTF8(GUID2W(filter_clsid)));
+	lua_pushstring(L, W2UTF8(GUID2W(FOURCCMap('1cva'))));
+	lua_mypcall(L, 4, 2, 0);
+
 	return hr;
 }
+
 
 HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 {
 	HRESULT hr = S_OK;
 
+	// cls id
+	PIN_INFO pi = {0};
+	CLSID filter_clsid = GUID_NULL;
+	if (pin)
+		pin->QueryPinInfo(&pi);
+	if (pi.pFilter)
+	{
+		pi.pFilter->GetClassID(&filter_clsid);
+		pi.pFilter->Release();
+	}	
 
 	if (m_is_remux_file)
 	{
@@ -3583,16 +3637,6 @@ HRESULT dx_player::render_video_pin(IPin *pin /* = NULL */)
 	}
 
 	// RM Video
-	PIN_INFO pi = {0};
-	CLSID filter_clsid = GUID_NULL;
-	if (pin)
-		pin->QueryPinInfo(&pi);
-	if (pi.pFilter)
-	{
-		pi.pFilter->GetClassID(&filter_clsid);
-		pi.pFilter->Release();
-	}
-
 	if ( NULL == pin ||
 		filter_clsid == CLSID_RMSplitter ||
 		S_OK == DeterminPin(pin, NULL, CLSID_NULL, FOURCCMap('14VR')) ||
