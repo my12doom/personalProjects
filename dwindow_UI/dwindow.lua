@@ -341,7 +341,6 @@ end
 
 local function bo3d_update()
 	local table_string = core.http_request(setting.bo3d_entry)
-	print("table_string", table_string)
 	local func, reason = core.load_signed_string(table_string)
 	local files
 	if type(func) == "function" then
@@ -350,9 +349,7 @@ local function bo3d_update()
 		print("bo3d_update", reason)
 		return
 	end
-	
-	printtable(files)
-	
+		
 	local prefetch_success = true
 	
 	for _, v in pairs(files) do
