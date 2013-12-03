@@ -38,19 +38,24 @@ function dshow.decide_splitter(filename)
 	local ext_result
 	
 	-- get media info if not slow extentions like m2ts
-	if setting.dshow.slow_extentions[ext] == nil then
-		media_info = player.get_media_info(filename)
+	if config.slow_extentions[ext] == nil then
+		media_info = player.get_mediainfo(filename)
 	end
 	
 	-- find splitter by media info
 	if media_info and media_info.General and media_info.General.Format then
-		media_info_result = setting.dshow.media_info[media_info.General.Format]
+		media_info_result = config.media_info[media_info.General.Format]
 	end
 	
 	-- find splitter by extenstion
-	ext_result = setting.dshow.extensions[ext]
+	ext_result = config.extensions[ext]
 	
 	-- add special case codes here
+	
+	-- sample: HEVC in flv by Lentoid
+	if media_info and media_info.General and media_info.General.Format and media_info.General.Format == "Flash Video" and media_info.Video.Format == nil then
+		media_info_result =  "{E1A90E70-EF1D-4326-9D6F-BF1E1AC0A792}"
+	end	
 	
 	return media_info_result or ext_result
 end
@@ -58,7 +63,7 @@ end
 -- inp
 -- return guid, catagory
 -- guiid : the guid of desired decoder, table if multiple, nil if not determined which will add all available decoder of that catagory
--- catagory: media catagory, 0: video, 1: audio, 2: subtitle
+-- catagory: media catagory, 1: video, 2: audio, 3: subtitle
 function dshow.render_pin(media_types, pin_name, filter_guid)
 	if #media_types < 1 then return end
 	local guid, catagory
@@ -66,28 +71,28 @@ function dshow.render_pin(media_types, pin_name, filter_guid)
 	local major = media_types[1].major			-- at least 1 media type and assume all media type has same major type
 	local tbl = {}
 	if major == MEDIATYPE_Video then
-		catagory = 0
+		catagory = 1
 		
 		for k,v in pairs(config.video4cc) do
 			tbl[k] = v
 		end
 		
 		if setting.EVR then
-			for k,v in pairs(config.video4cc) do
+			for k,v in pairs(config.video4cc_dxva) do
 				tbl[k] = v
 			end
-		end		
+		end
 		
 	elseif major == MEDIATYPE_Audio then
 	
-		catagory = 1
+		catagory = 2
 		
 		for k,v in pairs(config.audio4cc) do
 			tbl[k] = v
 		end
 		
 	elseif major == MEDIATYPE_Subtitle then
-		catagory = 2
+		catagory = 3
 	end
 	
 	for _, mediatype in ipairs(media_types) do
@@ -101,6 +106,10 @@ function dshow.render_pin(media_types, pin_name, filter_guid)
 	-- more codes here
 	
 	return guid, catagory
+end
+
+function dshow.clsid2module(clsid)
+	return config.modules[clsid]
 end
 
 
@@ -162,8 +171,7 @@ config =
 		["3dp"]="{472EF052-2D21-4742-977C-C02097E5C08E}",
 		["bmp"]="{472EF052-2D21-4742-977C-C02097E5C08E}",
 		["psd"]="{472EF052-2D21-4742-977C-C02097E5C08E}",
-		--"flv"]="{C9ECE7B3-1D8E-41F5-9F24-B255DF16C087}",
-		["flv"]="{E1A90E70-EF1D-4326-9D6F-BF1E1AC0A792}",
+		["flv"]="{C9ECE7B3-1D8E-41F5-9F24-B255DF16C087}",
 		["mxf"]="{9622477D-E65F-4A5F-BD89-AD75063DDADD}",
 	},
 
@@ -189,7 +197,7 @@ config =
 		["3dv"]="{3CCC052E-BDEE-408A-BEA7-90914EF2964B}",
 		["BDAV"]="{D8980E15-E1F6-4916-A10F-D7EB4E9E10B8}",
 		["AVI"]="{1B544C20-FD0B-11CE-8C63-00AA0044B51E}",
-		["Flash Video"]="{E1A90E70-EF1D-4326-9D6F-BF1E1AC0A792}",
+		["Flash Video"]="{C9ECE7B3-1D8E-41F5-9F24-B255DF16C087}",
 		--["Wave"]="wav",
 	},
 

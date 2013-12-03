@@ -6,7 +6,9 @@
 #include "color_adjust.h"
 #include "latency_dialog.h"
 #include "MediaInfo.h"
+#include "MediaInfoDLL.h"
 #include "AboudWindow.h"
+#include "..\hookdshow\hookdshow.h"
 
 lua_manager *g_player_lua_manager = NULL;
 extern dx_player *g_player;
@@ -825,6 +827,202 @@ static int set_window_text(lua_State *L)
 	return 0;
 }
 
+
+bool wcs_replace(wchar_t *to_replace, const wchar_t *searchfor, const wchar_t *replacer);
+using namespace MediaInfoDLL;
+static int lua_get_mediainfo(lua_State *L)
+{
+	UTF82W filenamew(lua_tostring(L,1));
+	const wchar_t *filename = filenamew;
+	bool use_localization = lua_toboolean(L,2);
+
+	MediaInfo MI;
+
+// 	dwindow_log_line(L"Gettting MediaInfo for %s", filename);
+	// use lua's parser
+	std::wstring filename_parsed;
+	{
+		luaState L;
+		lua_getglobal(L, "parseURL");
+		lua_pushstring(L, W2UTF8(filename));
+		lua_pcall(L, 1, 1, 0);
+
+		const char *url_out = lua_tostring(L, -1);
+		filename_parsed = UTF82W(url_out);
+		filename = filename_parsed.c_str();
+	}
+// 	dwindow_log_line(L"parsed URL: %s", filename);
+
+	// localization
+	if (use_localization)
+	{
+		wchar_t path[MAX_PATH];
+		wcscpy(path, g_apppath);
+		wcscat(path, C(L"MediaInfoLanguageFile"));
+
+		FILE *f = _wfopen(path, L"rb");
+		if (f)
+		{
+			wchar_t lang[102400] = L"";
+			char tmp[1024];
+			wchar_t tmp2[1024];
+			USES_CONVERSION;
+			while (fscanf(f, "%s", tmp, 1024, f) != EOF)
+			{
+				MultiByteToWideChar(CP_UTF8, 0, tmp, 1024, tmp2, 1024);
+
+				if (wcsstr(tmp2, L";"))
+				{
+					wcscat(lang, tmp2);
+					wcscat(lang, L"\n");
+				}
+			}
+			fclose(f);
+			MI.Option(_T("Language"), W2T(lang));
+		}
+		else
+		{
+			MI.Option(_T("Language"));
+		}
+	}
+	else
+	{
+		MI.Option(_T("Language"));
+	}
+
+
+	if (!Token2URL(filename))
+	{
+		// real disk file, use stable interface
+		MI.Open((wchar_t*)filename);
+	}
+	else
+	{
+		// readers, use buffer parser
+		HANDLE h_file = CreateFileW (filename, GENERIC_READ, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+		if (h_file != INVALID_HANDLE_VALUE)
+		{
+			__int64 filesize = 0;
+			GetFileSizeEx(h_file, (LARGE_INTEGER*)&filesize);
+
+			DWORD From_Buffer_Size = 0;
+			unsigned char *From_Buffer = new unsigned char[1024*1024];
+			MI.Open_Buffer_Init(filesize);
+
+			__int64 last_seek_target = -6, seek_target = -5;
+
+			do
+			{
+				if (seek_target >= 0)
+					last_seek_target = seek_target;
+
+				if (!ReadFile(h_file, From_Buffer, 1316, &From_Buffer_Size, NULL) || From_Buffer_Size < 0)
+					break;
+
+				size_t result = MI.Open_Buffer_Continue(From_Buffer, From_Buffer_Size);
+				if ((result&0x08)==0x08) // 8 = all done
+					break;
+
+				seek_target = MI.Open_Buffer_Continue_GoTo_Get();
+				if (seek_target>=0)
+					SetFilePointerEx(h_file, *(LARGE_INTEGER*)&seek_target, NULL, SEEK_SET);
+				if (seek_target >= filesize)
+					break;
+				if (last_seek_target == seek_target)
+					break;
+			}
+			while (From_Buffer_Size>0 );
+			MI.Open_Buffer_Finalize();
+
+			CloseHandle(h_file);
+			delete From_Buffer;
+		}
+	}
+
+	MI.Option(_T("Complete"));
+	MI.Option(_T("Inform"));
+	String str = MI.Inform().c_str();
+	MI.Close();
+	wchar_t *p = (wchar_t*)str.c_str();
+	wchar_t *p2 = wcsstr(p, L"\n");
+	wchar_t tmp[20480];
+	bool next_is_a_header = true;
+
+	wchar_t header_name[2048] = {0};
+
+	lua_newtable(L);
+	while (true)
+	{
+		if (p2)
+		{
+			p2[0] = NULL;
+			p2 ++;
+		}
+
+		wcscpy(tmp, p);
+		wcstrim(tmp);
+		wcstrim(tmp, L'\n');
+		wcstrim(tmp, L'\r');
+		wcs_replace(tmp, L"  ", L" ");
+
+		if (tmp[0] == NULL || tmp[0] == L'\n' || tmp[0] == L'\r')
+		{
+			next_is_a_header = true;
+
+			if (header_name[0])
+			{
+				lua_setfield(L, -2, W2UTF8(header_name));
+				header_name[0] = NULL;
+			}
+		}
+		else if (next_is_a_header)
+		{
+			next_is_a_header = false;
+
+			wcscpy(header_name, tmp);
+			wcstrim(header_name);
+
+			lua_newtable(L);
+		}
+		else
+		{
+			wchar_t *key = new wchar_t[wcslen(tmp)+1];
+			wchar_t *value = new wchar_t[wcslen(tmp)+1];
+			wcscpy(key, tmp);
+			if (wcschr(key, L':'))
+			{
+				*((wchar_t*)wcsrchr(key, L':')) = NULL;
+
+				wcscpy(value, wcsrchr(tmp, L':')+1);
+			}
+			wcstrim(key);
+			wcstrim(value);
+			lua_pushstring(L, W2UTF8(value));
+			lua_setfield(L, -2, W2UTF8(key));
+
+			delete key;
+			delete value;
+		}
+
+
+		if (!p2)
+		{
+			if (header_name[0])
+			{
+				lua_setfield(L, -2, W2UTF8(header_name));
+				header_name[0] = NULL;
+			}
+
+			break;
+		}
+
+		p = p2;
+		p2 = wcsstr(p2, L"\n");
+	}
+
+	return 1;
+}
+
 int player_lua_init()
 {
 	g_player_lua_manager = new lua_manager("player");
@@ -862,6 +1060,7 @@ int player_lua_init()
 	g_player_lua_manager->get_variable("set_topmost") = &set_topmost;
 	g_player_lua_manager->get_variable("logout") = &logout;
 	g_player_lua_manager->get_variable("exit") = &lua_exit;
+	g_player_lua_manager->get_variable("get_mediainfo") = &lua_get_mediainfo;
 
 	g_player_lua_manager->get_variable("get_splayer_subtitle") = &lua_get_splayer_subtitle;
 

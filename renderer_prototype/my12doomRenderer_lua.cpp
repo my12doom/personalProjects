@@ -5,6 +5,7 @@
 #include <atlbase.h>
 #include "..\dwindow\dx_player.h"
 #include "..\hookdshow\hookdshow.h"
+#include "..\dwindow\dwindow_log.h"
 
 extern my12doomRenderer *g_renderer;
 lua_manager *g_lua_dx9_manager = NULL;
@@ -331,8 +332,38 @@ static int draw_font_core(lua_State *L)
 	return 3;
 }
 
+int old_print = -1;
 static int myprint(lua_State *L)
 {
+	int n = lua_gettop(L);
+	lua_rawgeti(L, LUA_REGISTRYINDEX, old_print);
+	char *buf = new char[200*1024];
+	buf[0] = NULL;
+	for(int i=0; i<n; i++)
+	{
+		if (i>0)
+			strcat(buf, "    ");
+		lua_getglobal(L, "tostring");
+		lua_pushvalue(L, i+1);
+		lua_call(L, 1, 1);
+		const char * str = lua_tostring(L, -1);
+		int len = lua_rawlen(L, -1);
+		len = len > 1024? 1024:len;
+		*(buf+strlen(buf)+len) = NULL;
+		strncpy(buf+strlen(buf), str, len);
+	}
+	lua_pcall(L, n, 0, 0);
+
+
+	int len = MultiByteToWideChar(CP_UTF8, NULL, buf, -1, NULL, 0);
+	wchar_t *bufw = new wchar_t[len];
+	MultiByteToWideChar(CP_UTF8, NULL, buf, -1, bufw, len);
+
+	dwindow_log_line(L"(lua)%s", bufw);
+
+	delete bufw;
+	delete buf;
+
 	return 0;
 }
 
@@ -384,6 +415,13 @@ static int set_movie_rect(lua_State *L)
 
 int my12doomRenderer_lua_init()
 {
+	// print hook
+	luaState L;
+	lua_getglobal(L, "print");
+	old_print = luaL_ref(L, LUA_REGISTRYINDEX);
+	lua_pushcfunction(L, &myprint);
+	lua_setglobal(L, "print");
+
 	// dx9
 	g_lua_dx9_manager = new lua_manager("dx9");
 	g_lua_dx9_manager->get_variable("paint_core") = &paint_core;

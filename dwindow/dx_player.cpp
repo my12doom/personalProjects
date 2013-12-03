@@ -3425,23 +3425,6 @@ HRESULT dx_player::render_audio_pin(IPin *pin)
 {
 	HRESULT hr = E_FAIL;
 
-	PIN_INFO pi = {0};
-	CLSID filter_clsid = GUID_NULL;
-	if (pin)
-		pin->QueryPinInfo(&pi);
-	if (pi.pFilter)
-	{
-		pi.pFilter->GetClassID(&filter_clsid);
-		pi.pFilter->Release();
-	}
-
-	if (filter_clsid == CLSID_RMSplitter || pin == NULL)
-	{
-		CComPtr<IBaseFilter> rm_audio;
-		myCreateInstance(CLSID_RMAudioDecoder, IID_IBaseFilter, (void**)&rm_audio);
-		m_gb->AddFilter(rm_audio, L"RM Audio Decoder");
-	}
-
 	set_ff_audio_formats(m_lav);
 
 	if(m_useInternalAudioDecoder)
@@ -3652,8 +3635,6 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 	wchar_t file_to_play[MAX_PATH*10];
 	wcscpy(file_to_play, pathname);
 
-	//prepare_file(pathname, NULL);
-
 	// detect ISO files
 	if (wcs_endwith_nocase(pathname, L".iso"))
 	{
@@ -3721,7 +3702,7 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 	// check private source and whether is MVC content
 	CLSID source_clsid;
-	hr = GetFileSource(file_to_play, &source_clsid, !isSlowExtention(file_to_play));
+	hr = GetFileSource(file_to_play, &source_clsid);
 	bool matched_private_filter = SUCCEEDED(hr);
 
 	// E3D keys
@@ -3828,45 +3809,6 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 					if (info.pFilter) info.pFilter->Release();
 					dwindow_log_line(L"testing pin %s", info.achName);
 
-					if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Video))
-					{
-
-						if ( (video_track>=0 && (LOADFILE_TRACK_NUMBER(video_num) & video_track ))
-							|| video_track == LOADFILE_ALL_TRACK)
-						{
-
-							dwindow_log_line(L"renderering video pin #%d", video_num);
-							hr = render_video_pin(pin);
-							dwindow_log_line(L"done renderering video pin #%d", video_num);
-							video_rendered ++;
-						}
-						video_num ++;
-					}
-
-					else if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Audio))
-					{
-						if ( (audio_track>=0 && (LOADFILE_TRACK_NUMBER(audio_num) & audio_track ))
-							|| audio_track == LOADFILE_ALL_TRACK)
-						{
-							hr = render_audio_pin(pin);
-							dwindow_log_line(L"done renderering audio pin #%d", audio_num);
-							audio_rendered ++;
-						}
-						audio_num ++;
-					}
-
-					else if (S_OK == DeterminPin(pin, NULL, MEDIATYPE_Subtitle))
-					{
-						dwindow_log_line(L"renderering subtitle pin %s", info.achName);
-						CComPtr<IPin> srenderer_pin;
-						GetUnconnectedPin(m_grenderer.m_filter, PINDIR_INPUT, &srenderer_pin);
-						if (srenderer_pin) m_gb->ConnectDirect(pin, srenderer_pin, NULL);
-						dwindow_log_line(L"done renderering subtitle %s", info.achName);
-					}
-
-					else;	// other tracks, ignore them
-
-
 					// lua test
 					luaState L;
 					lua_getglobal(L, "dshow");
@@ -3896,12 +3838,120 @@ HRESULT dx_player::load_file(const wchar_t *pathname, bool non_mainfile /* = fal
 
 					n = lua_gettop(L);
 
-					lua_pushstring(L, "pin_name");
+					lua_pushstring(L, W2UTF8(info.achName));
 					CLSID filter_clsid = GUID_NULL;
 					source_base->GetClassID(&filter_clsid);
 					lua_pushstring(L, W2UTF8(GUID2W(filter_clsid)));
 					lua_pushstring(L, W2UTF8(GUID2W(FOURCCMap('1cva'))));
 					lua_mypcall(L, 4, 2, 0);
+
+					int cat = lua_tointeger(L, -1);
+					CComPtr<IPin> ffdshow_in;
+
+					// add filters
+					if (cat > 0)
+					{
+						if (lua_type(L, -2) == LUA_TTABLE)
+						{
+							int n = lua_rawlen(L, -2);
+							for(int i=1; i<=n; i++)
+							{
+								lua_rawgeti(L, -2, i);
+
+								CLSID clsid;
+								CLSIDFromString(UTF82W(lua_tostring(L,-1)), &clsid);
+								CComPtr<IBaseFilter> filter;
+								myCreateInstance(clsid, IID_IBaseFilter, (void**)&filter);
+								if (clsid == CLSID_CoreAVC)
+									ActiveCoreMVC(filter);
+								if (clsid == CLSID_ffdshowDXVA)
+									GetUnconnectedPin(filter, PINDIR_INPUT, &ffdshow_in);
+
+								dwindow_log_line(L"adding filter %s", UTF82W(lua_tostring(L,-2)));
+
+								hr = m_gb->AddFilter(filter, UTF82W(lua_tostring(L,-1)));
+
+								lua_pop(L,1);
+							}
+						}
+						else if (lua_type(L, -2) == LUA_TSTRING)
+						{
+							CLSID clsid;
+							CLSIDFromString(UTF82W(lua_tostring(L,-2)), &clsid);
+							CComPtr<IBaseFilter> filter;
+							myCreateInstance(clsid, IID_IBaseFilter, (void**)&filter);
+							if (clsid == CLSID_CoreAVC)
+								ActiveCoreMVC(filter);
+							if (clsid == CLSID_ffdshowDXVA)
+								GetUnconnectedPin(filter, PINDIR_INPUT, &ffdshow_in);
+
+							dwindow_log_line(L"adding filter %s", UTF82W(lua_tostring(L,-2)));
+
+							hr = m_gb->AddFilter(filter, UTF82W(lua_tostring(L,-2)));
+						}
+					}
+
+					if (cat == 1)
+					{
+
+						if ( (video_track>=0 && (LOADFILE_TRACK_NUMBER(video_num) & video_track ))
+							|| video_track == LOADFILE_ALL_TRACK)
+						{
+
+							dwindow_log_line(L"renderering video pin #%d", video_num);
+							CComPtr<IPin> renderer_input;
+
+							if (GET_CONST("EVR"))
+							{
+								GetUnconnectedPin(m_renderer1->m_evr, PINDIR_INPUT, &renderer_input);
+								if (!renderer_input)
+									GetUnconnectedPin(m_renderer1->m_evr2, PINDIR_INPUT, &renderer_input);
+								if (ffdshow_in)
+								{
+									hr = m_gb->ConnectDirect(pin, ffdshow_in, NULL);
+									PIN_INFO pi;
+									ffdshow_in->QueryPinInfo(&pi);
+									hr = set_ff_video_formats(pi.pFilter);
+									pi.pFilter->Release();
+								}
+							}
+							else
+							{
+								GetUnconnectedPin(m_renderer1->m_dshow_renderer1, PINDIR_INPUT, &renderer_input);
+								if (!renderer_input)
+									GetUnconnectedPin(m_renderer1->m_dshow_renderer2, PINDIR_INPUT, &renderer_input);
+							}
+
+							hr = m_gb->Connect(pin, renderer_input);
+							dwindow_log_line(L"done renderering video pin #%d", video_num);
+							video_rendered ++;
+						}
+						video_num ++;
+					}
+
+					else if (cat == 2)
+					{
+						if ( (audio_track>=0 && (LOADFILE_TRACK_NUMBER(audio_num) & audio_track ))
+							|| audio_track == LOADFILE_ALL_TRACK)
+						{
+							hr = render_audio_pin(pin);
+							dwindow_log_line(L"done renderering audio pin #%d", audio_num);
+							audio_rendered ++;
+						}
+						audio_num ++;
+					}
+
+					else if (cat==3)
+					{
+						dwindow_log_line(L"renderering subtitle pin %s", info.achName);
+						CComPtr<IPin> srenderer_pin;
+						GetUnconnectedPin(m_grenderer.m_filter, PINDIR_INPUT, &srenderer_pin);
+						if (srenderer_pin) m_gb->ConnectDirect(pin, srenderer_pin, NULL);
+						dwindow_log_line(L"done renderering subtitle %s", info.achName);
+					}
+
+					else;	// other tracks, ignore them
+
 				}
 			}
 			pin = NULL;
@@ -3969,17 +4019,20 @@ HRESULT dx_player::prepare_file(const wchar_t *pathname, IBaseFilter **out)
 	CoInitialize(NULL);
 	dwindow_log_line(L"start preloading %s", pathname);
 
-	if (wcsstr_nocase(pathname, L"http://") == pathname)
+	// reader probe?
+	luaState L;
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "probe_reader");
+	lua_pushstring(L, W2UTF8(pathname));
+	lua_mypcall(L, 1, 1, 0);
+	if(lua_toboolean(L, -1))
 		pathname = URL2Token(pathname);
-	else if (wcsstr_nocase(pathname, L".torrent"))
-		pathname = URL2Token(pathname);
-	else
-		return S_FALSE;
+	lua_settop(L, 0);
 
 	// check private source and whether is MVC content
 	HRESULT hr;
 	CLSID source_clsid;
-	hr = GetFileSource(pathname, &source_clsid, !isSlowExtention(pathname));
+	hr = GetFileSource(pathname, &source_clsid);
 	bool matched_private_filter = SUCCEEDED(hr);
 	CComPtr<IGraphBuilder> gb;
 	gb.CoCreateInstance(CLSID_FilterGraph);
@@ -4036,14 +4089,6 @@ HRESULT dx_player::prepare_file(const wchar_t *pathname, IBaseFilter **out)
 		{
 			source_source->Load(pathname, NULL);
 			gb->AddFilter(source_base, L"Source");
-
-// 			CComQIPtr<IOffsetMetadata, &IID_IOffsetMetadata> offset(source_base);
-// 			if (offset)
-// 				m_offset_metadata = offset;
-// 
-// 			CComQIPtr<IStereoLayout, &IID_IStereoLayout> stereo_layout(source_base);
-// 			if (stereo_layout)
-// 				m_stereo_layout = stereo_layout;
 		}
 		else
 		{
@@ -4069,10 +4114,9 @@ HRESULT dx_player::prepare_file(const wchar_t *pathname, IBaseFilter **out)
 	else
 	{
 		return gb->RenderFile(pathname, NULL);
-	}
-		
+	}		
 
-	return E_NOTIMPL;
+	return S_OK;
 }
 
 HRESULT dx_player::end_loading()
