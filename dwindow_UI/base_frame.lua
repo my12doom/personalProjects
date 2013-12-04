@@ -12,6 +12,31 @@ BOTTOMRIGHT = BOTTOM + RIGHT
 
 BaseFrame ={}
 
+
+local function frame_has_loop_reference(t, checker_table)
+	checker_table = checker_table or t
+
+	if checker_table == nil then return false end;
+
+	for k,v in pairs(t.layout_childs) do
+
+		if type(v) == "table" then
+
+			if v == checker_table then
+				return true
+			end
+
+
+			if frame_has_loop_reference(v, checker_table) then				
+				return true
+			end
+
+		end
+	end
+
+	return false
+end
+
 function BaseFrame:Create(parent)
 	local o = {}
 	o.childs = {}
@@ -31,6 +56,10 @@ end
 function BaseFrame:render(...)
 
 	local ml,mt,mr,mb = self:GetRect()
+	if not self.rt then
+		return
+	end
+	
 	dx9.clear_core(0,0,mr-ml,mb-mt,self.rt.handle)
 	self:RenderThis(...)
 
@@ -38,9 +67,7 @@ function BaseFrame:render(...)
 		local v = self.childs[i]
 		if v and v.render then
 			local l,t,r,b = v:GetRect();
-			BeginChild(l,t,r,b,1,v)
-			if IsCurrentDrawingVisible() then v:render(...) end
-			EndChild(l,t,r,b,1,v)
+			v:render(...)
 			
 			if self.rt and v.rt then
 				dx9.paint_core(l-ml, t-mt, r-ml, b-mt, v.rt.handle, 0, 0, r-l, b-t, v.alpha or 1, bilinear_no_mipmap, self.rt.handle)
@@ -288,31 +315,6 @@ function BaseFrame:SetPoint(point, frame, anchor, dx, dy)
 	end
 	
 	return true
-end
-
-
-function frame_has_loop_reference(t, checker_table)
-	checker_table = checker_table or t
-
-	if checker_table == nil then return false end;
-
-	for k,v in pairs(t.layout_childs) do
-
-		if type(v) == "table" then
-
-			if v == checker_table then
-				return true
-			end
-
-
-			if frame_has_loop_reference(v, checker_table) then				
-				return true
-			end
-
-		end
-	end
-
-	return false
 end
 
 function BaseFrame:BringToTop(include_parent)

@@ -1,6 +1,4 @@
-﻿local rect = {0,0,99999,99999,0,0}
-local rects = {}
-local bitmapcache = {}
+﻿local bitmapcache = {}
 local all_gpu_objects = {}
 local cache_lock
 
@@ -33,33 +31,6 @@ function error(...)
 	print("--ERROR:", ...)
 end
 
-local current_child
-function BeginChild(left, top, right, bottom, alpha, child)
-	current_child = child
-	local left_unclip, top_unclip = left, top
-	left = math.max(rect[1], left)
-	top = math.max(rect[2], top)
-	right = math.min(rect[3], right)
-	bottom = math.min(rect[4], bottom)
-	local new_rect = {left, top, right, bottom, left_unclip, top_unclip, alpha}
-	table.insert(rects, rect)
-	rect = new_rect
-
-	dx9.set_clip_rect_core(left, top, right, bottom)
-	dx9.set_clip_rect_core(0, 0, 9999, 9999)
-end
-
-function EndChild(left, top, right, bottom)
-	rect = table.remove(rects)
-	dx9.set_clip_rect_core(rects[1], rects[2], rects[3], rects[4])
-end
-
-function IsCurrentDrawingVisible()
-	return rect[3]>rect[1] and rect[4]>rect[2]
-end
-
-
-
 function OnMove() end
 function OnSize() end
 
@@ -78,17 +49,17 @@ function RenderUI(view)
 	local delta_time = 0;
 	if last_render_time > 0 then delta_time = core.GetTickCount() - last_render_time end
 	last_render_time = core.GetTickCount();
-	local t = core.GetTickCount()
+	local t1 = core.GetTickCount()
 	if view == 0 then root:BroadCastEvent("PreRenderUI", last_render_time, delta_time) end
-	local dt = core.GetTickCount() -t
-	t = core.GetTickCount()
+	local dt = core.GetTickCount() -t1
+	t1 = core.GetTickCount()
 
 	root:render(view)
 	
 	local l,t,r,b = root:GetRect()
 	dx9.paint_core(l, t, r, b, root.rt.handle, 0, 0, r-l, b-t, 1, bilinear_no_mipmap)
 
-	local dt2 = core.GetTickCount() -t
+	local dt2 = core.GetTickCount() -t1
 
 	if dt > 0 or dt2 > 0 then
 		info(string.format("slow RenderUI() : PreRender() cost %dms, render() cost %dms", dt, dt2))
@@ -184,7 +155,7 @@ function releaseCache(is_decommit)
 	cache_lock:unlock()
 end
 
-function test_get_text_bitmap(...)
+function DrawText(...)
 	local res, width, height = dx9.draw_font_core(...)		-- width is also used as error msg output.
 	if not res then
 		error(width, filename)
@@ -192,8 +163,6 @@ function test_get_text_bitmap(...)
 	end
 	return resource_base:create(res, width, height)
 end
-
-DrawText = test_get_text_bitmap
 
 function get_bitmap(filename, reload)
 	if reload then unload_bitmap(filename) end
@@ -253,22 +222,6 @@ lanczos = 1
 bilinear_no_mipmap = 2
 lanczos_onepass = 3
 bilinear_mipmap = 4
-
-function paint(left, top, right, bottom, bitmap, alpha, resampling_method)
-	if not bitmap or not bitmap.handle then return end
-	local x,y  = rect[5], rect[6]
-	local a = alpha or 1.0
-	
-	if current_child and current_child.rt and current_child.rt.handle then
-		--print(current_child.rt.handle)
-		--dx9.paint_core(left, top, right, bottom, dx9.get_resource(), 0, 0, 0, 0, 1, resampling_method or bilinear_no_mipmap, current_child.rt.handle)
-		dx9.set_clip_rect_core(0, 0, right+x, bottom+y)
-		dx9.paint_core(left, top, right, bottom, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, 1, bilinear_no_mipmap, current_child.rt.handle)
-		return dx9.paint_core(left+x, top+y, right+x, bottom+y, current_child.rt.handle, left, top, right, bottom, a, resampling_method or bilinear_no_mipmap)
-	end
-	
-	--return dx9.paint_core(left+x, top+y, right+x, bottom+y, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap)
-end
 
 -- native threading support
 Thread = {}

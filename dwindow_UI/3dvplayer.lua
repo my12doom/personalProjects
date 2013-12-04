@@ -213,7 +213,7 @@ function v3dplayer_add_button()
 	end
 
 	function test:OnInitCPU()
-		self.res = self.res or test_get_text_bitmap("HelloWorld你好")
+		self.res = self.res or DrawText("HelloWorld你好")
 		self:SetSize(self.res.width, self.res.height)
 	end
 
