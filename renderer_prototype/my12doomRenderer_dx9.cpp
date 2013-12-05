@@ -3171,7 +3171,6 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 	input_layout_types input = m_input_layout == input_layout_auto ? m_layout_detected : m_input_layout;
 	bool need_detect = !dual_stream && m_input_layout == input_layout_auto && !m_no_more_detect;
 	CLSID format = sample1->m_format;
-	bool topdown = sample1->m_topdown;
 
 	HRESULT hr = S_OK;
 	if (sample1)

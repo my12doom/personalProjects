@@ -26,7 +26,6 @@ public:
 	REFERENCE_TIME m_end;
 	int m_fn;
 	CLSID m_format;
-	bool m_topdown;
 	bool m_interlaced;
 	bool m_GDI_prepared;
 	bool m_need_backup_when_decommitting;

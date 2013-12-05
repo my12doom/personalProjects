@@ -746,13 +746,13 @@ void LoadSetting(HWND hWnd)
     lua_const& val1 = GET_CONST(TestSet[1].arrSettingName);
     dVal = val1;
     int nSel = -1;
-    if (abs(dVal - ( -1 )) < 0.000001)
+    if (abs(dVal - ( -1 )) < 0.001)
         nSel = 0;
-    else if (abs(dVal - 4 / 3) < 0.000001)
+    else if (abs(dVal - 4.0 / 3) < 0.001)
         nSel = 1;
-    else if (abs (dVal - 16 / 9) < 0.000001)
+    else if (abs (dVal - 16.0 / 9) < 0.001)
         nSel = 2;
-    else if (abs(dVal - 2.35) < 0.000001)
+    else if (abs(dVal - 2.35) < 0.001)
         nSel = 3;
     SendMessage(GetDlgItem(hWnd, TestSet[1].nCtrlID), CB_SETCURSEL, (WPARAM)nSel, 0);
 

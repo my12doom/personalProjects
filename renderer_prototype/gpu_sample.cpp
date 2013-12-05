@@ -205,6 +205,7 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 		hr = device->SetPixelShaderConstantF(0, rect_data, 2);
 		hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
 		hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		hr = device->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
 
 		// vertex
 		MyVertex vertex[4];
@@ -575,7 +576,6 @@ void gpu_sample::zero(IDirect3DDevice9 *device, CTextureAllocator *allocator)
 	m_height = 0;
 	m_ready = false;
 	m_format = MEDIASUBTYPE_RGB32;
-	m_topdown = false;
 	m_prepared_for_rendering = false;
 	m_converted = false;
 	m_cpu_stereo_tested = false;
@@ -591,7 +591,6 @@ gpu_sample::gpu_sample(IMediaSample *memory_sample, CTextureAllocator *allocator
 	m_width = width;
 	m_height = height;
 	m_format = format;
-	m_topdown = topdown_RGB32;
 	m_interlaced = interlaced;
 	HRESULT hr;
 	CComQIPtr<IMediaSample2, &IID_IMediaSample2> I2(memory_sample);
