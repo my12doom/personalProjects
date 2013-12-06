@@ -31,16 +31,9 @@ static int release_resource_core(lua_State *L)
 
 	return 0;
 }
-bool setup_gc(lua_State *L)
+static bool setup_gpu_sample_gc(lua_State *L)
 {
-	int n = lua_gettop(L);
-
-	lua_newtable(L);
-	lua_pushcfunction(L, &release_resource_core);
-	lua_setfield(L, -2, "__gc");
-	lua_setmetatable(L, -2);
-
-	return n == lua_gettop(L);	
+	return setup_gc(L, &release_resource_core);
 }
 
 static int commit_resource_core(lua_State *L)
@@ -79,6 +72,8 @@ static int decommit_resource_core(lua_State *L)
 }
 
 
+CCritSec paint_lock;
+
 static int paint_core(lua_State *L)
 {
 	int parameter_count = -lua_gettop(L);
@@ -106,6 +101,8 @@ static int paint_core(lua_State *L)
 	RECTF dst_rect = {left, top, right, bottom};
 	RECTF src_rect = {s_left, s_top, s_right, s_bottom};
 	bool hasROI = s_left > 0 || s_top > 0 || s_right > 0 || s_bottom > 0;
+
+	CAutoLock lck(&paint_lock);
 
 	g_renderer->paint(&dst_rect, resource, hasROI ? &src_rect : NULL, alpha, method, rt);
 
@@ -177,7 +174,7 @@ static int create_rt(lua_State *L)
 	resource_userdata *resource = (resource_userdata*)lua_newuserdata(L, sizeof(resource_userdata));
 	HRESULT hr = g_renderer->create_rt(width, height, resource);
 
-	setup_gc(L);
+	setup_gpu_sample_gc(L);
 
 	return 1;
 }
@@ -199,7 +196,7 @@ static int load_bitmap_core(lua_State *L)
 	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
 	resource->pointer = sample;
 	resource->managed = false;
-	setup_gc(L);
+	setup_gpu_sample_gc(L);
 	lua_pushinteger(L, sample->m_width);
 	lua_pushinteger(L, sample->m_height);
 	return 3;
@@ -326,7 +323,7 @@ static int draw_font_core(lua_State *L)
 	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
 	resource->pointer = sample;
 	resource->managed = false;
-	setup_gc(L);
+	setup_gpu_sample_gc(L);
 	lua_pushinteger(L, sample->m_width);
 	lua_pushinteger(L, sample->m_height);
 	return 3;

@@ -2681,9 +2681,11 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 	return resize_surface(src, src2, dst, &s, &d, method, alpha);
 }
 
-
+CCritSec resize_surface_lock;
 HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src2, IDirect3DSurface9 *dst, RECTF *src_rect /* = NULL */, RECTF *dst_rect /* = NULL */, resampling_method method /* = bilinear_mipmap_minus_one */, float alpha /*= 1.0f*/)
 {
+	CAutoLock lck(&resize_surface_lock);
+
 	if ((!src && !src2) || !dst)
 		return E_POINTER;
 

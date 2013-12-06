@@ -57,7 +57,7 @@ function RenderUI(view)
 	root:render(view)
 	
 	local l,t,r,b = root:GetRect()
-	dx9.paint_core(l, t, r, b, root.rt.handle, 0, 0, r-l, b-t, 1, bilinear_no_mipmap)
+	dx9.paint_core(l, t, r, b, root.rt2.handle, 0, 0, r-l, b-t, 1, bilinear_no_mipmap)
 
 	local dt2 = core.GetTickCount() -t1
 

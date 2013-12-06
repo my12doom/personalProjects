@@ -15,6 +15,8 @@ int dwindow_lua_exit();
 int lua_mypcall(lua_State *L, int n, int r, int flag);
 int lua_save_settings();
 int lua_load_settings();
+bool setup_gc(lua_State *L, lua_CFunction f);
+
 
 class luaState
 {
