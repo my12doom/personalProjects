@@ -4984,6 +4984,25 @@ HRESULT my12doomRenderer::CreateVideoSamples(IMFMediaType *pFormat, VideoSampleL
 // 	CHECK_HR(hr = OnCreateVideoSamples(pp));
 
 done:
+
+
+	// passed, reset layout detection
+	m_source_aspect = (double)pp.BackBufferWidth / pp.BackBufferHeight;
+	m_normal = m_sbs = m_tb = 0;
+	m_layout_detected = mono2d;
+	m_no_more_detect = false;
+
+	if (m_source_aspect > 2.65)
+	{
+		m_layout_detected = side_by_side;
+		m_no_more_detect = true;
+	}
+	else if (m_source_aspect < 1.325)
+	{
+		m_layout_detected = top_bottom;
+		m_no_more_detect = true;
+	}
+
 	if (FAILED(hr))
 	{
 		ReleaseResources();
