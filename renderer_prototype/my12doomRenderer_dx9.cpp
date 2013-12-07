@@ -200,11 +200,21 @@ my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/)
 	m_render_thread = INVALID_HANDLE_VALUE;
 	m_render_thread_exit = false;
 
+	// AES key
+
+	unsigned char passkey_big_decrypted[128];
+	RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
+	m_AES.set_key((unsigned char*)passkey_big_decrypted+64, 256);
+	memcpy(m_key, (unsigned char*)passkey_big_decrypted+64, 32);
+	memset(passkey_big_decrypted, 0, 128);
+
 	init_variables();
 
 	pump();
 
 	reset();
+
+	pump();
 }
 
 void my12doomRenderer::init_variables()
@@ -1765,6 +1775,12 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 		hr = m_Device->BeginScene();
 
+
+		CAutoLock lck2(&m_uidrawer_cs);
+		hr = m_uidrawer == NULL ? S_FALSE : m_uidrawer->pre_render_movie(NULL);
+
+
+
 		// prepare all samples in queue for rendering
 		if(false)
 		{
@@ -2259,13 +2275,6 @@ HRESULT my12doomRenderer::draw_movie(IDirect3DSurface9 *surface, int view)
 	if (!surface)
 		return E_POINTER;
 
-	if (view == 0)
-	{
-		CAutoLock lck2(&m_uidrawer_cs);
-		hr = m_uidrawer == NULL ? S_FALSE : m_uidrawer->pre_render_movie(surface);
-	}
-
-
 	view = m_force2d ? 0 : view;
 
 	CComPtr<IDirect3DSurface9> src;
@@ -2510,7 +2519,6 @@ HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RE
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 		}
 	}
-
 	m_Device->SetRenderTarget(0, last_rt);
 
 	return S_OK;
@@ -4835,6 +4843,7 @@ HRESULT my12doomRenderer::set_ui_drawer(ui_drawer_base * new_ui_drawer)
 		m_uidrawer->init_cpu(m_Device);
 		set_device_state(need_reset_object);
 	}
+	pump();
 	return S_OK;
 }
 

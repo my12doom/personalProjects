@@ -20,8 +20,8 @@ player.set_window_text(L("DWindow"), L("DWindow"))
 
 
 -- black background and right mouse reciever
-local oroot = BaseFrame:Create()
-root:AddChild(oroot)
+local oroot = root
+--root:AddChild(oroot)
 function oroot:OnInitGPU(t, dt)
 	self:SetSize(ui.width, ui.height)
 end
@@ -80,6 +80,7 @@ oroot:AddChild(bottombar)
 bottombar:SetPoint(BOTTOMLEFT)
 bottombar:SetPoint(BOTTOMRIGHT)
 bottombar:SetHeight(44)
+bottombar.name = "bottom"
 bottombar:set_texture(get_bitmap(lua_path .. "bar.png"))
 
 
@@ -89,6 +90,7 @@ oroot:AddChild(topbar)
 topbar:SetPoint(TOPLEFT)
 topbar:SetPoint(TOPRIGHT)
 topbar:SetHeight(30)
+topbar.name = "top"
 topbar:set_texture(get_bitmap(lua_path .. "bar.png"))
 
 -- caption
@@ -374,21 +376,31 @@ end
 
 -- volume bar
 -- enlarged hittest width
-local volume = BaseFrame:Create()
+volume = BaseFrame:Create()
 bottombar:AddChild(volume)
 volume:SetPoint(RIGHT, full, LEFT, -20+9, 0)
 volume:SetSize(68+18, 16+4)
+volume.name = "volume"
+print(volume.rt, volume.rt2, "volume", volume:paint(0,0,60,20, get_bitmap(lua_path .. "volume_bg.png")))
 
 function volume:PreRender()
 	local v = math.max(math.min(player.get_volume(), 1), 0)
-	local l,_,r = self:GetRect()
-	
 	if self.v ~= v then
-		self:clear()
-		if not self:paint(9,8,9+r-l-18, 8+4, get_bitmap(lua_path .. "volume_bg.png")) then return end
-		if not self:paint(9,8,9+(r-l-18)*v,8+4, get_bitmap(lua_path .. "volume.png")) then return end
-		self.v = v
+		print("volume:PreRender():paint()")
+		self:OnResize()
+		self.v = self.v and v or -1
 	end
+end
+
+function volume:OnResize()
+	local v = math.max(math.min(player.get_volume(), 1), 0)
+	local l,_,r = self:GetRect()	
+	print("volume:paint()", self.rt, self.rt2)
+	core.track_back()
+	self:clear()
+	if not self:paint(9,8,9+r-l-18, 8+4, get_bitmap(lua_path .. "volume_bg.png")) then return end
+	if not self:paint(9,8,9+(r-l-18)*v,8+4, get_bitmap(lua_path .. "volume.png")) then return end
+	self.v = v
 end
 
 function volume:OnMouseMove(x,y,button)
@@ -804,7 +816,7 @@ local last_mousemove =  0
 local mousex = -999
 local mousey = -999
 
-function mouse_hider:OnUpdate(t, dt)
+function mouse_hider:PreRender(t, dt)
 
 	local px, py = ui.get_mouse_pos()
 	if (mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 100 or ((mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 0 and alpha > 0.5) then	

@@ -419,8 +419,7 @@ int luaCreateCritSec(lua_State *L)
 	CRITICAL_SECTION *cs = (CRITICAL_SECTION *)lua_newuserdata(L, sizeof(CRITICAL_SECTION));
 	InitializeCriticalSection(cs);
 
-	lua_pushcfunction(L, &luaDestroyCritSec);
-	setup_gc(L, &luaDestroyCritSec);
+	bool b = setup_gc(L, &luaDestroyCritSec);
 
 	return 1;
 }
