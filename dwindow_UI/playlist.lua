@@ -73,8 +73,6 @@ function playlist:play_item(n)
 	L = L and parseURL(L)
 	R = R and parseURL(R)
 	
-	root:BroadCastEvent("OnPlaylistChange")
-	
 	if type(L) == "table" then
 		-- currently for youku only,
 		playlist.L = L

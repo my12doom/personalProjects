@@ -20,17 +20,7 @@ static int lua_GetTickCount (lua_State *L)
 	lua_pushinteger(L, timeGetTime());
 	return 1;
 }
-bool setup_gc(lua_State *L, lua_CFunction f)
-{
-	int n = lua_gettop(L);
 
-	lua_newtable(L);
-	lua_pushcfunction(L, f);
-	lua_setfield(L, -2, "__gc");
-	lua_setmetatable(L, -2);
-
-	return n == lua_gettop(L);
-}
 static int lua_ApplySetting(lua_State *L)
 {
 	const char *name = lua_tostring(L, -1);
@@ -402,24 +392,11 @@ int luaCreateThread(lua_State *L)
 	return 1;
 }
 
-CRITICAL_SECTION zero_cs = {0};
-int luaDestroyCritSec(lua_State *L)
-{
-	CRITICAL_SECTION *cs = (CRITICAL_SECTION*)lua_touserdata(L, -1);
-	if (!cs || memcmp(cs, &zero_cs, sizeof(zero_cs)) == 0)
-		return 0;
-
-	DeleteCriticalSection(cs);
-	memset(cs, 0, sizeof(CRITICAL_SECTION));
-	return 1;
-}
-
 int luaCreateCritSec(lua_State *L)
 {
-	CRITICAL_SECTION *cs = (CRITICAL_SECTION *)lua_newuserdata(L, sizeof(CRITICAL_SECTION));
+	CRITICAL_SECTION *cs = new CRITICAL_SECTION;
 	InitializeCriticalSection(cs);
-
-	bool b = setup_gc(L, &luaDestroyCritSec);
+	lua_pushlightuserdata(L, cs);
 
 	return 1;
 }
@@ -442,6 +419,16 @@ int luaUnlockCritSec(lua_State *L)
 
 	LeaveCriticalSection(cs);
 	lua_pushboolean(L, 1);
+	return 1;
+}
+int luaDestroyCritSec(lua_State *L)
+{
+	CRITICAL_SECTION *cs = (CRITICAL_SECTION*)lua_touserdata(L, -1);
+	if (!cs)
+		return 0;
+
+	DeleteCriticalSection(cs);
+	delete cs;
 	return 1;
 }
 
@@ -1135,7 +1122,6 @@ int lua_track_back(lua_State *L)
 	const char* err = lua_tostring(L, -1);
 
 #ifdef DEBUG
-	OutputDebugStringA("----trackback----");
 	char tmp[10240];
 	lua_Debug debug;
 	for(int level = 1; lua_getstack(L, level, &debug); level++)

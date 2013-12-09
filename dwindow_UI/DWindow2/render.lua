@@ -20,8 +20,8 @@ player.set_window_text(L("DWindow"), L("DWindow"))
 
 
 -- black background and right mouse reciever
-local oroot = root
---root:AddChild(oroot)
+local oroot = BaseFrame:Create()
+root:AddChild(oroot)
 function oroot:OnInitGPU(t, dt)
 	self:SetSize(ui.width, ui.height)
 end
@@ -42,36 +42,31 @@ function oroot:OnClick(x,y,button)
 end
 
 
--- background
-logo = BaseFrame:Create()
+-- background / loading progress
+local logo = BaseFrame:Create()
 oroot:AddChild(logo)
 logo:SetPoint(CENTER)
 logo:SetSize(1024,600)
-function logo:PreRender()
+
+function logo:RenderThis()
 	if not player.movie_loaded then
-		self:set_texture(get_bitmap(lua_path .. "bg.png"))
-	else
-		self:set_texture(nil)
+		local res = get_bitmap(lua_path .. "bg.png")
+		self:paint(0,0,1024,600, res)
 	end
-end
-
--- loading progress icon
-local loading_icon = BaseFrame:Create()
-logo:AddChild(loading_icon)
-loading_icon:SetPoint(CENTER)
-loading_icon:SetSize(64,64)
-
-function loading_icon:PreRender()
 	if player.movie_loading then
-		self:clear()
 		local p = math.floor((core.GetTickCount() % 1000)/100)
 		local res = get_bitmap(lua_path .. "loading.png")
 		set_bitmap_rect(res, p*64,0,(p+1)*64,64)
-		self:paint(0,0,64,64, res)
-	elseif self.last then
-		self:clear()
+		self:paint(480,268,544,332, res)
 	end
-	self.last = player.movie_loading
+end
+
+function logo:OnReleaseGPU()
+	dx9.lock_frame()
+	if (self.res) then
+		self.res:decommit()
+	end
+	dx9.unlock_frame()
 end
 
 -- bottom bar
@@ -80,8 +75,11 @@ oroot:AddChild(bottombar)
 bottombar:SetPoint(BOTTOMLEFT)
 bottombar:SetPoint(BOTTOMRIGHT)
 bottombar:SetHeight(44)
-bottombar.name = "bottom"
-bottombar:set_texture(get_bitmap(lua_path .. "bar.png"))
+
+function bottombar:RenderThis()
+	local res = get_bitmap(lua_path .. "bar.png")
+	self:paint(0,0,ui.width,44, res)
+end
 
 
 -- top bar
@@ -90,37 +88,40 @@ oroot:AddChild(topbar)
 topbar:SetPoint(TOPLEFT)
 topbar:SetPoint(TOPRIGHT)
 topbar:SetHeight(30)
-topbar.name = "top"
-topbar:set_texture(get_bitmap(lua_path .. "bar.png"))
+topbar.item = " "
 
--- caption
-local caption = BaseFrame:Create()
-topbar:AddChild(caption)
-caption:SetPoint(LEFT, topbar, LEFT, 15)
-caption.text = " "
-
-function caption:PreRender()
+function topbar:PreRender()
 	local left, right = playlist:current_item();
 	local dis = GetName(left) or " "
 	if right then dis = dis .. " + " .. GetName(right) end
 	if not player.movie_loaded then dis = " " end
-	
-	if self.text ~= dis then
-		self.text = dis
-		self.res = DrawText(self.text, font_black)
-		self:set_texture(self.res)
-		self:SetSize(self.res.width, self.res.height)
+	if self.item ~= dis then
+		self.item = dis
+		
+		if self.res then
+			self.res:release()
+		end
+		self.res = DrawText(self.item, font_black)
 	end
 end
 
+function topbar:RenderThis()
+	local res = get_bitmap(lua_path .. "bar.png")
+	self:paint(0,0,ui.width,34, res)
+	
+	if self.res then 
+		local h = (34-self.res.height)/2
+		self:paint(15, h, 15+self.res.width, h+self.res.height, self.res)
+	end
+end
 
 -- playlist button
 bottombar:AddChild(playlist_button)
 playlist_button:SetPoint(BOTTOMLEFT, bottombar, BOTTOMLEFT, 14, -7)
 playlist_button:SetSize(36,30)
 
-function playlist_button:PreRender()
-	self:set_texture(get_bitmap(lua_path .. (self:IsMouseOver() and "playlist_mouseover.png" or "playlist_normal.png")))	
+function playlist_button:RenderThis()
+	self:paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "playlist_mouseover.png" or "playlist_normal.png")))	
 end
 
 function playlist_button:OnClick()
@@ -143,10 +144,9 @@ local setting_button = BaseFrame:Create()
 bottombar:AddChild(setting_button)
 setting_button:SetPoint(LEFT, playlist_button, RIGHT, -18, 0)
 setting_button:SetSize(36,30)
-setting_button:set_texture(get_bitmap(lua_path .. "setting_normal.png"))
 
-function setting_button:PreRender()
-	self:set_texture(get_bitmap(lua_path .. (self:IsMouseOver() and "setting_mouseover.png" or "setting_normal.png")))	
+function setting_button:RenderThis()
+	self:paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "setting_mouseover.png" or "setting_normal.png")))	
 end
 
 function setting_button:HitTest(x, y)
@@ -164,13 +164,13 @@ bottombar:AddChild(b3d)
 b3d:SetPoint(LEFT, setting_button, RIGHT, -18, 0)
 b3d:SetSize(36,30)
 
-function b3d:PreRender()
-	if not player.movie_loaded then
-		self:set_texture(nil)
-	elseif dx9.is2DMovie() then
-		self:set_texture(get_bitmap(lua_path .. (self:IsMouseOver() and "2d_mouseover.png" or "2d_normal.png")))	
+function b3d:RenderThis()
+	if not player.movie_loaded then return end
+	
+	if dx9.is2DMovie() then
+		self:paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "2d_mouseover.png" or "2d_normal.png")))	
 	else
-		self:set_texture(get_bitmap(lua_path .. (dx9.is2DRendering() and "3d_normal.png" or "3d_mouseover.png")))	
+		self:paint(0,0,36,30, get_bitmap(lua_path .. (dx9.is2DRendering() and "3d_normal.png" or "3d_mouseover.png")))	
 	end
 end
 
@@ -191,12 +191,12 @@ LR:SetPoint(LEFT, b3d, RIGHT, -18, 0)
 LR:SetSize(36,30)
 
 function LR:RenderThis()
-	if not player.movie_loaded or dx9.is2DMovie() then
-		self:set_texture(nil)	
-	elseif setting.SwapEyes then
-		self:set_texture(get_bitmap(lua_path .. (self:IsMouseOver() and "RL_mouseover.png" or "RL_normal.png")))
+	if not player.movie_loaded or dx9.is2DMovie() then return end
+	
+	if setting.SwapEyes then
+		self:paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "RL_mouseover.png" or "RL_normal.png")))
 	else
-		self:set_texture(get_bitmap(lua_path .. (self:IsMouseOver() and "LR_mouseover.png" or "LR_normal.png")))			
+		self:paint(0,0,36,30, get_bitmap(lua_path .. (self:IsMouseOver() and "LR_mouseover.png" or "LR_normal.png")))			
 	end
 end
 
@@ -216,10 +216,9 @@ local full = BaseFrame:Create()
 bottombar:AddChild(full)
 full:SetPoint(BOTTOMRIGHT, bottombar, nil, -14, -7)
 full:SetSize(33,31)
-full:set_texture(get_bitmap(lua_path .. "fullscreen.png"))
 
-function full:PreRender()
-	self:set_texture(get_bitmap(lua_path .. (self:IsMouseOver() and "fullscreen_mouseover.png" or "fullscreen.png")))
+function full:RenderThis()
+	self:paint(0,0,33,31, get_bitmap(lua_path .. (self:IsMouseOver() and "fullscreen_mouseover.png" or "fullscreen.png")))
 end
 
 function full:OnClick()
@@ -233,13 +232,12 @@ local play = BaseFrame:Create()
 bottombar:AddChild(play)
 play:SetPoint(BOTTOM)
 play:SetSize(109,38)
-play:set_texture(get_bitmap(lua_path .. "pause_mouseover.png"))
 
-function play:PreRender()
+function play:RenderThis()
 	if player.is_playing() then
-		self:set_texture(get_bitmap(lua_path .. (self:IsMouseOver() and "pause_mousedown.png" or "pause_mouseover.png")))	
+		self:paint(0,0,109,38, get_bitmap(lua_path .. (self:IsMouseOver() and "pause_mousedown.png" or "pause_mouseover.png")))	
 	else
-		self:set_texture(get_bitmap(lua_path .. (self:IsMouseOver() and "play_mousedown.png" or "play_mouseover.png")))	
+		self:paint(0,0,109,38, get_bitmap(lua_path .. (self:IsMouseOver() and "play_mousedown.png" or "play_mouseover.png")))	
 	end
 end
 
@@ -268,18 +266,13 @@ progress:SetPoint(TOPLEFT, bottombar, nil, 0, -8)
 progress:SetPoint(TOPRIGHT, bottombar, nil, 0, -8)
 progress:SetHeight(16+6)
 
-function progress:PreRender()
+function progress:RenderThis()
 	local v = (player.tell() or 0) / (player.total() or 1)
 	v = math.max(math.min(v, 1), 0)
 	local l,_,r = self:GetRect()
 	
-	local r2 = math.floor((r-l)*v+0.5)
-	if self.r2 ~= r2 then
-		self.r2 = r2
-		self:clear()
-		self:paint(0,8,r-l, 8+(self:IsMouseOver() and 6 or 2), get_bitmap(lua_path .. "progress_bg.png"))
-		self:paint(0,8,r2,8+6, get_bitmap(lua_path .. (self:IsMouseOver() and "progress_thick.png" or "progress.png")))
-	end
+	self:paint(0,8,r-l, 8+(self:IsMouseOver() and 6 or 2), get_bitmap(lua_path .. "progress_bg.png"))
+	self:paint(0,8,(r-l)*v,8+6, get_bitmap(lua_path .. (self:IsMouseOver() and "progress_thick.png" or "progress.png")))
 end
 
 function progress:OnMouseMove(x,y,button)
@@ -310,16 +303,17 @@ oroot:AddChild(progress_slider)
 progress_slider:SetSize(17, 17)
 progress_slider:SetPoint(CENTER, progress, LEFT)
 
+function progress_slider:RenderThis()
+	if progress:IsMouseOver() then
+		self:paint(0,0,17, 17, get_bitmap(lua_path .. "slider.png"))
+	end
+end
+
 function progress_slider:PreRender()
 	local v = (player.tell() or 0) / (player.total() or 1)
 	v = math.max(math.min(v, 1), 0)
 	local l,_,r = progress:GetRect()
 	self:SetPoint(CENTER, progress, LEFT, math.floor((r-l)*v), 0.5)
-	if progress:IsMouseOver() then
-		self:set_texture(get_bitmap(lua_path .. "slider.png"))
-	else
-		self:set_texture(nil)
-	end
 end
 
 function progress_slider:HitTest()
@@ -327,8 +321,8 @@ function progress_slider:HitTest()
 end
 
 local function create_time_texture(time, color)
-	local second = (time)%60
-	local minute = time/60
+	local second = (time/1000)%60
+	local minute = time/60000
 	return DrawText(string.format("%02d:%02d", minute, second), font, color or 0x00ffff)
 end
 
@@ -338,17 +332,20 @@ oroot:AddChild(current_time)
 current_time:SetSize(37, 14)
 current_time:SetPoint(BOTTOM, progress_slider, TOP)
 
-function current_time:PreRender()
-	if progress:IsMouseOver() then		
-		local time = player.tell()/1000
-		if self.time ~= time then
-			self.texture = create_time_texture(time)
-			self:SetSize(self.texture.width, self.texture.height)
-			self:set_texture(self.texture)
-			self.time = time
+function current_time:RenderThis()
+	if progress:IsMouseOver() then
+		if self.texture then
+			self.texture:release()
 		end
-	else
-		self:set_texture(nil)
+		self.texture = create_time_texture(player.tell())
+		if not self.texture then return end
+		self:paint(0,0,self.texture.width, self.texture.height, self.texture)
+	end
+end
+
+function current_time:OnReleaseGPU()
+	if self.texture then
+		self.texture:release()
 	end
 end
 
@@ -362,45 +359,34 @@ oroot:AddChild(total_time)
 total_time:SetSize(37, 14)
 total_time:SetPoint(BOTTOMRIGHT, progress, TOPRIGHT, nil, 3)
 
-function total_time:PreRender()
-	local time = player.total()/1000
-	if self.time ~= time then 
-		self.texture = create_time_texture(time, 0x00333333)
-		self:SetSize(self.texture.width, self.texture.height)
-		self:set_texture(self.texture)
-		self.dirty = alpha ~= self.alpha
-		self.alpha = alpha
-		self.time = time
+function total_time:RenderThis()
+	if self.texture then
+		self.texture:release()
+	end
+	self.texture = create_time_texture(player.total(), 0x00333333)
+	if not self.texture then return end
+	self:paint(0,0,self.texture.width, self.texture.height, self.texture, alpha)
+end
+
+function total_time:OnReleaseGPU()
+	if self.texture then
+		self.texture:release()
 	end
 end
 
 -- volume bar
 -- enlarged hittest width
-volume = BaseFrame:Create()
+local volume = BaseFrame:Create()
 bottombar:AddChild(volume)
 volume:SetPoint(RIGHT, full, LEFT, -20+9, 0)
 volume:SetSize(68+18, 16+4)
-volume.name = "volume"
-print(volume.rt, volume.rt2, "volume", volume:paint(0,0,60,20, get_bitmap(lua_path .. "volume_bg.png")))
 
-function volume:PreRender()
+function volume:RenderThis()
 	local v = math.max(math.min(player.get_volume(), 1), 0)
-	if self.v ~= v then
-		print("volume:PreRender():paint()")
-		self:OnResize()
-		self.v = self.v and v or -1
-	end
-end
-
-function volume:OnResize()
-	local v = math.max(math.min(player.get_volume(), 1), 0)
-	local l,_,r = self:GetRect()	
-	print("volume:paint()", self.rt, self.rt2)
-	core.track_back()
-	self:clear()
-	if not self:paint(9,8,9+r-l-18, 8+4, get_bitmap(lua_path .. "volume_bg.png")) then return end
-	if not self:paint(9,8,9+(r-l-18)*v,8+4, get_bitmap(lua_path .. "volume.png")) then return end
-	self.v = v
+	local l,_,r = self:GetRect()
+	
+	self:paint(9,8,9+r-l-18, 8+4, get_bitmap(lua_path .. "volume_bg.png"))
+	self:paint(9,8,9+(r-l-18)*v,8+4, get_bitmap(lua_path .. "volume.png"))
 end
 
 function volume:OnMouseMove(x,y,button)
@@ -427,11 +413,14 @@ end
 
 -- volume slider
 local volume_slider = BaseFrame:Create()
+local volume_slider = BaseFrame:Create()
 oroot:AddChild(volume_slider)
 volume_slider:SetSize(17, 17)
 volume_slider:SetPoint(CENTER, volume, LEFT, 9)
-volume_slider:set_texture(get_bitmap(lua_path .. "slider.png"))
 
+function volume_slider:RenderThis()
+	self:paint(0,0,17, 17, get_bitmap(lua_path .. "slider.png"))
+end
 
 function volume_slider:HitTest()
 	return false;
@@ -449,8 +438,8 @@ bottombar:AddChild(volume_button)
 volume_button:SetPoint(RIGHT, volume, LEFT, 5, 0)
 volume_button:SetSize(25, 24)
 
-function volume_button:PreRender()
-	self:set_texture(get_bitmap(lua_path .. (player.get_volume() > 0 and "volume_button_normal.png" or "volume_button_mute.png")))
+function volume_button:RenderThis()
+	self:paint(0,0,25, 24, get_bitmap(lua_path .. (player.get_volume() > 0 and "volume_button_normal.png" or "volume_button_mute.png")))
 end
 
 function volume_button:OnClick()
@@ -469,18 +458,34 @@ local open = BaseFrame:Create()
 oroot:AddChild(open)
 open:SetPoint(CENTER)
 open:SetSize(165,36)
-open:set_texture(get_bitmap(lua_path .. "open.png"))
 
-function open:PreRender()
-	local alpha 
+function open:RenderThis()
 	if not player.movie_loaded and not player.movie_loading then
-		alpha = 1
-	else
-		alpha = 0
+		self:paint(0,0,165,36, get_bitmap(lua_path .. "open.png"))
+		local x = math.floor((165-self.caption.width)/2)
+		local y = math.floor((36-self.caption.height)/2)
+		self:paint(x,y,x+self.caption.width, y+self.caption.height, self.caption)
 	end
-	
-	self.dirty = self.alpha ~= alpha
-	self.alpha = alpha
+end
+
+function open:OnInitGPU()
+	local font = dx9.CreateFont({name="宋体", weight=0, height=13})
+	self.caption = DrawText(L("Open File..."), font, 0x00ffff)
+	dx9.ReleaseFont(font)
+end
+
+function open:OnReleaseGPU()
+	if (self.caption) then
+		self.caption:release()
+		self.caption = nil
+	end	
+end
+
+function open:OnLanguageChange()
+	dx9.lock_frame()
+	self:OnReleaseGPU()
+	self:OnInitGPU()
+	dx9.unlock_frame()
 end
 
 function open:HitTest()
@@ -496,54 +501,41 @@ function open:OnClick()
 	return true
 end
 
-local open_text = BaseFrame:Create()
-open:AddChild(open_text)
-open_text:SetPoint(CENTER)
-function open_text:OnLanguageChange()
-	local font = dx9.CreateFont({name="宋体", weight=0, height=13})
-	self.caption = DrawText(L("Open File..."), font, 0x00ffff)
-	dx9.ReleaseFont(font)
-	self:SetSize(self.caption.width, self.caption.height)
-	self:set_texture(self.caption)
-end
-
-function open_text:HitTest()
-	return false
-end
-
-open_text:OnLanguageChange()
-
-
 -- playlist items
 local playlist_item = BaseFrame:Create()
 function playlist_item:Create(text)
 	local o = BaseFrame:Create()
-	o.res = DrawText(text, font, 0x1a6eb0)
 	setmetatable(o, self)
 	self.__index = self
 	o:SetHeight(28)
+	o.text = text
 	
 	return o
 end
 
-function playlist_item:OnResize()
+function playlist_item:OnReleaseGPU()
+	if self.res then
+		self.res:release()
+	end
+	self.res = nil
+end
 
+function playlist_item:RenderThis()
+
+	self.res = self.res or DrawText(self.text, font, 0x1a6eb0)
 	local l,t,r,b = self:GetRect()
 	l, t, r, b = 0, 0, r-l, b-t
-	
-	self:clear()
 	
 	if self.id == playlist:current_pos() then
 		self:paint(l,t,r,b, get_bitmap(lua_path .. "menu_item.png"))
 	end
 	
-	local dy = (28-self.res.height)/2
-	local dx = 10
-	self:paint(dx,dy, dx+self.res.width, dy+self.res.height, self.res, 1, bilinear_mipmap_minus_one)
-end
+	if self.res and self.res.width and self.res.height then
+		local dy = (28-self.res.height)/2
+		local dx = 10
+		self:paint(dx,dy, dx+self.res.width, dy+self.res.height, self.res, 1, bilinear_mipmap_minus_one)
+	end
 
-function playlist_item:OnPlaylistChange()
-	self:OnResize()
 end
 
 function playlist_item:OnDoubleClick()
@@ -557,21 +549,21 @@ function playlist_item:OnClick(x, y, button)
 	local m = 
 	{
 		{
-			string = L("Delete this item"),
+			string = "删除该条目",
 			id = self.id,
 			on_command = function(v)
 				playlist:remove_item(v.id)
 			end
 		},
 		{
-			string = L("Play this item"),
+			string = "播放该条目",
 			id = self.id,
 			on_command = function(v)
 				playlist:play_item(v.id)
 			end
 		},
 		{
-			string = L("Clear all"),
+			string = "清空",
 			id = self.id,
 			on_command = function(v)
 				playlist:clear()
@@ -593,10 +585,9 @@ playlist_list:SetWidth(setting.playlist_width)
 playlist_list:SetPoint(TOPLEFT, topbar, BOTTOMLEFT, -setting.playlist_width)
 playlist_list:SetPoint(BOTTOMLEFT, bottombar, TOPLEFT, -setting.playlist_width)
 
-function playlist_list:OnResize()
+function playlist_list:RenderThis()
 	local l,t,r,b = self:GetRect()
 	local res = get_bitmap(lua_path .. "blue.bmp")
-	self:clear()
 	--paint(0,0,r-l,b-t, )
 	self:paint(0, 0, r-l, b-t, get_bitmap(lua_path .. "playlist_bg.png"))
 	self:paint(0, 0, r-l, 2, res)
@@ -691,10 +682,14 @@ playlist_list:OnPlaylistChange()
 -- the close button
 playlist_close:SetSize(30,30)
 playlist_close:SetPoint(RIGHT)
-playlist_close:set_texture(get_bitmap(lua_path .. "playlist_close.png"))
+
+function playlist_close:RenderThis()
+	self:paint(0, 0, 30, 30, get_bitmap(lua_path .. "playlist_close.png"))
+end
 
 function playlist_close:OnClick()
-	playlist_list:hide()	
+	playlist_list:hide()
+	
 	return true
 end
 
@@ -705,11 +700,9 @@ oroot:AddChild(open2)
 open2:SetPoint(LEFT, open, RIGHT)
 open2:SetSize(31,36)
 
-function open2:PreRender()
+function open2:RenderThis()
 	if not player.movie_loaded and not player.movie_loading then
-		self:set_texture(get_bitmap(lua_path .. "open_more.png"))
-	else
-		self:set_texture(nil)
+		self:paint(0,0,31,36, get_bitmap(lua_path .. "open_more.png"))
 	end
 end
 
@@ -816,7 +809,7 @@ local last_mousemove =  0
 local mousex = -999
 local mousey = -999
 
-function mouse_hider:PreRender(t, dt)
+function mouse_hider:OnUpdate(t, dt)
 
 	local px, py = ui.get_mouse_pos()
 	if (mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 100 or ((mousex-px)*(mousex-px)+(mousey-py)*(mousey-py) > 0 and alpha > 0.5) then	

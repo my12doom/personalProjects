@@ -328,67 +328,67 @@ HRESULT gpu_sample::do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShade
 
 	return E_UNEXPECTED;
 
-// 	commit();
-// 
-// 	HRESULT hr;
-// 	if (FAILED( hr = m_allocator->CreateTexture(stereo_test_texture_size, stereo_test_texture_size, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_stereo_test)))
-// 		return hr;
-// 
-// 	if (!m_tex_gpu_RGB32)
-// 		return E_FAIL;
-// 
-// 
-// 	CComPtr<IDirect3DSurface9> rt;
-// 	m_tex_stereo_test->get_first_level(&rt);
-// 	device->SetRenderTarget(0, rt);
-// 
-// 	device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
-// 	device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-// 	device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
-// 	hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
-// 	hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-// 	CComPtr<IDirect3DSurface9> left_surface;
-// 	CComPtr<IDirect3DSurface9> right_surface;
-// 
-// 	// drawing
-// 	hr = device->SetStreamSource( 0, vb, 0, sizeof(MyVertex) );
-// 	hr = device->SetFVF( FVF_Flags );
-// 
-// 	// vertex
-// 	MyVertex vertex[4];	
-// 	vertex[0].x = (float)0;
-// 	vertex[0].y = (float)0;
-// 	vertex[1].x = (float)stereo_test_texture_size/2;
-// 	vertex[1].y = (float)0;
-// 	vertex[2].x = (float)0;
-// 	vertex[2].y = (float)stereo_test_texture_size;
-// 	vertex[3].x = (float)stereo_test_texture_size/2;
-// 	vertex[3].y = (float)stereo_test_texture_size;
-// 	vertex[0].tu = 0; vertex[0].tv = 0;
-// 	vertex[1].tu = 1.0f; vertex[1].tv = 0;
-// 	vertex[2].tu = 0; vertex[2].tv = 1.0f;
-// 	vertex[3].tu = 1.0f; vertex[3].tv = 1.0f;
-// 
-// 	for(int i=0;i <4; i++)
-// 	{
-// 		vertex[i].x -= 0.5f;
-// 		vertex[i].y -= 0.5f;
-// 		vertex[i].z = 1.0f;
-// 		vertex[i].w = 1.0f;
-// 	}
-// 
-// 	hr = device->SetTexture( 0, m_tex_gpu_RGB32->texture );
-// 	hr = device->SetPixelShader(shader_sbs);
-// 	hr = device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex) );
-// 	for(int i=0; i<4; i++)
-// 		vertex[i].x += stereo_test_texture_size/2;
-// 	hr = device->SetPixelShader(shader_tb);
-// 	hr = device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex) );
-// 
-// 	//hr = device->EndScene();
-// 
-// 	mylog("test:%x:%d\n", this, timeGetTime());
-// 
+	commit();
+
+	HRESULT hr;
+	if (FAILED( hr = m_allocator->CreateTexture(stereo_test_texture_size, stereo_test_texture_size, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,	&m_tex_stereo_test)))
+		return hr;
+
+	if (!m_tex_gpu_RGB32)
+		return E_FAIL;
+
+
+	CComPtr<IDirect3DSurface9> rt;
+	m_tex_stereo_test->get_first_level(&rt);
+	device->SetRenderTarget(0, rt);
+
+	device->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
+	device->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+	device->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
+	hr = device->SetRenderState(D3DRS_LIGHTING, FALSE);
+	hr = device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	CComPtr<IDirect3DSurface9> left_surface;
+	CComPtr<IDirect3DSurface9> right_surface;
+
+	// drawing
+	hr = device->SetStreamSource( 0, vb, 0, sizeof(MyVertex) );
+	hr = device->SetFVF( FVF_Flags );
+
+	// vertex
+	MyVertex vertex[4];	
+	vertex[0].x = (float)0;
+	vertex[0].y = (float)0;
+	vertex[1].x = (float)stereo_test_texture_size/2;
+	vertex[1].y = (float)0;
+	vertex[2].x = (float)0;
+	vertex[2].y = (float)stereo_test_texture_size;
+	vertex[3].x = (float)stereo_test_texture_size/2;
+	vertex[3].y = (float)stereo_test_texture_size;
+	vertex[0].tu = 0; vertex[0].tv = 0;
+	vertex[1].tu = 1.0f; vertex[1].tv = 0;
+	vertex[2].tu = 0; vertex[2].tv = 1.0f;
+	vertex[3].tu = 1.0f; vertex[3].tv = 1.0f;
+
+	for(int i=0;i <4; i++)
+	{
+		vertex[i].x -= 0.5f;
+		vertex[i].y -= 0.5f;
+		vertex[i].z = 1.0f;
+		vertex[i].w = 1.0f;
+	}
+
+	hr = device->SetTexture( 0, m_tex_gpu_RGB32->texture );
+	hr = device->SetPixelShader(shader_sbs);
+	hr = device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex) );
+	for(int i=0; i<4; i++)
+		vertex[i].x += stereo_test_texture_size/2;
+	hr = device->SetPixelShader(shader_tb);
+	hr = device->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, vertex, sizeof(MyVertex) );
+
+	//hr = device->EndScene();
+
+	mylog("test:%x:%d\n", this, timeGetTime());
+
 	return S_OK;
 }
 

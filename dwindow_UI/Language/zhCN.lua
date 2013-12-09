@@ -3,9 +3,6 @@
 	LCID = {"简体中文", 2052, 3076},
 	
 
-	["Delete this item"] = "删除该条目",
-	["Play this item"] = "播放该条目",
-	["Clear all"] = "清空",
 	["Source Aspect"] = "来源宽高比",
 	["Donate"] = "捐赠",
 	["Free"] = "免费",

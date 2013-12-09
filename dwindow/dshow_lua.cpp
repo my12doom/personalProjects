@@ -92,8 +92,7 @@ static int set_swapeyes(lua_State *L)
 
 static int is_fullscreen(lua_State *L)
 {
-	//lua_pushboolean(L, g_player->is_fullsceen(1));
-	lua_pushboolean(L, 1);
+	lua_pushboolean(L, g_player->is_fullsceen(1));
 
 	return 1;
 }

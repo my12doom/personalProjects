@@ -43,7 +43,6 @@ function BaseFrame:Create(parent)
 	o.anchors = {}
 	o.layout_childs = {}		-- frames which are relatived to this frame
 	o.layout_parents = {}		-- frames which this frame relatives to
-	o.paint_lock = CritSec:create()
 	setmetatable(o, self)
 	self.__index = self
 	
@@ -54,118 +53,36 @@ function BaseFrame:Create(parent)
 	return o
 end
 
-function BaseFrame:render(...)	
+function BaseFrame:render(...)
 
-	self.paint_lock:lock()
-	if self.rt == nil or self.rt.handle == nil or self.rt2 == nil or self.rt2.handle == nil then
-		self:update()
-		self.texture_dirty = true
-		print("BaseFrame:render update")
-	end
-	
-	-- texture dirty check
-	if self.texture_dirty then
-		self.texture_dirty = false
-		self:clear()
-		if self.texture then
-			local l,t,r,b = self:GetRect()
-			l,t,r,b = 0,0,r-l,b-t
-			set_bitmap_rect(table.unpack(self.texture))--self.texture[1], self.texture[2], self.texture[3], self.texture[4], self.texture[5])
-			self.texture_dirty = not self:paint(l,t,r,b,self.texture[1])
-		end
-	end
-	
-	
-	-- update dirty childs and self
+	local ml,mt,mr,mb = self:GetRect()
 	if not self.rt then
-		return self.paint_lock:unlock()
-	end
-	
-	
-	if self.dirty then
-		local ml,mt,mr,mb=self:GetRect()
-		dx9.clear_core(0,0,mr-ml,mb-mt, self.rt2.handle)
-		dx9.paint_core(0,0,mr-ml,mb-mt, self.rt.handle, 0, 0, mr-ml, mb-mt, self.alpha or 1, bilinear_no_mipmap, self.rt2.handle)
-
-		for i=1,#self.childs do
-			local v = self.childs[i]
-			if v and v.render then
-				local l,t,r,b = v:GetRect();
-				
-				if self.rt and v.rt then
-					v.paint_lock:lock()
-					v:render()
-					dx9.paint_core(l-ml, t-mt, r-ml, b-mt, v.rt2.handle, 0, 0, r-l, b-t, v.alpha or 1, bilinear_no_mipmap, self.rt2.handle)
-					v.paint_lock:unlock()
-				end
-			end
-		end
-		self.dirty = false
-	end
-	self.paint_lock:unlock()
-end
-
-function BaseFrame:clear()
-	self.paint_lock:lock()
-	if self.rt then
-		local l,t,r,b = self:GetRect()
-		dx9.clear_core(0,0,r-l,b-t,self.rt.handle)
-		self:update()
-	end
-	self.paint_lock:unlock()
-end
-
-function BaseFrame:set_texture(bitmap)
-	self.paint_lock:lock()
-	if not bitmap then
-		local update = self.texture ~= nil 
-		self.texture = nil
-		self.texture_dirty = true
-		if update then
-			self:update()
-		end
-		self.paint_lock:unlock()
 		return
 	end
+	
+	dx9.clear_core(0,0,mr-ml,mb-mt,self.rt.handle)
+	self:RenderThis(...)
 
-	if not self.texture or self.texture[1] ~= bitmap or self.texture[2] ~= bitmap.left or self.texture[3] ~= bitmap.top or self.texture[4] ~= bitmap.right or self.texture[5] ~= bitmap.bottom then
-		self.texture = {bitmap, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom}
-		self.texture_dirty = true
-		self:update()
+	for i=1,#self.childs do
+		local v = self.childs[i]
+		if v and v.render then
+			local l,t,r,b = v:GetRect();
+			v:render(...)
+			
+			if self.rt and v.rt then
+				dx9.paint_core(l-ml, t-mt, r-ml, b-mt, v.rt.handle, 0, 0, r-l, b-t, v.alpha or 1, bilinear_no_mipmap, self.rt.handle)
+			end
+		end
 	end
-	self.paint_lock:unlock()	
-end
 
-local n = 0
+end
 
 function BaseFrame:paint(left, top, right, bottom, bitmap, alpha, resampling_method)
-	n = n + 1
-	if n<20 then
-		core.track_back()
-	end
-	if not bitmap or not bitmap.handle or not self.rt or not self.rt.handle then
-		print("paint() failed")
-		core.track_back()
-		return false
-	end
-	self.paint_lock:lock()
+	if not bitmap or not bitmap.handle then return end
 	dx9.paint_core(left, top, right, bottom, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, alpha or 1, resampling_method or bilinear_no_mipmap, self.rt.handle)
-	self.paint_lock:unlock()
-	self:update()
-	return true
+	--dx9.render()
 end
 
-function BaseFrame:update()
-	--core.track_back()
-	--self.paint_lock:lock()
-	self.dirty = true
-	--self.paint_lock:unlock()
-	if self.parent then
-		self.parent:update()
-	end
-		
-	dx9.render()
-end
 
 -- these size / width / height is the desired values
 -- and anchor points may overwite them
@@ -561,61 +478,28 @@ function BaseFrame:CalculateAbsRect()
 		bottom = math.floor(ycenter + height/2)
 	end
 	
-	local old_width = (self.r or 0 ) - (self.l or 0)
-	local old_height = (self.b or 0 ) - (self.t or 0)
-	
 	left, top, right, bottom = left or 0, top or 0, right or 0, bottom or 0	
 	self.l, self.t, self.r, self.b = left, top, right, bottom
 	
 	width, height = right - left, bottom - top
 	
-
 	if width > 0 and height > 0 then
-		self.paint_lock:lock()
 		if self.rt and self.rt.width >= width and self.rt.height >= height then
-			-- do nothing
 		else
-			local src, src2
 			if self.rt then
 				width = math.max(self.rt.width, width)
 				height = math.max(self.rt.height, height)
-				--self.rt:release()
-				--self.rt2:release()
-				src = self.rt
-				src2 = self.rt2
-				
-				core.track_back()
-				print("core new width:", width, height, self, self.name)
+				self.rt:release()
 			end
 			self.rt = resource_base:create(dx9.create_rt(width, height), width, height)
-			self.rt2 = resource_base:create(dx9.create_rt(width, height), width, height)
-			if src then
-				-- copy old image to new render target
-				dx9.clear_core(0,0,width,height,self.rt.handle)
-				dx9.paint_core(0,0,old_width,old_height, src.handle, 0, 0, old_width, old_height, self.alpha or 1, bilinear_no_mipmap, self.rt.handle)
-				src:release()
-			end
-			if src2 then
-				src2:release()
-			end
-			self.dirty = true
-			self.texture_dirty = true
 		end
-		self.paint_lock:unlock()
 	end
 	
 	if self.debug then
 		print("left, right, xcenter, top, bottom, ycenter, width, height=", left, right, xcenter, top, bottom, ycenter, width, height)
 	end
 	
-	if width ~= old_width or height ~= old_height then
-		self:OnResize()
-		self:update()
-	end
-	
-	if self.parent then
-		self.parent:update()
-	end
+	dx9.render()
 end
 
 -- CONSTANTS
@@ -639,7 +523,6 @@ function BaseFrame:OnMouseWheel() end
 function BaseFrame:OnKeyDown() end
 function BaseFrame:OnKeyUp() end
 function BaseFrame:OnKillFocus() end
-function BaseFrame:OnResize() end
 
 function BaseFrame:OnMouseEvent(event, x, y, ...)
 	local l, t = self:GetRect()

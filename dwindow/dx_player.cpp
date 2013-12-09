@@ -2811,8 +2811,6 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 	SetFocus(id_to_hwnd(id));
 	if (id == 1)
 	{
-
-
 		widi_initialize();
 		g_renderer = m_renderer1 = new my12doomRenderer(id_to_hwnd(1), id_to_hwnd(2));
 #ifdef ZHUZHU
@@ -2826,6 +2824,11 @@ LRESULT dx_player::on_init_dialog(int id, WPARAM wParam, LPARAM lParam)
 		show_window(1, true);
 		show_window(2, (int)m_output_mode == dual_window || (int)m_output_mode == iz3d);
 
+		unsigned char passkey_big_decrypted[128];
+		RSA_dwindow_public(&g_passkey_big, passkey_big_decrypted);
+		m_renderer1->m_AES.set_key((unsigned char*)passkey_big_decrypted+64, 256);
+		memcpy(m_renderer1->m_key, (unsigned char*)passkey_big_decrypted+64, 32);
+		memset(passkey_big_decrypted, 0, 128);
 		init_done_flag = 0x12345678;
 
 	}
@@ -5537,8 +5540,7 @@ HRESULT lua_drawer::pre_render_movie(IDirect3DSurface9 *surface)
 		lua_pop(lua_state, 1);
 
 	return S_OK;
-}
-HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, int view)
+}HRESULT lua_drawer::draw_ui(IDirect3DSurface9 *surface, int view)
 {
 	m_device->SetRenderTarget(0, surface);
 

@@ -1815,6 +1815,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\DWindowLuaAPI.lua"
+				>
+			</File>
+			<File
 				RelativePath="..\lua\DWindowReader.h"
 				>
 			</File>
