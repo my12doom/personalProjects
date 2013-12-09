@@ -15,6 +15,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -124,11 +128,83 @@ public class DWindowActivity extends Activity {
 			Toast.makeText(DWindowActivity.this, hint, Toast.LENGTH_SHORT).show();
 		}
 	}
-	
+	// gsensor
+	private SensorManager mSensorManager;
+    private Sensor mAccelerometer;
+    private Sensor mGyroscope;
+    private String TAG = "sensor";
+    
+ // gsensor
+    private SensorEventListener listener = new SensorEventListener() {
+    	
+    	final float RC = 1.0f/(2*3.1415926f * 25);
+    	final float RCv = 1.0f/(2*3.1415926f * 2);
+    	long time = 0;
+    	float ax, vy, vz, vx, sx;
+    	float lax;
+    	float lvx;
+    	@Override
+    	public void onSensorChanged(SensorEvent event) {
+    		float x = event.values[SensorManager.DATA_X];
+    		float y = event.values[SensorManager.DATA_Y];
+    		float z = event.values[SensorManager.DATA_Z];
+    		if (time > 0)
+    		{
+    			float t_delta = (float)(System.currentTimeMillis() - time)/1000.0f;
+	    		float alpha = t_delta / (t_delta + RC);
+	    		float alphav = t_delta / (t_delta + RCv);
+	    		switch (event.sensor.getType()) {
+	    			case Sensor.TYPE_ACCELEROMETER:
+	    				
+	    				float dx = x-lax;
+	    				//if (dx > 0.12)
+	    				{
+				    		time = System.currentTimeMillis();
+	    					ax = alpha * (ax + dx);
+	    				}
+	    				if (Math.abs(ax)>0.02)
+	    					vx = vx + ax * t_delta;
+	    				//vx = vx * 0.90f;
+	    				float dvx = vx-lvx;
+	    				vx = alphav * (vx + dvx);
+	    				if (Math.abs(vx)>0.002)
+	    					sx = sx + vx * t_delta * 1000;
+	    				//editHost.setText(String.format("\ra,v,s=%s%.2f,%s%.2f,%s%.2f, alpha=%f", ax>0?"+":"", ax, vx>0?"+":"", vx, sx>0?"+":"", sx, alpha));
+	    				lax = x;
+	    				lvx = vx;
+	    				break;
+	    			case Sensor.TYPE_GYROSCOPE:
+	    				editHost.setText(String.format("%s%.2f,%s%.2f,%s%.2f", x>0?"+":"", x, y>0?"+":"", y, z>0?"+":"", z));
+	    				break;
+	    		}
+    		}
+    		else
+    		{
+    			vx = 0;
+    			vy = 0;
+    			vz = 0;
+    			lax = 0;
+	    		time = System.currentTimeMillis();
+    		}
+    	}
+    	
+        @Override  
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        	//
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) 
     {
 		super.onCreate(savedInstanceState);
+		
+		// gsensor
+        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mGyroscope = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        mSensorManager.registerListener(listener, mAccelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(listener, mGyroscope, SensorManager.SENSOR_DELAY_FASTEST);
 		
 		//getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		//requestWindowFeature(Window.FEATURE_NO_TITLE);
