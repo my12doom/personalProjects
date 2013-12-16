@@ -11,7 +11,15 @@ BOTTOMLEFT = BOTTOM + LEFT
 BOTTOMRIGHT = BOTTOM + RIGHT
 
 BaseFrame ={}
+local rect = {0,0,99999,99999,0,0}
+local rects = {}
 
+-- paint constants
+bilinear_mipmap_minus_one = 0
+lanczos = 1
+bilinear_no_mipmap = 2
+lanczos_onepass = 3
+bilinear_mipmap = 4
 
 local function frame_has_loop_reference(t, checker_table)
 	checker_table = checker_table or t
@@ -53,25 +61,93 @@ function BaseFrame:Create(parent)
 	return o
 end
 
-function BaseFrame:render(...)
-
-	local ml,mt,mr,mb = self:GetRect()
-	if not self.rt then
-		return
+-- the Main Render function
+local render_ops = {}
+local render_hash = {}
+local last_hash = ""
+local last_render_time = 0
+local g_rt
+local g_rt_has_content
+local BeginChild
+local EndChild
+function RenderUI(view)
+	if g_rt == nil or g_rt.handle == nil then
+		info("UI create!")
+		g_rt = resource_base:create(dx9.create_rt(2048,2048),2048,2048)
 	end
 	
-	dx9.clear_core(0,0,mr-ml,mb-mt,self.rt.handle)
+	render_ops = {}
+	render_hash = {}
+	local delta_time = 0;
+	if last_render_time > 0 then delta_time = core.GetTickCount() - last_render_time end
+	last_render_time = core.GetTickCount();
+	local t1 = core.GetTickCount()
+	if view == 0 then root:BroadCastEvent("PreRenderUI", last_render_time, delta_time) end
+	local dt = core.GetTickCount() -t1
+	t1 = core.GetTickCount()
+
+	rect = {0,0,ui.width, ui.height,0,0}
+	root:render(view)
+	local dt2 = core.GetTickCount() -t1
+
+	if dt > 0 or dt2 > 0 then
+		info(string.format("slow RenderUI() : PreRender() cost %dms, render() cost %dms", dt, dt2))
+	end
+	local hash = table.concat(render_hash,"|")
+	if last_hash ~= hash then
+		info("UI change!")
+		last_hash = hash
+		dx9.clear_core(0, 0, ui.width, ui.height, g_rt.handle)
+		g_rt_has_content = false
+		local thecall = function (func, ...)
+			g_rt_has_content = g_rt_has_content or func == dx9.paint_core
+			func(...)			
+		end
+		for i=1,#render_ops do
+			 thecall(table.unpack(render_ops[i]))
+		end
+	end
+	if g_rt_has_content then
+		dx9.set_clip_rect_core(0, 0, ui.width, ui.height)
+		dx9.paint_core(0, 0, ui.width, ui.height, g_rt.handle, 0, 0, ui.width, ui.height, 1.0, bilinear_no_mipmap)
+	end
+end
+
+function BeginChild(left, top, right, bottom, alpha, child)
+	local left_unclip, top_unclip = left, top
+	left = math.max(rect[1], left)
+	top = math.max(rect[2], top)
+	right = math.min(rect[3], right)
+	bottom = math.min(rect[4], bottom)
+	alpha = (alpha or 1) * (rect[7] or 1)
+	local new_rect = {left, top, right, bottom, left_unclip, top_unclip, alpha}
+	table.insert(rects, rect)
+	rect = new_rect
+	
+	table.insert(render_ops, {dx9.set_clip_rect_core, left, top, right, bottom})
+end
+
+function EndChild(left, top, right, bottom)
+	rect = table.remove(rects)
+	table.insert(render_ops, {dx9.set_clip_rect_core, rects[1], rects[2], rects[3], rects[4]})
+end
+
+function IsCurrentDrawingVisible()
+	return rect[3]>rect[1] and rect[4]>rect[2]
+end
+
+
+function BaseFrame:render(...)
+
 	self:RenderThis(...)
 
 	for i=1,#self.childs do
 		local v = self.childs[i]
 		if v and v.render then
 			local l,t,r,b = v:GetRect();
-			v:render(...)
-			
-			if self.rt and v.rt then
-				dx9.paint_core(l-ml, t-mt, r-ml, b-mt, v.rt.handle, 0, 0, r-l, b-t, v.alpha or 1, bilinear_no_mipmap, self.rt.handle)
-			end
+			BeginChild(l,t,r,b,self.alpha)
+			if IsCurrentDrawingVisible() then v:render(...) end
+			EndChild(l,t,r,b)
 		end
 	end
 
@@ -79,8 +155,20 @@ end
 
 function BaseFrame:paint(left, top, right, bottom, bitmap, alpha, resampling_method)
 	if not bitmap or not bitmap.handle then return end
-	dx9.paint_core(left, top, right, bottom, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, alpha or 1, resampling_method or bilinear_no_mipmap, self.rt.handle)
-	--dx9.render()
+	local x,y,parent_alpha  = rect[5], rect[6], rect[7]
+	local a = (alpha or 1.0) * parent_alpha
+	
+	-- check for clip
+	local clipped_left = math.max(rect[1], left+x)
+	local clipped_top = math.max(rect[2], top+y)
+	local clipped_right = math.min(rect[3], right+x)
+	local clipped_bottom = math.min(rect[4], bottom+y)	
+	
+	if a > 0 and clipped_right > clipped_left and clipped_bottom > clipped_top then
+		local hash = string.format("%d,%d,%d,%d,%s,%d,%d,%d,%d,%f,%d", left+x, top+y, right+x, bottom+y, tostring(bitmap.handle), bitmap.left or 0, bitmap.top or 0, bitmap.right or 0, bitmap.bottom or 0, a, resampling_method or bilinear_no_mipmap)
+		table.insert(render_hash, hash)
+		table.insert(render_ops, {dx9.paint_core, left+x, top+y, right+x, bottom+y, bitmap.handle, bitmap.left, bitmap.top, bitmap.right, bitmap.bottom, a, resampling_method or bilinear_no_mipmap, g_rt.handle})
+	end
 end
 
 
@@ -491,7 +579,7 @@ function BaseFrame:CalculateAbsRect()
 				height = math.max(self.rt.height, height)
 				self.rt:release()
 			end
-			self.rt = resource_base:create(dx9.create_rt(width, height), width, height)
+			--self.rt = resource_base:create(dx9.create_rt(width, height), width, height)
 		end
 	end
 	

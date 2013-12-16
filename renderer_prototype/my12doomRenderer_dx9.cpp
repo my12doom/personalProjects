@@ -2505,7 +2505,7 @@ HRESULT my12doomRenderer::paint(RECTF *dst_rect, resource_userdata *resource, RE
 		{
 			sample->commit();
 			m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
 			resize_surface(NULL, sample, rt, src_rect, dst_rect, method, alpha );
 			m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 		}

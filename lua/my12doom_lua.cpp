@@ -1135,7 +1135,7 @@ int lua_track_back(lua_State *L)
 	const char* err = lua_tostring(L, -1);
 
 #ifdef DEBUG
-	OutputDebugStringA("----trackback----");
+	OutputDebugStringA("----trackback----\r\n");
 	char tmp[10240];
 	lua_Debug debug;
 	for(int level = 1; lua_getstack(L, level, &debug); level++)

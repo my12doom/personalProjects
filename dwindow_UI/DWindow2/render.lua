@@ -20,8 +20,7 @@ player.set_window_text(L("DWindow"), L("DWindow"))
 
 
 -- black background and right mouse reciever
-local oroot = BaseFrame:Create()
-root:AddChild(oroot)
+local oroot = root
 function oroot:OnInitGPU(t, dt)
 	self:SetSize(ui.width, ui.height)
 end
@@ -337,7 +336,10 @@ function current_time:RenderThis()
 		if self.texture then
 			self.texture:release()
 		end
-		self.texture = create_time_texture(player.tell())
+		if self.texture_time ~= math.floor(player.tell()/1000) then
+			self.texture = create_time_texture(player.tell())
+			self.texture_time = math.floor(player.tell()/1000)
+		end
 		if not self.texture then return end
 		self:paint(0,0,self.texture.width, self.texture.height, self.texture)
 	end
@@ -360,18 +362,12 @@ total_time:SetSize(37, 14)
 total_time:SetPoint(BOTTOMRIGHT, progress, TOPRIGHT, nil, 3)
 
 function total_time:RenderThis()
-	if self.texture then
-		self.texture:release()
+	if self.texture_time ~= math.floor(player.total()/1000) then
+		self.texture = create_time_texture(player.total(), 0x00333333)
+		self.texture_time = math.floor(player.total()/1000)
 	end
-	self.texture = create_time_texture(player.total(), 0x00333333)
 	if not self.texture then return end
 	self:paint(0,0,self.texture.width, self.texture.height, self.texture, alpha)
-end
-
-function total_time:OnReleaseGPU()
-	if self.texture then
-		self.texture:release()
-	end
 end
 
 -- volume bar
@@ -475,10 +471,7 @@ function open:OnInitGPU()
 end
 
 function open:OnReleaseGPU()
-	if (self.caption) then
-		self.caption:release()
-		self.caption = nil
-	end	
+	self.caption = nil
 end
 
 function open:OnLanguageChange()
@@ -822,7 +815,7 @@ function mouse_hider:OnUpdate(t, dt)
 	local mouse_in_pannel = (px>=0 and px<ui.width and py>=ui.height-44 and py<ui.height) -- bottombar
 	mouse_in_pannel = mouse_in_pannel or (px>=0 and px<ui.width and py>0 and py<30)	-- topbar
 	mouse_in_pannel = mouse_in_pannel or (playlist_list.showing and px >= 0 and px <= setting.playlist_width)	-- playlist
-	local hide_mouse = (not mouse_in_pannel) and (t > last_mousemove + UI_show_time) and (player.is_fullscreen())
+	local hide_mouse = (not mouse_in_pannel) and (t > last_mousemove + UI_show_time) and (player.is_fullscreen() or true)
 	player.show_mouse(not hide_mouse)
 	
 	if hide_mouse then
@@ -843,5 +836,5 @@ function mouse_hider:OnUpdate(t, dt)
 	
 	if (px < 5 and px >= 0 and py >= 0 and py < ui.height) then
 		playlist_list:show()
-	end
+	end	
 end
