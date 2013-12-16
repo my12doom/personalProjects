@@ -327,6 +327,7 @@ HRESULT gpu_sample::do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShade
 		return S_FALSE;
 
 	return E_UNEXPECTED;
+	/*
 
 	commit();
 
@@ -390,6 +391,7 @@ HRESULT gpu_sample::do_stereo_test(IDirect3DDevice9 *device, IDirect3DPixelShade
 	mylog("test:%x:%d\n", this, timeGetTime());
 
 	return S_OK;
+	*/
 }
 
 HRESULT gpu_sample::get_strereo_test_result(IDirect3DDevice9 *device, int *out)

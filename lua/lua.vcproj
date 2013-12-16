@@ -364,7 +364,7 @@
 			Name="release_zhu|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -383,6 +383,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;LUA_BUILD_AS_DLL;LUA_COMPAT_ALL"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
