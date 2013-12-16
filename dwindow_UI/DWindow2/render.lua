@@ -815,7 +815,7 @@ function mouse_hider:OnUpdate(t, dt)
 	local mouse_in_pannel = (px>=0 and px<ui.width and py>=ui.height-44 and py<ui.height) -- bottombar
 	mouse_in_pannel = mouse_in_pannel or (px>=0 and px<ui.width and py>0 and py<30)	-- topbar
 	mouse_in_pannel = mouse_in_pannel or (playlist_list.showing and px >= 0 and px <= setting.playlist_width)	-- playlist
-	local hide_mouse = (not mouse_in_pannel) and (t > last_mousemove + UI_show_time) and (player.is_fullscreen() or true)
+	local hide_mouse = (not mouse_in_pannel) and (t > last_mousemove + UI_show_time) and player.is_fullscreen()
 	player.show_mouse(not hide_mouse)
 	
 	if hide_mouse then
