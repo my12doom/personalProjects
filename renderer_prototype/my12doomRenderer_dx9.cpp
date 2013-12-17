@@ -151,14 +151,12 @@ my12doomRenderer::my12doomRenderer(HWND hwnd, HWND hwnd2/* = NULL*/)
 		// disable new 3d vision interface for now
 		m_nv_version.drvVersion = min(m_nv_version.drvVersion, 28500);
 	}
-	m_subtitle = NULL;
-	m_subtitle_mem = NULL;
 	m_nv3d_handle = NULL;
 	m_output_mode = mono;
 	m_intel_s3d = NULL;
 	m_HD3DStereoModesCount = m_HD3Dlineoffset = 0;
 	m_render_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-	m_pool = NULL;
+	m_allocator = NULL;
 	m_last_rendered_sample1 = m_last_rendered_sample2 = m_sample2render_1 = m_sample2render_2 = NULL;
 	m_enter_counter = 0;
 	HMODULE h = LoadLibrary( L"d3d9.dll" );
@@ -301,15 +299,13 @@ void my12doomRenderer::init_variables()
 	// ui & bitmap
 	m_has_subtitle = false;
 	m_subtitle_parallax = 0;
-	m_subtitle_pixel_width = 0;
-	m_subtitle_pixel_height = 0;
 }
 
 my12doomRenderer::~my12doomRenderer()
 {
 	terminate_render_thread();
 	invalidate_gpu_objects();
-	if (m_pool) delete m_pool;
+	if (m_allocator) delete m_allocator;
 	m_Device = NULL;
 	m_D3D = NULL;
 }
@@ -675,8 +671,8 @@ HRESULT my12doomRenderer::DataPreroll(int id, IMediaSample *media_sample)
 	int max_retry = 5;
 	{
 retry:
-		CAutoLock lck(&m_pool_lock);
-		loaded_sample = new gpu_sample(media_sample, m_pool, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, m_forced_deinterlace, need_detect, m_remux_mode, D3DPOOL_SYSTEMMEM, m_PC_level);
+		CAutoLock lck(&m_allocator_lock);
+		loaded_sample = new gpu_sample(media_sample, m_allocator, m_lVidWidth, m_lVidHeight, m_dsr0->m_format, m_revert_RGB32, m_forced_deinterlace, need_detect, m_remux_mode, D3DPOOL_SYSTEMMEM, m_PC_level);
 
 //		if ( (m_dsr0->m_format == MEDIASUBTYPE_RGB32 && (!loaded_sample->m_tex_RGB32 || loaded_sample->m_tex_RGB32->creator != m_Device)) ||
 //			 (m_dsr0->m_format == MEDIASUBTYPE_YUY2 && (!loaded_sample->m_tex_YUY2 || loaded_sample->m_tex_YUY2->creator != m_Device)) ||
@@ -969,9 +965,9 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 
 		// clear DEFAULT pool
 		{
-			CAutoLock lck(&m_pool_lock);
-			if (m_pool)
-				m_pool->DestroyPool(D3DPOOL_DEFAULT);
+			CAutoLock lck(&m_allocator_lock);
+			if (m_allocator)
+				m_allocator->DestroyPool(D3DPOOL_DEFAULT);
 		}
 
 		render(true);
@@ -1099,7 +1095,7 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		{
 			terminate_render_thread();
 			MANAGE_DEVICE;
-			CAutoLock lck2(&m_pool_lock);
+			CAutoLock lck2(&m_allocator_lock);
 			invalidate_gpu_objects();
 			invalidate_cpu_objects();
 
@@ -1229,10 +1225,10 @@ HRESULT my12doomRenderer::handle_device_state()							//handle device create/rec
 		set_output_mode(m_output_mode);		// just to active nv3d
 
 		{
-			CAutoLock lck(&m_pool_lock);
-			if (m_pool) delete m_pool;
-			m_pool = new CTextureAllocator(m_Device);
-			mylog("new pool: 0x%08x\n", m_pool);
+			CAutoLock lck(&m_allocator_lock);
+			if (m_allocator) delete m_allocator;
+			m_allocator = new CTextureAllocator(m_Device);
+			mylog("new pool: 0x%08x\n", m_allocator);
 		}
 
 		FAIL_SLEEP_RET(restore_cpu_objects());
@@ -1318,9 +1314,17 @@ HRESULT my12doomRenderer::invalidate_cpu_objects()
 		CAutoLock lck(&m_uidrawer_cs);
 		if (m_uidrawer) m_uidrawer->invalidate_cpu();
 	}
-	CAutoLock lck2(&m_pool_lock);
-	if (m_pool) m_pool->DestroyPool(D3DPOOL_MANAGED);
-	if (m_pool) m_pool->DestroyPool(D3DPOOL_SYSTEMMEM);
+	CAutoLock lck2(&m_allocator_lock);
+	if (m_allocator) m_allocator->DestroyPool(D3DPOOL_MANAGED);
+	if (m_allocator) m_allocator->DestroyPool(D3DPOOL_SYSTEMMEM);
+
+	CAutoLock lck(&m_subtitle_lock);
+	release_subtitle(m_subtitle);
+	m_subtitle = NULL;
+	for(std::vector<gpu_sample*>::iterator i = m_prerolled_subtitles.begin(); i!= m_prerolled_subtitles.end(); ++i)
+		safe_delete((*i));
+
+	m_prerolled_subtitles.clear();
 
 	return S_OK;
 }
@@ -1367,7 +1371,12 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	m_ps_bmp_blur = NULL;
 
 	// textures
-	safe_delete(m_subtitle);
+	{
+		CAutoLock lck(&m_subtitle_lock);
+		safe_decommit(m_subtitle);
+		for(std::vector<gpu_sample*>::iterator i = m_prerolled_subtitles.begin(); i!= m_prerolled_subtitles.end(); ++i)
+			(*i)->decommit();
+	}
 
 	// pending samples
 	{
@@ -1402,8 +1411,8 @@ HRESULT my12doomRenderer::invalidate_gpu_objects()
 	}
 
 	{
-		CAutoLock lck(&m_pool_lock);
-		if (m_pool) m_pool->DestroyPool(D3DPOOL_DEFAULT);
+		CAutoLock lck(&m_allocator_lock);
+		if (m_allocator) m_allocator->DestroyPool(D3DPOOL_DEFAULT);
 	}
 
 	// surfaces
@@ -1719,34 +1728,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 	int l = timeGetTime();
 
-
-	// upload subtitle if updated.
-	{
-		CAutoLock lck(&m_subtitle_lock);
-		if (m_subtitle_mem && m_subtitle)
-		{
-			int l2 = timeGetTime();
-			RECT dirty = {0,0,min(m_subtitle_pixel_width+32, m_subtitle_mem->locked_rect.Pitch/4), min(m_subtitle_pixel_height+32, min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE))};
-			m_subtitle_mem->Unlock();
-			int l3 = timeGetTime();
-			//m_pool->UpdateTexture(m_subtitle_mem, m_subtitle, &dirty);
-			CComPtr<IDirect3DSurface9> mem_surf;
-			CComPtr<IDirect3DSurface9> def_surf;
-			m_subtitle_mem->get_first_level(&mem_surf);
-			m_subtitle->get_first_level(&def_surf);
-
-			POINT p = {0,0};
-			m_Device->UpdateSurface(mem_surf, &dirty, def_surf, &p);
-
-
-			int l4 = timeGetTime();
-			safe_delete(m_subtitle_mem);
-
-			if (l4 - l2 >0)
-				dwindow_log_line("upload subtitle cost %d-%d-%d, %dx%d", l4-l2, l3-l2, l4-l3, dirty.right, dirty.bottom);
-		}
-	}
-
 	CAutoLock lck(&m_frame_lock);
 	{
 		MANAGE_DEVICE;
@@ -1814,7 +1795,7 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 		if (is2DMovie() && m_dsr0->is_connected())
 		{
-			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
+			FAIL_RET(m_allocator->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
 			view0->get_first_level(&surf0);
 			view1 = view0;
 			surf1 = surf0;
@@ -1825,8 +1806,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 		else if (m_output_mode != mono && m_output_mode != pageflipping)
 		{
-			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
-			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view1));
+			FAIL_RET(m_allocator->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view0));
+			FAIL_RET(m_allocator->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view1));
 
 			view0->get_first_level(&surf0);
 			view1->get_first_level(&surf1);
@@ -1890,8 +1871,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 			CComPtr<IDirect3DSurface9> surf2;
 			CComPtr<IDirect3DSurface9> surf3;
 			
-			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view2));
-			FAIL_RET(m_pool->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view3));
+			FAIL_RET(m_allocator->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view2));
+			FAIL_RET(m_allocator->CreateTexture(m_active_pp.BackBufferWidth, m_active_pp.BackBufferHeight, D3DUSAGE_RENDERTARGET, m_active_pp.BackBufferFormat, D3DPOOL_DEFAULT, &view3));
 
 			view2->get_first_level(&surf2);
 			view3->get_first_level(&surf3);
@@ -2235,6 +2216,16 @@ presant:
 			n = timeGetTime();
 		}
 
+		// pre-commit subtitle, one subtitle a time
+		CAutoLock lck_subtitle(&m_subtitle_lock);
+		int t = timeGetTime();
+		for(std::vector<gpu_sample*>::iterator i = m_prerolled_subtitles.begin(); i!= m_prerolled_subtitles.end(); ++i)
+		{
+			(*i)->commit();
+			if (timeGetTime() - t > 0)
+				break;
+		}
+
 		// debug LockRect times
 		//if (lockrect_surface + lockrect_texture)
 		//	printf("LockRect: surface, texture, total, cycle = %d, %d, %d, %d.\n", lockrect_surface, lockrect_texture, lockrect_surface+lockrect_texture, (int)lockrect_texture_cycle);
@@ -2391,33 +2382,30 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 	if (!surface)
 		return E_POINTER;
 
-	if (!m_has_subtitle)
+	if (!m_has_subtitle || !m_subtitle)
 		return S_FALSE;
 
 	// assume draw_movie() handles pointer and not connected issues, so no more check
 	HRESULT hr = E_FAIL;
 
+	CAutoLock lck2(&m_subtitle_lock);
 	// movie picture position
-	RECTF src_rect = {0,0,m_subtitle_pixel_width, m_subtitle_pixel_height};
+	RECTF src_rect = {0,0,0,0};
+	if (m_subtitle->m_ROI)
+		src_rect = *m_subtitle->m_ROI;
 	RECTF dst_rect = {0};
 	calculate_subtitle_position(&dst_rect, view);
 
-	CAutoLock lck2(&m_subtitle_lock);
-
-	{
-		CAutoLock lck(&m_pool_lock);
-		if (!m_subtitle && FAILED( hr = m_pool->CreateTexture(min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE), min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE), D3DUSAGE_RENDERTARGET | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_subtitle)))
-			return hr;
-	}
-
-	CComPtr<IDirect3DSurface9> src;
-	m_subtitle->get_first_level(&src);
 
 	m_Device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 	RECT scissor = get_movie_scissor_rect();
 	m_Device->SetScissorRect(&scissor);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-	hr = resize_surface(src, NULL, surface, &src_rect, &dst_rect, (resampling_method)(int)m_subtitle_resizing);
+	int t = timeGetTime();
+ 	m_subtitle->commit();
+	if(timeGetTime()-t>1)
+		dwindow_log_line("slow subtitle commit cost %dms", timeGetTime()-t);
+	hr = resize_surface(NULL, m_subtitle, surface, &src_rect, &dst_rect, (resampling_method)(int)m_subtitle_resizing);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 
 	return hr;
@@ -2436,8 +2424,8 @@ HRESULT my12doomRenderer::loadBitmap(gpu_sample **out, const wchar_t *file)
 	if (!out)
 		return E_POINTER;
 
-	CAutoLock lck(&m_pool_lock);
-	gpu_sample *sample = new gpu_sample(file, m_pool);
+	CAutoLock lck(&m_allocator_lock);
+	gpu_sample *sample = new gpu_sample(file, m_allocator);
 	if (!sample)
 		return E_OUTOFMEMORY;
 	if (!sample->m_ready)
@@ -2456,8 +2444,8 @@ HRESULT my12doomRenderer::drawFont(gpu_sample **out, HFONT font, wchar_t *text, 
 	if (!out)
 		return E_POINTER;
 
-	CAutoLock lck(&m_pool_lock);
-	gpu_sample *sample = new gpu_sample(m_pool, font, text, color, dst_rect, flag);
+	CAutoLock lck(&m_allocator_lock);
+	gpu_sample *sample = new gpu_sample(m_allocator, font, text, color, dst_rect, flag);
 	if (!sample)
 		return E_OUTOFMEMORY;
 	if (!sample->m_ready)
@@ -2544,9 +2532,9 @@ HRESULT my12doomRenderer::get_resource(int arg, resource_userdata *resource)
 
 HRESULT my12doomRenderer::create_rt(int width, int height, resource_userdata *resource)
 {
-	CAutoLock lck(&m_pool_lock);
+	CAutoLock lck(&m_allocator_lock);
 	resource->resource_type = resource_userdata::RESOURCE_TYPE_GPU_SAMPLE;
-	resource->pointer = new gpu_sample(m_Device, width, height, m_pool);
+	resource->pointer = new gpu_sample(m_Device, width, height, m_allocator);
 	resource->managed = false;
 
 	return S_OK;
@@ -2581,13 +2569,13 @@ HRESULT my12doomRenderer::adjust_temp_color(IDirect3DSurface9 *surface_to_adjust
 		(!left && (abs((double)saturation2-0.5)>0.005 || abs((double)m_luminance2-0.5)>0.005 || abs((double)m_hue2-0.5)>0.005 || abs((double)m_contrast2-0.5)>0.005)))
 	{
 		// creating
-		CAutoLock lck(&m_pool_lock);
+		CAutoLock lck(&m_allocator_lock);
 		CPooledTexture *tex_src;
 		CPooledTexture *tex_rt;
-		hr = m_pool->CreateTexture(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tex_src);
+		hr = m_allocator->CreateTexture(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tex_src);
 		if (FAILED(hr))
 			return hr;
-		hr = m_pool->CreateTexture(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tex_rt);
+		hr = m_allocator->CreateTexture(desc.Width, desc.Height, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tex_rt);
 		if (FAILED(hr))
 			return hr;
 		CComPtr<IDirect3DSurface9> surface_of_tex_src;
@@ -2834,9 +2822,9 @@ HRESULT my12doomRenderer::resize_surface(IDirect3DSurface9 *src, gpu_sample *src
 
 	if (method == lanczos)
 	{
-		CAutoLock lck(&m_pool_lock);
+		CAutoLock lck(&m_allocator_lock);
 		CPooledTexture *tmp1 = NULL;
-		hr = m_pool->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tmp1);
+		hr = m_allocator->CreateTexture(TEXTURE_SIZE, TEXTURE_SIZE, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &tmp1);
 		if (FAILED(hr))
 		{
 			safe_delete(tmp1);
@@ -4124,7 +4112,7 @@ HRESULT my12doomRenderer::repaint_video()
 	return S_OK;
 }
 
-HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow)
+HRESULT my12doomRenderer::set_subtitle(gpu_sample* data, float fwidth, float fheight, float fleft, float ftop)
 {
 	if (m_device_state >= device_lost)
 		return S_FALSE;			// TODO : of source it's not SUCCESS
@@ -4137,48 +4125,71 @@ HRESULT my12doomRenderer::set_subtitle(void* data, int width, int height, float 
 	else
 	{
 		HRESULT hr;
-		CPooledTexture *tex_mem = NULL;
+
+		int l = timeGetTime();
+		m_has_subtitle = true;
+		CAutoLock lck2(&m_subtitle_lock);
+		for(std::vector<gpu_sample*>::iterator i = m_prerolled_subtitles.begin(); i!= m_prerolled_subtitles.end(); ++i)
 		{
-			CAutoLock lck(&m_pool_lock);
-			if (!m_pool)
-				return VFW_E_WRONG_STATE;
-			FAIL_RET(m_pool->CreateTexture(min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE), min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE), NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &tex_mem));
+			if (*i == data)
+			{
+				release_subtitle(m_subtitle);
+
+				m_subtitle = data;
+
+				m_subtitle_fleft = fleft;
+				m_subtitle_ftop = ftop;
+				m_subtitle_fwidth = fwidth;
+				m_subtitle_fheight = fheight;
+
+				return S_OK;
+			}
 		}
 
-		// copying
-		BYTE *src = (BYTE*)data;
-		BYTE *dst = (BYTE*) tex_mem->locked_rect.pBits;
-		for(int y=0; y<min((int)TEXTURE_SIZE,height); y++)
+		return E_INVALIDARG;
+	}
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::preroll_subtitle(void* data, int width, int height, gpu_sample **out)
+{
+	if (!out)
+		return E_POINTER;
+
+	CAutoLock lck(&m_allocator_lock);
+
+	if (!data)
+		return S_OK;
+
+	*out = new gpu_sample(m_Device, width, height, data, m_allocator);
+	CAutoLock lck2(&m_subtitle_lock);
+
+	if (m_prerolled_subtitles.size()>5)
+	{
+		delete (*m_prerolled_subtitles.begin());
+		m_prerolled_subtitles.erase(m_prerolled_subtitles.begin());
+	}
+	m_prerolled_subtitles.push_back(*out);
+
+	return S_OK;
+}
+
+HRESULT my12doomRenderer::release_subtitle(gpu_sample *data)
+{
+	if (!data)
+		return E_POINTER;
+
+	// remove it from the subtitle cache and delete, don't delete if not found in subtitle cache
+	CAutoLock lck(&m_subtitle_lock);
+	for(std::vector<gpu_sample*>::iterator i = m_prerolled_subtitles.begin(); i!= m_prerolled_subtitles.end(); ++i)
+	{
+		if (*i == data)
 		{
-			memcpy(dst, src, min(width*4, tex_mem->locked_rect.Pitch));
-			memset(dst+width*4, 0, 32*4);
-			dst += tex_mem->locked_rect.Pitch;
-			src += width*4;
+			m_prerolled_subtitles.erase(i);
+			delete data;
+			break;
 		}
-		memset(dst, 0, tex_mem->locked_rect.Pitch * min(min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE)-height, 32));
-
-
-		{
-			int l = timeGetTime();
- 			CAutoLock lck2(&m_subtitle_lock);
-
-			CPooledTexture *p = m_subtitle_mem;
-			m_subtitle_mem = NULL;
-			m_subtitle_mem = tex_mem;
-			m_has_subtitle = true;
-			m_gpu_shadow = gpu_shadow;
-
-			m_subtitle_fleft = fleft;
-			m_subtitle_ftop = ftop;
-			m_subtitle_fwidth = fwidth;
-			m_subtitle_fheight = fheight;
-			m_subtitle_pixel_width = width;
-			m_subtitle_pixel_height = height;
-
-			safe_delete(p);
-		}
-
-// 		repaint_video();
 	}
 
 	return S_OK;
@@ -5094,10 +5105,10 @@ HRESULT my12doomRenderer::PresentSample(IMFSample* pSample, LONGLONG llTarget, i
 		m_lVidHeight = desc.Height;
 		m_source_aspect = (double)m_lVidWidth / m_lVidHeight;
 
-		CAutoLock pool_lock(&m_pool_lock);
+		CAutoLock pool_lock(&m_allocator_lock);
 		CAutoLock rendered_lock(&m_packet_lock);
 		safe_delete(m_sample2render_1);
- 		m_sample2render_1 = new gpu_sample(m_Device, pSurface, m_pool);
+ 		m_sample2render_1 = new gpu_sample(m_Device, pSurface, m_allocator);
 
 		render(true);
 

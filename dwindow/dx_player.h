@@ -334,6 +334,7 @@ public:
 		bool valid;
 		int time;
 		HRESULT hr;
+		gpu_sample *prerolled;
 	} rendered_subtitle2;
 	rendered_subtitle2 m_subtitle_cache[1024];
 	CComPtr<IOffsetMetadata> m_offset_metadata;

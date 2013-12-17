@@ -524,7 +524,7 @@ HRESULT dx_player::seek(int time)
 
 	REFERENCE_TIME target = (REFERENCE_TIME)time *10000;
 
-	if(m_renderer1) m_renderer1->set_subtitle(NULL, 0, 0, 0, 0, 0, 0);				// refresh subtitle on next frame
+	if(m_renderer1) m_renderer1->set_subtitle(NULL, 0, 0, 0, 0);				// refresh subtitle on next frame
 	dwindow_log_line("seeking to %I64d", target);
 	HRESULT hr = m_ms->SetPositions(&target, AM_SEEKING_AbsolutePositioning, NULL, NULL);
 	m_ms->GetPositions(&target, NULL);
@@ -2549,7 +2549,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		if (m_display_subtitle)
 			set_subtitle_pos(m_subtitle_center_x, m_subtitle_bottom_y);
 		else
-			if (m_renderer1) m_renderer1->set_subtitle(NULL, 0, 0, 0, 0, 0, 0);
+			if (m_renderer1) m_renderer1->set_subtitle(NULL, 0, 0, 0, 0);
 	}
 
 	else if (uid == ID_OPENBDFOLDER)
@@ -2984,6 +2984,7 @@ HRESULT dx_player::PrerollCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, I
 
 		sub->hr = m_srenderer->get_subtitle(ms_start, sub, m_lastCBtime);
 		sub->time = ms_start;
+		m_renderer1->preroll_subtitle(sub->data, sub->width_pixel, sub->height_pixel, &sub->prerolled);
 	}
 
 	m_lastCBtime = ms_start;
@@ -3003,7 +3004,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		/*|| timeGetTime()-m_last_bitmap_update < 200*/)	// only update bitmap once per 200ms 
 	{
 		if (m_renderer1)
-			m_renderer1->set_subtitle(NULL, 0, 0, 0, 0, 0, 0);
+			m_renderer1->set_subtitle(NULL, 0, 0, 0, 0);
 
 		return S_OK;
 	}
@@ -3030,7 +3031,8 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 	int ms_end = (int)(TimeEnd / 10000.0 + 0.5);
 
 	// CSubtitleRenderer test
-	rendered_subtitle sub;
+	rendered_subtitle2 sub;
+	memset(&sub, 0, sizeof(sub));
 	HRESULT hr = E_FAIL;
 	{
 		CAutoLock lck(&m_subtitle_sec);
@@ -3048,6 +3050,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 					{
 						if (m_subtitle_cache[i].delta)
 							free(m_subtitle_cache[i].data);
+						m_renderer1->release_subtitle(m_subtitle_cache[i].prerolled);		// won't cause crash, but can get a E_POINTER
 						m_subtitle_cache[i].valid = false;
 					}
 
@@ -3077,7 +3080,7 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 		// empty result, clear it
 		if( sub.width == 0 || sub.height ==0 || sub.width_pixel==0 || sub.height_pixel == 0 || sub.data == NULL)
 		{
-			m_renderer1->set_subtitle(NULL, 0, 0, 0, 0, 0, 0);
+			m_renderer1->set_subtitle(NULL, 0, 0, 0, 0);
 		}
 
 		// draw it
@@ -3087,11 +3090,12 @@ HRESULT dx_player::SampleCB(REFERENCE_TIME TimeStart, REFERENCE_TIME TimeEnd, IM
 			if (sub.delta_valid)
 				hr = m_renderer1->set_subtitle_parallax(sub.delta + (double)m_user_subtitle_parallax/1920);
 
-			hr = m_renderer1->set_subtitle(sub.data, sub.width_pixel, sub.height_pixel, sub.width,
-				sub.height,
-				sub.left + ((double)m_subtitle_center_x-0.5),
-				sub.top + ((double)m_subtitle_bottom_y-0.95),
-				sub.gpu_shadow);
+			if (sub.prerolled)
+				hr = m_renderer1->set_subtitle(sub.prerolled, sub.width, sub.height,
+					sub.left + ((double)m_subtitle_center_x-0.5),
+					sub.top + ((double)m_subtitle_bottom_y-0.95));
+			else
+				hr = m_renderer1->set_subtitle(NULL, 0, 0, 0, 0);
 
 			free(sub.data);
 			if (FAILED(hr))

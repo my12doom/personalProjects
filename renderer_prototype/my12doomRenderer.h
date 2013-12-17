@@ -2,6 +2,7 @@
 #include <d3d9.h>
 #include <streams.h>
 #include <atlbase.h>
+#include <vector>
 #include "..\AESFile\rijndael.h"
 #include "..\dwindow\nvapi.h"
 #include "AtiDx9Stereo.h"
@@ -243,7 +244,9 @@ public:
 	HRESULT set_aspect(double aspect);
 	HRESULT set_window(HWND wnd, HWND wnd2);
 	HRESULT set_movie_scissor_rect(RECTF *scissor);
-	HRESULT set_subtitle(void* data, int width, int height, float fwidth, float fheight, float fleft, float ftop, bool gpu_shadow = false);
+	HRESULT preroll_subtitle(void* data, int width, int height, gpu_sample **out);
+	HRESULT set_subtitle(gpu_sample* data, float fwidth, float fheight, float fleft, float ftop);	// don't delete the gpu_sample directly, use release_subtitle() to release it
+	HRESULT release_subtitle(gpu_sample *data);		// This is an advanced call, and normally need not be called, you can call this to release it explicitly
 	HRESULT set_subtitle_parallax(double offset);
 	HRESULT set_parallax(double parallax);
 	HRESULT set_callback(Imy12doomRendererCallback *cb){m_cb = cb; return S_OK;}
@@ -286,10 +289,9 @@ protected:
 	double m_parallax;
 	bool m_has_subtitle;
 	int m_last_ui_draw;
-	CPooledTexture *m_subtitle;
-	CPooledTexture *m_subtitle_mem;
+	std::vector<gpu_sample*> m_prerolled_subtitles;
+	gpu_sample *m_subtitle;
 	CCritSec m_subtitle_lock;
-	int m_subtitle_pixel_width, m_subtitle_pixel_height;
 	float m_subtitle_fleft, m_subtitle_ftop, m_subtitle_fwidth, m_subtitle_fheight;
 	lua_const &m_movie_offset_x /*= -0.0*/;
 	lua_const &m_movie_offset_y /*= 0.0*/;
@@ -343,7 +345,7 @@ protected:
 	gpu_sample * m_last_rendered_sample1;
 	gpu_sample * m_last_rendered_sample2;
 	CCritSec m_packet_lock;
-	CCritSec m_pool_lock;
+	CCritSec m_allocator_lock;
 
 	// dx9 functions and variables
 	enum device_state
@@ -513,7 +515,7 @@ protected:
 	CCritSec m_device_lock;
 	HANDLE m_render_event;
 	int m_device_threadid;
-	CTextureAllocator *m_pool;
+	CTextureAllocator *m_allocator;
 
 	CComPtr <IDirect3DPixelShader9> m_ps_yv12;
 	CComPtr <IDirect3DPixelShader9> m_ps_nv12;

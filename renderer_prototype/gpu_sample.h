@@ -7,6 +7,7 @@ public:
 	gpu_sample(CTextureAllocator *allocator, HFONT font, const wchar_t *text, RGBQUAD color, RECT *dst_rect = NULL, DWORD flag = DT_CENTER | DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK | DT_EDITCONTROL);
 	gpu_sample(IDirect3DDevice9 *device, IDirect3DSurface9 *surface, CTextureAllocator *allocator);
 	gpu_sample(IDirect3DDevice9 *device, int width, int height, CTextureAllocator *allocator);		// for render target
+	gpu_sample(IDirect3DDevice9 *device, int width, int height, void *data, CTextureAllocator *allocator);	// raw pre-multiplied RGBA data
 	~gpu_sample();
 	HRESULT commit();
 	HRESULT decommit();
@@ -30,6 +31,8 @@ public:
 	bool m_GDI_prepared;
 	bool m_need_backup_when_decommitting;
 	bool m_no_pool;
+	RECT *m_ROI;		// ROI for rendering, usally for subtitle
+	RECT *m_ROIex;		// ROI for committing, usually with a black padding
 
 	CPooledTexture *m_tex_gpu_RGB32;				// GPU RGB32 planes, in A8R8G8B8, full width
 	CPooledTexture *m_tex_gpu_Y;					// GPU Y plane of YV12/NV12, in L8

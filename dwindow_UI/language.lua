@@ -50,7 +50,6 @@ end
 function core.get_language_list()
 	local o = {}
 	for k,v in pairs(language_list) do
-		print(k)
 		table.insert(o, k)
 	end
 	return o

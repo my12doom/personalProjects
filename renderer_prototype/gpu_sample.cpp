@@ -43,6 +43,9 @@ gpu_sample::~gpu_sample()
 	safe_delete(m_surf_gpu_YV12);
 	safe_delete(m_surf_gpu_NV12);
 	safe_delete(m_surf_gpu_YUY2);
+
+	safe_delete(m_ROI);
+	safe_delete(m_ROIex);
 }
 
 CCritSec g_gpu_lock;
@@ -106,11 +109,11 @@ HRESULT gpu_sample::commit()
 		JIF( m_allocator->CreateTexture(m_width/2, m_height, NULL, D3DFMT_L8,D3DPOOL_DEFAULT,	&m_tex_gpu_YV12_UV));
 	}
 
-	if (m_tex_RGB32) JIF(m_allocator->UpdateTexture(m_tex_RGB32, m_tex_gpu_RGB32));
-	if (m_tex_Y) JIF(m_allocator->UpdateTexture(m_tex_Y, m_tex_gpu_Y));
-	if (m_tex_YV12_UV) JIF(m_allocator->UpdateTexture(m_tex_YV12_UV, m_tex_gpu_YV12_UV));
-	if (m_tex_NV12_UV) JIF(m_allocator->UpdateTexture(m_tex_NV12_UV, m_tex_gpu_NV12_UV));
-	if (m_tex_YUY2_UV) JIF(m_allocator->UpdateTexture(m_tex_YUY2_UV, m_tex_gpu_YUY2_UV));
+	if (m_tex_RGB32) JIF(m_allocator->UpdateTexture(m_tex_RGB32, m_tex_gpu_RGB32, m_ROIex));
+	if (m_tex_Y) JIF(m_allocator->UpdateTexture(m_tex_Y, m_tex_gpu_Y, m_ROIex));
+	if (m_tex_YV12_UV) JIF(m_allocator->UpdateTexture(m_tex_YV12_UV, m_tex_gpu_YV12_UV, m_ROIex));
+	if (m_tex_NV12_UV) JIF(m_allocator->UpdateTexture(m_tex_NV12_UV, m_tex_gpu_NV12_UV, m_ROIex));
+	if (m_tex_YUY2_UV) JIF(m_allocator->UpdateTexture(m_tex_YUY2_UV, m_tex_gpu_YUY2_UV, m_ROIex));
 
 	m_prepared_for_rendering = true;
 	// 	QueryPerformanceCounter(&counter2);
@@ -596,6 +599,8 @@ int gpusample_deinterlace(int height, int n)
 
 void gpu_sample::zero(IDirect3DDevice9 *device, CTextureAllocator *allocator)
 {
+	m_ROI = NULL;
+	m_ROIex = NULL;
 	m_no_pool = false;
 	m_need_backup_when_decommitting = false;
 	m_device = device;
@@ -926,6 +931,67 @@ gpu_sample::gpu_sample(const wchar_t *filename, CTextureAllocator *allocator)
 			dst += d3dlr.Pitch;
 		}
 	}
+
+	return;
+
+clearup:
+	m_ready = false;
+	safe_delete(m_tex_RGB32);
+	safe_delete(m_tex_Y);
+	safe_delete(m_tex_YV12_UV);
+	safe_delete(m_tex_NV12_UV);
+	safe_delete(m_tex_YUY2_UV);
+}
+
+gpu_sample::gpu_sample(IDirect3DDevice9 *device, int width, int height, void *data, CTextureAllocator *allocator)
+{
+	zero(device, allocator);
+
+	CAutoLock lck(&g_ILLock);
+	HRESULT hr;
+	if (!allocator)
+		goto clearup;
+
+	int l = timeGetTime();
+
+	m_ready = true;
+	m_StretchRect = false;
+	m_pool = D3DPOOL_SYSTEMMEM;
+	m_ready = true;
+	m_format = MEDIASUBTYPE_ARGB32;
+
+	static lua_const & TEXTURE_SIZE = GET_CONST("TextureSize");
+	static lua_const & SUBTITLE_TEXTURE_SIZE = GET_CONST("SubtitleTextureSize");
+
+	int size = min((int)TEXTURE_SIZE, (int)SUBTITLE_TEXTURE_SIZE);
+
+	JIF( allocator->CreateTexture(size, size, NULL, D3DFMT_A8R8G8B8,D3DPOOL_SYSTEMMEM,	&m_tex_RGB32));
+
+	m_width = m_height = size;
+	m_ROI = new RECT;
+	m_ROIex = new RECT;
+	m_ROI->left = m_ROI->top = m_ROIex->left = m_ROIex->top = 0;
+	m_ROI->right = width;
+	m_ROI->bottom = height;
+	m_ROIex->right = min(width+32, size);
+	m_ROIex->bottom = min(height+32, size);
+
+
+	// data loading
+	D3DLOCKED_RECT &d3dlr = m_tex_RGB32->locked_rect;
+	BYTE * src = (BYTE*)data;
+	BYTE * dst = (BYTE *)d3dlr.pBits;
+	for(int i=0; i<height; i++)
+	{
+		memcpy(dst, src, width*4);
+		memset(dst+width*4, 0, 32*4);
+
+		src += width*4;
+		dst += d3dlr.Pitch;
+	}
+
+	memset(dst, 0, d3dlr.Pitch * min(size-height, 32));
+
 
 	return;
 
