@@ -333,9 +333,6 @@ current_time:SetPoint(BOTTOM, progress_slider, TOP)
 
 function current_time:RenderThis()
 	if progress:IsMouseOver() then
-		if self.texture then
-			self.texture:release()
-		end
 		if self.texture_time ~= math.floor(player.tell()/1000) then
 			self.texture = create_time_texture(player.tell())
 			self.texture_time = math.floor(player.tell()/1000)
