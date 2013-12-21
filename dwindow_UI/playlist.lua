@@ -218,3 +218,47 @@ function OnDirectshowEvents(event_code, param1, param2)
 	end
 end
 
+-- media info for playlist
+local insertt -- (root, string, parent, level)
+
+function inserttree(hMediaInfoWindow, table, parent, level)
+	level = level or 0
+	for k,v in pairs(table) do
+		if type(v) == "table" then
+			local item = insert(hMediaInfoWindow, k, parent, level)
+			inserttree(hMediaInfoWindow, v, item, level+1)
+		else
+			insert(hMediaInfoWindow, k .. " : " .. tostring(v), parent, level)
+		end
+	end
+end
+
+function show_media_info(hMediaInfoWindow, insert_func)
+	local L,R = playlist:current_item()
+	
+	L = L and parseURL(L)
+	R = R and parseURL(R)
+	
+	local tbl = {}
+	if type(L) == "table" then
+		for _,v in pairs(L) do
+			table.insert(tbl, v.url)
+		end
+		if R ~= nil then
+			for _,v in pairs(R) do
+				table.insert(tbl, v.url)
+			end
+		end	
+	else
+		table.insert(tbl, L)
+		table.insert(tbl, R)
+	end
+	
+	local o = {}
+	for _,v in ipairs(tbl) do
+		o[v] = player.get_mediainfo(v, true)
+	end	
+
+	insert = insert_func
+	inserttree(hMediaInfoWindow, o)
+end

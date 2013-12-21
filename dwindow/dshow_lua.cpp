@@ -778,7 +778,7 @@ static int show_media_info_lua(lua_State *L)
 	const char *filename = lua_tostring(L, -n+0);
 
 
-	show_media_info(UTF82W(filename), g_player->m_full1 ? g_player->get_window(-1) : NULL);
+	show_media_info(g_player->m_full1 ? g_player->get_window(-1) : NULL);
 	lua_pushboolean(L, true);
 	return 1;
 }
@@ -889,6 +889,16 @@ static int lua_get_mediainfo(lua_State *L)
 	{
 		MI.Option(_T("Language"));
 	}
+
+	// reader probe?
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "probe_reader");
+	lua_pushstring(L, W2UTF8(filename));
+	lua_mypcall(L, 1, 1, 0);
+	if(lua_toboolean(L, -1))
+		filename = URL2Token(filename);
+	lua_settop(L, 0);
+
 
 
 	if (!Token2URL(filename))

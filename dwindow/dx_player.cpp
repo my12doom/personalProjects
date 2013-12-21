@@ -2101,7 +2101,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 		{
 			wchar_t tmp[1024];
 			GetWindowTextW(m_hwnd1, tmp, 1024);
-			show_media_info(tmp, m_full1 ? (m_theater_owner ? m_theater_owner : id_to_hwnd(1)) : NULL);
+			show_media_info(m_full1 ? (m_theater_owner ? m_theater_owner : id_to_hwnd(1)) : NULL);
 		}
 
 	}
