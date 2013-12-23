@@ -4193,6 +4193,9 @@ HRESULT my12doomRenderer::release_subtitle(gpu_sample *data)
 		}
 	}
 
+	if (m_subtitle == data)
+		m_subtitle = NULL;
+
 	return S_OK;
 }
 
