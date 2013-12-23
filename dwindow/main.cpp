@@ -41,7 +41,26 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	int argc = 1;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-	dwindow_log_line(L"DWindow rev%d running, commandline=%s", my12doom_rev, GetCommandLineW());
+	dwindow_log_line(L"DWindow rev%d running, commandline=%s, version=%s", my12doom_rev, GetCommandLineW(), 
+
+#ifdef dwindow_free
+		L"free"
+#endif
+
+#ifdef dwindow_jz
+		L"donate"
+#endif
+
+#ifdef dwindow_pro
+#ifdef DEBUG
+		L"professional(debug)"
+#else
+		L"professional"
+#endif
+#endif
+
+
+		);
 
 
 	RECT screen1;
