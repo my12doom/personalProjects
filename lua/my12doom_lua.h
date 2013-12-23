@@ -13,7 +13,7 @@ extern "C"
 int dwindow_lua_init();
 int dwindow_lua_exit();
 int lua_mypcall(lua_State *L, int n, int r, int flag);
-int lua_save_settings();
+int lua_save_settings(bool restore_play_after_reset = true);
 int lua_load_settings();
 bool setup_gc(lua_State *L, lua_CFunction f);
 

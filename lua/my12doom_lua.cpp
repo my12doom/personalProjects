@@ -494,7 +494,7 @@ int luaGetSystemDefaultLCID(lua_State *L)
 
 static int lua_restart_this_program(lua_State *L)
 {
-	restart_this_program();
+	restart_this_program(lua_toboolean(L, 1));
 	return 1;
 }
 
@@ -1179,12 +1179,13 @@ int lua_load_settings()
 	return 0;
 }
 
-int lua_save_settings()
+int lua_save_settings(bool restore_play_after_reset /*=true */)
 {
 	luaState L;
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "save_settings");
-	lua_mypcall(L, 0, 0, 0);
+	lua_pushboolean(L, restore_play_after_reset);
+	lua_mypcall(L, 1, 0, 0);
 	lua_settop(L, 0);
 
 	return 0;

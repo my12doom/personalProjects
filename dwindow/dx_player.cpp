@@ -2066,7 +2066,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			save_passkey();
 
 // 			MessageBoxW(m_theater_owner ? m_theater_owner : id_to_hwnd(1), C(L"Logged out, the program will exit now, restart the program to login."), L"...", MB_OK);
-			restart_this_program();
+			restart_this_program(false);
 		}
 		m_dialog_open --;
 	}
@@ -2741,7 +2741,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			if (MessageBoxW(id_to_hwnd(id), 
 				C(L"A Reset is needed for this setting to take effect.\r\n\r\nRestart Now ?"), 
 				C(L"Warning"), MB_ICONWARNING | MB_YESNO) == IDYES)
-				restart_this_program();
+				restart_this_program(true);
 		}
 
 		else if (GET_CONST("EVR"))
@@ -2751,7 +2751,7 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			if (MessageBoxW(id_to_hwnd(id), 
 				C(L"A Reset is needed for this setting to take effect.\r\n\r\nRestart Now ?"), 
 				C(L"Warning"), MB_ICONWARNING | MB_YESNO) == IDYES)
-				restart_this_program();
+				restart_this_program(true);
 		}
 	}
 

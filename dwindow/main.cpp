@@ -171,6 +171,12 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		SetFocus(test->m_hwnd1);
 	}
 
+	{
+		luaState L;
+		lua_getglobal(L, "OnStartup");
+		lua_mypcall(L, 0, 0, 0);
+	}
+
 	setlocale(LC_ALL, "chs");
 
 	while (test->init_done_flag != 0x12345678)
@@ -209,7 +215,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	while (!test->is_closed())
 		Sleep(100);
 
-	lua_save_settings();
+	lua_save_settings(false);
 
  	HANDLE killer = CreateThread(NULL, NULL, killer_thread2, new DWORD(3000), NULL, NULL);
 	bar_logout();
@@ -263,7 +269,7 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	report_file(zip);
 
 #ifdef ZHUZHU
-	restart_this_program();
+	restart_this_program(false);
 #endif
 
 	// reset and suicide
@@ -274,7 +280,7 @@ LONG WINAPI my_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
 							L"\nMini Dump File:\n%s"), dump_file);
 	int o = MessageBoxW(NULL, description, C(L"Error"), MB_CANCELTRYCONTINUE | MB_ICONERROR);
 	if (o == IDCANCEL)
-		restart_this_program();
+		restart_this_program(false);
 	else if (o == IDCONTINUE)
 		TerminateThread(GetCurrentThread(), -1);
 	DebugBreak();

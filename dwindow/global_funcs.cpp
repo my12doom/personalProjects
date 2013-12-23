@@ -1616,7 +1616,7 @@ HRESULT update_file_association(bool uac /*= false*/)
 
 		if (res<0 && uac)
 		{
-			lua_save_settings();
+			lua_save_settings(false);
 
 			SHELLEXECUTEINFO ShExecInfo = {0};
 			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -2235,9 +2235,9 @@ DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter)
 	return exit_code;
 }
 
-HRESULT restart_this_program()
+HRESULT restart_this_program(bool restore_play_after_reset /*= true*/)
 {
-	lua_save_settings();
+	lua_save_settings(restore_play_after_reset);
 
 	wchar_t reset_exe[MAX_PATH];
 	wcscpy(reset_exe, g_apppath);

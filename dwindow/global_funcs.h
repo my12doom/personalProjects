@@ -156,7 +156,7 @@ BOOL hasGetGustureInfo();
 HRESULT CrackPD10(IBaseFilter *filter);
 bool jpeg_enc_yv12(unsigned char* Ybuffer, unsigned char *Ubuffer, unsigned char*Vbuffer, int width, int height, int Ystride, int UVstride, int quality, const wchar_t* filename);
 DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter);
-HRESULT restart_this_program();
+HRESULT restart_this_program(bool restore_play_after_reset = true);
 HRESULT report_file(const wchar_t *filepath);
 HRESULT get_splayer_subtitle(const wchar_t *filepath, wchar_t *out, const wchar_t **langs = NULL);
 RECT get_special_size_physical_monitor(SIZE size);

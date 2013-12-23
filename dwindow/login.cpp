@@ -167,7 +167,7 @@ DWORD WINAPI register_download_thread(LPVOID puid)
 		if (!is_trial_version())
 		{
 			MessageBoxW(g_login_window, C(L"This program will RESTART NOW to activate new user id."), C(L"Exiting"), MB_ICONINFORMATION);
-			restart_this_program();
+			restart_this_program(true);
 		}
 
 		EndDialog(g_login_window, IDOK);

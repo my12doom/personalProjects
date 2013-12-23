@@ -397,16 +397,29 @@ function format_table(t, level)
 	return "\r\n" .. table.concat(o, "\r\n"..lead) .."\r\n".. leadd1 .. "}"
 end
 
-function core.save_settings()
+function core.save_settings(restore_after_reset)
 	print("SAVING SETTINGS")
 	
+	setting.playlist.position = player.tell()
+	setting.playlist.is_playing = player.is_playing()
+	setting.playlist.restore_after_reset = restore_after_reset and player.movie_loaded and true
+		
 	return core.WriteConfigFile("tmpsetting = " .. format_table(setting) .. "\r\nmerge_table(setting, tmpsetting)\r\n")
 end
 
-function core.load_settings()
+function core.load_settings(restore_after_reset)
 	print("LOADING SETTINGS")
-	
 	return core.execute_luafile(core.GetConfigFile())
+end
+
+function OnStartup()
+	if setting.playlist.restore_after_reset then
+		playlist:play_item(setting.playlist.playing)
+		player.seek(setting.playlist.position)
+		if not setting.playlist.is_playing then
+			player.pause()
+		end	
+	end
 end
 
 function core.set_setting(key, value)
