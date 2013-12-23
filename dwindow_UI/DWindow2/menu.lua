@@ -1,5 +1,16 @@
 ﻿local MB_YESNO = 4
 local IDYES = 6
+
+local function dual_projector_warning()
+	if not string.find(core.payed, "professional") then
+		player.message_box(L("Dual projector and IZ3D mode is only available in registered version."), "...", MB_OK)
+		
+		local SW_SHOWNORMAL = 1
+		
+		core.shellexecute("open", "http://www.bo3d.net/buy.php", nil, nil, SW_SHOWNORMAL)
+	end
+end
+
 function popup_dwindow2()
 	local m = 
 	{
@@ -407,7 +418,7 @@ function popup_dwindow2()
 				{
 					string = L("IZ3D Displayer"),
 					checked = setting.OutputMode == 5,
-					on_command = function() player.set_output_mode(5) end,
+					on_command = function() dual_projector_warning() player.set_output_mode(5) end,
 				},
 				{
 					string = L("Gerneral 120Hz Glasses"),
@@ -471,17 +482,17 @@ function popup_dwindow2()
 				{
 					string = L("Dual Projector - Vertical Span Mode"),
 					checked = setting.OutputMode == 8,
-					on_command = function() player.set_output_mode(8) end,
+					on_command = function() dual_projector_warning() player.set_output_mode(8) end,
 				},
 				{
 					string = L("Dual Projector - Horizontal Span Mode"),
 					checked = setting.OutputMode == 7,
-					on_command = function() player.set_output_mode(7) end,
+					on_command = function() dual_projector_warning() player.set_output_mode(7) end,
 				},
 				{
 					string = L("Dual Projector - Independent Mode"),
 					checked = setting.OutputMode == 6,
-					on_command = function() player.set_output_mode(6) end,
+					on_command = function() dual_projector_warning() player.set_output_mode(6) end,
 				},
 				{
 					seperator = true,

@@ -175,6 +175,26 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		luaState L;
 		lua_getglobal(L, "OnStartup");
 		lua_mypcall(L, 0, 0, 0);
+
+		lua_getglobal(L, "core");
+
+#ifdef dwindow_free
+		lua_pushstring(L, "free");
+#endif
+
+#ifdef dwindow_jz
+		lua_pushstring(L, "donate");
+#endif
+
+#ifdef dwindow_pro
+#ifdef DEBUG
+		lua_pushstring(L, "professional(debug)");
+#else
+		lua_pushstring(L, "professional");
+#endif
+#endif
+
+		lua_setfield(L, -2, "payed");
 	}
 
 	setlocale(LC_ALL, "chs");

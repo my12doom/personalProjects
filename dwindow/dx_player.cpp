@@ -2472,7 +2472,6 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 
 	else if (uid == ID_LOADAUDIOTRACK)
 	{
-#ifndef no_dual_projector
 		wchar_t file[MAX_PATH*10] = L"";
 		m_dialog_open++;
 		if (open_file_dlg(file, m_theater_owner ? m_theater_owner : id_to_hwnd(1), L"Audio Tracks\0*.mp3;*.mxf;*.dts;*.ac3;*.aac;*.m4a;*.mka\0All Files\0*.*\0\0"))
@@ -2480,10 +2479,6 @@ LRESULT dx_player::on_command(int id, WPARAM wParam, LPARAM lParam)
 			load_audiotrack(file);
 		}
 		m_dialog_open--;
-#else
-		MessageBoxW(id_to_hwnd(id), C(L"External audio track support is only available in registered version."), L"", MB_OK | MB_ICONINFORMATION);
-		ShellExecuteW(NULL, L"open", L"http://www.bo3d.net/buy.php", NULL, NULL, SW_SHOWNORMAL);
-#endif
 	}
 
 	else if (uid == ID_SUBTITLE_LOADFILE)
@@ -4215,7 +4210,6 @@ HRESULT dx_player::debug_list_filters()
 
 HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
 {
-#ifndef no_dual_projector
 	//disable all audio first
 	enable_audio_track(-1);
 
@@ -4237,9 +4231,6 @@ HRESULT dx_player::load_audiotrack(const wchar_t *pathname)
 	m_mc->GetState(INFINITE, &state);
 	hr = seek(time);
 	return hr;
-#else
-	return S_OK;
-#endif
 }
 
 void dx_player::subtitle_loader::run()

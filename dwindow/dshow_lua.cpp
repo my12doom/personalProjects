@@ -70,7 +70,7 @@ static int set_force2d(lua_State *L)
 
 static int is_playing(lua_State *L)
 {
-	lua_pushboolean(L, g_player->is_playing());
+	lua_pushboolean(L, g_player ? g_player->is_playing() : false);
 
 	return 1;
 }
@@ -100,7 +100,8 @@ static int is_fullscreen(lua_State *L)
 static int tell(lua_State *L)
 {
 	int t = 0;
-	g_player->tell(&t);
+	if(g_player)
+		g_player->tell(&t);
 	lua_pushinteger(L, t);
 
 	return 1;

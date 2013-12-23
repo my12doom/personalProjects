@@ -537,6 +537,19 @@ int lua_clear_all_handles(lua_State*L)
 	return 1;
 }
 
+
+int lua_shellexecute(lua_State *L)
+{
+	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+
+	int n = lua_gettop(L);
+
+	lua_pushboolean(L, (int)ShellExecuteW(NULL, UTF82W(lua_tostring(L,1)), UTF82W(lua_tostring(L,2)), UTF82W(lua_tostring(L,3)), UTF82W(lua_tostring(L,4)), lua_tointeger(L,5)) > 32);
+
+	return 1;
+}
+
+
 extern "C" int luaopen_cjson_safe(lua_State *l);
 bool lua_inited = false;
 int dwindow_lua_init () 
@@ -584,6 +597,7 @@ int dwindow_lua_init ()
 	g_lua_core_manager->get_variable("GetTickCount") = &lua_GetTickCount;
 	g_lua_core_manager->get_variable("execute_luafile") = &execute_luafile;
 	g_lua_core_manager->get_variable("execute_signed_luafile") = &execute_signed_luafile;
+	g_lua_core_manager->get_variable("shellexecute") = &lua_shellexecute;
 	g_lua_core_manager->get_variable("load_signed_string") = &load_signed_string;
 	g_lua_core_manager->get_variable("loaddll") = &loaddll;
 	g_lua_core_manager->get_variable("track_back") = &track_back;
