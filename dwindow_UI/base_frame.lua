@@ -489,7 +489,7 @@ function BaseFrame:CalculateAbsRect()
 	end
 	
 	if anchors == default_anchors and self.debug then
-		print("using default anchor")
+		info("using default anchor")
 	end
 
 	for point, parameter in pairs(anchors) do
