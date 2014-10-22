@@ -45,10 +45,10 @@ void nmea_time_now(nmeaTIME *stm)
 
 void nmea_time_now(nmeaTIME *stm)
 {
-    time_t lt;
+    time_t lt = 0;
     struct tm *tt;
 
-    time(&lt);
+    //time(&lt);
     tt = gmtime(&lt);
 
     stm->year = tt->tm_year;

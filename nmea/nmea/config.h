@@ -43,7 +43,7 @@
 
 #if !defined(NDEBUG) && !defined(NMEA_CE)
 #   include <assert.h>
-#   define NMEA_ASSERT(x)   assert(x)
+#   define NMEA_ASSERT(x)
 #else
 #   define NMEA_ASSERT(x)
 #endif

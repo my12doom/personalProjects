@@ -33,6 +33,8 @@ typedef struct _nmeaTIME
     int     sec;        /**< Seconds after the minute - [0,59] */
     int     hsec;       /**< Hundredth part of second - [0,99] */
 
+	int     zone_hour;
+	int     zone_minute;
 } nmeaTIME;
 
 /**

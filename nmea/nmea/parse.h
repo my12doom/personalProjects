@@ -25,12 +25,14 @@ int nmea_parse_GPGSA(const char *buff, int buff_sz, nmeaGPGSA *pack);
 int nmea_parse_GPGSV(const char *buff, int buff_sz, nmeaGPGSV *pack);
 int nmea_parse_GPRMC(const char *buff, int buff_sz, nmeaGPRMC *pack);
 int nmea_parse_GPVTG(const char *buff, int buff_sz, nmeaGPVTG *pack);
+int nmea_parse_GPZDA(const char *buff, int buff_sz, nmeaGPZDA *pack);
 
 void nmea_GPGGA2info(nmeaGPGGA *pack, nmeaINFO *info);
 void nmea_GPGSA2info(nmeaGPGSA *pack, nmeaINFO *info);
 void nmea_GPGSV2info(nmeaGPGSV *pack, nmeaINFO *info);
 void nmea_GPRMC2info(nmeaGPRMC *pack, nmeaINFO *info);
 void nmea_GPVTG2info(nmeaGPVTG *pack, nmeaINFO *info);
+void nmea_GPZDA2info(nmeaGPZDA *pack, nmeaINFO *info);
 
 #ifdef  __cplusplus
 }

@@ -105,6 +105,7 @@ int nmea_pack_type(const char *buff, int buff_sz)
         "GPGSV",
         "GPRMC",
         "GPVTG",
+		"GPZDA",
     };
 
     NMEA_ASSERT(buff);
@@ -121,6 +122,8 @@ int nmea_pack_type(const char *buff, int buff_sz)
         return GPRMC;
     else if(0 == memcmp(buff, pheads[4], 5))
         return GPVTG;
+	else if(0 == memcmp(buff, pheads[5], 5))
+		return GPZDA;
 
     return GPNON;
 }
@@ -367,6 +370,41 @@ int nmea_parse_GPVTG(const char *buff, int buff_sz, nmeaGPVTG *pack)
     return 1;
 }
 
+int nmea_parse_GPZDA(const char *buff, int buff_sz, nmeaGPZDA *pack)
+{
+	char time_buff[NMEA_TIMEPARSE_BUF];
+
+	NMEA_ASSERT(buff && pack);
+
+	memset(pack, 0, sizeof(nmeaGPVTG));
+
+	nmea_trace_buff(buff, buff_sz);
+
+	if(6 != nmea_scanf(buff, buff_sz,
+		"$GPZDA,%s,%d,%d,%d,%d,%d*",
+		time_buff,
+		&(pack->utc.day),
+		&(pack->utc.mon),
+		&(pack->utc.year),
+		&(pack->utc.zone_hour),
+		&(pack->utc.zone_minute)))
+	{
+		nmea_error("GPZDA parse error!");
+		return 0;
+	}
+
+	pack->utc.mon -= 1;
+	pack->utc.year -= 1900;
+
+	if(0 != _nmea_parse_time(&time_buff[0], (int)strlen(&time_buff[0]), &(pack->utc)))
+	{
+		nmea_error("GPGGA time parse error!");
+		return 0;
+	}
+
+	return 1;
+}
+
 /**
  * \brief Fill nmeaINFO structure by GGA packet data.
  * @param pack a pointer of packet structure.
@@ -498,4 +536,16 @@ void nmea_GPVTG2info(nmeaGPVTG *pack, nmeaINFO *info)
     info->declination = pack->dec;
     info->speed = pack->spk;
     info->smask |= GPVTG;
+}
+
+/**
+ * \brief Fill nmeaINFO structure by ZDA packet data.
+ * @param pack a pointer of packet structure.
+ * @param info a pointer of summary information structure.
+ */
+void nmea_GPZDA2info(nmeaGPZDA *pack, nmeaINFO *info)
+{
+    NMEA_ASSERT(pack && info);
+
+	info->utc2 = pack->utc;	
 }

@@ -84,6 +84,7 @@ typedef struct _nmeaINFO
     int     smask;      /**< Mask specifying types of packages from which data have been obtained */
 
     nmeaTIME utc;       /**< UTC of position */
+    nmeaTIME utc2;      /**< UTC of position by GPZDA packet */
 
     int     sig;        /**< GPS quality indicator (0 = Invalid; 1 = Fix; 2 = Differential, 3 = Sensitive) */
     int     fix;        /**< Operating mode, used for navigation (1 = Fix not available; 2 = 2D; 3 = 3D) */
