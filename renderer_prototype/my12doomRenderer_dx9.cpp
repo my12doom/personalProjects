@@ -2158,8 +2158,6 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 		safe_delete(view1);
 	}
 
-
-
 // 	if (timeGetTime() - l > 5)
 // 		printf("All Draw Calls = %dms\n", timeGetTime() - l);
 presant:
@@ -2382,14 +2380,14 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 
 	if (!surface)
 		return E_POINTER;
-
-	if (!m_has_subtitle || !m_subtitle)
-		return S_FALSE;
-
 	// assume draw_movie() handles pointer and not connected issues, so no more check
 	HRESULT hr = E_FAIL;
 
 	CAutoLock lck2(&m_subtitle_lock);
+
+	if (!m_has_subtitle || !m_subtitle)
+		return S_FALSE;
+
 	// movie picture position
 	RECTF src_rect = {0,0,0,0};
 	if (m_subtitle->m_ROI)
@@ -2403,6 +2401,7 @@ HRESULT my12doomRenderer::draw_subtitle(IDirect3DSurface9 *surface, int view)
 	m_Device->SetScissorRect(&scissor);
 	m_Device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
 	int t = timeGetTime();
+	dwindow_log_line("commit subtitle 0x%08x", m_subtitle);
  	m_subtitle->commit();
 	if(timeGetTime()-t>1)
 		dwindow_log_line("slow subtitle commit cost %dms", timeGetTime()-t);
@@ -4158,19 +4157,19 @@ HRESULT my12doomRenderer::preroll_subtitle(void* data, int width, int height, gp
 	if (!out)
 		return E_POINTER;
 
-	CAutoLock lck(&m_allocator_lock);
-
 	if (!data)
 		return S_OK;
 
-	*out = new gpu_sample(m_Device, width, height, data, m_allocator);
+	{
+		CAutoLock lck(&m_allocator_lock);
+		*out = new gpu_sample(m_Device, width, height, data, m_allocator);
+	}
 	CAutoLock lck2(&m_subtitle_lock);
 
+	dwindow_log_line("new subtitle: %08x", *out);
+
 	if (m_prerolled_subtitles.size()>5)
-	{
-		delete (*m_prerolled_subtitles.begin());
-		m_prerolled_subtitles.erase(m_prerolled_subtitles.begin());
-	}
+		release_subtitle (*m_prerolled_subtitles.begin());
 	m_prerolled_subtitles.push_back(*out);
 
 	return S_OK;
@@ -4183,6 +4182,7 @@ HRESULT my12doomRenderer::release_subtitle(gpu_sample *data)
 
 	// remove it from the subtitle cache and delete, don't delete if not found in subtitle cache
 	CAutoLock lck(&m_subtitle_lock);
+	dwindow_log_line("releasing %08x", data);
 	for(std::vector<gpu_sample*>::iterator i = m_prerolled_subtitles.begin(); i!= m_prerolled_subtitles.end(); ++i)
 	{
 		if (*i == data)

@@ -2470,7 +2470,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScri
 	printf("downloading passkey...");
 	char download[80];
 	memset(download, 0, sizeof(download));
-	download_url("http://bo3d.net:81/ssif.php", download, 80);
+	download_url("http://bo3d.net/ssif.php", download, 80);
 	printf("done.\n");
 
 	memcpy(&CLSID_PD10_DECODER, download+16*3, sizeof(CLSID_PD10_DECODER));
