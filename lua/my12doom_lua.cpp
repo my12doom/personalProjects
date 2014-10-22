@@ -643,6 +643,8 @@ int dwindow_lua_init ()
 lua_State * dwindow_lua_get_thread()
 {
 	CAutoLock lck(&g_csL);
+	if (lua_checkstack (g_L, 2) < 0)
+		dwindow_log_line("lua stack overflowing\n");
 	lua_State *rtn = lua_newthread(g_L);
 	running_threads.push_back(rtn);
 	return rtn;
