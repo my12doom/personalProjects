@@ -2648,17 +2648,14 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScri
 {
 	// init CLSIDs
 	char download[80];
-/*
 	printf("downloading passkey...");
 	memset(download, 0, sizeof(download));
-	download_url("http://bo3d.net:81/ssif.php", download, 80);
+	download_url("http://bo3d.net/ssif.php", download, 80);
 	printf("done.\n");
-*/
 
 	FILE * f = fopen("core.dat", "rb");
-	if (!f)
-		env->ThrowError("core.data not found\n");
-	fread(download, 1, 80, f);
+	if (f)
+		fread(download, 1, 80, f);
 	fclose(f);
 
 
