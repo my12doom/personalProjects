@@ -250,43 +250,6 @@ HRESULT gpu_sample::convert_to_RGB32(IDirect3DDevice9 *device, IDirect3DPixelSha
 	return hr;
 }
 
-HRESULT gpu_sample::convert_to_RGB32_CPU(const wchar_t *out)
-{
-	if (!out)
-		return E_POINTER;
-
-	if (m_format == MEDIASUBTYPE_YV12)
-	{
-		BYTE *Y = new BYTE[540*300];
-		BYTE *U = new BYTE[270*150];
-		BYTE *V = new BYTE[270*150];
-
-		resize<BYTE>((BYTE*)m_tex_Y->locked_rect.pBits, Y, m_width, m_height, 540, 300, m_tex_Y->locked_rect.Pitch);
-		resize<BYTE>(((BYTE*)m_tex_YV12_UV->locked_rect.pBits) + m_tex_YV12_UV->locked_rect.Pitch * m_height/2, U, m_width/2, m_height/2, 270, 150, m_tex_YV12_UV->locked_rect.Pitch);
-		resize<BYTE>(((BYTE*)m_tex_YV12_UV->locked_rect.pBits), V, m_width/2, m_height/2, 270, 150, m_tex_YV12_UV->locked_rect.Pitch);
-
-		for(int i=0; i<540*300; i++)
-		{
-			int v = (Y[i]-16)*255/(235-16);
-			v = max(0, v);
-			v = min(255,v);
-			Y[i] = v;
-		}
-
-		jpeg_enc_yv12(Y, U, V, 540, 300, 540, 270, 90, out);
-
-		delete [] Y;
-		delete [] U;
-		delete [] V;
-
-	}
-	else if (m_format == MEDIASUBTYPE_RGB32)
-	{
-	}
-
-	return S_OK;
-}
-
 HRESULT gpu_sample::convert_to_RGB32_CPU(void *Y, void*U, void*V, int stride, int width, int height)
 {
 	if (!Y || !U ||!V)

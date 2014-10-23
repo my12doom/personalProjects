@@ -157,24 +157,23 @@ HRESULT dx_player::execute_command_adv(wchar_t *command, wchar_t *out, const wch
 
 	CASE(L"shot")
 	{
-		int l = timeGetTime();
-		wchar_t tmpPath[MAX_PATH];
-		GetTempPathW(MAX_PATH, tmpPath);
-		wchar_t tmpFile[MAX_PATH];
-		GetTempFileNameW(tmpPath, L"DWindow", 0, tmpFile);
-		m_renderer1->screenshot(tmpFile);
+		myInt width(args[0], 640);
+		myInt height(args[1], 480);
 
-		FILE *f = _wfopen(tmpFile, L"rb");
-		if (!f)
-			return E_FAIL;
-		fseek(f, 0, SEEK_END);
-		int size = ftell(f);
-		fseek(f, 0, SEEK_SET);
-		*((int*)out) = size;
-		memset(out+2, 0, size);
-		int r = fread(out+2, 1, size, f);
-		fclose(f);
-		DeleteFileW(tmpFile);
+		unsigned char *data = new unsigned char[width*height*3/2];
+		*((int*)out) = width*height*3/2;
+		unsigned char *Y = data;
+		unsigned char *V = Y+width*height;
+		unsigned char *U = V+width/2*height/2;
+
+		int l = timeGetTime();
+		HRESULT hr = m_renderer1->screenshot(Y, U, V, width, width, height);
+
+		int jpegsize = jpeg_enc_yv12(Y, U, V, width, height, width, width/2, 20, (char*)out+4, 1024*1024-4);
+		delete data;
+
+		*((int*)out) = jpegsize;
+
 
 		char tmp[200];
 		sprintf(tmp, "shot take %dms\n", GetTickCount()-l);

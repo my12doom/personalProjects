@@ -2211,6 +2211,95 @@ exit:
 	return ret;
 }
 
+static void JpegInitDestination(j_compress_ptr cinfo)
+{
+
+}
+static boolean JpegEmptyOutputBuffer(j_compress_ptr cinfo)
+{
+	return TRUE;
+}
+static void JpegTermDestination(j_compress_ptr cinfo)
+{
+//    jpegDstDataLen = jpegDstBufferLen - jpegDstManager.free_in_buffer;
+}
+
+int jpeg_enc_yv12(unsigned char* Ybuffer, unsigned char *Ubuffer, unsigned char*Vbuffer, int width, int height, int Ystride, int UVstride, int quality, char* outbuffer, int buffersize)
+{
+	int height2 = height+16;
+	struct jpeg_compress_struct cinfo;
+	struct jpeg_error_mgr jerr;
+	struct jpeg_destination_mgr jpegDstManager;
+	int ret = 0;
+	if(Ybuffer == NULL || Ubuffer == NULL || Vbuffer == NULL || width <=0 || height <=0|| outbuffer == NULL)
+		return -2;
+	cinfo.err = jpeg_std_error(&jerr);
+	jpeg_create_compress(&cinfo);
+
+	cinfo.image_width = width; 
+	cinfo.image_height = height;
+	cinfo.input_components = 3;        
+	cinfo.in_color_space = JCS_YCbCr;
+	jpeg_set_defaults(&cinfo);
+#if JPEG_LIB_VERSION >= 70
+	cinfo.do_fancy_downsampling = FALSE;
+	cinfo.dct_method = JDCT_FASTEST;
+	cinfo.smoothing_factor = 0;
+#endif
+	jpeg_set_quality(&cinfo, quality, TRUE);
+	cinfo.raw_data_in = TRUE;
+	cinfo.dest = &jpegDstManager;
+	jpegDstManager.next_output_byte = (unsigned char*)outbuffer;
+	jpegDstManager.free_in_buffer = buffersize;
+	jpegDstManager.init_destination = JpegInitDestination;
+	jpegDstManager.empty_output_buffer = JpegEmptyOutputBuffer;
+	jpegDstManager.term_destination = JpegTermDestination;
+
+	{
+		JSAMPARRAY pp[3];
+		JSAMPROW *rpY = (JSAMPROW*)malloc(sizeof(JSAMPROW) * height2);
+		JSAMPROW *rpU = (JSAMPROW*)malloc(sizeof(JSAMPROW) * height2);
+		JSAMPROW *rpV = (JSAMPROW*)malloc(sizeof(JSAMPROW) * height2);
+		int k;
+		if(rpY == NULL && rpU == NULL && rpV == NULL)
+		{
+			ret = -1;
+			goto exit;
+		}
+		cinfo.comp_info[0].h_samp_factor = cinfo.comp_info[0].v_samp_factor = 2;
+		cinfo.comp_info[1].h_samp_factor =
+		cinfo.comp_info[1].v_samp_factor =
+		cinfo.comp_info[2].h_samp_factor =
+		cinfo.comp_info[2].v_samp_factor = 1;
+		jpeg_start_compress(&cinfo, TRUE);
+
+		for (k = 0; k < height2; k+=2) 
+		{
+			int km = min(k, height-1);
+			rpY[k]   = Ybuffer + km*Ystride;
+			rpY[k+1] = Ybuffer + (km+1)*Ystride;
+			rpU[k/2] = Ubuffer + (km/2)*UVstride;
+			rpV[k/2] = Vbuffer + (km/2)*UVstride;
+		}
+		for (k = 0; k < height; k+=2*DCTSIZE) 
+		{
+			pp[0] = &rpY[k];
+			pp[1] = &rpU[k/2];
+			pp[2] = &rpV[k/2];
+			jpeg_write_raw_data(&cinfo, pp, 2*DCTSIZE);
+		}
+		jpeg_finish_compress(&cinfo);
+		free(rpY);
+		free(rpU);
+		free(rpV);
+	}
+
+	ret = (char*)jpegDstManager.next_output_byte - outbuffer;
+exit:
+	jpeg_destroy_compress(&cinfo);
+	return ret;
+}
+
 DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter)
 {
 	SHELLEXECUTEINFO ShExecInfo = {0};

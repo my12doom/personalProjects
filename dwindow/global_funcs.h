@@ -155,6 +155,7 @@ BOOL myGetGestureInfo(HGESTUREINFO hGestureInfo, PGESTUREINFO pGestureInfo);
 BOOL hasGetGustureInfo();
 HRESULT CrackPD10(IBaseFilter *filter);
 bool jpeg_enc_yv12(unsigned char* Ybuffer, unsigned char *Ubuffer, unsigned char*Vbuffer, int width, int height, int Ystride, int UVstride, int quality, const wchar_t* filename);
+int jpeg_enc_yv12(unsigned char* Ybuffer, unsigned char *Ubuffer, unsigned char*Vbuffer, int width, int height, int Ystride, int UVstride, int quality, char* outbuffer, int buffersize);
 DWORD shellexecute_and_wait(const wchar_t *file, const wchar_t *parameter);
 HRESULT restart_this_program(bool restore_play_after_reset = true);
 HRESULT report_file(const wchar_t *filepath);

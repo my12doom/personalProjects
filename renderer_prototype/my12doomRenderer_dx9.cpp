@@ -3221,18 +3221,6 @@ HRESULT my12doomRenderer::load_image(int id /*= -1*/, bool forced /* = false */)
 	return hr;
 }
 
-HRESULT my12doomRenderer::screenshot(const wchar_t*file)
-{
-	if (!file)
-		return E_POINTER;
-
-	CAutoLock rendered_lock(&m_rendered_packet_lock);
-	if (!m_last_rendered_sample1)
-		return E_FAIL;
-
-	return m_last_rendered_sample1->convert_to_RGB32_CPU(file);
-}
-
 HRESULT my12doomRenderer::screenshot(void *Y, void*U, void*V, int stride, int width, int height)
 {
 	CAutoLock rendered_lock(&m_rendered_packet_lock);
