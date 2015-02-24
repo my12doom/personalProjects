@@ -553,6 +553,7 @@ protected:
 
 	CComPtr<IDirect3DSurface9> m_deinterlace_surface;		// surface for deinterlace
 	RECT m_window_rect;
+	POINT m_client_topleft_in_screen;
 	CComPtr<IDirect3DTexture9> m_tex_mask;					// mask txture
 
 

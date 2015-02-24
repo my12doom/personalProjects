@@ -1940,8 +1940,8 @@ HRESULT my12doomRenderer::render_nolock(bool forced)
 
 			// swap on need
 			bool need_swap = false;
-			int x = m_window_rect.left&1;
-			int y = m_window_rect.top&1;
+			int x = m_client_topleft_in_screen.x&1;
+			int y = m_client_topleft_in_screen.y&1;
 			if ( ((m_mask_mode == row_interlace || m_mask_mode == subpixel_row_interlace) && x) ||
 				(m_mask_mode == line_interlace && y) ||
 				(m_mask_mode == checkboard_interlace && ((x+y)%2)))
@@ -3747,6 +3747,9 @@ HRESULT my12doomRenderer::pump()
 	if (m_hWnd)
 	{
 		GetWindowRect(m_hWnd, &m_window_rect);
+		POINT p = {0};
+		ClientToScreen(m_hWnd, &p);
+		m_client_topleft_in_screen = p;
 		success = GetClientRect(m_hWnd, &rect);
 		if (success && rect.right > 0 && rect.bottom > 0)
 		if (m_active_pp.BackBufferWidth != rect.right-rect.left || m_active_pp.BackBufferHeight != rect.bottom - rect.top)

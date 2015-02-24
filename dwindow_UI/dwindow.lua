@@ -457,9 +457,11 @@ if core and core.execute_luafile then
 	debug_print(core.execute_luafile(lua_path .. "parser.lua"))
 	debug_print(core.execute_luafile(lua_path .. "filter.lua"))
 	
+	print("LUA modules loaded")
 	for _, dll in pairs(player.enum_folder(app.plugin_path)) do
 		if dll:lower():find(".dll") then
 			print("loading plugin", dll, core.loaddll(app.plugin_path .. dll))
 		end
-	end	
+	end
+	print("LUA-DLL modules loaded")
 end

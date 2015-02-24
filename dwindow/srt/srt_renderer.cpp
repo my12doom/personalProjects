@@ -1,4 +1,5 @@
 #include "srt_renderer.h"
+#include "../global_funcs.h"
 
 HRESULT CsrtRenderer::get_subtitle(int time, rendered_subtitle *out, int last_time/*=-1*/)	// get subtitle on a time point, 
 																							// if last_time != -1, return S_OK = need update, return S_FALSE = same subtitle, and out should be ignored;
@@ -48,32 +49,32 @@ HRESULT CsrtRenderer::load_file(wchar_t *filename)										//maybe you don't ne
 }
 HRESULT CsrtRenderer::load_index(void *data, int size)
 {
-	char index_source[18][400] = 
+	wchar_t index_source[18][400] = 
 	{
-		"[Script Info]",
-		"Title:DWindow",
-		"Original Script:DWindow",
-		"Synch Point:0",
-		"ScriptType:v4.00+",
-		"Collisions:Norma",
-		"PlayResX:640",
-		"PlayResY:360",
-		"Timer:100.0000",
-		"",
-		"[V4+ Styles]",
-		"Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-		"Style: Default,ºÚÌå,25,&H00FFFFFF,&HF0000000,&H00000000,&H80000000,-1,0,0,0,100,100,0,0.00,1,1,1,2,30,30,10,134",
-		"",
-		"[Events]",
-		"Format: Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text",
-		"",
-		"",
+		L"[Script Info]",
+		L"Title:DWindow",
+		L"Original Script:DWindow",
+		L"Synch Point:0",
+		L"ScriptType:v4.00+",
+		L"Collisions:Norma",
+		L"PlayResX:640",
+		L"PlayResY:360",
+		L"Timer:100.0000",
+		L"",
+		L"[V4+ Styles]",
+		L"Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+		L"Style: Default,Î¢ÈíÑÅºÚ,25,&H00FFFFFF,&HF0000000,&H00000000,&H80000000,-1,0,0,0,100,100,0,0.00,1,1,1,2,30,30,10,134",
+		L"",
+		L"[Events]",
+		L"Format: Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text",
+		L"",
+		L"",
 	};
 
 	char index[2048] = {0};
 	for(int i=0; i<18; i++)
 	{
-		strcat(index, index_source[i]);
+		strcat(index, W2UTF8(index_source[i]));
 		strcat(index, "\r\n");
 	}
 
@@ -124,6 +125,7 @@ HRESULT CsrtRenderer::add_data(BYTE *data, int size, int start, int end)
 	HRESULT hr = m_ass.add_data((BYTE*)p1, strlen(p1), start, end);
 
 	free(p1);
+	free(line);
 
 	return hr;
 }

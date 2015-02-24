@@ -1828,9 +1828,10 @@ HRESULT download_e3d_key(const wchar_t *filename)
 		strcat(url, tmp);
 	}
 
-	char str_e3d_key[65] = "D3821F7B81206903280461E52DE2B29901B9B458836B3795DD40F50C2583EF7A";
-	int size = 64;
+	char str_e3d_key[1025] = "D3821F7B81206903280461E52DE2B29901B9B458836B3795DD40F50C2583EF7A";
+	int size = 1024;
 	hr = download_url(url, str_e3d_key, &size);
+	str_e3d_key[size] = 0;
 	if (FAILED(hr))
 		goto err_ret;
 

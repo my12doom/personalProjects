@@ -522,8 +522,8 @@ const wchar_t *URL2Token(const wchar_t *URL)
 		return g_URL2Token[URL].c_str();
 
 	// create the token and insert it
-	wchar_t token[MAX_PATH];
-	wsprintf(token, L"X:\\DWindow\\%d%s", g_URL2Token.size(), wcsrchr(URL, L'.'));
+	wchar_t token[MAX_PATH] = {0};
+	wnsprintf(token, MAX_PATH, L"X:\\DWindow\\%d%s", g_URL2Token.size(), wcsrchr(URL, L'.'));
 
 	g_URL2Token[URL] = token;
 	g_Token2URL[token] = URL;

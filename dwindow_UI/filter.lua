@@ -38,7 +38,7 @@ function dshow.decide_splitter(filename)
 	local ext_result
 	
 	-- get media info if not slow extentions like m2ts
-	if config.slow_extentions[ext] == nil then
+	if config.slow_extentions[ext:lower()] == nil then
 		media_info = player.get_mediainfo(filename)
 	end
 	
@@ -48,7 +48,7 @@ function dshow.decide_splitter(filename)
 	end
 	
 	-- find splitter by extenstion
-	ext_result = config.extensions[ext]
+	ext_result = config.extensions[ext:lower()]
 	
 	-- add special case codes here
 	
@@ -171,7 +171,7 @@ config =
 		["3dp"]="{472EF052-2D21-4742-977C-C02097E5C08E}",
 		["bmp"]="{472EF052-2D21-4742-977C-C02097E5C08E}",
 		["psd"]="{472EF052-2D21-4742-977C-C02097E5C08E}",
-		["flv"]="{C9ECE7B3-1D8E-41F5-9F24-B255DF16C087}",
+		["flv"]="{E1A90E70-EF1D-4326-9D6F-BF1E1AC0A792}",
 		["mxf"]="{9622477D-E65F-4A5F-BD89-AD75063DDADD}",
 	},
 
@@ -179,6 +179,7 @@ config =
 	{
 		-- ["slow extension"] = 1
 		["ssif"]=1,
+		["e3d"]=1,
 		["m2ts"]=1,
 		["ts"]=1,
 		["tp"]=1,

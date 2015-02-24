@@ -14,6 +14,7 @@ public:
 	~LibassRendererCore();
 
 	// CSubtitleRenderer
+	virtual HRESULT load_memory(const void *data, int size);									//maybe you don't need this?
 	virtual HRESULT load_file(wchar_t *filename);												//maybe you don't need this?
 	virtual HRESULT load_index(void *data, int size);
 	virtual HRESULT add_data(BYTE *data, int size, int start, int end);

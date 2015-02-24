@@ -63,6 +63,9 @@ HRESULT LibassRendererCore::load_file(wchar_t *filename)
 		ass_free_track(m_track);
 
 	FILE * f = _wfopen(filename, L"rb");
+	if (!f)
+		return E_FAIL;
+
 	fseek(f, 0, SEEK_END);
 	int file_size = ftell(f);
 	fseek(f, 0, SEEK_SET);
@@ -71,15 +74,24 @@ HRESULT LibassRendererCore::load_file(wchar_t *filename)
 	fread(src, 1, file_size, f);
 	fclose(f);
 
-	int utf8_size = ConvertToUTF8(src, file_size, utf8, file_size*3);
+
+	return load_memory(src, file_size);
+}
+
+HRESULT LibassRendererCore::load_memory(const void *data, int size)
+{
+	CAutoLock lck(&g_libass_cs);
+	char *utf8 = (char*)malloc(size*3);
+
+	int utf8_size = ConvertToUTF8((char*)data, size, utf8, size*3);
 
 	m_track = ass_read_memory(g_ass_library, utf8, utf8_size, NULL);
 
-	free(src);
 	free(utf8);
 
 	return m_track ? S_OK : E_FAIL;
 }
+
 HRESULT LibassRendererCore::load_index(void *data, int size)
 {
 	CAutoLock lck(&g_libass_cs);
@@ -346,6 +358,7 @@ static DWORD WINAPI loadFontThread(LPVOID param)
 enum command_types
 {
 	command_loadfile,
+	command_loadmemory,
 	command_loadindex,
 	command_adddata,
 	command_reset,
@@ -378,10 +391,21 @@ LibassRenderer::~LibassRenderer()
 
 HRESULT LibassRenderer::load_file(wchar_t *filename)												//maybe you don't need this?
 {
-	void *p = malloc(wcslen(filename)*2+2);
-	memcpy(p, filename, wcslen(filename)*2+2);
 	m_fallback->load_file(filename);
-	return send_command(command_loadfile, p, wcslen(filename)*2+2);
+
+	// read out file and store it in memory to prevent async situation
+	FILE * f = _wfopen(filename, L"rb");
+	if (!f)
+		return E_FAIL;
+
+	fseek(f, 0, SEEK_END);
+	int size = ftell(f);
+	char *data = new char[size];
+	fseek(f, 0, SEEK_SET);
+	fread(data, 1, size, f);
+	fclose(f);
+
+	return send_command(command_loadmemory, data, size);
 }
 
 HRESULT LibassRenderer::load_index(void *data, int size)
@@ -442,6 +466,9 @@ HRESULT LibassRenderer::execute_command(int command_type, void *data, int size)
 	{
 	case command_loadfile:
 		hr = m_core->load_file((wchar_t*)data);
+		break;
+	case command_loadmemory:
+		hr = m_core->load_memory(data, size);
 		break;
 	case command_loadindex:
 		hr = m_core->load_index(data, size);
