@@ -3,7 +3,6 @@
 // Used by AvsSlideShow.rc
 //
 #define IDD_DIALOG1                     101
-#define IDR_JDO                         102
 #define IDC_VIDEO                       1001
 #define IDC_VIDEO_BROWSE                1002
 #define IDC_BMP                         1003

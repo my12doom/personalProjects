@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "convert.h"
 #include <tchar.h>
 #include <conio.h>
 #include <math.h>
@@ -7,14 +8,16 @@
 #include "avisynth.h"
 #include "resource.h"
 #include "screenshotor.h"
+#include "libjpeg/jpeglib.h"
+#pragma comment(lib, "libjpeg/turbojpeg-static.lib")
 
 HRESULT do_capture(const wchar_t*video, const wchar_t*bmp, int w_count, int h_count, bool showtime, int re_w, int re_h, wchar_t *msg, HWND cb, double transparancy);
 HRESULT save_bitmap(DWORD *data, const wchar_t *filename, int width, int height);
 INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
 bool open_file_dlg(wchar_t *pathname, HWND hDlg, bool do_open  = true, wchar_t *filter = NULL);
+bool jpeg_enc_yv12(unsigned char* Ybuffer, unsigned char *Ubuffer, unsigned char*Vbuffer, int width, int height, int Ystride, int UVstride, int quality, const wchar_t* filename);
 
 wchar_t apppath[1024] = L"";
-wchar_t jdopath[1024] = L"";
 
 
 class myFFSource: public IClip
@@ -81,39 +84,8 @@ int wmain(int argc, const wchar_t* argv[])
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	GetModuleFileNameW(NULL, apppath, 1024);
-	for(int i=wcslen(apppath); i>=0; i--)
-		if (apppath[i] == L'\\')
-		{
-			apppath[i] = NULL;
-			break;
-		}
-	wcscpy(jdopath, apppath);
-	wcscat(jdopath, L"\\jdo.exe");
-
-	// Extract jdo.exe
-	HMODULE hm = GetModuleHandle(NULL);
-	HRSRC hResInfo = FindResource(hm, MAKEINTRESOURCE(IDR_JDO), RT_RCDATA);
-	HGLOBAL hDllData = LoadResource(hm, hResInfo);
-	int res_size = SizeofResource(hm, hResInfo);
-	void * dll_data = LockResource(hDllData);
-	if (!dll_data)
-	{
-		MessageBoxA(NULL, "jdo.exe in AvsSlideShow.exe corrupted.", "Error", MB_ICONERROR);
-		return -1;
-	}
-	FILE * f = _wfopen(jdopath, L"wb");
-	if (!f)
-	{
-		MessageBoxA(NULL, "failed writing jdo.exe", "Error", MB_ICONERROR);
-		return -1;
-	}
-	else
-	{
-		fwrite(dll_data, 1, res_size, f);
-		fclose(f);
-	}
-
+	InitLookupTable();
+	InitConvertTable();
 
 	DialogBoxW(NULL, MAKEINTRESOURCEW(IDD_DIALOG1), NULL, window_proc);
 	TerminateProcess(GetCurrentProcess(), 0);
@@ -201,7 +173,6 @@ INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 				else
 				{
 					ShellExecuteW(hDlg, L"open", bmp, NULL, NULL, SW_SHOW);
-					ShellExecuteW(NULL, NULL, jdopath, cmd, NULL, SW_HIDE);
 				}
 			}
 
@@ -251,6 +222,82 @@ INT_PTR CALLBACK window_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 
 	return TRUE; // Handled message
 }
+
+bool jpeg_enc_yv12(unsigned char* Ybuffer, unsigned char *Ubuffer, unsigned char*Vbuffer, int width, int height, int Ystride, int UVstride, int quality, const wchar_t* filename)
+{
+	int height2 = height+16;
+	struct jpeg_compress_struct cinfo;
+	struct jpeg_error_mgr jerr;
+	FILE *outfile = NULL;
+	bool ret = TRUE;
+	if(Ybuffer == NULL || Ubuffer == NULL || Vbuffer == NULL || width <=0 || height <=0|| filename == NULL)
+		return FALSE;
+	if ((outfile = _wfopen(filename, L"wb")) == NULL) 
+	{  
+		return FALSE;
+	}    
+	cinfo.err = jpeg_std_error(&jerr);
+	jpeg_create_compress(&cinfo);
+	jpeg_stdio_dest(&cinfo, outfile);
+
+	cinfo.image_width = width; 
+	cinfo.image_height = height;
+	cinfo.input_components = 3;        
+	cinfo.in_color_space = JCS_YCbCr;
+	jpeg_set_defaults(&cinfo);
+#if JPEG_LIB_VERSION >= 70
+	cinfo.do_fancy_downsampling = FALSE;
+	cinfo.dct_method = JDCT_FASTEST;
+	cinfo.smoothing_factor = 0;
+#endif
+	jpeg_set_quality(&cinfo, quality, TRUE);
+	cinfo.raw_data_in = TRUE;  
+
+	{
+		JSAMPARRAY pp[3];
+		JSAMPROW *rpY = (JSAMPROW*)malloc(sizeof(JSAMPROW) * height2);
+		JSAMPROW *rpU = (JSAMPROW*)malloc(sizeof(JSAMPROW) * height2);
+		JSAMPROW *rpV = (JSAMPROW*)malloc(sizeof(JSAMPROW) * height2);
+		int k;
+		if(rpY == NULL && rpU == NULL && rpV == NULL)
+		{
+			ret = FALSE;
+			goto exit;
+		}
+		cinfo.comp_info[0].h_samp_factor =
+			cinfo.comp_info[0].v_samp_factor = 2;
+		cinfo.comp_info[1].h_samp_factor =
+			cinfo.comp_info[1].v_samp_factor =
+			cinfo.comp_info[2].h_samp_factor =
+			cinfo.comp_info[2].v_samp_factor = 1;
+		jpeg_start_compress(&cinfo, TRUE);
+
+		for (k = 0; k < height2; k+=2) 
+		{
+			int km = min(k, height-1);
+			rpY[k]   = Ybuffer + km*Ystride;
+			rpY[k+1] = Ybuffer + (km+1)*Ystride;
+			rpU[k/2] = Ubuffer + (km/2)*UVstride;
+			rpV[k/2] = Vbuffer + (km/2)*UVstride;
+		}
+		for (k = 0; k < height; k+=2*DCTSIZE) 
+		{
+			pp[0] = &rpY[k];
+			pp[1] = &rpU[k/2];
+			pp[2] = &rpV[k/2];
+			jpeg_write_raw_data(&cinfo, pp, 2*DCTSIZE);
+		}
+		jpeg_finish_compress(&cinfo);
+		free(rpY);
+		free(rpU);
+		free(rpV);
+	}
+exit:
+	fclose(outfile);
+	jpeg_destroy_compress(&cinfo);
+	return ret;
+}
+
 HRESULT do_capture(const wchar_t*video, const wchar_t*bmp, int w_count, int h_count, bool showtime, int re_w, int re_h, wchar_t *msg, HWND cb, double transparancy)
 {
 	USES_CONVERSION;
@@ -410,6 +457,24 @@ HRESULT do_capture(const wchar_t*video, const wchar_t*bmp, int w_count, int h_co
 
 HRESULT save_bitmap(DWORD *data, const wchar_t *filename, int width, int height) 
 {
+	// revert rgb
+	DWORD *line = new DWORD[width];
+	for(int y=0; y<height/2; y++)
+	{
+		int y2 = height - y;
+		memcpy(line, data + width * y, width*4);
+		memcpy(data + width * y, data + width * y2, width*4);
+		memcpy(data + width * y2, line, width * 4);
+	}
+	delete line;
+
+	wchar_t filenamejpg[1024];
+	wsprintfW(filenamejpg, L"%s.jpg", filename);
+	unsigned char *yuv = new unsigned char[width * height * 2];
+	ConvertRGBA2YUV(width, height, (unsigned char*)data, yuv);
+	jpeg_enc_yv12(yuv, yuv+width*height, yuv+width*height*5/4, width, height, width, width/2, 85, filenamejpg);
+
+	delete yuv;
 
 	FILE *pFile = _wfopen(filename, L"wb");
 	if(pFile == NULL)
@@ -422,9 +487,8 @@ HRESULT save_bitmap(DWORD *data, const wchar_t *filename, int width, int height)
 	BMIH.biPlanes = 1;
 	BMIH.biCompression = BI_RGB;
 	BMIH.biWidth = width;
-	BMIH.biHeight = height;
-	BMIH.biSizeImage = ((((BMIH.biWidth * BMIH.biBitCount) 
-		+ 31) & ~31) >> 3) * BMIH.biHeight;
+	BMIH.biHeight = -height;
+	BMIH.biSizeImage = ((((BMIH.biWidth * BMIH.biBitCount) + 31) & ~31) >> 3) * height;
 
 	BITMAPFILEHEADER bmfh;
 	int nBitsOffset = sizeof(BITMAPFILEHEADER) + BMIH.biSize; 
@@ -434,26 +498,20 @@ HRESULT save_bitmap(DWORD *data, const wchar_t *filename, int width, int height)
 	bmfh.bfOffBits = nBitsOffset;
 	bmfh.bfSize = lFileSize;
 	bmfh.bfReserved1 = bmfh.bfReserved2 = 0;
+
 	//Write the bitmap file header
+	UINT nWrittenFileHeaderSize = fwrite(&bmfh, 1, sizeof(BITMAPFILEHEADER), pFile);
 
-	UINT nWrittenFileHeaderSize = fwrite(&bmfh, 1, 
-		sizeof(BITMAPFILEHEADER), pFile);
 	//And then the bitmap info header
+	UINT nWrittenInfoHeaderSize = fwrite(&BMIH, 1, sizeof(BITMAPINFOHEADER), pFile);
 
-	UINT nWrittenInfoHeaderSize = fwrite(&BMIH, 
-		1, sizeof(BITMAPINFOHEADER), pFile);
 	//Finally, write the image data itself 
-
-	//-- the data represents our drawing
-
-	UINT nWrittenDIBDataSize = 
-		fwrite(data, 1, lImageSize, pFile);
+	UINT nWrittenDIBDataSize = fwrite(data, 1, lImageSize, pFile);
 
 	fclose(pFile);
 
 	return S_OK;
 }
-
 
 bool open_file_dlg(wchar_t *pathname, HWND hDlg, bool do_open /* = false*/, wchar_t *filter/* = NULL*/)
 {
