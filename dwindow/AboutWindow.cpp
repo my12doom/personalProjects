@@ -43,8 +43,13 @@ wchar_t version[200] = L"Free";
 #endif
 
 #ifdef dwindow_jz
+#ifdef OEM1
+wchar_t version[200] = L"OEM";
+#else
 wchar_t version[200] = L"Donate";
 #endif
+#endif
+
 
 #ifdef dwindow_pro
 wchar_t version[200] = L"Personal";

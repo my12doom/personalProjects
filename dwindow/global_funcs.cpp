@@ -1323,6 +1323,64 @@ HRESULT save_passkey()
 	return S_OK;
 }
 
+HRESULT test_passkey(const void *newkey)
+{
+	if (!newkey)
+		return E_POINTER;
+
+	char old_key[128];
+	memcpy(old_key, g_passkey_big, 128);
+
+	int o = memcmp(old_key, newkey, 128);
+	memcpy(g_passkey_big, newkey, 128);
+	if (FAILED(check_passkey()))
+	{
+		memcpy(g_passkey_big, old_key, 128);
+		return E_FAIL;
+	}
+
+	memcpy(g_passkey_big, old_key, 128);
+	return S_OK;
+}
+HRESULT use_passkey(const void *newkey)
+{
+	if (SUCCEEDED(test_passkey(newkey)))
+	{
+		memcpy(g_passkey_big, newkey, 128);
+		save_passkey();
+		return S_OK;
+	}
+	return E_FAIL;
+}
+
+HRESULT active_base64(const wchar_t *string)
+{
+	wchar_t * trim= new wchar_t[wcslen(string)+1];
+	wchar_t * p = trim;
+	while(*string)
+	{
+		if (*string != ' ' && *string != '\r' && *string != '\n')
+		{
+			*p = *string;
+			p++;
+		}
+		string++;
+	}
+	*p = NULL;
+
+	luaState L;
+	lua_getglobal(L, "bittorrent");
+	lua_getfield(L, -1, "string2hex");
+	lua_pushstring(L, W2UTF8(trim));
+	
+	lua_mypcall(L, 1, 1, 0);
+	int raw_len = lua_rawlen(L, -1);
+	if (lua_rawlen(L, -1) < 128 || lua_type(L, -1) != LUA_TSTRING)
+		return E_INVALIDARG;
+
+	return use_passkey(lua_tostring(L, -1));
+}
+
 HRESULT load_e3d_key(const unsigned char *file_hash, unsigned char *file_key)
 {
 	unsigned char key_tmp[32+16];

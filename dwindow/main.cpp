@@ -1,5 +1,6 @@
 #include "dx_player.h"
 #include "login.h"
+#include "activation.h"
 #include "..\lua\my12doom_lua.h"
 #include <locale.h>
 #include <Dbghelp.h>
@@ -48,7 +49,11 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif
 
 #ifdef dwindow_jz
+#ifdef OEM1
+		L"OEM"
+#else
 		L"donate"
+#endif
 #endif
 
 #ifdef dwindow_pro
@@ -79,7 +84,11 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	my12doomRenderer_lua_init();
 	my12doomRenderer_lua_loadscript();
 
+#ifdef OEM1
+	check_activation();
+#else
 	check_login();
+#endif
 	save_passkey();
 	BasicRsaCheck();
 
@@ -183,8 +192,13 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif
 
 #ifdef dwindow_jz
+#ifdef OEM1
+		lua_pushstring(L, "OEM");
+#else
 		lua_pushstring(L, "donate");
 #endif
+#endif
+
 
 #ifdef dwindow_pro
 #ifdef DEBUG

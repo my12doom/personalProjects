@@ -35,6 +35,7 @@ class AutoSettingString;
 
 // register window proc
 INT_PTR CALLBACK register_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
+INT_PTR CALLBACK activation_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
 
 
 // public variables
@@ -126,6 +127,9 @@ HRESULT GetFilterFriedlyName(IBaseFilter *filter, wchar_t *out, int outlen);
 HRESULT RemoveUselessFilters(IGraphBuilder *gb);
 HRESULT DeterminPin(IPin *pin, wchar_t *name = NULL, CLSID majortype = CLSID_NULL, CLSID subtype = CLSID_NULL);
 HRESULT GetPinByName(IBaseFilter *pFilter, PIN_DIRECTION PinDir, const wchar_t *name, IPin **ppPin);
+HRESULT test_passkey(const void *newkey);
+HRESULT use_passkey(const void *newkey);
+HRESULT active_base64(const wchar_t *string);
 HRESULT load_passkey();
 HRESULT save_passkey();
 HRESULT save_e3d_key(const unsigned char *file_hash, const unsigned char *file_key);
