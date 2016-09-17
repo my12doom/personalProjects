@@ -40,6 +40,10 @@ function oroot:OnClick(x,y,button)
 	return true
 end
 
+function oroot:OnDoubleClick(x,y,button)
+	player.toggle_fullscreen()
+	return true
+end
 
 -- background / loading progress
 local logo = BaseFrame:Create()

@@ -22,6 +22,8 @@ Global
 		release_mt|x64 = release_mt|x64
 		release_oem1|Win32 = release_oem1|Win32
 		release_oem1|x64 = release_oem1|x64
+		release_oem2|Win32 = release_oem2|Win32
+		release_oem2|x64 = release_oem2|x64
 		release_personal|Win32 = release_personal|Win32
 		release_personal|x64 = release_personal|x64
 		release_vstar|Win32 = release_vstar|Win32
@@ -48,6 +50,10 @@ Global
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_oem1|Win32.Build.0 = release_oem1|Win32
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_oem1|x64.ActiveCfg = release_oem1|x64
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_oem1|x64.Build.0 = release_oem1|x64
+		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_oem2|Win32.ActiveCfg = release_oem2|Win32
+		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_oem2|Win32.Build.0 = release_oem2|Win32
+		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_oem2|x64.ActiveCfg = release_oem2|x64
+		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_oem2|x64.Build.0 = release_oem2|x64
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_personal|Win32.ActiveCfg = release_personal|Win32
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_personal|Win32.Build.0 = release_personal|Win32
 		{99F4BF26-5159-4A90-83BE-CB492C8A87C7}.release_personal|x64.ActiveCfg = release_personal|x64
@@ -76,6 +82,9 @@ Global
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem1|Win32.ActiveCfg = release_oem1|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem1|Win32.Build.0 = release_oem1|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem1|x64.ActiveCfg = release_oem1|Win32
+		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem2|Win32.ActiveCfg = release_oem2|Win32
+		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem2|Win32.Build.0 = release_oem2|Win32
+		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem2|x64.ActiveCfg = release_oem2|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_personal|Win32.ActiveCfg = release_personal|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_personal|Win32.Build.0 = release_personal|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_personal|x64.ActiveCfg = Release|Win32
@@ -89,7 +98,6 @@ Global
 		{3FC7256B-0072-43BD-A284-77A147297150}.Release|Win32.Build.0 = Release|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.Release|x64.ActiveCfg = Release|Win32
 		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.Debug|Win32.ActiveCfg = Debug|Win32
-		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.Debug|Win32.Build.0 = Debug|Win32
 		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.Debug|x64.ActiveCfg = Debug|Win32
 		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_jz|Win32.ActiveCfg = release_jz|Win32
 		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_jz|Win32.Build.0 = release_jz|Win32
@@ -100,6 +108,9 @@ Global
 		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_oem1|Win32.ActiveCfg = release_oem1|Win32
 		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_oem1|Win32.Build.0 = release_oem1|Win32
 		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_oem1|x64.ActiveCfg = release_oem1|Win32
+		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_oem2|Win32.ActiveCfg = release_oem2|Win32
+		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_oem2|Win32.Build.0 = release_oem2|Win32
+		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_oem2|x64.ActiveCfg = release_oem2|Win32
 		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_personal|Win32.ActiveCfg = release_personal|Win32
 		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_personal|Win32.Build.0 = release_personal|Win32
 		{4C42F70A-3497-4B9F-8850-ED1DEF413E89}.release_personal|x64.ActiveCfg = Release|Win32
@@ -124,6 +135,9 @@ Global
 		{B2C82C01-65E8-44E2-AF31-10A6FE471F39}.release_oem1|Win32.ActiveCfg = release_oem1|Win32
 		{B2C82C01-65E8-44E2-AF31-10A6FE471F39}.release_oem1|Win32.Build.0 = release_oem1|Win32
 		{B2C82C01-65E8-44E2-AF31-10A6FE471F39}.release_oem1|x64.ActiveCfg = release_oem1|Win32
+		{B2C82C01-65E8-44E2-AF31-10A6FE471F39}.release_oem2|Win32.ActiveCfg = release_oem2|Win32
+		{B2C82C01-65E8-44E2-AF31-10A6FE471F39}.release_oem2|Win32.Build.0 = release_oem2|Win32
+		{B2C82C01-65E8-44E2-AF31-10A6FE471F39}.release_oem2|x64.ActiveCfg = release_oem2|Win32
 		{B2C82C01-65E8-44E2-AF31-10A6FE471F39}.release_personal|Win32.ActiveCfg = Release|Win32
 		{B2C82C01-65E8-44E2-AF31-10A6FE471F39}.release_personal|Win32.Build.0 = Release|Win32
 		{B2C82C01-65E8-44E2-AF31-10A6FE471F39}.release_personal|x64.ActiveCfg = Release|Win32

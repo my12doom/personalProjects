@@ -1,5 +1,6 @@
 #include "dshow_lua.h"
 #include "global_funcs.h"
+#include "dwindow_log.h"
 #include "dx_player.h"
 #include "open_double_file.h"
 #include "open_url.h"

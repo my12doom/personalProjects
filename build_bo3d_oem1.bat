@@ -36,6 +36,6 @@ C:\NSIS\makensisw.exe dwindow_NSIS\dwindow.nsi
 cd dwindow_NSIS
 set v=%DATE:~2,2%%DATE:~5,2%%DATE:~8,2%
 del (donate)bo3d%v%.exe
-ren dwindow_setup.exe (donate)bo3d%v%.exe
+ren dwindow_setup.exe (oem1)bo3d%v%.exe
 cd..
 copy/y dwindow\release_oem1\StereoPlayer.pdb pdbs\(oem1)bo3d%v%.pdb

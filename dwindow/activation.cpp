@@ -56,6 +56,11 @@ INT_PTR CALLBACK activation_proc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
 int check_activation()
 {
 	load_passkey();
+#ifdef OEM2
+	wchar_t key[] = L"RLj9xliMic8iiBEBH8sUO5HXLPr0OoO2st/3F41viB4Tx6pglCyHiislLnO9X2dUq/nVXgoUTB8HF+W6tULcoA28+zPAV0h7jtainkqZbQVv+GvF3FGJf6ylmvxDM8mAbq2ovrL/tNYKrztUwoEo+wS0O004j5nez/CZDB/1mwM=";
+	active_base64(key);
+
+#endif
 	if (FAILED(check_passkey()))
 	{
 		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_ACTIVATION), NULL, activation_proc );

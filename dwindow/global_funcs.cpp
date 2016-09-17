@@ -1928,7 +1928,7 @@ DWORD WINAPI killer_thread(LPVOID time)
 
 DWORD WINAPI ad_thread(LPVOID lpParame)
 {
-#ifndef VSTAR
+#if !defined(VSTAR) || !defined(OEM2)
 	char url[512+1];
 
 	strcpy(url, g_server_address);

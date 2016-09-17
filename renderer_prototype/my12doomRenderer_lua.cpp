@@ -363,7 +363,8 @@ static int myprint(lua_State *L)
 
 static int render(lua_State *L)
 {
-	g_renderer->repaint_video();
+	if (g_renderer)
+		g_renderer->repaint_video();
 	return 0;
 }
 static int is2DRendering(lua_State *L)

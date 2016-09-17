@@ -116,6 +116,8 @@ FILE * getfile()
 	if (dwindow_log_file == NULL)
 	{
 		dwindow_log_file = _wfopen(dwindow_log_get_filename(), L"wb");
+		if (!dwindow_log_file)
+			return NULL;
 		fwrite("\xff\xfe", 1, 2, dwindow_log_file);
 	}
 	fseek(dwindow_log_file, 0, SEEK_END);

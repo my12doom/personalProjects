@@ -29,8 +29,9 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 		}
 	}
 	HWND parent_window = (HWND)lpParame;
-
+#ifndef DEBUG
  	Sleep(60*1000);
+#endif
 
 
 	dwindow_message_uncrypt message;
@@ -109,7 +110,8 @@ DWORD WINAPI bomb_network_thread(LPVOID lpParame)
 		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID), parent_window, register_proc );
 #elif defined(OEM1)
 		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_ACTIVATION), parent_window, activation_proc );
-
+#elif defined(OEM2)
+		int o = 0;
 #else
 		int o = (int)DialogBox( NULL, MAKEINTRESOURCE(IDD_USERID_PAYED), parent_window, register_proc );
 #endif

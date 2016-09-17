@@ -32,10 +32,30 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 	return (fwrite(p,size,1,(FILE*)u)!=1) && (size!=0);
 }
 
+void fix_wndproc_exception()
+{
+	#define PROCESS_CALLBACK_FILTER_ENABLED     0x1
+	typedef BOOL (WINAPI *GETPROCESSUSERMODEEXCEPTIONPOLICY)(__out LPDWORD lpFlags);
+	typedef BOOL (WINAPI *SETPROCESSUSERMODEEXCEPTIONPOLICY)(__in DWORD dwFlags );
+	HINSTANCE h = ::LoadLibrary(L"kernel32.dll");
+	if ( h ) {
+		GETPROCESSUSERMODEEXCEPTIONPOLICY GetProcessUserModeExceptionPolicy = reinterpret_cast< GETPROCESSUSERMODEEXCEPTIONPOLICY >( ::GetProcAddress(h, "GetProcessUserModeExceptionPolicy") );
+		SETPROCESSUSERMODEEXCEPTIONPOLICY SetProcessUserModeExceptionPolicy = reinterpret_cast< SETPROCESSUSERMODEEXCEPTIONPOLICY >( ::GetProcAddress(h, "SetProcessUserModeExceptionPolicy") );
+		if ( GetProcessUserModeExceptionPolicy == 0 || SetProcessUserModeExceptionPolicy == 0 ) {
+			return;
+		}
+		DWORD dwFlags;
+		if (GetProcessUserModeExceptionPolicy(&dwFlags)) {
+			SetProcessUserModeExceptionPolicy(dwFlags & ~PROCESS_CALLBACK_FILTER_ENABLED); 
+		}
+	}
+};
+
 #include <Shlobj.h>
 #pragma comment(lib, "Shell32.lib")
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
+	fix_wndproc_exception();
  	SetUnhandledExceptionFilter(my_handler);
 	DisableSetUnhandledExceptionFilter();
 	CoInitialize(NULL);
@@ -49,8 +69,10 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif
 
 #ifdef dwindow_jz
-#ifdef OEM1
+#if defined(OEM1)
 		L"OEM"
+#elif defined(OEM2)
+		L"Final"
 #else
 		L"donate"
 #endif
@@ -84,7 +106,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	my12doomRenderer_lua_init();
 	my12doomRenderer_lua_loadscript();
 
-#ifdef OEM1
+#if defined(OEM1) || defined(OEM2)
 	check_activation();
 #else
 	check_login();
@@ -192,8 +214,10 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif
 
 #ifdef dwindow_jz
-#ifdef OEM1
+#if defined(OEM1)
 		lua_pushstring(L, "OEM");
+#elif defined(OEM2)
+		lua_pushstring(L, "final");
 #else
 		lua_pushstring(L, "donate");
 #endif
