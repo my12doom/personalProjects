@@ -82,8 +82,8 @@ Global
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem1|Win32.ActiveCfg = release_oem1|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem1|Win32.Build.0 = release_oem1|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem1|x64.ActiveCfg = release_oem1|Win32
-		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem2|Win32.ActiveCfg = release_oem2|Win32
-		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem2|Win32.Build.0 = release_oem2|Win32
+		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem2|Win32.ActiveCfg = Debug|Win32
+		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem2|Win32.Build.0 = Debug|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_oem2|x64.ActiveCfg = release_oem2|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_personal|Win32.ActiveCfg = release_personal|Win32
 		{3FC7256B-0072-43BD-A284-77A147297150}.release_personal|Win32.Build.0 = release_personal|Win32

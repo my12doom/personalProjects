@@ -20,7 +20,9 @@ copy/y dwindow\logo.raw dwindow_NSIS
 copy/y dwindow\release_oem2\StereoPlayer.exe dwindow_NSIS
 copy/y reset\release\reset.exe dwindow_NSIS
 copy/y dwindow\release_oem2\lua.dll dwindow_NSIS
+copy/y lua\Release\lua.dll dwindow_NSIS
 copy/y report_server\release\ErrorReport.exe dwindow_NSIS
+md dwindow_NSIS\codec
 del/q dwindow_NSIS\codec\*.*
 copy/y mySplitter\release_mt\*.ax dwindow_NSIS\codec
 copy/y 3rdFilter\*.* dwindow_NSIS\codec
