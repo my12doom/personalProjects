@@ -3318,11 +3318,14 @@ HRESULT my12doomRenderer::calculate_movie_position_unscaled(RECTF *position)
 		tar.bottom = t;
 	}
 
-	// half width/height for sbs/tb output mode
-	if (m_output_mode == out_sbs)
-		tar.right /= 2;
-	else if (m_output_mode == out_tb)
-		tar.bottom /= 2;
+	// half width/height for sbs/tb output mode full screen
+	if (!m_movie_scissor_rect)
+	{
+		if (m_output_mode == out_sbs)
+			tar.right /= 2;
+		else if (m_output_mode == out_tb)
+			tar.bottom /= 2;
+	}
 
 	float width = tar.right - tar.left;
 	float height = tar.bottom - tar.top;

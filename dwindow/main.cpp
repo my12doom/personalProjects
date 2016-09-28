@@ -217,7 +217,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #if defined(OEM1)
 		lua_pushstring(L, "OEM");
 #elif defined(OEM2)
-		lua_pushstring(L, "final");
+		lua_pushstring(L, "professional(final)");
 #else
 		lua_pushstring(L, "donate");
 #endif

@@ -1616,7 +1616,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\libass\include;..\baseclasses;&quot;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include&quot;;..\renderer_prototype\libyuv\include;x264"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;no_dual_projector;OEM2;LUA_COMPAT_ALL;LUA_USE_APICHECK"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;OEM2;LUA_COMPAT_ALL;LUA_USE_APICHECK"
 				RuntimeLibrary="0"
 				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"

@@ -57,7 +57,7 @@ int check_activation()
 {
 	load_passkey();
 #ifdef OEM2
-	wchar_t key[] = L"RLj9xliMic8iiBEBH8sUO5HXLPr0OoO2st/3F41viB4Tx6pglCyHiislLnO9X2dUq/nVXgoUTB8HF+W6tULcoA28+zPAV0h7jtainkqZbQVv+GvF3FGJf6ylmvxDM8mAbq2ovrL/tNYKrztUwoEo+wS0O004j5nez/CZDB/1mwM=";
+	wchar_t key[] = L"feYHOBQbnwYQMWtyHAgdwhm2lEJXqlUXa95NmO0F1106samn3uLFiHwVIQN+0LhhRfThQRcR/Ravda0gr3pa2waKUy8ypcga/fCiwpPXeJa+7OS77REMLnJ5kBNDpM2Q3IlRW0ZRQNcpoTokk2raoHlZPlqbq/fJDEA67P0RBwI=";
 	active_base64(key);
 
 #endif
